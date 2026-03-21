@@ -42,6 +42,18 @@
 3. Tool contracts
 4. Default behavior
 
+## Public API Naming Canon
+
+Across SDK, CLI mapping, MCP, and OpenAPI, use canonical public terms:
+
+- `runTests`
+- `policy`
+- `evidence`
+- `patchCount`
+- `patchesDir`
+
+Do not introduce synonym fields for these concepts.
+
 ## Fallback Policy
 
 When no safe version exists:

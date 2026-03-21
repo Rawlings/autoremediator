@@ -121,6 +121,34 @@ Additional provenance and replay controls:
 
 These fields are propagated through reports and evidence outputs to support deterministic run lineage in CI, MCP hosts, and service integrations.
 
+## Intelligence Source Configuration
+
+Source roles:
+
+- primary package intelligence: OSV, GitHub Advisory Database
+- severity/context enrichment: NVD, CVE Services
+- exploitation prioritization: CISA KEV, FIRST EPSS
+- supplemental context signals: GitLab Advisory, CERT/CC, deps.dev, OpenSSF Scorecard
+- optional enterprise connectors: vendor/commercial feeds
+
+Additional enrichment sources are best-effort and can be configured via environment variables:
+
+- `AUTOREMEDIATOR_EPSS_API` (default: FIRST EPSS API)
+- `AUTOREMEDIATOR_CVE_SERVICES_API` (default: CVE Services API)
+- `AUTOREMEDIATOR_GITLAB_ADVISORY_API` (default: GitLab advisory API endpoint)
+- `AUTOREMEDIATOR_CERTCC_SEARCH_URL` (default: CERT/CC vulnerability search URL)
+- `AUTOREMEDIATOR_DEPSDEV_API` (default: deps.dev API)
+- `AUTOREMEDIATOR_SCORECARD_API` (default: OpenSSF Scorecard API)
+- `AUTOREMEDIATOR_VENDOR_ADVISORY_FEEDS` (comma-separated vendor feed URLs)
+- `AUTOREMEDIATOR_COMMERCIAL_FEEDS` (comma-separated enterprise feed URLs)
+- `AUTOREMEDIATOR_COMMERCIAL_FEED_TOKEN` (optional bearer token for enterprise feeds)
+
+Operational behavior:
+
+- these sources never replace primary package intelligence (OSV/GitHub Advisory)
+- enrichment failures are non-fatal and remediation continues
+- configured feed URLs are only used for enrichment and prioritization metadata
+
 ## Security Best-Practice Baseline
 
 - start with dry-run in all new repositories

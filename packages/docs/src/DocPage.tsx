@@ -10,6 +10,7 @@ import policyAndSafety from "../content/policy-and-safety.md?raw";
 import apiSdk from "../content/api-sdk.md?raw";
 import integrations from "../content/integrations.md?raw";
 import contributorGuide from "../content/contributor-guide.md?raw";
+import changelog from "../content/changelog.md?raw";
 
 export type Doc = {
   slug: string;
@@ -25,6 +26,7 @@ export const docs: Doc[] = [
   { slug: "api-sdk", title: "API and SDK", body: apiSdk },
   { slug: "integrations", title: "Integrations", body: integrations },
   { slug: "contributor-guide", title: "Contributor Guide", body: contributorGuide },
+  { slug: "changelog", title: "Changelog", body: changelog },
 ];
 
 function findDoc(slug: string | undefined): Doc | undefined {

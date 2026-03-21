@@ -71,9 +71,9 @@ Core options:
 - `packageManager`: explicit package manager selection (`npm`, `pnpm`, `yarn`)
 - `dryRun`: simulation mode without mutation
 - `preview`: non-mutating planning mode for orchestration/approval workflows
-- `skipTests`: disables post-apply test validation
+- `runTests`: enables post-apply test validation
 - `llmProvider`: provider selection (`openai`, `anthropic`, `local` deterministic mode)
-- `policyPath`: path to `.autoremediator.json`
+- `policy`: path to `.autoremediator.json`
 - `patchesDir`: patch output/apply location when fallback patching is used
 - `requestId`: request-level correlation identifier
 - `sessionId`: session-level correlation identifier
@@ -88,7 +88,19 @@ Core options:
 Scan-specific options:
 
 - `format`: scanner adapter selection (`auto`, `npm-audit`, `yarn-audit`, `sarif`)
-- `writeEvidence`: enable/disable evidence artifact writing
+- `evidence`: enable/disable evidence artifact writing
+
+## Source Precedence
+
+Lookup and enrichment follows this precedence model:
+
+- Primary package intelligence: OSV, then GitHub Advisory Database
+- Severity and CVE context enrichment: NVD, then CVE Services
+- Exploitation prioritization enrichment: CISA KEV and FIRST EPSS
+- Supplemental trust/context enrichment: GitLab Advisory, CERT/CC, deps.dev, OpenSSF Scorecard
+- Optional enterprise enrichment: vendor and commercial feed connectors
+
+Primary package intelligence determines affected npm packages and version windows. All other sources are best-effort enrichment and do not block remediation when unavailable.
 
 ## Basic TypeScript Usage
 
@@ -103,7 +115,7 @@ const report = await remediate("CVE-2021-23337", {
 
 const scanReport = await remediateFromScan("./audit.json", {
 	format: "npm-audit",
-	policyPath: "./.autoremediator.json"
+	policy: "./.autoremediator.json"
 });
 
 const preview = await planRemediation("CVE-2021-23337", {
@@ -144,6 +156,11 @@ Common failure classes to handle:
 - no safe fixed version available
 - policy denial
 - patch confidence/validation failure
+
+Intelligence observability:
+
+- `report.cveDetails.intelligence.sourceHealth` includes per-source enrichment status for each `lookup-cve` run
+- each source entry exposes `attempted`, `changed`, and optional `error`
 
 ## Security Guidance for SDK Integrators
 

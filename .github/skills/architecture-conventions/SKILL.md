@@ -16,6 +16,8 @@ user-invocable: true
 
 **Contributor tooling.** This skill governs how the codebase is organized, not how the tool runs. Read it when adding new source files, moving modules, resolving import path questions, or deciding which module a new concern belongs in. It has no bearing on the tool's runtime behavior.
 
+For public naming conventions and API contract consistency across surfaces, use `public-api-governance`.
+
 ## When to Use
 
 - Adding new source files anywhere under `packages/core/src/`.

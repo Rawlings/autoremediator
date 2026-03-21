@@ -41,8 +41,8 @@ export async function runRemediationPipeline(
   const packageManager = options.packageManager ?? detectPackageManager(cwd);
   const preview = options.preview ?? false;
   const dryRun = (options.dryRun ?? false) || preview;
-  const skipTests = options.skipTests ?? true;
-  const policyPath = options.policyPath ?? "";
+  const runTests = options.runTests ?? false;
+  const policy = options.policy ?? "";
   const patchesDir = options.patchesDir || "./patches";
 
   const model = await createModel(options);
@@ -51,8 +51,8 @@ export async function runRemediationPipeline(
     cveId,
     cwd,
     dryRun,
-    skipTests,
-    policyPath,
+    runTests,
+    policy,
     patchesDir,
     packageManager,
   });
@@ -178,8 +178,8 @@ async function runLocalRemediationPipeline(
   const packageManager = options.packageManager ?? detectPackageManager(cwd);
   const preview = options.preview ?? false;
   const dryRun = (options.dryRun ?? false) || preview;
-  const skipTests = options.skipTests ?? true;
-  const policyPath = options.policyPath ?? "";
+  const runTests = options.runTests ?? false;
+  const policy = options.policy ?? "";
 
   const collectedResults: PatchResult[] = [];
   const vulnerablePackages: VulnerablePackage[] = [];
@@ -340,8 +340,8 @@ async function runLocalRemediationPipeline(
       fromVersion: pkg.version,
       toVersion: safeVersion,
       dryRun,
-      policyPath,
-      skipTests,
+      policy,
+      runTests,
     })) as PatchResult;
     agentSteps += 1;
 
@@ -372,8 +372,8 @@ interface PromptContext {
   cwd: string;
   packageManager: "npm" | "pnpm" | "yarn";
   dryRun: boolean;
-  skipTests: boolean;
-  policyPath: string;
+  runTests: boolean;
+  policy: string;
   patchesDir: string;
 }
 
@@ -385,8 +385,8 @@ function loadOrchestrationPrompt(ctx: PromptContext): string {
 Working directory: ${ctx.cwd}
   Package manager: ${ctx.packageManager}
 Dry run: ${ctx.dryRun}
-Skip tests: ${ctx.skipTests}
-Policy path: ${ctx.policyPath || "undefined"}
+Run tests: ${ctx.runTests}
+Policy: ${ctx.policy || "undefined"}
 Patches dir: ${ctx.patchesDir}
 
 Required sequence:
@@ -410,7 +410,7 @@ Always respect dryRun and policy constraints.`;
     .replaceAll("{{cwd}}", ctx.cwd)
     .replaceAll("{{packageManager}}", ctx.packageManager)
     .replaceAll("{{dryRun}}", String(ctx.dryRun))
-    .replaceAll("{{skipTests}}", String(ctx.skipTests))
-    .replaceAll("{{policyPath}}", ctx.policyPath || "undefined")
+    .replaceAll("{{runTests}}", String(ctx.runTests))
+    .replaceAll("{{policy}}", ctx.policy || "undefined")
     .replaceAll("{{patchesDir}}", ctx.patchesDir);
 }

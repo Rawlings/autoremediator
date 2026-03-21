@@ -46,8 +46,8 @@ async function runSingleCve(cveId: string, opts: CommandOptions): Promise<void> 
     packageManager: opts.packageManager,
     dryRun: opts.dryRun,
     preview: opts.preview,
-    skipTests: !opts.runTests,
-    policyPath: opts.policy,
+    runTests: opts.runTests,
+    policy: opts.policy,
     llmProvider: opts.llmProvider,
     requestId: opts.requestId,
     sessionId: opts.sessionId,
@@ -76,12 +76,12 @@ async function runScanInput(inputPath: string, opts: CommandOptions): Promise<vo
     cwd: opts.cwd,
     packageManager: opts.packageManager,
     format: opts.format,
-    policyPath: opts.policy,
+    policy: opts.policy,
     dryRun: opts.dryRun,
     preview: opts.preview,
-    skipTests: !opts.runTests,
+    runTests: opts.runTests,
     llmProvider: opts.llmProvider,
-    writeEvidence: opts.evidence,
+    evidence: opts.evidence,
     requestId: opts.requestId,
     sessionId: opts.sessionId,
     parentRunId: opts.parentRunId,
@@ -181,6 +181,7 @@ export function createProgram(): Command {
     .option("--source <src>", "Source system: cli|sdk|mcp|openapi|unknown")
     .option("--direct-dependencies-only", "Enforce direct-dependency-only remediation constraint", false)
     .option("--prefer-version-bump", "Reject patch-file outcomes when version-bump is preferred", false)
+    .option("--evidence", "Enable evidence file output", true)
     .option("--no-evidence", "Disable evidence file output")
     .option("--ci", "Enable CI behavior (non-zero exit on failed remediations)", false)
     .option("--summary-file <path>", "Write machine-readable scan summary JSON to path")
@@ -212,6 +213,7 @@ export function createProgram(): Command {
     .option("--input <path>", "Path to scanner output file (scanner-first mode)")
     .option("--format <type>", "Input format: auto|npm-audit|yarn-audit|sarif", "auto")
     .option("--policy <path>", "Path to policy file (.autoremediator.json)")
+    .option("--evidence", "Enable evidence file output", true)
     .option("--no-evidence", "Disable evidence file output")
     .option("--ci", "Enable CI behavior (non-zero exit on failed remediations)", false)
     .option("--summary-file <path>", "Write machine-readable scan summary JSON to path")

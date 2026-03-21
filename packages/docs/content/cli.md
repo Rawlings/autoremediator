@@ -66,9 +66,10 @@ When to use which mode:
 | `--input <path>` | scanner file path | enables scanner-to-remediation pipelines |
 | `--format <auto|npm-audit|yarn-audit|sarif>` | parser adapter selection | improves reliability for mixed scanner ecosystems |
 | `--policy <path>` | policy file path | enforces organization-specific safety controls |
+| `--evidence` | enables evidence artifact writing | explicit positive control for evidence output |
 | `--ci` | non-interactive CI behavior | deterministic summary/exit semantics for gating |
 | `--summary-file <path>` | summary artifact output | preserves auditable run metadata for dashboards |
-| `--no-evidence` | disables evidence artifact writing | useful only when external evidence capture is mandatory elsewhere |
+| `--no-evidence` | disables evidence artifact writing | use when evidence must be suppressed for a specific run |
 
 ## What `--ci` Changes
 

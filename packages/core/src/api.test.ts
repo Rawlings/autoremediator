@@ -168,7 +168,7 @@ describe("api preview and correlation behavior", () => {
     expect(report.correlation?.requestId).toBe(evidenceCorrelation.requestId);
   });
 
-  it("does not write evidence file when writeEvidence is false", async () => {
+  it("does not write evidence file when evidence is false", async () => {
     mocked.runRemediationPipeline.mockResolvedValue({
       cveId: "CVE-2021-23337",
       cveDetails: null,
@@ -180,7 +180,7 @@ describe("api preview and correlation behavior", () => {
 
     const report = await remediateFromScan("./audit.json", {
       cwd: "/tmp/project",
-      writeEvidence: false,
+      evidence: false,
       requestId: "req-no-write",
     });
 

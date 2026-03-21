@@ -7,8 +7,8 @@ Project context:
 - Working directory: {{cwd}}
 - Package manager: {{packageManager}}
 - Dry run: {{dryRun}}
-- Skip tests: {{skipTests}}
-- Policy path: {{policyPath}}
+- Run tests: {{runTests}}
+- Policy: {{policy}}
 - Patches dir: {{patchesDir}}
 
 ## Objective
@@ -35,7 +35,7 @@ If apply-version-bump result has strategy="none":
 ## Runtime Rules
 
 - Respect dryRun at all times.
-- Include packageManager, policyPath, and skipTests in apply-version-bump inputs.
+- Include packageManager, policy, and runTests in apply-version-bump inputs.
 - Include vulnerableRange in find-fixed-version inputs when available.
 - Treat indirect dependencies as unresolved for automatic version-bump unless an explicit override strategy is provided.
 - Do not skip tools due to assumptions.

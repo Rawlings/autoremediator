@@ -26,7 +26,7 @@ describe("cli preview and correlation option forwarding", () => {
       successCount: 0,
       failedCount: 0,
       errors: [],
-      patchFileCount: 0,
+      patchCount: 0,
     });
     mocked.toCiSummary.mockReturnValue({ failedCount: 0 });
     mocked.ciExitCode.mockReturnValue(0);

@@ -64,6 +64,8 @@ Before opening a PR that changes runtime behavior, update matching governance do
 - .github/instructions/orchestration.instructions.md
 - relevant skill files under .github/skills
 
+For public API naming and schema changes, include .github/skills/public-api-governance/SKILL.md in the update set and keep canonical terms aligned across SDK, CLI mapping, MCP, OpenAPI, and docs.
+
 If you change public API or CLI behavior, update documentation in packages/docs and ensure root README links remain correct.
 
 ## Pull Request Checklist

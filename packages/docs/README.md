@@ -49,7 +49,20 @@ Primary advisory sources used by Autoremediator:
 - [GitHub Advisory Database](https://github.com/advisories)
 - [NVD](https://nvd.nist.gov)
 
+Supplemental enrichment and prioritization sources used by the runtime:
+
+- [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
+- [FIRST EPSS](https://www.first.org/epss/)
+- [CVE Services](https://www.cve.org/)
+- [GitLab Advisory Database](https://advisories.gitlab.com)
+- [CERT/CC Vulnerability Notes](https://www.kb.cert.org/vuls/)
+- [deps.dev](https://deps.dev)
+- [OpenSSF Scorecard](https://securityscorecards.dev)
+- Optional vendor and commercial feeds via environment-configured connectors
+
 The docs should keep these sources visible and explain that remediation outcomes are policy-gated and evidence-backed.
+
+Public API naming canon across docs and examples is: `runTests`, `policy`, `evidence`, `patchCount`, and `patchesDir`.
 
 ## Published Documentation Index
 

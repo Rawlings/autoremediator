@@ -85,8 +85,8 @@ For every directory under `.github/skills/`, a `SKILL.md` must exist and must sa
 {{cveId}}
 {{cwd}}
 {{dryRun}}
-{{skipTests}}
-{{policyPath}}
+{{runTests}}
+{{policy}}
 {{patchesDir}}
 ```
 

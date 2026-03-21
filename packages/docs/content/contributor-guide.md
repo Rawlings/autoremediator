@@ -84,6 +84,12 @@ When changing runtime behavior, contributors must align with:
 
 For major behavior changes, include documentation updates in the same pull request.
 
+Public API naming governance:
+
+- use `.github/skills/public-api-governance/SKILL.md` when changing any public option/report/schema names
+- keep SDK, CLI mapping, MCP schema, OpenAPI schema, and docs in sync in one change set
+- canonical public terms are `runTests`, `policy`, `evidence`, `patchCount`, and `patchesDir`
+
 ## Documentation Quality Standard
 
 For each docs page, include:

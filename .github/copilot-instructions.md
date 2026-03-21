@@ -35,6 +35,7 @@ Use these when **building or extending the tool** — adding files, changing pub
 |---|---|
 | `architecture-conventions` | File placement, module layout, import graph rules |
 | `api-surface` | SDK functions, exported types, OpenAPI/HTTP routes |
+| `public-api-governance` | Canonical naming, schema consistency, and scalable public API evolution |
 | `mcp-tool-registration` | MCP tool schemas, names, result shapes |
 | `evidence-ci-reporting` | Evidence log fields, CI summary schema, exit codes |
 | `governance-check` | Verify governance files are present, correctly structured, and in sync with source |

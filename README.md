@@ -48,6 +48,17 @@ Primary sources used by the remediation pipeline:
 - [GitHub Advisory Database](https://github.com/advisories): package advisories with ecosystem metadata
 - [NVD](https://nvd.nist.gov): NIST-backed CVE reference data and severity context
 
+Supplemental enrichment and prioritization sources:
+
+- [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog): known exploited vulnerability signal
+- [FIRST EPSS](https://www.first.org/epss/): exploit probability and percentile scoring
+- [CVE Services](https://www.cve.org/): additional CVE record references and descriptions
+- [GitLab Advisory Database](https://advisories.gitlab.com): supplemental advisory matching and references
+- [CERT/CC Vulnerability Notes](https://www.kb.cert.org/vuls/): additional analyst context for selected CVEs
+- [deps.dev](https://deps.dev): package metadata coverage checks
+- [OpenSSF Scorecard](https://securityscorecards.dev): package trust and repository security posture signals
+- Optional vendor and commercial feeds via environment-configured connectors
+
 Trust model principles:
 
 - use multiple sources for CVE enrichment and correlation
@@ -77,6 +88,8 @@ Trust model principles:
 - SDK for custom automation programs (`remediate`, `planRemediation`, `remediateFromScan`)
 - MCP for AI tooling ecosystems
 - OpenAPI for service-based integration
+
+Public API naming canon: `runTests`, `policy`, `evidence`, `patchCount`, and `patchesDir`.
 
 ## Documentation
 

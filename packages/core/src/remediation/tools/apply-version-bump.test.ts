@@ -70,7 +70,7 @@ describe("apply-version-bump lock integration", () => {
       fromVersion: "4.17.0",
       toVersion: "4.17.21",
       dryRun: false,
-      skipTests: true,
+      runTests: false,
     });
 
     expect(mocked.withRepoLock).toHaveBeenCalledTimes(1);
@@ -89,7 +89,7 @@ describe("apply-version-bump lock integration", () => {
       fromVersion: "4.17.0",
       toVersion: "4.17.21",
       dryRun: true,
-      skipTests: true,
+      runTests: false,
     });
 
     expect(mocked.withRepoLock).not.toHaveBeenCalled();

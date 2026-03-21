@@ -37,8 +37,8 @@ export type { ScanInputFormat } from "./scanner/index.js";
 
 export interface ScanOptions extends RemediateOptions {
   format?: ScanInputFormat;
-  policyPath?: string;
-  writeEvidence?: boolean;
+  policy?: string;
+  evidence?: boolean;
 }
 
 export interface ScanReport {
@@ -51,13 +51,13 @@ export interface ScanReport {
   failedCount: number;
   errors: Array<{ cveId: string; message: string }>;
   evidenceFile?: string;
-  patchFileCount: number;
+  patchCount: number;
   patchValidationFailures?: Array<{
     packageName: string;
     cveId: string;
     error: string;
   }>;
-  patchStorageDir?: string;
+  patchesDir?: string;
   correlation?: CorrelationContext;
   provenance?: ProvenanceContext;
   constraints?: RemediationConstraints;
@@ -74,13 +74,13 @@ export interface CiSummary {
   failedCount: number;
   errors: Array<{ cveId: string; message: string }>;
   evidenceFile?: string;
-  patchFileCount?: number;
+  patchCount?: number;
   patchValidationFailures?: Array<{
     packageName: string;
     cveId: string;
     error: string;
   }>;
-  patchStorageDir?: string;
+  patchesDir?: string;
   correlation?: CorrelationContext;
   provenance?: ProvenanceContext;
   constraints?: RemediationConstraints;
@@ -107,7 +107,7 @@ function resolveProvenanceContext(options: RemediateOptions): ProvenanceContext 
 }
 
 function resolveConstraints(options: RemediateOptions, cwd: string): RemediationConstraints {
-  const policy = loadPolicy(cwd, options.policyPath);
+  const policy = loadPolicy(cwd, options.policy);
   return {
     directDependenciesOnly:
       options.constraints?.directDependenciesOnly ??
@@ -242,7 +242,7 @@ export async function remediateFromScan(
 
   const findings = parseScanInput(inputPath, format);
   const cveIds = uniqueCveIds(findings);
-  const policy = loadPolicy(cwd, options.policyPath);
+  const policy = loadPolicy(cwd, options.policy);
   const correlation = resolveCorrelationContext(options);
   const provenance = resolveProvenanceContext(options);
   const constraints = resolveConstraints(options, cwd);
@@ -262,7 +262,7 @@ export async function remediateFromScan(
     cveId: string;
     error: string;
   }> = [];
-  let patchFileCount = 0;
+  let patchCount = 0;
 
   for (const cveId of cveIds) {
     try {
@@ -282,7 +282,7 @@ export async function remediateFromScan(
       // Count patches and collect validation failures
       for (const result of report.results) {
         if (result.strategy === "patch-file") {
-          patchFileCount += 1;
+          patchCount += 1;
         }
         if (result.validation?.passed === false && result.validation?.error) {
           patchValidationFailures.push({
@@ -324,7 +324,7 @@ export async function remediateFromScan(
   }
 
   finalizeEvidence(evidence);
-  const evidenceFile = options.writeEvidence === false ? undefined : writeEvidenceLog(cwd, evidence);
+  const evidenceFile = options.evidence === false ? undefined : writeEvidenceLog(cwd, evidence);
 
   return {
     schemaVersion: "1.0",
@@ -336,9 +336,9 @@ export async function remediateFromScan(
     failedCount,
     errors,
     evidenceFile,
-    patchFileCount,
+    patchCount,
     patchValidationFailures: patchValidationFailures.length > 0 ? patchValidationFailures : undefined,
-    patchStorageDir: patchFileCount > 0 ? patchesDir : undefined,
+    patchesDir: patchCount > 0 ? patchesDir : undefined,
     correlation,
     provenance,
     constraints,
@@ -362,9 +362,9 @@ export function toCiSummary(report: ScanReport): CiSummary {
     failedCount: report.failedCount,
     errors: report.errors,
     evidenceFile: report.evidenceFile,
-    patchFileCount: report.patchFileCount || 0,
+    patchCount: report.patchCount || 0,
     patchValidationFailures: report.patchValidationFailures,
-    patchStorageDir: report.patchStorageDir,
+    patchesDir: report.patchesDir,
     correlation: report.correlation,
     provenance: report.provenance,
     constraints: report.constraints,

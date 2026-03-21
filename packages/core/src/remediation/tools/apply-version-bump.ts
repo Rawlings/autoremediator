@@ -38,14 +38,14 @@ export const applyVersionBumpTool = tool({
     fromVersion: z.string().describe("The currently installed vulnerable version"),
     toVersion: z.string().describe("The safe target version to upgrade to"),
     dryRun: z.boolean().default(false).describe("If true, report changes but do not write"),
-    policyPath: z
+    policy: z
       .string()
       .optional()
       .describe("Optional path to .autoremediator policy file"),
-    skipTests: z
+    runTests: z
       .boolean()
-      .default(true)
-      .describe("If true, skip test validation after applying the fix"),
+      .default(false)
+      .describe("If true, run test validation after applying the fix"),
   }),
   execute: async ({
     cwd,
@@ -54,15 +54,15 @@ export const applyVersionBumpTool = tool({
     fromVersion,
     toVersion,
     dryRun,
-    policyPath,
-    skipTests,
+    policy,
+    runTests,
   }): Promise<PatchResult> => {
     const pm = (packageManager ?? detectPackageManager(cwd)) as PackageManager;
     const commands = getPackageManagerCommands(pm);
     const pkgPath = join(cwd, "package.json");
-    const policy = loadPolicy(cwd, policyPath);
+    const loadedPolicy = loadPolicy(cwd, policy);
 
-    if (!isPackageAllowed(policy, packageName)) {
+    if (!isPackageAllowed(loadedPolicy, packageName)) {
       return {
         packageName,
         strategy: "none",
@@ -79,7 +79,7 @@ export const applyVersionBumpTool = tool({
       semver.valid(toVersion) &&
       semver.major(toVersion) > semver.major(fromVersion);
 
-    if (isMajorBump && !policy.allowMajorBumps) {
+    if (isMajorBump && !loadedPolicy.allowMajorBumps) {
       return {
         packageName,
         strategy: "none",
@@ -138,7 +138,7 @@ export const applyVersionBumpTool = tool({
         toVersion,
         applied: false,
         dryRun: true,
-        message: `[DRY RUN] Would update ${depField}.${packageName}: "${currentRange}" → "${newRange}", then run ${installCmd}${skipTests ? "" : ` and ${testCmd}`}.`,
+        message: `[DRY RUN] Would update ${depField}.${packageName}: "${currentRange}" -> "${newRange}", then run ${installCmd}${runTests ? ` and ${testCmd}` : ""}.`,
       };
     }
 
@@ -171,7 +171,7 @@ export const applyVersionBumpTool = tool({
         };
       }
 
-      if (!skipTests) {
+      if (runTests) {
         try {
           const [testCmd, ...testArgs] = commands.test;
           await execa(testCmd, testArgs, {
@@ -213,7 +213,7 @@ export const applyVersionBumpTool = tool({
         toVersion,
         applied: true,
         dryRun: false,
-        message: `Successfully upgraded "${packageName}" from ${fromVersion} to ${toVersion}, ran ${commands.installPreferOffline.join(" ")}${skipTests ? "" : `, and passed ${commands.test.join(" ")}`}.`,
+        message: `Successfully upgraded "${packageName}" from ${fromVersion} to ${toVersion}, ran ${commands.installPreferOffline.join(" ")}${runTests ? `, and passed ${commands.test.join(" ")}` : ""}.`,
       };
     });
   },

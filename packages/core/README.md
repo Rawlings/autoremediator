@@ -56,6 +56,17 @@ Primary sources:
 - [GitHub Advisory Database](https://github.com/advisories)
 - [NVD](https://nvd.nist.gov)
 
+Supplemental enrichment and prioritization sources:
+
+- [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
+- [FIRST EPSS](https://www.first.org/epss/)
+- [CVE Services](https://www.cve.org/)
+- [GitLab Advisory Database](https://advisories.gitlab.com)
+- [CERT/CC Vulnerability Notes](https://www.kb.cert.org/vuls/)
+- [deps.dev](https://deps.dev)
+- [OpenSSF Scorecard](https://securityscorecards.dev)
+- Optional vendor and commercial feeds via environment-configured connectors
+
 Trust controls:
 
 - correlate advisory data with local dependency inventory before action
@@ -69,6 +80,8 @@ Trust controls:
 - SDK: custom automation programs (`remediate`, `planRemediation`, `remediateFromScan`)
 - MCP: AI host integrations
 - OpenAPI: service-based automation
+
+Public API naming canon: `runTests`, `policy`, `evidence`, `patchCount`, and `patchesDir`.
 
 ## Documentation
 

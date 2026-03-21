@@ -16,6 +16,8 @@ user-invocable: true
 
 **Contributor tooling.** This skill governs what the tool exposes to callers — SDK functions, exported types, OpenAPI routes. Read it when adding or renaming public functions, changing report schemas, or updating the HTTP server surface. It does not govern internal pipeline logic or module internals.
 
+For naming canon, terminology normalization, and cross-surface parity rules, pair this skill with `public-api-governance`.
+
 ## When to Use
 
 - Modifying `packages/core/src/api.ts` exports.

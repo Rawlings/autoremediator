@@ -89,3 +89,47 @@ export function getNvdConfig(): NvdConfig {
 export function getGitHubToken(): string | undefined {
   return process.env.GITHUB_TOKEN;
 }
+
+export interface IntelligenceSourceConfig {
+  gitLabAdvisoryApi?: string;
+  certCcSearchUrl?: string;
+  epssApi?: string;
+  cveServicesApi?: string;
+  depsDevApi?: string;
+  scorecardApi?: string;
+  vendorAdvisoryFeeds: string[];
+  commercialFeeds: string[];
+  commercialFeedToken?: string;
+}
+
+export function getIntelligenceSourceConfig(): IntelligenceSourceConfig {
+  return {
+    gitLabAdvisoryApi:
+      process.env.AUTOREMEDIATOR_GITLAB_ADVISORY_API ??
+      "https://advisories.gitlab.com/api/v1/advisories",
+    certCcSearchUrl:
+      process.env.AUTOREMEDIATOR_CERTCC_SEARCH_URL ??
+      "https://www.kb.cert.org/vuls/search",
+    epssApi:
+      process.env.AUTOREMEDIATOR_EPSS_API ??
+      "https://api.first.org/data/v1/epss",
+    cveServicesApi:
+      process.env.AUTOREMEDIATOR_CVE_SERVICES_API ??
+      "https://cveawg.mitre.org/api/cve",
+    depsDevApi:
+      process.env.AUTOREMEDIATOR_DEPSDEV_API ??
+      "https://api.deps.dev/v3",
+    scorecardApi:
+      process.env.AUTOREMEDIATOR_SCORECARD_API ??
+      "https://api.securityscorecards.dev",
+    vendorAdvisoryFeeds: (process.env.AUTOREMEDIATOR_VENDOR_ADVISORY_FEEDS ?? "")
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean),
+    commercialFeeds: (process.env.AUTOREMEDIATOR_COMMERCIAL_FEEDS ?? "")
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean),
+    commercialFeedToken: process.env.AUTOREMEDIATOR_COMMERCIAL_FEED_TOKEN,
+  };
+}

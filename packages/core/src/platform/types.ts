@@ -8,6 +8,35 @@ export interface CveDetails {
   summary: string;
   severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | "UNKNOWN";
   cvssScore?: number;
+  epss?: {
+    score: number;
+    percentile: number;
+    date?: string;
+  };
+  kev?: {
+    knownExploited: boolean;
+    dateAdded?: string;
+    dueDate?: string;
+    requiredAction?: string;
+    knownRansomwareCampaignUse?: string;
+  };
+  intelligence?: {
+    cveServicesEnriched?: boolean;
+    gitlabAdvisoryMatched?: boolean;
+    certCcMatched?: boolean;
+    depsDevEnrichedPackages?: number;
+    scorecardProjects?: number;
+    vendorAdvisories?: string[];
+    commercialFeeds?: string[];
+    sourceHealth?: Record<
+      string,
+      {
+        attempted: boolean;
+        changed: boolean;
+        error?: string;
+      }
+    >;
+  };
   references: string[];
   affectedPackages: AffectedPackage[];
 }
@@ -82,14 +111,14 @@ export interface RemediateOptions extends CorrelationContext {
   packageManager?: "npm" | "pnpm" | "yarn";
   /** If true, plan and report changes but do not write anything */
   dryRun?: boolean;
-  /** If true, skip running npm test after patching */
-  skipTests?: boolean;
+  /** If true, run package-manager tests after patching */
+  runTests?: boolean;
   /** Override the LLM provider (falls back to env AUTOREMEDIATOR_LLM_PROVIDER) */
   llmProvider?: "openai" | "anthropic" | "local";
   /** Override the model name */
   model?: string;
   /** Optional path to a policy file (.autoremediator.json) */
-  policyPath?: string;
+  policy?: string;
   /** Directory to write .patch files (default: ./patches) */
   patchesDir?: string;
   /** If true, run a non-mutating remediation preview (forces dryRun behavior for mutation tools). */
