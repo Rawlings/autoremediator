@@ -1,0 +1,362 @@
+/**
+ * Autoremediator agentic loop
+ *
+ * Orchestrates the full CVE patching pipeline using Vercel AI SDK's
+ * generateText with a tool-calling loop.
+ *
+ * Phase 1 tools: lookup-cve → check-inventory → check-version-match
+ *                → find-fixed-version → apply-version-bump
+ * Phase 4 tools: fetch-package-source → generate-patch → apply-patch-file
+ */
+import { generateText } from "ai";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import semver from "semver";
+import { createModel, resolveProvider } from "../platform/config.js";
+import { detectPackageManager } from "../platform/package-manager.js";
+import { lookupCveTool } from "./tools/lookup-cve.js";
+import { checkInventoryTool } from "./tools/check-inventory.js";
+import { checkVersionMatchTool } from "./tools/check-version-match.js";
+import { findFixedVersionTool } from "./tools/find-fixed-version.js";
+import { applyVersionBumpTool } from "./tools/apply-version-bump.js";
+import { fetchPackageSourceTool } from "./tools/fetch-package-source.js";
+import { generatePatchTool } from "./tools/generate-patch.js";
+import { applyPatchFileTool } from "./tools/apply-patch-file.js";
+import { lookupCveOsv } from "../intelligence/sources/osv.js";
+import { lookupCveGitHub, mergeGhDataIntoCveDetails } from "../intelligence/sources/github-advisory.js";
+import { enrichWithNvd } from "../intelligence/sources/nvd.js";
+import { findSafeUpgradeVersion } from "../intelligence/sources/registry.js";
+import type { HealOptions, HealReport, PatchResult, VulnerablePackage, CveDetails } from "../platform/types.js";
+
+export async function runHealAgent(
+  cveId: string,
+  options: HealOptions = {}
+): Promise<HealReport> {
+  const provider = resolveProvider(options);
+  if (provider === "local") {
+    return runLocalHealPipeline(cveId, options);
+  }
+
+  const cwd = options.cwd ?? process.cwd();
+  const packageManager = options.packageManager ?? detectPackageManager(cwd);
+  const dryRun = options.dryRun ?? false;
+  const skipTests = options.skipTests ?? true;
+  const policyPath = options.policyPath ?? "";
+  const patchesDir = options.patchesDir || "./patches";
+
+  const model = await createModel(options);
+
+  const systemPrompt = loadOrchestrationPrompt({
+    cveId,
+    cwd,
+    dryRun,
+    skipTests,
+    policyPath,
+    patchesDir,
+    packageManager,
+  });
+
+  const prompt = `Patch vulnerable dependencies affected by ${cveId} in the project at: ${cwd}. Package manager: ${packageManager}.`;
+
+  const collectedResults: PatchResult[] = [];
+  const vulnerablePackages: VulnerablePackage[] = [];
+  let cveDetails: CveDetails | null = null;
+  let agentSteps = 0;
+  let lastGeneratedPatches: Record<string, string> | null = null;
+
+  const result = await generateText({
+    model,
+    system: systemPrompt,
+    prompt,
+    tools: {
+      "lookup-cve": lookupCveTool,
+      "check-inventory": checkInventoryTool,
+      "check-version-match": checkVersionMatchTool,
+      "find-fixed-version": findFixedVersionTool,
+      "apply-version-bump": applyVersionBumpTool,
+      "fetch-package-source": fetchPackageSourceTool,
+      "generate-patch": generatePatchTool,
+      "apply-patch-file": applyPatchFileTool,
+    },
+    maxSteps: 25,
+    onStepFinish(stepResult) {
+      agentSteps += 1;
+
+      const { toolResults } = stepResult;
+
+      for (const tr of toolResults ?? []) {
+        const toolResult = tr.result as Record<string, unknown> | undefined;
+
+        if (tr.toolName === "lookup-cve" && toolResult?.data) {
+          cveDetails = toolResult.data as CveDetails;
+        }
+        if (tr.toolName === "check-version-match" && toolResult?.vulnerablePackages) {
+          vulnerablePackages.push(...(toolResult.vulnerablePackages as VulnerablePackage[]));
+        }
+        if (tr.toolName === "apply-version-bump") {
+          collectedResults.push(toolResult as unknown as PatchResult);
+        }
+
+        // Phase 4: Patch generation fallback handling
+        if (tr.toolName === "fetch-package-source" && toolResult?.success) {
+          // Store source files in context for generate-patch tool
+          const sourceData = {
+            success: toolResult.success as boolean,
+            sourceFiles: toolResult.sourceFiles as Record<string, string> | undefined,
+            packageDir: toolResult.packageDir as string | undefined,
+          };
+          // This data will be available in the context for the next tool call
+        }
+
+        if (tr.toolName === "generate-patch" && toolResult?.success) {
+          // Extract and store patch generation results
+          const patchData = {
+            success: toolResult.success as boolean,
+            patches: toolResult.patches as Record<string, string> | undefined,
+            confidence: toolResult.confidence as number | undefined,
+            riskLevel: toolResult.riskLevel as string | undefined,
+          };
+          lastGeneratedPatches = patchData.patches || null;
+          // Patch generation succeeded, store for apply-patch-file tool
+        }
+
+        if (tr.toolName === "apply-patch-file" && toolResult) {
+          // Extract patch application results
+          const patchFileResult = {
+            success: toolResult.success as boolean,
+            patchPath: toolResult.patchPath as string | undefined,
+            postinstallConfigured: toolResult.postinstallConfigured as boolean | undefined,
+            validation: toolResult.validation as Record<string, unknown> | undefined,
+          };
+          // Add to collected results with patch-file strategy
+          if (patchFileResult.success) {
+            collectedResults.push({
+              ...toolResult,
+              strategy: "patch-file",
+            } as unknown as PatchResult);
+          }
+        }
+      }
+    },
+  });
+
+  return {
+    cveId,
+    cveDetails,
+    vulnerablePackages,
+    results: collectedResults,
+    agentSteps,
+    summary: result.text,
+  };
+}
+
+async function runLocalHealPipeline(
+  cveId: string,
+  options: HealOptions = {}
+): Promise<HealReport> {
+  const cwd = options.cwd ?? process.cwd();
+  const packageManager = options.packageManager ?? detectPackageManager(cwd);
+  const dryRun = options.dryRun ?? false;
+  const skipTests = options.skipTests ?? true;
+  const policyPath = options.policyPath ?? "";
+
+  const collectedResults: PatchResult[] = [];
+  const vulnerablePackages: VulnerablePackage[] = [];
+  let cveDetails: CveDetails | null = null;
+  let agentSteps = 0;
+
+  const normalizedId = cveId.toUpperCase();
+  const [osvDetails, ghPackages] = await Promise.all([
+    lookupCveOsv(normalizedId),
+    lookupCveGitHub(normalizedId).catch(() => []),
+  ]);
+  agentSteps += 2;
+
+  if (!osvDetails && ghPackages.length === 0) {
+    return {
+      cveId,
+      cveDetails: null,
+      vulnerablePackages,
+      results: collectedResults,
+      agentSteps,
+      summary: `Local mode failed at lookup-cve: ${normalizedId} not found in OSV or GitHub advisory data.`,
+    };
+  }
+
+  cveDetails = osvDetails ?? {
+    id: normalizedId,
+    summary: "Details sourced from GitHub Advisory Database.",
+    severity: "UNKNOWN",
+    references: [],
+    affectedPackages: [],
+  };
+
+  if (ghPackages.length > 0) {
+    cveDetails = mergeGhDataIntoCveDetails(cveDetails, ghPackages);
+  }
+  cveDetails = await enrichWithNvd(cveDetails);
+
+  if (cveDetails.affectedPackages.length === 0) {
+    return {
+      cveId,
+      cveDetails,
+      vulnerablePackages,
+      results: collectedResults,
+      agentSteps,
+      summary: `Local mode lookup succeeded but no npm affected packages were found for ${normalizedId}.`,
+    };
+  }
+
+  const inventory = await (checkInventoryTool as any).execute({ cwd, packageManager });
+  agentSteps += 1;
+
+  if (inventory?.error) {
+    return {
+      cveId,
+      cveDetails,
+      vulnerablePackages,
+      results: collectedResults,
+      agentSteps,
+      summary: `Local mode failed at check-inventory: ${inventory.error}`,
+    };
+  }
+
+  const installedPackages = (inventory.packages ?? []) as Array<{
+    name: string;
+    version: string;
+    type: "direct" | "indirect";
+  }>;
+
+  for (const affected of cveDetails.affectedPackages) {
+    if (!affected || typeof affected !== "object") continue;
+    if (!affected.name || !affected.vulnerableRange) continue;
+    if (affected.ecosystem !== "npm") continue;
+    const matches = installedPackages.filter((p) => p.name === affected.name);
+    for (const installed of matches) {
+      if (!semver.valid(installed.version)) continue;
+      let isVulnerable = false;
+      try {
+        isVulnerable = semver.satisfies(installed.version, affected.vulnerableRange, {
+          includePrerelease: false,
+        });
+      } catch {
+        continue;
+      }
+      if (isVulnerable) {
+        vulnerablePackages.push({ installed, affected });
+      }
+    }
+  }
+  agentSteps += 1;
+
+  for (const vulnerable of vulnerablePackages) {
+    const pkg = vulnerable.installed;
+    const firstPatchedVersion = vulnerable.affected.firstPatchedVersion;
+
+    if (!firstPatchedVersion) {
+      collectedResults.push({
+        packageName: pkg.name,
+        strategy: "none",
+        fromVersion: pkg.version,
+        applied: false,
+        dryRun,
+        message: `No firstPatchedVersion available for ${pkg.name}; cannot resolve deterministic upgrade in local mode.`,
+      });
+      continue;
+    }
+
+    const safeVersion = await findSafeUpgradeVersion(
+      pkg.name,
+      pkg.version,
+      firstPatchedVersion
+    );
+    agentSteps += 1;
+
+    if (!safeVersion) {
+      collectedResults.push({
+        packageName: pkg.name,
+        strategy: "none",
+        fromVersion: pkg.version,
+        applied: false,
+        dryRun,
+        message: `No safe upgrade version found for ${pkg.name}.`,
+      });
+      continue;
+    }
+
+    const applyResult = (await (applyVersionBumpTool as any).execute({
+      cwd,
+      packageManager,
+      packageName: pkg.name,
+      fromVersion: pkg.version,
+      toVersion: safeVersion,
+      dryRun,
+      policyPath,
+      skipTests,
+    })) as PatchResult;
+    agentSteps += 1;
+
+    collectedResults.push(applyResult);
+  }
+
+  const appliedCount = collectedResults.filter((r) => r.applied).length;
+  const unresolvedCount = collectedResults.filter((r) => !r.applied && !r.dryRun).length;
+  const dryRunCount = collectedResults.filter((r) => r.dryRun).length;
+
+  return {
+    cveId,
+    cveDetails,
+    vulnerablePackages,
+    results: collectedResults,
+    agentSteps,
+    summary: `Local mode completed: vulnerable=${vulnerablePackages.length}, applied=${appliedCount}, dryRun=${dryRunCount}, unresolved=${unresolvedCount}`,
+  };
+}
+
+interface PromptContext {
+  cveId: string;
+  cwd: string;
+  packageManager: "npm" | "pnpm" | "yarn";
+  dryRun: boolean;
+  skipTests: boolean;
+  policyPath: string;
+  patchesDir: string;
+}
+
+function loadOrchestrationPrompt(ctx: PromptContext): string {
+  const promptPath = join(process.cwd(), ".github", "instructions", "orchestration.instructions.md");
+
+  if (!existsSync(promptPath)) {
+    return `You are autoremediator, an agentic security remediation system for Node.js package dependencies.
+Working directory: ${ctx.cwd}
+  Package manager: ${ctx.packageManager}
+Dry run: ${ctx.dryRun}
+Skip tests: ${ctx.skipTests}
+Policy path: ${ctx.policyPath || "undefined"}
+Patches dir: ${ctx.patchesDir}
+
+Required sequence:
+1. lookup-cve
+2. check-inventory
+3. check-version-match
+4. find-fixed-version
+5. apply-version-bump
+
+Fallback sequence (when strategy="none"):
+1. fetch-package-source
+2. generate-patch
+3. apply-patch-file
+
+Always respect dryRun and policy constraints.`;
+  }
+
+  const template = readFileSync(promptPath, "utf8");
+  return template
+    .replaceAll("{{cveId}}", ctx.cveId)
+    .replaceAll("{{cwd}}", ctx.cwd)
+    .replaceAll("{{packageManager}}", ctx.packageManager)
+    .replaceAll("{{dryRun}}", String(ctx.dryRun))
+    .replaceAll("{{skipTests}}", String(ctx.skipTests))
+    .replaceAll("{{policyPath}}", ctx.policyPath || "undefined")
+    .replaceAll("{{patchesDir}}", ctx.patchesDir);
+}

@@ -1,0 +1,10 @@
+body {
+  margin: 0;
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: #111827;
+  background: #f8fafc;
+}
+
+#root {
+  min-height: 100vh;
+}

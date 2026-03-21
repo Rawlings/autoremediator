@@ -1,0 +1,258 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "governance check",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"test"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "audit repo for cves",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"audit",
+				"--json"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "typecheck local mode",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"typecheck"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "verify local mode run",
+			"type": "shell",
+			"command": "sh",
+			"args": [
+				"-lc",
+				"pnpm build && pnpm audit --json > /tmp/autoremediator-audit.json || true && node dist/cli.js /tmp/autoremediator-audit.json --cwd . --llm-provider local --dry-run --run-tests"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "run local mode cli only",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"dist/cli.js",
+				"/tmp/autoremediator-audit.json",
+				"--cwd",
+				".",
+				"--llm-provider",
+				"local",
+				"--dry-run",
+				"--run-tests"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "rebuild and verify local cli",
+			"type": "shell",
+			"command": "sh",
+			"args": [
+				"-lc",
+				"pnpm build && node dist/cli.js /tmp/autoremediator-audit.json --cwd . --llm-provider local --dry-run --run-tests"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "local mode demo command check",
+			"type": "shell",
+			"command": "sh",
+			"args": [
+				"-lc",
+				"mkdir -p demo-vuln-app && cat > demo-vuln-app/package.json <<'JSON'\n{\n  \"name\": \"demo-vuln-app\",\n  \"private\": true,\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"lodash\": \"4.17.20\"\n  }\n}\nJSON\npnpm --dir demo-vuln-app install >/dev/null 2>&1\nnode dist/cli.js CVE-2021-23337 --cwd ./demo-vuln-app --llm-provider local --dry-run --run-tests"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "typecheck after local hardening",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"typecheck"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "verify local cve dry run",
+			"type": "shell",
+			"command": "sh",
+			"args": [
+				"-lc",
+				"pnpm build && node dist/cli.js CVE-2021-23337 --cwd ./demo-vuln-app --llm-provider local --dry-run --run-tests"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "retest local cve dry run",
+			"type": "shell",
+			"command": "sh",
+			"args": [
+				"-lc",
+				"pnpm build && node dist/cli.js CVE-2021-23337 --cwd ./demo-vuln-app --llm-provider local --dry-run --run-tests"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "debug local stack",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"--input-type=module",
+				"-e",
+				"import { runHealAgent } from './dist/index.js'; runHealAgent('CVE-2021-23337',{cwd:'./demo-vuln-app',llmProvider:'local',dryRun:true,skipTests:false}).then(r=>console.log(JSON.stringify(r,null,2))).catch(e=>{console.error(e.stack); process.exit(1);});"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "debug local stack 2",
+			"type": "shell",
+			"command": "sh",
+			"args": [
+				"-lc",
+				"node --input-type=module <<'EOF'\nimport { runHealAgent } from './dist/index.js';\ntry {\n  const r = await runHealAgent('CVE-2021-23337', { cwd: './demo-vuln-app', llmProvider: 'local', dryRun: true, skipTests: false });\n  console.log(JSON.stringify(r, null, 2));\n} catch (e) {\n  console.error(e?.stack || e);\n  process.exit(1);\n}\nEOF"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "run local debug script",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"tmp-debug-local.mjs"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "build and run local debug",
+			"type": "shell",
+			"command": "sh",
+			"args": [
+				"-lc",
+				"pnpm build && node tmp-debug-local.mjs"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "find no-fix cve candidates",
+			"type": "shell",
+			"command": "sh",
+			"args": [
+				"-lc",
+				"node -e \"const ids=['CVE-2017-16042','CVE-2017-16011','CVE-2017-16026','CVE-2020-26289','CVE-2020-36632','CVE-2021-23337','CVE-2021-32803','CVE-2018-16469']; (async()=>{for(const id of ids){try{const r=await fetch('https://api.osv.dev/v1/vulns/'+id); if(!r.ok){console.log(id,'HTTP',r.status); continue;} const j=await r.json(); const npm=(j.affected||[]).filter(a=>a.package&&a.package.ecosystem==='npm'); let hasFixed=false; for(const a of npm){for(const rg of (a.ranges||[])){for(const ev of (rg.events||[])){if(ev.fixed) hasFixed=true;}}} console.log(id,'npmPkgs=',npm.length,'hasFixed=',hasFixed);}catch(e){console.log(id,'ERR',e.message)}}})()\""
+			]
+		},
+		{
+			"label": "find no-fix cve candidates 2",
+			"type": "shell",
+			"command": "sh",
+			"args": [
+				"-lc",
+				"node <<'EOF'\nconst ids=['CVE-2017-16042','CVE-2017-16011','CVE-2017-16026','CVE-2020-26289','CVE-2020-36632','CVE-2021-23337','CVE-2021-32803','CVE-2018-16469'];\n(async()=>{\n  for(const id of ids){\n    try{\n      const r=await fetch('https://api.osv.dev/v1/vulns/'+id);\n      if(!r.ok){console.log(id,'HTTP',r.status); continue;}\n      const j=await r.json();\n      const npm=(j.affected||[]).filter(a=>a.package&&a.package.ecosystem==='npm');\n      let hasFixed=false;\n      for(const a of npm){\n        for(const rg of (a.ranges||[])){\n          for(const ev of (rg.events||[])){\n            if(ev.fixed) hasFixed=true;\n          }\n        }\n      }\n      console.log(id,'npmPkgs=',npm.length,'hasFixed=',hasFixed);\n    }catch(e){\n      console.log(id,'ERR',e.message);\n    }\n  }\n})();\nEOF"
+			]
+		},
+		{
+			"label": "run no-fix cve finder script",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"tmp-find-no-fix-cve.mjs"
+			]
+		},
+		{
+			"label": "run gh no-fix finder",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"tmp-find-gh-no-fix.mjs"
+			]
+		},
+		{
+			"label": "prepare demo with sjcl vuln",
+			"type": "shell",
+			"command": "sh",
+			"args": [
+				"-lc",
+				"pnpm --dir demo-vuln-app add sjcl@1.0.8"
+			]
+		},
+		{
+			"label": "build and run no-fix patch fallback demo",
+			"type": "shell",
+			"command": "sh",
+			"args": [
+				"-lc",
+				"pnpm build && node dist/cli.js CVE-2026-4258 --cwd ./demo-vuln-app --run-tests"
+			]
+		},
+		{
+			"label": "run no-fix cve local mode",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"dist/cli.js",
+				"CVE-2026-4258",
+				"--cwd",
+				"./demo-vuln-app",
+				"--llm-provider",
+				"local",
+				"--run-tests"
+			]
+		},
+		{
+			"label": "inspect dist exports",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"-e",
+				"import('./dist/chunk-YXKSHJQP.js').then(m=>console.log(Object.keys(m).sort().join('\\n'))).catch(e=>{console.error(e);process.exit(1)})"
+			]
+		},
+		{
+			"label": "inspect exports via script",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"tmp-inspect-exports.mjs"
+			]
+		},
+		{
+			"label": "generate demo patch file for sjcl",
+			"type": "shell",
+			"command": "sh",
+			"args": [
+				"-lc",
+				"pnpm --dir demo-vuln-app add -D patch-package && node -e \"const fs=require('fs'); const p='demo-vuln-app/node_modules/sjcl/package.json'; const j=JSON.parse(fs.readFileSync(p,'utf8')); j.autoremediatorDemoPatched=true; fs.writeFileSync(p,JSON.stringify(j,null,2)+'\\\\n');\" && (cd demo-vuln-app && pnpm exec patch-package sjcl)"
+			]
+		},
+		{
+			"label": "mark sjcl and create patch-package patch",
+			"type": "shell",
+			"command": "sh",
+			"args": [
+				"-lc",
+				"node tmp-mark-sjcl.mjs && (cd demo-vuln-app && pnpm exec patch-package sjcl)"
+			]
+		},
+		{
+			"label": "create patch from sjcl.js change",
+			"type": "shell",
+			"command": "sh",
+			"args": [
+				"-lc",
+				"node tmp-mark-sjcl-js.mjs && (cd demo-vuln-app && pnpm exec patch-package sjcl)"
+			]
+		}
+	]
+}

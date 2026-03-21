@@ -1,0 +1,112 @@
+.counter {
+  font-size: 16px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
+  margin-bottom: 24px;
+
+  &:hover {
+    border-color: var(--accent-border);
+  }
+  &:focus-visible {
+    .layout {
+  display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 320px;
+      border-right: 1px solid #e3e6eb;
+      background: linear-gradient(170deg, #f2f7ff 0%, #f9fafb 65%);
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    .sidebar h1 {
+      margin: 0;
+      font-size: 1.3rem;
+      color: #0f172a;
+    }
+
+    .subtitle {
+      margin: 6px 0 18px;
+      color: #475569;
+      font-size: 0.95rem;
+    }
+
+    .sidebar nav {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-item {
+      text-align: left;
+      border: 1px solid #d8dee7;
+      background: #ffffff;
+      color: #1f2937;
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+
+    .nav-item:hover {
+      border-color: #94a3b8;
+    }
+
+    .nav-item.active {
+      background: #0f172a;
+      border-color: #0f172a;
+      color: #ffffff;
+    }
+
+    .content {
+      flex: 1;
+      padding: 28px;
+      box-sizing: border-box;
+      background: #ffffff;
+    }
+
+    .content-header h2 {
+      margin: 0 0 16px;
+      color: #0f172a;
+    }
+
+    .markdown-preview {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 18px;
+      background: #f8fafc;
+    }
+
+    .markdown-preview pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+        "Courier New", monospace;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      color: #111827;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        border-right: 0;
+        border-bottom: 1px solid #e3e6eb;
+      }
+
+      .content {
+        padding: 16px;
+      }
+    }
+  margin: 32px 0 0;
