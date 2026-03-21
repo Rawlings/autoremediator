@@ -1,4 +1,7 @@
 export type {
+  CorrelationContext,
+  RemediationConstraints,
+  ProvenanceContext,
   CveDetails,
   AffectedPackage,
   InventoryPackage,
@@ -42,3 +45,8 @@ export {
   type PackageManager,
   type PackageManagerCommands,
 } from "./package-manager.js";
+
+export {
+  readIdempotentReport,
+  storeIdempotentReport,
+} from "./idempotency.js";

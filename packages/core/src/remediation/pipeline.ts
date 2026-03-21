@@ -39,7 +39,8 @@ export async function runRemediationPipeline(
 
   const cwd = options.cwd ?? process.cwd();
   const packageManager = options.packageManager ?? detectPackageManager(cwd);
-  const dryRun = options.dryRun ?? false;
+  const preview = options.preview ?? false;
+  const dryRun = (options.dryRun ?? false) || preview;
   const skipTests = options.skipTests ?? true;
   const policyPath = options.policyPath ?? "";
   const patchesDir = options.patchesDir || "./patches";
@@ -63,6 +64,21 @@ export async function runRemediationPipeline(
   let cveDetails: CveDetails | null = null;
   let agentSteps = 0;
 
+  const applyVersionBumpToolForRun = preview
+    ? {
+        ...applyVersionBumpTool,
+        execute: async (input: Record<string, unknown>) =>
+          (applyVersionBumpTool as any).execute({ ...input, dryRun: true }),
+      } as typeof applyVersionBumpTool
+    : applyVersionBumpTool;
+  const applyPatchFileToolForRun = preview
+    ? {
+        ...applyPatchFileTool,
+        execute: async (input: Record<string, unknown>) =>
+          (applyPatchFileTool as any).execute({ ...input, dryRun: true }),
+      } as typeof applyPatchFileTool
+    : applyPatchFileTool;
+
   const result = await generateText({
     model,
     system: systemPrompt,
@@ -72,10 +88,10 @@ export async function runRemediationPipeline(
       "check-inventory": checkInventoryTool,
       "check-version-match": checkVersionMatchTool,
       "find-fixed-version": findFixedVersionTool,
-      "apply-version-bump": applyVersionBumpTool,
+      "apply-version-bump": applyVersionBumpToolForRun,
       "fetch-package-source": fetchPackageSourceTool,
       "generate-patch": generatePatchTool,
-      "apply-patch-file": applyPatchFileTool,
+      "apply-patch-file": applyPatchFileToolForRun,
     },
     maxSteps: 25,
     onStepFinish(stepResult) {
@@ -146,6 +162,11 @@ export async function runRemediationPipeline(
     results: collectedResults,
     agentSteps,
     summary: result.text,
+    correlation: {
+      requestId: options.requestId,
+      sessionId: options.sessionId,
+      parentRunId: options.parentRunId,
+    },
   };
 }
 
@@ -155,7 +176,8 @@ async function runLocalRemediationPipeline(
 ): Promise<RemediationReport> {
   const cwd = options.cwd ?? process.cwd();
   const packageManager = options.packageManager ?? detectPackageManager(cwd);
-  const dryRun = options.dryRun ?? false;
+  const preview = options.preview ?? false;
+  const dryRun = (options.dryRun ?? false) || preview;
   const skipTests = options.skipTests ?? true;
   const policyPath = options.policyPath ?? "";
 
@@ -179,6 +201,11 @@ async function runLocalRemediationPipeline(
       results: collectedResults,
       agentSteps,
       summary: `Local mode failed at lookup-cve: ${normalizedId} not found in OSV or GitHub advisory data.`,
+      correlation: {
+        requestId: options.requestId,
+        sessionId: options.sessionId,
+        parentRunId: options.parentRunId,
+      },
     };
   }
 
@@ -203,6 +230,11 @@ async function runLocalRemediationPipeline(
       results: collectedResults,
       agentSteps,
       summary: `Local mode lookup succeeded but no npm affected packages were found for ${normalizedId}.`,
+      correlation: {
+        requestId: options.requestId,
+        sessionId: options.sessionId,
+        parentRunId: options.parentRunId,
+      },
     };
   }
 
@@ -217,6 +249,11 @@ async function runLocalRemediationPipeline(
       results: collectedResults,
       agentSteps,
       summary: `Local mode failed at check-inventory: ${inventory.error}`,
+      correlation: {
+        requestId: options.requestId,
+        sessionId: options.sessionId,
+        parentRunId: options.parentRunId,
+      },
     };
   }
 
@@ -322,6 +359,11 @@ async function runLocalRemediationPipeline(
     results: collectedResults,
     agentSteps,
     summary: `Local mode completed: vulnerable=${vulnerablePackages.length}, applied=${appliedCount}, dryRun=${dryRunCount}, unresolved=${unresolvedCount}`,
+    correlation: {
+      requestId: options.requestId,
+      sessionId: options.sessionId,
+      parentRunId: options.parentRunId,
+    },
   };
 }
 

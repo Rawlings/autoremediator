@@ -16,6 +16,8 @@ It is built for teams that want dependency remediation to run as part of deliver
 
 It supports direct CVE remediation, scanner-driven batch remediation, deterministic CI gating, and service/agent integrations (SDK, MCP, OpenAPI).
 
+It also supports non-mutating remediation planning and run-correlation metadata for orchestration-first platforms.
+
 ## Why Teams Use It
 
 - Continuous remediation in CI and scheduled GitHub workflows
@@ -72,7 +74,7 @@ Trust model principles:
 ## Surfaces
 
 - CLI for workflow jobs and CI runs
-- SDK for custom automation programs
+- SDK for custom automation programs (`remediate`, `planRemediation`, `remediateFromScan`)
 - MCP for AI tooling ecosystems
 - OpenAPI for service-based integration
 

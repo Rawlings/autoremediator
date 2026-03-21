@@ -36,30 +36,25 @@ user-invocable: true
 
 ## Tool Naming Convention
 
-MCP tools use verbatim kebab-case names matching the agent tool map:
+MCP tools use stable API-facing names that map to exported SDK entry points:
 
-| Agent tool name      | MCP tool name        |
-|----------------------|----------------------|
-| `lookup-cve`         | `lookup-cve`         |
-| `check-inventory`    | `check-inventory`    |
-| `check-version-match`| `check-version-match`|
-| `find-fixed-version` | `find-fixed-version` |
-| `apply-version-bump` | `apply-version-bump` |
-| `fetch-package-source` | `fetch-package-source` |
-| `generate-patch`     | `generate-patch`     |
-| `apply-patch-file`   | `apply-patch-file`   |
+| SDK/API function       | MCP tool name       |
+|------------------------|---------------------|
+| `remediate`            | `remediate`         |
+| `planRemediation`      | `planRemediation`   |
+| `remediateFromScan`    | `remediateFromScan` |
 
 ## Guardrails
 
-- MCP tool names must exactly match the entries in `tool-contracts.instructions.md`.
-- Each MCP tool must expose the same Zod parameter schema used by the underlying agent tool.
+- MCP tool names must exactly match registered names in `packages/core/src/mcp/server.ts` and documented public behavior.
+- MCP tool parameter fields must remain aligned with the underlying API option contracts.
 - MCP tool descriptions must be precise enough for an LLM to select the correct tool without reading source code.
 - Never expose internal implementation details (model names, file paths) in MCP tool descriptions.
-- `apply-version-bump` and `apply-patch-file` must pass `dryRun` through from caller context.
+- Ensure `preview`, `requestId`, `sessionId`, and `parentRunId` are exposed where applicable for orchestration contexts.
 
 ## Verification Checklist
 
-- MCP tool list matches `## Current Tool Inventory` in `tool-contracts.instructions.md`.
-- Each tool's parameter schema is identical to the underlying agent tool definition.
+- MCP tool list contains `remediate`, `planRemediation`, and `remediateFromScan`.
+- Each tool's parameter schema is aligned with the underlying public API option contracts.
 - MCP server starts without errors (`node dist/mcp/server.js`).
-- Running `autoremediator --mcp` registers all tools with the MCP host.
+- Running `autoremediator-mcp` registers all tools with the MCP host.

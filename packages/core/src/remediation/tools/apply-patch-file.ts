@@ -17,6 +17,7 @@ import {
   getPackageManagerCommands,
   type PackageManager,
 } from "../../platform/package-manager.js";
+import { withRepoLock } from "../../platform/repo-lock.js";
 
 /**
  * Validation result object.
@@ -135,80 +136,82 @@ export const applyPatchFileTool = tool({
         };
       }
 
-      // Step 1: Create patches directory if it doesn't exist
-      const patchesDirPath = join(cwd, patchesDir);
-      await mkdir(patchesDirPath, { recursive: true });
+      return withRepoLock(cwd, async () => {
+        // Step 1: Create patches directory if it doesn't exist
+        const patchesDirPath = join(cwd, patchesDir);
+        await mkdir(patchesDirPath, { recursive: true });
 
-      // Step 2: Write patch file with proper naming convention
-      await writeFile(patchFilePath, selectedPatch, "utf8");
+        // Step 2: Write patch file with proper naming convention
+        await writeFile(patchFilePath, selectedPatch, "utf8");
 
-      let validationResult: ValidationResult | undefined;
-      const patchMode = await resolvePatchMode(pm, cwd);
+        let validationResult: ValidationResult | undefined;
+        const patchMode = await resolvePatchMode(pm, cwd);
 
-      // Step 3: Apply patch via native package-manager workflow when available.
-      // npm always uses patch-package, yarn v1 falls back to patch-package.
-      const applyResult =
-        patchMode === "patch-package"
-          ? await configurePatchPackagePostinstall(cwd, pm)
-          : await applyNativePatch({
-              cwd,
-              packageName,
-              vulnerableVersion,
-              patchContent: selectedPatch,
-              patchMode,
-            });
+        // Step 3: Apply patch via native package-manager workflow when available.
+        // npm always uses patch-package, yarn v1 falls back to patch-package.
+        const applyResult =
+          patchMode === "patch-package"
+            ? await configurePatchPackagePostinstall(cwd, pm)
+            : await applyNativePatch({
+                cwd,
+                packageName,
+                vulnerableVersion,
+                patchContent: selectedPatch,
+                patchMode,
+              });
 
-      if (!applyResult.success) {
-        return {
-          success: false,
-          packageName,
-          vulnerableVersion,
-          applied: false,
-          dryRun: false,
-          message: applyResult.error,
-          patchFilePath,
-          patchPath: patchFilePath,
-          patchMode,
-          postinstallConfigured: patchMode === "patch-package" ? false : undefined,
-          error: applyResult.error,
-        };
-      }
-
-      // Step 4: Validate with tests if requested
-      if (validateWithTests) {
-        validationResult = await validatePatchWithTests(cwd, pm);
-        if (!validationResult.passed) {
-          const validationError = "Patch validation failed after apply; patch marked unresolved.";
+        if (!applyResult.success) {
           return {
             success: false,
             packageName,
             vulnerableVersion,
             applied: false,
             dryRun: false,
-            message: validationError,
+            message: applyResult.error,
             patchFilePath,
             patchPath: patchFilePath,
             patchMode,
-            postinstallConfigured: patchMode === "patch-package",
-            validation: validationResult,
-            error: validationError,
+            postinstallConfigured: patchMode === "patch-package" ? false : undefined,
+            error: applyResult.error,
           };
         }
-      }
 
-      return {
-        success: true,
-        packageName,
-        vulnerableVersion,
-        applied: true,
-        dryRun: false,
-        message: `Patch applied successfully for ${packageName}@${vulnerableVersion}.`,
-        patchFilePath,
-        patchPath: patchFilePath,
-        patchMode,
-        postinstallConfigured: patchMode === "patch-package",
-        validation: validationResult,
-      };
+        // Step 4: Validate with tests if requested
+        if (validateWithTests) {
+          validationResult = await validatePatchWithTests(cwd, pm);
+          if (!validationResult.passed) {
+            const validationError = "Patch validation failed after apply; patch marked unresolved.";
+            return {
+              success: false,
+              packageName,
+              vulnerableVersion,
+              applied: false,
+              dryRun: false,
+              message: validationError,
+              patchFilePath,
+              patchPath: patchFilePath,
+              patchMode,
+              postinstallConfigured: patchMode === "patch-package",
+              validation: validationResult,
+              error: validationError,
+            };
+          }
+        }
+
+        return {
+          success: true,
+          packageName,
+          vulnerableVersion,
+          applied: true,
+          dryRun: false,
+          message: `Patch applied successfully for ${packageName}@${vulnerableVersion}.`,
+          patchFilePath,
+          patchPath: patchFilePath,
+          patchMode,
+          postinstallConfigured: patchMode === "patch-package",
+          validation: validationResult,
+        };
+      });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : String(err);

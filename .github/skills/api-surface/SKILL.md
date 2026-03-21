@@ -41,6 +41,7 @@ user-invocable: true
 ```ts
 // Primary entry points
 remediate(cveId: string, options?: RemediateOptions): Promise<RemediationReport>
+planRemediation(cveId: string, options?: RemediateOptions): Promise<RemediationReport>
 remediateFromScan(inputPath: string, options?: ScanOptions): Promise<ScanReport>
 
 // CI helpers

@@ -3,6 +3,7 @@
 import { Command } from "commander";
 import { ciExitCode, remediate, remediateFromScan, toCiSummary } from "./api.js";
 import { existsSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 type ScanFormat = "auto" | "npm-audit" | "yarn-audit" | "sarif";
 
@@ -10,9 +11,19 @@ interface CommandOptions {
   cwd: string;
   packageManager?: "npm" | "pnpm" | "yarn";
   dryRun: boolean;
+  preview: boolean;
   runTests: boolean;
   json: boolean;
   llmProvider?: "openai" | "anthropic" | "local";
+  requestId?: string;
+  sessionId?: string;
+  parentRunId?: string;
+  idempotencyKey?: string;
+  resume: boolean;
+  actor?: string;
+  source?: "cli" | "sdk" | "mcp" | "openapi" | "unknown";
+  directDependenciesOnly: boolean;
+  preferVersionBump: boolean;
   input?: string;
   format: ScanFormat;
   policy?: string;
@@ -34,9 +45,21 @@ async function runSingleCve(cveId: string, opts: CommandOptions): Promise<void> 
     cwd: opts.cwd,
     packageManager: opts.packageManager,
     dryRun: opts.dryRun,
+    preview: opts.preview,
     skipTests: !opts.runTests,
     policyPath: opts.policy,
     llmProvider: opts.llmProvider,
+    requestId: opts.requestId,
+    sessionId: opts.sessionId,
+    parentRunId: opts.parentRunId,
+    idempotencyKey: opts.idempotencyKey,
+    resume: opts.resume,
+    actor: opts.actor,
+    source: opts.source ?? "cli",
+    constraints: {
+      directDependenciesOnly: opts.directDependenciesOnly,
+      preferVersionBump: opts.preferVersionBump,
+    },
   });
 
   if (opts.json) {
@@ -55,9 +78,21 @@ async function runScanInput(inputPath: string, opts: CommandOptions): Promise<vo
     format: opts.format,
     policyPath: opts.policy,
     dryRun: opts.dryRun,
+    preview: opts.preview,
     skipTests: !opts.runTests,
     llmProvider: opts.llmProvider,
     writeEvidence: opts.evidence,
+    requestId: opts.requestId,
+    sessionId: opts.sessionId,
+    parentRunId: opts.parentRunId,
+    idempotencyKey: opts.idempotencyKey,
+    resume: opts.resume,
+    actor: opts.actor,
+    source: opts.source ?? "cli",
+    constraints: {
+      directDependenciesOnly: opts.directDependenciesOnly,
+      preferVersionBump: opts.preferVersionBump,
+    },
   });
 
   if (opts.summaryFile) {
@@ -92,7 +127,7 @@ async function runScanInput(inputPath: string, opts: CommandOptions): Promise<vo
   }
 }
 
-async function main(): Promise<void> {
+export function createProgram(): Command {
   const program = new Command();
 
   program
@@ -108,8 +143,18 @@ async function main(): Promise<void> {
     .option("--cwd <path>", "Target project directory", process.cwd())
     .option("--package-manager <name>", "Package manager: npm|pnpm|yarn")
     .option("--dry-run", "Plan changes only without mutating files", false)
+    .option("--preview", "Run non-mutating remediation preview mode", false)
     .option("--run-tests", "Run package-manager test validation after apply", false)
     .option("--llm-provider <provider>", "LLM provider: openai|anthropic|local")
+    .option("--request-id <id>", "Request correlation ID")
+    .option("--session-id <id>", "Session correlation ID")
+    .option("--parent-run-id <id>", "Parent run correlation ID")
+    .option("--idempotency-key <key>", "Idempotency key for replay-safe execution")
+    .option("--resume", "Resume by returning cached result for matching idempotency key", false)
+    .option("--actor <name>", "Actor identity for evidence provenance")
+    .option("--source <src>", "Source system: cli|sdk|mcp|openapi|unknown")
+    .option("--direct-dependencies-only", "Enforce direct-dependency-only remediation constraint", false)
+    .option("--prefer-version-bump", "Reject patch-file outcomes when version-bump is preferred", false)
     .option("--json", "Print JSON output", false)
     .action(async (cveId: string, opts: CommandOptions) => {
       await runSingleCve(cveId, opts);
@@ -124,8 +169,18 @@ async function main(): Promise<void> {
     .option("--package-manager <name>", "Package manager: npm|pnpm|yarn")
     .option("--policy <path>", "Path to policy file (.autoremediator.json)")
     .option("--dry-run", "Plan changes only without mutating files", false)
+    .option("--preview", "Run non-mutating remediation preview mode", false)
     .option("--run-tests", "Run package-manager test validation after apply", false)
     .option("--llm-provider <provider>", "LLM provider: openai|anthropic|local")
+    .option("--request-id <id>", "Request correlation ID")
+    .option("--session-id <id>", "Session correlation ID")
+    .option("--parent-run-id <id>", "Parent run correlation ID")
+    .option("--idempotency-key <key>", "Idempotency key for replay-safe execution")
+    .option("--resume", "Resume by returning cached result for matching idempotency key", false)
+    .option("--actor <name>", "Actor identity for evidence provenance")
+    .option("--source <src>", "Source system: cli|sdk|mcp|openapi|unknown")
+    .option("--direct-dependencies-only", "Enforce direct-dependency-only remediation constraint", false)
+    .option("--prefer-version-bump", "Reject patch-file outcomes when version-bump is preferred", false)
     .option("--no-evidence", "Disable evidence file output")
     .option("--ci", "Enable CI behavior (non-zero exit on failed remediations)", false)
     .option("--summary-file <path>", "Write machine-readable scan summary JSON to path")
@@ -142,8 +197,18 @@ async function main(): Promise<void> {
     .option("--cwd <path>", "Target project directory", process.cwd())
     .option("--package-manager <name>", "Package manager: npm|pnpm|yarn")
     .option("--dry-run", "Plan changes only without mutating files", false)
+    .option("--preview", "Run non-mutating remediation preview mode", false)
     .option("--run-tests", "Run package-manager test validation after apply", false)
     .option("--llm-provider <provider>", "LLM provider: openai|anthropic|local")
+    .option("--request-id <id>", "Request correlation ID")
+    .option("--session-id <id>", "Session correlation ID")
+    .option("--parent-run-id <id>", "Parent run correlation ID")
+    .option("--idempotency-key <key>", "Idempotency key for replay-safe execution")
+    .option("--resume", "Resume by returning cached result for matching idempotency key", false)
+    .option("--actor <name>", "Actor identity for evidence provenance")
+    .option("--source <src>", "Source system: cli|sdk|mcp|openapi|unknown")
+    .option("--direct-dependencies-only", "Enforce direct-dependency-only remediation constraint", false)
+    .option("--prefer-version-bump", "Reject patch-file outcomes when version-bump is preferred", false)
     .option("--input <path>", "Path to scanner output file (scanner-first mode)")
     .option("--format <type>", "Input format: auto|npm-audit|yarn-audit|sarif", "auto")
     .option("--policy <path>", "Path to policy file (.autoremediator.json)")
@@ -177,11 +242,23 @@ async function main(): Promise<void> {
       );
     });
 
-  await program.parseAsync(process.argv);
+  return program;
 }
 
-main().catch((error) => {
-  const message = error instanceof Error ? error.message : String(error);
-  process.stderr.write(`[autoremediator] ${message}\n`);
-  process.exit(1);
-});
+async function main(argv = process.argv): Promise<void> {
+  const program = createProgram();
+  await program.parseAsync(argv);
+}
+
+function isMainModule(): boolean {
+  if (!process.argv[1]) return false;
+  return fileURLToPath(import.meta.url) === process.argv[1];
+}
+
+if (isMainModule()) {
+  main().catch((error) => {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`[autoremediator] ${message}\n`);
+    process.exit(1);
+  });
+}

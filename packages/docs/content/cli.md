@@ -45,8 +45,18 @@ When to use which mode:
 | `--cwd <path>` | target project directory | supports centralized runners operating across many repos |
 | `--package-manager <npm|pnpm|yarn>` | install/update tool selection | avoids ambiguous lockfile detection in custom pipelines |
 | `--dry-run` | simulation-only execution | validates policy and expected actions without file mutation |
+| `--preview` | non-mutating remediation preview mode | enables planning flows without write side effects |
 | `--run-tests` | post-apply validation | reduces risk of introducing breaking dependency changes |
 | `--llm-provider <openai|anthropic|local>` | patch-generation provider selection | controls determinism, cost, and fallback behavior |
+| `--request-id <id>` | request correlation id | links CLI runs to external orchestration traces |
+| `--session-id <id>` | session correlation id | groups related remediation runs |
+| `--parent-run-id <id>` | parent run linkage | supports hierarchical trace chains in evidence |
+| `--idempotency-key <key>` | replay-safe execution key | enables cached resume behavior for repeated jobs |
+| `--resume` | reuse cached result for same idempotency key | prevents duplicate remediation work in retried pipelines |
+| `--actor <name>` | actor identity metadata | adds provenance context to evidence output |
+| `--source <src>` | source system metadata | tags run origin (`cli`, `sdk`, `mcp`, `openapi`, `unknown`) |
+| `--direct-dependencies-only` | direct-only remediation constraint | blocks indirect dependency result application |
+| `--prefer-version-bump` | bump-only remediation constraint | rejects patch-file outcomes when bump policy is required |
 | `--json` | machine-readable output | simplifies CI parsing and SIEM ingestion |
 
 ## Scan Mode Options
@@ -100,6 +110,12 @@ Single CVE dry-run preview:
 
 ```bash
 autoremediator CVE-2021-23337 --dry-run --json
+
+# explicit preview + correlation context
+autoremediator cve CVE-2021-23337 --preview --request-id req-42 --session-id nightly-security --json
+
+# resumable + constrained run
+autoremediator CVE-2021-23337 --idempotency-key nightly-cve-2021-23337 --resume --direct-dependencies-only --prefer-version-bump --actor sec-bot --source cli --json
 ```
 
 CI scanner gate with summary artifact:

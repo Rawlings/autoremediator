@@ -2,13 +2,14 @@
 
 ## Public Entry Points
 
-The package exposes two primary programmatic entry points:
+The package exposes three primary programmatic entry points:
 
 ```ts
-import { remediate, remediateFromScan } from "autoremediator";
+import { remediate, planRemediation, remediateFromScan } from "autoremediator";
 ```
 
 - `remediate(cveId, options?)` — remediates a single CVE in a target project.
+- `planRemediation(cveId, options?)` — runs a non-mutating remediation preview for a single CVE.
 - `remediateFromScan(inputPath, options?)` — parses a scanner output file and remediates all discovered CVEs.
 
 ## Type Naming
@@ -28,7 +29,7 @@ All report types carry `schemaVersion: "1.0"`. Do not increment this value witho
 
 The following are stable public API:
 
-- `remediate`, `remediateFromScan`, `toCiSummary`, `ciExitCode`
+- `remediate`, `planRemediation`, `remediateFromScan`, `toCiSummary`, `ciExitCode`
 - `RemediateOptions`, `RemediationReport`, `ScanOptions`, `ScanReport`, `CiSummary`
 - All types re-exported from `packages/core/src/platform/types.ts`
 

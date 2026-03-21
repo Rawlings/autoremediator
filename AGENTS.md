@@ -4,7 +4,7 @@
 
 ### Mode 1: Direct CVE
 
-- Trigger: `autoremediator CVE-YYYY-NNNNN` or `remediate(cveId, options)`
+- Trigger: `autoremediator CVE-YYYY-NNNNN`, `remediate(cveId, options)`, or `planRemediation(cveId, options)`
 - Behavior: single-CVE remediation pipeline
 - Instruction set:
   - .github/instructions/orchestration.instructions.md
@@ -26,13 +26,13 @@
 ### Mode 4: MCP Tool Server
 
 - Trigger: `autoremediator-mcp` (stdio)
-- Behavior: exposes `remediate` and `remediateFromScan` as MCP tools
+- Behavior: exposes `remediate`, `planRemediation`, and `remediateFromScan` as MCP tools
 - Source: `packages/core/src/mcp/server.ts`
 
 ### Mode 5: OpenAPI HTTP Server
 
 - Trigger: `node dist/openapi/server.js [--port 3000]`
-- Behavior: POST `/remediate` and POST `/remediate-from-scan` over HTTP
+- Behavior: POST `/remediate`, POST `/plan-remediation`, and POST `/remediate-from-scan` over HTTP
 - Source: `packages/core/src/openapi/server.ts`
 
 ## Precedence

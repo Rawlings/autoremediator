@@ -6,14 +6,24 @@
  *   const report = await remediate('CVE-2021-23337', { cwd: '/my/project' });
  */
 import { runRemediationPipeline } from "./remediation/pipeline.js";
-import type { RemediateOptions, RemediationReport } from "./platform/types.js";
+import type {
+  CorrelationContext,
+  ProvenanceContext,
+  RemediationConstraints,
+  RemediateOptions,
+  RemediationReport,
+} from "./platform/types.js";
 import { parseScanInput, type ScanInputFormat, uniqueCveIds } from "./scanner/index.js";
 import { addEvidenceStep, createEvidenceLog, finalizeEvidence, writeEvidenceLog } from "./platform/evidence.js";
 import { isPackageAllowed, loadPolicy } from "./platform/policy.js";
+import { readIdempotentReport, storeIdempotentReport } from "./platform/idempotency.js";
 
 export { runRemediationPipeline } from "./remediation/pipeline.js";
 
 export type {
+  CorrelationContext,
+  RemediationConstraints,
+  ProvenanceContext,
   RemediateOptions,
   RemediationReport,
   CveDetails,
@@ -48,6 +58,10 @@ export interface ScanReport {
     error: string;
   }>;
   patchStorageDir?: string;
+  correlation?: CorrelationContext;
+  provenance?: ProvenanceContext;
+  constraints?: RemediationConstraints;
+  idempotencyKey?: string;
 }
 
 export interface CiSummary {
@@ -67,6 +81,82 @@ export interface CiSummary {
     error: string;
   }>;
   patchStorageDir?: string;
+  correlation?: CorrelationContext;
+  provenance?: ProvenanceContext;
+  constraints?: RemediationConstraints;
+  idempotencyKey?: string;
+}
+
+function buildRequestId(): string {
+  return `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function resolveCorrelationContext(options: RemediateOptions): Required<Pick<CorrelationContext, "requestId">> & CorrelationContext {
+  return {
+    requestId: options.requestId ?? buildRequestId(),
+    sessionId: options.sessionId,
+    parentRunId: options.parentRunId,
+  };
+}
+
+function resolveProvenanceContext(options: RemediateOptions): ProvenanceContext {
+  return {
+    actor: options.actor,
+    source: options.source ?? "sdk",
+  };
+}
+
+function resolveConstraints(options: RemediateOptions, cwd: string): RemediationConstraints {
+  const policy = loadPolicy(cwd, options.policyPath);
+  return {
+    directDependenciesOnly:
+      options.constraints?.directDependenciesOnly ??
+      policy.constraints?.directDependenciesOnly ??
+      false,
+    preferVersionBump:
+      options.constraints?.preferVersionBump ??
+      policy.constraints?.preferVersionBump ??
+      false,
+  };
+}
+
+function enforceConstraints(
+  report: RemediationReport,
+  constraints: RemediationConstraints
+): RemediationReport {
+  const indirectPackages = new Set(
+    report.vulnerablePackages
+      .filter((vp) => vp.installed.type === "indirect")
+      .map((vp) => vp.installed.name)
+  );
+
+  const nextResults = report.results.map((result) => {
+    if (constraints.directDependenciesOnly && indirectPackages.has(result.packageName)) {
+      return {
+        ...result,
+        strategy: "none" as const,
+        applied: false,
+        message: `Constraint blocked remediation for indirect dependency \"${result.packageName}\".`,
+      };
+    }
+
+    if (constraints.preferVersionBump && result.strategy === "patch-file") {
+      return {
+        ...result,
+        strategy: "none" as const,
+        applied: false,
+        message: `Constraint prefers version-bump and rejected patch-file remediation for \"${result.packageName}\".`,
+      };
+    }
+
+    return result;
+  });
+
+  return {
+    ...report,
+    results: nextResults,
+    constraints,
+  };
 }
 
 /**
@@ -82,7 +172,60 @@ export async function remediate(cveId: string, options: RemediateOptions = {}): 
       `Invalid CVE ID: "${cveId}". Expected format: CVE-YYYY-NNNNN (e.g. CVE-2021-23337).`
     );
   }
-  return runRemediationPipeline(cveId.toUpperCase(), options);
+  const cwd = options.cwd ?? process.cwd();
+  const constraints = resolveConstraints(options, cwd);
+  const provenance = resolveProvenanceContext(options);
+  const correlation = resolveCorrelationContext(options);
+
+  if (options.resume && options.idempotencyKey) {
+    const cached = readIdempotentReport(cwd, options.idempotencyKey, cveId.toUpperCase());
+    if (cached) {
+      return {
+        ...cached,
+        summary: `${cached.summary} (resumed from idempotency cache)`,
+        correlation,
+        provenance,
+        constraints,
+        resumedFromCache: true,
+      };
+    }
+  }
+
+  const report = await runRemediationPipeline(cveId.toUpperCase(), {
+    ...options,
+    ...correlation,
+    constraints,
+  });
+  const constrainedReport = enforceConstraints(report, constraints);
+  const finalReport = {
+    ...constrainedReport,
+    correlation,
+    provenance,
+    constraints,
+    resumedFromCache: false,
+  };
+
+  if (options.idempotencyKey && !options.dryRun && !options.preview) {
+    storeIdempotentReport(cwd, options.idempotencyKey, cveId.toUpperCase(), finalReport);
+  }
+
+  return {
+    ...finalReport,
+  };
+}
+
+/**
+ * Non-mutating preview entrypoint for planning and orchestration.
+ */
+export async function planRemediation(
+  cveId: string,
+  options: RemediateOptions = {}
+): Promise<RemediationReport> {
+  return remediate(cveId, {
+    ...options,
+    preview: true,
+    dryRun: true,
+  });
 }
 
 /**
@@ -100,8 +243,16 @@ export async function remediateFromScan(
   const findings = parseScanInput(inputPath, format);
   const cveIds = uniqueCveIds(findings);
   const policy = loadPolicy(cwd, options.policyPath);
+  const correlation = resolveCorrelationContext(options);
+  const provenance = resolveProvenanceContext(options);
+  const constraints = resolveConstraints(options, cwd);
 
-  const evidence = createEvidenceLog(cwd, cveIds);
+  const evidence = createEvidenceLog(cwd, cveIds, {
+    ...correlation,
+    actor: provenance.actor,
+    source: provenance.source,
+    idempotencyKey: options.idempotencyKey,
+  });
   addEvidenceStep(evidence, "scan.parse", { inputPath, format }, { findingCount: findings.length, cveCount: cveIds.length });
 
   const reports: RemediationReport[] = [];
@@ -119,6 +270,10 @@ export async function remediateFromScan(
       const report = await remediate(cveId, {
         ...options,
         patchesDir,
+        ...correlation,
+        actor: provenance.actor,
+        source: provenance.source,
+        constraints,
       });
 
       // Keep a defensive filter in case upstream tools return unexpected packages.
@@ -184,6 +339,10 @@ export async function remediateFromScan(
     patchFileCount,
     patchValidationFailures: patchValidationFailures.length > 0 ? patchValidationFailures : undefined,
     patchStorageDir: patchFileCount > 0 ? patchesDir : undefined,
+    correlation,
+    provenance,
+    constraints,
+    idempotencyKey: options.idempotencyKey,
   };
 }
 
@@ -206,6 +365,10 @@ export function toCiSummary(report: ScanReport): CiSummary {
     patchFileCount: report.patchFileCount || 0,
     patchValidationFailures: report.patchValidationFailures,
     patchStorageDir: report.patchStorageDir,
+    correlation: report.correlation,
+    provenance: report.provenance,
+    constraints: report.constraints,
+    idempotencyKey: report.idempotencyKey,
   };
 }
 

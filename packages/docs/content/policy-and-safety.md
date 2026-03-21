@@ -20,7 +20,11 @@ Create `.autoremediator.json`:
 {
   "allowMajorBumps": false,
   "denyPackages": ["lodash"],
-  "allowPackages": []
+  "allowPackages": [],
+  "constraints": {
+    "directDependenciesOnly": false,
+    "preferVersionBump": false
+  }
 }
 ```
 
@@ -36,6 +40,12 @@ Field intent:
 - `allowPackages`:
   - what: optional allowlist boundary
   - why: limit automation scope during staged rollout
+- `constraints.directDependenciesOnly`:
+  - what: blocks outcomes for indirect dependencies
+  - why: keeps automation within directly managed dependency scope
+- `constraints.preferVersionBump`:
+  - what: rejects patch-file outcomes
+  - why: enforces bump-first remediation policy for change governance
 
 ## Precedence Rules
 
@@ -56,6 +66,7 @@ Why this matters:
 Core guardrails:
 
 - dry-run must not mutate files
+- preview mode must remain non-mutating (preview enforces dry-run behavior)
 - package allow/deny policy must be enforced
 - major bump policy must be enforced
 - tool failures must surface in structured outputs
@@ -92,6 +103,23 @@ Safety implications:
 - install/test validation uses the resolved package manager for the repository
 - `--run-tests` enables post-apply test validation and should be used in mutation-enabled automation
 - `--dry-run` is the onboarding and policy-tuning baseline for new projects
+- `--preview` is the planning baseline for orchestration systems that need non-mutating intent before apply
+
+## Correlation and Traceability
+
+Orchestration-facing fields:
+
+- `requestId`: request-scoped trace identifier
+- `sessionId`: multi-run session identifier
+- `parentRunId`: parent-child linkage for hierarchical workflows
+
+Additional provenance and replay controls:
+
+- `actor`: identity of the automation principal
+- `source`: calling surface (`cli`, `sdk`, `mcp`, `openapi`, `unknown`)
+- `idempotencyKey` + `resume`: replay-safe execution pair for deterministic retries
+
+These fields are propagated through reports and evidence outputs to support deterministic run lineage in CI, MCP hosts, and service integrations.
 
 ## Security Best-Practice Baseline
 

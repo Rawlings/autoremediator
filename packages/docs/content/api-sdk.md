@@ -13,6 +13,7 @@ Related references:
 ## Public APIs
 
 - `remediate(cveId, options?)`
+- `planRemediation(cveId, options?)`
 - `remediateFromScan(inputPath, options?)`
 - `toCiSummary(scanReport)`
 - `ciExitCode(summary)`
@@ -22,7 +23,7 @@ Legacy aliases (for compatibility only):
 - `heal`
 - `healFromScanFile`
 
-New integrations should prefer `remediate` and `remediateFromScan`.
+New integrations should prefer `remediate`, `planRemediation`, and `remediateFromScan`.
 
 ## Function Reference
 
@@ -41,6 +42,14 @@ What: parses scanner output and remediates each discovered CVE.
 Why: best for scheduled CI and batch remediation operations.
 
 How: normalizes scanner findings, deduplicates CVEs, and delegates each CVE to the remediation pipeline.
+
+### `planRemediation(cveId, options?)`
+
+What: runs a non-mutating remediation preview for a single CVE.
+
+Why: best for agent orchestration systems that need to inspect intended actions before allowing write operations.
+
+How: forces preview semantics and returns a standard remediation report shape with dry-run outcomes.
 
 ### `toCiSummary(scanReport)`
 
@@ -61,10 +70,20 @@ Core options:
 - `cwd`: repository root to operate on
 - `packageManager`: explicit package manager selection (`npm`, `pnpm`, `yarn`)
 - `dryRun`: simulation mode without mutation
+- `preview`: non-mutating planning mode for orchestration/approval workflows
 - `skipTests`: disables post-apply test validation
 - `llmProvider`: provider selection (`openai`, `anthropic`, `local` deterministic mode)
 - `policyPath`: path to `.autoremediator.json`
 - `patchesDir`: patch output/apply location when fallback patching is used
+- `requestId`: request-level correlation identifier
+- `sessionId`: session-level correlation identifier
+- `parentRunId`: optional parent run linkage for hierarchical traces
+- `idempotencyKey`: deterministic replay key for cached resume flows
+- `resume`: reuse cached report for matching `idempotencyKey` + CVE when available
+- `actor`: actor identity string written to evidence metadata
+- `source`: provenance source (`cli`, `sdk`, `mcp`, `openapi`, `unknown`)
+- `constraints.directDependenciesOnly`: block remediation outcomes for indirect dependencies
+- `constraints.preferVersionBump`: reject patch-file outcomes in favor of bump-only policy
 
 Scan-specific options:
 
@@ -74,7 +93,7 @@ Scan-specific options:
 ## Basic TypeScript Usage
 
 ```ts
-import { remediate, remediateFromScan, toCiSummary, ciExitCode } from "autoremediator";
+import { planRemediation, remediate, remediateFromScan, toCiSummary, ciExitCode } from "autoremediator";
 
 const report = await remediate("CVE-2021-23337", {
 	cwd: process.cwd(),
@@ -85,6 +104,23 @@ const report = await remediate("CVE-2021-23337", {
 const scanReport = await remediateFromScan("./audit.json", {
 	format: "npm-audit",
 	policyPath: "./.autoremediator.json"
+});
+
+const preview = await planRemediation("CVE-2021-23337", {
+	cwd: process.cwd(),
+	requestId: "req-42",
+	sessionId: "nightly-security-job"
+});
+
+const resumable = await remediate("CVE-2021-23337", {
+	cwd: process.cwd(),
+	idempotencyKey: "nightly-cve-2021-23337",
+	resume: true,
+	source: "sdk",
+	constraints: {
+		directDependenciesOnly: true,
+		preferVersionBump: true
+	}
 });
 
 const summary = toCiSummary(scanReport);

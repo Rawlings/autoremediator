@@ -1,0 +1,34 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+## 0.3.0
+
+### Added
+
+- New SDK entry point: `planRemediation(cveId, options?)` for non-mutating remediation preview flows.
+- New preview option plumbing across interfaces:
+  - SDK/API: `RemediateOptions.preview`
+  - CLI: `--preview`
+  - MCP: `preview` input field where applicable
+  - OpenAPI: `POST /plan-remediation`
+- Correlation context fields for run traceability:
+  - `requestId`, `sessionId`, `parentRunId`
+  - propagated through SDK/CLI/MCP/OpenAPI and evidence output.
+- Repository mutation lock for concurrent safety in mutating remediation paths.
+- Additional test coverage for API preview behavior, correlation propagation, OpenAPI route contracts, CLI option forwarding, and MCP tool contracts.
+- Idempotency/resume support via `idempotencyKey` + `resume`, including cached report replay behavior.
+- Idempotency state persistence under `.autoremediator/state/idempotency.json`.
+- Constraint enforcement support via `constraints.directDependenciesOnly` and `constraints.preferVersionBump`.
+- New CLI options for replay/provenance/constraints:
+  - `--idempotency-key`, `--resume`
+  - `--actor`, `--source`
+  - `--direct-dependencies-only`, `--prefer-version-bump`
+- Provenance metadata support via `actor` and `source`, propagated through reporting and evidence.
+- Expanded API, MCP, and OpenAPI option schemas to include idempotency, provenance, and constraints fields.
+- Additional test coverage for lock integration in mutating tools (`apply-version-bump`, `apply-patch-file`) and idempotency/constraint enforcement behavior.
+
+### Changed
+
+- OpenAPI server and CLI/MCP entrypoints were refactored for import-safe testability (no auto-start side effects on module import).
+- MCP tool dispatch was extracted into a testable handler (`handleToolCall`) with structured unknown-tool error handling.

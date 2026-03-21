@@ -19,7 +19,7 @@ Related references:
 
 ## What You Need
 
-- Node.js 20+
+- Node.js 22+
 - one package manager in your target project (`pnpm`, `npm`, or `yarn`)
 - a repository with lockfile and dependency manifest
 - optional model credentials for patch generation fallback:
@@ -58,6 +58,7 @@ yarn autoremediator --help
 | Use case | Recommended mode | Why |
 |---|---|---|
 | Urgent single CVE | direct CVE mode | Fast, focused remediation and clear operator feedback |
+| Non-mutating orchestration planning | `--preview` or `planRemediation()` | Evaluate intended remediation actions before mutation |
 | Nightly scanner automation | scan mode (`--input`) | Batch handling with deterministic CI summary |
 | CI gate without mutation | `--dry-run --ci` | Safety-first check for unresolved risk |
 | Air-gapped or deterministic environments | `--llm-provider local` | No remote model dependency and predictable behavior |
@@ -102,6 +103,16 @@ autoremediator CVE-2021-23337 --dry-run
 What it does: runs full decision logic without mutating project files.
 
 Why to use it: validate policy impact and expected changes before applying.
+
+Planning preview with correlation context:
+
+```bash
+autoremediator CVE-2021-23337 --preview --request-id req-42 --session-id nightly-security
+```
+
+What it does: runs non-mutating planning while attaching orchestration trace identifiers to report/evidence outputs.
+
+Why to use it: enables external automation systems to correlate remediation runs across jobs, services, and follow-up actions.
 
 Validation-enabled apply:
 

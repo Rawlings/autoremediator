@@ -58,8 +58,24 @@ export interface PatchResult {
   };
 }
 
+export interface CorrelationContext {
+  requestId?: string;
+  sessionId?: string;
+  parentRunId?: string;
+}
+
+export interface RemediationConstraints {
+  directDependenciesOnly?: boolean;
+  preferVersionBump?: boolean;
+}
+
+export interface ProvenanceContext {
+  actor?: string;
+  source?: "cli" | "sdk" | "mcp" | "openapi" | "unknown";
+}
+
 /** Top-level options for the remediate() API and CLI */
-export interface RemediateOptions {
+export interface RemediateOptions extends CorrelationContext {
   /** Working directory of the consumer's project (defaults to process.cwd()) */
   cwd?: string;
   /** Package manager to use (defaults to auto-detect from lockfile) */
@@ -76,6 +92,17 @@ export interface RemediateOptions {
   policyPath?: string;
   /** Directory to write .patch files (default: ./patches) */
   patchesDir?: string;
+  /** If true, run a non-mutating remediation preview (forces dryRun behavior for mutation tools). */
+  preview?: boolean;
+  /** Optional deterministic idempotency key for request replay handling. */
+  idempotencyKey?: string;
+  /** If true, return cached report for matching idempotency key + CVE when available. */
+  resume?: boolean;
+  /** Optional caller provenance fields for evidence and reporting. */
+  actor?: string;
+  source?: "cli" | "sdk" | "mcp" | "openapi" | "unknown";
+  /** Optional orchestration constraints for result enforcement. */
+  constraints?: RemediationConstraints;
 }
 
 /** Final report returned by the remediation pipeline */
@@ -86,4 +113,8 @@ export interface RemediationReport {
   results: PatchResult[];
   agentSteps: number;
   summary: string;
+  correlation?: CorrelationContext;
+  provenance?: ProvenanceContext;
+  constraints?: RemediationConstraints;
+  resumedFromCache?: boolean;
 }

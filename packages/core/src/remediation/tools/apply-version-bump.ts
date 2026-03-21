@@ -12,6 +12,7 @@ import { execa } from "execa";
 import semver from "semver";
 import type { PatchResult } from "../../platform/types.js";
 import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
+import { withRepoLock } from "../../platform/repo-lock.js";
 import {
   detectPackageManager,
   getPackageManagerCommands,
@@ -141,55 +142,22 @@ export const applyVersionBumpTool = tool({
       };
     }
 
-    // Write updated package.json
-    pkgJson[depField]![packageName] = newRange;
-    writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
-
-    // Run package-manager install
-    try {
-      const [installCmd, ...installArgs] = commands.installPreferOffline;
-      await execa(installCmd, installArgs, {
-        cwd,
-        stdio: "pipe",
-      });
-    } catch (err) {
-      // Revert the package.json change on install failure
-      pkgJson[depField]![packageName] = currentRange;
+    return withRepoLock(cwd, async () => {
+      // Write updated package.json
+      pkgJson[depField]![packageName] = newRange;
       writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
-      const message = err instanceof Error ? err.message : String(err);
-      return {
-        packageName,
-        strategy: "version-bump",
-        fromVersion,
-        toVersion,
-        applied: false,
-        dryRun: false,
-        message: `${commands.installPreferOffline.join(" ")} failed after updating "${packageName}" to ${toVersion}. Reverted. Error: ${message}`,
-      };
-    }
-
-    if (!skipTests) {
+      // Run package-manager install
       try {
-        const [testCmd, ...testArgs] = commands.test;
-        await execa(testCmd, testArgs, {
+        const [installCmd, ...installArgs] = commands.installPreferOffline;
+        await execa(installCmd, installArgs, {
           cwd,
           stdio: "pipe",
         });
       } catch (err) {
-        // Roll back both manifest and lock state by restoring dep range and reinstalling.
+        // Revert the package.json change on install failure
         pkgJson[depField]![packageName] = currentRange;
         writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
-
-        try {
-          const [rollbackCmd, ...rollbackArgs] = commands.installPreferOffline;
-          await execa(rollbackCmd, rollbackArgs, {
-            cwd,
-            stdio: "pipe",
-          });
-        } catch {
-          // Ignore rollback install failure and return original test failure context.
-        }
 
         const message = err instanceof Error ? err.message : String(err);
         return {
@@ -199,19 +167,54 @@ export const applyVersionBumpTool = tool({
           toVersion,
           applied: false,
           dryRun: false,
-          message: `${commands.test.join(" ")} failed after upgrading "${packageName}" to ${toVersion}. Rolled back to ${currentRange}. Error: ${message}`,
+          message: `${commands.installPreferOffline.join(" ")} failed after updating "${packageName}" to ${toVersion}. Reverted. Error: ${message}`,
         };
       }
-    }
 
-    return {
-      packageName,
-      strategy: "version-bump",
-      fromVersion,
-      toVersion,
-      applied: true,
-      dryRun: false,
-      message: `Successfully upgraded "${packageName}" from ${fromVersion} to ${toVersion}, ran ${commands.installPreferOffline.join(" ")}${skipTests ? "" : `, and passed ${commands.test.join(" ")}`}.`,
-    };
+      if (!skipTests) {
+        try {
+          const [testCmd, ...testArgs] = commands.test;
+          await execa(testCmd, testArgs, {
+            cwd,
+            stdio: "pipe",
+          });
+        } catch (err) {
+          // Roll back both manifest and lock state by restoring dep range and reinstalling.
+          pkgJson[depField]![packageName] = currentRange;
+          writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+
+          try {
+            const [rollbackCmd, ...rollbackArgs] = commands.installPreferOffline;
+            await execa(rollbackCmd, rollbackArgs, {
+              cwd,
+              stdio: "pipe",
+            });
+          } catch {
+            // Ignore rollback install failure and return original test failure context.
+          }
+
+          const message = err instanceof Error ? err.message : String(err);
+          return {
+            packageName,
+            strategy: "version-bump",
+            fromVersion,
+            toVersion,
+            applied: false,
+            dryRun: false,
+            message: `${commands.test.join(" ")} failed after upgrading "${packageName}" to ${toVersion}. Rolled back to ${currentRange}. Error: ${message}`,
+          };
+        }
+      }
+
+      return {
+        packageName,
+        strategy: "version-bump",
+        fromVersion,
+        toVersion,
+        applied: true,
+        dryRun: false,
+        message: `Successfully upgraded "${packageName}" from ${fromVersion} to ${toVersion}, ran ${commands.installPreferOffline.join(" ")}${skipTests ? "" : `, and passed ${commands.test.join(" ")}`}.`,
+      };
+    });
   },
 });

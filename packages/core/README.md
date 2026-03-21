@@ -16,6 +16,8 @@ This package is designed for teams that want remediation integrated into GitHub 
 
 It exposes stable SDK and CLI surfaces for direct CVE remediation and scanner-driven automation.
 
+It also exposes non-mutating planning and correlation context for agent orchestration workflows.
+
 ## Why Teams Use It
 
 - Continuous remediation in CI and scheduled GitHub workflows
@@ -64,7 +66,7 @@ Trust controls:
 ## Surfaces
 
 - CLI: workflow and CI execution
-- SDK: custom automation programs
+- SDK: custom automation programs (`remediate`, `planRemediation`, `remediateFromScan`)
 - MCP: AI host integrations
 - OpenAPI: service-based automation
 

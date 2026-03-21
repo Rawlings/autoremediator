@@ -11,6 +11,12 @@ export interface EvidenceStep {
 
 export interface EvidenceLog {
   runId: string;
+  requestId?: string;
+  sessionId?: string;
+  parentRunId?: string;
+  actor?: string;
+  source?: "cli" | "sdk" | "mcp" | "openapi" | "unknown";
+  idempotencyKey?: string;
   cveIds: string[];
   cwd: string;
   startedAt: string;
@@ -18,9 +24,24 @@ export interface EvidenceLog {
   steps: EvidenceStep[];
 }
 
-export function createEvidenceLog(cwd: string, cveIds: string[]): EvidenceLog {
+interface EvidenceContext {
+  requestId?: string;
+  sessionId?: string;
+  parentRunId?: string;
+  actor?: string;
+  source?: "cli" | "sdk" | "mcp" | "openapi" | "unknown";
+  idempotencyKey?: string;
+}
+
+export function createEvidenceLog(cwd: string, cveIds: string[], context: EvidenceContext = {}): EvidenceLog {
   return {
-    runId: `${Date.now()}`,
+    runId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    requestId: context.requestId,
+    sessionId: context.sessionId,
+    parentRunId: context.parentRunId,
+    actor: context.actor,
+    source: context.source,
+    idempotencyKey: context.idempotencyKey,
     cveIds,
     cwd,
     startedAt: new Date().toISOString(),

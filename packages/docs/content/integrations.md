@@ -240,6 +240,7 @@ autoremediator-mcp
 Tools exposed:
 
 - `remediate`
+- `planRemediation`
 - `remediateFromScan`
 
 Why use MCP: standard tool contracts for AI host ecosystems, with typed request/response patterns.
@@ -255,6 +256,7 @@ node dist/openapi/server.js --port 3000
 Routes:
 
 - `POST /remediate`
+- `POST /plan-remediation`
 - `POST /remediate-from-scan`
 - `GET /openapi.json`
 - `GET /health`
