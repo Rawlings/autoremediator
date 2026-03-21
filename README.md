@@ -97,15 +97,16 @@ autoremediator ./scan.json --ci --summary-file ./summary.json
 
 Detailed documentation has moved to packages/docs:
 
+- Live docs site: https://rawlings.github.io/autoremediator/
+
 - [Docs Home](packages/docs/README.md)
-- [Getting Started](packages/docs/getting-started.md)
-- [CLI Reference](packages/docs/cli.md)
-- [Scanner Inputs](packages/docs/scanner-inputs.md)
-- [Policy and Safety](packages/docs/policy-and-safety.md)
-- [API and SDK](packages/docs/api-sdk.md)
-- [Integrations](packages/docs/integrations.md)
-- [Migration Guide: npm to pnpm](packages/docs/migration-from-npm.md)
-- [Contributor Guide](packages/docs/contributor-guide.md)
+- [Getting Started](packages/docs/content/getting-started.md)
+- [CLI Reference](packages/docs/content/cli.md)
+- [Scanner Inputs](packages/docs/content/scanner-inputs.md)
+- [Policy and Safety](packages/docs/content/policy-and-safety.md)
+- [API and SDK](packages/docs/content/api-sdk.md)
+- [Integrations](packages/docs/content/integrations.md)
+- [Contributor Guide](packages/docs/content/contributor-guide.md)
 
 ## Exit Codes (CI)
 

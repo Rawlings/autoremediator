@@ -25,13 +25,12 @@ The site is deployed by the repository workflow in `.github/workflows/docs-pages
 
 ## Documentation Sources
 
-The content displayed by the app is sourced from markdown files in this directory:
+The content displayed by the app is sourced from markdown files in `content/`:
 
-- `getting-started.md`
-- `cli.md`
-- `scanner-inputs.md`
-- `policy-and-safety.md`
-- `api-sdk.md`
-- `integrations.md`
-- `migration-from-npm.md`
-- `contributor-guide.md`
+- `content/getting-started.md`
+- `content/cli.md`
+- `content/scanner-inputs.md`
+- `content/policy-and-safety.md`
+- `content/api-sdk.md`
+- `content/integrations.md`
+- `content/contributor-guide.md`

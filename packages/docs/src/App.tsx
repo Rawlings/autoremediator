@@ -1,70 +1,80 @@
-import { useMemo, useState } from "react";
+import { Navigate, NavLink, Route, Routes, useParams } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import "./App.css";
 
-import gettingStarted from "../getting-started.md?raw";
-import cli from "../cli.md?raw";
-import scannerInputs from "../scanner-inputs.md?raw";
-import policyAndSafety from "../policy-and-safety.md?raw";
-import apiSdk from "../api-sdk.md?raw";
-import integrations from "../integrations.md?raw";
-import migrationFromNpm from "../migration-from-npm.md?raw";
-import contributorGuide from "../contributor-guide.md?raw";
+import gettingStarted from "../content/getting-started.md?raw";
+import cli from "../content/cli.md?raw";
+import scannerInputs from "../content/scanner-inputs.md?raw";
+import policyAndSafety from "../content/policy-and-safety.md?raw";
+import apiSdk from "../content/api-sdk.md?raw";
+import integrations from "../content/integrations.md?raw";
+import contributorGuide from "../content/contributor-guide.md?raw";
 
-type DocKey =
-  | "getting-started"
-  | "cli"
-  | "scanner-inputs"
-  | "policy-and-safety"
-  | "api-sdk"
-  | "integrations"
-  | "migration-from-npm"
-  | "contributor-guide";
+type Doc = {
+  slug: string;
+  title: string;
+  body: string;
+};
 
-const DOCS: Array<{ key: DocKey; title: string; body: string }> = [
-  { key: "getting-started", title: "Getting Started", body: gettingStarted },
-  { key: "cli", title: "CLI Reference", body: cli },
-  { key: "scanner-inputs", title: "Scanner Inputs", body: scannerInputs },
-  { key: "policy-and-safety", title: "Policy and Safety", body: policyAndSafety },
-  { key: "api-sdk", title: "API and SDK", body: apiSdk },
-  { key: "integrations", title: "Integrations", body: integrations },
-  { key: "migration-from-npm", title: "Migration: npm to pnpm", body: migrationFromNpm },
-  { key: "contributor-guide", title: "Contributor Guide", body: contributorGuide },
+const docs: Doc[] = [
+  { slug: "getting-started", title: "Getting Started", body: gettingStarted },
+  { slug: "cli", title: "CLI Reference", body: cli },
+  { slug: "scanner-inputs", title: "Scanner Inputs", body: scannerInputs },
+  { slug: "policy-and-safety", title: "Policy and Safety", body: policyAndSafety },
+  { slug: "api-sdk", title: "API and SDK", body: apiSdk },
+  { slug: "integrations", title: "Integrations", body: integrations },
+  { slug: "contributor-guide", title: "Contributor Guide", body: contributorGuide },
 ];
 
-function App() {
-  const [selectedDoc, setSelectedDoc] = useState<DocKey>("getting-started");
+function findDoc(slug: string | undefined): Doc | undefined {
+  return docs.find((doc) => doc.slug === slug);
+}
 
-  const activeDoc = useMemo(
-    () => DOCS.find((doc) => doc.key === selectedDoc) ?? DOCS[0],
-    [selectedDoc]
+function DocPage() {
+  const { slug } = useParams();
+  const doc = findDoc(slug);
+
+  if (!doc) {
+    return <Navigate to={`/docs/${docs[0].slug}`} replace />;
+  }
+
+  return (
+    <main className="content">
+      <header className="content-header">
+        <h2>{doc.title}</h2>
+      </header>
+      <article className="markdown-rendered">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{doc.body}</ReactMarkdown>
+      </article>
+    </main>
   );
+}
 
+function App() {
   return (
     <div className="layout">
       <aside className="sidebar">
         <h1>Autoremediator Docs</h1>
-        <p className="subtitle">Vite + React + TypeScript</p>
+        <p className="subtitle">Security remediation documentation and references</p>
         <nav>
-          {DOCS.map((doc) => (
-            <button
-              key={doc.key}
-              className={doc.key === activeDoc.key ? "nav-item active" : "nav-item"}
-              onClick={() => setSelectedDoc(doc.key)}
+          {docs.map((doc) => (
+            <NavLink
+              key={doc.slug}
+              to={`/docs/${doc.slug}`}
+              className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}
             >
               {doc.title}
-            </button>
+            </NavLink>
           ))}
         </nav>
       </aside>
 
-      <main className="content">
-        <header className="content-header">
-          <h2>{activeDoc.title}</h2>
-        </header>
-        <article className="markdown-preview">
-          <pre>{activeDoc.body}</pre>
-        </article>
-      </main>
+      <Routes>
+        <Route path="/" element={<Navigate to={`/docs/${docs[0].slug}`} replace />} />
+        <Route path="/docs/:slug" element={<DocPage />} />
+        <Route path="*" element={<Navigate to={`/docs/${docs[0].slug}`} replace />} />
+      </Routes>
     </div>
   );
 }

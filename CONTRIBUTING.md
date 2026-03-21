@@ -54,7 +54,6 @@ Runtime source currently lives under packages/core/src with feature-first module
   - policy-and-safety.md
   - api-sdk.md
   - integrations.md
-  - migration-from-npm.md
   - contributor-guide.md
 
 ## Governance Expectations
