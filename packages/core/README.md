@@ -14,6 +14,8 @@ Autoremediator is an automation-first Node.js CVE remediation platform package.
 
 This package is designed for teams that want remediation integrated into GitHub workflows and CI pipelines.
 
+It exposes stable SDK and CLI surfaces for direct CVE remediation and scanner-driven automation.
+
 ## Why Teams Use It
 
 - Continuous remediation in CI and scheduled GitHub workflows
@@ -30,6 +32,18 @@ This package is designed for teams that want remediation integrated into GitHub 
 - Platform-level remediation orchestration across many services
 - Agentic integration via CLI, SDK, MCP, and OpenAPI
 
+## How Remediation Works
+
+Core pipeline behavior:
+
+1. CVE lookup and enrichment
+2. installed dependency inventory detection
+3. vulnerable version matching
+4. safe version bump attempt
+5. controlled fallback patch flow when no safe bump exists
+
+Safety and policy controls are applied through each stage.
+
 ## Surfaces
 
 - CLI: workflow and CI execution
@@ -39,15 +53,14 @@ This package is designed for teams that want remediation integrated into GitHub 
 
 ## Documentation
 
-- https://rawlings.github.io/autoremediator/
-
-- Getting Started: https://rawlings.github.io/autoremediator/docs/getting-started
-- CLI Reference: https://rawlings.github.io/autoremediator/docs/cli
-- Scanner Inputs: https://rawlings.github.io/autoremediator/docs/scanner-inputs
-- Policy and Safety: https://rawlings.github.io/autoremediator/docs/policy-and-safety
-- API and SDK: https://rawlings.github.io/autoremediator/docs/api-sdk
-- Integrations: https://rawlings.github.io/autoremediator/docs/integrations
-- Contributor Guide: https://rawlings.github.io/autoremediator/docs/contributor-guide
+- [Docs Home](https://rawlings.github.io/autoremediator/)
+- [Getting Started](https://rawlings.github.io/autoremediator/docs/getting-started): install and first remediation runs
+- [CLI Reference](https://rawlings.github.io/autoremediator/docs/cli): command and option semantics
+- [Scanner Inputs](https://rawlings.github.io/autoremediator/docs/scanner-inputs): scanner adapters and format constraints
+- [Policy and Safety](https://rawlings.github.io/autoremediator/docs/policy-and-safety): policy precedence and operational guardrails
+- [API and SDK](https://rawlings.github.io/autoremediator/docs/api-sdk): public programmatic entry points
+- [Integrations](https://rawlings.github.io/autoremediator/docs/integrations): CI workflows and service integrations
+- [Contributor Guide](https://rawlings.github.io/autoremediator/docs/contributor-guide): architecture and extension guidance
 
 ## Product Direction
 
@@ -59,14 +72,14 @@ This package is designed for teams that want remediation integrated into GitHub 
 
 Start from the live guides instead of repo markdown:
 
-- Quick setup: https://rawlings.github.io/autoremediator/docs/getting-started
-- Automation workflows: https://rawlings.github.io/autoremediator/docs/integrations
-- Safety controls: https://rawlings.github.io/autoremediator/docs/policy-and-safety
+- [Quick setup](https://rawlings.github.io/autoremediator/docs/getting-started)
+- [Automation workflows](https://rawlings.github.io/autoremediator/docs/integrations)
+- [Safety controls](https://rawlings.github.io/autoremediator/docs/policy-and-safety)
 
 ## Package
 
-- npm: https://www.npmjs.com/package/autoremediator
-- repository: https://github.com/Rawlings/autoremediator
+- [npm package](https://www.npmjs.com/package/autoremediator)
+- [repository](https://github.com/Rawlings/autoremediator)
 
 ## License
 

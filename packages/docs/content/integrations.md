@@ -1,8 +1,35 @@
 # Integrations
 
+This page documents integration patterns for automation-first remediation.
+
+It focuses on what each integration does, why to choose it, and how to operate it safely.
+
+Related references:
+
+- [Getting Started](getting-started.md)
+- [CLI Reference](cli.md)
+- [Policy and Safety](policy-and-safety.md)
+- [API and SDK](api-sdk.md)
+
+## Integration Decision Guide
+
+| Pattern | Use when | Key outcome |
+|---|---|---|
+| Scheduled PR automation | you want continuous improvement with review gates | automatic remediation PRs on a cadence |
+| Enforcement-only gate | you want fail-fast security gating in PR/merge pipelines | deterministic pass/fail based on unresolved outcomes |
+| SDK integration | you need custom control flow in internal tooling | programmable orchestration and reporting |
+| MCP server | you integrate with AI-host tool ecosystems | standardized tool interface for remediation workflows |
+| OpenAPI server | you need service-based central remediation execution | networked API access for multi-system orchestration |
+
 ## GitHub Actions: Scheduled Auto-Remediation PRs
 
-Use this when you want automatic remediation runs that open pull requests on a cadence.
+Use this for regular remediation with human review.
+
+Why this pattern works:
+
+- shortens vulnerability exposure windows
+- preserves branch protection and review controls
+- creates auditable PR history
 
 ### pnpm workflow
 
@@ -31,7 +58,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm audit --json > audit.json || true
-      - run: pnpm exec autoremediator scan --input ./audit.json --ci --summary-file ./autoremediator-summary.json
+      - run: pnpm exec autoremediator scan --input ./audit.json --format npm-audit --ci --summary-file ./autoremediator-summary.json
       - uses: peter-evans/create-pull-request@v6
         with:
           branch: chore/autoremediator-nightly
@@ -63,7 +90,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm audit --json > audit.json || true
-      - run: npm exec autoremediator -- scan --input ./audit.json --ci --summary-file ./autoremediator-summary.json
+      - run: npm exec autoremediator -- scan --input ./audit.json --format npm-audit --ci --summary-file ./autoremediator-summary.json
       - uses: peter-evans/create-pull-request@v6
         with:
           branch: chore/autoremediator-nightly
@@ -96,7 +123,7 @@ jobs:
       - run: corepack enable
       - run: yarn install --immutable || yarn install --frozen-lockfile
       - run: yarn npm audit --json > audit.json || yarn audit --json > audit.json || true
-      - run: yarn autoremediator scan --input ./audit.json --ci --summary-file ./autoremediator-summary.json
+      - run: yarn autoremediator scan --input ./audit.json --format yarn-audit --ci --summary-file ./autoremediator-summary.json
       - uses: peter-evans/create-pull-request@v6
         with:
           branch: chore/autoremediator-nightly
@@ -106,7 +133,13 @@ jobs:
 
 ## GitHub Actions: Enforcement-Only Gate
 
-Use this when you want CI to fail on unresolved remediations without auto-PR creation.
+Use this when you want CI to fail on unresolved remediation outcomes without opening PRs.
+
+Why this pattern works:
+
+- makes unresolved risk explicit in merge workflow
+- prevents silent vulnerability drift
+- keeps dependency mutation out of gate jobs
 
 ### pnpm workflow
 
@@ -132,7 +165,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm audit --json > audit.json || true
-      - run: pnpm exec autoremediator --input ./audit.json --format auto --ci --summary-file ./summary.json
+      - run: pnpm exec autoremediator scan --input ./audit.json --format npm-audit --ci --summary-file ./summary.json --dry-run
 ```
 
 ### npm workflow
@@ -156,7 +189,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm audit --json > audit.json || true
-      - run: npm exec autoremediator -- --input ./audit.json --format auto --ci --summary-file ./summary.json
+      - run: npm exec autoremediator -- scan --input ./audit.json --format npm-audit --ci --summary-file ./summary.json --dry-run
 ```
 
 ### yarn workflow
@@ -181,10 +214,24 @@ jobs:
       - run: corepack enable
       - run: yarn install --immutable || yarn install --frozen-lockfile
       - run: yarn npm audit --json > audit.json || yarn audit --json > audit.json || true
-      - run: yarn autoremediator --input ./audit.json --format auto --ci --summary-file ./summary.json
+      - run: yarn autoremediator scan --input ./audit.json --format yarn-audit --ci --summary-file ./summary.json --dry-run
 ```
 
-## MCP
+## Multi-Stage Automation Pattern
+
+For high-assurance environments, use staged jobs:
+
+1. scanner export stage
+2. dry-run gate stage
+3. mutation-enabled remediation stage (optional)
+4. validation/test stage
+5. PR creation and review stage
+
+This sequence improves rollback posture and traceability.
+
+## MCP Integration
+
+Start MCP server:
 
 ```bash
 autoremediator-mcp
@@ -195,7 +242,11 @@ Tools exposed:
 - `remediate`
 - `remediateFromScan`
 
-## OpenAPI
+Why use MCP: standard tool contracts for AI host ecosystems, with typed request/response patterns.
+
+## OpenAPI Integration
+
+Start OpenAPI server:
 
 ```bash
 node dist/openapi/server.js --port 3000
@@ -208,7 +259,17 @@ Routes:
 - `GET /openapi.json`
 - `GET /health`
 
+Why use OpenAPI: central remediation service for multiple clients and repositories.
+
+Security guidance:
+
+- place server behind authenticated network boundaries
+- restrict callers and apply least-privilege credentials
+- retain request/summary artifacts for audit trails
+
 ## CLI in CI
+
+Generic invocation:
 
 ```bash
 autoremediator ./audit.json --ci --summary-file ./summary.json
@@ -226,3 +287,18 @@ npm exec autoremediator -- ./audit.json --ci --summary-file ./summary.json
 # yarn
 yarn autoremediator ./audit.json --ci --summary-file ./summary.json
 ```
+
+## Operational Best Practices
+
+- default new automation to dry-run until policy controls are validated
+- keep branch protections enabled for remediation PR branches
+- pin Node and package-manager versions in workflow jobs
+- use explicit scanner format where possible
+- route unresolved outcomes to a tracked escalation workflow
+
+## Related Docs
+
+- [CLI Reference](cli.md)
+- [Scanner Inputs](scanner-inputs.md)
+- [Policy and Safety](policy-and-safety.md)
+- [API and SDK](api-sdk.md)

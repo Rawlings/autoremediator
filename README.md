@@ -14,6 +14,8 @@ Autoremediator is an automation-first Node.js CVE remediation platform.
 
 It is built for teams that want dependency remediation to run as part of delivery infrastructure, not as ad hoc manual activity.
 
+It supports direct CVE remediation, scanner-driven batch remediation, deterministic CI gating, and service/agent integrations (SDK, MCP, OpenAPI).
+
 ## Why Teams Use It
 
 - Continuous remediation in CI and scheduled GitHub workflows
@@ -22,6 +24,18 @@ It is built for teams that want dependency remediation to run as part of deliver
 - Structured evidence and summary outputs for security operations
 - Multiple integration surfaces for platform engineering and automation agents
 
+## How It Works
+
+Autoremediator follows a deterministic remediation flow:
+
+1. lookup CVE intelligence
+2. inspect installed dependency inventory
+3. match vulnerable installed versions
+4. attempt safe version bump
+5. if no safe bump exists, attempt controlled patch fallback
+
+Safety gates are applied throughout the flow, including policy enforcement, dry-run controls, and validation requirements.
+
 ## Primary Use Cases
 
 - GitHub workflow automation: nightly or hourly remediation runs that open PRs automatically
@@ -29,6 +43,14 @@ It is built for teams that want dependency remediation to run as part of deliver
 - Security operations acceleration: convert scanner outputs into actionable remediation changes
 - Platform integration: embed remediation in internal bots and security assistants via SDK, MCP, or OpenAPI
 - Portfolio remediation: standardize CVE handling across many Node.js services
+
+## Security and Automation Principles
+
+- keep automation policy-driven (`.autoremediator.json`)
+- use dry-run first in new repositories
+- retain summaries/evidence for audit trails
+- require review and branch protection for remediation PRs
+- treat unresolved outcomes as escalation inputs
 
 ## Surfaces
 
@@ -39,15 +61,14 @@ It is built for teams that want dependency remediation to run as part of deliver
 
 ## Documentation
 
-- https://rawlings.github.io/autoremediator/
-
-- Getting Started: https://rawlings.github.io/autoremediator/docs/getting-started
-- CLI Reference: https://rawlings.github.io/autoremediator/docs/cli
-- Scanner Inputs: https://rawlings.github.io/autoremediator/docs/scanner-inputs
-- Policy and Safety: https://rawlings.github.io/autoremediator/docs/policy-and-safety
-- API and SDK: https://rawlings.github.io/autoremediator/docs/api-sdk
-- Integrations: https://rawlings.github.io/autoremediator/docs/integrations
-- Contributor Guide: https://rawlings.github.io/autoremediator/docs/contributor-guide
+- [Docs Home](https://rawlings.github.io/autoremediator/)
+- [Getting Started](https://rawlings.github.io/autoremediator/docs/getting-started): setup, first runs, and result interpretation
+- [CLI Reference](https://rawlings.github.io/autoremediator/docs/cli): command modes, option semantics, and CI behavior
+- [Scanner Inputs](https://rawlings.github.io/autoremediator/docs/scanner-inputs): scanner format support and parsing constraints
+- [Policy and Safety](https://rawlings.github.io/autoremediator/docs/policy-and-safety): policy precedence, safety guarantees, and fallback controls
+- [API and SDK](https://rawlings.github.io/autoremediator/docs/api-sdk): programmatic integration and CI summary utilities
+- [Integrations](https://rawlings.github.io/autoremediator/docs/integrations): GitHub Actions, MCP, OpenAPI, and multi-stage automation patterns
+- [Contributor Guide](https://rawlings.github.io/autoremediator/docs/contributor-guide): architecture and contribution standards
 
 ## Product Direction
 
@@ -59,9 +80,9 @@ It is built for teams that want dependency remediation to run as part of deliver
 
 Start from the live guides instead of repo markdown:
 
-- Quick setup: https://rawlings.github.io/autoremediator/docs/getting-started
-- Automation workflows: https://rawlings.github.io/autoremediator/docs/integrations
-- Safety controls: https://rawlings.github.io/autoremediator/docs/policy-and-safety
+- [Quick setup](https://rawlings.github.io/autoremediator/docs/getting-started)
+- [Automation workflows](https://rawlings.github.io/autoremediator/docs/integrations)
+- [Safety controls](https://rawlings.github.io/autoremediator/docs/policy-and-safety)
 
 ## Project References
 
