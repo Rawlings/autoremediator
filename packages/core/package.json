@@ -1,7 +1,7 @@
 {
   "name": "autoremediator",
   "private": false,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Automated CVE remediation for Node.js dependencies with CLI, SDK, MCP, and scanner-to-fix workflows.",
   "keywords": [
     "security-remediation",
@@ -90,13 +90,13 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
-    "ai": "^4.3.16",
-    "chalk": "^5.4.1",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "ai": "^4.3.19",
+    "chalk": "^5.6.2",
     "commander": "^13.1.0",
-    "execa": "^9.5.2",
-    "semver": "^7.7.1",
-    "zod": "^3.24.2"
+    "execa": "^9.6.1",
+    "semver": "^7.7.4",
+    "zod": "^3.25.76"
   },
   "peerDependencies": {
     "@ai-sdk/anthropic": "^1.0.0",
@@ -112,14 +112,14 @@
   },
   "devDependencies": {
     "@ai-sdk/anthropic": "^1.2.12",
-    "@ai-sdk/openai": "^1.3.22",
-    "@types/node": "^22.13.14",
-    "@types/semver": "^7.7.0",
-    "tsup": "^8.4.0",
-    "typescript": "^5.8.2",
-    "vitest": "^3.0.9"
+    "@ai-sdk/openai": "^1.3.24",
+    "@types/node": "^24.12.0",
+    "@types/semver": "^7.7.1",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.0.0"
   }
 }

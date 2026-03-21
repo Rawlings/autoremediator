@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.4.1
+
+### Changed
+
+- Updated project dependencies to latest compatible versions.
+- Updated supported Node.js runtime version requirements.
+
 ## 0.4.0
 
 ### Added

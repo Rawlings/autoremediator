@@ -1,0 +1,85 @@
+.site-footer {
+  grid-column: 1 / -1;
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-panel-soft) 88%, transparent), color-mix(in srgb, var(--color-surface-panel) 90%, transparent));
+  padding: var(--space-6) var(--space-4) var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  box-shadow: var(--shadow-soft), inset 0 0.0625rem 0 var(--color-surface-highlight);
+  animation: fade-in-up 0.62s ease-out both;
+  margin-bottom: var(--space-4);
+}
+
+.badge-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.badge-row a {
+  line-height: 0;
+}
+
+.badge-row img {
+  max-height: 1.3125rem;
+}
+
+.external-links {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.external-links a {
+  border-radius: var(--radius-pill);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-pill) 92%, transparent), color-mix(in srgb, var(--color-surface-panel-soft) 88%, transparent));
+  box-shadow: var(--shadow-button);
+  color: var(--color-ink-2);
+  text-decoration: none;
+  font-size: var(--typography-pill-size);
+  font-weight: var(--typography-pill-weight);
+  line-height: var(--typography-pill-leading);
+  letter-spacing: var(--typography-pill-tracking);
+  padding: 0.5rem 0.75rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.external-links a:hover {
+  transform: translateY(-0.0625rem);
+  box-shadow: var(--shadow-glow), var(--shadow-button);
+}
+
+.site-link {
+  background: linear-gradient(180deg, var(--color-surface-action-1) 0%, var(--color-surface-action-2) 100%);
+  color: var(--color-ink-action);
+  font-weight: 510;
+}
+
+.site-link:hover {
+  box-shadow: var(--shadow-glow);
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-footer {
+    animation: none;
+  }
+
+  .external-links a {
+    transition: none;
+  }
+}

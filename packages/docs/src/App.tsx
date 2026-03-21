@@ -1,10 +1,12 @@
 import { useEffect } from "react";
-import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import "./App.css";
 
-import { DocPage, docs, setCanonical } from "./DocPage";
+import { Menu } from "./Menu";
+import { Footer } from "./Footer";
+import { DocPage, setCanonical } from "./DocPage";
 import monorepoReadme from "../../../README.md?raw";
 
 function setMetaTag(key: "name" | "property", value: string, content: string): void {
@@ -41,74 +43,24 @@ function App() {
 
   return (
     <div className="layout">
-      <header className="site-header">
-        <div className="brand-block">
-          <p className="eyebrow">Autoremediator</p>
-          <h1>Security Reference</h1>
-          <p className="subtitle">Automation-first guidance, references, and integration patterns</p>
-        </div>
+      <Menu />
 
-        <nav className="top-nav" aria-label="Reference sections">
-          <NavLink to="/" end className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
-            Home
-          </NavLink>
-          {docs.map((doc) => (
-            <NavLink
-              key={doc.slug}
-              to={`/docs/${doc.slug}`}
-              className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}
-            >
-              {doc.title}
-            </NavLink>
-          ))}
-        </nav>
-      </header>
-
-      <Routes>
-        <Route
-          path="/"
-          element={(
-            <main className="content">
+      <main className="main-content">
+        <Routes>
+          <Route
+            path="/"
+            element={(
               <article className="markdown-rendered">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{monorepoReadme}</ReactMarkdown>
               </article>
-            </main>
-          )}
-        />
-        <Route path="/docs/:slug" element={<DocPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+            )}
+          />
+          <Route path="/docs/:slug" element={<DocPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
 
-      <footer className="site-footer">
-        <div className="badge-row" aria-label="Project badges">
-          <a href="https://www.npmjs.com/package/autoremediator" target="_blank" rel="noreferrer">
-            <img
-              src="https://img.shields.io/npm/v/autoremediator.svg"
-              alt="npm version badge"
-              loading="lazy"
-            />
-          </a>
-          <a href="https://github.com/Rawlings/autoremediator" target="_blank" rel="noreferrer">
-            <img
-              src="https://img.shields.io/github/stars/Rawlings/autoremediator.svg?style=social"
-              alt="GitHub stars badge"
-              loading="lazy"
-            />
-          </a>
-        </div>
-
-        <div className="external-links" aria-label="Package and repository links">
-          <a href="https://www.npmjs.com/package/autoremediator" target="_blank" rel="noreferrer">
-            npm package
-          </a>
-          <a href="https://github.com/Rawlings/autoremediator" target="_blank" rel="noreferrer">
-            GitHub repository
-          </a>
-          <a className="site-link" href="https://rawlings.github.io/autoremediator/" target="_blank" rel="noreferrer">
-            Open site
-          </a>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

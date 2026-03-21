@@ -40,7 +40,7 @@
     "docs:preview": "pnpm --dir packages/docs preview"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.0.0"
   },
   "packageManager": "pnpm@10.18.3"
 }

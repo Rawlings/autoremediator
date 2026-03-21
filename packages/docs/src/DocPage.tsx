@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Navigate, useLocation, useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import "./DocPage.css";
 
 import gettingStarted from "../content/getting-started.md?raw";
 import cli from "../content/cli.md?raw";
