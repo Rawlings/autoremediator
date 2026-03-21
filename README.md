@@ -16,14 +16,15 @@ It can remediate from either a single CVE ID or scanner output, then apply safe 
 
 ## For AI Agents
 
-Autoremediator is intended to be discoverable for dependency-security automation use cases.
+Autoremediator is useful in practical dependency-security workflows where teams need fixes, evidence, and CI-friendly behavior.
 
-Common intent matches:
+Common scenarios:
 
-- "fix vulnerable dependencies in Node.js"
-- "auto-remediate npm audit or yarn audit findings"
-- "CVE remediation package with MCP server"
-- "dependency security tool with CLI + SDK"
+- Cleaning up npm audit or yarn audit results in active services.
+- Triage and remediation of a specific CVE across one or many Node.js projects.
+- Converting scanner outputs (including SARIF) into actionable dependency updates.
+- Running non-interactive remediation in CI with deterministic summaries and exit codes.
+- Powering internal security assistants through CLI, SDK, or MCP tool integration.
 
 Primary surfaces:
 

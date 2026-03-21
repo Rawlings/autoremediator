@@ -6,7 +6,9 @@ settings:
 
 importers:
 
-  .:
+  .: {}
+
+  packages/core:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.0.0

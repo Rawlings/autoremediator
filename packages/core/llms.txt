@@ -1,0 +1,12 @@
+# autoremediator
+
+> Agentic CVE remediation for Node.js projects - MCP tool server, OpenAPI HTTP API, and CLI.
+
+## What it does
+
+autoremediator takes a CVE ID (or a scanner output file) and autonomously:
+1. Looks up the CVE in OSV + GitHub Advisory databases
+2. Scans the project's installed packages for vulnerable versions
+3. Finds the lowest safe upgrade version from the npm registry
+4. Applies a package.json version bump and runs the resolved package manager install command
+5. Falls back to generating and applying a unified diff .patch file when no safe upgrade exists
