@@ -44,6 +44,23 @@ Core pipeline behavior:
 
 Safety and policy controls are applied through each stage.
 
+## Trust and Advisory Sources
+
+The remediation engine relies on public vulnerability intelligence sources and deterministic policy checks.
+
+Primary sources:
+
+- [OSV](https://osv.dev)
+- [GitHub Advisory Database](https://github.com/advisories)
+- [NVD](https://nvd.nist.gov)
+
+Trust controls:
+
+- correlate advisory data with local dependency inventory before action
+- prefer safe version remediation when fixed versions are available
+- emit structured evidence so every remediation attempt is traceable
+- preserve unresolved status when confidence or validation gates fail
+
 ## Surfaces
 
 - CLI: workflow and CI execution

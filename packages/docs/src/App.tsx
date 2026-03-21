@@ -1,8 +1,11 @@
 import { useEffect } from "react";
 import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import "./App.css";
 
 import { DocPage, docs, setCanonical } from "./DocPage";
+import monorepoReadme from "../../../README.md?raw";
 
 function setMetaTag(key: "name" | "property", value: string, content: string): void {
   const selector = `meta[${key}="${value}"]`;
@@ -46,6 +49,9 @@ function App() {
         </div>
 
         <nav className="top-nav" aria-label="Reference sections">
+          <NavLink to="/" end className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
+            Home
+          </NavLink>
           {docs.map((doc) => (
             <NavLink
               key={doc.slug}
@@ -58,18 +64,19 @@ function App() {
         </nav>
       </header>
 
-      <div className="warning-card warning-inline">
-        <p className="warning-title">Warning</p>
-        <p>
-          Automated dependency remediation is controversial. Pair automation with policy controls,
-          CI safeguards, and protected branch workflows.
-        </p>
-      </div>
-
       <Routes>
-        <Route path="/" element={<Navigate to={`/docs/${docs[0].slug}`} replace />} />
+        <Route
+          path="/"
+          element={(
+            <main className="content">
+              <article className="markdown-rendered">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{monorepoReadme}</ReactMarkdown>
+              </article>
+            </main>
+          )}
+        />
         <Route path="/docs/:slug" element={<DocPage />} />
-        <Route path="*" element={<Navigate to={`/docs/${docs[0].slug}`} replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
       <footer className="site-footer">

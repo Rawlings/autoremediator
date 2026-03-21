@@ -29,6 +29,8 @@ The site is deployed by the repository workflow in `.github/workflows/docs-pages
 
 The content displayed by the app is sourced from markdown files in `content/`:
 
+- repository root `README.md` (rendered as the docs home page at `/`)
+
 - `content/getting-started.md`
 - `content/cli.md`
 - `content/scanner-inputs.md`
@@ -36,6 +38,18 @@ The content displayed by the app is sourced from markdown files in `content/`:
 - `content/api-sdk.md`
 - `content/integrations.md`
 - `content/contributor-guide.md`
+
+## Trust and Advisory Sources
+
+The documentation emphasizes trust by documenting where vulnerability intelligence comes from and how automation decisions are controlled.
+
+Primary advisory sources used by Autoremediator:
+
+- [OSV](https://osv.dev)
+- [GitHub Advisory Database](https://github.com/advisories)
+- [NVD](https://nvd.nist.gov)
+
+The docs should keep these sources visible and explain that remediation outcomes are policy-gated and evidence-backed.
 
 ## Published Documentation Index
 

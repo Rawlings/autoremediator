@@ -36,6 +36,23 @@ Autoremediator follows a deterministic remediation flow:
 
 Safety gates are applied throughout the flow, including policy enforcement, dry-run controls, and validation requirements.
 
+## Trust and Advisory Sources
+
+Autoremediator is built around verifiable vulnerability intelligence from public advisory sources.
+
+Primary sources used by the remediation pipeline:
+
+- [OSV](https://osv.dev): ecosystem-first vulnerability records and affected/fixed range data
+- [GitHub Advisory Database](https://github.com/advisories): package advisories with ecosystem metadata
+- [NVD](https://nvd.nist.gov): NIST-backed CVE reference data and severity context
+
+Trust model principles:
+
+- use multiple sources for CVE enrichment and correlation
+- preserve evidence output so remediation decisions can be audited
+- apply policy and validation gates before marking outcomes resolved
+- treat unresolved or low-confidence outcomes as explicit escalation paths
+
 ## Primary Use Cases
 
 - GitHub workflow automation: nightly or hourly remediation runs that open PRs automatically
