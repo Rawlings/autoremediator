@@ -12,6 +12,7 @@ on:
       - 'packages/**/pnpm-lock.yaml'
   push:
     branches:
+      - master
       - main
     paths:
       - '.github/**'
