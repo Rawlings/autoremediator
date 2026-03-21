@@ -1,7 +1,7 @@
 {
   "name": "autoremediator",
   "private": false,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Automated CVE remediation for Node.js dependencies with CLI, SDK, MCP, and scanner-to-fix workflows.",
   "keywords": [
     "security-remediation",
