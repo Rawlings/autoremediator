@@ -30,6 +30,12 @@ If you use `--llm-provider local` (deterministic mode), API keys are not require
 
 ## Install
 
+Try without installing:
+
+```bash
+npx autoremediator --help
+```
+
 Global install is useful for operator workstations:
 
 ```bash
@@ -53,16 +59,36 @@ yarn add --dev autoremediator
 yarn autoremediator --help
 ```
 
+With Docker:
+
+```bash
+docker run --rm -v "$PWD:/workdir" ghcr.io/rawlings/autoremediator CVE-2021-23337
+```
+
 ## Choose the Right Mode
 
 | Use case | Recommended mode | Why |
 |---|---|---|
+| GitHub Actions CI (recommended) | `uses: rawlings/autoremediator@v1` | Zero boilerplate, works with pnpm/npm/yarn |
 | Urgent single CVE | direct CVE mode | Fast, focused remediation and clear operator feedback |
 | Non-mutating orchestration planning | `--preview` or `planRemediation()` | Evaluate intended remediation actions before mutation |
 | Nightly scanner automation | scan mode (`--input`) | Batch handling with deterministic CI summary |
 | CI gate without mutation | `--dry-run --ci` | Safety-first check for unresolved risk |
 | Air-gapped or deterministic environments | `--llm-provider local` | No remote model dependency and predictable behavior |
 | Platform service integration | SDK, MCP, or OpenAPI | Standardized orchestration across many repos |
+
+For GitHub Actions, the recommended approach is the Marketplace action:
+
+```yaml
+- uses: actions/checkout@v4
+- run: pnpm audit --json > audit.json || true  # or: npm audit / yarn audit
+- uses: rawlings/autoremediator@v1
+  with:
+    scan-file: audit.json
+    ci: 'true'
+```
+
+Works with pnpm, npm, and yarn. See [Integrations](integrations.md) for all patterns.
 
 For full mode semantics, see [CLI Reference](cli.md) and [Integrations](integrations.md).
 

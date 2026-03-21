@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.5.0
+
+### Added
+
+- **`toSarifOutput(report: ScanReport): SarifOutput`**: New public SDK function that converts a `ScanReport` to SARIF 2.1.0 format for upload to GitHub Code Scanning via `actions/upload-sarif`.
+- **`SarifOutput` type**: Exported type representing a valid SARIF 2.1.0 document with `runs`, `tool.driver.rules`, and `results`.
+- **`--output-format sarif` CLI flag**: Available on the `scan` subcommand and the top-level default command. Emits SARIF JSON to stdout instead of the default report format.
+
 ## 0.4.1
 
 ### Changed

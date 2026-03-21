@@ -15,23 +15,107 @@ Related references:
 
 | Pattern | Use when | Key outcome |
 |---|---|---|
+| GitHub Actions Marketplace action | you want zero-boilerplate CI integration | one step, works with pnpm/npm/yarn |
+| VS Code extension | you want inline diagnostics while editing | squiggles + code action on package.json |
 | Scheduled PR automation | you want continuous improvement with review gates | automatic remediation PRs on a cadence |
 | Enforcement-only gate | you want fail-fast security gating in PR/merge pipelines | deterministic pass/fail based on unresolved outcomes |
+| SARIF upload | you want results in GitHub Security tab | Code Scanning alerts alongside other tools |
 | SDK integration | you need custom control flow in internal tooling | programmable orchestration and reporting |
 | MCP server | you integrate with AI-host tool ecosystems | standardized tool interface for remediation workflows |
 | OpenAPI server | you need service-based central remediation execution | networked API access for multi-system orchestration |
 
+## GitHub Code Scanning: SARIF Upload
+
+Use `--output-format sarif` to emit SARIF 2.1.0 output, then upload directly to GitHub's Security tab via `actions/upload-sarif`.
+
+This makes autoremediator results appear as Code Scanning alerts alongside other security tools.
+
+```yaml
+name: autoremediator-sarif
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 3 * * *"
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --json > audit.json || true
+      - run: pnpm exec autoremediator scan --input audit.json --dry-run --output-format sarif > results.sarif
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+```
+
+For npm or yarn, substitute the audit and exec commands accordingly.
+
+The `--dry-run` flag ensures this job is read-only — no changes are made to the project.
+
+## GitHub Actions Marketplace Action
+
+The `rawlings/autoremediator` action installs and runs autoremediator in a single step.
+Node.js setup and package installation are handled inside the action — no boilerplate needed.
+
+Works with **pnpm, npm, and yarn**. Run your package manager's audit first to produce the input file, then pass it to the action:
+
+```yaml
+# pnpm
+- run: pnpm audit --json > audit.json || true
+- uses: rawlings/autoremediator@v1
+  with:
+    scan-file: audit.json
+
+# npm
+- run: npm audit --json > audit.json || true
+- uses: rawlings/autoremediator@v1
+  with:
+    scan-file: audit.json
+
+# yarn
+- run: yarn npm audit --json > audit.json || yarn audit --json > audit.json || true
+- uses: rawlings/autoremediator@v1
+  with:
+    scan-file: audit.json
+    format: yarn-audit
+```
+
+All scan-mode flags are available as inputs:
+
+| Input | Description | Default |
+|---|---|---|
+| `scan-file` | Path to scanner output file | — |
+| `cve-id` | Single CVE ID to remediate (instead of scan-file) | — |
+| `format` | `auto`, `npm-audit`, `yarn-audit`, `sarif` | `auto` |
+| `cwd` | Target project directory | `.` |
+| `package-manager` | `npm`, `pnpm`, `yarn` (auto-detected from lockfile) | — |
+| `dry-run` | Plan only, no mutations | `false` |
+| `run-tests` | Validate changes with test command | `false` |
+| `ci` | Exit non-zero on unresolved CVEs | `false` |
+| `summary-file` | Write machine-readable summary JSON | — |
+| `policy` | Path to `.autoremediator.json` | — |
+| `llm-provider` | `openai`, `anthropic`, `local` | `local` |
+| `node-version` | Node.js version (24+) | `24` |
+
 ## GitHub Actions: Scheduled Auto-Remediation PRs
 
-Use this for regular remediation with human review.
-
-Why this pattern works:
-
-- shortens vulnerability exposure windows
-- preserves branch protection and review controls
-- creates auditable PR history
-
-### pnpm workflow
+Nightly remediation with automatic PR creation. The action handles Node.js and autoremediator installation —
+you only need the audit step and the PR creator.
 
 ```yaml
 name: autoremediator-nightly
@@ -49,16 +133,11 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - run: pnpm audit --json > audit.json || true   # or: npm audit / yarn audit
+      - uses: rawlings/autoremediator@v1
         with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm audit --json > audit.json || true
-      - run: pnpm exec autoremediator scan --input ./audit.json --format npm-audit --ci --summary-file ./autoremediator-summary.json
+          scan-file: audit.json
+          summary-file: autoremediator-summary.json
       - uses: peter-evans/create-pull-request@v6
         with:
           branch: chore/autoremediator-nightly
@@ -66,82 +145,11 @@ jobs:
           title: "chore: automated CVE remediation"
 ```
 
-### npm workflow
-
-```yaml
-name: autoremediator-nightly-npm
-
-on:
-  schedule:
-    - cron: "0 3 * * *"
-  workflow_dispatch:
-
-jobs:
-  remediate:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm audit --json > audit.json || true
-      - run: npm exec autoremediator -- scan --input ./audit.json --format npm-audit --ci --summary-file ./autoremediator-summary.json
-      - uses: peter-evans/create-pull-request@v6
-        with:
-          branch: chore/autoremediator-nightly
-          commit-message: "chore: automated CVE remediation"
-          title: "chore: automated CVE remediation"
-```
-
-### yarn workflow
-
-```yaml
-name: autoremediator-nightly-yarn
-
-on:
-  schedule:
-    - cron: "0 3 * * *"
-  workflow_dispatch:
-
-jobs:
-  remediate:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: yarn
-      - run: corepack enable
-      - run: yarn install --immutable || yarn install --frozen-lockfile
-      - run: yarn npm audit --json > audit.json || yarn audit --json > audit.json || true
-      - run: yarn autoremediator scan --input ./audit.json --format yarn-audit --ci --summary-file ./autoremediator-summary.json
-      - uses: peter-evans/create-pull-request@v6
-        with:
-          branch: chore/autoremediator-nightly
-          commit-message: "chore: automated CVE remediation"
-          title: "chore: automated CVE remediation"
-```
+This works for npm and yarn too — substitute the audit command on the `run:` line and set `format: yarn-audit` if using yarn.
 
 ## GitHub Actions: Enforcement-Only Gate
 
-Use this when you want CI to fail on unresolved remediation outcomes without opening PRs.
-
-Why this pattern works:
-
-- makes unresolved risk explicit in merge workflow
-- prevents silent vulnerability drift
-- keeps dependency mutation out of gate jobs
-
-### pnpm workflow
+Fail the build when unresolved CVEs remain. Uses `dry-run` so no files are mutated.
 
 ```yaml
 name: autoremediator-gate
@@ -156,65 +164,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - run: pnpm audit --json > audit.json || true   # or: npm audit / yarn audit
+      - uses: rawlings/autoremediator@v1
         with:
-          version: 10
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm audit --json > audit.json || true
-      - run: pnpm exec autoremediator scan --input ./audit.json --format npm-audit --ci --summary-file ./summary.json --dry-run
-```
-
-### npm workflow
-
-```yaml
-name: autoremediator-gate-npm
-
-on:
-  pull_request:
-  push:
-    branches: [main]
-
-jobs:
-  gate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm audit --json > audit.json || true
-      - run: npm exec autoremediator -- scan --input ./audit.json --format npm-audit --ci --summary-file ./summary.json --dry-run
-```
-
-### yarn workflow
-
-```yaml
-name: autoremediator-gate-yarn
-
-on:
-  pull_request:
-  push:
-    branches: [main]
-
-jobs:
-  gate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: yarn
-      - run: corepack enable
-      - run: yarn install --immutable || yarn install --frozen-lockfile
-      - run: yarn npm audit --json > audit.json || yarn audit --json > audit.json || true
-      - run: yarn autoremediator scan --input ./audit.json --format yarn-audit --ci --summary-file ./summary.json --dry-run
+          scan-file: audit.json
+          dry-run: 'true'
+          ci: 'true'
+          summary-file: summary.json
 ```
 
 ## Multi-Stage Automation Pattern

@@ -4,6 +4,8 @@
 [![npm downloads](https://img.shields.io/npm/dm/autoremediator.svg)](https://www.npmjs.com/package/autoremediator)
 [![license](https://img.shields.io/npm/l/autoremediator.svg)](https://github.com/Rawlings/autoremediator/blob/master/LICENSE)
 [![node](https://img.shields.io/node/v/autoremediator.svg)](https://www.npmjs.com/package/autoremediator)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io-blue)](https://github.com/Rawlings/autoremediator/pkgs/container/autoremediator)
+[![GitHub Actions](https://img.shields.io/badge/github--actions-marketplace-blue)](https://github.com/marketplace/actions/autoremediator)
 
 > [!WARNING]
 > Automated dependency remediation is a controversial practice.
@@ -17,6 +19,8 @@ This package is designed for teams that want remediation integrated into GitHub 
 It exposes stable SDK and CLI surfaces for direct CVE remediation and scanner-driven automation.
 
 It also exposes non-mutating planning and correlation context for agent orchestration workflows.
+
+See the [documentation](https://rawlings.github.io/autoremediator/docs/getting-started) to get started.
 
 ## Why Teams Use It
 
@@ -99,14 +103,6 @@ Public API naming canon: `runTests`, `policy`, `evidence`, `patchCount`, and `pa
 - Prioritize automation workflows over one-off manual runs
 - Configure policy and branch protection before broad rollout
 - Use CI summaries and evidence outputs for operational governance
-
-## Getting Started Fast
-
-Start from the live guides instead of repo markdown:
-
-- [Quick setup](https://rawlings.github.io/autoremediator/docs/getting-started)
-- [Automation workflows](https://rawlings.github.io/autoremediator/docs/integrations)
-- [Safety controls](https://rawlings.github.io/autoremediator/docs/policy-and-safety)
 
 ## Package
 

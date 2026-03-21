@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { ciExitCode, remediate, remediateFromScan, toCiSummary } from "./api.js";
+import { ciExitCode, remediate, remediateFromScan, toCiSummary, toSarifOutput } from "./api.js";
 import { existsSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -14,6 +14,7 @@ interface CommandOptions {
   preview: boolean;
   runTests: boolean;
   json: boolean;
+  outputFormat: "json" | "sarif";
   llmProvider?: "openai" | "anthropic" | "local";
   requestId?: string;
   sessionId?: string;
@@ -98,6 +99,14 @@ async function runScanInput(inputPath: string, opts: CommandOptions): Promise<vo
   if (opts.summaryFile) {
     const summary = toCiSummary(report);
     writeFileSync(opts.summaryFile, JSON.stringify(summary, null, 2) + "\n", "utf8");
+  }
+
+  if (opts.outputFormat === "sarif") {
+    logJson(toSarifOutput(report));
+    if (opts.ci) {
+      process.exitCode = ciExitCode(toCiSummary(report));
+    }
+    return;
   }
 
   if (opts.json) {
@@ -185,6 +194,7 @@ export function createProgram(): Command {
     .option("--no-evidence", "Disable evidence file output")
     .option("--ci", "Enable CI behavior (non-zero exit on failed remediations)", false)
     .option("--summary-file <path>", "Write machine-readable scan summary JSON to path")
+    .option("--output-format <format>", "Output format: json|sarif", "json")
     .option("--json", "Print JSON output", false)
     .action(async (opts: CommandOptions) => {
       await runScanInput(opts.input!, opts);
@@ -217,6 +227,7 @@ export function createProgram(): Command {
     .option("--no-evidence", "Disable evidence file output")
     .option("--ci", "Enable CI behavior (non-zero exit on failed remediations)", false)
     .option("--summary-file <path>", "Write machine-readable scan summary JSON to path")
+    .option("--output-format <format>", "Output format: json|sarif", "json")
     .option("--json", "Print JSON output", false)
     .action(async (target: string | undefined, opts: CommandOptions) => {
       if (opts.input) {

@@ -375,3 +375,118 @@ export function toCiSummary(report: ScanReport): CiSummary {
 export function ciExitCode(summary: CiSummary): number {
   return summary.failedCount > 0 ? 1 : 0;
 }
+
+// ---------------------------------------------------------------------------
+// SARIF 2.1.0 output
+// ---------------------------------------------------------------------------
+
+type SarifLevel = "error" | "warning" | "note" | "none";
+
+interface SarifRule {
+  id: string;
+  name: string;
+  shortDescription: { text: string };
+  fullDescription: { text: string };
+  defaultConfiguration: { level: SarifLevel };
+  helpUri: string;
+  properties: { severity: string };
+}
+
+interface SarifResult {
+  ruleId: string;
+  level: SarifLevel;
+  message: { text: string };
+  locations: Array<{
+    physicalLocation: {
+      artifactLocation: { uri: string; uriBaseId: string };
+    };
+  }>;
+}
+
+export interface SarifOutput {
+  version: "2.1.0";
+  $schema: string;
+  runs: Array<{
+    tool: {
+      driver: {
+        name: string;
+        informationUri: string;
+        rules: SarifRule[];
+      };
+    };
+    results: SarifResult[];
+  }>;
+}
+
+function severityToSarifLevel(severity: string): SarifLevel {
+  if (severity === "CRITICAL" || severity === "HIGH") return "error";
+  if (severity === "MEDIUM") return "warning";
+  if (severity === "LOW") return "note";
+  return "warning";
+}
+
+/**
+ * Convert a ScanReport to SARIF 2.1.0 format for GitHub Code Scanning upload.
+ */
+export function toSarifOutput(report: ScanReport): SarifOutput {
+  const rules: SarifRule[] = [];
+  const results: SarifResult[] = [];
+  const seenRules = new Set<string>();
+
+  for (const r of report.reports) {
+    const severity = r.cveDetails?.severity ?? "UNKNOWN";
+    const level = severityToSarifLevel(severity);
+    const summary = r.cveDetails?.summary ?? r.cveId;
+
+    if (!seenRules.has(r.cveId)) {
+      seenRules.add(r.cveId);
+      rules.push({
+        id: r.cveId,
+        name: "VulnerableDependency",
+        shortDescription: { text: r.cveId },
+        fullDescription: { text: summary },
+        defaultConfiguration: { level },
+        helpUri: `https://osv.dev/vulnerability/${r.cveId}`,
+        properties: { severity },
+      });
+    }
+
+    for (const vp of r.vulnerablePackages) {
+      const fixText = vp.affected.firstPatchedVersion
+        ? ` Fix: upgrade to ${vp.affected.firstPatchedVersion}.`
+        : " No fixed version available.";
+      results.push({
+        ruleId: r.cveId,
+        level,
+        message: {
+          text: `${vp.installed.name}@${vp.installed.version} is vulnerable to ${r.cveId}: ${summary}${fixText}`,
+        },
+        locations: [
+          {
+            physicalLocation: {
+              artifactLocation: { uri: "package.json", uriBaseId: "%SRCROOT%" },
+            },
+          },
+        ],
+      });
+    }
+  }
+
+  return {
+    version: "2.1.0",
+    $schema:
+      "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Documents/CommitteeSpecifications/2.1.0/sarif-schema-2.1.0.json",
+    runs: [
+      {
+        tool: {
+          driver: {
+            name: "autoremediator",
+            informationUri: "https://github.com/Rawlings/autoremediator",
+            rules,
+          },
+        },
+        results,
+      },
+    ],
+  };
+}

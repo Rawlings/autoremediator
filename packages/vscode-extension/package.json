@@ -1,0 +1,62 @@
+{
+  "name": "autoremediator-vscode",
+  "displayName": "Autoremediator",
+  "description": "Inline CVE diagnostics and one-click remediation for Node.js dependencies",
+  "version": "0.1.0",
+  "publisher": "rawlings",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rawlings/autoremediator.git"
+  },
+  "homepage": "https://github.com/Rawlings/autoremediator#readme",
+  "bugs": {
+    "url": "https://github.com/Rawlings/autoremediator/issues"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "keywords": [
+    "security",
+    "cve",
+    "dependency",
+    "vulnerability",
+    "remediation",
+    "npm-audit",
+    "supply-chain"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/package.json"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "autoremediator.scanWorkspace",
+        "title": "Autoremediator: Scan workspace for CVEs"
+      },
+      {
+        "command": "autoremediator.fixCve",
+        "title": "Fix with Autoremediator"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=dist/extension.js --sourcemap",
+    "watch": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=dist/extension.js --sourcemap --watch",
+    "typecheck": "tsc --noEmit",
+    "package": "vsce package --no-dependencies",
+    "publish": "vsce publish --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.0"
+  }
+}

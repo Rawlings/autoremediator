@@ -1,0 +1,140 @@
+name: Autoremediator
+description: >
+  Automated CVE remediation for Node.js dependencies.
+  Runs version-bump remediation for scanner output or a single CVE ID,
+  with LLM patch-generation fallback when no safe version exists.
+author: rawlings
+
+branding:
+  icon: shield
+  color: green
+
+inputs:
+  scan-file:
+    description: >
+      Path to scanner output file (npm audit --json, pnpm audit --json,
+      yarn audit --json, or SARIF). Mutually exclusive with cve-id.
+      Required if cve-id is not set.
+    required: false
+  cve-id:
+    description: >
+      Single CVE ID to remediate directly (e.g. CVE-2021-23337).
+      Mutually exclusive with scan-file. Required if scan-file is not set.
+    required: false
+  format:
+    description: >
+      Scanner input format. One of: auto, npm-audit, yarn-audit, sarif.
+      Ignored when cve-id is set.
+    required: false
+    default: auto
+  cwd:
+    description: >
+      Target project directory containing package.json and lockfile.
+      Defaults to repository root.
+    required: false
+    default: .
+  package-manager:
+    description: >
+      Package manager to use for installs: npm, pnpm, or yarn.
+      Auto-detected from lockfile if not set.
+    required: false
+  dry-run:
+    description: Plan changes only — do not mutate files or run installs.
+    required: false
+    default: 'false'
+  run-tests:
+    description: >
+      Run the package-manager test command to validate changes after applying.
+    required: false
+    default: 'false'
+  ci:
+    description: >
+      Enable CI mode — exit non-zero when any CVE is unresolved after
+      remediation attempts. Ignored when cve-id is set.
+    required: false
+    default: 'false'
+  summary-file:
+    description: >
+      Write a machine-readable scan summary JSON to this path.
+      Useful for downstream steps and artifact upload.
+      Ignored when cve-id is set.
+    required: false
+  policy:
+    description: >
+      Path to a policy file (.autoremediator.json) that controls upgrade
+      constraints, allow/deny lists, and remediation behavior.
+    required: false
+  llm-provider:
+    description: >
+      LLM provider for patch-generation fallback when no safe version exists.
+      One of: openai, anthropic, local.
+      local runs deterministic mode and requires no API key.
+    required: false
+    default: local
+  node-version:
+    description: Node.js version to use. Must be 24 or higher.
+    required: false
+    default: '24'
+
+outputs:
+  summary-file:
+    description: >
+      Path to the generated summary JSON file (if summary-file input was set).
+    value: ${{ inputs.summary-file }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install autoremediator
+      shell: bash
+      run: npm install -g autoremediator@latest
+
+    - name: Remediate single CVE
+      if: ${{ inputs.cve-id != '' }}
+      shell: bash
+      env:
+        INPUT_CVE_ID: ${{ inputs.cve-id }}
+        INPUT_CWD: ${{ inputs.cwd }}
+        INPUT_PKG_MANAGER: ${{ inputs.package-manager }}
+        INPUT_DRY_RUN: ${{ inputs.dry-run }}
+        INPUT_RUN_TESTS: ${{ inputs.run-tests }}
+        INPUT_POLICY: ${{ inputs.policy }}
+        INPUT_LLM_PROVIDER: ${{ inputs.llm-provider }}
+      run: |
+        ARGS=("cve" "$INPUT_CVE_ID" "--cwd" "$INPUT_CWD")
+        [ -n "$INPUT_PKG_MANAGER" ]        && ARGS+=("--package-manager" "$INPUT_PKG_MANAGER")
+        [ "$INPUT_DRY_RUN"    = "true" ]   && ARGS+=("--dry-run")
+        [ "$INPUT_RUN_TESTS"  = "true" ]   && ARGS+=("--run-tests")
+        [ -n "$INPUT_POLICY" ]             && ARGS+=("--policy" "$INPUT_POLICY")
+        [ -n "$INPUT_LLM_PROVIDER" ]       && ARGS+=("--llm-provider" "$INPUT_LLM_PROVIDER")
+        autoremediator "${ARGS[@]}"
+
+    - name: Remediate from scan file
+      if: ${{ inputs.scan-file != '' }}
+      shell: bash
+      env:
+        INPUT_SCAN_FILE: ${{ inputs.scan-file }}
+        INPUT_FORMAT: ${{ inputs.format }}
+        INPUT_CWD: ${{ inputs.cwd }}
+        INPUT_PKG_MANAGER: ${{ inputs.package-manager }}
+        INPUT_DRY_RUN: ${{ inputs.dry-run }}
+        INPUT_RUN_TESTS: ${{ inputs.run-tests }}
+        INPUT_CI: ${{ inputs.ci }}
+        INPUT_SUMMARY_FILE: ${{ inputs.summary-file }}
+        INPUT_POLICY: ${{ inputs.policy }}
+        INPUT_LLM_PROVIDER: ${{ inputs.llm-provider }}
+      run: |
+        ARGS=("scan" "--input" "$INPUT_SCAN_FILE" "--format" "$INPUT_FORMAT" "--cwd" "$INPUT_CWD")
+        [ -n "$INPUT_PKG_MANAGER" ]        && ARGS+=("--package-manager" "$INPUT_PKG_MANAGER")
+        [ "$INPUT_DRY_RUN"    = "true" ]   && ARGS+=("--dry-run")
+        [ "$INPUT_RUN_TESTS"  = "true" ]   && ARGS+=("--run-tests")
+        [ "$INPUT_CI"         = "true" ]   && ARGS+=("--ci")
+        [ -n "$INPUT_SUMMARY_FILE" ]       && ARGS+=("--summary-file" "$INPUT_SUMMARY_FILE")
+        [ -n "$INPUT_POLICY" ]             && ARGS+=("--policy" "$INPUT_POLICY")
+        [ -n "$INPUT_LLM_PROVIDER" ]       && ARGS+=("--llm-provider" "$INPUT_LLM_PROVIDER")
+        autoremediator "${ARGS[@]}"

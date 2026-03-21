@@ -1,0 +1,27 @@
+name: Tag action release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update floating major version tag
+        run: |
+          VERSION=$(jq -r .version packages/core/package.json)
+          MAJOR="v${VERSION%%.*}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -fa "$MAJOR" -m "Release $MAJOR (${VERSION})"
+          git push origin "$MAJOR" --force
