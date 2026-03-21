@@ -14,6 +14,15 @@ pnpm dev
 pnpm build
 ```
 
+## GitHub Pages Deployment
+
+The site is deployed by the repository workflow in `.github/workflows/docs-pages.yml`.
+
+- Pull requests run a build-only validation for docs changes.
+- Pushes to `main` build and deploy to GitHub Pages.
+- In GitHub Actions, Vite uses the repository name as the base path (for this repo: `/autoremediator/`).
+- Local builds keep the base path at `/`.
+
 ## Documentation Sources
 
 The content displayed by the app is sourced from markdown files in this directory:
