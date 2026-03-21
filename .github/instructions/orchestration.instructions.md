@@ -36,6 +36,8 @@ If apply-version-bump result has strategy="none":
 
 - Respect dryRun at all times.
 - Include packageManager, policyPath, and skipTests in apply-version-bump inputs.
+- Include vulnerableRange in find-fixed-version inputs when available.
+- Treat indirect dependencies as unresolved for automatic version-bump unless an explicit override strategy is provided.
 - Do not skip tools due to assumptions.
 - Keep reasoning concise and structured.
 

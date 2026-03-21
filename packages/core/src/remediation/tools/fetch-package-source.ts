@@ -6,7 +6,7 @@
  */
 import { tool } from "ai";
 import { z } from "zod";
-import { mkdir, readdir, readFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { execa } from "execa";
 
@@ -15,7 +15,7 @@ import { execa } from "execa";
  */
 interface FetchPackageSourceResult {
   success: boolean;
-  sourceCode?: Record<string, string>;
+  sourceFiles?: Record<string, string>;
   packageDir?: string;
   error?: string;
 }
@@ -131,7 +131,7 @@ export const fetchPackageSourceTool = tool({
 
       return {
         success: true,
-        sourceCode,
+        sourceFiles: sourceCode,
         packageDir: packageRootDir,
       };
     } catch (err) {
@@ -150,6 +150,8 @@ export const fetchPackageSourceTool = tool({
         success: false,
         error: `Failed to fetch and extract package ${packageName}@${version}: ${message}`,
       };
+    } finally {
+      await rm(tempBaseDir, { recursive: true, force: true });
     }
   },
 });

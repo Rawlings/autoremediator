@@ -20,9 +20,12 @@ Fallback branch (only when version bump cannot be applied):
 - Tool outputs must be machine-readable and avoid natural language-only status.
 - Failure outputs must include a clear error message string.
 - `check-inventory`, `apply-version-bump`, and `apply-patch-file` must accept `packageManager` and auto-detect from lockfile when omitted.
+- `apply-patch-file` must accept `dryRun` and must not mutate files when `dryRun=true`.
 - apply-version-bump must return strategy="none" when no safe upgrade can be applied.
 - apply-patch-file must prefer native patch flows for pnpm and yarn (Berry), and use patch-package compatibility mode for npm and yarn v1.
 - patch fallback tools must return structured success=false on failure (no thrown-only failures).
+- `fetch-package-source` should return source files under `sourceFiles`.
+- `generate-patch` should return `patchContent` (or `patches`) that can be passed directly to `apply-patch-file`.
 
 ## Precedence and Conflict Rules
 

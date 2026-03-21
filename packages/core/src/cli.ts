@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { ciExitCode, remediate as heal, remediateFromScan as healFromScanFile, toCiSummary } from "./api.js";
+import { ciExitCode, remediate, remediateFromScan, toCiSummary } from "./api.js";
 import { existsSync, writeFileSync } from "node:fs";
 
 type ScanFormat = "auto" | "npm-audit" | "yarn-audit" | "sarif";
@@ -30,7 +30,7 @@ function isCveId(value: string): boolean {
 }
 
 async function runSingleCve(cveId: string, opts: CommandOptions): Promise<void> {
-  const report = await heal(cveId, {
+  const report = await remediate(cveId, {
     cwd: opts.cwd,
     packageManager: opts.packageManager,
     dryRun: opts.dryRun,
@@ -49,7 +49,7 @@ async function runSingleCve(cveId: string, opts: CommandOptions): Promise<void> 
 }
 
 async function runScanInput(inputPath: string, opts: CommandOptions): Promise<void> {
-  const report = await healFromScanFile(inputPath, {
+  const report = await remediateFromScan(inputPath, {
     cwd: opts.cwd,
     packageManager: opts.packageManager,
     format: opts.format,
@@ -98,13 +98,12 @@ async function main(): Promise<void> {
   program
     .name("autoremediator")
     .description("Scanner-first Node.js vulnerability auto-remediation tool")
-    .version("0.1.0")
+    .version("0.1.2")
     .showHelpAfterError();
 
-  // Compatibility command retained for explicit CVE use.
   program
     .command("cve")
-    .description("Compatibility: heal a single CVE ID")
+    .description("Remediate a single CVE ID")
     .argument("<cveId>", "CVE ID, e.g. CVE-2021-23337")
     .option("--cwd <path>", "Target project directory", process.cwd())
     .option("--package-manager <name>", "Package manager: npm|pnpm|yarn")
@@ -118,7 +117,7 @@ async function main(): Promise<void> {
 
   program
     .command("scan")
-    .description("Heal vulnerabilities from scanner output (npm/pnpm/yarn audit JSON or SARIF)")
+    .description("Remediate vulnerabilities from scanner output (npm/pnpm/yarn audit JSON or SARIF)")
     .requiredOption("--input <path>", "Path to scanner output file")
     .option("--format <type>", "Input format: auto|npm-audit|yarn-audit|sarif", "auto")
     .option("--cwd <path>", "Target project directory", process.cwd())
@@ -138,7 +137,6 @@ async function main(): Promise<void> {
   // Scanner-first top-level mode (default):
   //   autoremediator --input audit.json
   //   autoremediator audit.json
-  // Compatibility fallback: autoremediator CVE-2021-23337
   program
     .argument("[target]", "Scanner output file path (or CVE ID fallback)")
     .option("--cwd <path>", "Target project directory", process.cwd())

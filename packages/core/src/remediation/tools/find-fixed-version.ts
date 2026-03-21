@@ -19,11 +19,16 @@ export const findFixedVersionTool = tool({
       .describe(
         "The first version that is NOT vulnerable (from lookup-cve). Use this as the floor."
       ),
+    vulnerableRange: z
+      .string()
+      .optional()
+      .describe("Optional vulnerable semver range used to exclude still-vulnerable versions"),
   }),
   execute: async ({
     packageName,
     installedVersion,
     firstPatchedVersion,
+    vulnerableRange,
   }): Promise<{
     safeVersion?: string;
     isMajorBump: boolean;
@@ -32,7 +37,8 @@ export const findFixedVersionTool = tool({
     const safeVersion = await findSafeUpgradeVersion(
       packageName,
       installedVersion,
-      firstPatchedVersion
+      firstPatchedVersion,
+      vulnerableRange
     );
 
     if (!safeVersion) {

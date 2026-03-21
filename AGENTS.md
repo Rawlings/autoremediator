@@ -27,13 +27,13 @@
 
 - Trigger: `autoremediator-mcp` (stdio)
 - Behavior: exposes `remediate` and `remediateFromScan` as MCP tools
-- Source: `src/mcp/server.ts`
+- Source: `packages/core/src/mcp/server.ts`
 
 ### Mode 5: OpenAPI HTTP Server
 
 - Trigger: `node dist/openapi/server.js [--port 3000]`
 - Behavior: POST `/remediate` and POST `/remediate-from-scan` over HTTP
-- Source: `src/openapi/server.ts`
+- Source: `packages/core/src/openapi/server.ts`
 
 ## Precedence
 

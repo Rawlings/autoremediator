@@ -32,6 +32,12 @@ interface ValidationResult {
  */
 interface ApplyPatchFileResult {
   success: boolean;
+  packageName: string;
+  vulnerableVersion: string;
+  applied: boolean;
+  dryRun: boolean;
+  message: string;
+  patchFilePath?: string;
   patchPath?: string;
   patchMode?: "patch-package" | "native-pnpm" | "native-yarn";
   postinstallConfigured?: boolean;
@@ -43,6 +49,7 @@ interface ApplyPatchFileResult {
  * Raw package.json structure for type safety.
  */
 interface RawPackageJson {
+  devDependencies?: Record<string, string>;
   scripts?: Record<string, string>;
   [key: string]: unknown;
 }
@@ -58,7 +65,17 @@ export const applyPatchFileTool = tool({
     patchContent: z
       .string()
       .min(10)
+      .optional()
       .describe("Unified diff patch content from generate-patch"),
+    patches: z
+      .array(
+        z.object({
+          filePath: z.string().min(1),
+          unifiedDiff: z.string().min(10),
+        })
+      )
+      .optional()
+      .describe("Patch list from generate-patch; first patch is applied"),
     patchesDir: z
       .string()
       .optional()
@@ -71,29 +88,59 @@ export const applyPatchFileTool = tool({
       .optional()
       .default(true)
       .describe("Run package manager test command to validate patch doesn't break anything"),
+    dryRun: z.boolean().optional().default(false).describe("If true, report but do not mutate files"),
+  }).refine((value) => Boolean(value.patchContent || (value.patches && value.patches.length > 0)), {
+    message: "Either patchContent or patches must be provided",
   }),
   execute: async ({
     packageName,
     vulnerableVersion,
     patchContent,
+    patches,
     patchesDir,
     cwd,
     packageManager,
     validateWithTests,
+    dryRun,
   }): Promise<ApplyPatchFileResult> => {
     try {
       const pm = (packageManager ?? detectPackageManager(cwd)) as PackageManager;
+      const selectedPatch = patchContent ?? patches?.[0]?.unifiedDiff;
+
+      if (!selectedPatch) {
+        return {
+          success: false,
+          packageName,
+          vulnerableVersion,
+          applied: false,
+          dryRun,
+          message: "No patch content provided.",
+          error: "No patch content provided.",
+        };
+      }
+
+      const patchFileName = buildPatchFileName(packageName, vulnerableVersion);
+      const patchFilePath = join(cwd, patchesDir, patchFileName);
+
+      if (dryRun) {
+        return {
+          success: true,
+          packageName,
+          vulnerableVersion,
+          applied: false,
+          dryRun: true,
+          message: `[DRY RUN] Would write and configure patch at ${patchFilePath}.`,
+          patchFilePath,
+          patchPath: patchFilePath,
+        };
+      }
 
       // Step 1: Create patches directory if it doesn't exist
       const patchesDirPath = join(cwd, patchesDir);
       await mkdir(patchesDirPath, { recursive: true });
 
       // Step 2: Write patch file with proper naming convention
-      // Use + as separator to match patch-package convention
-      const patchFileName = `${packageName}+${vulnerableVersion}.patch`;
-      const patchFilePath = join(patchesDirPath, patchFileName);
-
-      await writeFile(patchFilePath, patchContent, "utf8");
+      await writeFile(patchFilePath, selectedPatch, "utf8");
 
       let validationResult: ValidationResult | undefined;
       const patchMode = await resolvePatchMode(pm, cwd);
@@ -102,18 +149,24 @@ export const applyPatchFileTool = tool({
       // npm always uses patch-package, yarn v1 falls back to patch-package.
       const applyResult =
         patchMode === "patch-package"
-          ? await configurePatchPackagePostinstall(cwd)
+          ? await configurePatchPackagePostinstall(cwd, pm)
           : await applyNativePatch({
               cwd,
               packageName,
               vulnerableVersion,
-              patchContent,
+              patchContent: selectedPatch,
               patchMode,
             });
 
       if (!applyResult.success) {
         return {
           success: false,
+          packageName,
+          vulnerableVersion,
+          applied: false,
+          dryRun: false,
+          message: applyResult.error,
+          patchFilePath,
           patchPath: patchFilePath,
           patchMode,
           postinstallConfigured: patchMode === "patch-package" ? false : undefined,
@@ -124,10 +177,33 @@ export const applyPatchFileTool = tool({
       // Step 4: Validate with tests if requested
       if (validateWithTests) {
         validationResult = await validatePatchWithTests(cwd, pm);
+        if (!validationResult.passed) {
+          const validationError = "Patch validation failed after apply; patch marked unresolved.";
+          return {
+            success: false,
+            packageName,
+            vulnerableVersion,
+            applied: false,
+            dryRun: false,
+            message: validationError,
+            patchFilePath,
+            patchPath: patchFilePath,
+            patchMode,
+            postinstallConfigured: patchMode === "patch-package",
+            validation: validationResult,
+            error: validationError,
+          };
+        }
       }
 
       return {
         success: true,
+        packageName,
+        vulnerableVersion,
+        applied: true,
+        dryRun: false,
+        message: `Patch applied successfully for ${packageName}@${vulnerableVersion}.`,
+        patchFilePath,
         patchPath: patchFilePath,
         patchMode,
         postinstallConfigured: patchMode === "patch-package",
@@ -138,6 +214,11 @@ export const applyPatchFileTool = tool({
         err instanceof Error ? err.message : String(err);
       return {
         success: false,
+        packageName,
+        vulnerableVersion,
+        applied: false,
+        dryRun,
+        message: `Failed to apply patch file: ${message}`,
         error: `Failed to apply patch file: ${message}`,
       };
     }
@@ -164,7 +245,12 @@ async function resolvePatchMode(packageManager: PackageManager, cwd: string): Pr
   }
 }
 
-async function configurePatchPackagePostinstall(cwd: string): Promise<{ success: true } | { success: false; error: string }> {
+function buildPatchFileName(packageName: string, vulnerableVersion: string): string {
+  const safeName = packageName.replace(/^@/, "").replace(/\//g, "+");
+  return `${safeName}+${vulnerableVersion}.patch`;
+}
+
+async function configurePatchPackagePostinstall(cwd: string, packageManager: PackageManager): Promise<{ success: true } | { success: false; error: string }> {
   const pkgJsonPath = join(cwd, "package.json");
   let pkgJson: RawPackageJson;
 
@@ -175,6 +261,23 @@ async function configurePatchPackagePostinstall(cwd: string): Promise<{ success:
       success: false,
       error: `Could not read package.json at ${pkgJsonPath}`,
     };
+  }
+
+  const devDependencies = pkgJson.devDependencies ?? {};
+  if (!devDependencies["patch-package"]) {
+    try {
+      const commands = getPackageManagerCommands(packageManager);
+      const [cmd, ...args] = commands.installDev("patch-package");
+      await execa(cmd, args, {
+        cwd,
+        stdio: "pipe",
+      });
+    } catch (err) {
+      return {
+        success: false,
+        error: `Failed to install patch-package: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
   }
 
   if (!pkgJson.scripts) {
@@ -204,14 +307,12 @@ async function applyNativePatch(params: {
   const { cwd, packageName, vulnerableVersion, patchContent, patchMode } = params;
   const packageSpec = `${packageName}@${vulnerableVersion}`;
 
-  const createArgs =
-    patchMode === "native-pnpm"
-      ? ["pnpm", ["patch", packageSpec] as string[]]
-      : ["yarn", ["patch", packageSpec] as string[]];
+  const createCommand = patchMode === "native-pnpm" ? "pnpm" : "yarn";
+  const createArgs = ["patch", packageSpec];
 
   let patchDir: string;
   try {
-    const createResult = await execa(createArgs[0], createArgs[1], {
+    const createResult = await execa(createCommand, createArgs, {
       cwd,
       stdio: "pipe",
     });
@@ -242,12 +343,13 @@ async function applyNativePatch(params: {
       stdio: "pipe",
     });
 
+    const commitCommand = patchMode === "native-pnpm" ? "pnpm" : "yarn";
     const commitArgs =
       patchMode === "native-pnpm"
-        ? ["pnpm", ["patch-commit", patchDir] as string[]]
-        : ["yarn", ["patch-commit", "-s", patchDir] as string[]];
+        ? ["patch-commit", patchDir]
+        : ["patch-commit", "-s", patchDir];
 
-    await execa(commitArgs[0], commitArgs[1], {
+    await execa(commitCommand, commitArgs, {
       cwd,
       stdio: "pipe",
     });

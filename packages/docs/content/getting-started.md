@@ -17,6 +17,12 @@ Project local:
 ```bash
 pnpm add -D autoremediator
 pnpm exec autoremediator --help
+# or
+npm install --save-dev autoremediator
+npm exec autoremediator -- --help
+# or
+yarn add --dev autoremediator
+yarn autoremediator --help
 ```
 
 ## Environment
@@ -35,3 +41,8 @@ autoremediator ./audit.json
 autoremediator CVE-2021-23337 --dry-run
 autoremediator CVE-2021-23337 --run-tests
 ```
+
+## Mode Notes
+
+- `--llm-provider local` runs a deterministic remediation path without LLM patch generation.
+- automatic version-bump remediation is strongest for direct dependencies.

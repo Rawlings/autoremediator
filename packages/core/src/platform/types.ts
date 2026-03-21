@@ -76,21 +76,7 @@ export interface RemediateOptions {
   policyPath?: string;
   /** Directory to write .patch files (default: ./patches) */
   patchesDir?: string;
-  /** Enable automatic patch file generation (default: false) */
-  generatePatches?: boolean;
-  /** Disable fallback to patch generation (default: false) */
-  noPatchFallback?: boolean;
-  /** Run tests to validate patches (default: true) */
-  validatePatches?: boolean;
-  /** Maximum patch file size in bytes (default: 51200) */
-  maxPatchSize?: number;
 }
-
-/**
- * @deprecated Use RemediateOptions instead.
- * Kept for backward compatibility during the 0.1 → 0.2 transition.
- */
-export type HealOptions = RemediateOptions;
 
 /** Final report returned by the remediation pipeline */
 export interface RemediationReport {
@@ -101,9 +87,3 @@ export interface RemediationReport {
   agentSteps: number;
   summary: string;
 }
-
-/**
- * @deprecated Use RemediationReport instead.
- * Kept for backward compatibility during the 0.1 → 0.2 transition.
- */
-export type HealReport = RemediationReport;

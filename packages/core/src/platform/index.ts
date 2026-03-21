@@ -7,8 +7,6 @@ export type {
   PatchResult,
   RemediateOptions,
   RemediationReport,
-  HealOptions,
-  HealReport,
 } from "./types.js";
 
 export {

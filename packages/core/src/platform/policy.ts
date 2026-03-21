@@ -5,14 +5,12 @@ export interface AutoremediatorPolicy {
   allowMajorBumps: boolean;
   denyPackages: string[];
   allowPackages: string[];
-  autoApply: boolean;
 }
 
 export const DEFAULT_POLICY: AutoremediatorPolicy = {
   allowMajorBumps: false,
   denyPackages: [],
   allowPackages: [],
-  autoApply: true,
 };
 
 export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPolicy {
@@ -25,7 +23,6 @@ export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPo
       allowMajorBumps: parsed.allowMajorBumps ?? DEFAULT_POLICY.allowMajorBumps,
       denyPackages: parsed.denyPackages ?? DEFAULT_POLICY.denyPackages,
       allowPackages: parsed.allowPackages ?? DEFAULT_POLICY.allowPackages,
-      autoApply: parsed.autoApply ?? DEFAULT_POLICY.autoApply,
     };
   } catch {
     return DEFAULT_POLICY;

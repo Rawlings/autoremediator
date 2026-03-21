@@ -5,15 +5,13 @@
  *   import { remediate } from 'autoremediator';
  *   const report = await remediate('CVE-2021-23337', { cwd: '/my/project' });
  */
-import { runHealAgent } from "./remediation/pipeline.js";
+import { runRemediationPipeline } from "./remediation/pipeline.js";
 import type { RemediateOptions, RemediationReport } from "./platform/types.js";
 import { parseScanInput, type ScanInputFormat, uniqueCveIds } from "./scanner/index.js";
 import { addEvidenceStep, createEvidenceLog, finalizeEvidence, writeEvidenceLog } from "./platform/evidence.js";
 import { isPackageAllowed, loadPolicy } from "./platform/policy.js";
 
-// Internal alias so pipeline stays working
-const runRemediationPipeline = runHealAgent;
-export { runRemediationPipeline, runHealAgent };
+export { runRemediationPipeline } from "./remediation/pipeline.js";
 
 export type {
   RemediateOptions,
@@ -24,8 +22,6 @@ export type {
   VulnerablePackage,
   PatchResult,
   PatchStrategy,
-  /** @deprecated Use RemediateOptions */ HealOptions,
-  /** @deprecated Use RemediationReport */ HealReport,
 } from "./platform/types.js";
 export type { ScanInputFormat } from "./scanner/index.js";
 
@@ -78,7 +74,7 @@ export interface CiSummary {
  *
  * @param cveId  - CVE identifier, e.g. "CVE-2021-23337"
  * @param options - Optional configuration (cwd, dryRun, llmProvider, etc.)
- * @returns       A HealReport describing what was found and done
+ * @returns       A RemediationReport describing what was found and done
  */
 export async function remediate(cveId: string, options: RemediateOptions = {}): Promise<RemediationReport> {
   if (!/^CVE-\d{4}-\d+$/i.test(cveId)) {
@@ -86,7 +82,7 @@ export async function remediate(cveId: string, options: RemediateOptions = {}): 
       `Invalid CVE ID: "${cveId}". Expected format: CVE-YYYY-NNNNN (e.g. CVE-2021-23337).`
     );
   }
-  return runHealAgent(cveId.toUpperCase(), options);
+  return runRemediationPipeline(cveId.toUpperCase(), options);
 }
 
 /**
@@ -119,7 +115,7 @@ export async function remediateFromScan(
 
   for (const cveId of cveIds) {
     try {
-      addEvidenceStep(evidence, "heal.start", { cveId });
+      addEvidenceStep(evidence, "remediate.start", { cveId });
       const report = await remediate(cveId, {
         ...options,
         patchesDir,
@@ -143,11 +139,11 @@ export async function remediateFromScan(
       }
 
       reports.push(report);
-      addEvidenceStep(evidence, "heal.finish", { cveId }, { results: report.results.length });
+      addEvidenceStep(evidence, "remediate.finish", { cveId }, { results: report.results.length });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       errors.push({ cveId, message });
-      addEvidenceStep(evidence, "heal.error", { cveId }, undefined, message);
+      addEvidenceStep(evidence, "remediate.error", { cveId }, undefined, message);
     }
   }
 
@@ -216,6 +212,3 @@ export function toCiSummary(report: ScanReport): CiSummary {
 export function ciExitCode(summary: CiSummary): number {
   return summary.failedCount > 0 ? 1 : 0;
 }
-
-// Backward-compatible aliases (deprecated)
-export { remediate as heal, remediateFromScan as healFromScanFile };

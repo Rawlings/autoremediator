@@ -26,15 +26,15 @@ import { lookupCveOsv } from "../intelligence/sources/osv.js";
 import { lookupCveGitHub, mergeGhDataIntoCveDetails } from "../intelligence/sources/github-advisory.js";
 import { enrichWithNvd } from "../intelligence/sources/nvd.js";
 import { findSafeUpgradeVersion } from "../intelligence/sources/registry.js";
-import type { HealOptions, HealReport, PatchResult, VulnerablePackage, CveDetails } from "../platform/types.js";
+import type { RemediateOptions, RemediationReport, PatchResult, VulnerablePackage, CveDetails } from "../platform/types.js";
 
-export async function runHealAgent(
+export async function runRemediationPipeline(
   cveId: string,
-  options: HealOptions = {}
-): Promise<HealReport> {
+  options: RemediateOptions = {}
+): Promise<RemediationReport> {
   const provider = resolveProvider(options);
   if (provider === "local") {
-    return runLocalHealPipeline(cveId, options);
+    return runLocalRemediationPipeline(cveId, options);
   }
 
   const cwd = options.cwd ?? process.cwd();
@@ -62,7 +62,6 @@ export async function runHealAgent(
   const vulnerablePackages: VulnerablePackage[] = [];
   let cveDetails: CveDetails | null = null;
   let agentSteps = 0;
-  let lastGeneratedPatches: Record<string, string> | null = null;
 
   const result = await generateText({
     model,
@@ -97,44 +96,44 @@ export async function runHealAgent(
           collectedResults.push(toolResult as unknown as PatchResult);
         }
 
-        // Phase 4: Patch generation fallback handling
-        if (tr.toolName === "fetch-package-source" && toolResult?.success) {
-          // Store source files in context for generate-patch tool
-          const sourceData = {
-            success: toolResult.success as boolean,
-            sourceFiles: toolResult.sourceFiles as Record<string, string> | undefined,
-            packageDir: toolResult.packageDir as string | undefined,
-          };
-          // This data will be available in the context for the next tool call
-        }
-
-        if (tr.toolName === "generate-patch" && toolResult?.success) {
-          // Extract and store patch generation results
-          const patchData = {
-            success: toolResult.success as boolean,
-            patches: toolResult.patches as Record<string, string> | undefined,
-            confidence: toolResult.confidence as number | undefined,
-            riskLevel: toolResult.riskLevel as string | undefined,
-          };
-          lastGeneratedPatches = patchData.patches || null;
-          // Patch generation succeeded, store for apply-patch-file tool
-        }
-
         if (tr.toolName === "apply-patch-file" && toolResult) {
-          // Extract patch application results
-          const patchFileResult = {
-            success: toolResult.success as boolean,
-            patchPath: toolResult.patchPath as string | undefined,
-            postinstallConfigured: toolResult.postinstallConfigured as boolean | undefined,
-            validation: toolResult.validation as Record<string, unknown> | undefined,
-          };
-          // Add to collected results with patch-file strategy
-          if (patchFileResult.success) {
-            collectedResults.push({
-              ...toolResult,
-              strategy: "patch-file",
-            } as unknown as PatchResult);
-          }
+          const validation = toolResult.validation as
+            | { passed?: boolean; error?: string }
+            | undefined;
+          const message =
+            typeof toolResult.message === "string"
+              ? toolResult.message
+              : typeof toolResult.error === "string"
+                ? toolResult.error
+                : "Patch-file strategy finished.";
+
+          collectedResults.push({
+            packageName:
+              typeof toolResult.packageName === "string"
+                ? toolResult.packageName
+                : "unknown-package",
+            strategy: "patch-file",
+            fromVersion:
+              typeof toolResult.vulnerableVersion === "string"
+                ? toolResult.vulnerableVersion
+                : "unknown",
+            patchFilePath:
+              typeof toolResult.patchFilePath === "string"
+                ? toolResult.patchFilePath
+                : typeof toolResult.patchPath === "string"
+                  ? toolResult.patchPath
+                  : undefined,
+            applied: Boolean(toolResult.applied),
+            dryRun: Boolean(toolResult.dryRun),
+            message,
+            validation:
+              validation && typeof validation.passed === "boolean"
+                ? {
+                    passed: validation.passed,
+                    error: typeof validation.error === "string" ? validation.error : undefined,
+                  }
+                : undefined,
+          });
         }
       }
     },
@@ -150,10 +149,10 @@ export async function runHealAgent(
   };
 }
 
-async function runLocalHealPipeline(
+async function runLocalRemediationPipeline(
   cveId: string,
-  options: HealOptions = {}
-): Promise<HealReport> {
+  options: RemediateOptions = {}
+): Promise<RemediationReport> {
   const cwd = options.cwd ?? process.cwd();
   const packageManager = options.packageManager ?? detectPackageManager(cwd);
   const dryRun = options.dryRun ?? false;
@@ -253,6 +252,18 @@ async function runLocalHealPipeline(
     const pkg = vulnerable.installed;
     const firstPatchedVersion = vulnerable.affected.firstPatchedVersion;
 
+    if (pkg.type === "indirect") {
+      collectedResults.push({
+        packageName: pkg.name,
+        strategy: "none",
+        fromVersion: pkg.version,
+        applied: false,
+        dryRun,
+        message: `"${pkg.name}" is an indirect dependency; automatic version bump is limited to direct dependencies in local mode.`,
+      });
+      continue;
+    }
+
     if (!firstPatchedVersion) {
       collectedResults.push({
         packageName: pkg.name,
@@ -268,7 +279,8 @@ async function runLocalHealPipeline(
     const safeVersion = await findSafeUpgradeVersion(
       pkg.name,
       pkg.version,
-      firstPatchedVersion
+      firstPatchedVersion,
+      vulnerable.affected.vulnerableRange
     );
     agentSteps += 1;
 

@@ -14,6 +14,13 @@ npm audit --json > audit.json
 autoremediator audit.json --format npm-audit
 ```
 
+## pnpm audit
+
+```bash
+pnpm audit --json > pnpm-audit.json
+autoremediator pnpm-audit.json --format npm-audit
+```
+
 ## yarn audit
 
 ```bash

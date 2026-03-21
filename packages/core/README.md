@@ -5,104 +5,68 @@
 [![license](https://img.shields.io/npm/l/autoremediator.svg)](https://github.com/Rawlings/autoremediator/blob/master/LICENSE)
 [![node](https://img.shields.io/node/v/autoremediator.svg)](https://www.npmjs.com/package/autoremediator)
 
-Autoremediator is an agentic Node.js CVE remediation tool.
+> [!WARNING]
+> Automated dependency remediation is a controversial practice.
+> It can reduce exposure windows, but it can also introduce operational and supply-chain risk if used without policy controls.
+> Autoremediator is designed for automation-first teams, and should be paired with explicit policy, CI safeguards, and repository protection rules.
 
-It can remediate from either a single CVE ID or scanner output, then apply safe dependency updates with package-manager-aware validation and fallback strategies.
+Autoremediator is an automation-first Node.js CVE remediation platform package.
 
-- Scanner-first workflow with CVE fallback
-- Package manager support: npm, pnpm, yarn
-- Policy-driven safety controls
-- Evidence logging and CI summary support
+This package is designed for teams that want remediation integrated into GitHub workflows and CI pipelines.
 
-## For AI Agents
+## Why Teams Use It
 
-Autoremediator is useful in practical dependency-security workflows where teams need fixes, evidence, and CI-friendly behavior.
+- Continuous remediation in CI and scheduled GitHub workflows
+- Scanner-to-fix pipelines from npm audit, yarn audit, and SARIF inputs
+- Policy-aware upgrade behavior for controlled automation at scale
+- Structured evidence and summary outputs for security operations
+- Multiple integration surfaces for platform engineering and automation agents
 
-Common scenarios:
+## Primary Use Cases
 
-- Cleaning up npm audit or yarn audit results in active services.
-- Triage and remediation of a specific CVE across one or many Node.js projects.
-- Converting scanner outputs (including SARIF) into actionable dependency updates.
-- Running non-interactive remediation in CI with deterministic summaries and exit codes.
-- Powering internal security assistants through CLI, SDK, or MCP tool integration.
+- Scheduled GitHub Actions remediation jobs with auto-generated pull requests
+- CI enforcement gates that fail on unresolved remediation outcomes
+- Scanner-to-fix automation from npm audit, yarn audit, and SARIF outputs
+- Platform-level remediation orchestration across many services
+- Agentic integration via CLI, SDK, MCP, and OpenAPI
 
-Primary surfaces:
+## Surfaces
 
-- CLI: `autoremediator`
-- MCP server: `autoremediator-mcp`
-- SDK: `import { remediate, remediateFromScan } from "autoremediator"`
-
-## Use Cases
-
-- Auto-remediate npm audit findings in CI with deterministic exit codes.
-- Process SARIF security scan output and apply safe dependency upgrades.
-- Build an internal security bot on top of the MCP server tool surface.
-- Integrate CVE-to-fix workflows into custom Node.js platform tooling.
-- Run scanner-to-remediation pipelines across npm, pnpm, and yarn projects.
-
-## Installation
-
-Global:
-
-```bash
-pnpm add -g autoremediator
-# or
-npm install -g autoremediator
-# or
-yarn global add autoremediator
-```
-
-Project-local:
-
-```bash
-pnpm add -D autoremediator
-pnpm exec autoremediator --help
-```
-
-## Environment
-
-Set one provider key:
-
-```bash
-export OPENAI_API_KEY=...
-# or
-export ANTHROPIC_API_KEY=...
-```
-
-## Quick Start
-
-Single CVE:
-
-```bash
-autoremediator CVE-2021-23337
-autoremediator CVE-2021-23337 --dry-run
-autoremediator CVE-2021-23337 --run-tests
-autoremediator CVE-2021-23337 --llm-provider anthropic
-```
-
-Scanner input:
-
-```bash
-autoremediator ./audit.json
-autoremediator ./report.sarif --format sarif
-autoremediator --input ./scan.json --format auto
-```
-
-CI mode:
-
-```bash
-autoremediator ./scan.json --ci --summary-file ./summary.json
-```
+- CLI: workflow and CI execution
+- SDK: custom automation programs
+- MCP: AI host integrations
+- OpenAPI: service-based automation
 
 ## Documentation
 
-- Live docs site: https://rawlings.github.io/autoremediator/
-- Repository: https://github.com/Rawlings/autoremediator
+- https://rawlings.github.io/autoremediator/
 
-## Exit Codes (CI)
+- Getting Started: https://rawlings.github.io/autoremediator/docs/getting-started
+- CLI Reference: https://rawlings.github.io/autoremediator/docs/cli
+- Scanner Inputs: https://rawlings.github.io/autoremediator/docs/scanner-inputs
+- Policy and Safety: https://rawlings.github.io/autoremediator/docs/policy-and-safety
+- API and SDK: https://rawlings.github.io/autoremediator/docs/api-sdk
+- Integrations: https://rawlings.github.io/autoremediator/docs/integrations
+- Contributor Guide: https://rawlings.github.io/autoremediator/docs/contributor-guide
 
-- `0` when failedCount is 0
-- `1` when failedCount is greater than 0
+## Product Direction
+
+- Prioritize automation workflows over one-off manual runs
+- Configure policy and branch protection before broad rollout
+- Use CI summaries and evidence outputs for operational governance
+
+## Getting Started Fast
+
+Start from the live guides instead of repo markdown:
+
+- Quick setup: https://rawlings.github.io/autoremediator/docs/getting-started
+- Automation workflows: https://rawlings.github.io/autoremediator/docs/integrations
+- Safety controls: https://rawlings.github.io/autoremediator/docs/policy-and-safety
+
+## Package
+
+- npm: https://www.npmjs.com/package/autoremediator
+- repository: https://github.com/Rawlings/autoremediator
 
 ## License
 

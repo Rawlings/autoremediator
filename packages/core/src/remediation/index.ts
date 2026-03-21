@@ -1,4 +1,4 @@
-export { runHealAgent as runRemediationPipeline, runHealAgent } from "./pipeline.js";
+export { runRemediationPipeline } from "./pipeline.js";
 export * from "./tools/lookup-cve.js";
 export * from "./tools/check-inventory.js";
 export * from "./tools/check-version-match.js";

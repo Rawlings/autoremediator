@@ -16,7 +16,7 @@ import {
 import { remediate, remediateFromScan } from "../api.js";
 
 const server = new Server(
-  { name: "autoremediator", version: "0.2.0" },
+  { name: "autoremediator", version: "0.1.2" },
   { capabilities: { tools: {} } }
 );
 

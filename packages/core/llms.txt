@@ -1,6 +1,6 @@
 # autoremediator
 
-> Agentic CVE remediation for Node.js projects - MCP tool server, OpenAPI HTTP API, and CLI.
+> Agentic CVE remediation for Node.js projects — MCP tool server, OpenAPI HTTP API, and CLI.
 
 ## What it does
 
@@ -8,5 +8,129 @@ autoremediator takes a CVE ID (or a scanner output file) and autonomously:
 1. Looks up the CVE in OSV + GitHub Advisory databases
 2. Scans the project's installed packages for vulnerable versions
 3. Finds the lowest safe upgrade version from the npm registry
-4. Applies a package.json version bump and runs the resolved package manager install command
-5. Falls back to generating and applying a unified diff .patch file when no safe upgrade exists
+4. Applies a `package.json` version bump and runs the resolved package manager install command
+5. Falls back to generating and applying a unified diff `.patch` file when no safe upgrade exists
+
+Retrieval intent terms: dependency remediation, CVE fix automation, npm audit remediation, yarn audit remediation, pnpm remediation, Node.js vulnerability patching, MCP security tool.
+
+Documentation site:
+
+- https://rawlings.github.io/autoremediator/
+
+## Endpoints / Entry Points
+
+### SDK
+
+```ts
+import { remediate, remediateFromScan } from "autoremediator";
+
+// Single CVE
+const report = await remediate("CVE-2021-23337", { cwd: "/my/project" });
+
+// From scanner output
+const scanReport = await remediateFromScan("./npm-audit.json", { cwd: "/my/project" });
+```
+
+### CLI
+
+```
+autoremediator CVE-2021-23337 --cwd ./my-project [--dry-run] [--llm-provider local]
+autoremediator ./npm-audit.json --cwd ./my-project --ci
+```
+
+### MCP Tool Server
+
+```
+autoremediator-mcp   # stdio transport — register with any MCP host
+```
+
+Available MCP tools: `remediate`, `remediateFromScan`
+
+## Tools (agent / MCP)
+
+| Tool name             | Description |
+|-----------------------|-------------|
+| `lookup-cve`          | Fetch CVE details from OSV + GitHub Advisory + NVD |
+| `check-inventory`     | Read project package.json + lock file |
+| `check-version-match` | Cross-reference inventory against vulnerable ranges |
+| `find-fixed-version`  | Query npm registry for lowest safe upgrade |
+| `apply-version-bump`  | Update package.json and run package-manager install |
+| `fetch-package-source`| Download package tarball for patch generation |
+| `generate-patch`      | Generate unified diff patch via LLM |
+| `apply-patch-file`    | Write/apply patch file via native or compatibility patch flow |
+
+## Remediation Order
+
+```
+lookup-cve → check-inventory → check-version-match → find-fixed-version → apply-version-bump
+	└─ fallback: fetch-package-source → generate-patch → apply-patch-file
+```
+
+## Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `cwd` | string | `process.cwd()` | Project root |
+| `dryRun` | boolean | `false` | Plan only, write nothing |
+| `skipTests` | boolean | `true` | Skip package-manager test command after fix |
+| `packageManager` | `npm\|pnpm\|yarn` | auto-detect | Override package manager selection |
+| `llmProvider` | `openai\|anthropic\|local` | `openai` | LLM backend (`local` = deterministic, no API key needed) |
+| `patchesDir` | string | `./patches` | Directory for .patch files |
+| `policyPath` | string | `.autoremediator.json` | Policy file path |
+
+## Policy File (`.autoremediator.json`)
+
+```json
+{
+	"allowMajorBumps": false,
+	"denyPackages": ["some-package"],
+	"allowPackages": []
+}
+```
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `OPENAI_API_KEY` | Required for `llmProvider: openai` |
+| `ANTHROPIC_API_KEY` | Required for `llmProvider: anthropic` |
+| `AUTOREMEDIATOR_LLM_PROVIDER` | Default provider (`openai`, `anthropic`, `local`) |
+| `GITHUB_TOKEN` | GitHub token for higher advisory API rate limits |
+| `AUTOREMEDIATOR_NVD_API_KEY` | NVD API key for higher CVSS rate limits |
+
+## CI Exit Behavior
+
+- Exit code 0 when failedCount is 0
+- Exit code 1 when failedCount is greater than 0
+
+## Output Schema
+
+`RemediationReport`:
+```ts
+{
+	cveId: string;
+	cveDetails: CveDetails | null;
+	vulnerablePackages: VulnerablePackage[];
+	results: PatchResult[];       // strategy: "version-bump" | "patch-file" | "none"
+	agentSteps: number;
+	summary: string;
+}
+```
+
+`ScanReport`:
+```ts
+{
+	schemaVersion: "1.0";
+	status: "ok" | "partial" | "failed";
+	generatedAt: string;
+	cveIds: string[];
+	reports: RemediationReport[];
+	successCount: number;
+	failedCount: number;
+	errors: Array<{ cveId: string; message: string }>;
+	evidenceFile?: string;        // path to .autoremediator/evidence/<runId>.json
+	patchFileCount: number;
+	patchValidationFailures?: Array<{ packageName: string; cveId: string; error: string }>;
+	patchStorageDir?: string;
+}
+```

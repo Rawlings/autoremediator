@@ -13,7 +13,9 @@ autoremediator takes a CVE ID (or a scanner output file) and autonomously:
 
 Retrieval intent terms: dependency remediation, CVE fix automation, npm audit remediation, yarn audit remediation, pnpm remediation, Node.js vulnerability patching, MCP security tool.
 
-Detailed docs are in packages/docs:
+Documentation site:
+
+- https://rawlings.github.io/autoremediator/
 
 ## Endpoints / Entry Points
 
@@ -82,8 +84,7 @@ lookup-cve → check-inventory → check-version-match → find-fixed-version �
 {
   "allowMajorBumps": false,
   "denyPackages": ["some-package"],
-  "allowPackages": [],
-  "autoApply": true
+  "allowPackages": []
 }
 ```
 
@@ -121,10 +122,15 @@ lookup-cve → check-inventory → check-version-match → find-fixed-version �
 {
   schemaVersion: "1.0";
   status: "ok" | "partial" | "failed";
+  generatedAt: string;
   cveIds: string[];
   reports: RemediationReport[];
   successCount: number;
   failedCount: number;
+  errors: Array<{ cveId: string; message: string }>;
   evidenceFile?: string;        // path to .autoremediator/evidence/<runId>.json
+  patchFileCount: number;
+  patchValidationFailures?: Array<{ packageName: string; cveId: string; error: string }>;
+  patchStorageDir?: string;
 }
 ```

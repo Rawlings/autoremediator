@@ -59,7 +59,8 @@ export async function fetchPackageVersions(packageName: string): Promise<string[
 export async function findSafeUpgradeVersion(
   packageName: string,
   installedVersion: string,
-  firstPatchedVersion: string
+  firstPatchedVersion: string,
+  vulnerableRange?: string
 ): Promise<string | undefined> {
   const versions = await fetchPackageVersions(packageName);
   if (!versions.length) return undefined;
@@ -69,6 +70,15 @@ export async function findSafeUpgradeVersion(
   // All versions >= firstPatchedVersion, sorted ascending
   const candidates = versions
     .filter((v) => semver.valid(v) && semver.gte(v, firstPatchedVersion))
+    .filter((v) => {
+      if (!vulnerableRange) return true;
+      try {
+        return !semver.satisfies(v, vulnerableRange, { includePrerelease: false });
+      } catch {
+        // If vulnerable range cannot be parsed, avoid filtering out candidates.
+        return true;
+      }
+    })
     .sort(semver.compare);
 
   if (!candidates.length) return undefined;

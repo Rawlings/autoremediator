@@ -23,6 +23,7 @@ interface GeneratedPatch {
 interface GeneratePatchResult {
   success: boolean;
   patches?: GeneratedPatch[];
+  patchContent?: string;
   llmModel: string;
   confidence: number;
   riskLevel: "low" | "medium" | "high";
@@ -92,12 +93,23 @@ export const generatePatchTool = tool({
     dryRun,
   }): Promise<GeneratePatchResult> => {
     try {
+      const resolvedSourceFiles = sourceFiles;
+      if (Object.keys(resolvedSourceFiles).length === 0) {
+        return {
+          success: false,
+          llmModel: "unknown",
+          confidence: 0,
+          riskLevel: "high",
+          error: "No source files were provided. Call fetch-package-source first and pass sourceFiles.",
+        };
+      }
+
       // Create LLM model
       const model = await createModel();
       const modelName = model.modelId || "unknown-model";
 
       // Build source files context
-      const sourceContext = Object.entries(sourceFiles)
+      const sourceContext = Object.entries(resolvedSourceFiles)
         .map(([filePath, content]) => `\n### File: ${filePath}\n\`\`\`typescript\n${content}\n\`\`\``)
         .join("\n");
 
@@ -204,15 +216,15 @@ Important:
       for (const [filePath, fixedCode] of Object.entries(
         analysis.fixedCode
       )) {
-        const originalCode = sourceFiles[filePath];
+        const sourceFile = resolvedSourceFiles[filePath];
 
-        if (!originalCode) {
+        if (!sourceFile) {
           continue; // Skip files not in original source
         }
 
         // Generate unified diff
         const unifiedDiff = generateUnifiedDiff(
-          originalCode,
+          sourceFile,
           fixedCode,
           filePath
         );
@@ -238,6 +250,7 @@ Important:
       return {
         success: true,
         patches,
+        patchContent: patches[0]?.unifiedDiff,
         llmModel: modelName,
         confidence: analysis.confidence,
         riskLevel: analysis.riskLevel,

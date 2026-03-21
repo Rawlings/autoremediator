@@ -25,7 +25,7 @@ export function getPackageManagerCommands(pm: PackageManager): PackageManagerCom
       installPreferOffline: ["pnpm", "install", "--prefer-offline"],
       installDev: (pkg: string) => ["pnpm", "add", "-D", pkg],
       test: ["pnpm", "test"],
-      list: ["pnpm", "list", "--json", "--depth=0"],
+      list: ["pnpm", "list", "--json", "--depth", "99"],
       lockfileName: "pnpm-lock.yaml",
     };
   }
@@ -36,7 +36,7 @@ export function getPackageManagerCommands(pm: PackageManager): PackageManagerCom
       installPreferOffline: ["yarn", "install"],
       installDev: (pkg: string) => ["yarn", "add", "--dev", pkg],
       test: ["yarn", "test"],
-      list: ["yarn", "list", "--json", "--depth=0"],
+      list: ["yarn", "list", "--json"],
       lockfileName: "yarn.lock",
     };
   }
@@ -46,7 +46,7 @@ export function getPackageManagerCommands(pm: PackageManager): PackageManagerCom
     installPreferOffline: ["npm", "install", "--prefer-offline"],
     installDev: (pkg: string) => ["npm", "install", "--save-dev", pkg],
     test: ["npm", "test"],
-    list: ["npm", "list", "--json", "--depth=0"],
+    list: ["npm", "list", "--json", "--all"],
     lockfileName: "package-lock.json",
   };
 }
@@ -92,15 +92,26 @@ export function parseListOutput(pm: PackageManager, stdout: string): Map<string,
   }
 
   const root = Array.isArray(parsed) ? parsed[0] : parsed;
-  const dependencies = (root as { dependencies?: Record<string, { version?: string }> } | undefined)
-    ?.dependencies;
 
-  for (const [name, entry] of Object.entries(dependencies ?? {})) {
-    const version = entry?.version;
-    if (typeof version === "string" && version) {
-      versions.set(name, version);
+  type DependencyTree = {
+    version?: string;
+    dependencies?: Record<string, DependencyTree>;
+  };
+
+  function collectDependencies(tree?: Record<string, DependencyTree>): void {
+    if (!tree) return;
+
+    for (const [name, entry] of Object.entries(tree)) {
+      if (!entry || typeof entry !== "object") continue;
+      const version = entry.version;
+      if (typeof version === "string" && version) {
+        versions.set(name, version);
+      }
+      collectDependencies(entry.dependencies);
     }
   }
+
+  collectDependencies((root as { dependencies?: Record<string, DependencyTree> } | undefined)?.dependencies);
 
   return versions;
 }
