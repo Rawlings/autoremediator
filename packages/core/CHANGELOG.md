@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.7.0
+
+### Changed
+
+- Improved consistency across SDK, CLI, MCP, and OpenAPI so shared options and report fields behave the same way across interfaces.
+- Expanded local-mode remediation behavior with deterministic-first execution and controlled patch fallback handling when safe upgrades are unavailable.
+- Improved single-CVE CLI parity with CI and SARIF workflows so `cve` mode aligns with scan-mode automation expectations.
+- Enhanced remediation reporting and evidence outputs with clearer aggregate summaries for strategy, dependency scope, unresolved reasons, and patch activity.
+
 ## 0.6.0
 
 ### Changed

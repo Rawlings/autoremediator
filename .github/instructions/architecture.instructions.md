@@ -12,8 +12,8 @@ The source tree is organized into feature-first modules. Each module has a singl
 | `packages/core/src/remediation/`  | Remediation pipeline, AI tool implementations, patch utilities   |
 | `packages/core/src/mcp/`          | MCP server — exposes tools to LLM hosts                          |
 | `packages/core/src/openapi/`      | OpenAPI / HTTP server surface                                    |
-| `packages/core/src/api.ts`        | Public SDK entry point                                           |
-| `packages/core/src/cli.ts`        | CLI entry point                                                  |
+| `packages/core/src/api/`          | Public SDK surface (index.ts + focused modules)                 |
+| `packages/core/src/cli/`          | CLI surface (index.ts + focused modules)                        |
 
 ## Dependency Rules
 
@@ -21,8 +21,9 @@ The source tree is organized into feature-first modules. Each module has a singl
 - `intelligence/` imports from `platform/` only.
 - `scanner/` imports from `platform/` only.
 - `remediation/` imports from `platform/`, `intelligence/`, and `scanner/`.
-- `api.ts` and `cli.ts` import from `remediation/` and `scanner/` barrels.
-- `mcp/` and `openapi/` import from `api.ts` only.
+- `api/index.ts` and `cli/index.ts` import from `remediation/` and `scanner/` barrels.
+- `mcp/` and `openapi/` import from `api/index.ts` only.
+- Entrypoint index.ts files should be thin export surfaces; move orchestration logic into dedicated modules.
 
 Violations of these rules must be treated as architectural defects and resolved before merging.
 

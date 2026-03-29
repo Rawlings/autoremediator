@@ -38,6 +38,7 @@ Use these when **building or extending the tool** — adding files, changing pub
 | `public-api-governance` | Canonical naming, schema consistency, and scalable public API evolution |
 | `mcp-tool-registration` | MCP tool schemas, names, result shapes |
 | `evidence-ci-reporting` | Evidence log fields, CI summary schema, exit codes |
+| `changeset-writing` | Semver bump choice and public-impact-first changelog/changeset writing |
 | `governance-check` | Verify governance files are present, correctly structured, and in sync with source |
 
 ## Agentic Remediation Order

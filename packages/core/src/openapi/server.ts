@@ -16,8 +16,8 @@ import {
   planRemediation,
   remediate,
   remediateFromScan,
-} from "../api.js";
-import type { RemediateOptions, ScanOptions } from "../api.js";
+} from "../api/index.js";
+import type { RemediateOptions, ScanOptions } from "../api/index.js";
 import { PACKAGE_VERSION } from "../version";
 
 const DEFAULT_PORT = 3000;
@@ -232,7 +232,7 @@ export const OPENAPI_SPEC = {
                   options: {
                     type: "object",
                     description: "RemediateOptions",
-                    properties: createRemediateOptionSchemaProperties({ includeDryRun: false, includePreview: false }),
+                    properties: createRemediateOptionSchemaProperties({ includeDryRun: false, includePreview: false, includeEvidence: true }),
                   },
                 },
               },

@@ -35,6 +35,7 @@ This skill does not govern remediation pipeline step order or internal tool algo
   - tests: `runTests`
   - evidence: `evidence`
   - patch summaries: `patchCount`, `patchesDir`
+  - remediation aggregates: `strategyCounts`, `dependencyScopeCounts`, `unresolvedByReason`
 
 ## Extensibility Rules
 

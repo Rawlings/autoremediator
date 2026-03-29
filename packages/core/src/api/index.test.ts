@@ -14,33 +14,33 @@ const mocked = vi.hoisted(() => ({
   storeIdempotentReport: vi.fn(),
 }));
 
-vi.mock("./remediation/pipeline.js", () => ({
+vi.mock("../remediation/pipeline.js", () => ({
   runRemediationPipeline: mocked.runRemediationPipeline,
 }));
 
-vi.mock("./scanner/index.js", () => ({
+vi.mock("../scanner/index.js", () => ({
   parseScanInput: mocked.parseScanInput,
   uniqueCveIds: mocked.uniqueCveIds,
 }));
 
-vi.mock("./platform/policy.js", () => ({
+vi.mock("../platform/policy.js", () => ({
   loadPolicy: mocked.loadPolicy,
   isPackageAllowed: mocked.isPackageAllowed,
 }));
 
-vi.mock("./platform/evidence.js", () => ({
+vi.mock("../platform/evidence.js", () => ({
   createEvidenceLog: mocked.createEvidenceLog,
   addEvidenceStep: mocked.addEvidenceStep,
   finalizeEvidence: mocked.finalizeEvidence,
   writeEvidenceLog: mocked.writeEvidenceLog,
 }));
 
-vi.mock("./platform/idempotency.js", () => ({
+vi.mock("../platform/idempotency.js", () => ({
   readIdempotentReport: mocked.readIdempotentReport,
   storeIdempotentReport: mocked.storeIdempotentReport,
 }));
 
-import { planRemediation, remediate, remediateFromScan, toCiSummary } from "./api.js";
+import { planRemediation, remediate, remediateFromScan, toCiSummary } from "./index.js";
 
 describe("api preview and correlation behavior", () => {
   beforeEach(() => {
@@ -236,7 +236,7 @@ describe("api preview and correlation behavior", () => {
     );
   });
 
-  it("enforces directDependenciesOnly constraint by rejecting indirect package result", async () => {
+  it("passes constraints to pipeline without post-hoc result rewrites", async () => {
     mocked.runRemediationPipeline.mockResolvedValue({
       cveId: "CVE-2021-23337",
       cveDetails: null,
@@ -271,12 +271,17 @@ describe("api preview and correlation behavior", () => {
       constraints: { directDependenciesOnly: true },
     });
 
-    expect(report.results[0]?.applied).toBe(false);
-    expect(report.results[0]?.strategy).toBe("none");
-    expect(report.results[0]?.message).toContain("Constraint blocked remediation for indirect dependency");
+    expect(mocked.runRemediationPipeline).toHaveBeenCalledWith(
+      "CVE-2021-23337",
+      expect.objectContaining({
+        constraints: expect.objectContaining({ directDependenciesOnly: true }),
+      })
+    );
+    expect(report.results[0]?.applied).toBe(true);
+    expect(report.results[0]?.strategy).toBe("version-bump");
   });
 
-  it("enforces preferVersionBump by rejecting non-version-bump result", async () => {
+  it("writes direct-remediation evidence by default and supports disabling it", async () => {
     mocked.runRemediationPipeline.mockResolvedValue({
       cveId: "CVE-2021-23337",
       cveDetails: null,
@@ -295,44 +300,29 @@ describe("api preview and correlation behavior", () => {
       summary: "done",
     });
 
-    const report = await remediate("CVE-2021-23337", {
+    const withEvidence = await remediate("CVE-2021-23337", {
       cwd: "/tmp/project",
-      constraints: { preferVersionBump: true },
     });
+    expect(withEvidence.evidenceFile).toBe("/tmp/project/.autoremediator/evidence/run-1.json");
+    expect(mocked.writeEvidenceLog).toHaveBeenCalled();
 
-    expect(report.results[0]?.applied).toBe(false);
-    expect(report.results[0]?.strategy).toBe("none");
-    expect(report.results[0]?.message).toContain("Constraint prefers version-bump");
-  });
-
-  it("enforces preferVersionBump by rejecting override result", async () => {
+    vi.clearAllMocks();
     mocked.runRemediationPipeline.mockResolvedValue({
       cveId: "CVE-2021-23337",
       cveDetails: null,
       vulnerablePackages: [],
-      results: [
-        {
-          packageName: "minimist",
-          strategy: "override",
-          fromVersion: "1.2.0",
-          toVersion: "1.2.8",
-          applied: true,
-          dryRun: false,
-          message: "overridden",
-        },
-      ],
+      results: [],
       agentSteps: 1,
       summary: "done",
     });
 
-    const report = await remediate("CVE-2021-23337", {
+    const withoutEvidence = await remediate("CVE-2021-23337", {
       cwd: "/tmp/project",
-      constraints: { preferVersionBump: true },
+      evidence: false,
     });
 
-    expect(report.results[0]?.applied).toBe(false);
-    expect(report.results[0]?.strategy).toBe("none");
-    expect(report.results[0]?.message).toContain("Constraint prefers version-bump");
+    expect(withoutEvidence.evidenceFile).toBeUndefined();
+    expect(mocked.writeEvidenceLog).not.toHaveBeenCalled();
   });
 
   it("aggregates strategy counts and unresolved reasons into scan report and CI summary", async () => {

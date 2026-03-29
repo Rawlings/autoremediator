@@ -18,12 +18,7 @@ Related references:
 - `toCiSummary(scanReport)`
 - `ciExitCode(summary)`
 
-Legacy aliases (for compatibility only):
-
-- `heal`
-- `healFromScanFile`
-
-New integrations should prefer `remediate`, `planRemediation`, and `remediateFromScan`.
+New integrations should use `remediate`, `planRemediation`, and `remediateFromScan`.
 
 ## Function Reference
 
@@ -74,8 +69,9 @@ Core options:
 - `dryRun`: simulation mode without mutation
 - `preview`: non-mutating planning mode for orchestration/approval workflows
 - `runTests`: enables post-apply test validation
-- `llmProvider`: provider selection (`openai`, `anthropic`, `local` deterministic mode)
+- `llmProvider`: provider selection (`openai`, `anthropic`, `local` deterministic primary path)
 - `policy`: path to `.autoremediator.json`
+- `evidence`: enable/disable evidence artifact writing for direct and scan workflows
 - `patchesDir`: patch output/apply location when fallback patching is used
 - `requestId`: request-level correlation identifier
 - `sessionId`: session-level correlation identifier
@@ -97,7 +93,6 @@ Scan and CI summary aggregates:
 Scan-specific options:
 
 - `format`: scanner adapter selection (`auto`, `npm-audit`, `yarn-audit`, `sarif`)
-- `evidence`: enable/disable evidence artifact writing
 
 ## Source Precedence
 
@@ -155,7 +150,7 @@ Recommended handling pattern:
 
 - treat unresolved outcomes as actionable backlog, not success
 - persist summaries for security reporting
-- use deterministic mode (`llmProvider: "local"`) where remote model access is restricted
+- use `llmProvider: "local"` for deterministic primary flow; if no safe version exists, patch fallback may still require remote model credentials
 - avoid retry loops that ignore policy and validation failures
 
 Common failure classes to handle:

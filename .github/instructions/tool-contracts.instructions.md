@@ -7,9 +7,9 @@
 3. check-version-match
 4. find-fixed-version
 5. apply-version-bump
-6. apply-package-override
+6. apply-package-override (conditional: omitted when directDependenciesOnly=true or preferVersionBump=true)
 
-Fallback branch (only when neither version bump nor override can be applied):
+Fallback branch (tools 7-9; only when neither version bump nor override can be applied):
 
 7. fetch-package-source
 8. generate-patch

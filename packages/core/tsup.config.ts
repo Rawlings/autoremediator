@@ -2,8 +2,8 @@ import { defineConfig } from "tsup";
 
 export default defineConfig({
   entry: {
-    index: "src/api.ts",
-    cli: "src/cli.ts",
+    index: "src/api/index.ts",
+    cli: "src/cli/index.ts",
     "mcp/server": "src/mcp/server.ts",
     "openapi/server": "src/openapi/server.ts",
   },

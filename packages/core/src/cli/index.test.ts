@@ -5,6 +5,7 @@ const mocked = vi.hoisted(() => ({
   remediateFromScan: vi.fn(),
   toCiSummary: vi.fn(),
   ciExitCode: vi.fn(),
+  toSarifOutput: vi.fn(),
   optionDescriptions: {
     cveId: "CVE ID, e.g. CVE-2021-23337",
     inputPath: "Absolute path to the scanner output file",
@@ -30,19 +31,21 @@ const mocked = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("./api.js", () => ({
+vi.mock("../api/index.js", () => ({
   remediate: mocked.remediate,
   remediateFromScan: mocked.remediateFromScan,
   toCiSummary: mocked.toCiSummary,
   ciExitCode: mocked.ciExitCode,
+  toSarifOutput: mocked.toSarifOutput,
   OPTION_DESCRIPTIONS: mocked.optionDescriptions,
 }));
 
-import { createProgram } from "./cli.js";
+import { createProgram } from "./index.js";
 
 describe("cli preview and correlation option forwarding", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.exitCode = undefined;
     mocked.remediate.mockResolvedValue({ summary: "ok", results: [] });
     mocked.remediateFromScan.mockResolvedValue({
       cveIds: [],
@@ -54,6 +57,7 @@ describe("cli preview and correlation option forwarding", () => {
     });
     mocked.toCiSummary.mockReturnValue({ failedCount: 0 });
     mocked.ciExitCode.mockReturnValue(0);
+    mocked.toSarifOutput.mockReturnValue({ version: "2.1.0", runs: [] });
   });
 
   it("forwards preview and correlation options in top-level CVE mode", async () => {
@@ -152,5 +156,64 @@ describe("cli preview and correlation option forwarding", () => {
         patchesDir: "./custom-patches",
       })
     );
+  });
+
+  it("forwards evidence option in explicit cve command", async () => {
+    const program = createProgram();
+    await program.parseAsync(
+      [
+        "node",
+        "autoremediator",
+        "cve",
+        "CVE-2021-23337",
+        "--no-evidence",
+      ]
+    );
+
+    expect(mocked.remediate).toHaveBeenCalledWith(
+      "CVE-2021-23337",
+      expect.objectContaining({
+        evidence: false,
+      })
+    );
+  });
+
+  it("supports ci and sarif output in explicit cve command", async () => {
+    mocked.remediate.mockResolvedValue({
+      cveId: "CVE-2021-23337",
+      cveDetails: null,
+      vulnerablePackages: [],
+      results: [
+        {
+          packageName: "lodash",
+          strategy: "none",
+          fromVersion: "4.17.0",
+          applied: false,
+          dryRun: false,
+          message: "unresolved",
+        },
+      ],
+      agentSteps: 1,
+      summary: "done",
+    });
+
+    mocked.toCiSummary.mockImplementation((value) => value);
+    mocked.ciExitCode.mockReturnValue(1);
+
+    const program = createProgram();
+    await program.parseAsync(
+      [
+        "node",
+        "autoremediator",
+        "cve",
+        "CVE-2021-23337",
+        "--output-format",
+        "sarif",
+        "--ci",
+      ]
+    );
+
+    expect(mocked.ciExitCode).toHaveBeenCalledTimes(1);
+    expect(process.exitCode).toBe(1);
   });
 });

@@ -101,7 +101,7 @@ Use `--dry-run` first when onboarding a new repository or policy file.
 
 | Provider | Recommended use | Considerations |
 |---|---|---|
-| `local` (deterministic mode) | regulated or air-gapped automation, repeatable CI | avoids remote model calls and LLM patch generation |
+| `local` (deterministic primary path) | regulated or mostly-offline automation, repeatable CI | primary remediation flow avoids remote model calls; no-safe-version patch fallback may require model credentials |
 | `openai` | broad patch quality needs | external network and credential requirements |
 | `anthropic` | alternate model path with similar workflow | external network and credential requirements |
 

@@ -38,8 +38,8 @@ packages/core/src/
     tools/        ← individual AI tool definitions (lookup-cve, apply-version-bump, …)
   mcp/            ← Model Context Protocol server surface
   openapi/        ← OpenAPI / HTTP server surface
-  api.ts          ← public SDK entry point (remediate, remediateFromScan, …)
-  cli.ts          ← CLI entry point (Commander)
+  api/            ← public SDK surface (index.ts thin export surface + focused modules)
+  cli/            ← CLI surface (index.ts thin export surface + focused modules)
 ```
 
 ## Inputs
@@ -59,8 +59,9 @@ packages/core/src/
 - `intelligence/` imports only from `platform/`.
 - `scanner/` imports only from `platform/`.
 - `remediation/` imports from `platform/`, `intelligence/`, and `scanner/`.
-- `api.ts` and `cli.ts` import from `remediation/` and `scanner/` barrels only.
-- `mcp/` and `openapi/` import only from `api.ts`.
+- `api/index.ts` and `cli/index.ts` import from `remediation/` and `scanner/` barrels only.
+- `mcp/` and `openapi/` import only from `api/index.ts`.
+- I'll split this entry file further by extracting the two main flows into dedicated modules and leaving index.ts as a thin export surface.
 - Never import from `dist/` at runtime.
 
 ## Verification Checklist

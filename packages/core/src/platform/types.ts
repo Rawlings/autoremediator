@@ -83,8 +83,12 @@ export type UnresolvedReason =
   | "override-apply-failed"
   | "package-json-not-found"
   | "patch-apply-failed"
+  | "patch-confidence-too-low"
+  | "patch-generation-failed"
   | "patch-validation-failed"
   | "policy-blocked"
+  | "requires-llm-fallback"
+  | "source-fetch-failed"
   | "validation-failed";
 
 export type PatchStrategyCounts = Partial<Record<PatchStrategy, number>>;
@@ -141,6 +145,8 @@ export interface RemediateOptions extends CorrelationContext {
   model?: string;
   /** Optional path to a policy file (.autoremediator.json) */
   policy?: string;
+  /** If false, do not write evidence JSON for this run (default: true). */
+  evidence?: boolean;
   /** Directory to write .patch files (default: ./patches) */
   patchesDir?: string;
   /** If true, run a non-mutating remediation preview (forces dryRun behavior for mutation tools). */
@@ -164,6 +170,7 @@ export interface RemediationReport {
   results: PatchResult[];
   agentSteps: number;
   summary: string;
+  evidenceFile?: string;
   correlation?: CorrelationContext;
   provenance?: ProvenanceContext;
   constraints?: RemediationConstraints;

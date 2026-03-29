@@ -28,7 +28,7 @@ Related references:
 	- `OPENAI_API_KEY`
 	- `ANTHROPIC_API_KEY`
 
-If you use `--llm-provider local` (deterministic mode), API keys are not required.
+If you use `--llm-provider local`, API keys are not required for the deterministic primary flow; patch fallback for no-safe-version cases may still require remote model credentials.
 
 ## Install
 

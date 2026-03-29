@@ -21,7 +21,7 @@ import {
   planRemediation,
   remediate,
   remediateFromScan,
-} from "../api.js";
+} from "../api/index.js";
 import { PACKAGE_VERSION } from "../version";
 
 interface McpApiDeps {
@@ -70,7 +70,7 @@ export const TOOLS = [
       required: ["cveId"],
       properties: {
         cveId: { type: "string", description: OPTION_DESCRIPTIONS.cveId },
-        ...createRemediateOptionSchemaProperties({ includeDryRun: false, includePreview: false }),
+        ...createRemediateOptionSchemaProperties({ includeDryRun: false, includePreview: false, includeEvidence: true }),
       },
     },
   },
