@@ -14,5 +14,6 @@ describe("createEvidenceLog", () => {
     expect(log.parentRunId).toBe("parent-1");
     expect(log.cveIds).toEqual(["CVE-2021-23337"]);
     expect(log.runId).toMatch(/^\d+-[a-z0-9]{6}$/);
+    expect(log.summary).toBeUndefined();
   });
 });

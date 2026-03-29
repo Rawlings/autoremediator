@@ -1,8 +1,10 @@
 # CLI Reference
 
-The CLI is the primary automation surface for CI, scheduled workflows, and operator-triggered remediation runs.
+The CLI is the primary risk-aware automation surface for CI, scheduled workflows, and operator-triggered remediation runs.
 
-This page documents command behavior, option semantics, and safe automation patterns.
+It helps teams act on what matters first by combining OSV package intelligence with CISA KEV and FIRST EPSS risk signals, then enforcing policy and evidence controls during execution.
+
+This page documents command behavior, option semantics, and trusted automation patterns.
 
 Related references:
 
@@ -145,6 +147,13 @@ Current CI exit semantics:
 - `1`: one or more failed remediations
 
 Use summary data to distinguish fully remediated, partially remediated, and unresolved outcomes in downstream automation.
+
+Summary fields to watch:
+
+- `patchCount`: count of patch-file remediations attempted in the scan run
+- `strategyCounts`: aggregate counts for `version-bump`, `override`, `patch-file`, and `none`
+- `dependencyScopeCounts`: aggregate counts for `direct` and `transitive` remediation outcomes
+- `unresolvedByReason`: aggregate counts for machine-readable unresolved causes such as `no-safe-version`, `constraint-blocked`, and `patch-validation-failed`
 
 ## Troubleshooting
 

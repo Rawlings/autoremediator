@@ -2,13 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
-## 0.5.0
+## 0.6.0
 
-### Added
+### Changed
 
-- **`toSarifOutput(report: ScanReport): SarifOutput`**: New public SDK function that converts a `ScanReport` to SARIF 2.1.0 format for upload to GitHub Code Scanning via `actions/upload-sarif`.
-- **`SarifOutput` type**: Exported type representing a valid SARIF 2.1.0 document with `runs`, `tool.driver.rules`, and `results`.
-- **`--output-format sarif` CLI flag**: Available on the `scan` subcommand and the top-level default command. Emits SARIF JSON to stdout instead of the default report format.
+- This release turns autoremediator into a more complete remediation platform rather than a version-bump-only tool. It now handles direct upgrades, transitive dependency overrides or resolutions, and controlled patch fallback under one policy-driven workflow.
+- Reporting and governance were tightened across every surface. SDK, CLI, MCP, OpenAPI, and evidence outputs now expose clearer rollups for remediation strategy, dependency scope, unresolved reasons, patch activity, and replay or provenance context.
+- The public contract was cleaned up and aligned across touchpoints so the same concepts, option names, and summary fields behave consistently whether the tool is used in CI, through code, or from an agent or service integration.
+- Operational readiness improved with stronger fallback validation, better constraint enforcement, richer documentation, and a cleaner release path for the VS Code extension and CI-facing packaging flows.
 
 ## 0.4.1
 

@@ -10,37 +10,48 @@
 > [!WARNING]
 > Automated dependency remediation is a controversial practice.
 > It can reduce exposure windows, but it can also introduce operational and supply-chain risk if used without policy controls.
-> Autoremediator is designed for automation-first teams, and should be paired with explicit policy, CI safeguards, and repository protection rules.
+> Autoremediator is designed for risk-aware automation teams, and should be paired with explicit policy, CI safeguards, and repository protection rules.
 
-Autoremediator is an automation-first Node.js CVE remediation platform.
+Autoremediator is a risk-aware, agentic CVE remediation platform for Node.js.
 
-It is built for teams that want dependency remediation to run as part of delivery infrastructure, not as ad hoc manual activity.
+It correlates OSV package intelligence with CISA KEV known-exploited signals and FIRST EPSS exploit probability scores so teams can prioritize vulnerabilities that are more likely to matter in production.
+
+It is built for teams that want security remediation to run as part of delivery infrastructure, not as ad hoc manual activity or semver-only triage.
 
 It supports direct CVE remediation, scanner-driven batch remediation, deterministic CI gating, and service/agent integrations (SDK, MCP, OpenAPI).
 
 It also supports non-mutating remediation planning and run-correlation metadata for orchestration-first platforms.
+
+Safety and trust are built in through policy gates, dry-run controls, validation requirements, and structured evidence outputs.
+
+Scan and CI summaries include rollups for remediation strategy, dependency scope, and unresolved reasons so downstream automation can distinguish direct upgrades from transitive override outcomes without reparsing nested result trees.
 
 See the [documentation](https://rawlings.github.io/autoremediator/docs/getting-started) to get started.
 
 ## Why Teams Use It
 
 - Continuous remediation in CI and scheduled GitHub workflows
+- Risk-aware prioritization using EPSS, CISA KEV, and OSV intelligence
 - Scanner-to-fix pipelines from npm audit, yarn audit, and SARIF inputs
+- Lower vulnerability fatigue by focusing operator attention on exploited and higher-probability issues
 - Policy-aware upgrade behavior for controlled automation at scale
 - Structured evidence and summary outputs for security operations
 - Multiple integration surfaces for platform engineering and automation agents
 
 ## How It Works
 
-Autoremediator follows a deterministic remediation flow:
+Autoremediator follows a deterministic, risk-informed remediation flow:
 
 1. lookup CVE intelligence
 2. inspect installed dependency inventory
 3. match vulnerable installed versions
-4. attempt safe version bump
-5. if no safe bump exists, attempt controlled patch fallback
+4. attempt a safe direct dependency version bump
+5. when the vulnerable package is transitive, attempt a package-manager-native override or resolution
+6. if neither path can remediate safely, attempt controlled patch fallback
 
 Safety gates are applied throughout the flow, including policy enforcement, dry-run controls, and validation requirements.
+
+Operational outputs stay deterministic across CLI, SDK, MCP, and OpenAPI surfaces, including `strategyCounts`, `dependencyScopeCounts`, and `unresolvedByReason` for CI routing and dashboards.
 
 ## Trust and Advisory Sources
 
@@ -92,8 +103,11 @@ Trust model principles:
 - SDK for custom automation programs (`remediate`, `planRemediation`, `remediateFromScan`)
 - MCP for AI tooling ecosystems
 - OpenAPI for service-based integration
+- VS Code extension: Node CVE Remediator for editor-side scanning and fix actions
 
 Public API naming canon: `runTests`, `policy`, `evidence`, `patchCount`, and `patchesDir`.
+
+Packaging shortcut: `pnpm build:vsix` builds the publishable VSIX from the repository root.
 
 ## Documentation
 

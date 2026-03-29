@@ -18,12 +18,14 @@ import {
   type PackageManager,
 } from "../../platform/package-manager.js";
 import { withRepoLock } from "../../platform/repo-lock.js";
+import { validatePatchDiff } from "../strategies/patch-utils.js";
 
 /**
  * Validation result object.
  */
 interface ValidationResult {
   passed: boolean;
+  error?: string;
   output?: string;
   failedTests?: string[];
 }
@@ -120,6 +122,19 @@ export const applyPatchFileTool = tool({
         };
       }
 
+      const patchValidation = validatePatchDiff(selectedPatch);
+      if (!patchValidation.valid) {
+        return {
+          success: false,
+          packageName,
+          vulnerableVersion,
+          applied: false,
+          dryRun,
+          message: patchValidation.error ?? "Patch content is not a valid unified diff.",
+          error: patchValidation.error ?? "Patch content is not a valid unified diff.",
+        };
+      }
+
       const patchFileName = buildPatchFileName(packageName, vulnerableVersion);
       const patchFilePath = join(cwd, patchesDir, patchFileName);
 
@@ -137,6 +152,11 @@ export const applyPatchFileTool = tool({
       }
 
       return withRepoLock(cwd, async () => {
+        const packageJsonSnapshot =
+          patchModeRequiresPackageJsonSnapshot(pm, cwd)
+            ? await capturePackageJsonSnapshot(cwd)
+            : undefined;
+
         // Step 1: Create patches directory if it doesn't exist
         const patchesDirPath = join(cwd, patchesDir);
         await mkdir(patchesDirPath, { recursive: true });
@@ -146,6 +166,7 @@ export const applyPatchFileTool = tool({
 
         let validationResult: ValidationResult | undefined;
         const patchMode = await resolvePatchMode(pm, cwd);
+        const commands = getPackageManagerCommands(pm);
 
         // Step 3: Apply patch via native package-manager workflow when available.
         // npm always uses patch-package, yarn v1 falls back to patch-package.
@@ -161,6 +182,14 @@ export const applyPatchFileTool = tool({
               });
 
         if (!applyResult.success) {
+          await cleanupPatchArtifacts({
+            cwd,
+            packageManager: pm,
+            patchFilePath,
+            patchMode,
+            packageJsonSnapshot,
+            rerunInstall: patchMode === "patch-package",
+          });
           return {
             success: false,
             packageName,
@@ -176,10 +205,51 @@ export const applyPatchFileTool = tool({
           };
         }
 
+        if (patchMode === "patch-package") {
+          try {
+            const [installCmd, ...installArgs] = commands.installPreferOffline;
+            await execa(installCmd, installArgs, {
+              cwd,
+              stdio: "pipe",
+            });
+          } catch (err) {
+            await cleanupPatchArtifacts({
+              cwd,
+              packageManager: pm,
+              patchFilePath,
+              patchMode,
+              packageJsonSnapshot,
+              rerunInstall: true,
+            });
+            const error = err instanceof Error ? err.message : String(err);
+            return {
+              success: false,
+              packageName,
+              vulnerableVersion,
+              applied: false,
+              dryRun: false,
+              message: `Failed to apply patch-package workflow for ${packageName}@${vulnerableVersion}: ${error}`,
+              patchFilePath,
+              patchPath: patchFilePath,
+              patchMode,
+              postinstallConfigured: false,
+              error: `Failed to apply patch-package workflow for ${packageName}@${vulnerableVersion}: ${error}`,
+            };
+          }
+        }
+
         // Step 4: Validate with tests if requested
         if (validateWithTests) {
           validationResult = await validatePatchWithTests(cwd, pm);
           if (!validationResult.passed) {
+            await cleanupPatchArtifacts({
+              cwd,
+              packageManager: pm,
+              patchFilePath,
+              patchMode,
+              packageJsonSnapshot,
+              rerunInstall: patchMode === "patch-package",
+            });
             const validationError = "Patch validation failed after apply; patch marked unresolved.";
             return {
               success: false,
@@ -191,7 +261,7 @@ export const applyPatchFileTool = tool({
               patchFilePath,
               patchPath: patchFilePath,
               patchMode,
-              postinstallConfigured: patchMode === "patch-package",
+              postinstallConfigured: false,
               validation: validationResult,
               error: validationError,
             };
@@ -230,6 +300,11 @@ export const applyPatchFileTool = tool({
 
 type PatchMode = "patch-package" | "native-pnpm" | "native-yarn";
 
+interface PackageJsonSnapshot {
+  path: string;
+  content: string;
+}
+
 async function resolvePatchMode(packageManager: PackageManager, cwd: string): Promise<PatchMode> {
   if (packageManager === "npm") return "patch-package";
   if (packageManager === "pnpm") return "native-pnpm";
@@ -246,6 +321,13 @@ async function resolvePatchMode(packageManager: PackageManager, cwd: string): Pr
   } catch {
     return "patch-package";
   }
+}
+
+function patchModeRequiresPackageJsonSnapshot(packageManager: PackageManager, cwd: string): boolean {
+  if (packageManager === "npm") return true;
+  if (packageManager === "pnpm") return false;
+
+  return true;
 }
 
 function buildPatchFileName(packageName: string, vulnerableVersion: string): string {
@@ -298,6 +380,47 @@ async function configurePatchPackagePostinstall(cwd: string, packageManager: Pac
 
   await writeFile(pkgJsonPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
   return { success: true };
+}
+
+async function capturePackageJsonSnapshot(cwd: string): Promise<PackageJsonSnapshot | undefined> {
+  const path = join(cwd, "package.json");
+
+  try {
+    const content = await readFile(path, "utf8");
+    return { path, content };
+  } catch {
+    return undefined;
+  }
+}
+
+async function cleanupPatchArtifacts(params: {
+  cwd: string;
+  packageManager: PackageManager;
+  patchFilePath: string;
+  patchMode: PatchMode;
+  packageJsonSnapshot?: PackageJsonSnapshot;
+  rerunInstall: boolean;
+}): Promise<void> {
+  const { cwd, packageManager, patchFilePath, patchMode, packageJsonSnapshot, rerunInstall } = params;
+
+  await rm(patchFilePath, { force: true }).catch(() => undefined);
+
+  if (patchMode === "patch-package" && packageJsonSnapshot) {
+    await writeFile(packageJsonSnapshot.path, packageJsonSnapshot.content, "utf8").catch(() => undefined);
+  }
+
+  if (!rerunInstall) return;
+
+  try {
+    const commands = getPackageManagerCommands(packageManager);
+    const [installCmd, ...installArgs] = commands.installPreferOffline;
+    await execa(installCmd, installArgs, {
+      cwd,
+      stdio: "pipe",
+    });
+  } catch {
+    // Ignore cleanup install failures and preserve the original remediation error.
+  }
 }
 
 async function applyNativePatch(params: {
@@ -414,13 +537,17 @@ async function validatePatchWithTests(cwd: string, packageManager: PackageManage
   } catch (err) {
     // Extract useful error information
     const errorOutput =
-      err instanceof Error && "stdout" in err
-        ? (err as Record<string, string>).stdout
+      typeof err === "object" && err !== null && "stdout" in err
+        ? String((err as Record<string, unknown>).stdout ?? "")
         : "";
     const failedTests = extractFailedTests(errorOutput);
 
     return {
       passed: false,
+      error:
+        failedTests.length > 0
+          ? `Failed tests: ${failedTests.join(", ")}`
+          : "Package-manager test validation failed.",
       output: errorOutput,
       failedTests,
     };
@@ -438,7 +565,7 @@ function extractFailedTests(output: string): string[] {
   const patterns = [
     /✖\s+(.+?)(?:\n|$)/g, // Mocha style
     /●\s+(.+)(?:\n|$)/g, // Jest style
-    /FAIL.*?(.+?)(?:\n|$)/g, // Generic FAIL
+    /^FAIL\s+(.+?)(?:\n|$)/gm, // Generic FAIL
   ];
 
   for (const pattern of patterns) {

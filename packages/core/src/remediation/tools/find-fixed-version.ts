@@ -6,11 +6,11 @@
  */
 import { tool } from "ai";
 import { z } from "zod";
-import { findSafeUpgradeVersion } from "../../intelligence/sources/registry.js";
+import { resolveSafeUpgradeVersion } from "../../intelligence/sources/registry.js";
 
 export const findFixedVersionTool = tool({
   description:
-    "Query the npm registry to find the lowest published version of a package that is >= the first patched version. Prefer same-major upgrades. Returns undefined if no safe version exists.",
+    "Query the npm registry to find the safest published upgrade version for a package that is >= the first patched version. Prefer patch upgrades first, then minor, and only fall back to major when no same-major fix exists.",
   parameters: z.object({
     packageName: z.string().describe("The npm package name"),
     installedVersion: z.string().describe("The currently installed version (exact semver)"),
@@ -31,19 +31,25 @@ export const findFixedVersionTool = tool({
     vulnerableRange,
   }): Promise<{
     safeVersion?: string;
+    upgradeLevel?: "patch" | "minor" | "major";
+    candidates: Partial<Record<"patch" | "minor" | "major", string>>;
     isMajorBump: boolean;
+    majorOnlyFixAvailable: boolean;
     message: string;
   }> => {
-    const safeVersion = await findSafeUpgradeVersion(
+    const resolution = await resolveSafeUpgradeVersion(
       packageName,
       installedVersion,
       firstPatchedVersion,
       vulnerableRange
     );
+    const { safeVersion, upgradeLevel, candidates, majorOnlyFixAvailable } = resolution;
 
     if (!safeVersion) {
       return {
+        candidates,
         isMajorBump: false,
+        majorOnlyFixAvailable: false,
         message: `No safe upgrade version found for "${packageName}". The patch-file path will be needed.`,
       };
     }
@@ -54,10 +60,13 @@ export const findFixedVersionTool = tool({
 
     return {
       safeVersion,
+      upgradeLevel,
+      candidates,
       isMajorBump,
+      majorOnlyFixAvailable,
       message: isMajorBump
-        ? `Found safe version ${safeVersion} for "${packageName}", but it is a major bump from ${installedVersion}. Applying anyway — consumer should review for breaking changes.`
-        : `Found safe version ${safeVersion} for "${packageName}" (from ${installedVersion}).`,
+        ? `Found safe version ${safeVersion} for "${packageName}", but only a major upgrade is available from ${installedVersion}. This should remain blocked unless policy explicitly allows major bumps.`
+        : `Found ${upgradeLevel ?? "safe"} upgrade ${safeVersion} for "${packageName}" (from ${installedVersion}).`,
     };
   },
 });

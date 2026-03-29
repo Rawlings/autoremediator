@@ -1,8 +1,8 @@
 # Integrations
 
-This page documents integration patterns for automation-first remediation.
+This page documents integration patterns for risk-aware, agentic remediation.
 
-It focuses on what each integration does, why to choose it, and how to operate it safely.
+It focuses on what each integration does, why to choose it, and how to operate it safely with EPSS, CISA KEV, and OSV intelligence plus auditable evidence outputs.
 
 Related references:
 
@@ -15,6 +15,7 @@ Related references:
 
 | Pattern | Use when | Key outcome |
 |---|---|---|
+| Risk-prioritized triage in CI | you need to reduce vulnerability fatigue from noisy scanner output | focus remediation on known-exploited and higher-probability CVEs first |
 | GitHub Actions Marketplace action | you want zero-boilerplate CI integration | one step, works with pnpm/npm/yarn |
 | VS Code extension | you want inline diagnostics while editing | squiggles + code action on package.json |
 | Scheduled PR automation | you want continuous improvement with review gates | automatic remediation PRs on a cadence |
@@ -147,6 +148,8 @@ jobs:
 
 This works for npm and yarn too — substitute the audit command on the `run:` line and set `format: yarn-audit` if using yarn.
 
+The generated summary file includes aggregate fields such as `strategyCounts`, `dependencyScopeCounts`, and `unresolvedByReason`, which are useful for PR descriptions, dashboards, and CI policy checks.
+
 ## GitHub Actions: Enforcement-Only Gate
 
 Fail the build when unresolved CVEs remain. Uses `dry-run` so no files are mutated.
@@ -172,6 +175,8 @@ jobs:
           ci: 'true'
           summary-file: summary.json
 ```
+
+The summary JSON is designed for automation consumption: `strategyCounts` shows which remediation path was used, `dependencyScopeCounts` distinguishes direct dependency work from transitive remediation, and `unresolvedByReason` lets CI react to specific failure classes without parsing human-readable messages.
 
 ## Multi-Stage Automation Pattern
 
@@ -201,6 +206,8 @@ Tools exposed:
 
 Why use MCP: standard tool contracts for AI host ecosystems, with typed request/response patterns.
 
+The scan-oriented MCP response includes the same aggregate summary fields used by the SDK and CLI, including `strategyCounts`, `dependencyScopeCounts`, and `unresolvedByReason`.
+
 ## OpenAPI Integration
 
 Start OpenAPI server:
@@ -218,6 +225,8 @@ Routes:
 - `GET /health`
 
 Why use OpenAPI: central remediation service for multiple clients and repositories.
+
+The OpenAPI responses expose the same aggregate reporting fields as the SDK and CLI, so service consumers can build routing and governance logic around `strategyCounts`, `dependencyScopeCounts`, and `unresolvedByReason` without custom post-processing.
 
 Security guidance:
 

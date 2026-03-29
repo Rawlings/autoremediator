@@ -8,8 +8,17 @@
  */
 import http from "node:http";
 import { fileURLToPath } from "node:url";
-import { planRemediation, remediate, remediateFromScan } from "../api.js";
+import {
+  createRemediateOptionSchemaProperties,
+  createScanOptionSchemaProperties,
+  createScanReportSchemaProperties,
+  OPTION_DESCRIPTIONS,
+  planRemediation,
+  remediate,
+  remediateFromScan,
+} from "../api.js";
 import type { RemediateOptions, ScanOptions } from "../api.js";
+import { PACKAGE_VERSION } from "../version";
 
 const DEFAULT_PORT = 3000;
 
@@ -153,7 +162,7 @@ export const OPENAPI_SPEC = {
   openapi: "3.1.0",
   info: {
     title: "autoremediator",
-    version: "0.1.2",
+    version: PACKAGE_VERSION,
     description: "Agentic CVE remediation for Node.js dependency projects",
   },
   paths: {
@@ -171,36 +180,13 @@ export const OPENAPI_SPEC = {
                 properties: {
                   cveId: {
                     type: "string",
-                    description: "CVE identifier, e.g. CVE-2021-23337",
+                    description: OPTION_DESCRIPTIONS.cveId,
                     pattern: "^CVE-\\d{4}-\\d+$",
                   },
                   options: {
                     type: "object",
                     description: "RemediateOptions",
-                    properties: {
-                      cwd: { type: "string" },
-                      packageManager: { type: "string", enum: ["npm", "pnpm", "yarn"] },
-                      dryRun: { type: "boolean" },
-                      preview: { type: "boolean" },
-                      runTests: { type: "boolean" },
-                      llmProvider: { type: "string", enum: ["openai", "anthropic", "local"] },
-                      patchesDir: { type: "string" },
-                      policy: { type: "string" },
-                      requestId: { type: "string" },
-                      sessionId: { type: "string" },
-                      parentRunId: { type: "string" },
-                      idempotencyKey: { type: "string" },
-                      resume: { type: "boolean" },
-                      actor: { type: "string" },
-                      source: { type: "string", enum: ["cli", "sdk", "mcp", "openapi", "unknown"] },
-                      constraints: {
-                        type: "object",
-                        properties: {
-                          directDependenciesOnly: { type: "boolean" },
-                          preferVersionBump: { type: "boolean" },
-                        },
-                      },
-                    },
+                    properties: createRemediateOptionSchemaProperties(),
                   },
                 },
               },
@@ -240,34 +226,13 @@ export const OPENAPI_SPEC = {
                 properties: {
                   cveId: {
                     type: "string",
-                    description: "CVE identifier, e.g. CVE-2021-23337",
+                    description: OPTION_DESCRIPTIONS.cveId,
                     pattern: "^CVE-\\d{4}-\\d+$",
                   },
                   options: {
                     type: "object",
                     description: "RemediateOptions",
-                    properties: {
-                      cwd: { type: "string" },
-                      packageManager: { type: "string", enum: ["npm", "pnpm", "yarn"] },
-                      runTests: { type: "boolean" },
-                      llmProvider: { type: "string", enum: ["openai", "anthropic", "local"] },
-                      patchesDir: { type: "string" },
-                      policy: { type: "string" },
-                      requestId: { type: "string" },
-                      sessionId: { type: "string" },
-                      parentRunId: { type: "string" },
-                      idempotencyKey: { type: "string" },
-                      resume: { type: "boolean" },
-                      actor: { type: "string" },
-                      source: { type: "string", enum: ["cli", "sdk", "mcp", "openapi", "unknown"] },
-                      constraints: {
-                        type: "object",
-                        properties: {
-                          directDependenciesOnly: { type: "boolean" },
-                          preferVersionBump: { type: "boolean" },
-                        },
-                      },
-                    },
+                    properties: createRemediateOptionSchemaProperties({ includeDryRun: false, includePreview: false }),
                   },
                 },
               },
@@ -307,37 +272,12 @@ export const OPENAPI_SPEC = {
                 properties: {
                   inputPath: {
                     type: "string",
-                    description: "Absolute or relative path to npm/pnpm/yarn audit JSON or SARIF file",
+                    description: OPTION_DESCRIPTIONS.inputPath,
                   },
                   options: {
                     type: "object",
                     description: "ScanOptions",
-                    properties: {
-                      cwd: { type: "string" },
-                      packageManager: { type: "string", enum: ["npm", "pnpm", "yarn"] },
-                      dryRun: { type: "boolean" },
-                      preview: { type: "boolean" },
-                      runTests: { type: "boolean" },
-                      llmProvider: { type: "string", enum: ["openai", "anthropic", "local"] },
-                      format: { type: "string", enum: ["npm-audit", "yarn-audit", "sarif", "auto"] },
-                      patchesDir: { type: "string" },
-                      policy: { type: "string" },
-                      evidence: { type: "boolean" },
-                      requestId: { type: "string" },
-                      sessionId: { type: "string" },
-                      parentRunId: { type: "string" },
-                      idempotencyKey: { type: "string" },
-                      resume: { type: "boolean" },
-                      actor: { type: "string" },
-                      source: { type: "string", enum: ["cli", "sdk", "mcp", "openapi", "unknown"] },
-                      constraints: {
-                        type: "object",
-                        properties: {
-                          directDependenciesOnly: { type: "boolean" },
-                          preferVersionBump: { type: "boolean" },
-                        },
-                      },
-                    },
+                    properties: createScanOptionSchemaProperties(),
                   },
                 },
               },
@@ -351,19 +291,7 @@ export const OPENAPI_SPEC = {
               "application/json": {
                 schema: {
                   type: "object",
-                  properties: {
-                    schemaVersion: { type: "string" },
-                    status: { type: "string", enum: ["ok", "partial", "failed"] },
-                    generatedAt: { type: "string" },
-                    cveIds: { type: "array", items: { type: "string" } },
-                    reports: { type: "array", items: { type: "object" } },
-                    successCount: { type: "number" },
-                    failedCount: { type: "number" },
-                    errors: { type: "array", items: { type: "object" } },
-                    evidenceFile: { type: "string" },
-                    patchCount: { type: "number" },
-                    patchesDir: { type: "string" },
-                  },
+                  properties: createScanReportSchemaProperties(),
                 },
               },
             },

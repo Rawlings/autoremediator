@@ -1,7 +1,7 @@
 {
-  "name": "autoremediator-vscode",
-  "displayName": "Autoremediator",
-  "description": "Inline CVE diagnostics and one-click remediation for Node.js dependencies",
+  "name": "autoremediator-rawlings",
+  "displayName": "Node CVE Remediator",
+  "description": "VS Code extension for risk-aware Node.js CVE diagnostics and remediation using OSV, CISA KEV, and FIRST EPSS signals",
   "version": "0.1.0",
   "publisher": "rawlings",
   "license": "MIT",
@@ -49,6 +49,7 @@
     "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=dist/extension.js --sourcemap",
     "watch": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=dist/extension.js --sourcemap --watch",
     "typecheck": "tsc --noEmit",
+    "build:vsix": "pnpm build && pnpm package",
     "package": "vsce package --no-dependencies",
     "publish": "vsce publish --no-dependencies"
   },

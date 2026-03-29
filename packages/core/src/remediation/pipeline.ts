@@ -19,13 +19,14 @@ import { checkInventoryTool } from "./tools/check-inventory.js";
 import { checkVersionMatchTool } from "./tools/check-version-match.js";
 import { findFixedVersionTool } from "./tools/find-fixed-version.js";
 import { applyVersionBumpTool } from "./tools/apply-version-bump.js";
+import { applyPackageOverrideTool } from "./tools/apply-package-override.js";
 import { fetchPackageSourceTool } from "./tools/fetch-package-source.js";
 import { generatePatchTool } from "./tools/generate-patch.js";
 import { applyPatchFileTool } from "./tools/apply-patch-file.js";
 import { lookupCveOsv } from "../intelligence/sources/osv.js";
 import { lookupCveGitHub, mergeGhDataIntoCveDetails } from "../intelligence/sources/github-advisory.js";
 import { enrichWithNvd } from "../intelligence/sources/nvd.js";
-import { findSafeUpgradeVersion } from "../intelligence/sources/registry.js";
+import { resolveSafeUpgradeVersion } from "../intelligence/sources/registry.js";
 import type { RemediateOptions, RemediationReport, PatchResult, VulnerablePackage, CveDetails } from "../platform/types.js";
 
 export async function runRemediationPipeline(
@@ -44,6 +45,7 @@ export async function runRemediationPipeline(
   const runTests = options.runTests ?? false;
   const policy = options.policy ?? "";
   const patchesDir = options.patchesDir || "./patches";
+  const constraints = options.constraints ?? {};
 
   const model = await createModel(options);
 
@@ -55,6 +57,7 @@ export async function runRemediationPipeline(
     policy,
     patchesDir,
     packageManager,
+    constraints,
   });
 
   const prompt = `Patch vulnerable dependencies affected by ${cveId} in the project at: ${cwd}. Package manager: ${packageManager}.`;
@@ -71,6 +74,13 @@ export async function runRemediationPipeline(
           (applyVersionBumpTool as any).execute({ ...input, dryRun: true }),
       } as typeof applyVersionBumpTool
     : applyVersionBumpTool;
+  const applyPackageOverrideToolForRun = preview
+    ? {
+        ...applyPackageOverrideTool,
+        execute: async (input: Record<string, unknown>) =>
+          (applyPackageOverrideTool as any).execute({ ...input, dryRun: true }),
+      } as typeof applyPackageOverrideTool
+    : applyPackageOverrideTool;
   const applyPatchFileToolForRun = preview
     ? {
         ...applyPatchFileTool,
@@ -78,28 +88,28 @@ export async function runRemediationPipeline(
           (applyPatchFileTool as any).execute({ ...input, dryRun: true }),
       } as typeof applyPatchFileTool
     : applyPatchFileTool;
+  const tools = buildRuntimeTools({
+    applyVersionBumpToolForRun,
+    applyPackageOverrideToolForRun,
+    applyPatchFileToolForRun,
+    constraints,
+  });
 
   const result = await generateText({
     model,
     system: systemPrompt,
     prompt,
-    tools: {
-      "lookup-cve": lookupCveTool,
-      "check-inventory": checkInventoryTool,
-      "check-version-match": checkVersionMatchTool,
-      "find-fixed-version": findFixedVersionTool,
-      "apply-version-bump": applyVersionBumpToolForRun,
-      "fetch-package-source": fetchPackageSourceTool,
-      "generate-patch": generatePatchTool,
-      "apply-patch-file": applyPatchFileToolForRun,
-    },
+    tools: tools as any,
     maxSteps: 25,
     onStepFinish(stepResult) {
       agentSteps += 1;
 
-      const { toolResults } = stepResult;
+      const toolResults = (stepResult.toolResults ?? []) as Array<{
+        toolName: string;
+        result?: unknown;
+      }>;
 
-      for (const tr of toolResults ?? []) {
+      for (const tr of toolResults) {
         const toolResult = tr.result as Record<string, unknown> | undefined;
 
         if (tr.toolName === "lookup-cve" && toolResult?.data) {
@@ -109,6 +119,10 @@ export async function runRemediationPipeline(
           vulnerablePackages.push(...(toolResult.vulnerablePackages as VulnerablePackage[]));
         }
         if (tr.toolName === "apply-version-bump") {
+          collectedResults.push(toolResult as unknown as PatchResult);
+        }
+
+        if (tr.toolName === "apply-package-override") {
           collectedResults.push(toolResult as unknown as PatchResult);
         }
 
@@ -141,6 +155,12 @@ export async function runRemediationPipeline(
                   : undefined,
             applied: Boolean(toolResult.applied),
             dryRun: Boolean(toolResult.dryRun),
+            unresolvedReason:
+              !Boolean(toolResult.applied) && !Boolean(toolResult.dryRun)
+                ? validation && validation.passed === false
+                  ? "patch-validation-failed"
+                  : "patch-apply-failed"
+                : undefined,
             message,
             validation:
               validation && typeof validation.passed === "boolean"
@@ -180,6 +200,7 @@ async function runLocalRemediationPipeline(
   const dryRun = (options.dryRun ?? false) || preview;
   const runTests = options.runTests ?? false;
   const policy = options.policy ?? "";
+  const constraints = options.constraints ?? {};
 
   const collectedResults: PatchResult[] = [];
   const vulnerablePackages: VulnerablePackage[] = [];
@@ -290,14 +311,78 @@ async function runLocalRemediationPipeline(
     const firstPatchedVersion = vulnerable.affected.firstPatchedVersion;
 
     if (pkg.type === "indirect") {
-      collectedResults.push({
+      if (constraints.directDependenciesOnly) {
+        collectedResults.push({
+          packageName: pkg.name,
+          strategy: "none",
+          fromVersion: pkg.version,
+          applied: false,
+          dryRun,
+          unresolvedReason: "constraint-blocked",
+          message: `Constraint blocked remediation for indirect dependency "${pkg.name}".`,
+        });
+        continue;
+      }
+
+      if (constraints.preferVersionBump) {
+        collectedResults.push({
+          packageName: pkg.name,
+          strategy: "none",
+          fromVersion: pkg.version,
+          applied: false,
+          dryRun,
+          unresolvedReason: "constraint-blocked",
+          message: `Constraint prefers version-bump and rejected override remediation for "${pkg.name}".`,
+        });
+        continue;
+      }
+
+      if (!firstPatchedVersion) {
+        collectedResults.push({
+          packageName: pkg.name,
+          strategy: "none",
+          fromVersion: pkg.version,
+          applied: false,
+          dryRun,
+          unresolvedReason: "no-safe-version",
+          message: `No firstPatchedVersion available for ${pkg.name}; cannot resolve deterministic override in local mode.`,
+        });
+        continue;
+      }
+
+      const safeUpgrade = await resolveSafeUpgradeVersion(
+        pkg.name,
+        pkg.version,
+        firstPatchedVersion,
+        vulnerable.affected.vulnerableRange
+      );
+      agentSteps += 1;
+
+      if (!safeUpgrade.safeVersion) {
+        collectedResults.push({
+          packageName: pkg.name,
+          strategy: "none",
+          fromVersion: pkg.version,
+          applied: false,
+          dryRun,
+          unresolvedReason: "no-safe-version",
+          message: `No safe override version found for ${pkg.name}.`,
+        });
+        continue;
+      }
+
+      const overrideResult = (await (applyPackageOverrideTool as any).execute({
+        cwd,
+        packageManager,
         packageName: pkg.name,
-        strategy: "none",
         fromVersion: pkg.version,
-        applied: false,
+        toVersion: safeUpgrade.safeVersion,
         dryRun,
-        message: `"${pkg.name}" is an indirect dependency; automatic version bump is limited to direct dependencies in local mode.`,
-      });
+        policy,
+        runTests,
+      })) as PatchResult;
+      agentSteps += 1;
+      collectedResults.push(overrideResult);
       continue;
     }
 
@@ -308,17 +393,19 @@ async function runLocalRemediationPipeline(
         fromVersion: pkg.version,
         applied: false,
         dryRun,
+        unresolvedReason: "no-safe-version",
         message: `No firstPatchedVersion available for ${pkg.name}; cannot resolve deterministic upgrade in local mode.`,
       });
       continue;
     }
 
-    const safeVersion = await findSafeUpgradeVersion(
+    const safeUpgrade = await resolveSafeUpgradeVersion(
       pkg.name,
       pkg.version,
       firstPatchedVersion,
       vulnerable.affected.vulnerableRange
     );
+    const safeVersion = safeUpgrade.safeVersion;
     agentSteps += 1;
 
     if (!safeVersion) {
@@ -328,6 +415,7 @@ async function runLocalRemediationPipeline(
         fromVersion: pkg.version,
         applied: false,
         dryRun,
+        unresolvedReason: "no-safe-version",
         message: `No safe upgrade version found for ${pkg.name}.`,
       });
       continue;
@@ -375,6 +463,42 @@ interface PromptContext {
   runTests: boolean;
   policy: string;
   patchesDir: string;
+  constraints: {
+    directDependenciesOnly?: boolean;
+    preferVersionBump?: boolean;
+  };
+}
+
+interface RuntimeToolContext {
+  applyVersionBumpToolForRun: typeof applyVersionBumpTool;
+  applyPackageOverrideToolForRun: typeof applyPackageOverrideTool;
+  applyPatchFileToolForRun: typeof applyPatchFileTool;
+  constraints: {
+    directDependenciesOnly?: boolean;
+    preferVersionBump?: boolean;
+  };
+}
+
+function buildRuntimeTools(ctx: RuntimeToolContext) {
+  const tools = {
+    "lookup-cve": lookupCveTool,
+    "check-inventory": checkInventoryTool,
+    "check-version-match": checkVersionMatchTool,
+    "find-fixed-version": findFixedVersionTool,
+    "apply-version-bump": ctx.applyVersionBumpToolForRun,
+  } as Record<string, unknown>;
+
+  if (!ctx.constraints.directDependenciesOnly && !ctx.constraints.preferVersionBump) {
+    tools["apply-package-override"] = ctx.applyPackageOverrideToolForRun;
+  }
+
+  if (!ctx.constraints.preferVersionBump) {
+    tools["fetch-package-source"] = fetchPackageSourceTool;
+    tools["generate-patch"] = generatePatchTool;
+    tools["apply-patch-file"] = ctx.applyPatchFileToolForRun;
+  }
+
+  return tools;
 }
 
 function loadOrchestrationPrompt(ctx: PromptContext): string {
@@ -388,6 +512,8 @@ Dry run: ${ctx.dryRun}
 Run tests: ${ctx.runTests}
 Policy: ${ctx.policy || "undefined"}
 Patches dir: ${ctx.patchesDir}
+Direct dependencies only: ${String(ctx.constraints.directDependenciesOnly ?? false)}
+Prefer version bump: ${String(ctx.constraints.preferVersionBump ?? false)}
 
 Required sequence:
 1. lookup-cve
@@ -395,8 +521,9 @@ Required sequence:
 3. check-version-match
 4. find-fixed-version
 5. apply-version-bump
+6. apply-package-override
 
-Fallback sequence (when strategy="none"):
+Fallback sequence (when neither version bump nor override can be applied):
 1. fetch-package-source
 2. generate-patch
 3. apply-patch-file
@@ -412,5 +539,7 @@ Always respect dryRun and policy constraints.`;
     .replaceAll("{{dryRun}}", String(ctx.dryRun))
     .replaceAll("{{runTests}}", String(ctx.runTests))
     .replaceAll("{{policy}}", ctx.policy || "undefined")
-    .replaceAll("{{patchesDir}}", ctx.patchesDir);
+    .replaceAll("{{patchesDir}}", ctx.patchesDir)
+    .replaceAll("{{directDependenciesOnly}}", String(ctx.constraints.directDependenciesOnly ?? false))
+    .replaceAll("{{preferVersionBump}}", String(ctx.constraints.preferVersionBump ?? false));
 }

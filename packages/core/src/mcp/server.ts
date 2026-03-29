@@ -14,7 +14,15 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { fileURLToPath } from "node:url";
-import { planRemediation, remediate, remediateFromScan } from "../api.js";
+import {
+  createRemediateOptionSchemaProperties,
+  createScanOptionSchemaProperties,
+  OPTION_DESCRIPTIONS,
+  planRemediation,
+  remediate,
+  remediateFromScan,
+} from "../api.js";
+import { PACKAGE_VERSION } from "../version";
 
 interface McpApiDeps {
   remediateFn: typeof remediate;
@@ -30,7 +38,7 @@ const defaultDeps: McpApiDeps = {
 
 function createBaseServer(): Server {
   return new Server(
-    { name: "autoremediator", version: "0.1.2" },
+    { name: "autoremediator", version: PACKAGE_VERSION },
     { capabilities: { tools: {} } }
   );
 }
@@ -48,29 +56,8 @@ export const TOOLS = [
       type: "object",
       required: ["cveId"],
       properties: {
-        cveId: { type: "string", description: "CVE ID, e.g. CVE-2021-23337" },
-        cwd: { type: "string", description: "Absolute path to the project root (default: process.cwd())" },
-        packageManager: { type: "string", enum: ["npm", "pnpm", "yarn"], description: "Package manager override (auto-detected by default)" },
-        dryRun: { type: "boolean", description: "If true, plan changes but write nothing (default: false)" },
-        preview: { type: "boolean", description: "If true, enforce non-mutating preview mode" },
-        runTests: { type: "boolean", description: "Run package-manager test command after applying fix (default: false)" },
-        llmProvider: { type: "string", enum: ["openai", "anthropic", "local"], description: "LLM provider override" },
-        patchesDir: { type: "string", description: "Directory to write .patch files (default: ./patches)" },
-        policy: { type: "string", description: "Optional path to .autoremediator policy file" },
-        requestId: { type: "string", description: "Request correlation ID" },
-        sessionId: { type: "string", description: "Session correlation ID" },
-        parentRunId: { type: "string", description: "Parent run correlation ID" },
-        idempotencyKey: { type: "string", description: "Idempotency key for replay-safe execution" },
-        resume: { type: "boolean", description: "Return cached result for matching idempotency key when available" },
-        actor: { type: "string", description: "Actor identity for evidence provenance" },
-        source: { type: "string", enum: ["cli", "sdk", "mcp", "openapi", "unknown"], description: "Source system for provenance" },
-        constraints: {
-          type: "object",
-          properties: {
-            directDependenciesOnly: { type: "boolean" },
-            preferVersionBump: { type: "boolean" },
-          },
-        },
+        cveId: { type: "string", description: OPTION_DESCRIPTIONS.cveId },
+        ...createRemediateOptionSchemaProperties(),
       },
     },
   },
@@ -82,27 +69,8 @@ export const TOOLS = [
       type: "object",
       required: ["cveId"],
       properties: {
-        cveId: { type: "string", description: "CVE ID, e.g. CVE-2021-23337" },
-        cwd: { type: "string", description: "Absolute path to the project root (default: process.cwd())" },
-        packageManager: { type: "string", enum: ["npm", "pnpm", "yarn"], description: "Package manager override (auto-detected by default)" },
-        runTests: { type: "boolean", description: "Run package-manager test command after applying fix (default: false)" },
-        llmProvider: { type: "string", enum: ["openai", "anthropic", "local"], description: "LLM provider override" },
-        patchesDir: { type: "string", description: "Directory to write .patch files (default: ./patches)" },
-        policy: { type: "string", description: "Optional path to .autoremediator policy file" },
-        requestId: { type: "string", description: "Request correlation ID" },
-        sessionId: { type: "string", description: "Session correlation ID" },
-        parentRunId: { type: "string", description: "Parent run correlation ID" },
-        idempotencyKey: { type: "string", description: "Idempotency key for replay-safe execution" },
-        resume: { type: "boolean", description: "Return cached result for matching idempotency key when available" },
-        actor: { type: "string", description: "Actor identity for evidence provenance" },
-        source: { type: "string", enum: ["cli", "sdk", "mcp", "openapi", "unknown"], description: "Source system for provenance" },
-        constraints: {
-          type: "object",
-          properties: {
-            directDependenciesOnly: { type: "boolean" },
-            preferVersionBump: { type: "boolean" },
-          },
-        },
+        cveId: { type: "string", description: OPTION_DESCRIPTIONS.cveId },
+        ...createRemediateOptionSchemaProperties({ includeDryRun: false, includePreview: false }),
       },
     },
   },
@@ -114,29 +82,8 @@ export const TOOLS = [
       type: "object",
       required: ["inputPath"],
       properties: {
-        inputPath: { type: "string", description: "Absolute path to the scanner output file" },
-        cwd: { type: "string", description: "Absolute path to the project root" },
-        packageManager: { type: "string", enum: ["npm", "pnpm", "yarn"], description: "Package manager override (auto-detected by default)" },
-        format: { type: "string", enum: ["auto", "npm-audit", "yarn-audit", "sarif"], description: "Scanner format (default: auto)" },
-        dryRun: { type: "boolean", description: "If true, plan changes but write nothing" },
-        preview: { type: "boolean", description: "If true, enforce non-mutating preview mode" },
-        evidence: { type: "boolean", description: "Write evidence JSON to .autoremediator/evidence/ (default: true)" },
-        runTests: { type: "boolean", description: "Run package-manager test command after applying fix (default: false)" },
-        policy: { type: "string", description: "Optional path to .autoremediator policy file" },
-        requestId: { type: "string", description: "Request correlation ID" },
-        sessionId: { type: "string", description: "Session correlation ID" },
-        parentRunId: { type: "string", description: "Parent run correlation ID" },
-        idempotencyKey: { type: "string", description: "Idempotency key for replay-safe execution" },
-        resume: { type: "boolean", description: "Return cached result for matching idempotency key when available" },
-        actor: { type: "string", description: "Actor identity for evidence provenance" },
-        source: { type: "string", enum: ["cli", "sdk", "mcp", "openapi", "unknown"], description: "Source system for provenance" },
-        constraints: {
-          type: "object",
-          properties: {
-            directDependenciesOnly: { type: "boolean" },
-            preferVersionBump: { type: "boolean" },
-          },
-        },
+        inputPath: { type: "string", description: OPTION_DESCRIPTIONS.inputPath },
+        ...createScanOptionSchemaProperties(),
       },
     },
   },

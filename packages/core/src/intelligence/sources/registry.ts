@@ -10,6 +10,15 @@ import semver from "semver";
 
 const NPM_REGISTRY = "https://registry.npmjs.org";
 
+export type SafeUpgradeLevel = "patch" | "minor" | "major";
+
+export interface SafeUpgradeResolution {
+  safeVersion?: string;
+  upgradeLevel?: SafeUpgradeLevel;
+  candidates: Partial<Record<SafeUpgradeLevel, string>>;
+  majorOnlyFixAvailable: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // Raw registry types (abbreviated)
 // ---------------------------------------------------------------------------
@@ -62,10 +71,31 @@ export async function findSafeUpgradeVersion(
   firstPatchedVersion: string,
   vulnerableRange?: string
 ): Promise<string | undefined> {
-  const versions = await fetchPackageVersions(packageName);
-  if (!versions.length) return undefined;
+  const resolution = await resolveSafeUpgradeVersion(
+    packageName,
+    installedVersion,
+    firstPatchedVersion,
+    vulnerableRange
+  );
 
-  const installedMajor = semver.major(installedVersion);
+  return resolution.safeVersion;
+}
+
+export async function resolveSafeUpgradeVersion(
+  packageName: string,
+  installedVersion: string,
+  firstPatchedVersion: string,
+  vulnerableRange?: string
+): Promise<SafeUpgradeResolution> {
+  const versions = await fetchPackageVersions(packageName);
+  if (!versions.length) {
+    return {
+      candidates: {},
+      majorOnlyFixAvailable: false,
+    };
+  }
+
+  const installed = semver.parse(installedVersion);
 
   // All versions >= firstPatchedVersion, sorted ascending
   const candidates = versions
@@ -81,16 +111,71 @@ export async function findSafeUpgradeVersion(
     })
     .sort(semver.compare);
 
-  if (!candidates.length) return undefined;
+  if (!candidates.length) {
+    return {
+      candidates: {},
+      majorOnlyFixAvailable: false,
+    };
+  }
 
-  // Prefer same-major bump (semver-compatible)
-  const sameMajor = candidates.find(
-    (v) => semver.major(v) === installedMajor
-  );
-  if (sameMajor) return sameMajor;
+  const categorizedCandidates: SafeUpgradeResolution["candidates"] = {};
 
-  // Fallback: next-lowest available — caller should warn about major bump
-  return candidates[0];
+  for (const candidate of candidates) {
+    const level = classifyUpgradeLevel(installedVersion, candidate);
+    if (!level) continue;
+    if (!categorizedCandidates[level]) {
+      categorizedCandidates[level] = candidate;
+    }
+  }
+
+  const safeVersion =
+    categorizedCandidates.patch ?? categorizedCandidates.minor ?? categorizedCandidates.major;
+
+  if (!safeVersion) {
+    return {
+      candidates: categorizedCandidates,
+      majorOnlyFixAvailable: false,
+    };
+  }
+
+  const upgradeLevel = classifyUpgradeLevel(installedVersion, safeVersion);
+  const majorOnlyFixAvailable =
+    !categorizedCandidates.patch &&
+    !categorizedCandidates.minor &&
+    Boolean(categorizedCandidates.major);
+
+  if (!installed || !upgradeLevel) {
+    return {
+      safeVersion,
+      upgradeLevel,
+      candidates: categorizedCandidates,
+      majorOnlyFixAvailable,
+    };
+  }
+
+  return {
+    safeVersion,
+    upgradeLevel,
+    candidates: categorizedCandidates,
+    majorOnlyFixAvailable,
+  };
+}
+
+function classifyUpgradeLevel(
+  installedVersion: string,
+  candidateVersion: string
+): SafeUpgradeLevel | undefined {
+  const installed = semver.parse(installedVersion);
+  const candidate = semver.parse(candidateVersion);
+
+  if (!installed || !candidate) return undefined;
+  if (candidate.major > installed.major) return "major";
+  if (candidate.minor > installed.minor) return "minor";
+  if (candidate.patch > installed.patch || candidate.version === installed.version) {
+    return "patch";
+  }
+
+  return undefined;
 }
 
 /**

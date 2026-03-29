@@ -10,6 +10,8 @@ Project context:
 - Run tests: {{runTests}}
 - Policy: {{policy}}
 - Patches dir: {{patchesDir}}
+- Direct dependencies only: {{directDependenciesOnly}}
+- Prefer version bump: {{preferVersionBump}}
 
 ## Objective
 
@@ -21,11 +23,12 @@ For CVE {{cveId}}, identify vulnerable installed packages and remediate automati
 2. Call check-inventory next.
 3. Call check-version-match using CVE + inventory results.
 4. For each vulnerable package, call find-fixed-version.
-5. Attempt apply-version-bump for each vulnerable package.
+5. Attempt apply-version-bump for direct vulnerable packages.
+6. Attempt apply-package-override for indirect vulnerable packages when a safe version exists and constraints allow it.
 
 ## Fallback Sequence
 
-If apply-version-bump result has strategy="none":
+If neither apply-version-bump nor apply-package-override can resolve a vulnerable package:
 
 1. Call fetch-package-source.
 2. Call generate-patch.
@@ -36,8 +39,10 @@ If apply-version-bump result has strategy="none":
 
 - Respect dryRun at all times.
 - Include packageManager, policy, and runTests in apply-version-bump inputs.
+- Include packageManager, policy, and runTests in apply-package-override inputs.
 - Include vulnerableRange in find-fixed-version inputs when available.
-- Treat indirect dependencies as unresolved for automatic version-bump unless an explicit override strategy is provided.
+- When `directDependenciesOnly` is true, do not attempt override remediation for indirect dependencies.
+- When `preferVersionBump` is true, do not attempt override or patch-file remediation.
 - Do not skip tools due to assumptions.
 - Keep reasoning concise and structured.
 

@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import type { DependencyScopeCounts, PatchStrategyCounts, UnresolvedReasonCounts } from "./types.js";
 
 export interface EvidenceStep {
   at: string;
@@ -7,6 +8,24 @@ export interface EvidenceStep {
   input?: Record<string, unknown>;
   output?: Record<string, unknown>;
   error?: string;
+}
+
+export interface EvidenceSummary {
+  status: "ok" | "partial" | "failed";
+  cveCount: number;
+  remediationCount: number;
+  successCount: number;
+  failedCount: number;
+  patchCount: number;
+  patchValidationFailures?: Array<{
+    packageName: string;
+    cveId: string;
+    error: string;
+  }>;
+  strategyCounts?: PatchStrategyCounts;
+  unresolvedByReason?: UnresolvedReasonCounts;
+  dependencyScopeCounts?: DependencyScopeCounts;
+  patchesDir?: string;
 }
 
 export interface EvidenceLog {
@@ -21,6 +40,7 @@ export interface EvidenceLog {
   cwd: string;
   startedAt: string;
   finishedAt?: string;
+  summary?: EvidenceSummary;
   steps: EvidenceStep[];
 }
 

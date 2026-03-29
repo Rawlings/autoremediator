@@ -77,8 +77,8 @@ export function validatePatchDiff(patchContent: string): PatchValidationResult {
   }
 
   // Check for basic unified diff structure
-  const hasFromLine = /^---\s+\S+/.test(patchContent);
-  const hasToLine = /^\+\+\+\s+\S+/.test(patchContent);
+  const hasFromLine = /^---\s+\S+/m.test(patchContent);
+  const hasToLine = /^\+\+\+\s+\S+/m.test(patchContent);
   const hasHunkHeader = /^@@\s+-\d+/m.test(patchContent);
 
   if (!hasFromLine) {

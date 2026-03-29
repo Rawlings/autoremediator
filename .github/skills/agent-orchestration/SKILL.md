@@ -38,11 +38,12 @@ user-invocable: true
 - Do not remove fallback branch for unresolved packages.
 - Preserve maxSteps safety cap.
 - Ensure package manager is resolved once per run and propagated to tool calls.
+- Keep transitive remediation aligned with package-manager-native override fields before patch fallback.
 
 ## Verification Checklist
 
 - Tool names in code and contracts match.
 - Prompt placeholders resolve correctly at runtime.
 - packageManager placeholder resolves correctly at runtime.
-- apply-version-bump and fallback chain both reachable.
+- apply-version-bump, apply-package-override, and fallback chain are all reachable.
 - apply-patch-file path is package-manager aware (native pnpm/yarn where supported, compatibility fallback otherwise).

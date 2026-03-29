@@ -31,7 +31,9 @@
   "type": "module",
   "scripts": {
     "build": "pnpm --dir packages/core build",
+    "build:vsix": "pnpm --dir packages/vscode-extension build:vsix",
     "dev": "pnpm --dir packages/core dev",
+    "extension:package": "pnpm --dir packages/vscode-extension build:vsix",
     "typecheck": "pnpm --dir packages/core typecheck",
     "test": "pnpm --dir packages/core test",
     "test:watch": "pnpm --dir packages/core test:watch",

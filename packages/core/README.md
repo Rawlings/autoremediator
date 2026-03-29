@@ -10,11 +10,13 @@
 > [!WARNING]
 > Automated dependency remediation is a controversial practice.
 > It can reduce exposure windows, but it can also introduce operational and supply-chain risk if used without policy controls.
-> Autoremediator is designed for automation-first teams, and should be paired with explicit policy, CI safeguards, and repository protection rules.
+> Autoremediator is designed for risk-aware automation teams, and should be paired with explicit policy, CI safeguards, and repository protection rules.
 
-Autoremediator is an automation-first Node.js CVE remediation platform package.
+Autoremediator is a risk-aware, agentic Node.js CVE remediation package.
 
-This package is designed for teams that want remediation integrated into GitHub workflows and CI pipelines.
+It correlates OSV package intelligence with CISA KEV known-exploited signals and FIRST EPSS exploit probability scores to prioritize vulnerabilities more likely to matter in production.
+
+This package is designed for teams that want remediation integrated into GitHub workflows and CI pipelines with policy and evidence controls.
 
 It exposes stable SDK and CLI surfaces for direct CVE remediation and scanner-driven automation.
 
@@ -25,7 +27,9 @@ See the [documentation](https://rawlings.github.io/autoremediator/docs/getting-s
 ## Why Teams Use It
 
 - Continuous remediation in CI and scheduled GitHub workflows
+- Risk-aware prioritization using EPSS, CISA KEV, and OSV intelligence
 - Scanner-to-fix pipelines from npm audit, yarn audit, and SARIF inputs
+- Lower vulnerability fatigue by focusing operator attention on exploited and higher-probability issues
 - Policy-aware upgrade behavior for controlled automation at scale
 - Structured evidence and summary outputs for security operations
 - Multiple integration surfaces for platform engineering and automation agents

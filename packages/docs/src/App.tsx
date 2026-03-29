@@ -28,8 +28,8 @@ function App() {
 
   useEffect(() => {
     if (!location.pathname.startsWith("/docs/")) {
-      const title = "Autoremediator | Automation-first CVE Remediation";
-      const description = "Guides and references for CI-native Node.js CVE remediation using CLI, SDK, MCP, and OpenAPI surfaces.";
+      const title = "Autoremediator | Risk-Aware, Agentic CVE Remediation";
+      const description = "Guides and references for Node.js CVE remediation prioritized with OSV, CISA KEV, and FIRST EPSS intelligence, with policy and evidence controls for trusted automation.";
 
       document.title = title;
       setMetaTag("name", "description", description);

@@ -57,6 +57,8 @@ What: derives deterministic CI summary output from scan results.
 
 Why: stable contract for pipeline gates and dashboards.
 
+How: includes aggregate strategy counts, dependency-scope counts, and unresolved-reason counts so callers can distinguish direct bumps, transitive overrides, patch fallback, and blocked outcomes without re-walking nested reports.
+
 ### `ciExitCode(summary)`
 
 What: translates summary results into CI-friendly exit behavior.
@@ -84,6 +86,13 @@ Core options:
 - `source`: provenance source (`cli`, `sdk`, `mcp`, `openapi`, `unknown`)
 - `constraints.directDependenciesOnly`: block remediation outcomes for indirect dependencies
 - `constraints.preferVersionBump`: reject patch-file outcomes in favor of bump-only policy
+
+Scan and CI summary aggregates:
+
+- `patchCount`: total patch-file remediation attempts in the scan run
+- `strategyCounts`: aggregate counts by remediation strategy (`version-bump`, `override`, `patch-file`, `none`)
+- `dependencyScopeCounts`: aggregate counts by dependency scope (`direct`, `transitive`)
+- `unresolvedByReason`: aggregate counts by machine-readable unresolved reason
 
 Scan-specific options:
 
@@ -156,6 +165,12 @@ Common failure classes to handle:
 - no safe fixed version available
 - policy denial
 - patch confidence/validation failure
+
+Summary observability:
+
+- use `strategyCounts` to distinguish direct bumps from override-based transitive remediation
+- use `dependencyScopeCounts` to understand how much of a run was handled as direct dependency work versus transitive dependency remediation
+- use `unresolvedByReason` to drive CI escalation, dashboards, or ticket routing without parsing freeform messages
 
 Intelligence observability:
 

@@ -56,6 +56,11 @@ Do not introduce synonym fields for these concepts.
 
 ## Fallback Policy
 
+When a safe version exists but the vulnerable package is transitive:
+
+1. apply-package-override using package-manager-native fields
+2. only fall back to patch generation if override remediation cannot be applied
+
 When no safe version exists:
 
 1. fetch-package-source

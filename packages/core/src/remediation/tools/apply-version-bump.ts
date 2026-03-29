@@ -70,6 +70,7 @@ export const applyVersionBumpTool = tool({
         toVersion,
         applied: false,
         dryRun,
+        unresolvedReason: "policy-blocked",
         message: `Policy blocked changes for package "${packageName}".`,
       };
     }
@@ -87,6 +88,7 @@ export const applyVersionBumpTool = tool({
         toVersion,
         applied: false,
         dryRun,
+        unresolvedReason: "major-bump-required",
         message: `Policy blocked major bump for "${packageName}" (${fromVersion} -> ${toVersion}).`,
       };
     }
@@ -101,6 +103,7 @@ export const applyVersionBumpTool = tool({
         fromVersion,
         applied: false,
         dryRun,
+        unresolvedReason: "package-json-not-found",
         message: `Could not read package.json at "${pkgPath}".`,
       };
     }
@@ -117,6 +120,7 @@ export const applyVersionBumpTool = tool({
         fromVersion,
         applied: false,
         dryRun,
+        unresolvedReason: "indirect-dependency",
         message: `"${packageName}" was not found in package.json dependencies (it may be a transitive dep). Cannot auto-bump.`,
       };
     }
@@ -167,6 +171,7 @@ export const applyVersionBumpTool = tool({
           toVersion,
           applied: false,
           dryRun: false,
+          unresolvedReason: "install-failed",
           message: `${commands.installPreferOffline.join(" ")} failed after updating "${packageName}" to ${toVersion}. Reverted. Error: ${message}`,
         };
       }
@@ -201,6 +206,7 @@ export const applyVersionBumpTool = tool({
             toVersion,
             applied: false,
             dryRun: false,
+            unresolvedReason: "validation-failed",
             message: `${commands.test.join(" ")} failed after upgrading "${packageName}" to ${toVersion}. Rolled back to ${currentRange}. Error: ${message}`,
           };
         }

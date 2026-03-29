@@ -1,8 +1,8 @@
 {
   "name": "autoremediator",
   "private": false,
-  "version": "0.5.0",
-  "description": "Automated CVE remediation for Node.js dependencies with CLI, SDK, MCP, and scanner-to-fix workflows.",
+  "version": "0.6.0",
+  "description": "Risk-aware, agentic CVE remediation for Node.js using OSV, CISA KEV, and FIRST EPSS intelligence with policy and evidence controls.",
   "keywords": [
     "security-remediation",
     "dependency-security",

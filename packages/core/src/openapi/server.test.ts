@@ -21,6 +21,16 @@ describe("openapi server", () => {
     expect(optionsProps.packageManager.enum).toEqual(["npm", "pnpm", "yarn"]);
   });
 
+  it("declares strategy and unresolved aggregates on scan responses", () => {
+    const scanRoute = (OPENAPI_SPEC.paths as Record<string, any>)["/remediate-from-scan"];
+    const responseProps =
+      scanRoute.post.responses["200"].content["application/json"].schema.properties;
+
+    expect(responseProps.strategyCounts).toBeDefined();
+    expect(responseProps.dependencyScopeCounts).toBeDefined();
+    expect(responseProps.unresolvedByReason).toBeDefined();
+  });
+
   it("creates server with injected dependencies", () => {
     const server = createOpenApiServer({
       remediateFn: vi.fn(async () => ({ cveId: "CVE-2021-23337" } as any)),

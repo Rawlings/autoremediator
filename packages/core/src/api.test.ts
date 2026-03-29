@@ -40,7 +40,7 @@ vi.mock("./platform/idempotency.js", () => ({
   storeIdempotentReport: mocked.storeIdempotentReport,
 }));
 
-import { planRemediation, remediate, remediateFromScan } from "./api.js";
+import { planRemediation, remediate, remediateFromScan, toCiSummary } from "./api.js";
 
 describe("api preview and correlation behavior", () => {
   beforeEach(() => {
@@ -276,7 +276,7 @@ describe("api preview and correlation behavior", () => {
     expect(report.results[0]?.message).toContain("Constraint blocked remediation for indirect dependency");
   });
 
-  it("enforces preferVersionBump by rejecting patch-file result", async () => {
+  it("enforces preferVersionBump by rejecting non-version-bump result", async () => {
     mocked.runRemediationPipeline.mockResolvedValue({
       cveId: "CVE-2021-23337",
       cveDetails: null,
@@ -303,5 +303,143 @@ describe("api preview and correlation behavior", () => {
     expect(report.results[0]?.applied).toBe(false);
     expect(report.results[0]?.strategy).toBe("none");
     expect(report.results[0]?.message).toContain("Constraint prefers version-bump");
+  });
+
+  it("enforces preferVersionBump by rejecting override result", async () => {
+    mocked.runRemediationPipeline.mockResolvedValue({
+      cveId: "CVE-2021-23337",
+      cveDetails: null,
+      vulnerablePackages: [],
+      results: [
+        {
+          packageName: "minimist",
+          strategy: "override",
+          fromVersion: "1.2.0",
+          toVersion: "1.2.8",
+          applied: true,
+          dryRun: false,
+          message: "overridden",
+        },
+      ],
+      agentSteps: 1,
+      summary: "done",
+    });
+
+    const report = await remediate("CVE-2021-23337", {
+      cwd: "/tmp/project",
+      constraints: { preferVersionBump: true },
+    });
+
+    expect(report.results[0]?.applied).toBe(false);
+    expect(report.results[0]?.strategy).toBe("none");
+    expect(report.results[0]?.message).toContain("Constraint prefers version-bump");
+  });
+
+  it("aggregates strategy counts and unresolved reasons into scan report and CI summary", async () => {
+    mocked.uniqueCveIds.mockReturnValue(["CVE-2021-23337"]);
+    mocked.runRemediationPipeline.mockResolvedValue({
+      cveId: "CVE-2021-23337",
+      cveDetails: null,
+      vulnerablePackages: [
+        {
+          installed: { name: "lodash", version: "4.17.0", type: "direct" },
+          affected: {
+            name: "lodash",
+            ecosystem: "npm",
+            vulnerableRange: ">=4.0.0 <4.17.21",
+            source: "osv",
+          },
+        },
+        {
+          installed: { name: "minimist", version: "1.2.0", type: "indirect" },
+          affected: {
+            name: "minimist",
+            ecosystem: "npm",
+            vulnerableRange: ">=1.0.0 <1.2.8",
+            source: "osv",
+          },
+        },
+        {
+          installed: { name: "debug", version: "2.6.8", type: "indirect" },
+          affected: {
+            name: "debug",
+            ecosystem: "npm",
+            vulnerableRange: ">=2.0.0 <2.6.9",
+            source: "osv",
+          },
+        },
+      ],
+      results: [
+        {
+          packageName: "lodash",
+          strategy: "version-bump",
+          fromVersion: "4.17.0",
+          toVersion: "4.17.21",
+          applied: true,
+          dryRun: false,
+          message: "bumped",
+        },
+        {
+          packageName: "minimist",
+          strategy: "override",
+          fromVersion: "1.2.0",
+          toVersion: "1.2.8",
+          applied: true,
+          dryRun: false,
+          message: "overridden",
+        },
+        {
+          packageName: "debug",
+          strategy: "none",
+          fromVersion: "2.6.8",
+          applied: false,
+          dryRun: false,
+          unresolvedReason: "no-safe-version",
+          message: "unresolved",
+        },
+      ],
+      agentSteps: 1,
+      summary: "done",
+    });
+
+    const report = await remediateFromScan("./audit.json", {
+      cwd: "/tmp/project",
+    });
+    const summary = toCiSummary(report);
+
+    expect(report.strategyCounts).toEqual({
+      "version-bump": 1,
+      override: 1,
+      none: 1,
+    });
+    expect(report.dependencyScopeCounts).toEqual({
+      direct: 1,
+      transitive: 2,
+    });
+    expect(report.unresolvedByReason).toEqual({
+      "no-safe-version": 1,
+    });
+    expect(summary.strategyCounts).toEqual(report.strategyCounts);
+    expect(summary.dependencyScopeCounts).toEqual(report.dependencyScopeCounts);
+    expect(summary.unresolvedByReason).toEqual(report.unresolvedByReason);
+    expect(mocked.writeEvidenceLog).toHaveBeenCalledWith(
+      "/tmp/project",
+      expect.objectContaining({
+        summary: expect.objectContaining({
+          strategyCounts: {
+            "version-bump": 1,
+            override: 1,
+            none: 1,
+          },
+          dependencyScopeCounts: {
+            direct: 1,
+            transitive: 2,
+          },
+          unresolvedByReason: {
+            "no-safe-version": 1,
+          },
+        }),
+      })
+    );
   });
 });

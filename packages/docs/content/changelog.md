@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+### Added
+
+- Aggregate dependency-scope reporting via `dependencyScopeCounts` across SDK, CLI summaries, OpenAPI responses, and documentation.
+- Evidence log summary rollups for strategy counts, dependency scope counts, unresolved reasons, patch validation failures, and patch output location.
+- Root packaging shortcuts for the VS Code extension via `pnpm build:vsix` and `pnpm extension:package`.
+
+### Changed
+
+- Release-facing docs and README now describe transitive override remediation, direct-vs-transitive outcome reporting, and the `Node CVE Remediator` extension packaging flow.
+
 ## 0.4.0
 
 ### Added

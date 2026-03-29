@@ -1,15 +1,24 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { ciExitCode, remediate, remediateFromScan, toCiSummary, toSarifOutput } from "./api.js";
+import {
+  ciExitCode,
+  OPTION_DESCRIPTIONS,
+  remediate,
+  remediateFromScan,
+  toCiSummary,
+  toSarifOutput,
+} from "./api.js";
 import { existsSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { PACKAGE_VERSION } from "./version";
 
 type ScanFormat = "auto" | "npm-audit" | "yarn-audit" | "sarif";
 
 interface CommandOptions {
   cwd: string;
   packageManager?: "npm" | "pnpm" | "yarn";
+  patchesDir?: string;
   dryRun: boolean;
   preview: boolean;
   runTests: boolean;
@@ -41,6 +50,15 @@ function isCveId(value: string): boolean {
   return /^CVE-\d{4}-\d+$/i.test(value);
 }
 
+function formatCountMap(counts: Record<string, number> | undefined): string | undefined {
+  if (!counts) return undefined;
+
+  const entries = Object.entries(counts).filter(([, value]) => value > 0);
+  if (entries.length === 0) return undefined;
+
+  return entries.map(([key, value]) => `${key}=${value}`).join(", ");
+}
+
 async function runSingleCve(cveId: string, opts: CommandOptions): Promise<void> {
   const report = await remediate(cveId, {
     cwd: opts.cwd,
@@ -48,6 +66,7 @@ async function runSingleCve(cveId: string, opts: CommandOptions): Promise<void> 
     dryRun: opts.dryRun,
     preview: opts.preview,
     runTests: opts.runTests,
+    patchesDir: opts.patchesDir,
     policy: opts.policy,
     llmProvider: opts.llmProvider,
     requestId: opts.requestId,
@@ -78,6 +97,7 @@ async function runScanInput(inputPath: string, opts: CommandOptions): Promise<vo
     packageManager: opts.packageManager,
     format: opts.format,
     policy: opts.policy,
+    patchesDir: opts.patchesDir,
     dryRun: opts.dryRun,
     preview: opts.preview,
     runTests: opts.runTests,
@@ -121,6 +141,18 @@ async function runScanInput(inputPath: string, opts: CommandOptions): Promise<vo
   process.stdout.write(`Remediation reports: ${report.reports.length}\n`);
   process.stdout.write(`Successful remediations: ${report.successCount}\n`);
   process.stdout.write(`Failed remediations: ${report.failedCount}\n`);
+  const strategyCounts = formatCountMap(report.strategyCounts);
+  if (strategyCounts) {
+    process.stdout.write(`Strategy counts: ${strategyCounts}\n`);
+  }
+  const dependencyScopeCounts = formatCountMap(report.dependencyScopeCounts);
+  if (dependencyScopeCounts) {
+    process.stdout.write(`Dependency scope counts: ${dependencyScopeCounts}\n`);
+  }
+  const unresolvedByReason = formatCountMap(report.unresolvedByReason);
+  if (unresolvedByReason) {
+    process.stdout.write(`Unresolved reasons: ${unresolvedByReason}\n`);
+  }
   if (report.evidenceFile) {
     process.stdout.write(`Evidence: ${report.evidenceFile}\n`);
   }
@@ -142,28 +174,29 @@ export function createProgram(): Command {
   program
     .name("autoremediator")
     .description("Scanner-first Node.js vulnerability auto-remediation tool")
-    .version("0.1.2")
+    .version(PACKAGE_VERSION)
     .showHelpAfterError();
 
   program
     .command("cve")
     .description("Remediate a single CVE ID")
-    .argument("<cveId>", "CVE ID, e.g. CVE-2021-23337")
-    .option("--cwd <path>", "Target project directory", process.cwd())
-    .option("--package-manager <name>", "Package manager: npm|pnpm|yarn")
-    .option("--dry-run", "Plan changes only without mutating files", false)
-    .option("--preview", "Run non-mutating remediation preview mode", false)
-    .option("--run-tests", "Run package-manager test validation after apply", false)
-    .option("--llm-provider <provider>", "LLM provider: openai|anthropic|local")
-    .option("--request-id <id>", "Request correlation ID")
-    .option("--session-id <id>", "Session correlation ID")
-    .option("--parent-run-id <id>", "Parent run correlation ID")
-    .option("--idempotency-key <key>", "Idempotency key for replay-safe execution")
-    .option("--resume", "Resume by returning cached result for matching idempotency key", false)
-    .option("--actor <name>", "Actor identity for evidence provenance")
-    .option("--source <src>", "Source system: cli|sdk|mcp|openapi|unknown")
-    .option("--direct-dependencies-only", "Enforce direct-dependency-only remediation constraint", false)
-    .option("--prefer-version-bump", "Reject patch-file outcomes when version-bump is preferred", false)
+    .argument("<cveId>", OPTION_DESCRIPTIONS.cveId)
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
+    .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
+    .option("--dry-run", OPTION_DESCRIPTIONS.dryRun, false)
+    .option("--preview", OPTION_DESCRIPTIONS.preview, false)
+    .option("--run-tests", OPTION_DESCRIPTIONS.runTests, false)
+    .option("--llm-provider <provider>", OPTION_DESCRIPTIONS.llmProvider)
+    .option("--request-id <id>", OPTION_DESCRIPTIONS.requestId)
+    .option("--session-id <id>", OPTION_DESCRIPTIONS.sessionId)
+    .option("--parent-run-id <id>", OPTION_DESCRIPTIONS.parentRunId)
+    .option("--idempotency-key <key>", OPTION_DESCRIPTIONS.idempotencyKey)
+    .option("--resume", OPTION_DESCRIPTIONS.resume, false)
+    .option("--actor <name>", OPTION_DESCRIPTIONS.actor)
+    .option("--source <src>", `${OPTION_DESCRIPTIONS.source}: cli|sdk|mcp|openapi|unknown`)
+    .option("--direct-dependencies-only", OPTION_DESCRIPTIONS.directDependenciesOnly, false)
+    .option("--prefer-version-bump", OPTION_DESCRIPTIONS.preferVersionBump, false)
     .option("--json", "Print JSON output", false)
     .action(async (cveId: string, opts: CommandOptions) => {
       await runSingleCve(cveId, opts);
@@ -172,25 +205,26 @@ export function createProgram(): Command {
   program
     .command("scan")
     .description("Remediate vulnerabilities from scanner output (npm/pnpm/yarn audit JSON or SARIF)")
-    .requiredOption("--input <path>", "Path to scanner output file")
-    .option("--format <type>", "Input format: auto|npm-audit|yarn-audit|sarif", "auto")
-    .option("--cwd <path>", "Target project directory", process.cwd())
-    .option("--package-manager <name>", "Package manager: npm|pnpm|yarn")
-    .option("--policy <path>", "Path to policy file (.autoremediator.json)")
-    .option("--dry-run", "Plan changes only without mutating files", false)
-    .option("--preview", "Run non-mutating remediation preview mode", false)
-    .option("--run-tests", "Run package-manager test validation after apply", false)
-    .option("--llm-provider <provider>", "LLM provider: openai|anthropic|local")
-    .option("--request-id <id>", "Request correlation ID")
-    .option("--session-id <id>", "Session correlation ID")
-    .option("--parent-run-id <id>", "Parent run correlation ID")
-    .option("--idempotency-key <key>", "Idempotency key for replay-safe execution")
-    .option("--resume", "Resume by returning cached result for matching idempotency key", false)
-    .option("--actor <name>", "Actor identity for evidence provenance")
-    .option("--source <src>", "Source system: cli|sdk|mcp|openapi|unknown")
-    .option("--direct-dependencies-only", "Enforce direct-dependency-only remediation constraint", false)
-    .option("--prefer-version-bump", "Reject patch-file outcomes when version-bump is preferred", false)
-    .option("--evidence", "Enable evidence file output", true)
+    .requiredOption("--input <path>", OPTION_DESCRIPTIONS.inputPath)
+    .option("--format <type>", OPTION_DESCRIPTIONS.format, "auto")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
+    .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
+    .option("--policy <path>", OPTION_DESCRIPTIONS.policy)
+    .option("--dry-run", OPTION_DESCRIPTIONS.dryRun, false)
+    .option("--preview", OPTION_DESCRIPTIONS.preview, false)
+    .option("--run-tests", OPTION_DESCRIPTIONS.runTests, false)
+    .option("--llm-provider <provider>", OPTION_DESCRIPTIONS.llmProvider)
+    .option("--request-id <id>", OPTION_DESCRIPTIONS.requestId)
+    .option("--session-id <id>", OPTION_DESCRIPTIONS.sessionId)
+    .option("--parent-run-id <id>", OPTION_DESCRIPTIONS.parentRunId)
+    .option("--idempotency-key <key>", OPTION_DESCRIPTIONS.idempotencyKey)
+    .option("--resume", OPTION_DESCRIPTIONS.resume, false)
+    .option("--actor <name>", OPTION_DESCRIPTIONS.actor)
+    .option("--source <src>", `${OPTION_DESCRIPTIONS.source}: cli|sdk|mcp|openapi|unknown`)
+    .option("--direct-dependencies-only", OPTION_DESCRIPTIONS.directDependenciesOnly, false)
+    .option("--prefer-version-bump", OPTION_DESCRIPTIONS.preferVersionBump, false)
+    .option("--evidence", OPTION_DESCRIPTIONS.evidence, true)
     .option("--no-evidence", "Disable evidence file output")
     .option("--ci", "Enable CI behavior (non-zero exit on failed remediations)", false)
     .option("--summary-file <path>", "Write machine-readable scan summary JSON to path")
@@ -205,25 +239,26 @@ export function createProgram(): Command {
   //   autoremediator audit.json
   program
     .argument("[target]", "Scanner output file path (or CVE ID fallback)")
-    .option("--cwd <path>", "Target project directory", process.cwd())
-    .option("--package-manager <name>", "Package manager: npm|pnpm|yarn")
-    .option("--dry-run", "Plan changes only without mutating files", false)
-    .option("--preview", "Run non-mutating remediation preview mode", false)
-    .option("--run-tests", "Run package-manager test validation after apply", false)
-    .option("--llm-provider <provider>", "LLM provider: openai|anthropic|local")
-    .option("--request-id <id>", "Request correlation ID")
-    .option("--session-id <id>", "Session correlation ID")
-    .option("--parent-run-id <id>", "Parent run correlation ID")
-    .option("--idempotency-key <key>", "Idempotency key for replay-safe execution")
-    .option("--resume", "Resume by returning cached result for matching idempotency key", false)
-    .option("--actor <name>", "Actor identity for evidence provenance")
-    .option("--source <src>", "Source system: cli|sdk|mcp|openapi|unknown")
-    .option("--direct-dependencies-only", "Enforce direct-dependency-only remediation constraint", false)
-    .option("--prefer-version-bump", "Reject patch-file outcomes when version-bump is preferred", false)
-    .option("--input <path>", "Path to scanner output file (scanner-first mode)")
-    .option("--format <type>", "Input format: auto|npm-audit|yarn-audit|sarif", "auto")
-    .option("--policy <path>", "Path to policy file (.autoremediator.json)")
-    .option("--evidence", "Enable evidence file output", true)
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
+    .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
+    .option("--dry-run", OPTION_DESCRIPTIONS.dryRun, false)
+    .option("--preview", OPTION_DESCRIPTIONS.preview, false)
+    .option("--run-tests", OPTION_DESCRIPTIONS.runTests, false)
+    .option("--llm-provider <provider>", OPTION_DESCRIPTIONS.llmProvider)
+    .option("--request-id <id>", OPTION_DESCRIPTIONS.requestId)
+    .option("--session-id <id>", OPTION_DESCRIPTIONS.sessionId)
+    .option("--parent-run-id <id>", OPTION_DESCRIPTIONS.parentRunId)
+    .option("--idempotency-key <key>", OPTION_DESCRIPTIONS.idempotencyKey)
+    .option("--resume", OPTION_DESCRIPTIONS.resume, false)
+    .option("--actor <name>", OPTION_DESCRIPTIONS.actor)
+    .option("--source <src>", `${OPTION_DESCRIPTIONS.source}: cli|sdk|mcp|openapi|unknown`)
+    .option("--direct-dependencies-only", OPTION_DESCRIPTIONS.directDependenciesOnly, false)
+    .option("--prefer-version-bump", OPTION_DESCRIPTIONS.preferVersionBump, false)
+    .option("--input <path>", `${OPTION_DESCRIPTIONS.inputPath} (scanner-first mode)`)
+    .option("--format <type>", OPTION_DESCRIPTIONS.format, "auto")
+    .option("--policy <path>", OPTION_DESCRIPTIONS.policy)
+    .option("--evidence", OPTION_DESCRIPTIONS.evidence, true)
     .option("--no-evidence", "Disable evidence file output")
     .option("--ci", "Enable CI behavior (non-zero exit on failed remediations)", false)
     .option("--summary-file <path>", "Write machine-readable scan summary JSON to path")

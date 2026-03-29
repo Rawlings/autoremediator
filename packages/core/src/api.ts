@@ -8,10 +8,14 @@
 import { runRemediationPipeline } from "./remediation/pipeline.js";
 import type {
   CorrelationContext,
+  DependencyScope,
+  DependencyScopeCounts,
+  PatchStrategyCounts,
   ProvenanceContext,
   RemediationConstraints,
   RemediateOptions,
   RemediationReport,
+  UnresolvedReasonCounts,
 } from "./platform/types.js";
 import { parseScanInput, type ScanInputFormat, uniqueCveIds } from "./scanner/index.js";
 import { addEvidenceStep, createEvidenceLog, finalizeEvidence, writeEvidenceLog } from "./platform/evidence.js";
@@ -32,6 +36,11 @@ export type {
   VulnerablePackage,
   PatchResult,
   PatchStrategy,
+  PatchStrategyCounts,
+  DependencyScope,
+  DependencyScopeCounts,
+  UnresolvedReason,
+  UnresolvedReasonCounts,
 } from "./platform/types.js";
 export type { ScanInputFormat } from "./scanner/index.js";
 
@@ -57,6 +66,9 @@ export interface ScanReport {
     cveId: string;
     error: string;
   }>;
+  strategyCounts?: PatchStrategyCounts;
+  dependencyScopeCounts?: DependencyScopeCounts;
+  unresolvedByReason?: UnresolvedReasonCounts;
   patchesDir?: string;
   correlation?: CorrelationContext;
   provenance?: ProvenanceContext;
@@ -80,11 +92,122 @@ export interface CiSummary {
     cveId: string;
     error: string;
   }>;
+  strategyCounts?: PatchStrategyCounts;
+  dependencyScopeCounts?: DependencyScopeCounts;
+  unresolvedByReason?: UnresolvedReasonCounts;
   patchesDir?: string;
   correlation?: CorrelationContext;
   provenance?: ProvenanceContext;
   constraints?: RemediationConstraints;
   idempotencyKey?: string;
+}
+
+type JsonSchemaProperty = Record<string, unknown>;
+
+export const PACKAGE_MANAGER_VALUES = ["npm", "pnpm", "yarn"] as const;
+export const LLM_PROVIDER_VALUES = ["openai", "anthropic", "local"] as const;
+export const PROVENANCE_SOURCE_VALUES = ["cli", "sdk", "mcp", "openapi", "unknown"] as const;
+
+export const OPTION_DESCRIPTIONS = {
+  cveId: "CVE ID, e.g. CVE-2021-23337",
+  inputPath: "Absolute path to the scanner output file",
+  cwd: "Absolute path to the project root (default: process.cwd())",
+  packageManager: "Package manager override (auto-detected by default)",
+  dryRun: "If true, plan changes but write nothing",
+  preview: "If true, enforce non-mutating preview mode",
+  runTests: "Run package-manager test command after applying fix",
+  llmProvider: "LLM provider override",
+  patchesDir: "Directory to write .patch files (default: ./patches)",
+  policy: "Optional path to .autoremediator policy file",
+  requestId: "Request correlation ID",
+  sessionId: "Session correlation ID",
+  parentRunId: "Parent run correlation ID",
+  idempotencyKey: "Idempotency key for replay-safe execution",
+  resume: "Return cached result for matching idempotency key when available",
+  actor: "Actor identity for evidence provenance",
+  source: "Source system for provenance",
+  format: "Scanner format (default: auto)",
+  evidence: "Write evidence JSON to .autoremediator/evidence/ (default: true)",
+  directDependenciesOnly: "Restrict remediation to direct dependencies only",
+  preferVersionBump: "Reject override and patch remediation when version-bump-only policy is required",
+} as const;
+
+export function createConstraintSchemaProperties(): Record<string, JsonSchemaProperty> {
+  return {
+    directDependenciesOnly: { type: "boolean", description: OPTION_DESCRIPTIONS.directDependenciesOnly },
+    preferVersionBump: { type: "boolean", description: OPTION_DESCRIPTIONS.preferVersionBump },
+  };
+}
+
+export function createRemediateOptionSchemaProperties(options?: {
+  includeDryRun?: boolean;
+  includePreview?: boolean;
+}): Record<string, JsonSchemaProperty> {
+  const includeDryRun = options?.includeDryRun ?? true;
+  const includePreview = options?.includePreview ?? true;
+
+  return {
+    cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
+    packageManager: { type: "string", enum: [...PACKAGE_MANAGER_VALUES], description: OPTION_DESCRIPTIONS.packageManager },
+    ...(includeDryRun ? { dryRun: { type: "boolean", description: OPTION_DESCRIPTIONS.dryRun } } : {}),
+    ...(includePreview ? { preview: { type: "boolean", description: OPTION_DESCRIPTIONS.preview } } : {}),
+    runTests: { type: "boolean", description: OPTION_DESCRIPTIONS.runTests },
+    llmProvider: { type: "string", enum: [...LLM_PROVIDER_VALUES], description: OPTION_DESCRIPTIONS.llmProvider },
+    patchesDir: { type: "string", description: OPTION_DESCRIPTIONS.patchesDir },
+    policy: { type: "string", description: OPTION_DESCRIPTIONS.policy },
+    requestId: { type: "string", description: OPTION_DESCRIPTIONS.requestId },
+    sessionId: { type: "string", description: OPTION_DESCRIPTIONS.sessionId },
+    parentRunId: { type: "string", description: OPTION_DESCRIPTIONS.parentRunId },
+    idempotencyKey: { type: "string", description: OPTION_DESCRIPTIONS.idempotencyKey },
+    resume: { type: "boolean", description: OPTION_DESCRIPTIONS.resume },
+    actor: { type: "string", description: OPTION_DESCRIPTIONS.actor },
+    source: { type: "string", enum: [...PROVENANCE_SOURCE_VALUES], description: OPTION_DESCRIPTIONS.source },
+    constraints: {
+      type: "object",
+      properties: createConstraintSchemaProperties(),
+    },
+  };
+}
+
+export function createScanOptionSchemaProperties(): Record<string, JsonSchemaProperty> {
+  return {
+    ...createRemediateOptionSchemaProperties(),
+    format: { type: "string", enum: ["npm-audit", "yarn-audit", "sarif", "auto"], description: OPTION_DESCRIPTIONS.format },
+    evidence: { type: "boolean", description: OPTION_DESCRIPTIONS.evidence },
+  };
+}
+
+export function createScanReportSchemaProperties(): Record<string, JsonSchemaProperty> {
+  return {
+    schemaVersion: { type: "string" },
+    status: { type: "string", enum: ["ok", "partial", "failed"] },
+    generatedAt: { type: "string" },
+    cveIds: { type: "array", items: { type: "string" } },
+    reports: { type: "array", items: { type: "object" } },
+    successCount: { type: "number" },
+    failedCount: { type: "number" },
+    errors: { type: "array", items: { type: "object" } },
+    evidenceFile: { type: "string" },
+    patchCount: { type: "number" },
+    patchValidationFailures: { type: "array", items: { type: "object" } },
+    strategyCounts: {
+      type: "object",
+      additionalProperties: { type: "number" },
+    },
+    dependencyScopeCounts: {
+      type: "object",
+      additionalProperties: { type: "number" },
+    },
+    unresolvedByReason: {
+      type: "object",
+      additionalProperties: { type: "number" },
+    },
+    patchesDir: { type: "string" },
+    correlation: { type: "object" },
+    provenance: { type: "object" },
+    constraints: { type: "object" },
+    idempotencyKey: { type: "string" },
+  };
 }
 
 function buildRequestId(): string {
@@ -136,16 +259,18 @@ function enforceConstraints(
         ...result,
         strategy: "none" as const,
         applied: false,
+        unresolvedReason: "constraint-blocked" as const,
         message: `Constraint blocked remediation for indirect dependency \"${result.packageName}\".`,
       };
     }
 
-    if (constraints.preferVersionBump && result.strategy === "patch-file") {
+    if (constraints.preferVersionBump && result.strategy !== "version-bump" && result.strategy !== "none") {
       return {
         ...result,
         strategy: "none" as const,
         applied: false,
-        message: `Constraint prefers version-bump and rejected patch-file remediation for \"${result.packageName}\".`,
+        unresolvedReason: "constraint-blocked" as const,
+        message: `Constraint prefers version-bump and rejected ${result.strategy} remediation for \"${result.packageName}\".`,
       };
     }
 
@@ -157,6 +282,59 @@ function enforceConstraints(
     results: nextResults,
     constraints,
   };
+}
+
+function buildStrategyCounts(reports: RemediationReport[]): PatchStrategyCounts | undefined {
+  const counts: PatchStrategyCounts = {};
+
+  for (const report of reports) {
+    for (const result of report.results) {
+      counts[result.strategy] = (counts[result.strategy] ?? 0) + 1;
+    }
+  }
+
+  return Object.keys(counts).length > 0 ? counts : undefined;
+}
+
+function toDependencyScope(installedType: "direct" | "indirect"): DependencyScope {
+  return installedType === "direct" ? "direct" : "transitive";
+}
+
+function buildDependencyScopeCounts(reports: RemediationReport[]): DependencyScopeCounts | undefined {
+  const counts: DependencyScopeCounts = {};
+
+  for (const report of reports) {
+    const packageScopes = new Map<string, DependencyScope>();
+
+    for (const vulnerablePackage of report.vulnerablePackages) {
+      const scope = toDependencyScope(vulnerablePackage.installed.type);
+      const current = packageScopes.get(vulnerablePackage.installed.name);
+      if (!current || current !== "direct") {
+        packageScopes.set(vulnerablePackage.installed.name, scope);
+      }
+    }
+
+    for (const result of report.results) {
+      const scope = packageScopes.get(result.packageName);
+      if (!scope) continue;
+      counts[scope] = (counts[scope] ?? 0) + 1;
+    }
+  }
+
+  return Object.keys(counts).length > 0 ? counts : undefined;
+}
+
+function buildUnresolvedReasonCounts(reports: RemediationReport[]): UnresolvedReasonCounts | undefined {
+  const counts: UnresolvedReasonCounts = {};
+
+  for (const report of reports) {
+    for (const result of report.results) {
+      if (!result.unresolvedReason) continue;
+      counts[result.unresolvedReason] = (counts[result.unresolvedReason] ?? 0) + 1;
+    }
+  }
+
+  return Object.keys(counts).length > 0 ? counts : undefined;
 }
 
 /**
@@ -323,6 +501,28 @@ export async function remediateFromScan(
     status = "failed";
   }
 
+  const strategyCounts = buildStrategyCounts(reports);
+  const dependencyScopeCounts = buildDependencyScopeCounts(reports);
+  const unresolvedByReason = buildUnresolvedReasonCounts(reports);
+  let remediationCount = 0;
+  for (const report of reports) {
+    remediationCount += report.results.length;
+  }
+
+  evidence.summary = {
+    status,
+    cveCount: cveIds.length,
+    remediationCount,
+    successCount,
+    failedCount,
+    patchCount,
+    patchValidationFailures: patchValidationFailures.length > 0 ? patchValidationFailures : undefined,
+    strategyCounts,
+    dependencyScopeCounts,
+    unresolvedByReason,
+    patchesDir: patchCount > 0 ? patchesDir : undefined,
+  };
+
   finalizeEvidence(evidence);
   const evidenceFile = options.evidence === false ? undefined : writeEvidenceLog(cwd, evidence);
 
@@ -338,6 +538,9 @@ export async function remediateFromScan(
     evidenceFile,
     patchCount,
     patchValidationFailures: patchValidationFailures.length > 0 ? patchValidationFailures : undefined,
+    strategyCounts,
+    dependencyScopeCounts,
+    unresolvedByReason,
     patchesDir: patchCount > 0 ? patchesDir : undefined,
     correlation,
     provenance,
@@ -364,6 +567,9 @@ export function toCiSummary(report: ScanReport): CiSummary {
     evidenceFile: report.evidenceFile,
     patchCount: report.patchCount || 0,
     patchValidationFailures: report.patchValidationFailures,
+    strategyCounts: report.strategyCounts,
+    dependencyScopeCounts: report.dependencyScopeCounts,
+    unresolvedByReason: report.unresolvedByReason,
     patchesDir: report.patchesDir,
     correlation: report.correlation,
     provenance: report.provenance,

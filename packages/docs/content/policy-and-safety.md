@@ -79,24 +79,37 @@ These guarantees are critical for trustable automation in CI.
 - direct dependencies:
   - primary automatic upgrade target when safe fixed versions exist
 - indirect dependencies:
-  - may be unresolved when no safe direct bump path exists
-  - should route through team escalation or controlled fallback strategy
+  - can be remediated through package-manager-native overrides or resolutions when a safe transitive fix exists
+  - remain unresolved when no safe override path or validated fallback exists
+  - should route through team escalation when automation cannot produce a safe validated outcome
 
-Why this distinction exists: direct dependency changes are typically auditable and reviewable in repository context, while indirect fixes can require broader dependency graph decisions.
+Why this distinction exists: direct dependency changes are typically auditable and reviewable in repository context, while indirect fixes can require broader dependency graph decisions even when the package manager supports an override-based remediation path.
 
 ## Fallback Safety Path
 
-When a safe version bump cannot be applied, fallback may attempt:
+When a safe direct version bump cannot be applied, remediation may attempt:
 
-1. source fetch
-2. patch generation
-3. patch apply (if confidence and validation gates pass)
+1. package-manager-native override or resolution for transitive dependencies
+2. source fetch
+3. patch generation
+4. patch apply (if confidence and validation gates pass)
 
 Safety implications:
 
+- override-based remediation must still pass install and optional test validation
 - low-confidence patch output must not be applied
 - validation failures must be unresolved outcomes
 - unresolved results must remain visible for manual handling
+
+## Summary Signals
+
+Scan and CI runs expose aggregate summary fields in addition to per-CVE results:
+
+- `strategyCounts`: counts for `version-bump`, `override`, `patch-file`, and `none`
+- `dependencyScopeCounts`: counts for direct versus transitive remediation outcomes
+- `unresolvedByReason`: counts by machine-readable unresolved reason such as `no-safe-version`, `constraint-blocked`, and `patch-validation-failed`
+
+These fields make it easier to build CI gates, dashboards, and escalation rules without reparsing each nested remediation result.
 
 ## Validation Controls
 

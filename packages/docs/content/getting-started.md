@@ -1,13 +1,15 @@
 # Getting Started
 
-Autoremediator is an automation-first remediation system for Node.js dependency CVEs.
+Autoremediator is a risk-aware, agentic remediation system for Node.js dependency CVEs.
 
-It supports two primary entry paths:
+It combines OSV package intelligence, CISA KEV known-exploited signals, and FIRST EPSS exploit probability scores so teams can prioritize what is more likely to be exploited instead of treating every finding equally.
+
+It supports two primary execution paths:
 
 - direct CVE remediation (for urgent, targeted fixes)
 - scanner-driven remediation (for CI and recurring automation)
 
-This page explains what to run, why you would run it, and how to interpret results safely.
+This page explains what to run, why you would run it, and how to interpret risk-aware results with safety and evidence controls.
 
 Related references:
 

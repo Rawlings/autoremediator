@@ -70,7 +70,28 @@ export interface VulnerablePackage {
 }
 
 /** The outcome of a single patch operation */
-export type PatchStrategy = "version-bump" | "patch-file" | "none";
+export type PatchStrategy = "version-bump" | "override" | "patch-file" | "none";
+
+export type DependencyScope = "direct" | "transitive";
+
+export type UnresolvedReason =
+  | "constraint-blocked"
+  | "indirect-dependency"
+  | "install-failed"
+  | "major-bump-required"
+  | "no-safe-version"
+  | "override-apply-failed"
+  | "package-json-not-found"
+  | "patch-apply-failed"
+  | "patch-validation-failed"
+  | "policy-blocked"
+  | "validation-failed";
+
+export type PatchStrategyCounts = Partial<Record<PatchStrategy, number>>;
+
+export type DependencyScopeCounts = Partial<Record<DependencyScope, number>>;
+
+export type UnresolvedReasonCounts = Partial<Record<UnresolvedReason, number>>;
 
 export interface PatchResult {
   packageName: string;
@@ -81,6 +102,7 @@ export interface PatchResult {
   applied: boolean;
   dryRun: boolean;
   message: string;
+  unresolvedReason?: UnresolvedReason;
   validation?: {
     passed: boolean;
     error?: string;

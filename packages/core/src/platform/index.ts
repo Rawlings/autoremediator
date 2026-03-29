@@ -7,7 +7,12 @@ export type {
   InventoryPackage,
   VulnerablePackage,
   PatchStrategy,
+  PatchStrategyCounts,
+  DependencyScope,
+  DependencyScopeCounts,
   PatchResult,
+  UnresolvedReason,
+  UnresolvedReasonCounts,
   RemediateOptions,
   RemediationReport,
 } from "./types.js";
@@ -35,6 +40,7 @@ export {
   finalizeEvidence,
   writeEvidenceLog,
   type EvidenceStep,
+  type EvidenceSummary,
   type EvidenceLog,
 } from "./evidence.js";
 
