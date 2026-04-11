@@ -26,7 +26,8 @@ Create `.autoremediator.json`:
     "preferVersionBump": false,
     "installMode": "deterministic",
     "installPreferOffline": true,
-    "enforceFrozenLockfile": true
+    "enforceFrozenLockfile": true,
+    "workspace": "@apps/web"
   }
 }
 ```
@@ -58,6 +59,9 @@ Field intent:
 - `constraints.enforceFrozenLockfile`:
   - what: explicitly enables or disables lockfile-strict install behavior
   - why: allows teams to enforce deterministic lockfile safety or temporarily relax it during recovery workflows
+- `constraints.workspace`:
+  - what: scopes install/list/test operations to a specific workspace/package selector
+  - why: reduces remediation blast radius in monorepos and improves run performance
 
 ## Precedence Rules
 

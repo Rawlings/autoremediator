@@ -16,6 +16,7 @@ import {
   detectPackageManager,
   getPackageManagerCommands,
   resolveInstallCommand,
+  resolveTestCommand,
   type PackageManager,
 } from "../../platform/package-manager.js";
 import { withRepoLock } from "../../platform/repo-lock.js";
@@ -101,6 +102,10 @@ export const applyPatchFileTool = tool({
     cwd: z.string().describe("Project root directory (for package.json)"),
     packageManager: z.enum(["npm", "pnpm", "yarn"]).optional().describe("Package manager used by the target project (auto-detected if omitted)"),
     policy: z.string().optional().describe("Optional path to .autoremediator policy file"),
+    installMode: z.enum(["standard", "prefer-offline", "deterministic"]).optional(),
+    installPreferOffline: z.boolean().optional(),
+    enforceFrozenLockfile: z.boolean().optional(),
+    workspace: z.string().optional(),
     validateWithTests: z
       .boolean()
       .optional()
@@ -121,6 +126,10 @@ export const applyPatchFileTool = tool({
     cwd,
     packageManager,
     policy,
+    installMode,
+    installPreferOffline,
+    enforceFrozenLockfile,
+    workspace,
     riskLevel,
     validateWithTests,
     dryRun,
@@ -128,7 +137,15 @@ export const applyPatchFileTool = tool({
     try {
       const pm = (packageManager ?? detectPackageManager(cwd)) as PackageManager;
       const loadedPolicy = loadPolicy(cwd, policy);
-      const installCommand = resolveInstallCommand(pm, loadedPolicy.constraints);
+      const commandConstraints = {
+        ...loadedPolicy.constraints,
+        installMode: installMode ?? loadedPolicy.constraints?.installMode,
+        installPreferOffline: installPreferOffline ?? loadedPolicy.constraints?.installPreferOffline,
+        enforceFrozenLockfile: enforceFrozenLockfile ?? loadedPolicy.constraints?.enforceFrozenLockfile,
+        workspace: workspace ?? loadedPolicy.constraints?.workspace,
+      };
+      const installCommand = resolveInstallCommand(pm, commandConstraints);
+      const testCommand = resolveTestCommand(pm, commandConstraints);
       const selectedPatch = patchContent ?? patches?.[0]?.unifiedDiff;
       const patchFiles = extractPatchedFiles(selectedPatch ?? "");
       const hunkCount = countPatchHunks(selectedPatch ?? "");
@@ -226,7 +243,6 @@ export const applyPatchFileTool = tool({
 
         let validationResult: ValidationResult | undefined;
         const patchMode = await resolvePatchMode(pm, cwd);
-        const commands = getPackageManagerCommands(pm);
         const artifact: PatchArtifact = {
           ...baseArtifact,
           patchMode,
@@ -347,7 +363,7 @@ export const applyPatchFileTool = tool({
 
         // Step 4: Validate with tests if requested
         if (validateWithTests) {
-          validationResult = await validatePatchWithTests(cwd, pm);
+          validationResult = await validatePatchWithTests(cwd, testCommand);
           if (!validationResult.passed) {
             await cleanupPatchArtifacts({
               cwd,
@@ -701,10 +717,9 @@ function extractPatchDirectory(output: string): string {
 /**
  * Validate patch by running tests in the project.
  */
-async function validatePatchWithTests(cwd: string, packageManager: PackageManager): Promise<ValidationResult> {
+async function validatePatchWithTests(cwd: string, testCommand: string[]): Promise<ValidationResult> {
   try {
-    const commands = getPackageManagerCommands(packageManager);
-    const [cmd, ...args] = commands.test;
+    const [cmd, ...args] = testCommand;
 
     // Run package manager test command with a timeout
     const result = await execa(cmd, args, {

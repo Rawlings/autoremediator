@@ -116,7 +116,12 @@ export async function runLocalRemediationPipeline(
     };
   }
 
-  const inventory = await (checkInventoryTool as any).execute({ cwd, packageManager });
+  const inventory = await (checkInventoryTool as any).execute({
+    cwd,
+    packageManager,
+    policy: options.policy,
+    workspace: constraints.workspace,
+  });
   agentSteps += 1;
 
   if (inventory?.error) {
@@ -198,6 +203,10 @@ export async function runLocalRemediationPipeline(
         patchConfidenceThresholds,
         dynamicModelRouting,
         dynamicRoutingThresholdChars,
+        installMode: constraints.installMode,
+        installPreferOffline: constraints.installPreferOffline,
+        enforceFrozenLockfile: constraints.enforceFrozenLockfile,
+        workspace: constraints.workspace,
       });
       agentSteps += fallback.steps;
       collectedResults.push(fallback.result);

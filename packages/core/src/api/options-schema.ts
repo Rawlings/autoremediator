@@ -40,6 +40,7 @@ export const OPTION_DESCRIPTIONS = {
   installMode: "Install behavior profile: deterministic|prefer-offline|standard",
   installPreferOffline: "Override prefer-offline flag behavior for install commands",
   enforceFrozenLockfile: "Override frozen lockfile behavior for install commands",
+  workspace: "Workspace/package selector for scoped remediation in monorepos",
 } as const;
 
 export function createConstraintSchemaProperties(): Record<string, JsonSchemaProperty> {
@@ -53,6 +54,7 @@ export function createConstraintSchemaProperties(): Record<string, JsonSchemaPro
     },
     installPreferOffline: { type: "boolean", description: OPTION_DESCRIPTIONS.installPreferOffline },
     enforceFrozenLockfile: { type: "boolean", description: OPTION_DESCRIPTIONS.enforceFrozenLockfile },
+    workspace: { type: "string", description: OPTION_DESCRIPTIONS.workspace },
   };
 }
 

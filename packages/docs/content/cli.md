@@ -76,6 +76,7 @@ When to use which mode:
 | `--install-mode <deterministic|prefer-offline|standard>` | install command profile for apply and rollback steps | lets operators trade reproducibility vs install flexibility |
 | `--install-prefer-offline <true|false>` | force prefer-offline flag behavior | useful for cache-heavy CI or when diagnosing stale cache issues |
 | `--enforce-frozen-lockfile <true|false>` | force lockfile-strict install behavior | controls whether install steps must preserve lockfile determinism |
+| `--workspace <name>` | workspace/package selector for scoped monorepo remediation | limits install/list/test operations to a target workspace when supported |
 | `--json` | machine-readable output | simplifies CI parsing and SIEM ingestion |
 
 ## Scan Mode Options

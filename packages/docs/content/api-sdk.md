@@ -108,6 +108,7 @@ Core options:
 - `constraints.installMode`: install profile (`deterministic`, `prefer-offline`, `standard`) used for apply and rollback installs
 - `constraints.installPreferOffline`: explicit override for `--prefer-offline` install flag behavior
 - `constraints.enforceFrozenLockfile`: explicit override for frozen-lockfile behavior (`npm ci` / `--frozen-lockfile`)
+- `constraints.workspace`: workspace/package selector used to scope monorepo install/list/test operations when supported by the package manager
 - `modelPersonality`: prompt behavior profile (`analytical`, `pragmatic`, `balanced`)
 - `providerSafetyProfile`: confidence/safety posture profile (`strict`, `relaxed`)
 - `requireConsensusForHighRisk`: require consensus verification for high-risk generated patches

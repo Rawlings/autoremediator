@@ -9,6 +9,7 @@ All notable changes to this project are documented in this file.
 - Added new high-risk consensus controls across SDK, CLI, MCP, and OpenAPI: `consensusProvider` and `consensusModel`.
 - Added per-risk patch confidence override support through `patchConfidenceThresholds` (`low`, `medium`, `high`).
 - Added install behavior constraints (`installMode`, `installPreferOffline`, `enforceFrozenLockfile`) to give consumers explicit control over remediation apply/rollback install commands.
+- Added workspace-scoped remediation constraint support (`workspace`) for monorepo-targeted install/list/test execution.
 
 ### Changed
 

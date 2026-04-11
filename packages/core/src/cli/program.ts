@@ -64,6 +64,7 @@ function addSharedOptions(program: Command, includeInput = false): Command {
       `${OPTION_DESCRIPTIONS.enforceFrozenLockfile} (true|false)`,
       parseBooleanFlag
     )
+    .option("--workspace <name>", OPTION_DESCRIPTIONS.workspace)
     .option("--policy <path>", OPTION_DESCRIPTIONS.policy)
     .option("--evidence", OPTION_DESCRIPTIONS.evidence, true)
     .option("--no-evidence", "Disable evidence file output")

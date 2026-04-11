@@ -25,6 +25,22 @@ function addFlag(command: string[], flag: string): string[] {
   return [...command, flag];
 }
 
+function withWorkspace(command: string[], pm: PackageManager, workspace?: string): string[] {
+  if (!workspace) return command;
+
+  if (pm === "pnpm") {
+    // pnpm expects filters before the subcommand: pnpm --filter <selector> install
+    return [command[0], "--filter", workspace, ...command.slice(1)];
+  }
+
+  if (pm === "npm") {
+    return [...command, "--workspace", workspace];
+  }
+
+  // Yarn workspace command semantics differ by version; keep default behavior.
+  return command;
+}
+
 export function resolveInstallCommand(
   pm: PackageManager,
   constraints?: RemediationConstraints
@@ -60,7 +76,23 @@ export function resolveInstallCommand(
     command.push("--prefer-offline");
   }
 
-  return command;
+  return withWorkspace(command, pm, constraints?.workspace);
+}
+
+export function resolveListCommand(pm: PackageManager, constraints?: RemediationConstraints): string[] {
+  const base =
+    pm === "pnpm"
+      ? ["pnpm", "list", "--json", "--depth", "99"]
+      : pm === "yarn"
+        ? ["yarn", "list", "--json"]
+        : ["npm", "list", "--json", "--all"];
+
+  return withWorkspace(base, pm, constraints?.workspace);
+}
+
+export function resolveTestCommand(pm: PackageManager, constraints?: RemediationConstraints): string[] {
+  const base = pm === "pnpm" ? ["pnpm", "test"] : pm === "yarn" ? ["yarn", "test"] : ["npm", "test"];
+  return withWorkspace(base, pm, constraints?.workspace);
 }
 
 export function getPackageManagerCommands(pm: PackageManager): PackageManagerCommands {

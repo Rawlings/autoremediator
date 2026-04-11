@@ -34,6 +34,7 @@ const mocked = vi.hoisted(() => ({
     installMode: "Install behavior profile: deterministic|prefer-offline|standard",
     installPreferOffline: "Override prefer-offline flag behavior for install commands",
     enforceFrozenLockfile: "Override frozen lockfile behavior for install commands",
+    workspace: "Workspace/package selector for scoped remediation in monorepos",
   },
 }));
 
@@ -278,6 +279,8 @@ describe("cli preview and correlation option forwarding", () => {
         "false",
         "--enforce-frozen-lockfile",
         "true",
+        "--workspace",
+        "@apps/web",
       ]
     );
 
@@ -288,6 +291,7 @@ describe("cli preview and correlation option forwarding", () => {
           installMode: "standard",
           installPreferOffline: false,
           enforceFrozenLockfile: true,
+          workspace: "@apps/web",
         }),
       })
     );

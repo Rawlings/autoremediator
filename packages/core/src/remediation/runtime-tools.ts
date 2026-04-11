@@ -9,19 +9,24 @@ import { generatePatchTool } from "./tools/generate-patch.js";
 import { applyPatchFileTool } from "./tools/apply-patch-file.js";
 
 interface RuntimeToolContext {
+  checkInventoryToolForRun: typeof checkInventoryTool;
   applyVersionBumpToolForRun: typeof applyVersionBumpTool;
   applyPackageOverrideToolForRun: typeof applyPackageOverrideTool;
   applyPatchFileToolForRun: typeof applyPatchFileTool;
   constraints: {
     directDependenciesOnly?: boolean;
     preferVersionBump?: boolean;
+    workspace?: string;
+    installMode?: "standard" | "prefer-offline" | "deterministic";
+    installPreferOffline?: boolean;
+    enforceFrozenLockfile?: boolean;
   };
 }
 
 export function buildRuntimeTools(ctx: RuntimeToolContext): Record<string, unknown> {
   const tools = {
     "lookup-cve": lookupCveTool,
-    "check-inventory": checkInventoryTool,
+    "check-inventory": ctx.checkInventoryToolForRun,
     "check-version-match": checkVersionMatchTool,
     "find-fixed-version": findFixedVersionTool,
     "apply-version-bump": ctx.applyVersionBumpToolForRun,

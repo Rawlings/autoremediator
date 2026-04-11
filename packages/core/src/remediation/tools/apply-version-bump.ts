@@ -15,8 +15,8 @@ import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
 import { withRepoLock } from "../../platform/repo-lock.js";
 import {
   detectPackageManager,
-  getPackageManagerCommands,
   resolveInstallCommand,
+  resolveTestCommand,
   type PackageManager,
 } from "../../platform/package-manager.js";
 
@@ -47,6 +47,10 @@ export const applyVersionBumpTool = tool({
       .boolean()
       .default(false)
       .describe("If true, run test validation after applying the fix"),
+    installMode: z.enum(["standard", "prefer-offline", "deterministic"]).optional(),
+    installPreferOffline: z.boolean().optional(),
+    enforceFrozenLockfile: z.boolean().optional(),
+    workspace: z.string().optional(),
   }),
   execute: async ({
     cwd,
@@ -57,12 +61,23 @@ export const applyVersionBumpTool = tool({
     dryRun,
     policy,
     runTests,
+    installMode,
+    installPreferOffline,
+    enforceFrozenLockfile,
+    workspace,
   }): Promise<PatchResult> => {
     const pm = (packageManager ?? detectPackageManager(cwd)) as PackageManager;
-    const commands = getPackageManagerCommands(pm);
     const pkgPath = join(cwd, "package.json");
     const loadedPolicy = loadPolicy(cwd, policy);
-    const installCommand = resolveInstallCommand(pm, loadedPolicy.constraints);
+    const commandConstraints = {
+      ...loadedPolicy.constraints,
+      installMode: installMode ?? loadedPolicy.constraints?.installMode,
+      installPreferOffline: installPreferOffline ?? loadedPolicy.constraints?.installPreferOffline,
+      enforceFrozenLockfile: enforceFrozenLockfile ?? loadedPolicy.constraints?.enforceFrozenLockfile,
+      workspace: workspace ?? loadedPolicy.constraints?.workspace,
+    };
+    const installCommand = resolveInstallCommand(pm, commandConstraints);
+    const testCommand = resolveTestCommand(pm, commandConstraints);
 
     if (!isPackageAllowed(loadedPolicy, packageName)) {
       return {
@@ -136,7 +151,7 @@ export const applyVersionBumpTool = tool({
 
     if (dryRun) {
       const installCmd = installCommand.join(" ");
-      const testCmd = commands.test.join(" ");
+      const testCmd = testCommand.join(" ");
       return {
         packageName,
         strategy: "version-bump",
@@ -180,7 +195,7 @@ export const applyVersionBumpTool = tool({
 
       if (runTests) {
         try {
-          const [testCmd, ...testArgs] = commands.test;
+          const [testCmd, ...testArgs] = testCommand;
           await execa(testCmd, testArgs, {
             cwd,
             stdio: "pipe",
@@ -209,7 +224,7 @@ export const applyVersionBumpTool = tool({
             applied: false,
             dryRun: false,
             unresolvedReason: "validation-failed",
-            message: `${commands.test.join(" ")} failed after upgrading "${packageName}" to ${toVersion}. Rolled back to ${currentRange}. Error: ${message}`,
+            message: `${testCommand.join(" ")} failed after upgrading "${packageName}" to ${toVersion}. Rolled back to ${currentRange}. Error: ${message}`,
           };
         }
       }
@@ -221,7 +236,7 @@ export const applyVersionBumpTool = tool({
         toVersion,
         applied: true,
         dryRun: false,
-        message: `Successfully upgraded "${packageName}" from ${fromVersion} to ${toVersion}, ran ${installCommand.join(" ")}${runTests ? `, and passed ${commands.test.join(" ")}` : ""}.`,
+        message: `Successfully upgraded "${packageName}" from ${fromVersion} to ${toVersion}, ran ${installCommand.join(" ")}${runTests ? `, and passed ${testCommand.join(" ")}` : ""}.`,
       };
     });
   },

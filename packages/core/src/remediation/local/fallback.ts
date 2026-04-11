@@ -52,6 +52,10 @@ export async function tryLocalPatchFallback(params: {
   patchConfidenceThresholds?: PatchConfidenceThresholds;
   dynamicModelRouting?: boolean;
   dynamicRoutingThresholdChars?: number;
+  installMode?: "standard" | "prefer-offline" | "deterministic";
+  installPreferOffline?: boolean;
+  enforceFrozenLockfile?: boolean;
+  workspace?: string;
 }): Promise<{ result: PatchResult; steps: number; usage: LlmUsageMetrics[] }> {
   const usage: LlmUsageMetrics[] = [];
   let steps = 0;
@@ -243,6 +247,10 @@ export async function tryLocalPatchFallback(params: {
     cwd: params.cwd,
     packageManager: params.packageManager,
     policy: params.policy,
+    installMode: params.installMode,
+    installPreferOffline: params.installPreferOffline,
+    enforceFrozenLockfile: params.enforceFrozenLockfile,
+    workspace: params.workspace,
     riskLevel: patchResult.riskLevel,
     validateWithTests: params.runTests,
     dryRun: params.dryRun,

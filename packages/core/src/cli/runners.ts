@@ -75,6 +75,7 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
       installMode: opts.installMode,
       installPreferOffline: opts.installPreferOffline,
       enforceFrozenLockfile: opts.enforceFrozenLockfile,
+      workspace: opts.workspace,
     },
   });
 
@@ -147,6 +148,7 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
       installMode: opts.installMode,
       installPreferOffline: opts.installPreferOffline,
       enforceFrozenLockfile: opts.enforceFrozenLockfile,
+      workspace: opts.workspace,
     },
   });
 

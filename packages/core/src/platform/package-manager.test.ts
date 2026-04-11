@@ -69,6 +69,31 @@ describe("package-manager commands", () => {
 
     expect(command).toEqual(["npm", "ci"]);
   });
+
+  it("scopes npm install commands to workspace when provided", () => {
+    const command = resolveInstallCommand("npm", {
+      installMode: "standard",
+      workspace: "web-app",
+    });
+
+    expect(command).toEqual(["npm", "install", "--workspace", "web-app"]);
+  });
+
+  it("scopes pnpm install commands with filter when workspace is provided", () => {
+    const command = resolveInstallCommand("pnpm", {
+      installMode: "deterministic",
+      workspace: "@apps/web",
+    });
+
+    expect(command).toEqual([
+      "pnpm",
+      "--filter",
+      "@apps/web",
+      "install",
+      "--frozen-lockfile",
+      "--prefer-offline",
+    ]);
+  });
 });
 
 describe("detectPackageManager", () => {

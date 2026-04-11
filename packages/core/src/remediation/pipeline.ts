@@ -21,6 +21,7 @@ import type {
 import { runLocalRemediationPipeline } from "./local/index.js";
 import { loadOrchestrationPrompt } from "./orchestration-prompt.js";
 import { buildRuntimeTools } from "./runtime-tools.js";
+import { checkInventoryTool } from "./tools/check-inventory.js";
 
 export async function runRemediationPipeline(
   cveId: string,
@@ -86,29 +87,58 @@ export async function runRemediationPipeline(
     return match.installed.type === "direct" ? "direct" : "transitive";
   }
 
-  const applyVersionBumpToolForRun = preview
-    ? {
-        ...applyVersionBumpTool,
-        execute: async (input: Record<string, unknown>) =>
-          (applyVersionBumpTool as any).execute({ ...input, dryRun: true }),
-      }
-    : applyVersionBumpTool;
-  const applyPackageOverrideToolForRun = preview
-    ? {
-        ...applyPackageOverrideTool,
-        execute: async (input: Record<string, unknown>) =>
-          (applyPackageOverrideTool as any).execute({ ...input, dryRun: true }),
-      }
-    : applyPackageOverrideTool;
-  const applyPatchFileToolForRun = preview
-    ? {
-        ...applyPatchFileTool,
-        execute: async (input: Record<string, unknown>) =>
-          (applyPatchFileTool as any).execute({ ...input, dryRun: true }),
-      }
-    : applyPatchFileTool;
+  const checkInventoryToolForRun = {
+    ...checkInventoryTool,
+    execute: async (input: Record<string, unknown>) =>
+      (checkInventoryTool as any).execute({
+        ...input,
+        policy,
+        workspace: constraints.workspace,
+      }),
+  };
+
+  const applyVersionBumpToolForRun = {
+    ...applyVersionBumpTool,
+    execute: async (input: Record<string, unknown>) =>
+      (applyVersionBumpTool as any).execute({
+        ...input,
+        policy,
+        installMode: constraints.installMode,
+        installPreferOffline: constraints.installPreferOffline,
+        enforceFrozenLockfile: constraints.enforceFrozenLockfile,
+        workspace: constraints.workspace,
+        dryRun: preview ? true : input.dryRun,
+      }),
+  };
+  const applyPackageOverrideToolForRun = {
+    ...applyPackageOverrideTool,
+    execute: async (input: Record<string, unknown>) =>
+      (applyPackageOverrideTool as any).execute({
+        ...input,
+        policy,
+        installMode: constraints.installMode,
+        installPreferOffline: constraints.installPreferOffline,
+        enforceFrozenLockfile: constraints.enforceFrozenLockfile,
+        workspace: constraints.workspace,
+        dryRun: preview ? true : input.dryRun,
+      }),
+  };
+  const applyPatchFileToolForRun = {
+    ...applyPatchFileTool,
+    execute: async (input: Record<string, unknown>) =>
+      (applyPatchFileTool as any).execute({
+        ...input,
+        policy,
+        installMode: constraints.installMode,
+        installPreferOffline: constraints.installPreferOffline,
+        enforceFrozenLockfile: constraints.enforceFrozenLockfile,
+        workspace: constraints.workspace,
+        dryRun: preview ? true : input.dryRun,
+      }),
+  };
 
   const tools = buildRuntimeTools({
+    checkInventoryToolForRun,
     applyVersionBumpToolForRun,
     applyPackageOverrideToolForRun,
     applyPatchFileToolForRun,

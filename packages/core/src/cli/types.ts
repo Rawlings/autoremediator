@@ -33,6 +33,7 @@ export interface CommandOptions {
   installMode?: "standard" | "prefer-offline" | "deterministic";
   installPreferOffline?: boolean;
   enforceFrozenLockfile?: boolean;
+  workspace?: string;
   input?: string;
   format: ScanFormat;
   policy?: string;

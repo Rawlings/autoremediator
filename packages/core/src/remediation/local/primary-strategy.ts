@@ -13,6 +13,10 @@ export async function resolvePrimaryResult(params: {
   constraints: {
     directDependenciesOnly?: boolean;
     preferVersionBump?: boolean;
+    installMode?: "standard" | "prefer-offline" | "deterministic";
+    installPreferOffline?: boolean;
+    enforceFrozenLockfile?: boolean;
+    workspace?: string;
   };
 }): Promise<{ result: PatchResult; steps: number }> {
   const { vulnerable, cwd, packageManager, dryRun, policy, runTests, constraints } = params;
@@ -96,6 +100,10 @@ export async function resolvePrimaryResult(params: {
       dryRun,
       policy,
       runTests,
+      installMode: constraints.installMode,
+      installPreferOffline: constraints.installPreferOffline,
+      enforceFrozenLockfile: constraints.enforceFrozenLockfile,
+      workspace: constraints.workspace,
     })) as PatchResult;
 
     return {
@@ -150,6 +158,10 @@ export async function resolvePrimaryResult(params: {
     dryRun,
     policy,
     runTests,
+    installMode: constraints.installMode,
+    installPreferOffline: constraints.installPreferOffline,
+    enforceFrozenLockfile: constraints.enforceFrozenLockfile,
+    workspace: constraints.workspace,
   })) as PatchResult;
 
   return {

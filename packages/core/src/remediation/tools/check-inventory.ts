@@ -12,10 +12,11 @@ import { execa } from "execa";
 import type { InventoryPackage } from "../../platform/types.js";
 import {
   detectPackageManager,
-  getPackageManagerCommands,
   parseListOutput,
+  resolveListCommand,
   type PackageManager,
 } from "../../platform/package-manager.js";
+import { loadPolicy } from "../../platform/policy.js";
 
 interface PackageJson {
   dependencies?: Record<string, string>;
@@ -29,8 +30,10 @@ export const checkInventoryTool = tool({
   parameters: z.object({
     cwd: z.string().describe("Absolute path to the consumer project's root directory"),
     packageManager: z.enum(["npm", "pnpm", "yarn"]).optional().describe("Package manager used by the target project (auto-detected if omitted)"),
+    policy: z.string().optional().describe("Optional path to .autoremediator policy file"),
+    workspace: z.string().optional().describe("Optional workspace/package selector for monorepos"),
   }),
-  execute: async ({ cwd, packageManager }): Promise<{ packages: InventoryPackage[]; error?: string }> => {
+  execute: async ({ cwd, packageManager, policy, workspace }): Promise<{ packages: InventoryPackage[]; error?: string }> => {
     let pkgJson: PackageJson;
 
     try {
@@ -43,11 +46,15 @@ export const checkInventoryTool = tool({
     }
 
     const pm = (packageManager ?? detectPackageManager(cwd)) as PackageManager;
-    const commands = getPackageManagerCommands(pm);
+    const loadedPolicy = loadPolicy(cwd, policy);
+    const listCommand = resolveListCommand(pm, {
+      ...loadedPolicy.constraints,
+      workspace: workspace ?? loadedPolicy.constraints?.workspace,
+    });
     let installedVersions = new Map<string, string>();
 
     try {
-      const [cmd, ...args] = commands.list;
+      const [cmd, ...args] = listCommand;
       const listResult = await execa(cmd, args, {
         cwd,
         stdio: "pipe",
