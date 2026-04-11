@@ -31,6 +31,9 @@ const mocked = vi.hoisted(() => ({
     evidence: "Write evidence JSON to .autoremediator/evidence/ (default: true)",
     directDependenciesOnly: "Restrict remediation to direct dependencies only",
     preferVersionBump: "Reject override and patch remediation when version-bump-only policy is required",
+    installMode: "Install behavior profile: deterministic|prefer-offline|standard",
+    installPreferOffline: "Override prefer-offline flag behavior for install commands",
+    enforceFrozenLockfile: "Override frozen lockfile behavior for install commands",
   },
 }));
 
@@ -258,6 +261,34 @@ describe("cli preview and correlation option forwarding", () => {
           medium: 0.72,
           high: 0.91,
         },
+      })
+    );
+  });
+
+  it("forwards install constraint options in top-level CVE mode", async () => {
+    const program = createProgram();
+    await program.parseAsync(
+      [
+        "node",
+        "autoremediator",
+        "CVE-2021-23337",
+        "--install-mode",
+        "standard",
+        "--install-prefer-offline",
+        "false",
+        "--enforce-frozen-lockfile",
+        "true",
+      ]
+    );
+
+    expect(mocked.remediate).toHaveBeenCalledWith(
+      "CVE-2021-23337",
+      expect.objectContaining({
+        constraints: expect.objectContaining({
+          installMode: "standard",
+          installPreferOffline: false,
+          enforceFrozenLockfile: true,
+        }),
       })
     );
   });

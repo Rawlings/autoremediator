@@ -37,12 +37,22 @@ export const OPTION_DESCRIPTIONS = {
   evidence: "Write evidence JSON to .autoremediator/evidence/ (default: true)",
   directDependenciesOnly: "Restrict remediation to direct dependencies only",
   preferVersionBump: "Reject override and patch remediation when version-bump-only policy is required",
+  installMode: "Install behavior profile: deterministic|prefer-offline|standard",
+  installPreferOffline: "Override prefer-offline flag behavior for install commands",
+  enforceFrozenLockfile: "Override frozen lockfile behavior for install commands",
 } as const;
 
 export function createConstraintSchemaProperties(): Record<string, JsonSchemaProperty> {
   return {
     directDependenciesOnly: { type: "boolean", description: OPTION_DESCRIPTIONS.directDependenciesOnly },
     preferVersionBump: { type: "boolean", description: OPTION_DESCRIPTIONS.preferVersionBump },
+    installMode: {
+      type: "string",
+      enum: ["deterministic", "prefer-offline", "standard"],
+      description: OPTION_DESCRIPTIONS.installMode,
+    },
+    installPreferOffline: { type: "boolean", description: OPTION_DESCRIPTIONS.installPreferOffline },
+    enforceFrozenLockfile: { type: "boolean", description: OPTION_DESCRIPTIONS.enforceFrozenLockfile },
   };
 }
 

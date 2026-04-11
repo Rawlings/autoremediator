@@ -16,6 +16,7 @@ import { withRepoLock } from "../../platform/repo-lock.js";
 import {
   detectPackageManager,
   getPackageManagerCommands,
+  resolveInstallCommand,
   type PackageManager,
 } from "../../platform/package-manager.js";
 
@@ -61,6 +62,7 @@ export const applyVersionBumpTool = tool({
     const commands = getPackageManagerCommands(pm);
     const pkgPath = join(cwd, "package.json");
     const loadedPolicy = loadPolicy(cwd, policy);
+    const installCommand = resolveInstallCommand(pm, loadedPolicy.constraints);
 
     if (!isPackageAllowed(loadedPolicy, packageName)) {
       return {
@@ -133,7 +135,7 @@ export const applyVersionBumpTool = tool({
     const newRange = `${prefix}${toVersion}`;
 
     if (dryRun) {
-      const installCmd = commands.installPreferOffline.join(" ");
+      const installCmd = installCommand.join(" ");
       const testCmd = commands.test.join(" ");
       return {
         packageName,
@@ -153,7 +155,7 @@ export const applyVersionBumpTool = tool({
 
       // Run package-manager install
       try {
-        const [installCmd, ...installArgs] = commands.installPreferOffline;
+        const [installCmd, ...installArgs] = installCommand;
         await execa(installCmd, installArgs, {
           cwd,
           stdio: "pipe",
@@ -172,7 +174,7 @@ export const applyVersionBumpTool = tool({
           applied: false,
           dryRun: false,
           unresolvedReason: "install-failed",
-          message: `${commands.installPreferOffline.join(" ")} failed after updating "${packageName}" to ${toVersion}. Reverted. Error: ${message}`,
+          message: `${installCommand.join(" ")} failed after updating "${packageName}" to ${toVersion}. Reverted. Error: ${message}`,
         };
       }
 
@@ -189,7 +191,7 @@ export const applyVersionBumpTool = tool({
           writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
           try {
-            const [rollbackCmd, ...rollbackArgs] = commands.installPreferOffline;
+            const [rollbackCmd, ...rollbackArgs] = installCommand;
             await execa(rollbackCmd, rollbackArgs, {
               cwd,
               stdio: "pipe",
@@ -219,7 +221,7 @@ export const applyVersionBumpTool = tool({
         toVersion,
         applied: true,
         dryRun: false,
-        message: `Successfully upgraded "${packageName}" from ${fromVersion} to ${toVersion}, ran ${commands.installPreferOffline.join(" ")}${runTests ? `, and passed ${commands.test.join(" ")}` : ""}.`,
+        message: `Successfully upgraded "${packageName}" from ${fromVersion} to ${toVersion}, ran ${installCommand.join(" ")}${runTests ? `, and passed ${commands.test.join(" ")}` : ""}.`,
       };
     });
   },

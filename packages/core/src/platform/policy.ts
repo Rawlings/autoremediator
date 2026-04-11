@@ -24,6 +24,10 @@ export const DEFAULT_POLICY: AutoremediatorPolicy = {
   constraints: {
     directDependenciesOnly: false,
     preferVersionBump: false,
+    installMode: "deterministic",
+    installPreferOffline: undefined,
+    enforceFrozenLockfile: undefined,
+    workspace: undefined,
   },
   modelDefaults: {},
   providerSafetyProfile: "relaxed",
@@ -54,6 +58,19 @@ export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPo
           parsed.constraints?.preferVersionBump ??
           DEFAULT_POLICY.constraints?.preferVersionBump ??
           false,
+        installMode:
+          parsed.constraints?.installMode ??
+          DEFAULT_POLICY.constraints?.installMode ??
+          "deterministic",
+        installPreferOffline:
+          parsed.constraints?.installPreferOffline ??
+          DEFAULT_POLICY.constraints?.installPreferOffline,
+        enforceFrozenLockfile:
+          parsed.constraints?.enforceFrozenLockfile ??
+          DEFAULT_POLICY.constraints?.enforceFrozenLockfile,
+        workspace:
+          parsed.constraints?.workspace ??
+          DEFAULT_POLICY.constraints?.workspace,
       },
       modelDefaults: {
         remote: parsed.modelDefaults?.remote ?? DEFAULT_POLICY.modelDefaults?.remote,

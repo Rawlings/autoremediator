@@ -72,6 +72,9 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
     constraints: {
       directDependenciesOnly: opts.directDependenciesOnly,
       preferVersionBump: opts.preferVersionBump,
+      installMode: opts.installMode,
+      installPreferOffline: opts.installPreferOffline,
+      enforceFrozenLockfile: opts.enforceFrozenLockfile,
     },
   });
 
@@ -141,6 +144,9 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
     constraints: {
       directDependenciesOnly: opts.directDependenciesOnly,
       preferVersionBump: opts.preferVersionBump,
+      installMode: opts.installMode,
+      installPreferOffline: opts.installPreferOffline,
+      enforceFrozenLockfile: opts.enforceFrozenLockfile,
     },
   });
 

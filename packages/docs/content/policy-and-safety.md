@@ -23,7 +23,10 @@ Create `.autoremediator.json`:
   "allowPackages": [],
   "constraints": {
     "directDependenciesOnly": false,
-    "preferVersionBump": false
+    "preferVersionBump": false,
+    "installMode": "deterministic",
+    "installPreferOffline": true,
+    "enforceFrozenLockfile": true
   }
 }
 ```
@@ -46,6 +49,15 @@ Field intent:
 - `constraints.preferVersionBump`:
   - what: rejects patch-file outcomes
   - why: enforces bump-first remediation policy for change governance
+- `constraints.installMode`:
+  - what: selects install profile (`deterministic`, `prefer-offline`, or `standard`) for apply and rollback operations
+  - why: allows balancing reproducibility and operational flexibility per environment
+- `constraints.installPreferOffline`:
+  - what: explicitly enables or disables `--prefer-offline` where supported
+  - why: helps tune install reliability across cache-heavy and cache-cold runners
+- `constraints.enforceFrozenLockfile`:
+  - what: explicitly enables or disables lockfile-strict install behavior
+  - why: allows teams to enforce deterministic lockfile safety or temporarily relax it during recovery workflows
 
 ## Precedence Rules
 
@@ -114,6 +126,7 @@ These fields make it easier to build CI gates, dashboards, and escalation rules 
 ## Validation Controls
 
 - install/test validation uses the resolved package manager for the repository
+- apply and rollback install validation is lockfile-respecting by default (`npm ci`, `pnpm install --frozen-lockfile`, `yarn install --frozen-lockfile`)
 - `--run-tests` enables post-apply test validation and should be used in mutation-enabled automation
 - `--dry-run` is the onboarding and policy-tuning baseline for new projects
 - `--preview` is the planning baseline for orchestration systems that need non-mutating intent before apply

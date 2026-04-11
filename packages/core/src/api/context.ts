@@ -36,5 +36,18 @@ export function resolveConstraints(options: RemediateOptions, cwd: string): Reme
       options.constraints?.preferVersionBump ??
       policy.constraints?.preferVersionBump ??
       false,
+    installMode:
+      options.constraints?.installMode ??
+      policy.constraints?.installMode ??
+      "deterministic",
+    installPreferOffline:
+      options.constraints?.installPreferOffline ??
+      policy.constraints?.installPreferOffline,
+    enforceFrozenLockfile:
+      options.constraints?.enforceFrozenLockfile ??
+      policy.constraints?.enforceFrozenLockfile,
+    workspace:
+      options.constraints?.workspace ??
+      policy.constraints?.workspace,
   };
 }

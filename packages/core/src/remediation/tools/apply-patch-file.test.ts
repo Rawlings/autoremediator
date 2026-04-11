@@ -9,6 +9,8 @@ const mocked = vi.hoisted(() => ({
   execa: vi.fn(),
   detectPackageManager: vi.fn(),
   getPackageManagerCommands: vi.fn(),
+  resolveInstallCommand: vi.fn(),
+  loadPolicy: vi.fn(),
   withRepoLock: vi.fn(),
 }));
 
@@ -31,6 +33,11 @@ vi.mock("execa", () => ({
 vi.mock("../../platform/package-manager.js", () => ({
   detectPackageManager: mocked.detectPackageManager,
   getPackageManagerCommands: mocked.getPackageManagerCommands,
+  resolveInstallCommand: mocked.resolveInstallCommand,
+}));
+
+vi.mock("../../platform/policy.js", () => ({
+  loadPolicy: mocked.loadPolicy,
 }));
 
 vi.mock("../../platform/repo-lock.js", () => ({
@@ -54,10 +61,13 @@ describe("apply-patch-file lock integration", () => {
     mocked.rm.mockResolvedValue(undefined);
     mocked.detectPackageManager.mockReturnValue("npm");
     mocked.getPackageManagerCommands.mockReturnValue({
+      installDeterministic: ["npm", "ci", "--prefer-offline"],
       installPreferOffline: ["npm", "install", "--prefer-offline"],
       installDev: (pkg: string) => ["npm", "install", "-D", pkg],
       test: ["npm", "test"],
     });
+    mocked.loadPolicy.mockReturnValue({ constraints: { installMode: "deterministic" } });
+    mocked.resolveInstallCommand.mockReturnValue(["npm", "ci", "--prefer-offline"]);
     mocked.execa.mockResolvedValue({ stdout: "ok", stderr: "" });
     mocked.withRepoLock.mockImplementation(async (_cwd: string, fn: () => Promise<unknown>) => fn());
   });

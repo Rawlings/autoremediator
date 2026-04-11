@@ -10,6 +10,7 @@ import { withRepoLock } from "../../platform/repo-lock.js";
 import {
   detectPackageManager,
   getPackageManagerCommands,
+  resolveInstallCommand,
   type PackageManager,
 } from "../../platform/package-manager.js";
 
@@ -50,6 +51,7 @@ export const applyPackageOverrideTool = tool({
     const commands = getPackageManagerCommands(pm);
     const pkgPath = join(cwd, "package.json");
     const loadedPolicy = loadPolicy(cwd, policy);
+    const installCommand = resolveInstallCommand(pm, loadedPolicy.constraints);
 
     if (!isPackageAllowed(loadedPolicy, packageName)) {
       return {
@@ -109,7 +111,7 @@ export const applyPackageOverrideTool = tool({
         toVersion,
         applied: false,
         dryRun: true,
-        message: `[DRY RUN] Would set ${overrideLabel}.${packageName} to "${toVersion}", then run ${commands.installPreferOffline.join(" ")}${runTests ? ` and ${commands.test.join(" ")}` : ""}.`,
+        message: `[DRY RUN] Would set ${overrideLabel}.${packageName} to "${toVersion}", then run ${installCommand.join(" ")}${runTests ? ` and ${commands.test.join(" ")}` : ""}.`,
       };
     }
 
@@ -118,7 +120,7 @@ export const applyPackageOverrideTool = tool({
       writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
       try {
-        const [installCmd, ...installArgs] = commands.installPreferOffline;
+        const [installCmd, ...installArgs] = installCommand;
         await execa(installCmd, installArgs, { cwd, stdio: "pipe" });
       } catch (err) {
         restoreOverrideValue(pkgJson, pm, packageName, previousValue);
@@ -132,7 +134,7 @@ export const applyPackageOverrideTool = tool({
           applied: false,
           dryRun: false,
           unresolvedReason: "override-apply-failed",
-          message: `${commands.installPreferOffline.join(" ")} failed after applying ${overrideLabel} for "${packageName}" to ${toVersion}. Reverted. Error: ${message}`,
+          message: `${installCommand.join(" ")} failed after applying ${overrideLabel} for "${packageName}" to ${toVersion}. Reverted. Error: ${message}`,
         };
       }
 
@@ -145,7 +147,7 @@ export const applyPackageOverrideTool = tool({
           writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
           try {
-            const [rollbackCmd, ...rollbackArgs] = commands.installPreferOffline;
+            const [rollbackCmd, ...rollbackArgs] = installCommand;
             await execa(rollbackCmd, rollbackArgs, { cwd, stdio: "pipe" });
           } catch {
             // Ignore rollback install failure and return original test failure context.
@@ -172,7 +174,7 @@ export const applyPackageOverrideTool = tool({
         toVersion,
         applied: true,
         dryRun: false,
-        message: `Successfully applied ${overrideLabel} for "${packageName}" from ${fromVersion} to ${toVersion}, then ran ${commands.installPreferOffline.join(" ")}${runTests ? ` and passed ${commands.test.join(" ")}` : ""}.`,
+        message: `Successfully applied ${overrideLabel} for "${packageName}" from ${fromVersion} to ${toVersion}, then ran ${installCommand.join(" ")}${runTests ? ` and passed ${commands.test.join(" ")}` : ""}.`,
       };
     });
   },

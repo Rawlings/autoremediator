@@ -8,11 +8,13 @@ All notable changes to this project are documented in this file.
 
 - Added new high-risk consensus controls across SDK, CLI, MCP, and OpenAPI: `consensusProvider` and `consensusModel`.
 - Added per-risk patch confidence override support through `patchConfidenceThresholds` (`low`, `medium`, `high`).
+- Added install behavior constraints (`installMode`, `installPreferOffline`, `enforceFrozenLockfile`) to give consumers explicit control over remediation apply/rollback install commands.
 
 ### Changed
 
 - High-risk consensus verification now supports explicit verifier provider/model selection instead of a fixed provider fallback path.
 - Patch confidence gating is now risk-aware (`low`/`medium`/`high`) while preserving existing relaxed/strict profile defaults.
+- Remediation apply flows now use deterministic lockfile-respecting install commands (`npm ci`, `pnpm install --frozen-lockfile`, `yarn install --frozen-lockfile`) for apply and rollback validation steps.
 
 ## 0.8.0
 

@@ -8,6 +8,7 @@ const mocked = vi.hoisted(() => ({
   isPackageAllowed: vi.fn(),
   detectPackageManager: vi.fn(),
   getPackageManagerCommands: vi.fn(),
+  resolveInstallCommand: vi.fn(),
   withRepoLock: vi.fn(),
 }));
 
@@ -32,6 +33,7 @@ vi.mock("../../platform/policy.js", () => ({
 vi.mock("../../platform/package-manager.js", () => ({
   detectPackageManager: mocked.detectPackageManager,
   getPackageManagerCommands: mocked.getPackageManagerCommands,
+  resolveInstallCommand: mocked.resolveInstallCommand,
 }));
 
 vi.mock("../../platform/repo-lock.js", () => ({
@@ -53,9 +55,11 @@ describe("apply-package-override", () => {
     mocked.isPackageAllowed.mockReturnValue(true);
     mocked.detectPackageManager.mockReturnValue("npm");
     mocked.getPackageManagerCommands.mockReturnValue({
+      installDeterministic: ["npm", "ci", "--prefer-offline"],
       installPreferOffline: ["npm", "install", "--prefer-offline"],
       test: ["npm", "test"],
     });
+    mocked.resolveInstallCommand.mockReturnValue(["npm", "ci", "--prefer-offline"]);
     mocked.execa.mockResolvedValue({ stdout: "ok" });
     mocked.withRepoLock.mockImplementation(async (_cwd: string, fn: () => Promise<unknown>) => fn());
   });

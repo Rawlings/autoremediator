@@ -217,6 +217,10 @@ export interface CorrelationContext {
 export interface RemediationConstraints {
   directDependenciesOnly?: boolean;
   preferVersionBump?: boolean;
+  installMode?: "standard" | "prefer-offline" | "deterministic";
+  installPreferOffline?: boolean;
+  enforceFrozenLockfile?: boolean;
+  workspace?: string;
 }
 
 export type ModelPersonality = "analytical" | "pragmatic" | "balanced";

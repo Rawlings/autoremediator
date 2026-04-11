@@ -30,6 +30,9 @@ export interface CommandOptions {
   source?: "cli" | "sdk" | "mcp" | "openapi" | "unknown";
   directDependenciesOnly: boolean;
   preferVersionBump: boolean;
+  installMode?: "standard" | "prefer-offline" | "deterministic";
+  installPreferOffline?: boolean;
+  enforceFrozenLockfile?: boolean;
   input?: string;
   format: ScanFormat;
   policy?: string;

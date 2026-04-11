@@ -15,9 +15,11 @@ import { execa } from "execa";
 import {
   detectPackageManager,
   getPackageManagerCommands,
+  resolveInstallCommand,
   type PackageManager,
 } from "../../platform/package-manager.js";
 import { withRepoLock } from "../../platform/repo-lock.js";
+import { loadPolicy } from "../../platform/policy.js";
 import { validatePatchDiff } from "../strategies/patch-utils.js";
 import type {
   PatchArtifact,
@@ -98,6 +100,7 @@ export const applyPatchFileTool = tool({
       .describe("Directory to store patch files"),
     cwd: z.string().describe("Project root directory (for package.json)"),
     packageManager: z.enum(["npm", "pnpm", "yarn"]).optional().describe("Package manager used by the target project (auto-detected if omitted)"),
+    policy: z.string().optional().describe("Optional path to .autoremediator policy file"),
     validateWithTests: z
       .boolean()
       .optional()
@@ -117,12 +120,15 @@ export const applyPatchFileTool = tool({
     patchesDir,
     cwd,
     packageManager,
+    policy,
     riskLevel,
     validateWithTests,
     dryRun,
   }): Promise<ApplyPatchFileResult> => {
     try {
       const pm = (packageManager ?? detectPackageManager(cwd)) as PackageManager;
+      const loadedPolicy = loadPolicy(cwd, policy);
+      const installCommand = resolveInstallCommand(pm, loadedPolicy.constraints);
       const selectedPatch = patchContent ?? patches?.[0]?.unifiedDiff;
       const patchFiles = extractPatchedFiles(selectedPatch ?? "");
       const hunkCount = countPatchHunks(selectedPatch ?? "");
@@ -253,11 +259,11 @@ export const applyPatchFileTool = tool({
         if (!applyResult.success) {
           await cleanupPatchArtifacts({
             cwd,
-            packageManager: pm,
             patchFilePath,
-              manifestFilePath,
+            manifestFilePath,
             patchMode,
             packageJsonSnapshot,
+            installCommand,
             rerunInstall: patchMode === "patch-package",
           });
           return {
@@ -290,7 +296,7 @@ export const applyPatchFileTool = tool({
 
         if (patchMode === "patch-package") {
           try {
-            const [installCmd, ...installArgs] = commands.installPreferOffline;
+            const [installCmd, ...installArgs] = installCommand;
             await execa(installCmd, installArgs, {
               cwd,
               stdio: "pipe",
@@ -298,16 +304,16 @@ export const applyPatchFileTool = tool({
             validationPhases.push({
               phase: "install",
               passed: true,
-              message: `${commands.installPreferOffline.join(" ")} completed successfully.`,
+              message: `${installCommand.join(" ")} completed successfully.`,
             });
           } catch (err) {
             await cleanupPatchArtifacts({
               cwd,
-              packageManager: pm,
               patchFilePath,
               manifestFilePath,
               patchMode,
               packageJsonSnapshot,
+              installCommand,
               rerunInstall: true,
             });
             const error = err instanceof Error ? err.message : String(err);
@@ -345,11 +351,11 @@ export const applyPatchFileTool = tool({
           if (!validationResult.passed) {
             await cleanupPatchArtifacts({
               cwd,
-              packageManager: pm,
               patchFilePath,
               manifestFilePath,
               patchMode,
               packageJsonSnapshot,
+              installCommand,
               rerunInstall: patchMode === "patch-package",
             });
             const validationError = "Patch validation failed after apply; patch marked unresolved.";
@@ -524,14 +530,22 @@ async function capturePackageJsonSnapshot(cwd: string): Promise<PackageJsonSnaps
 
 async function cleanupPatchArtifacts(params: {
   cwd: string;
-  packageManager: PackageManager;
   patchFilePath: string;
   manifestFilePath?: string;
   patchMode: PatchMode;
   packageJsonSnapshot?: PackageJsonSnapshot;
+  installCommand: string[];
   rerunInstall: boolean;
 }): Promise<void> {
-  const { cwd, packageManager, patchFilePath, manifestFilePath, patchMode, packageJsonSnapshot, rerunInstall } = params;
+  const {
+    cwd,
+    patchFilePath,
+    manifestFilePath,
+    patchMode,
+    packageJsonSnapshot,
+    installCommand,
+    rerunInstall,
+  } = params;
 
   await rm(patchFilePath, { force: true }).catch(() => undefined);
   if (manifestFilePath) {
@@ -545,8 +559,7 @@ async function cleanupPatchArtifacts(params: {
   if (!rerunInstall) return;
 
   try {
-    const commands = getPackageManagerCommands(packageManager);
-    const [installCmd, ...installArgs] = commands.installPreferOffline;
+    const [installCmd, ...installArgs] = installCommand;
     await execa(installCmd, installArgs, {
       cwd,
       stdio: "pipe",

@@ -7,6 +7,8 @@ import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
 
 function addSharedOptions(program: Command, includeInput = false): Command {
+  const parseBooleanFlag = (value: string): boolean => value === "true";
+
   program
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
     .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
@@ -51,6 +53,17 @@ function addSharedOptions(program: Command, includeInput = false): Command {
     .option("--source <src>", `${OPTION_DESCRIPTIONS.source}: cli|sdk|mcp|openapi|unknown`)
     .option("--direct-dependencies-only", OPTION_DESCRIPTIONS.directDependenciesOnly, false)
     .option("--prefer-version-bump", OPTION_DESCRIPTIONS.preferVersionBump, false)
+    .option("--install-mode <mode>", OPTION_DESCRIPTIONS.installMode)
+    .option(
+      "--install-prefer-offline <value>",
+      `${OPTION_DESCRIPTIONS.installPreferOffline} (true|false)`,
+      parseBooleanFlag
+    )
+    .option(
+      "--enforce-frozen-lockfile <value>",
+      `${OPTION_DESCRIPTIONS.enforceFrozenLockfile} (true|false)`,
+      parseBooleanFlag
+    )
     .option("--policy <path>", OPTION_DESCRIPTIONS.policy)
     .option("--evidence", OPTION_DESCRIPTIONS.evidence, true)
     .option("--no-evidence", "Disable evidence file output")

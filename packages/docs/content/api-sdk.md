@@ -105,6 +105,9 @@ Core options:
 - `source`: provenance source (`cli`, `sdk`, `mcp`, `openapi`, `unknown`)
 - `constraints.directDependenciesOnly`: block remediation outcomes for indirect dependencies
 - `constraints.preferVersionBump`: reject patch-file outcomes in favor of bump-only policy
+- `constraints.installMode`: install profile (`deterministic`, `prefer-offline`, `standard`) used for apply and rollback installs
+- `constraints.installPreferOffline`: explicit override for `--prefer-offline` install flag behavior
+- `constraints.enforceFrozenLockfile`: explicit override for frozen-lockfile behavior (`npm ci` / `--frozen-lockfile`)
 - `modelPersonality`: prompt behavior profile (`analytical`, `pragmatic`, `balanced`)
 - `providerSafetyProfile`: confidence/safety posture profile (`strict`, `relaxed`)
 - `requireConsensusForHighRisk`: require consensus verification for high-risk generated patches
@@ -180,7 +183,9 @@ const resumable = await remediate("CVE-2021-23337", {
 	source: "sdk",
 	constraints: {
 		directDependenciesOnly: true,
-		preferVersionBump: true
+		preferVersionBump: true,
+		installMode: "deterministic",
+		enforceFrozenLockfile: true
 	}
 });
 

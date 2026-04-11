@@ -242,6 +242,7 @@ export async function tryLocalPatchFallback(params: {
     patchesDir: params.patchesDir,
     cwd: params.cwd,
     packageManager: params.packageManager,
+    policy: params.policy,
     riskLevel: patchResult.riskLevel,
     validateWithTests: params.runTests,
     dryRun: params.dryRun,

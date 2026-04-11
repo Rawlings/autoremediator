@@ -73,6 +73,9 @@ When to use which mode:
 | `--source <src>` | source system metadata | tags run origin (`cli`, `sdk`, `mcp`, `openapi`, `unknown`) |
 | `--direct-dependencies-only` | direct-only remediation constraint | blocks indirect dependency result application |
 | `--prefer-version-bump` | bump-only remediation constraint | rejects patch-file outcomes when bump policy is required |
+| `--install-mode <deterministic|prefer-offline|standard>` | install command profile for apply and rollback steps | lets operators trade reproducibility vs install flexibility |
+| `--install-prefer-offline <true|false>` | force prefer-offline flag behavior | useful for cache-heavy CI or when diagnosing stale cache issues |
+| `--enforce-frozen-lockfile <true|false>` | force lockfile-strict install behavior | controls whether install steps must preserve lockfile determinism |
 | `--json` | machine-readable output | simplifies CI parsing and SIEM ingestion |
 
 ## Scan Mode Options
