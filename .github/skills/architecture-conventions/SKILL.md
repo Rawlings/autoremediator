@@ -18,12 +18,20 @@ user-invocable: true
 
 For public naming conventions and API contract consistency across surfaces, use `public-api-governance`.
 
+When used for feature work, run this preflight before proposing new artifacts:
+
+1. Identify candidate existing files/modules that can absorb the change.
+2. Decide whether refactor/consolidation resolves the concern without adding new artifacts.
+3. Create a new file/directory only when reuse/refactor cannot preserve clear module boundaries.
+4. Record explicit rationale when step 3 is chosen.
+
 ## When to Use
 
 - Adding new source files anywhere under `packages/core/src/`.
 - Moving or renaming modules.
 - Resolving import path questions.
 - Reviewing whether a file belongs in the right module.
+- Running consolidation-first preflight before feature category selection.
 
 ## Module Map
 
@@ -61,12 +69,12 @@ packages/core/src/
 - `remediation/` imports from `platform/`, `intelligence/`, and `scanner/`.
 - `api/index.ts` and `cli/index.ts` import from `remediation/` and `scanner/` barrels only.
 - `mcp/` and `openapi/` import only from `api/index.ts`.
-- I'll split this entry file further by extracting the two main flows into dedicated modules and leaving index.ts as a thin export surface.
 - Never import from `dist/` at runtime.
 
 ## Verification Checklist
 
 - New file is placed in the module that matches its single responsibility.
+- Reuse/refactor/create decision is explicit; new artifacts include rationale.
 - No circular dependencies introduced (use `tsc --noEmit` to verify).
 - Barrel `index.ts` updated if the new export is part of the public module surface.
 - Import paths use `.js` extension (ESM Node.js requirement).

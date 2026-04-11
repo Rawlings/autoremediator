@@ -24,6 +24,8 @@ For CVE {{cveId}}, identify vulnerable installed packages and remediate automati
 
 ## Required Sequence
 
+Canonical ordering authority: `.github/instructions/tool-contracts.instructions.md` (Canonical Tool Order).
+
 1. Call lookup-cve first.
 2. Call check-inventory next.
 3. Call check-version-match using CVE + inventory results.
@@ -31,7 +33,7 @@ For CVE {{cveId}}, identify vulnerable installed packages and remediate automati
 5. Attempt apply-version-bump for direct vulnerable packages.
 6. Attempt apply-package-override for indirect vulnerable packages when a safe version exists and constraints allow it.
 
-Do not reorder steps 1-6 without updating tool contracts and governance docs in the same PR.
+Do not reorder steps 1-6 without updating `.github/instructions/tool-contracts.instructions.md` and governance docs in the same PR.
 
 ## Fallback Sequence
 

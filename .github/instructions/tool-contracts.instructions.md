@@ -22,6 +22,8 @@ Fallback branch (tools 7-9; only when neither version bump nor override can be a
 
 Do not reorder this sequence without updating orchestration governance and tests.
 
+For prompt-level sequencing and fallback narration, see `.github/instructions/orchestration.instructions.md`.
+
 ## Input/Output Contract Rules
 
 - Every tool must declare zod parameters and typed result fields.

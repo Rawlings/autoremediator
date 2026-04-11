@@ -1,12 +1,23 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   detectPackageManager,
+  getYarnMajorVersion,
+  resolveDedupeCommand,
   getPackageManagerCommands,
+  resolveAuditCommand,
   resolveInstallCommand,
+  resolveWhyCommand,
 } from "./package-manager.js";
+
+vi.mock("execa", () => ({
+  execa: vi.fn(),
+}));
+
+// Lazily import the mocked execa so tests can control its return value.
+import { execa } from "execa";
 
 const tempDirs: string[] = [];
 
@@ -93,6 +104,87 @@ describe("package-manager commands", () => {
       "--frozen-lockfile",
       "--prefer-offline",
     ]);
+  });
+
+  it("scopes npm audit command to workspace when provided", () => {
+    const command = resolveAuditCommand("npm", {
+      workspace: "web-app",
+    });
+
+    expect(command).toEqual(["npm", "audit", "--json", "--workspace", "web-app"]);
+  });
+
+  it("scopes pnpm audit command with filter when workspace is provided", () => {
+    const command = resolveAuditCommand("pnpm", {
+      workspace: "@apps/web",
+    });
+
+    expect(command).toEqual(["pnpm", "--filter", "@apps/web", "audit", "--json"]);
+  });
+
+  it("resolves npm explain command for dependency path diagnostics", () => {
+    const command = resolveWhyCommand("npm", "minimist");
+    expect(command).toEqual(["npm", "explain", "minimist"]);
+  });
+
+  it("resolves pnpm why command with workspace filter", () => {
+    const command = resolveWhyCommand("pnpm", "minimist", { workspace: "@apps/web" });
+    expect(command).toEqual(["pnpm", "--filter", "@apps/web", "why", "minimist"]);
+  });
+
+  it("resolves npm dedupe command with workspace", () => {
+    const command = resolveDedupeCommand("npm", { workspace: "web-app" });
+    expect(command).toEqual(["npm", "dedupe", "--workspace", "web-app"]);
+  });
+
+  it("uses --frozen-lockfile for yarn classic (v1) deterministic install", () => {
+    const command = resolveInstallCommand("yarn", { installMode: "deterministic" }, 1);
+    expect(command).toEqual(["yarn", "install", "--frozen-lockfile"]);
+  });
+
+  it("uses --immutable for yarn berry (v2+) deterministic install", () => {
+    const command = resolveInstallCommand("yarn", { installMode: "deterministic" }, 2);
+    expect(command).toEqual(["yarn", "install", "--immutable"]);
+  });
+
+  it("uses --immutable for yarn berry v4 deterministic install", () => {
+    const command = resolveInstallCommand("yarn", { installMode: "deterministic" }, 4);
+    expect(command).toEqual(["yarn", "install", "--immutable"]);
+  });
+
+  it("defaults to --frozen-lockfile when yarnMajor is not provided", () => {
+    const command = resolveInstallCommand("yarn", { installMode: "deterministic" });
+    expect(command).toEqual(["yarn", "install", "--frozen-lockfile"]);
+  });
+});
+
+describe("getYarnMajorVersion", () => {
+  afterEach(() => {
+    vi.mocked(execa).mockReset();
+  });
+
+  it("returns 1 for yarn classic v1", async () => {
+    vi.mocked(execa).mockResolvedValue({ stdout: "1.22.19", stderr: "" } as never);
+    const major = await getYarnMajorVersion("/fake/cwd");
+    expect(major).toBe(1);
+  });
+
+  it("returns 2 for yarn berry v2", async () => {
+    vi.mocked(execa).mockResolvedValue({ stdout: "2.4.3", stderr: "" } as never);
+    const major = await getYarnMajorVersion("/fake/cwd");
+    expect(major).toBe(2);
+  });
+
+  it("returns 4 for yarn berry v4", async () => {
+    vi.mocked(execa).mockResolvedValue({ stdout: "4.0.2", stderr: "" } as never);
+    const major = await getYarnMajorVersion("/fake/cwd");
+    expect(major).toBe(4);
+  });
+
+  it("falls back to 1 when yarn --version fails", async () => {
+    vi.mocked(execa).mockRejectedValue(new Error("yarn not found"));
+    const major = await getYarnMajorVersion("/fake/cwd");
+    expect(major).toBe(1);
   });
 });
 

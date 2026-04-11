@@ -9,6 +9,7 @@ const mocked = vi.hoisted(() => ({
   execa: vi.fn(),
   detectPackageManager: vi.fn(),
   getPackageManagerCommands: vi.fn(),
+  getYarnMajorVersion: vi.fn(),
   resolveInstallCommand: vi.fn(),
   resolveTestCommand: vi.fn(),
   loadPolicy: vi.fn(),
@@ -34,6 +35,7 @@ vi.mock("execa", () => ({
 vi.mock("../../platform/package-manager.js", () => ({
   detectPackageManager: mocked.detectPackageManager,
   getPackageManagerCommands: mocked.getPackageManagerCommands,
+  getYarnMajorVersion: mocked.getYarnMajorVersion,
   resolveInstallCommand: mocked.resolveInstallCommand,
   resolveTestCommand: mocked.resolveTestCommand,
 }));

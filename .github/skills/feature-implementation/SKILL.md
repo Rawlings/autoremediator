@@ -16,6 +16,12 @@ user-invocable: true
 
 Contributor workflow skill for feature execution. It enforces feature classification and the required update bundle so implementation is complete by default.
 
+Before feature categorization, perform a consolidation-first preflight:
+
+1. Run `architecture-conventions` to determine reuse vs refactor vs new artifact.
+2. Run `documentation-governance` to determine consolidation vs new doc artifact.
+3. Continue to feature category selection only after both preflight checks are resolved.
+
 ## When to Use
 
 - Any feature request affecting `packages/core/src/**`.
@@ -61,18 +67,17 @@ For `bugfix-refactor`:
 - Code + tests required.
 - Docs/governance updates only when behavior/contract changed.
 
-## Related Skills
+## Workflow Order
 
-Use with:
+Use this skill in the following order:
 
-- `architecture-conventions`
-- `api-surface`
-- `public-api-governance`
-- `mcp-tool-registration`
-- `evidence-ci-reporting`
-- `changeset-writing`
-- `governance-check`
-- `test-governance`
+1. `architecture-conventions` (placement and consolidation decision)
+2. `documentation-governance` (documentation consolidation decision)
+3. `feature-implementation` category selection + mandatory bundle
+4. `test-governance` for required tests
+5. `public-api-governance` / `api-surface` / `mcp-tool-registration` when public contracts change
+6. `changeset-writing` when release notes are required
+7. `governance-check` before completion
 
 ## Guardrails
 
@@ -83,6 +88,7 @@ Use with:
 
 ## Verification Checklist
 
+- Preflight decisions complete for architecture and docs (reuse/refactor/create rationale explicit when creating artifacts).
 - Feature category selected.
 - Required update bundle completed.
 - Typecheck/tests/docs build validated.

@@ -10,12 +10,18 @@ All notable changes to this project are documented in this file.
 - Added per-risk patch confidence override support through `patchConfidenceThresholds` (`low`, `medium`, `high`).
 - Added install behavior constraints (`installMode`, `installPreferOffline`, `enforceFrozenLockfile`) to give consumers explicit control over remediation apply/rollback install commands.
 - Added workspace-scoped remediation constraint support (`workspace`) for monorepo-targeted install/list/test execution.
+- Added scan-mode native audit ingestion (`--audit`) so npm/pnpm/yarn audit output can be consumed directly without a pre-generated file.
+- Added package-manager-native dependency path diagnostics command resolution (`npm explain`, `pnpm why`, `yarn why`) for remediation context.
+- Added override selector support so override remediation can target manager-native selector keys (including nested/scoped selectors).
 
 ### Changed
 
 - High-risk consensus verification now supports explicit verifier provider/model selection instead of a fixed provider fallback path.
 - Patch confidence gating is now risk-aware (`low`/`medium`/`high`) while preserving existing relaxed/strict profile defaults.
 - Remediation apply flows now use deterministic lockfile-respecting install commands (`npm ci`, `pnpm install --frozen-lockfile`, `yarn install --frozen-lockfile`) for apply and rollback validation steps.
+- Native scan audit mode now honors workspace-scoped execution for npm/pnpm when `workspace` constraints are provided.
+- Native scan audit mode parse failures now include command and exit-code context to improve debugging in CI and local runs.
+- Version-bump and override remediation now run a best-effort package-manager dedupe pass after successful apply/validation.
 
 ## 0.8.0
 

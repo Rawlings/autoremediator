@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { execa } from "execa";
 import type { RemediationConstraints } from "./types.js";
 
 export type PackageManager = "npm" | "pnpm" | "yarn";
@@ -12,6 +13,21 @@ export interface PackageManagerCommands {
   test: string[];
   list: string[];
   lockfileName: string;
+}
+
+/**
+ * Detect the installed yarn major version by running `yarn --version`.
+ * Returns 1 for classic yarn (1.x), or the actual major for berry (2+).
+ * Falls back to 1 when the version cannot be determined.
+ */
+export async function getYarnMajorVersion(cwd: string): Promise<number> {
+  try {
+    const result = await execa("yarn", ["--version"], { cwd, stdio: "pipe" });
+    const major = Number.parseInt(result.stdout.trim().split(".")[0] ?? "1", 10);
+    return Number.isNaN(major) ? 1 : major;
+  } catch {
+    return 1;
+  }
 }
 
 export function detectPackageManager(cwd: string): PackageManager {
@@ -43,7 +59,8 @@ function withWorkspace(command: string[], pm: PackageManager, workspace?: string
 
 export function resolveInstallCommand(
   pm: PackageManager,
-  constraints?: RemediationConstraints
+  constraints?: RemediationConstraints,
+  yarnMajor?: number
 ): string[] {
   const installMode = constraints?.installMode ?? "deterministic";
   const preferOfflineOverride = constraints?.installPreferOffline;
@@ -69,7 +86,9 @@ export function resolveInstallCommand(
   ];
 
   if (includeFrozenLockfile) {
-    command.push("--frozen-lockfile");
+    // Yarn Berry (v2+) uses --immutable instead of --frozen-lockfile
+    const isYarnBerry = pm === "yarn" && (yarnMajor ?? 1) >= 2;
+    command.push(isYarnBerry ? "--immutable" : "--frozen-lockfile");
   }
 
   if (includePreferOffline) {
@@ -92,6 +111,25 @@ export function resolveListCommand(pm: PackageManager, constraints?: Remediation
 
 export function resolveTestCommand(pm: PackageManager, constraints?: RemediationConstraints): string[] {
   const base = pm === "pnpm" ? ["pnpm", "test"] : pm === "yarn" ? ["yarn", "test"] : ["npm", "test"];
+  return withWorkspace(base, pm, constraints?.workspace);
+}
+
+export function resolveAuditCommand(pm: PackageManager, constraints?: RemediationConstraints): string[] {
+  const base = pm === "yarn" ? ["yarn", "audit", "--json"] : [pm, "audit", "--json"];
+  return withWorkspace(base, pm, constraints?.workspace);
+}
+
+export function resolveWhyCommand(
+  pm: PackageManager,
+  packageName: string,
+  constraints?: RemediationConstraints
+): string[] {
+  const base = pm === "npm" ? ["npm", "explain", packageName] : [pm, "why", packageName];
+  return withWorkspace(base, pm, constraints?.workspace);
+}
+
+export function resolveDedupeCommand(pm: PackageManager, constraints?: RemediationConstraints): string[] {
+  const base = [pm, "dedupe"];
   return withWorkspace(base, pm, constraints?.workspace);
 }
 

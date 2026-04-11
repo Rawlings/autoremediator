@@ -42,8 +42,9 @@ For `bugfix-refactor`:
 
 Feature completeness also includes code-structure quality:
 
+- Start with consolidation-first decisions: reuse existing module/file, then refactor, then create new artifact only when required by separation of concerns.
 - Do not keep adding behavior into already-large, multi-concern files when extraction is practical.
-- If feature work materially increases a large file, split by concern in the same PR unless blocked by scope constraints.
+- If feature work materially increases a large file, split by concern in the same PR.
 - Prefer reusable helpers over repeated logic blocks.
 - Keep orchestration, validation, and output formatting separated where practical.
 

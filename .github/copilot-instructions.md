@@ -10,6 +10,64 @@ This repository uses a skills-first governance model for agentic behavior.
 - Respect policy defaults from packages/core/src/platform/policy.ts and never bypass them in generated changes.
 - Preserve CLI/API compatibility when updating remediation behavior.
 
+## Agent Autopilot Contract
+
+Before proposing or creating any new file, directory, or markdown artifact, run this decision order:
+
+1. Reuse existing module/file/section when it can reasonably hold the change.
+2. Refactor and consolidate existing structure when reuse is possible but current organization is too large or mixed-concern.
+3. Create a new artifact only when reuse/refactor would violate separation of concerns or dependency boundaries.
+
+When step 3 is chosen, include explicit rationale in the task outcome (what was evaluated, why existing structure could not absorb the change, and why the new artifact has a single clear responsibility).
+
+Do not default to append-only docs or "new file first" implementation patterns.
+
+## Multi-Agent Handoff Contract
+
+This repository uses three logical contributor roles for autonomous feature/refactor work:
+
+- Planner agent: scopes work, runs consolidation-first analysis, and produces task handoff packets.
+- Developer agent: executes task packets while preserving architecture boundaries and contracts.
+- Architect agent: validates structure before execution and after implementation, and can require consolidation/refactor changes.
+
+These roles may be fulfilled by separate agents or by one agent operating in explicit phases, but all handoff gates still apply.
+
+### Handoff Gates
+
+1. Planner -> Architect pre-check:
+	- Planner must provide reuse/refactor/create analysis for each proposed artifact.
+	- Planner must include explicit rationale for any new file/directory/doc.
+	- Architect must approve or request consolidation/refactor before implementation starts.
+2. Architect -> Developer execution handoff:
+	- Developer receives approved task packet with boundaries, acceptance criteria, and forbidden shortcuts.
+	- Developer must not expand scope or create new artifacts outside the packet without re-routing to planner + architect.
+3. Developer -> Architect completion review:
+	- Architect verifies module boundaries, DRY, separation of concerns, and docs consolidation behavior.
+	- Architect can reject completion when implementation introduced avoidable sprawl.
+4. Architect -> Planner closure:
+	- Planner confirms all approved tasks are complete and governance/docs updates are coherent.
+
+### Task Packet Requirements
+
+Every planner handoff packet must include:
+
+- Reuse candidates evaluated.
+- Refactor/consolidation decision.
+- New artifact rationale (only when creation is required).
+- Files expected to change.
+- Required skills/instructions for execution.
+- Acceptance checks for architecture, tests, and docs.
+
+### Custom Agent Files
+
+Use these workspace custom agents under `.github/agents/` for governed handoffs:
+
+- `Planner`: `.github/agents/planner.agent.md`
+- `Developer`: `.github/agents/developer.agent.md`
+- `Architect`: `.github/agents/architect.agent.md`
+
+Use the names exactly as defined above when invoking subagents.
+
 ## Skill Categories
 
 Skills are divided into two groups by purpose. Always select from the appropriate group.
@@ -47,24 +105,16 @@ Use these when **building or extending the tool** — adding files, changing pub
 
 For feature requests, default to this flow unless explicitly told otherwise:
 
-1. Apply `feature-implementation` first to classify change scope.
-2. Apply `test-governance` for required test updates.
-3. Apply `documentation-governance.instructions.md` and `feature-completeness-gate.instructions.md` for mandatory docs/governance updates.
-4. Run governance validation before completion.
+1. Planner phase: run preflight with `architecture-conventions` and `documentation-governance.instructions.md` (consolidation-first decision), then produce task packet.
+2. Architect phase: review planner packet and enforce module/documentation boundaries before execution.
+3. Developer phase: apply `feature-implementation` and `test-governance` while staying within approved packet.
+4. Architect phase: run final structural review and require fixes for avoidable sprawl.
+5. Planner phase: run `feature-completeness-gate.instructions.md` and governance validation before completion.
 
 ## Agentic Remediation Order
 
-1. lookup-cve
-2. check-inventory
-3. check-version-match
-4. find-fixed-version
-5. apply-version-bump
-6. apply-package-override (when transitive and safe override is available)
-7. fetch-package-source (fallback only)
-8. generate-patch (fallback only)
-9. apply-patch-file (fallback only)
-
-Do not reorder these steps without updating .github/instructions/tool-contracts.instructions.md.
+Use `.github/instructions/tool-contracts.instructions.md` as the canonical source for runtime tool order.
+Use `.github/instructions/orchestration.instructions.md` for runtime sequencing behavior and fallback details.
 
 ## Evidence Requirement
 

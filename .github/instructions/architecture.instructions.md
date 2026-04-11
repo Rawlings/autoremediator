@@ -36,6 +36,31 @@ If adding a new dependency edge, document why the existing boundaries are insuff
 
 Violations of these rules must be treated as architectural defects and resolved before merging.
 
+## Extension vs New Artifact Rubric
+
+Before creating any new file or directory, run this decision sequence:
+
+1. Reuse check: confirm whether an existing file in the owning module can absorb the behavior.
+2. Consolidation check: if the target file is mixed-concern or large, split by concern first, then add behavior.
+3. Boundary check: ensure the concern stays within existing dependency rules.
+4. Creation check: create a new artifact only when steps 1-3 fail to provide a clean fit.
+
+Required rationale for new artifacts:
+
+- What existing files were evaluated.
+- Why reuse/refactor did not fit.
+- Why the new artifact has one clear responsibility.
+
+Invalid rationale examples:
+
+- "This looked cleaner in a new file."
+- "Might be useful later."
+
+Valid rationale examples:
+
+- Existing file already handles unrelated concerns and would become multi-domain if extended.
+- Refactor would create forbidden dependency direction or circular imports.
+
 ## File Placement Rules
 
 - New type definitions go in `packages/core/src/platform/types.ts`.
@@ -54,10 +79,10 @@ Default expectation: keep files focused and composable.
 - Avoid "god files" that combine parsing, orchestration, validation, I/O, and formatting in one place.
 - Extract shared logic into reusable helpers rather than duplicating branches across modules.
 
-Soft size thresholds (use judgment, not mechanical churn):
+Size thresholds:
 
 - Target most runtime files to stay below ~400 LOC.
-- If a file grows beyond ~600 LOC, split by concern before adding more behavior unless there is a strong reason not to.
+- If a file grows beyond ~600 LOC, split by concern before adding more behavior.
 - If a single function grows beyond ~80-100 LOC or has multiple logical phases, break it into named helpers.
 
 Refactor triggers that require decomposition:
@@ -73,6 +98,7 @@ When splitting files:
 - Preserve existing public exports and compatibility.
 - Add/update tests around extracted behavior.
 - Prefer feature-local helper files before introducing new cross-module dependencies.
+- Do not create new directories when a file-level extraction in the existing module is sufficient.
 
 ## Import Style
 

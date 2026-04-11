@@ -28,6 +28,7 @@ const mocked = vi.hoisted(() => ({
     actor: "Actor identity for evidence provenance",
     source: "Source system for provenance",
     format: "Scanner format (default: auto)",
+    audit: "Run package-manager-native audit command instead of reading a scan file",
     evidence: "Write evidence JSON to .autoremediator/evidence/ (default: true)",
     directDependenciesOnly: "Restrict remediation to direct dependencies only",
     preferVersionBump: "Reject override and patch remediation when version-bump-only policy is required",
@@ -293,6 +294,26 @@ describe("cli preview and correlation option forwarding", () => {
           enforceFrozenLockfile: true,
           workspace: "@apps/web",
         }),
+      })
+    );
+  });
+
+  it("supports explicit scan mode with --audit and no input file", async () => {
+    const program = createProgram();
+    await program.parseAsync([
+      "node",
+      "autoremediator",
+      "scan",
+      "--audit",
+      "--package-manager",
+      "npm",
+    ]);
+
+    expect(mocked.remediateFromScan).toHaveBeenCalledWith(
+      "",
+      expect.objectContaining({
+        audit: true,
+        packageManager: "npm",
       })
     );
   });

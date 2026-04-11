@@ -8,8 +8,11 @@ const mocked = vi.hoisted(() => ({
   isPackageAllowed: vi.fn(),
   detectPackageManager: vi.fn(),
   getPackageManagerCommands: vi.fn(),
+  getYarnMajorVersion: vi.fn(),
+  resolveDedupeCommand: vi.fn(),
   resolveInstallCommand: vi.fn(),
   resolveTestCommand: vi.fn(),
+  resolveWhyCommand: vi.fn(),
   withRepoLock: vi.fn(),
 }));
 
@@ -34,8 +37,11 @@ vi.mock("../../platform/policy.js", () => ({
 vi.mock("../../platform/package-manager.js", () => ({
   detectPackageManager: mocked.detectPackageManager,
   getPackageManagerCommands: mocked.getPackageManagerCommands,
+  getYarnMajorVersion: mocked.getYarnMajorVersion,
+  resolveDedupeCommand: mocked.resolveDedupeCommand,
   resolveInstallCommand: mocked.resolveInstallCommand,
   resolveTestCommand: mocked.resolveTestCommand,
+  resolveWhyCommand: mocked.resolveWhyCommand,
 }));
 
 vi.mock("../../platform/repo-lock.js", () => ({
@@ -61,8 +67,11 @@ describe("apply-package-override", () => {
       installPreferOffline: ["npm", "install", "--prefer-offline"],
       test: ["npm", "test"],
     });
+    mocked.resolveDedupeCommand.mockReturnValue(["npm", "dedupe"]);
     mocked.resolveInstallCommand.mockReturnValue(["npm", "ci", "--prefer-offline"]);
     mocked.resolveTestCommand.mockReturnValue(["npm", "test"]);
+    mocked.resolveWhyCommand.mockReturnValue(["npm", "explain", "minimist"]);
+    mocked.getYarnMajorVersion.mockResolvedValue(1);
     mocked.execa.mockResolvedValue({ stdout: "ok" });
     mocked.withRepoLock.mockImplementation(async (_cwd: string, fn: () => Promise<unknown>) => fn());
   });
@@ -139,5 +148,24 @@ describe("apply-package-override", () => {
     expect(result.dryRun).toBe(true);
     expect(result.applied).toBe(false);
     expect(result.strategy).toBe("override");
+  });
+
+  it("uses provided selector key for override entries", async () => {
+    await (applyPackageOverrideTool as any).execute({
+      cwd: "/tmp/project",
+      packageManager: "npm",
+      packageName: "minimist",
+      selector: "@scope/parent>minimist",
+      fromVersion: "1.2.0",
+      toVersion: "1.2.8",
+      dryRun: false,
+      runTests: false,
+    });
+
+    expect(mocked.writeFileSync).toHaveBeenCalledWith(
+      "/tmp/project/package.json",
+      expect.stringContaining('"@scope/parent>minimist": "1.2.8"'),
+      "utf8"
+    );
   });
 });

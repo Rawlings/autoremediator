@@ -9,8 +9,11 @@ import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
 import { withRepoLock } from "../../platform/repo-lock.js";
 import {
   detectPackageManager,
+  getYarnMajorVersion,
+  resolveDedupeCommand,
   resolveInstallCommand,
   resolveTestCommand,
+  resolveWhyCommand,
   type PackageManager,
 } from "../../platform/package-manager.js";
 
@@ -31,6 +34,10 @@ export const applyPackageOverrideTool = tool({
     cwd: z.string().describe("Absolute path to the consumer project root"),
     packageManager: z.enum(["npm", "pnpm", "yarn"]).optional().describe("Package manager used by the target project (auto-detected if omitted)"),
     packageName: z.string().describe("The npm package to override"),
+    selector: z
+      .string()
+      .optional()
+      .describe("Optional manager-native override selector key (for nested or scoped overrides)"),
     fromVersion: z.string().describe("The currently installed vulnerable version"),
     toVersion: z.string().describe("The safe target version to override to"),
     dryRun: z.boolean().default(false).describe("If true, report changes but do not write"),
@@ -45,6 +52,7 @@ export const applyPackageOverrideTool = tool({
     cwd,
     packageManager,
     packageName,
+    selector,
     fromVersion,
     toVersion,
     dryRun,
@@ -65,8 +73,11 @@ export const applyPackageOverrideTool = tool({
       enforceFrozenLockfile: enforceFrozenLockfile ?? loadedPolicy.constraints?.enforceFrozenLockfile,
       workspace: workspace ?? loadedPolicy.constraints?.workspace,
     };
-    const installCommand = resolveInstallCommand(pm, commandConstraints);
+    const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
+    const installCommand = resolveInstallCommand(pm, commandConstraints, yarnMajor);
     const testCommand = resolveTestCommand(pm, commandConstraints);
+    const dedupeCommand = resolveDedupeCommand(pm, commandConstraints);
+    const overrideSelector = selector?.trim() || packageName;
 
     if (!isPackageAllowed(loadedPolicy, packageName)) {
       return {
@@ -116,7 +127,10 @@ export const applyPackageOverrideTool = tool({
     }
 
     const overrideLabel = describeOverrideField(pm);
-    const previousValue = getOverrideValue(pkgJson, pm, packageName);
+    const previousValue = getOverrideValue(pkgJson, pm, overrideSelector);
+
+    const dependencyTrace = await collectDependencyTrace(cwd, pm, packageName, commandConstraints);
+    const dependencyTraceSuffix = dependencyTrace ? ` Dependency trace: ${dependencyTrace}` : "";
 
     if (dryRun) {
       return {
@@ -126,19 +140,19 @@ export const applyPackageOverrideTool = tool({
         toVersion,
         applied: false,
         dryRun: true,
-        message: `[DRY RUN] Would set ${overrideLabel}.${packageName} to "${toVersion}", then run ${installCommand.join(" ")}${runTests ? ` and ${testCommand.join(" ")}` : ""}.`,
+        message: `[DRY RUN] Would set ${overrideLabel}.${overrideSelector} to "${toVersion}", then run ${installCommand.join(" ")}${runTests ? ` and ${testCommand.join(" ")}` : ""}${dedupeCommand.length > 0 ? ` and ${dedupeCommand.join(" ")} (best-effort)` : ""}.${dependencyTraceSuffix}`,
       };
     }
 
     return withRepoLock(cwd, async () => {
-      setOverrideValue(pkgJson, pm, packageName, toVersion);
+      setOverrideValue(pkgJson, pm, overrideSelector, toVersion);
       writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
       try {
         const [installCmd, ...installArgs] = installCommand;
         await execa(installCmd, installArgs, { cwd, stdio: "pipe" });
       } catch (err) {
-        restoreOverrideValue(pkgJson, pm, packageName, previousValue);
+        restoreOverrideValue(pkgJson, pm, overrideSelector, previousValue);
         writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
         const message = err instanceof Error ? err.message : String(err);
         return {
@@ -149,7 +163,7 @@ export const applyPackageOverrideTool = tool({
           applied: false,
           dryRun: false,
           unresolvedReason: "override-apply-failed",
-          message: `${installCommand.join(" ")} failed after applying ${overrideLabel} for "${packageName}" to ${toVersion}. Reverted. Error: ${message}`,
+          message: `${installCommand.join(" ")} failed after applying ${overrideLabel} for "${overrideSelector}" to ${toVersion}. Reverted. Error: ${message}${dependencyTraceSuffix}`,
         };
       }
 
@@ -158,7 +172,7 @@ export const applyPackageOverrideTool = tool({
           const [testCmd, ...testArgs] = testCommand;
           await execa(testCmd, testArgs, { cwd, stdio: "pipe" });
         } catch (err) {
-          restoreOverrideValue(pkgJson, pm, packageName, previousValue);
+          restoreOverrideValue(pkgJson, pm, overrideSelector, previousValue);
           writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
           try {
@@ -177,9 +191,18 @@ export const applyPackageOverrideTool = tool({
             applied: false,
             dryRun: false,
             unresolvedReason: "validation-failed",
-            message: `${testCommand.join(" ")} failed after applying ${overrideLabel} for "${packageName}" to ${toVersion}. Reverted. Error: ${message}`,
+            message: `${testCommand.join(" ")} failed after applying ${overrideLabel} for "${overrideSelector}" to ${toVersion}. Reverted. Error: ${message}${dependencyTraceSuffix}`,
           };
         }
+      }
+
+      let dedupeNote = "";
+      try {
+        const [dedupeCmd, ...dedupeArgs] = dedupeCommand;
+        await execa(dedupeCmd, dedupeArgs, { cwd, stdio: "pipe" });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        dedupeNote = ` Dedupe warning: ${dedupeCommand.join(" ")} failed (${message}).`;
       }
 
       return {
@@ -189,11 +212,42 @@ export const applyPackageOverrideTool = tool({
         toVersion,
         applied: true,
         dryRun: false,
-        message: `Successfully applied ${overrideLabel} for "${packageName}" from ${fromVersion} to ${toVersion}, then ran ${installCommand.join(" ")}${runTests ? ` and passed ${testCommand.join(" ")}` : ""}.`,
+        message: `Successfully applied ${overrideLabel} for "${overrideSelector}" from ${fromVersion} to ${toVersion}, then ran ${installCommand.join(" ")}${runTests ? ` and passed ${testCommand.join(" ")}` : ""}.${dedupeNote}${dependencyTraceSuffix}`,
       };
     });
   },
 });
+
+async function collectDependencyTrace(
+  cwd: string,
+  pm: PackageManager,
+  packageName: string,
+  constraints: {
+    workspace?: string;
+  }
+): Promise<string | undefined> {
+  try {
+    const whyCommand = resolveWhyCommand(pm, packageName, constraints);
+    const [whyCmd, ...whyArgs] = whyCommand;
+    const result = await execa(whyCmd, whyArgs, {
+      cwd,
+      stdio: "pipe",
+      reject: false,
+    });
+
+    const output = [result.stdout, result.stderr]
+      .filter(Boolean)
+      .join("\n")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (output.length === 0) return undefined;
+    return output.slice(0, 3).join(" | ");
+  } catch {
+    return undefined;
+  }
+}
 
 function describeOverrideField(packageManager: PackageManager): string {
   if (packageManager === "npm") return "overrides";

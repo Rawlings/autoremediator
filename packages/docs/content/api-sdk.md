@@ -133,6 +133,7 @@ Patch lifecycle outputs:
 Scan-specific options:
 
 - `format`: scanner adapter selection (`auto`, `npm-audit`, `yarn-audit`, `sarif`)
+- `audit`: when true, executes package-manager-native audit output parsing instead of reading `inputPath` (respects `constraints.workspace` for npm/pnpm)
 
 ## Source Precedence
 

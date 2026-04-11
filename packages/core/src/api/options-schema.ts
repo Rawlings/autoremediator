@@ -34,6 +34,7 @@ export const OPTION_DESCRIPTIONS = {
   actor: "Actor identity for evidence provenance",
   source: "Source system for provenance",
   format: "Scanner format (default: auto)",
+  audit: "Run package-manager-native audit command instead of reading a scan file",
   evidence: "Write evidence JSON to .autoremediator/evidence/ (default: true)",
   directDependenciesOnly: "Restrict remediation to direct dependencies only",
   preferVersionBump: "Reject override and patch remediation when version-bump-only policy is required",
@@ -111,6 +112,7 @@ export function createScanOptionSchemaProperties(): Record<string, JsonSchemaPro
   return {
     ...createRemediateOptionSchemaProperties({ includeEvidence: true }),
     format: { type: "string", enum: ["npm-audit", "yarn-audit", "sarif", "auto"], description: OPTION_DESCRIPTIONS.format },
+    audit: { type: "boolean", description: OPTION_DESCRIPTIONS.audit },
   };
 }
 

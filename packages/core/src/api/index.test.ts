@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocked = vi.hoisted(() => ({
   runRemediationPipeline: vi.fn(),
   parseScanInput: vi.fn(),
+  parseScanInputFromAudit: vi.fn(),
   uniqueCveIds: vi.fn(),
   loadPolicy: vi.fn(),
   isPackageAllowed: vi.fn(),
@@ -20,6 +21,7 @@ vi.mock("../remediation/pipeline.js", () => ({
 
 vi.mock("../scanner/index.js", () => ({
   parseScanInput: mocked.parseScanInput,
+  parseScanInputFromAudit: mocked.parseScanInputFromAudit,
   uniqueCveIds: mocked.uniqueCveIds,
 }));
 
@@ -47,6 +49,7 @@ describe("api preview and correlation behavior", () => {
     vi.clearAllMocks();
 
     mocked.parseScanInput.mockReturnValue([{ cveId: "CVE-2021-23337" }]);
+    mocked.parseScanInputFromAudit.mockResolvedValue([{ cveId: "CVE-2021-23337" }]);
     mocked.uniqueCveIds.mockReturnValue(["CVE-2021-23337"]);
     mocked.loadPolicy.mockReturnValue({
       allowMajorBumps: false,
@@ -431,5 +434,62 @@ describe("api preview and correlation behavior", () => {
         }),
       })
     );
+  });
+
+  it("uses native audit parsing path when audit option is enabled", async () => {
+    mocked.parseScanInputFromAudit.mockResolvedValue([{ cveId: "CVE-2021-23337" }]);
+    mocked.uniqueCveIds.mockReturnValue(["CVE-2021-23337"]);
+    mocked.runRemediationPipeline.mockResolvedValue({
+      cveId: "CVE-2021-23337",
+      cveDetails: null,
+      vulnerablePackages: [],
+      results: [],
+      agentSteps: 1,
+      summary: "done",
+    });
+
+    await remediateFromScan("", {
+      cwd: "/tmp/project",
+      audit: true,
+      packageManager: "npm",
+      format: "auto",
+    });
+
+    expect(mocked.parseScanInputFromAudit).toHaveBeenCalledWith({
+      cwd: "/tmp/project",
+      packageManager: "npm",
+      format: "auto",
+    });
+    expect(mocked.parseScanInput).not.toHaveBeenCalled();
+  });
+
+  it("forwards workspace constraint to native audit parsing", async () => {
+    mocked.parseScanInputFromAudit.mockResolvedValue([{ cveId: "CVE-2021-23337" }]);
+    mocked.uniqueCveIds.mockReturnValue(["CVE-2021-23337"]);
+    mocked.runRemediationPipeline.mockResolvedValue({
+      cveId: "CVE-2021-23337",
+      cveDetails: null,
+      vulnerablePackages: [],
+      results: [],
+      agentSteps: 1,
+      summary: "done",
+    });
+
+    await remediateFromScan("", {
+      cwd: "/tmp/project",
+      audit: true,
+      packageManager: "npm",
+      format: "auto",
+      constraints: {
+        workspace: "web-app",
+      },
+    });
+
+    expect(mocked.parseScanInputFromAudit).toHaveBeenCalledWith({
+      cwd: "/tmp/project",
+      packageManager: "npm",
+      format: "auto",
+      workspace: "web-app",
+    });
   });
 });

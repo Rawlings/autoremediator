@@ -15,6 +15,7 @@ import { execa } from "execa";
 import {
   detectPackageManager,
   getPackageManagerCommands,
+  getYarnMajorVersion,
   resolveInstallCommand,
   resolveTestCommand,
   type PackageManager,
@@ -144,7 +145,8 @@ export const applyPatchFileTool = tool({
         enforceFrozenLockfile: enforceFrozenLockfile ?? loadedPolicy.constraints?.enforceFrozenLockfile,
         workspace: workspace ?? loadedPolicy.constraints?.workspace,
       };
-      const installCommand = resolveInstallCommand(pm, commandConstraints);
+      const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
+      const installCommand = resolveInstallCommand(pm, commandConstraints, yarnMajor);
       const testCommand = resolveTestCommand(pm, commandConstraints);
       const selectedPatch = patchContent ?? patches?.[0]?.unifiedDiff;
       const patchFiles = extractPatchedFiles(selectedPatch ?? "");
@@ -461,17 +463,8 @@ async function resolvePatchMode(packageManager: PackageManager, cwd: string): Pr
   if (packageManager === "pnpm") return "native-pnpm";
 
   // Yarn v1 does not provide native patch commands; use patch-package compatibility path.
-  try {
-    const result = await execa("yarn", ["--version"], {
-      cwd,
-      stdio: "pipe",
-    });
-    const version = result.stdout.trim();
-    const major = Number.parseInt(version.split(".")[0] || "0", 10);
-    return major >= 2 ? "native-yarn" : "patch-package";
-  } catch {
-    return "patch-package";
-  }
+  const major = await getYarnMajorVersion(cwd);
+  return major >= 2 ? "native-yarn" : "patch-package";
 }
 
 function patchModeRequiresPackageJsonSnapshot(packageManager: PackageManager, cwd: string): boolean {

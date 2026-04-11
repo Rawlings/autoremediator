@@ -13,6 +13,7 @@ import type { ScanInputFormat } from "../scanner/index.js";
 export interface ScanOptions extends RemediateOptions {
   format?: ScanInputFormat;
   policy?: string;
+  audit?: boolean;
 }
 
 export interface ScanReport {

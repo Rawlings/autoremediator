@@ -84,6 +84,7 @@ When to use which mode:
 | Option | What it controls | Why it matters in automation |
 |---|---|---|
 | `--input <path>` | scanner file path | enables scanner-to-remediation pipelines |
+| `--audit` | execute package-manager-native audit command | enables scan workflows without pre-generating an audit file and honors `--workspace` for npm/pnpm |
 | `--format <auto|npm-audit|yarn-audit|sarif>` | parser adapter selection | improves reliability for mixed scanner ecosystems |
 | `--policy <path>` | policy file path | enforces organization-specific safety controls |
 | `--evidence` | enables evidence artifact writing | explicit positive control for evidence output |

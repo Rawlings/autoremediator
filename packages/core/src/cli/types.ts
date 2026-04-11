@@ -35,6 +35,7 @@ export interface CommandOptions {
   enforceFrozenLockfile?: boolean;
   workspace?: string;
   input?: string;
+  audit: boolean;
   format: ScanFormat;
   policy?: string;
   evidence: boolean;

@@ -112,6 +112,7 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
     cwd: opts.cwd,
     packageManager: opts.packageManager,
     format: opts.format,
+    audit: opts.audit,
     policy: opts.policy,
     patchesDir: opts.patchesDir,
     dryRun: opts.dryRun,

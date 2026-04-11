@@ -15,6 +15,8 @@ import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
 import { withRepoLock } from "../../platform/repo-lock.js";
 import {
   detectPackageManager,
+  getYarnMajorVersion,
+  resolveDedupeCommand,
   resolveInstallCommand,
   resolveTestCommand,
   type PackageManager,
@@ -76,8 +78,10 @@ export const applyVersionBumpTool = tool({
       enforceFrozenLockfile: enforceFrozenLockfile ?? loadedPolicy.constraints?.enforceFrozenLockfile,
       workspace: workspace ?? loadedPolicy.constraints?.workspace,
     };
-    const installCommand = resolveInstallCommand(pm, commandConstraints);
+    const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
+    const installCommand = resolveInstallCommand(pm, commandConstraints, yarnMajor);
     const testCommand = resolveTestCommand(pm, commandConstraints);
+    const dedupeCommand = resolveDedupeCommand(pm, commandConstraints);
 
     if (!isPackageAllowed(loadedPolicy, packageName)) {
       return {
@@ -159,7 +163,7 @@ export const applyVersionBumpTool = tool({
         toVersion,
         applied: false,
         dryRun: true,
-        message: `[DRY RUN] Would update ${depField}.${packageName}: "${currentRange}" -> "${newRange}", then run ${installCmd}${runTests ? ` and ${testCmd}` : ""}.`,
+        message: `[DRY RUN] Would update ${depField}.${packageName}: "${currentRange}" -> "${newRange}", then run ${installCmd}${runTests ? ` and ${testCmd}` : ""}${dedupeCommand.length > 0 ? ` and ${dedupeCommand.join(" ")} (best-effort)` : ""}.`,
       };
     }
 
@@ -229,6 +233,18 @@ export const applyVersionBumpTool = tool({
         }
       }
 
+      let dedupeNote = "";
+      try {
+        const [dedupeCmd, ...dedupeArgs] = dedupeCommand;
+        await execa(dedupeCmd, dedupeArgs, {
+          cwd,
+          stdio: "pipe",
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        dedupeNote = ` Dedupe warning: ${dedupeCommand.join(" ")} failed (${message}).`;
+      }
+
       return {
         packageName,
         strategy: "version-bump",
@@ -236,7 +252,7 @@ export const applyVersionBumpTool = tool({
         toVersion,
         applied: true,
         dryRun: false,
-        message: `Successfully upgraded "${packageName}" from ${fromVersion} to ${toVersion}, ran ${installCommand.join(" ")}${runTests ? `, and passed ${testCommand.join(" ")}` : ""}.`,
+        message: `Successfully upgraded "${packageName}" from ${fromVersion} to ${toVersion}, ran ${installCommand.join(" ")}${runTests ? `, and passed ${testCommand.join(" ")}` : ""}.${dedupeNote}`,
       };
     });
   },

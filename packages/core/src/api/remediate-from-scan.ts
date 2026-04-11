@@ -1,5 +1,5 @@
 import type { RemediationReport } from "../platform/types.js";
-import { parseScanInput, uniqueCveIds } from "../scanner/index.js";
+import { parseScanInput, parseScanInputFromAudit, uniqueCveIds } from "../scanner/index.js";
 import { addEvidenceStep, createEvidenceLog, finalizeEvidence, writeEvidenceLog } from "../platform/evidence.js";
 import { loadPolicy } from "../platform/policy.js";
 import { resolveProvider } from "../platform/config.js";
@@ -13,12 +13,21 @@ export async function remediateFromScan(
   options: ScanOptions = {}
 ): Promise<ScanReport> {
   const cwd = options.cwd ?? process.cwd();
+  const policy = loadPolicy(cwd, options.policy);
   const format = options.format ?? "auto";
   const patchesDir = options.patchesDir ?? "./patches";
+  const audit = options.audit ?? false;
+  const workspace = options.constraints?.workspace ?? policy.constraints?.workspace;
 
-  const findings = parseScanInput(inputPath, format);
+  const findings = audit
+    ? await parseScanInputFromAudit({
+        cwd,
+        packageManager: options.packageManager,
+        format,
+        workspace,
+      })
+    : parseScanInput(inputPath, format);
   const cveIds = uniqueCveIds(findings);
-  const policy = loadPolicy(cwd, options.policy);
   const llmProvider = resolveProvider(options);
   const correlation = resolveCorrelationContext(options);
   const provenance = resolveProvenanceContext(options);
@@ -31,7 +40,12 @@ export async function remediateFromScan(
     llmProvider,
     idempotencyKey: options.idempotencyKey,
   });
-  addEvidenceStep(evidence, "scan.parse", { inputPath, format }, { findingCount: findings.length, cveCount: cveIds.length });
+  addEvidenceStep(
+    evidence,
+    "scan.parse",
+    { inputPath, format, audit },
+    { findingCount: findings.length, cveCount: cveIds.length }
+  );
 
   const execution = await executeScanRemediations({
     cveIds,

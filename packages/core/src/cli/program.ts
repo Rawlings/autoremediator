@@ -65,6 +65,7 @@ function addSharedOptions(program: Command, includeInput = false): Command {
       parseBooleanFlag
     )
     .option("--workspace <name>", OPTION_DESCRIPTIONS.workspace)
+    .option("--audit", OPTION_DESCRIPTIONS.audit, false)
     .option("--policy <path>", OPTION_DESCRIPTIONS.policy)
     .option("--evidence", OPTION_DESCRIPTIONS.evidence, true)
     .option("--no-evidence", "Disable evidence file output")
@@ -106,12 +107,20 @@ export function createProgram(): Command {
     program
       .command("scan")
       .description("Remediate vulnerabilities from scanner output (npm/pnpm/yarn audit JSON or SARIF)")
-      .requiredOption("--input <path>", OPTION_DESCRIPTIONS.inputPath)
+      .option("--input <path>", OPTION_DESCRIPTIONS.inputPath)
       .option("--format <type>", OPTION_DESCRIPTIONS.format, "auto")
       .option("--summary-file <path>", "Write machine-readable scan summary JSON to path"),
     false
-  ).action(async (opts: CommandOptions) => {
-    await runScanInput(opts.input!, opts);
+  ).action(async (opts: CommandOptions, command: Command) => {
+    const merged = {
+      ...opts,
+      ...(command.optsWithGlobals() as Partial<CommandOptions>),
+    } as CommandOptions;
+
+    if (!merged.audit && !merged.input) {
+      throw new Error("scan mode requires --input unless --audit is enabled.");
+    }
+    await runScanInput(merged.input ?? "", merged);
   });
 
   const patches = program.command("patches").description("Inspect and validate stored patch artifacts");
@@ -166,6 +175,11 @@ export function createProgram(): Command {
       .option("--summary-file <path>", "Write machine-readable scan summary JSON to path"),
     true
   ).action(async (target: string | undefined, opts: CommandOptions) => {
+    if (opts.audit) {
+      await runScanInput(opts.input ?? target ?? "", opts);
+      return;
+    }
+
     if (opts.input) {
       await runScanInput(opts.input, opts);
       return;

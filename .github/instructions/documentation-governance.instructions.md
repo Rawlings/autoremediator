@@ -9,6 +9,14 @@ applyTo: README.md,CONTRIBUTING.md,AGENTS.md,llms.txt,packages/core/README.md,pa
 
 Documentation updates are mandatory for feature work. This instruction defines what must be updated for each feature class so docs and governance stay aligned by default.
 
+Before creating a new markdown file, agents must first attempt:
+
+1. Reuse an existing canonical document section.
+2. Restructure/merge sections within an existing canonical document.
+3. Create a new document only if steps 1-2 cannot preserve clarity and separation of concerns.
+
+Do not default to append-only growth when section-level consolidation is feasible.
+
 ## Canonical Documentation Inventory
 
 Core references:
@@ -82,9 +90,12 @@ When release version/changelog changes:
 - Keep public naming canon consistent across SDK, CLI, MCP, OpenAPI, and docs.
 - Documentation updates are required in the same PR as behavior changes.
 - If behavior is internal-only and user-invisible, document rationale in PR summary and skip user docs intentionally.
+- Avoid creating new docs for topics already covered in canonical inventory files.
+- When creating a new markdown file is necessary, include explicit rationale in the task outcome.
 
 ## Verification
 
 - Run docs build validation.
 - Confirm changed paths are reflected in corresponding docs mapping above.
 - Confirm no stale references remain in markdown files.
+- Confirm consolidation-first decision was applied before any new markdown file creation.
