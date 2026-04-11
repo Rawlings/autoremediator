@@ -9,10 +9,14 @@ All notable changes to this project are documented in this file.
 - Aggregate dependency-scope reporting via `dependencyScopeCounts` across SDK, CLI summaries, OpenAPI responses, and documentation.
 - Evidence log summary rollups for strategy counts, dependency scope counts, unresolved reasons, patch validation failures, and patch output location.
 - Root packaging shortcuts for the VS Code extension via `pnpm build:vsix` and `pnpm extension:package`.
+- Agent ecosystem documentation page with plan-first orchestration patterns and MCP/OpenAPI setup guidance.
+- Advanced runtime control options documented across SDK/CLI surfaces (`modelPersonality`, `providerSafetyProfile`, `requireConsensusForHighRisk`, `dynamicModelRouting`, `dynamicRoutingThresholdChars`).
 
 ### Changed
 
 - Release-facing docs and README now describe transitive override remediation, direct-vs-transitive outcome reporting, and the `Node CVE Remediator` extension packaging flow.
+- **Breaking:** provider terminology is now vendor-neutral across public docs and schemas (`llmProvider: remote|local`).
+- Updated environment variable guidance for remote adapter configuration (`AUTOREMEDIATOR_REMOTE_CLIENT_MODULE`, `AUTOREMEDIATOR_REMOTE_CLIENT_FACTORY`, `AUTOREMEDIATOR_REMOTE_API_KEY`).
 
 ## 0.4.0
 

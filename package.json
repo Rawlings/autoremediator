@@ -12,8 +12,14 @@
     "pnpm",
     "yarn",
     "mcp",
+    "mcp-server",
     "openapi",
-    "agentic"
+    "agentic",
+    "ai",
+    "llm",
+    "claude",
+    "claude-mythos",
+    "security-automation"
   ],
   "license": "MIT",
   "homepage": "https://github.com/Rawlings/autoremediator#readme",

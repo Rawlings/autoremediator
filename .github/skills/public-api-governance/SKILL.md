@@ -49,8 +49,8 @@ This skill does not govern remediation pipeline step order or internal tool algo
 For any public API naming/schema change, update all of the following:
 
 1. `packages/core/src/platform/types.ts`
-2. `packages/core/src/api.ts`
-3. `packages/core/src/cli.ts`
+2. `packages/core/src/api/index.ts` (and any affected `packages/core/src/api/*.ts` modules)
+3. `packages/core/src/cli/index.ts` and `packages/core/src/cli/*.ts`
 4. `packages/core/src/mcp/server.ts`
 5. `packages/core/src/openapi/server.ts`
 6. Relevant tests under `packages/core/src/**/*.test.ts`
@@ -61,7 +61,7 @@ For any public API naming/schema change, update all of the following:
 - Do not leave mixed terminology in the same release.
 - Do not add compatibility aliases unless explicitly requested.
 - Preserve `schemaVersion: "1.0"` unless a formal schema migration is approved.
-- Keep MCP and OpenAPI surfaces wrapped around stable API entry points from `api.ts`.
+- Keep MCP and OpenAPI surfaces wrapped around stable API entry points from `api/index.ts`.
 
 ## Verification Checklist
 

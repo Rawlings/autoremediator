@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.8.0
+
+### Added
+
+- Added first-class patch lifecycle workflows across SDK, CLI, MCP, and OpenAPI with patch listing, inspection, and validation operations.
+- Added patch manifest sidecars (`.patch.json`) so patch artifacts can be inspected and validated as durable outputs.
+- Added `modelPersonality`, `providerSafetyProfile`, `requireConsensusForHighRisk`, `dynamicModelRouting`, and `dynamicRoutingThresholdChars` options for advanced model orchestration controls.
+- Added `llmUsage` telemetry on remediation reports and aggregate LLM telemetry fields (`llmUsageCount`, `estimatedCostUsd`, `totalLlmLatencyMs`) on scan/CI summary surfaces.
+- Added provider-aware orchestration prompt addendum support with non-mutating plan-first guidance.
+
+### Changed
+
+- Expanded patch-file remediation results with patch artifact metadata and phased validation details for better machine-readable automation.
+- Added CLI patch lifecycle commands: `autoremediator patches list`, `autoremediator patches inspect`, and `autoremediator patches validate`.
+- **Breaking:** public provider surface is now vendor-neutral: `llmProvider` uses `remote|local` instead of vendor-specific values.
+- **Breaking:** remote model wiring now uses generic adapter environment variables: `AUTOREMEDIATOR_REMOTE_CLIENT_MODULE`, `AUTOREMEDIATOR_REMOTE_CLIENT_FACTORY`, and `AUTOREMEDIATOR_REMOTE_API_KEY`.
+
 ## 0.7.0
 
 ### Changed

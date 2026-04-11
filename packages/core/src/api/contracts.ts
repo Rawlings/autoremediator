@@ -39,6 +39,9 @@ export interface ScanReport {
   provenance?: ProvenanceContext;
   constraints?: RemediationConstraints;
   idempotencyKey?: string;
+  llmUsageCount?: number;
+  estimatedCostUsd?: number;
+  totalLlmLatencyMs?: number;
 }
 
 export interface CiSummary {
@@ -65,4 +68,7 @@ export interface CiSummary {
   provenance?: ProvenanceContext;
   constraints?: RemediationConstraints;
   idempotencyKey?: string;
+  llmUsageCount?: number;
+  estimatedCostUsd?: number;
+  totalLlmLatencyMs?: number;
 }

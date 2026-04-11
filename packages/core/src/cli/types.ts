@@ -9,7 +9,13 @@ export interface CommandOptions {
   runTests: boolean;
   json: boolean;
   outputFormat: "json" | "sarif";
-  llmProvider?: "openai" | "anthropic" | "local";
+  llmProvider?: "remote" | "local";
+  model?: string;
+  modelPersonality?: "analytical" | "pragmatic" | "balanced";
+  providerSafetyProfile?: "strict" | "relaxed";
+  requireConsensusForHighRisk: boolean;
+  dynamicModelRouting: boolean;
+  dynamicRoutingThresholdChars?: number;
   requestId?: string;
   sessionId?: string;
   parentRunId?: string;

@@ -27,7 +27,7 @@ Core runtime is in `packages/core/src` with feature-first modules:
 - `intelligence`: CVE source acquisition and enrichment
 - `scanner`: scanner parsing adapters
 - `remediation`: orchestration and remediation tools
-- `api.ts` and `cli.ts`: public SDK and CLI entry points
+- `api/` and `cli/`: public SDK and CLI entry points
 - `mcp` and `openapi`: integration server surfaces
 
 Use module boundaries as a design rule, not a guideline.
@@ -84,11 +84,22 @@ When changing runtime behavior, contributors must align with:
 
 For major behavior changes, include documentation updates in the same pull request.
 
+Default feature workflow:
+
+1. classify feature scope using `.github/skills/feature-implementation/SKILL.md`
+2. apply test updates via `.github/skills/test-governance/SKILL.md`
+3. apply docs mappings from `.github/instructions/documentation-governance.instructions.md`
+4. validate completeness with `.github/instructions/feature-completeness-gate.instructions.md`
+5. run `.github/skills/governance-check/SKILL.md` before finalizing changes
+
+This workflow is advisory-first by default, but feature bundles are expected to be complete.
+
 Public API naming governance:
 
 - use `.github/skills/public-api-governance/SKILL.md` when changing any public option/report/schema names
 - keep SDK, CLI mapping, MCP schema, OpenAPI schema, and docs in sync in one change set
 - canonical public terms are `runTests`, `policy`, `evidence`, `patchCount`, and `patchesDir`
+- patch lifecycle operation names are `listPatchArtifacts`, `inspectPatchArtifact`, and `validatePatchArtifact`
 
 ## Documentation Quality Standard
 
@@ -121,3 +132,4 @@ Use pnpm-first commands in docs unless compatibility context requires alternativ
 - keep terminology consistent: remediation/remediate as primary terms
 - mark compatibility aliases as legacy when referenced
 - verify examples use secure defaults (`--dry-run`, policy guidance, validation where relevant)
+- ensure docs/governance update bundle matches feature category requirements

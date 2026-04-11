@@ -5,6 +5,9 @@ describe("openapi server", () => {
   it("exposes plan-remediation route in OpenAPI spec", () => {
     const paths = OPENAPI_SPEC.paths as Record<string, unknown>;
     expect(paths["/plan-remediation"]).toBeDefined();
+    expect(paths["/patches/list"]).toBeDefined();
+    expect(paths["/patches/inspect"]).toBeDefined();
+    expect(paths["/patches/validate"]).toBeDefined();
   });
 
   it("declares preview and correlation fields for plan-remediation", () => {
@@ -36,10 +39,20 @@ describe("openapi server", () => {
       remediateFn: vi.fn(async () => ({ cveId: "CVE-2021-23337" } as any)),
       planRemediationFn: vi.fn(async () => ({ cveId: "CVE-2021-23337" } as any)),
       remediateFromScanFn: vi.fn(async () => ({ schemaVersion: "1.0" } as any)),
+      listPatchArtifactsFn: vi.fn(async () => []),
+      inspectPatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
+      validatePatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
     });
 
     expect(server).toBeDefined();
     expect(typeof server.close).toBe("function");
     server.close();
+  });
+
+  it("declares patch lifecycle routes in OpenAPI spec", () => {
+    const paths = OPENAPI_SPEC.paths as Record<string, any>;
+    expect(paths["/patches/list"].post.operationId).toBe("listPatchArtifacts");
+    expect(paths["/patches/inspect"].post.operationId).toBe("inspectPatchArtifact");
+    expect(paths["/patches/validate"].post.operationId).toBe("validatePatchArtifact");
   });
 });

@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { OPTION_DESCRIPTIONS } from "../api/index.js";
 import { existsSync } from "node:fs";
 import { PACKAGE_VERSION } from "../version";
-import { runScanInput, runSingleCve } from "./runners.js";
+import { runInspectPatch, runListPatches, runScanInput, runSingleCve, runValidatePatch } from "./runners.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
 
@@ -15,6 +15,16 @@ function addSharedOptions(program: Command, includeInput = false): Command {
     .option("--preview", OPTION_DESCRIPTIONS.preview, false)
     .option("--run-tests", OPTION_DESCRIPTIONS.runTests, false)
     .option("--llm-provider <provider>", OPTION_DESCRIPTIONS.llmProvider)
+    .option("--model <name>", OPTION_DESCRIPTIONS.model)
+    .option("--model-personality <profile>", OPTION_DESCRIPTIONS.modelPersonality)
+    .option("--provider-safety-profile <profile>", OPTION_DESCRIPTIONS.providerSafetyProfile)
+    .option("--require-consensus-for-high-risk", OPTION_DESCRIPTIONS.requireConsensusForHighRisk, false)
+    .option("--dynamic-model-routing", OPTION_DESCRIPTIONS.dynamicModelRouting, false)
+    .option(
+      "--dynamic-routing-threshold-chars <count>",
+      OPTION_DESCRIPTIONS.dynamicRoutingThresholdChars,
+      (value: string) => parseInt(value, 10)
+    )
     .option("--request-id <id>", OPTION_DESCRIPTIONS.requestId)
     .option("--session-id <id>", OPTION_DESCRIPTIONS.sessionId)
     .option("--parent-run-id <id>", OPTION_DESCRIPTIONS.parentRunId)
@@ -72,6 +82,51 @@ export function createProgram(): Command {
   ).action(async (opts: CommandOptions) => {
     await runScanInput(opts.input!, opts);
   });
+
+  const patches = program.command("patches").description("Inspect and validate stored patch artifacts");
+
+  patches
+    .command("list")
+    .description("List patch artifacts in the configured patches directory")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
+    .option("--json", "Print JSON output", false)
+    .action(async (opts: Pick<CommandOptions, "cwd" | "patchesDir" | "json">, command: Command) => {
+      const merged = {
+        ...(command.optsWithGlobals() as Partial<CommandOptions>),
+        ...opts,
+      } as Pick<CommandOptions, "cwd" | "patchesDir" | "json">;
+      await runListPatches(merged);
+    });
+
+  patches
+    .command("inspect")
+    .description("Inspect a patch artifact and its manifest metadata")
+    .argument("<patchPath>", "Path to the .patch file to inspect")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--json", "Print JSON output", false)
+    .action(async (patchPath: string, opts: Pick<CommandOptions, "cwd" | "json">, command: Command) => {
+      const merged = {
+        ...(command.optsWithGlobals() as Partial<CommandOptions>),
+        ...opts,
+      } as Pick<CommandOptions, "cwd" | "json">;
+      await runInspectPatch(patchPath, merged);
+    });
+
+  patches
+    .command("validate")
+    .description("Validate a patch artifact against its manifest and the current dependency inventory")
+    .argument("<patchPath>", "Path to the .patch file to validate")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
+    .option("--json", "Print JSON output", false)
+    .action(async (patchPath: string, opts: Pick<CommandOptions, "cwd" | "packageManager" | "json">, command: Command) => {
+      const merged = {
+        ...(command.optsWithGlobals() as Partial<CommandOptions>),
+        ...opts,
+      } as Pick<CommandOptions, "cwd" | "packageManager" | "json">;
+      await runValidatePatch(patchPath, merged);
+    });
 
   addSharedOptions(
     program

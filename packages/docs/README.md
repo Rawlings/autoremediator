@@ -30,7 +30,6 @@ The site is deployed by the repository workflow in `.github/workflows/docs-pages
 The content displayed by the app is sourced from markdown files in `content/`:
 
 - repository root `README.md` (rendered as the docs home page at `/`)
-
 - `content/getting-started.md`
 - `content/cli.md`
 - `content/scanner-inputs.md`
@@ -63,6 +62,12 @@ Supplemental enrichment and prioritization sources used by the runtime:
 The docs should keep these sources visible and explain that remediation outcomes are policy-gated and evidence-backed.
 
 Public API naming canon across docs and examples is: `runTests`, `policy`, `evidence`, `patchCount`, and `patchesDir`.
+
+Patch lifecycle operation names must remain consistent across docs and examples:
+
+- `listPatchArtifacts`
+- `inspectPatchArtifact`
+- `validatePatchArtifact`
 
 ## Published Documentation Index
 

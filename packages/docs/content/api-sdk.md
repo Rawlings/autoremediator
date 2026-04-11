@@ -9,16 +9,21 @@ Related references:
 - [CLI Reference](cli.md)
 - [Policy and Safety](policy-and-safety.md)
 - [Integrations](integrations.md)
+- [Agent Ecosystems](agent-ecosystems.md)
 
 ## Public APIs
 
 - `remediate(cveId, options?)`
 - `planRemediation(cveId, options?)`
 - `remediateFromScan(inputPath, options?)`
+- `listPatchArtifacts(options?)`
+- `inspectPatchArtifact(patchFilePath, options?)`
+- `validatePatchArtifact(patchFilePath, options?)`
 - `toCiSummary(scanReport)`
 - `ciExitCode(summary)`
 
 New integrations should use `remediate`, `planRemediation`, and `remediateFromScan`.
+Patch-heavy integrations should also use the patch lifecycle functions when they need to reuse or verify generated patch artifacts.
 
 ## Function Reference
 
@@ -60,6 +65,24 @@ What: translates summary results into CI-friendly exit behavior.
 
 Why: supports policy-based gate enforcement in CI/CD.
 
+### `listPatchArtifacts(options?)`
+
+What: lists stored patch artifacts in the configured patch directory.
+
+Why: useful when downstream automation treats patches as durable assets.
+
+### `inspectPatchArtifact(patchFilePath, options?)`
+
+What: inspects a patch artifact and its optional manifest sidecar.
+
+Why: useful for metadata-aware automation and diagnostics before applying or promoting a patch.
+
+### `validatePatchArtifact(patchFilePath, options?)`
+
+What: validates a stored patch against its manifest and current dependency inventory.
+
+Why: useful for drift detection when lockfiles or installed versions change over time.
+
 ## Options Reference
 
 Core options:
@@ -69,7 +92,7 @@ Core options:
 - `dryRun`: simulation mode without mutation
 - `preview`: non-mutating planning mode for orchestration/approval workflows
 - `runTests`: enables post-apply test validation
-- `llmProvider`: provider selection (`openai`, `anthropic`, `local` deterministic primary path)
+- `llmProvider`: provider selection (`remote` or `local` deterministic primary path)
 - `policy`: path to `.autoremediator.json`
 - `evidence`: enable/disable evidence artifact writing for direct and scan workflows
 - `patchesDir`: patch output/apply location when fallback patching is used
@@ -82,6 +105,11 @@ Core options:
 - `source`: provenance source (`cli`, `sdk`, `mcp`, `openapi`, `unknown`)
 - `constraints.directDependenciesOnly`: block remediation outcomes for indirect dependencies
 - `constraints.preferVersionBump`: reject patch-file outcomes in favor of bump-only policy
+- `modelPersonality`: prompt behavior profile (`analytical`, `pragmatic`, `balanced`)
+- `providerSafetyProfile`: confidence/safety posture profile (`strict`, `relaxed`)
+- `requireConsensusForHighRisk`: require consensus verification for high-risk generated patches
+- `dynamicModelRouting`: enable dynamic model selection by input size
+- `dynamicRoutingThresholdChars`: threshold for dynamic routing behavior
 
 Scan and CI summary aggregates:
 
@@ -89,6 +117,11 @@ Scan and CI summary aggregates:
 - `strategyCounts`: aggregate counts by remediation strategy (`version-bump`, `override`, `patch-file`, `none`)
 - `dependencyScopeCounts`: aggregate counts by dependency scope (`direct`, `transitive`)
 - `unresolvedByReason`: aggregate counts by machine-readable unresolved reason
+
+Patch lifecycle outputs:
+
+- `patchArtifact`: structured metadata describing generated patch artifacts
+- `validationPhases`: phased patch validation results for deterministic decisioning
 
 Scan-specific options:
 
@@ -109,7 +142,16 @@ Primary package intelligence determines affected npm packages and version window
 ## Basic TypeScript Usage
 
 ```ts
-import { planRemediation, remediate, remediateFromScan, toCiSummary, ciExitCode } from "autoremediator";
+import {
+	ciExitCode,
+	inspectPatchArtifact,
+	listPatchArtifacts,
+	planRemediation,
+	remediate,
+	remediateFromScan,
+	toCiSummary,
+	validatePatchArtifact,
+} from "autoremediator";
 
 const report = await remediate("CVE-2021-23337", {
 	cwd: process.cwd(),
@@ -142,6 +184,10 @@ const resumable = await remediate("CVE-2021-23337", {
 const summary = toCiSummary(scanReport);
 const exit = ciExitCode(summary);
 process.exitCode = exit;
+
+const patches = await listPatchArtifacts({ cwd: process.cwd() });
+const inspection = await inspectPatchArtifact("./patches/lodash+4.17.0.patch", { cwd: process.cwd() });
+const validation = await validatePatchArtifact("./patches/lodash+4.17.0.patch", { cwd: process.cwd() });
 ```
 
 ## Automation and Error Handling
@@ -151,6 +197,7 @@ Recommended handling pattern:
 - treat unresolved outcomes as actionable backlog, not success
 - persist summaries for security reporting
 - use `llmProvider: "local"` for deterministic primary flow; if no safe version exists, patch fallback may still require remote model credentials
+- use `llmProvider: "remote"` when remote model-backed patch generation is required
 - avoid retry loops that ignore policy and validation failures
 
 Common failure classes to handle:

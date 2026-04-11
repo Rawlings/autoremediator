@@ -132,6 +132,11 @@ Additional provenance and replay controls:
 - `source`: calling surface (`cli`, `sdk`, `mcp`, `openapi`, `unknown`)
 - `idempotencyKey` + `resume`: replay-safe execution pair for deterministic retries
 
+Provider model controls:
+
+- `llmProvider: "local"` keeps execution deterministic-first
+- `llmProvider: "remote"` enables remote model-backed patch generation
+
 These fields are propagated through reports and evidence outputs to support deterministic run lineage in CI, MCP hosts, and service integrations.
 
 ## Intelligence Source Configuration

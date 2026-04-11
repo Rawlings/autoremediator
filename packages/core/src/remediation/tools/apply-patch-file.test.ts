@@ -139,19 +139,23 @@ describe("apply-patch-file lock integration", () => {
     expect(result.validation?.passed).toBe(false);
     expect(result.validation?.error).toContain("Failed tests");
     expect(mocked.rm).toHaveBeenCalledWith("/tmp/project/patches/lodash+4.17.0.patch", { force: true });
-    expect(mocked.writeFile).toHaveBeenNthCalledWith(
-      2,
+    expect(mocked.rm).toHaveBeenCalledWith("/tmp/project/patches/lodash+4.17.0.patch.json", { force: true });
+    expect(mocked.writeFile).toHaveBeenCalledWith(
       "/tmp/project/package.json",
       expect.stringContaining('"postinstall": "patch-package"'),
       "utf8"
     );
-    expect(mocked.writeFile).toHaveBeenNthCalledWith(
-      3,
+    expect(mocked.writeFile).toHaveBeenCalledWith(
       "/tmp/project/package.json",
       JSON.stringify({
         devDependencies: { "patch-package": "^8.0.0" },
         scripts: {},
       }),
+      "utf8"
+    );
+    expect(mocked.writeFile).toHaveBeenCalledWith(
+      "/tmp/project/patches/lodash+4.17.0.patch.json",
+      expect.stringContaining('"packageName": "lodash"'),
       "utf8"
     );
   });

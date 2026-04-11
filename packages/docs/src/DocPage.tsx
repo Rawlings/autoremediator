@@ -10,6 +10,7 @@ import scannerInputs from "../content/scanner-inputs.md?raw";
 import policyAndSafety from "../content/policy-and-safety.md?raw";
 import apiSdk from "../content/api-sdk.md?raw";
 import integrations from "../content/integrations.md?raw";
+import agentEcosystems from "../content/agent-ecosystems.md?raw";
 import contributorGuide from "../content/contributor-guide.md?raw";
 import changelog from "../content/changelog.md?raw";
 
@@ -26,6 +27,7 @@ export const docs: Doc[] = [
   { slug: "policy-and-safety", title: "Policy and Safety", body: policyAndSafety },
   { slug: "api-sdk", title: "API and SDK", body: apiSdk },
   { slug: "integrations", title: "Integrations", body: integrations },
+  { slug: "agent-ecosystems", title: "Agent Ecosystems", body: agentEcosystems },
   { slug: "contributor-guide", title: "Contributor Guide", body: contributorGuide },
   { slug: "changelog", title: "Changelog", body: changelog },
 ];

@@ -3,9 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocked = vi.hoisted(() => ({
   remediate: vi.fn(),
   remediateFromScan: vi.fn(),
+  inspectPatchArtifact: vi.fn(),
+  listPatchArtifacts: vi.fn(),
   toCiSummary: vi.fn(),
   ciExitCode: vi.fn(),
   toSarifOutput: vi.fn(),
+  validatePatchArtifact: vi.fn(),
   optionDescriptions: {
     cveId: "CVE ID, e.g. CVE-2021-23337",
     inputPath: "Absolute path to the scanner output file",
@@ -34,9 +37,12 @@ const mocked = vi.hoisted(() => ({
 vi.mock("../api/index.js", () => ({
   remediate: mocked.remediate,
   remediateFromScan: mocked.remediateFromScan,
+  inspectPatchArtifact: mocked.inspectPatchArtifact,
+  listPatchArtifacts: mocked.listPatchArtifacts,
   toCiSummary: mocked.toCiSummary,
   ciExitCode: mocked.ciExitCode,
   toSarifOutput: mocked.toSarifOutput,
+  validatePatchArtifact: mocked.validatePatchArtifact,
   OPTION_DESCRIPTIONS: mocked.optionDescriptions,
 }));
 
@@ -55,6 +61,9 @@ describe("cli preview and correlation option forwarding", () => {
       errors: [],
       patchCount: 0,
     });
+    mocked.listPatchArtifacts.mockResolvedValue([]);
+    mocked.inspectPatchArtifact.mockResolvedValue({ patchFilePath: "./patches/lodash.patch", exists: true, diffValid: true });
+    mocked.validatePatchArtifact.mockResolvedValue({ patchFilePath: "./patches/lodash.patch", exists: true, manifestFound: true, diffValid: true, driftDetected: false, validationPhases: [] });
     mocked.toCiSummary.mockReturnValue({ failedCount: 0 });
     mocked.ciExitCode.mockReturnValue(0);
     mocked.toSarifOutput.mockReturnValue({ version: "2.1.0", runs: [] });
@@ -215,5 +224,58 @@ describe("cli preview and correlation option forwarding", () => {
 
     expect(mocked.ciExitCode).toHaveBeenCalledTimes(1);
     expect(process.exitCode).toBe(1);
+  });
+
+  it("lists patch artifacts through the patches list command", async () => {
+    const program = createProgram();
+    await program.parseAsync([
+      "node",
+      "autoremediator",
+      "patches",
+      "list",
+      "--patches-dir",
+      "./custom-patches",
+    ]);
+
+    expect(mocked.listPatchArtifacts).toHaveBeenCalledWith(
+      expect.objectContaining({
+        patchesDir: "./custom-patches",
+      })
+    );
+  });
+
+  it("inspects patch artifacts through the patches inspect command", async () => {
+    const program = createProgram();
+    await program.parseAsync([
+      "node",
+      "autoremediator",
+      "patches",
+      "inspect",
+      "./patches/lodash+4.17.0.patch",
+      "--json",
+    ]);
+
+    expect(mocked.inspectPatchArtifact).toHaveBeenCalledWith(
+      "./patches/lodash+4.17.0.patch",
+      expect.objectContaining({ cwd: expect.any(String) })
+    );
+  });
+
+  it("validates patch artifacts through the patches validate command", async () => {
+    const program = createProgram();
+    await program.parseAsync([
+      "node",
+      "autoremediator",
+      "patches",
+      "validate",
+      "./patches/lodash+4.17.0.patch",
+      "--package-manager",
+      "pnpm",
+    ]);
+
+    expect(mocked.validatePatchArtifact).toHaveBeenCalledWith(
+      "./patches/lodash+4.17.0.patch",
+      expect.objectContaining({ packageManager: "pnpm" })
+    );
   });
 });

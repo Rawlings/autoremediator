@@ -74,7 +74,95 @@ export type PatchStrategy = "version-bump" | "override" | "patch-file" | "none";
 
 export type DependencyScope = "direct" | "transitive";
 
+export type PatchRiskLevel = "low" | "medium" | "high";
+
+export type PatchMode = "patch-package" | "native-pnpm" | "native-yarn";
+
+export type PatchValidationPhaseName =
+  | "diff-format"
+  | "patch-write"
+  | "manifest-write"
+  | "apply"
+  | "install"
+  | "test"
+  | "drift";
+
+export interface PatchValidationPhase {
+  phase: PatchValidationPhaseName;
+  passed: boolean;
+  message?: string;
+  error?: string;
+}
+
+export interface PatchArtifact {
+  schemaVersion: "1.0";
+  cveId?: string;
+  packageName: string;
+  vulnerableVersion: string;
+  patchFilePath: string;
+  manifestFilePath?: string;
+  patchFileName: string;
+  patchesDir?: string;
+  patchMode?: PatchMode;
+  confidence?: number;
+  riskLevel?: PatchRiskLevel;
+  generatedAt: string;
+  files?: string[];
+  hunkCount?: number;
+  applied: boolean;
+  dryRun: boolean;
+  validationPhases?: PatchValidationPhase[];
+}
+
+export interface PatchArtifactSummary {
+  patchFilePath: string;
+  manifestFilePath?: string;
+  patchFileName: string;
+  cveId?: string;
+  packageName?: string;
+  vulnerableVersion?: string;
+  patchMode?: PatchMode;
+  confidence?: number;
+  riskLevel?: PatchRiskLevel;
+  generatedAt?: string;
+  files?: string[];
+  hunkCount?: number;
+  diffValid?: boolean;
+}
+
+export interface PatchArtifactInspection extends PatchArtifactSummary {
+  exists: boolean;
+  diffValid: boolean;
+  formatError?: string;
+  patchSizeBytes?: number;
+  lineCount?: number;
+  manifest?: PatchArtifact;
+}
+
+export interface PatchArtifactValidationReport {
+  patchFilePath: string;
+  manifestFilePath?: string;
+  exists: boolean;
+  manifestFound: boolean;
+  diffValid: boolean;
+  formatError?: string;
+  driftDetected: boolean;
+  cveId?: string;
+  packageName?: string;
+  vulnerableVersion?: string;
+  installedVersion?: string;
+  inventoryMatch?: boolean;
+  validationPhases: PatchValidationPhase[];
+}
+
+export interface PatchArtifactQueryOptions {
+  cwd?: string;
+  patchesDir?: string;
+  packageManager?: "npm" | "pnpm" | "yarn";
+}
+
 export type UnresolvedReason =
+  | "consensus-failed"
   | "constraint-blocked"
   | "indirect-dependency"
   | "install-failed"
@@ -103,14 +191,19 @@ export interface PatchResult {
   fromVersion: string;
   toVersion?: string;
   patchFilePath?: string;
+  patchArtifact?: PatchArtifact;
   applied: boolean;
   dryRun: boolean;
   message: string;
+  dependencyScope?: DependencyScope;
+  confidence?: number;
+  riskLevel?: PatchRiskLevel;
   unresolvedReason?: UnresolvedReason;
   validation?: {
     passed: boolean;
     error?: string;
   };
+  validationPhases?: PatchValidationPhase[];
 }
 
 export interface CorrelationContext {
@@ -122,6 +215,34 @@ export interface CorrelationContext {
 export interface RemediationConstraints {
   directDependenciesOnly?: boolean;
   preferVersionBump?: boolean;
+}
+
+export type ModelPersonality = "analytical" | "pragmatic" | "balanced";
+
+export type ProviderSafetyProfile = "strict" | "relaxed";
+
+export interface ProgressEvent {
+  stage:
+    | "pipeline-start"
+    | "model-selected"
+    | "agent-step"
+    | "pipeline-finish"
+    | "patch-fallback"
+    | "patch-consensus";
+  detail: string;
+  at: string;
+  provider?: "remote" | "local";
+  model?: string;
+}
+
+export interface LlmUsageMetrics {
+  purpose: "orchestration" | "patch-generation" | "patch-consensus";
+  provider: "remote" | "local";
+  model: string;
+  latencyMs?: number;
+  promptChars?: number;
+  completionChars?: number;
+  estimatedCostUsd?: number;
 }
 
 export interface ProvenanceContext {
@@ -139,10 +260,22 @@ export interface RemediateOptions extends CorrelationContext {
   dryRun?: boolean;
   /** If true, run package-manager tests after patching */
   runTests?: boolean;
-  /** Override the LLM provider (falls back to env AUTOREMEDIATOR_LLM_PROVIDER) */
-  llmProvider?: "openai" | "anthropic" | "local";
+  /** Override the LLM provider (vendor-neutral surface): remote or local. */
+  llmProvider?: "remote" | "local";
   /** Override the model name */
   model?: string;
+  /** Prompt behavior profile for model-guided orchestration and patch generation. */
+  modelPersonality?: ModelPersonality;
+  /** Safety posture for confidence and high-risk patch behavior. */
+  providerSafetyProfile?: ProviderSafetyProfile;
+  /** Require a second-provider agreement for high-risk generated patches. */
+  requireConsensusForHighRisk?: boolean;
+  /** Enable provider-specific dynamic model routing by prompt/input size. */
+  dynamicModelRouting?: boolean;
+  /** Input-size threshold used by dynamic model routing when enabled. */
+  dynamicRoutingThresholdChars?: number;
+  /** Optional SDK callback for progress events during remediation execution. */
+  onProgress?: (event: ProgressEvent) => void;
   /** Optional path to a policy file (.autoremediator.json) */
   policy?: string;
   /** If false, do not write evidence JSON for this run (default: true). */
@@ -175,4 +308,5 @@ export interface RemediationReport {
   provenance?: ProvenanceContext;
   constraints?: RemediationConstraints;
   resumedFromCache?: boolean;
+  llmUsage?: LlmUsageMetrics[];
 }

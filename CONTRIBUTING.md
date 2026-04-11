@@ -41,8 +41,8 @@ Runtime source currently lives under packages/core/src with feature-first module
 - packages/core/src/remediation
 - packages/core/src/mcp
 - packages/core/src/openapi
-- packages/core/src/api.ts
-- packages/core/src/cli.ts
+- packages/core/src/api/
+- packages/core/src/cli/
 
 ## Documentation Layout
 
@@ -62,11 +62,27 @@ Before opening a PR that changes runtime behavior, update matching governance do
 
 - .github/instructions/tool-contracts.instructions.md
 - .github/instructions/orchestration.instructions.md
+- .github/instructions/feature-completeness-gate.instructions.md
+- .github/instructions/documentation-governance.instructions.md
+- .github/instructions/testing.instructions.md
 - relevant skill files under .github/skills
 
 For public API naming and schema changes, include .github/skills/public-api-governance/SKILL.md in the update set and keep canonical terms aligned across SDK, CLI mapping, MCP, OpenAPI, and docs.
 
 If you change public API or CLI behavior, update documentation in packages/docs and ensure root README links remain correct.
+
+If you add or modify patch lifecycle operations (`listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`), keep SDK, CLI, MCP, OpenAPI, and docs aligned in one change set.
+
+## Default Feature Workflow
+
+Feature work should follow this default path:
+
+1. Use `.github/skills/feature-implementation/SKILL.md` to classify feature scope.
+2. Use `.github/skills/test-governance/SKILL.md` to determine required test updates.
+3. Apply docs/governance mappings from `.github/instructions/documentation-governance.instructions.md`.
+4. Validate governance consistency with `.github/skills/governance-check/SKILL.md`.
+
+This process is advisory-first by default (warn-first), but still required for completeness.
 
 ## Pull Request Checklist
 
@@ -75,3 +91,5 @@ If you change public API or CLI behavior, update documentation in packages/docs 
 - Tests pass (unless the change is docs-only)
 - Docs updated for any user-facing or contributor-facing behavior change
 - Governance instructions and skills updated when execution behavior changes
+- Feature category identified (`internal-tool`, `public-operation`, or `bugfix-refactor`)
+- Mandatory update bundle completed per `.github/instructions/feature-completeness-gate.instructions.md`

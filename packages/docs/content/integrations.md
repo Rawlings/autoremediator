@@ -10,6 +10,7 @@ Related references:
 - [CLI Reference](cli.md)
 - [Policy and Safety](policy-and-safety.md)
 - [API and SDK](api-sdk.md)
+- [Agent Ecosystems](agent-ecosystems.md)
 
 ## Integration Decision Guide
 
@@ -110,7 +111,7 @@ All scan-mode flags are available as inputs:
 | `ci` | Exit non-zero on unresolved CVEs | `false` |
 | `summary-file` | Write machine-readable summary JSON | — |
 | `policy` | Path to `.autoremediator.json` | — |
-| `llm-provider` | `openai`, `anthropic`, `local` | `local` |
+| `llm-provider` | `remote`, `local` | `local` |
 | `node-version` | Node.js version (24+) | `24` |
 
 ## GitHub Actions: Scheduled Auto-Remediation PRs
@@ -203,10 +204,17 @@ Tools exposed:
 - `remediate`
 - `planRemediation`
 - `remediateFromScan`
+- `listPatchArtifacts`
+- `inspectPatchArtifact`
+- `validatePatchArtifact`
 
 Why use MCP: standard tool contracts for AI host ecosystems, with typed request/response patterns.
 
 The scan-oriented MCP response includes the same aggregate summary fields used by the SDK and CLI, including `strategyCounts`, `dependencyScopeCounts`, and `unresolvedByReason`.
+
+For patch fallback workflows, MCP callers can treat patch artifacts as durable assets by listing, inspecting, and validating them in follow-up automation.
+
+For plan-first orchestration guidance, see [Agent Ecosystems](agent-ecosystems.md).
 
 ## OpenAPI Integration
 
@@ -221,12 +229,19 @@ Routes:
 - `POST /remediate`
 - `POST /plan-remediation`
 - `POST /remediate-from-scan`
+- `POST /patches/list`
+- `POST /patches/inspect`
+- `POST /patches/validate`
 - `GET /openapi.json`
 - `GET /health`
 
 Why use OpenAPI: central remediation service for multiple clients and repositories.
 
 The OpenAPI responses expose the same aggregate reporting fields as the SDK and CLI, so service consumers can build routing and governance logic around `strategyCounts`, `dependencyScopeCounts`, and `unresolvedByReason` without custom post-processing.
+
+Patch lifecycle OpenAPI operations provide artifact inventory and drift validation for external orchestrators that run follow-up governance checks.
+
+For orchestration sequencing patterns, see [Agent Ecosystems](agent-ecosystems.md).
 
 Security guidance:
 

@@ -1,7 +1,17 @@
 import { fetchPackageSourceTool } from "../tools/fetch-package-source.js";
 import { generatePatchTool } from "../tools/generate-patch.js";
 import { applyPatchFileTool } from "../tools/apply-patch-file.js";
-import type { PatchResult, UnresolvedReason } from "../../platform/types.js";
+import type {
+  LlmUsageMetrics,
+  PatchResult,
+  UnresolvedReason,
+} from "../../platform/types.js";
+import { getPatchConfidenceThreshold } from "../../platform/config.js";
+
+function resolvePatchProvider(provider: "remote" | "local"): "remote" {
+  void provider;
+  return "remote";
+}
 
 export function shouldAttemptPatchFallback(result: PatchResult, preferVersionBump: boolean): boolean {
   if (preferVersionBump) return false;
@@ -24,10 +34,20 @@ export async function tryLocalPatchFallback(params: {
   vulnerableVersion: string;
   cveId: string;
   cveSummary: string;
+  dependencyScope: "direct" | "transitive";
   dryRun: boolean;
   runTests: boolean;
   patchesDir: string;
-}): Promise<{ result: PatchResult; steps: number }> {
+  llmProvider: "remote" | "local";
+  model?: string;
+  policy?: string;
+  modelPersonality?: "analytical" | "pragmatic" | "balanced";
+  providerSafetyProfile?: "strict" | "relaxed";
+  requireConsensusForHighRisk?: boolean;
+  dynamicModelRouting?: boolean;
+  dynamicRoutingThresholdChars?: number;
+}): Promise<{ result: PatchResult; steps: number; usage: LlmUsageMetrics[] }> {
+  const usage: LlmUsageMetrics[] = [];
   let steps = 0;
 
   const sourceResult = (await (fetchPackageSourceTool as any).execute({
@@ -43,18 +63,21 @@ export async function tryLocalPatchFallback(params: {
   if (!sourceResult?.success || !sourceResult.sourceFiles) {
     return {
       steps,
+      usage,
       result: {
         packageName: params.packageName,
         strategy: "none",
         fromVersion: params.vulnerableVersion,
         applied: false,
         dryRun: params.dryRun,
+        dependencyScope: params.dependencyScope,
         unresolvedReason: "source-fetch-failed",
         message: sourceResult?.error ?? `Failed to fetch source for ${params.packageName}@${params.vulnerableVersion}.`,
       },
     };
   }
 
+  const primaryProvider = resolvePatchProvider(params.llmProvider);
   const patchResult = (await (generatePatchTool as any).execute({
     packageName: params.packageName,
     vulnerableVersion: params.vulnerableVersion,
@@ -63,11 +86,25 @@ export async function tryLocalPatchFallback(params: {
     sourceFiles: sourceResult.sourceFiles,
     vulnerabilityCategory: "unknown",
     dryRun: params.dryRun,
+    llmProvider: primaryProvider,
+    model: params.model,
+    policy: params.policy,
+    cwd: params.cwd,
+    modelPersonality: params.modelPersonality,
+    providerSafetyProfile: params.providerSafetyProfile,
+    dynamicModelRouting: params.dynamicModelRouting,
+    dynamicRoutingThresholdChars: params.dynamicRoutingThresholdChars,
   })) as {
     success?: boolean;
     patches?: Array<{ filePath: string; unifiedDiff: string }>;
     patchContent?: string;
+    llmProvider?: "remote" | "local";
+    llmModel?: string;
+    latencyMs?: number;
+    estimatedCostUsd?: number;
+    confidenceThreshold?: number;
     confidence?: number;
+    riskLevel?: "low" | "medium" | "high";
     error?: string;
   };
   steps += 1;
@@ -80,41 +117,103 @@ export async function tryLocalPatchFallback(params: {
         : "patch-generation-failed";
     return {
       steps,
+      usage,
       result: {
         packageName: params.packageName,
         strategy: "none",
         fromVersion: params.vulnerableVersion,
         applied: false,
         dryRun: params.dryRun,
+        dependencyScope: params.dependencyScope,
         unresolvedReason,
         message: error,
       },
     };
   }
 
-  if (typeof patchResult.confidence === "number" && patchResult.confidence < 0.7) {
+  const effectiveProvider = patchResult.llmProvider ?? primaryProvider;
+  const confidenceThreshold =
+    patchResult.confidenceThreshold ??
+    getPatchConfidenceThreshold(effectiveProvider, params.providerSafetyProfile ?? "relaxed");
+
+  if (typeof patchResult.confidence === "number" && patchResult.confidence < confidenceThreshold) {
     return {
       steps,
+      usage,
       result: {
         packageName: params.packageName,
         strategy: "none",
         fromVersion: params.vulnerableVersion,
         applied: false,
         dryRun: params.dryRun,
+        dependencyScope: params.dependencyScope,
+        confidence: patchResult.confidence,
+        riskLevel: patchResult.riskLevel,
         unresolvedReason: "patch-confidence-too-low",
-        message: `Patch confidence ${patchResult.confidence.toFixed(2)} is below threshold 0.70.`,
+        message: `Patch confidence ${patchResult.confidence.toFixed(2)} is below threshold ${confidenceThreshold.toFixed(2)}.`,
       },
     };
+  }
+
+  if (
+    params.requireConsensusForHighRisk &&
+    patchResult.riskLevel === "high" &&
+    !params.dryRun
+  ) {
+    const consensus = (await (generatePatchTool as any).execute({
+      packageName: params.packageName,
+      vulnerableVersion: params.vulnerableVersion,
+      cveId: params.cveId,
+      cveSummary: params.cveSummary,
+      sourceFiles: sourceResult.sourceFiles,
+      vulnerabilityCategory: "unknown",
+      dryRun: false,
+      llmProvider: "remote",
+      policy: params.policy,
+      cwd: params.cwd,
+      modelPersonality: params.modelPersonality,
+      providerSafetyProfile: params.providerSafetyProfile,
+      dynamicModelRouting: params.dynamicModelRouting,
+      dynamicRoutingThresholdChars: params.dynamicRoutingThresholdChars,
+    })) as {
+      success?: boolean;
+      patches?: Array<{ filePath: string; unifiedDiff: string }>;
+      confidence?: number;
+      error?: string;
+    };
+    steps += 1;
+
+    const primaryDiff = patchResult.patches?.[0]?.unifiedDiff;
+    const secondaryDiff = consensus.patches?.[0]?.unifiedDiff;
+    if (!consensus.success || !primaryDiff || !secondaryDiff || primaryDiff !== secondaryDiff) {
+      return {
+        steps,
+        usage,
+        result: {
+          packageName: params.packageName,
+          strategy: "none",
+          fromVersion: params.vulnerableVersion,
+          applied: false,
+          dryRun: params.dryRun,
+          dependencyScope: params.dependencyScope,
+          unresolvedReason: "consensus-failed",
+          message: consensus.error ?? "High-risk patch did not pass consensus verification.",
+        },
+      };
+    }
   }
 
   const applyResult = (await (applyPatchFileTool as any).execute({
     packageName: params.packageName,
     vulnerableVersion: params.vulnerableVersion,
+    cveId: params.cveId,
+    confidence: patchResult.confidence,
     patchContent: patchResult.patchContent,
     patches: patchResult.patches,
     patchesDir: params.patchesDir,
     cwd: params.cwd,
     packageManager: params.packageManager,
+    riskLevel: patchResult.riskLevel,
     validateWithTests: params.runTests,
     dryRun: params.dryRun,
   })) as {
@@ -124,19 +223,36 @@ export async function tryLocalPatchFallback(params: {
     error?: string;
     patchFilePath?: string;
     patchPath?: string;
+    patchArtifact?: PatchResult["patchArtifact"];
+    validationPhases?: PatchResult["validationPhases"];
     validation?: { passed?: boolean; error?: string };
   };
   steps += 1;
 
+  if (patchResult.llmProvider && patchResult.llmModel) {
+    usage.push({
+      purpose: "patch-generation",
+      provider: patchResult.llmProvider,
+      model: patchResult.llmModel,
+      latencyMs: patchResult.latencyMs,
+      estimatedCostUsd: patchResult.estimatedCostUsd,
+    });
+  }
+
   return {
     steps,
+    usage,
     result: {
       packageName: params.packageName,
       strategy: "patch-file",
       fromVersion: params.vulnerableVersion,
       patchFilePath: applyResult.patchFilePath ?? applyResult.patchPath,
+      patchArtifact: applyResult.patchArtifact,
       applied: Boolean(applyResult.applied),
       dryRun: Boolean(applyResult.dryRun),
+      dependencyScope: params.dependencyScope,
+      confidence: patchResult.confidence,
+      riskLevel: patchResult.riskLevel,
       unresolvedReason:
         !Boolean(applyResult.applied) && !Boolean(applyResult.dryRun)
           ? applyResult.validation?.passed === false
@@ -151,6 +267,7 @@ export async function tryLocalPatchFallback(params: {
               error: applyResult.validation.error,
             }
           : undefined,
+      validationPhases: applyResult.validationPhases,
     },
   };
 }

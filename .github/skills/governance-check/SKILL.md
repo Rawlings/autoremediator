@@ -35,6 +35,8 @@ user-invocable: true
 
 A pass/fail report listing any missing files, malformed frontmatter, missing sections, or contract mismatches. No files are written or modified.
 
+By default this governance review is advisory (warn-first). Teams can choose stricter enforcement externally (CI policy), but this skill itself remains read-only and non-mutating.
+
 ## Required Governance Files
 
 Every file in this list must exist at the repository root:
@@ -47,6 +49,11 @@ AGENTS.md
 .github/instructions/orchestration.instructions.md
 .github/instructions/architecture.instructions.md
 .github/instructions/api-surface.instructions.md
+.github/instructions/documentation-governance.instructions.md
+.github/instructions/feature-completeness-gate.instructions.md
+.github/instructions/testing.instructions.md
+.github/instructions/report-evidence-evolution.instructions.md
+.github/instructions/deprecation.instructions.md
 .github/skills/agent-orchestration/SKILL.md
 .github/skills/cve-intelligence-sources/SKILL.md
 .github/skills/semver-remediation/SKILL.md
@@ -57,8 +64,36 @@ AGENTS.md
 .github/skills/architecture-conventions/SKILL.md
 .github/skills/mcp-tool-registration/SKILL.md
 .github/skills/api-surface/SKILL.md
+.github/skills/feature-implementation/SKILL.md
+.github/skills/test-governance/SKILL.md
 .github/skills/governance-check/SKILL.md
 ```
+
+Documentation governance references must also exist:
+
+```
+README.md
+CONTRIBUTING.md
+AGENTS.md
+llms.txt
+packages/core/llms.txt
+packages/core/CHANGELOG.md
+packages/docs/content/api-sdk.md
+packages/docs/content/cli.md
+packages/docs/content/integrations.md
+packages/docs/content/policy-and-safety.md
+packages/docs/content/contributor-guide.md
+packages/docs/content/changelog.md
+```
+
+## Instruction Frontmatter Rules
+
+For every file under `.github/instructions/`, frontmatter must include:
+
+- `description:` with a concise one-line summary
+- `applyTo:` with non-empty target patterns
+
+`applyTo` patterns must match at least one real repository file.
 
 ## SKILL.md Structural Rules
 
@@ -105,9 +140,18 @@ check-inventory
 check-version-match
 find-fixed-version
 apply-version-bump
+apply-package-override
 fetch-package-source
 generate-patch
 apply-patch-file
+```
+
+Patch lifecycle operation naming canon must also appear in governance references:
+
+```
+listPatchArtifacts
+inspectPatchArtifact
+validatePatchArtifact
 ```
 
 ## Guardrails
@@ -116,6 +160,7 @@ apply-patch-file
 - Report every failure found; do not stop at the first one.
 - A missing file is always a hard failure, not a warning.
 - Scope mismatches (e.g. `metadata.scope: foo`) are hard failures.
+- Treat documentation and naming drift as explicit findings even when advisory.
 
 ## Verification Checklist
 
@@ -123,7 +168,10 @@ apply-patch-file
 - [ ] Every `.github/skills/*/SKILL.md` has valid frontmatter (`name`, `description`, `scope`).
 - [ ] Every SKILL.md scope is exactly `runtime` or `contributor`.
 - [ ] Every SKILL.md contains all six required `##` sections.
+- [ ] Every `.github/instructions/*.md` file has `description` and `applyTo` frontmatter.
+- [ ] Every instruction `applyTo` pattern matches at least one file.
 - [ ] `copilot-instructions.md` lists all skills in the correct group (runtime vs contributor).
 - [ ] All orchestration placeholders are present in `orchestration.instructions.md`.
 - [ ] All tools in `pipeline.ts` are listed in `tool-contracts.instructions.md`.
-- [ ] All eight canonical tools appear in `tool-contracts.instructions.md`.
+- [ ] All nine canonical runtime tools appear in `tool-contracts.instructions.md`.
+- [ ] Patch lifecycle operation names are consistent across AGENTS, docs, and tool contracts.

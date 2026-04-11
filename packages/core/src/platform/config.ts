@@ -1,44 +1,103 @@
 import type { LanguageModelV1 } from "ai";
 import type { RemediateOptions } from "./types.js";
+import { loadPolicy } from "./policy.js";
 
-export type SupportedProvider = "openai" | "anthropic" | "local";
+export type SupportedProvider = "remote" | "local";
 
-/**
- * Reads configuration from environment variables with option overrides.
- * Does NOT import provider packages — those are dynamically imported so
- * that missing optional peer deps don't blow up at startup.
- */
+interface ModelRoutingContext {
+  inputChars?: number;
+}
+
+interface RemoteAdapterModule {
+  [key: string]: unknown;
+}
+
+interface RemoteModelFactory {
+  (options: { apiKey: string }): (modelName: string) => LanguageModelV1;
+}
+
 export function resolveProvider(options: RemediateOptions = {}): SupportedProvider {
-  const raw =
-    options.llmProvider ??
-    process.env.AUTOREMEDIATOR_LLM_PROVIDER ??
-    "openai";
-
-  if (raw !== "openai" && raw !== "anthropic" && raw !== "local") {
+  const raw = options.llmProvider ?? process.env.AUTOREMEDIATOR_LLM_PROVIDER ?? "remote";
+  if (raw !== "remote" && raw !== "local") {
     throw new Error(
-      `Unsupported LLM provider "${raw}". Set AUTOREMEDIATOR_LLM_PROVIDER to "openai", "anthropic", or "local".`
+      `Unsupported LLM provider "${raw}". Set AUTOREMEDIATOR_LLM_PROVIDER to "remote" or "local".`
     );
   }
-  return raw as SupportedProvider;
+  return raw;
 }
 
 export function resolveModelName(
   provider: SupportedProvider,
-  options: RemediateOptions = {}
+  options: RemediateOptions = {},
+  routing: ModelRoutingContext = {}
 ): string {
   if (options.model) return options.model;
   if (process.env.AUTOREMEDIATOR_MODEL) return process.env.AUTOREMEDIATOR_MODEL;
 
+  const cwd = options.cwd ?? process.cwd();
+  const policy = loadPolicy(cwd, options.policy);
+
+  const providerEnvModel =
+    provider === "remote"
+      ? process.env.AUTOREMEDIATOR_MODEL_REMOTE
+      : process.env.AUTOREMEDIATOR_MODEL_LOCAL;
+  if (providerEnvModel) return providerEnvModel;
+
+  const policyPinnedModel =
+    provider === "remote" ? policy.modelDefaults?.remote : policy.modelDefaults?.local;
+  if (policyPinnedModel) return policyPinnedModel;
+
   const defaults: Record<SupportedProvider, string> = {
-    openai: "gpt-4o",
-    anthropic: "claude-sonnet-4-5",
+    remote: "remote-default",
     local: "local",
   };
+
+  const routingEnabled =
+    options.dynamicModelRouting ??
+    policy.dynamicModelRouting ??
+    false;
+  const threshold =
+    options.dynamicRoutingThresholdChars ??
+    policy.dynamicRoutingThresholdChars ??
+    18000;
+
+  if (
+    provider === "remote" &&
+    routingEnabled &&
+    typeof routing.inputChars === "number" &&
+    routing.inputChars >= threshold
+  ) {
+    return process.env.AUTOREMEDIATOR_MODEL_REMOTE_LARGE ?? "remote-large";
+  }
+
   return defaults[provider];
 }
 
-/** Dynamically instantiates the LLM model at runtime. */
-export async function createModel(options: RemediateOptions = {}): Promise<LanguageModelV1> {
+async function loadRemoteFactory(): Promise<RemoteModelFactory> {
+  const moduleName = process.env.AUTOREMEDIATOR_REMOTE_CLIENT_MODULE;
+  const exportName = process.env.AUTOREMEDIATOR_REMOTE_CLIENT_FACTORY ?? "createRemoteClient";
+
+  if (!moduleName) {
+    throw new Error(
+      "AUTOREMEDIATOR_REMOTE_CLIENT_MODULE is required for remote provider model loading."
+    );
+  }
+
+  const loaded = (await import(moduleName)) as RemoteAdapterModule;
+  const factory = loaded[exportName];
+  if (typeof factory !== "function") {
+    throw new Error(
+      `Remote client factory "${exportName}" was not found in module "${moduleName}".`
+    );
+  }
+
+  return factory as RemoteModelFactory;
+}
+
+export async function createModel(
+  options: RemediateOptions = {},
+  routing: ModelRoutingContext = {}
+): Promise<LanguageModelV1> {
   const provider = resolveProvider(options);
 
   if (provider === "local") {
@@ -47,33 +106,52 @@ export async function createModel(options: RemediateOptions = {}): Promise<Langu
     );
   }
 
-  const modelName = resolveModelName(provider, options);
-
-  if (provider === "openai") {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error(
-        "OPENAI_API_KEY environment variable is required when using the openai provider."
-      );
-    }
-    const { createOpenAI } = await import("@ai-sdk/openai");
-    const openai = createOpenAI({ apiKey });
-    return openai(modelName) as LanguageModelV1;
+  const apiKey = process.env.AUTOREMEDIATOR_REMOTE_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "AUTOREMEDIATOR_REMOTE_API_KEY environment variable is required for remote provider."
+    );
   }
 
-  if (provider === "anthropic") {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      throw new Error(
-        "ANTHROPIC_API_KEY environment variable is required when using the anthropic provider."
-      );
-    }
-    const { createAnthropic } = await import("@ai-sdk/anthropic");
-    const anthropic = createAnthropic({ apiKey });
-    return anthropic(modelName) as LanguageModelV1;
-  }
+  const modelName = resolveModelName(provider, options, routing);
+  const createRemoteClient = await loadRemoteFactory();
+  const remoteClient = createRemoteClient({ apiKey });
+  return remoteClient(modelName);
+}
 
-  throw new Error(`Unhandled provider: ${provider}`);
+export function getPatchConfidenceThreshold(
+  provider: SupportedProvider,
+  safetyProfile: "strict" | "relaxed" = "relaxed"
+): number {
+  void provider;
+  const relaxed: Record<SupportedProvider, number> = {
+    remote: 0.7,
+    local: 0.7,
+  };
+  const strict: Record<SupportedProvider, number> = {
+    remote: 0.85,
+    local: 0.85,
+  };
+  return safetyProfile === "strict" ? strict[provider] : relaxed[provider];
+}
+
+export function estimateModelCostUsd(params: {
+  provider: SupportedProvider;
+  promptChars: number;
+  completionChars: number;
+}): number {
+  const inputTokens = params.promptChars / 4;
+  const outputTokens = params.completionChars / 4;
+
+  const pricePerThousand =
+    params.provider === "remote"
+      ? { input: 0.006, output: 0.02 }
+      : { input: 0, output: 0 };
+
+  return (
+    (inputTokens / 1000) * pricePerThousand.input +
+    (outputTokens / 1000) * pricePerThousand.output
+  );
 }
 
 export interface NvdConfig {

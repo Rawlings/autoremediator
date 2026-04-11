@@ -12,15 +12,46 @@ import {
   createRemediateOptionSchemaProperties,
   createScanOptionSchemaProperties,
   createScanReportSchemaProperties,
+  inspectPatchArtifact,
+  listPatchArtifacts,
   OPTION_DESCRIPTIONS,
   planRemediation,
   remediate,
   remediateFromScan,
+  validatePatchArtifact,
 } from "../api/index.js";
-import type { RemediateOptions, ScanOptions } from "../api/index.js";
+import type { PatchArtifactQueryOptions, RemediateOptions, ScanOptions } from "../api/index.js";
 import { PACKAGE_VERSION } from "../version";
 
+const PATCH_ARTIFACT_OPTION_PROPERTIES = {
+  cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
+  patchesDir: { type: "string", description: OPTION_DESCRIPTIONS.patchesDir },
+  packageManager: {
+    type: "string",
+    enum: ["npm", "pnpm", "yarn"],
+    description: OPTION_DESCRIPTIONS.packageManager,
+  },
+} as const;
+
 const DEFAULT_PORT = 3000;
+
+const REMEDIATION_REPORT_SCHEMA = {
+  type: "object",
+  properties: {
+    cveId: { type: "string" },
+    cveDetails: { type: ["object", "null"] },
+    vulnerablePackages: { type: "array", items: { type: "object" } },
+    results: { type: "array", items: { type: "object" } },
+    agentSteps: { type: "number" },
+    summary: { type: "string" },
+    evidenceFile: { type: "string" },
+    llmUsage: { type: "array", items: { type: "object" } },
+    correlation: { type: "object" },
+    provenance: { type: "object" },
+    constraints: { type: "object" },
+    resumedFromCache: { type: "boolean" },
+  },
+} as const;
 
 function parsePort(): number {
   const idx = process.argv.indexOf("--port");
@@ -74,12 +105,18 @@ interface OpenApiServerDeps {
   remediateFn: typeof remediate;
   remediateFromScanFn: typeof remediateFromScan;
   planRemediationFn: typeof planRemediation;
+  listPatchArtifactsFn: typeof listPatchArtifacts;
+  inspectPatchArtifactFn: typeof inspectPatchArtifact;
+  validatePatchArtifactFn: typeof validatePatchArtifact;
 }
 
 const defaultDeps: OpenApiServerDeps = {
   remediateFn: remediate,
   remediateFromScanFn: remediateFromScan,
   planRemediationFn: planRemediation,
+  listPatchArtifactsFn: listPatchArtifacts,
+  inspectPatchArtifactFn: inspectPatchArtifact,
+  validatePatchArtifactFn: validatePatchArtifact,
 };
 
 export function createOpenApiServer(deps: OpenApiServerDeps = defaultDeps): http.Server {
@@ -154,6 +191,60 @@ export function createOpenApiServer(deps: OpenApiServerDeps = defaultDeps): http
     }
   }
 
+    if (method === "POST" && url.pathname === "/patches/list") {
+      let body: { options?: unknown };
+      try {
+        body = (await readBody(req)) as typeof body;
+      } catch {
+        return send(res, 400, { error: "Invalid JSON body" });
+      }
+      try {
+        const report = await deps.listPatchArtifactsFn(body.options as PatchArtifactQueryOptions);
+        return send(res, 200, report);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return send(res, 400, { error: message });
+      }
+    }
+
+    if (method === "POST" && url.pathname === "/patches/inspect") {
+      let body: { patchFilePath?: unknown; options?: unknown };
+      try {
+        body = (await readBody(req)) as typeof body;
+      } catch {
+        return send(res, 400, { error: "Invalid JSON body" });
+      }
+      if (typeof body.patchFilePath !== "string" || !body.patchFilePath) {
+        return send(res, 400, { error: "patchFilePath is required (string)" });
+      }
+      try {
+        const report = await deps.inspectPatchArtifactFn(body.patchFilePath, body.options as PatchArtifactQueryOptions);
+        return send(res, 200, report);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return send(res, 400, { error: message });
+      }
+    }
+
+    if (method === "POST" && url.pathname === "/patches/validate") {
+      let body: { patchFilePath?: unknown; options?: unknown };
+      try {
+        body = (await readBody(req)) as typeof body;
+      } catch {
+        return send(res, 400, { error: "Invalid JSON body" });
+      }
+      if (typeof body.patchFilePath !== "string" || !body.patchFilePath) {
+        return send(res, 400, { error: "patchFilePath is required (string)" });
+      }
+      try {
+        const report = await deps.validatePatchArtifactFn(body.patchFilePath, body.options as PatchArtifactQueryOptions);
+        return send(res, 200, report);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return send(res, 400, { error: message });
+      }
+    }
+
     return send(res, 404, { error: "Not found" });
   });
 }
@@ -165,6 +256,18 @@ export const OPENAPI_SPEC = {
     version: PACKAGE_VERSION,
     description: "Agentic CVE remediation for Node.js dependency projects",
   },
+  servers: [
+    {
+      url: "http://localhost:3000",
+      description: "Local development server",
+    },
+  ],
+  "x-agent-compatible": true,
+  "x-agent-use-cases": [
+    "plan-first remediation",
+    "scanner-driven batch remediation",
+    "patch lifecycle validation",
+  ],
   paths: {
     "/remediate": {
       post: {
@@ -196,7 +299,7 @@ export const OPENAPI_SPEC = {
         responses: {
           "200": {
             description: "RemediationReport",
-            content: { "application/json": { schema: { type: "object" } } },
+            content: { "application/json": { schema: REMEDIATION_REPORT_SCHEMA } },
           },
           "400": {
             description: "Invalid input or remediation error",
@@ -242,7 +345,7 @@ export const OPENAPI_SPEC = {
         responses: {
           "200": {
             description: "RemediationReport",
-            content: { "application/json": { schema: { type: "object" } } },
+            content: { "application/json": { schema: REMEDIATION_REPORT_SCHEMA } },
           },
           "400": {
             description: "Invalid input or remediation error",
@@ -305,6 +408,117 @@ export const OPENAPI_SPEC = {
                   properties: { error: { type: "string" } },
                 },
               },
+            },
+          },
+        },
+      },
+    },
+    "/patches/list": {
+      post: {
+        operationId: "listPatchArtifacts",
+        summary: "List stored patch artifacts",
+        requestBody: {
+          required: false,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  options: {
+                    type: "object",
+                    description: "PatchArtifactQueryOptions",
+                    properties: PATCH_ARTIFACT_OPTION_PROPERTIES,
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Patch artifact summaries",
+            content: { "application/json": { schema: { type: "array", items: { type: "object" } } } },
+          },
+          "400": {
+            description: "Invalid input",
+            content: {
+              "application/json": { schema: { type: "object", properties: { error: { type: "string" } } } },
+            },
+          },
+        },
+      },
+    },
+    "/patches/inspect": {
+      post: {
+        operationId: "inspectPatchArtifact",
+        summary: "Inspect a stored patch artifact",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["patchFilePath"],
+                properties: {
+                  patchFilePath: { type: "string" },
+                  options: {
+                    type: "object",
+                    description: "PatchArtifactQueryOptions",
+                    properties: {
+                      cwd: PATCH_ARTIFACT_OPTION_PROPERTIES.cwd,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Patch artifact inspection",
+            content: { "application/json": { schema: { type: "object" } } },
+          },
+          "400": {
+            description: "Invalid input",
+            content: {
+              "application/json": { schema: { type: "object", properties: { error: { type: "string" } } } },
+            },
+          },
+        },
+      },
+    },
+    "/patches/validate": {
+      post: {
+        operationId: "validatePatchArtifact",
+        summary: "Validate a stored patch artifact",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["patchFilePath"],
+                properties: {
+                  patchFilePath: { type: "string" },
+                  options: {
+                    type: "object",
+                    description: "PatchArtifactQueryOptions",
+                    properties: PATCH_ARTIFACT_OPTION_PROPERTIES,
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Patch artifact validation report",
+            content: { "application/json": { schema: { type: "object" } } },
+          },
+          "400": {
+            description: "Invalid input",
+            content: {
+              "application/json": { schema: { type: "object", properties: { error: { type: "string" } } } },
             },
           },
         },

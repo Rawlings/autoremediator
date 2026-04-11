@@ -4,6 +4,8 @@ const mocked = vi.hoisted(() => ({
   generateText: vi.fn(),
   createModel: vi.fn(),
   resolveProvider: vi.fn(),
+  estimateModelCostUsd: vi.fn(),
+  getPatchConfidenceThreshold: vi.fn(),
   detectPackageManager: vi.fn(),
   lookupCveOsv: vi.fn(),
   lookupCveGitHub: vi.fn(),
@@ -26,6 +28,8 @@ vi.mock("ai", () => ({
 vi.mock("../platform/config.js", () => ({
   createModel: mocked.createModel,
   resolveProvider: mocked.resolveProvider,
+  estimateModelCostUsd: mocked.estimateModelCostUsd,
+  getPatchConfidenceThreshold: mocked.getPatchConfidenceThreshold,
 }));
 
 vi.mock("../platform/package-manager.js", () => ({
@@ -78,7 +82,9 @@ import { runRemediationPipeline } from "./pipeline.js";
 describe("runRemediationPipeline tool gating", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocked.resolveProvider.mockReturnValue("openai");
+    mocked.resolveProvider.mockReturnValue("remote");
+    mocked.estimateModelCostUsd.mockReturnValue(0.01);
+    mocked.getPatchConfidenceThreshold.mockReturnValue(0.7);
     mocked.createModel.mockResolvedValue({ modelId: "fake-model" });
     mocked.detectPackageManager.mockReturnValue("npm");
     mocked.generateText.mockResolvedValue({ text: "done" });
@@ -202,7 +208,7 @@ describe("runRemediationPipeline tool gating", () => {
     });
     mocked.generatePatchExecute.mockResolvedValue({
       success: false,
-      error: "OPENAI_API_KEY environment variable is required",
+      error: "AUTOREMEDIATOR_REMOTE_API_KEY environment variable is required",
     });
 
     const report = await runRemediationPipeline("CVE-2021-23337", {

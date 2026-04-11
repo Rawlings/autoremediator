@@ -1,3 +1,8 @@
+---
+description: Canonical runtime tool order and input/output contract requirements.
+applyTo: packages/core/src/{remediation,api,cli,mcp,openapi}/**/*.ts
+---
+
 # Tool Contracts
 
 ## Canonical Tool Order
@@ -15,6 +20,8 @@ Fallback branch (tools 7-9; only when neither version bump nor override can be a
 8. generate-patch
 9. apply-patch-file
 
+Do not reorder this sequence without updating orchestration governance and tests.
+
 ## Input/Output Contract Rules
 
 - Every tool must declare zod parameters and typed result fields.
@@ -28,6 +35,13 @@ Fallback branch (tools 7-9; only when neither version bump nor override can be a
 - patch fallback tools must return structured success=false on failure (no thrown-only failures).
 - `fetch-package-source` should return source files under `sourceFiles`.
 - `generate-patch` should return `patchContent` (or `patches`) that can be passed directly to `apply-patch-file`.
+- `apply-patch-file` should return patch artifact metadata and validation phase details when available.
+
+Patch lifecycle contract surfaces:
+
+- SDK operations: `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`
+- CLI operations: `patches list`, `patches inspect`, `patches validate`
+- MCP/OpenAPI should expose equivalent operation names and payload semantics.
 
 ## Precedence and Conflict Rules
 
@@ -48,6 +62,12 @@ Fallback branch (tools 7-9; only when neither version bump nor override can be a
 - generate-patch
 - apply-patch-file
 
+Patch lifecycle operations (post-remediation artifact management):
+
+- listPatchArtifacts
+- inspectPatchArtifact
+- validatePatchArtifact
+
 ## Compatibility
 
 When adding or renaming tools:
@@ -55,4 +75,5 @@ When adding or renaming tools:
 - Update this file.
 - Update packages/core/src/remediation/pipeline.ts tool map.
 - Update .github/skills/agent-orchestration/SKILL.md.
+- Update MCP/OpenAPI contracts if exposed tool operations changed.
 - Run the `governance-check` skill checklist.

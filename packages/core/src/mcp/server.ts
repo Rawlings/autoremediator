@@ -3,7 +3,7 @@
  * autoremediator MCP server
  *
  * Exposes all autoremediator tools via the Model Context Protocol so LLM hosts
- * (Claude Desktop, Cursor, Copilot, etc.) can invoke them directly.
+ * and compatible agent hosts can invoke them directly.
  *
  * Start: autoremediator-mcp   (stdio transport)
  */
@@ -17,23 +17,42 @@ import { fileURLToPath } from "node:url";
 import {
   createRemediateOptionSchemaProperties,
   createScanOptionSchemaProperties,
+  inspectPatchArtifact,
+  listPatchArtifacts,
   OPTION_DESCRIPTIONS,
   planRemediation,
   remediate,
   remediateFromScan,
+  validatePatchArtifact,
 } from "../api/index.js";
 import { PACKAGE_VERSION } from "../version";
+
+const PATCH_ARTIFACT_SCHEMA_PROPERTIES = {
+  cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
+  patchesDir: { type: "string", description: OPTION_DESCRIPTIONS.patchesDir },
+  packageManager: {
+    type: "string",
+    enum: ["npm", "pnpm", "yarn"],
+    description: OPTION_DESCRIPTIONS.packageManager,
+  },
+} as const;
 
 interface McpApiDeps {
   remediateFn: typeof remediate;
   planRemediationFn: typeof planRemediation;
   remediateFromScanFn: typeof remediateFromScan;
+  listPatchArtifactsFn: typeof listPatchArtifacts;
+  inspectPatchArtifactFn: typeof inspectPatchArtifact;
+  validatePatchArtifactFn: typeof validatePatchArtifact;
 }
 
 const defaultDeps: McpApiDeps = {
   remediateFn: remediate,
   planRemediationFn: planRemediation,
   remediateFromScanFn: remediateFromScan,
+  listPatchArtifactsFn: listPatchArtifacts,
+  inspectPatchArtifactFn: inspectPatchArtifact,
+  validatePatchArtifactFn: validatePatchArtifact,
 };
 
 function createBaseServer(): Server {
@@ -87,6 +106,43 @@ export const TOOLS = [
       },
     },
   },
+  {
+    name: "listPatchArtifacts",
+    description:
+      "List stored patch artifacts in the configured patches directory. Returns patch summaries with manifest metadata when available.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        ...PATCH_ARTIFACT_SCHEMA_PROPERTIES,
+      },
+    },
+  },
+  {
+    name: "inspectPatchArtifact",
+    description:
+      "Inspect a stored .patch file and its optional manifest metadata.",
+    inputSchema: {
+      type: "object",
+      required: ["patchFilePath"],
+      properties: {
+        patchFilePath: { type: "string", description: "Path to the .patch file" },
+        cwd: PATCH_ARTIFACT_SCHEMA_PROPERTIES.cwd,
+      },
+    },
+  },
+  {
+    name: "validatePatchArtifact",
+    description:
+      "Validate a stored patch artifact against its manifest and the current dependency inventory.",
+    inputSchema: {
+      type: "object",
+      required: ["patchFilePath"],
+      properties: {
+        patchFilePath: { type: "string", description: "Path to the .patch file" },
+        ...PATCH_ARTIFACT_SCHEMA_PROPERTIES,
+      },
+    },
+  },
 ];
 
 export async function handleToolCall(
@@ -115,6 +171,29 @@ export async function handleToolCall(
     if (name === "remediateFromScan") {
       const { inputPath, ...options } = args as { inputPath: string; [key: string]: unknown };
       const report = await deps.remediateFromScanFn(inputPath, withMcpSource(options) as Parameters<typeof remediateFromScan>[1]);
+      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
+    }
+
+    if (name === "listPatchArtifacts") {
+      const report = await deps.listPatchArtifactsFn(args as Parameters<typeof listPatchArtifacts>[0]);
+      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
+    }
+
+    if (name === "inspectPatchArtifact") {
+      const { patchFilePath, ...options } = args as { patchFilePath: string; [key: string]: unknown };
+      const report = await deps.inspectPatchArtifactFn(
+        patchFilePath,
+        options as Parameters<typeof inspectPatchArtifact>[1]
+      );
+      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
+    }
+
+    if (name === "validatePatchArtifact") {
+      const { patchFilePath, ...options } = args as { patchFilePath: string; [key: string]: unknown };
+      const report = await deps.validatePatchArtifactFn(
+        patchFilePath,
+        options as Parameters<typeof validatePatchArtifact>[1]
+      );
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 

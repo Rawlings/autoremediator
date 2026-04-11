@@ -64,6 +64,12 @@ If release impacts public behavior across surfaces, verify docs are aligned in:
 - `packages/docs/content/api-sdk.md`
 - `packages/docs/content/cli.md`
 - `packages/docs/content/getting-started.md`
+- `packages/docs/content/integrations.md`
+- `packages/docs/content/policy-and-safety.md`
+- `packages/docs/content/changelog.md`
+- `README.md`
+- `packages/core/llms.txt`
+- `llms.txt`
 
 ## Changelog Style Rules
 
@@ -78,5 +84,6 @@ If release impacts public behavior across surfaces, verify docs are aligned in:
 - Version bump matches declared scope (patch or minor).
 - Changelog section is present and at top.
 - Entry text mentions user-visible impact only.
+- Required docs and llms files are updated for user-visible feature changes.
 - `pnpm --dir packages/core typecheck`
 - `pnpm --dir packages/core test`

@@ -1,8 +1,9 @@
 name: Autoremediator
 description: >
-  Automated CVE remediation for Node.js dependencies.
+  Agentic CVE remediation for Node.js dependencies.
   Runs version-bump remediation for scanner output or a single CVE ID,
-  with LLM patch-generation fallback when no safe version exists.
+  with LLM patch-generation fallback when no safe version exists,
+  and integrates with MCP/OpenAPI security automation workflows.
 author: rawlings
 
 branding:
@@ -67,8 +68,8 @@ inputs:
   llm-provider:
     description: >
       LLM provider for patch-generation fallback when no safe version exists.
-      One of: openai, anthropic, local.
-      local runs deterministic mode and requires no API key.
+      One of: remote, local.
+      local runs deterministic mode and does not require remote credentials.
     required: false
     default: local
   node-version:

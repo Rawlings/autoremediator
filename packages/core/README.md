@@ -26,13 +26,11 @@ See the [documentation](https://rawlings.github.io/autoremediator/docs/getting-s
 
 ## Why Teams Use It
 
-- Continuous remediation in CI and scheduled GitHub workflows
-- Risk-aware prioritization using EPSS, CISA KEV, and OSV intelligence
-- Scanner-to-fix pipelines from npm audit, yarn audit, and SARIF inputs
-- Lower vulnerability fatigue by focusing operator attention on exploited and higher-probability issues
-- Policy-aware upgrade behavior for controlled automation at scale
-- Structured evidence and summary outputs for security operations
-- Multiple integration surfaces for platform engineering and automation agents
+- Deterministic remediation pipeline with policy-first behavior
+- Risk-informed prioritization via KEV and EPSS enrichment
+- Scanner-driven remediation for npm audit, yarn audit, and SARIF inputs
+- Clear CI summary outputs for routing and governance
+- Patch lifecycle workflows for listing, inspecting, and validating generated patch artifacts
 
 ## Primary Use Cases
 
@@ -42,17 +40,24 @@ See the [documentation](https://rawlings.github.io/autoremediator/docs/getting-s
 - Platform-level remediation orchestration across many services
 - Agentic integration via CLI, SDK, MCP, and OpenAPI
 
-## How Remediation Works
+## Core Pipeline Behavior
 
-Core pipeline behavior:
+Autoremediator follows a deterministic remediation order:
 
-1. CVE lookup and enrichment
-2. installed dependency inventory detection
-3. vulnerable version matching
-4. safe version bump attempt
-5. controlled fallback patch flow when no safe bump exists
+1. lookup CVE intelligence
+2. inspect local dependency inventory
+3. match vulnerable installed versions
+4. attempt direct safe version remediation
+5. attempt transitive override/resolution when direct bump is not possible
+6. attempt patch fallback only when safe version paths cannot remediate
 
 Safety and policy controls are applied through each stage.
+
+Patch lifecycle operations are available through:
+
+- CLI: `autoremediator patches list`, `autoremediator patches inspect`, `autoremediator patches validate`
+- SDK: `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`
+- MCP and OpenAPI: equivalent patch artifact tools and routes
 
 ## Trust and Advisory Sources
 
@@ -86,7 +91,7 @@ Trust controls:
 
 - CLI: workflow and CI execution
 - SDK: custom automation programs (`remediate`, `planRemediation`, `remediateFromScan`)
-- MCP: AI host integrations
+- MCP: AI host integrations, including Claude Mythos workflows
 - OpenAPI: service-based automation
 
 Public API naming canon: `runTests`, `policy`, `evidence`, `patchCount`, and `patchesDir`.

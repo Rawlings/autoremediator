@@ -4,12 +4,15 @@ import { lookupCveGitHub, mergeGhDataIntoCveDetails } from "../../intelligence/s
 import { enrichWithNvd } from "../../intelligence/sources/nvd.js";
 import type {
   CveDetails,
+  LlmUsageMetrics,
   PatchResult,
   RemediateOptions,
   RemediationReport,
   VulnerablePackage,
 } from "../../platform/types.js";
 import { detectPackageManager } from "../../platform/package-manager.js";
+import { resolveProvider } from "../../platform/config.js";
+import { loadPolicy } from "../../platform/policy.js";
 import { checkInventoryTool } from "../tools/check-inventory.js";
 import { resolvePrimaryResult } from "./primary-strategy.js";
 import { shouldAttemptPatchFallback, tryLocalPatchFallback } from "./fallback.js";
@@ -26,8 +29,26 @@ export async function runLocalRemediationPipeline(
   const policy = options.policy ?? "";
   const patchesDir = options.patchesDir || "./patches";
   const constraints = options.constraints ?? {};
+  const loadedPolicy = loadPolicy(cwd, options.policy);
+  const llmProvider = resolveProvider(options);
+  const providerSafetyProfile =
+    options.providerSafetyProfile ??
+    loadedPolicy.providerSafetyProfile ??
+    "relaxed";
+  const requireConsensusForHighRisk =
+    options.requireConsensusForHighRisk ??
+    loadedPolicy.requireConsensusForHighRisk ??
+    false;
+  const dynamicModelRouting =
+    options.dynamicModelRouting ??
+    loadedPolicy.dynamicModelRouting ??
+    false;
+  const dynamicRoutingThresholdChars =
+    options.dynamicRoutingThresholdChars ??
+    loadedPolicy.dynamicRoutingThresholdChars;
 
   const collectedResults: PatchResult[] = [];
+  const llmUsage: LlmUsageMetrics[] = [];
   const vulnerablePackages: VulnerablePackage[] = [];
   let cveDetails: CveDetails | null = null;
   let agentSteps = 0;
@@ -151,16 +172,31 @@ export async function runLocalRemediationPipeline(
         vulnerableVersion: vulnerable.installed.version,
         cveId: normalizedId,
         cveSummary: cveDetails?.summary ?? normalizedId,
+        dependencyScope: vulnerable.installed.type === "direct" ? "direct" : "transitive",
         dryRun,
         runTests,
         patchesDir,
+        llmProvider,
+        model: options.model,
+        policy: options.policy,
+        modelPersonality: options.modelPersonality,
+        providerSafetyProfile,
+        requireConsensusForHighRisk,
+        dynamicModelRouting,
+        dynamicRoutingThresholdChars,
       });
       agentSteps += fallback.steps;
       collectedResults.push(fallback.result);
+      if (fallback.usage) {
+        llmUsage.push(...fallback.usage);
+      }
       continue;
     }
 
-    collectedResults.push(primary.result);
+    collectedResults.push({
+      ...primary.result,
+      dependencyScope: vulnerable.installed.type === "direct" ? "direct" : "transitive",
+    });
   }
 
   const appliedCount = collectedResults.filter((result) => result.applied).length;
@@ -174,6 +210,7 @@ export async function runLocalRemediationPipeline(
     results: collectedResults,
     agentSteps,
     summary: `Local mode completed: vulnerable=${vulnerablePackages.length}, applied=${appliedCount}, dryRun=${dryRunCount}, unresolved=${unresolvedCount}`,
+    llmUsage: llmUsage.length > 0 ? llmUsage : undefined,
     correlation: {
       requestId: options.requestId,
       sessionId: options.sessionId,

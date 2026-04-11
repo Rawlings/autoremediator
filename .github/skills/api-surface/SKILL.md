@@ -1,7 +1,7 @@
 ---
 name: api-surface
 argument-hint: Describe the API contract change and compatibility constraints.
-description: Use when changing the public SDK API (packages/core/src/api.ts), exported types, function signatures, or the OpenAPI/HTTP server surface.
+description: Use when changing the public SDK API (packages/core/src/api/index.ts), exported types, function signatures, or the OpenAPI/HTTP server surface.
 disable-model-invocation: false
 license: MIT
 metadata:
@@ -20,7 +20,7 @@ For naming canon, terminology normalization, and cross-surface parity rules, pai
 
 ## When to Use
 
-- Modifying `packages/core/src/api.ts` exports.
+- Modifying `packages/core/src/api/index.ts` exports.
 - Adding or renaming public-facing functions.
 - Changing the shape of `RemediationReport`, `ScanReport`, `CiSummary`, or `RemediateOptions`.
 - Updating the OpenAPI spec or HTTP route handlers in `packages/core/src/openapi/`.
@@ -28,7 +28,7 @@ For naming canon, terminology normalization, and cross-surface parity rules, pai
 
 ## Inputs
 
-- Current `packages/core/src/api.ts` exports.
+- Current `packages/core/src/api/index.ts` exports.
 - Consumer-visible types in `packages/core/src/platform/types.ts`.
 - OpenAPI spec (when applicable).
 
@@ -58,7 +58,7 @@ ScanInputFormat
 
 ## Guardrails
 
-- `packages/core/src/api.ts` must only import from `packages/core/src/remediation/` and `packages/core/src/scanner/` barrels.
+- `packages/core/src/api/index.ts` and sibling API modules must import only from stable internal module barrels.
 - Never expose internal module paths in public exports.
 - `schemaVersion` fields must remain `"1.0"` unless a formal versioning process is followed.
 - Breaking changes must be documented in CHANGELOG and reflected in `llms.txt`.
@@ -66,7 +66,7 @@ ScanInputFormat
 
 ## Verification Checklist
 
-- `tsc --noEmit` passes with no errors on `packages/core/src/api.ts`.
-- All types re-exported from `packages/core/src/api.ts` are resolvable by consumers.
+- `tsc --noEmit` passes with no errors on `packages/core/src/api/index.ts`.
+- All types re-exported from `packages/core/src/api/index.ts` are resolvable by consumers.
 - OpenAPI spec (if generated) accurately reflects parameter and response shapes.
 - README quick-start example still compiles against updated API.

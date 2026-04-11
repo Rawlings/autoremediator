@@ -1,7 +1,7 @@
 export type JsonSchemaProperty = Record<string, unknown>;
 
 export const PACKAGE_MANAGER_VALUES = ["npm", "pnpm", "yarn"] as const;
-export const LLM_PROVIDER_VALUES = ["openai", "anthropic", "local"] as const;
+export const LLM_PROVIDER_VALUES = ["remote", "local"] as const;
 export const PROVENANCE_SOURCE_VALUES = ["cli", "sdk", "mcp", "openapi", "unknown"] as const;
 
 export const OPTION_DESCRIPTIONS = {
@@ -12,7 +12,13 @@ export const OPTION_DESCRIPTIONS = {
   dryRun: "If true, plan changes but write nothing",
   preview: "If true, enforce non-mutating preview mode",
   runTests: "Run package-manager test command after applying fix",
-  llmProvider: "LLM provider override",
+  llmProvider: "LLM provider override (remote|local)",
+  model: "LLM model override",
+  modelPersonality: "Prompt behavior profile: analytical|pragmatic|balanced",
+  providerSafetyProfile: "Safety posture profile for confidence gates: strict|relaxed",
+  requireConsensusForHighRisk: "Require second-provider agreement for high-risk generated patches",
+  dynamicModelRouting: "Enable dynamic model selection by input size",
+  dynamicRoutingThresholdChars: "Input size threshold used by dynamic model routing",
   patchesDir: "Directory to write .patch files (default: ./patches)",
   policy: "Optional path to .autoremediator policy file",
   requestId: "Request correlation ID",
@@ -51,6 +57,12 @@ export function createRemediateOptionSchemaProperties(options?: {
     ...(includePreview ? { preview: { type: "boolean", description: OPTION_DESCRIPTIONS.preview } } : {}),
     runTests: { type: "boolean", description: OPTION_DESCRIPTIONS.runTests },
     llmProvider: { type: "string", enum: [...LLM_PROVIDER_VALUES], description: OPTION_DESCRIPTIONS.llmProvider },
+    model: { type: "string", description: OPTION_DESCRIPTIONS.model },
+    modelPersonality: { type: "string", enum: ["analytical", "pragmatic", "balanced"], description: OPTION_DESCRIPTIONS.modelPersonality },
+    providerSafetyProfile: { type: "string", enum: ["strict", "relaxed"], description: OPTION_DESCRIPTIONS.providerSafetyProfile },
+    requireConsensusForHighRisk: { type: "boolean", description: OPTION_DESCRIPTIONS.requireConsensusForHighRisk },
+    dynamicModelRouting: { type: "boolean", description: OPTION_DESCRIPTIONS.dynamicModelRouting },
+    dynamicRoutingThresholdChars: { type: "number", description: OPTION_DESCRIPTIONS.dynamicRoutingThresholdChars },
     patchesDir: { type: "string", description: OPTION_DESCRIPTIONS.patchesDir },
     policy: { type: "string", description: OPTION_DESCRIPTIONS.policy },
     ...(includeEvidence ? { evidence: { type: "boolean", description: OPTION_DESCRIPTIONS.evidence } } : {}),
@@ -105,5 +117,8 @@ export function createScanReportSchemaProperties(): Record<string, JsonSchemaPro
     provenance: { type: "object" },
     constraints: { type: "object" },
     idempotencyKey: { type: "string" },
+    llmUsageCount: { type: "number" },
+    estimatedCostUsd: { type: "number" },
+    totalLlmLatencyMs: { type: "number" },
   };
 }

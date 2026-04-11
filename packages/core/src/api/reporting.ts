@@ -86,6 +86,9 @@ export function toCiSummary(report: ScanReport): CiSummary {
     provenance: report.provenance,
     constraints: report.constraints,
     idempotencyKey: report.idempotencyKey,
+    llmUsageCount: report.llmUsageCount,
+    estimatedCostUsd: report.estimatedCostUsd,
+    totalLlmLatencyMs: report.totalLlmLatencyMs,
   };
 }
 

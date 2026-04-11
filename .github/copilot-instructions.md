@@ -39,7 +39,18 @@ Use these when **building or extending the tool** — adding files, changing pub
 | `mcp-tool-registration` | MCP tool schemas, names, result shapes |
 | `evidence-ci-reporting` | Evidence log fields, CI summary schema, exit codes |
 | `changeset-writing` | Semver bump choice and public-impact-first changelog/changeset writing |
+| `feature-implementation` | Mandatory feature category and complete update bundle execution |
+| `test-governance` | Test scope, placement, and verification standards for feature changes |
 | `governance-check` | Verify governance files are present, correctly structured, and in sync with source |
+
+## Default Feature Workflow
+
+For feature requests, default to this flow unless explicitly told otherwise:
+
+1. Apply `feature-implementation` first to classify change scope.
+2. Apply `test-governance` for required test updates.
+3. Apply `documentation-governance.instructions.md` and `feature-completeness-gate.instructions.md` for mandatory docs/governance updates.
+4. Run governance validation before completion.
 
 ## Agentic Remediation Order
 
@@ -48,9 +59,10 @@ Use these when **building or extending the tool** — adding files, changing pub
 3. check-version-match
 4. find-fixed-version
 5. apply-version-bump
-6. fetch-package-source (fallback only)
-7. generate-patch (fallback only)
-8. apply-patch-file (fallback only)
+6. apply-package-override (when transitive and safe override is available)
+7. fetch-package-source (fallback only)
+8. generate-patch (fallback only)
+9. apply-patch-file (fallback only)
 
 Do not reorder these steps without updating .github/instructions/tool-contracts.instructions.md.
 

@@ -3,6 +3,7 @@ import type { RemediateOptions, RemediationReport } from "../platform/types.js";
 import { addEvidenceStep, createEvidenceLog, finalizeEvidence, writeEvidenceLog } from "../platform/evidence.js";
 import { readIdempotentReport, storeIdempotentReport } from "../platform/idempotency.js";
 import { resolveConstraints, resolveCorrelationContext, resolveProvenanceContext } from "./context.js";
+import { resolveProvider } from "../platform/config.js";
 
 export async function remediate(cveId: string, options: RemediateOptions = {}): Promise<RemediationReport> {
   if (!/^CVE-\d{4}-\d+$/i.test(cveId)) {
@@ -16,12 +17,14 @@ export async function remediate(cveId: string, options: RemediateOptions = {}): 
   const constraints = resolveConstraints(options, cwd);
   const provenance = resolveProvenanceContext(options);
   const correlation = resolveCorrelationContext(options);
+  const llmProvider = resolveProvider(options);
   const evidenceEnabled = options.evidence !== false;
   const evidence = evidenceEnabled
     ? createEvidenceLog(cwd, [normalizedCveId], {
         ...correlation,
         actor: provenance.actor,
         source: provenance.source,
+        llmProvider,
         idempotencyKey: options.idempotencyKey,
       })
     : undefined;
@@ -54,6 +57,7 @@ export async function remediate(cveId: string, options: RemediateOptions = {}): 
         cveId: normalizedCveId,
         dryRun: Boolean(options.dryRun),
         preview: Boolean(options.preview),
+        llmProvider,
       },
       {
         directDependenciesOnly: Boolean(constraints.directDependenciesOnly),
@@ -105,6 +109,7 @@ export async function remediate(cveId: string, options: RemediateOptions = {}): 
       {
         resultCount: report.results.length,
         vulnerableCount: report.vulnerablePackages.length,
+        llmUsage: report.llmUsage,
       }
     );
     finalizeEvidence(evidence);

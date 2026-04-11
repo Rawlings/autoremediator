@@ -3,27 +3,24 @@
  *
  * Orchestrates the full CVE patching pipeline using Vercel AI SDK's
  * generateText with a tool-calling loop.
- *
- * Phase 1 tools: lookup-cve → check-inventory → check-version-match
- *                → find-fixed-version → apply-version-bump
- * Phase 4 tools: fetch-package-source → generate-patch → apply-patch-file
  */
 import { generateText } from "ai";
-import { createModel, resolveProvider } from "../platform/config.js";
+import { createModel, estimateModelCostUsd, resolveProvider } from "../platform/config.js";
 import { detectPackageManager } from "../platform/package-manager.js";
 import { applyVersionBumpTool } from "./tools/apply-version-bump.js";
 import { applyPackageOverrideTool } from "./tools/apply-package-override.js";
 import { applyPatchFileTool } from "./tools/apply-patch-file.js";
 import type {
+  CveDetails,
+  LlmUsageMetrics,
+  PatchResult,
   RemediateOptions,
   RemediationReport,
-  PatchResult,
   VulnerablePackage,
-  CveDetails,
 } from "../platform/types.js";
 import { runLocalRemediationPipeline } from "./local/index.js";
-import { buildRuntimeTools } from "./runtime-tools.js";
 import { loadOrchestrationPrompt } from "./orchestration-prompt.js";
+import { buildRuntimeTools } from "./runtime-tools.js";
 
 export async function runRemediationPipeline(
   cveId: string,
@@ -34,6 +31,23 @@ export async function runRemediationPipeline(
     return runLocalRemediationPipeline(cveId, options);
   }
 
+  const emitProgress = (
+    stage: "pipeline-start" | "model-selected" | "agent-step" | "pipeline-finish" | "patch-fallback" | "patch-consensus",
+    detail: string,
+    extra?: { provider?: "remote" | "local"; model?: string }
+  ): void => {
+    if (!options.onProgress) return;
+    options.onProgress({
+      stage,
+      detail,
+      at: new Date().toISOString(),
+      provider: extra?.provider,
+      model: extra?.model,
+    });
+  };
+
+  emitProgress("pipeline-start", `Starting remediation for ${cveId}.`, { provider });
+
   const cwd = options.cwd ?? process.cwd();
   const packageManager = options.packageManager ?? detectPackageManager(cwd);
   const preview = options.preview ?? false;
@@ -43,11 +57,16 @@ export async function runRemediationPipeline(
   const patchesDir = options.patchesDir || "./patches";
   const constraints = options.constraints ?? {};
 
-  const model = await createModel(options);
+  const prompt = `Patch vulnerable dependencies affected by ${cveId} in the project at: ${cwd}. Package manager: ${packageManager}.`;
+  const model = await createModel(options, { inputChars: prompt.length });
+  const modelName = model.modelId ?? "unknown-model";
+  emitProgress("model-selected", `Selected model ${modelName}.`, { provider, model: modelName });
 
   const systemPrompt = loadOrchestrationPrompt({
     cveId,
     cwd,
+    llmProvider: provider,
+    modelPersonality: options.modelPersonality,
     dryRun,
     runTests,
     policy,
@@ -56,34 +75,39 @@ export async function runRemediationPipeline(
     constraints,
   });
 
-  const prompt = `Patch vulnerable dependencies affected by ${cveId} in the project at: ${cwd}. Package manager: ${packageManager}.`;
-
   const collectedResults: PatchResult[] = [];
   const vulnerablePackages: VulnerablePackage[] = [];
   let cveDetails: CveDetails | null = null;
   let agentSteps = 0;
+
+  function getDependencyScope(packageName: string): "direct" | "transitive" | undefined {
+    const match = vulnerablePackages.find((pkg) => pkg.installed.name === packageName);
+    if (!match) return undefined;
+    return match.installed.type === "direct" ? "direct" : "transitive";
+  }
 
   const applyVersionBumpToolForRun = preview
     ? {
         ...applyVersionBumpTool,
         execute: async (input: Record<string, unknown>) =>
           (applyVersionBumpTool as any).execute({ ...input, dryRun: true }),
-      } as typeof applyVersionBumpTool
+      }
     : applyVersionBumpTool;
   const applyPackageOverrideToolForRun = preview
     ? {
         ...applyPackageOverrideTool,
         execute: async (input: Record<string, unknown>) =>
           (applyPackageOverrideTool as any).execute({ ...input, dryRun: true }),
-      } as typeof applyPackageOverrideTool
+      }
     : applyPackageOverrideTool;
   const applyPatchFileToolForRun = preview
     ? {
         ...applyPatchFileTool,
         execute: async (input: Record<string, unknown>) =>
           (applyPatchFileTool as any).execute({ ...input, dryRun: true }),
-      } as typeof applyPatchFileTool
+      }
     : applyPatchFileTool;
+
   const tools = buildRuntimeTools({
     applyVersionBumpToolForRun,
     applyPackageOverrideToolForRun,
@@ -91,6 +115,7 @@ export async function runRemediationPipeline(
     constraints,
   });
 
+  const started = Date.now();
   const result = await generateText({
     model,
     system: systemPrompt,
@@ -111,15 +136,25 @@ export async function runRemediationPipeline(
         if (tr.toolName === "lookup-cve" && toolResult?.data) {
           cveDetails = toolResult.data as CveDetails;
         }
+
         if (tr.toolName === "check-version-match" && toolResult?.vulnerablePackages) {
           vulnerablePackages.push(...(toolResult.vulnerablePackages as VulnerablePackage[]));
         }
+
         if (tr.toolName === "apply-version-bump") {
-          collectedResults.push(toolResult as unknown as PatchResult);
+          const typed = toolResult as unknown as PatchResult;
+          collectedResults.push({
+            ...typed,
+            dependencyScope: typed.packageName ? getDependencyScope(typed.packageName) : typed.dependencyScope,
+          });
         }
 
         if (tr.toolName === "apply-package-override") {
-          collectedResults.push(toolResult as unknown as PatchResult);
+          const typed = toolResult as unknown as PatchResult;
+          collectedResults.push({
+            ...typed,
+            dependencyScope: typed.packageName ? getDependencyScope(typed.packageName) : typed.dependencyScope,
+          });
         }
 
         if (tr.toolName === "apply-patch-file" && toolResult) {
@@ -149,8 +184,28 @@ export async function runRemediationPipeline(
                 : typeof toolResult.patchPath === "string"
                   ? toolResult.patchPath
                   : undefined,
+            patchArtifact:
+              typeof toolResult.patchArtifact === "object" && toolResult.patchArtifact !== null
+                ? (toolResult.patchArtifact as PatchResult["patchArtifact"])
+                : undefined,
             applied: Boolean(toolResult.applied),
             dryRun: Boolean(toolResult.dryRun),
+            dependencyScope:
+              typeof toolResult.packageName === "string"
+                ? getDependencyScope(toolResult.packageName)
+                : undefined,
+            confidence:
+              typeof toolResult.patchArtifact === "object" &&
+              toolResult.patchArtifact !== null &&
+              typeof (toolResult.patchArtifact as Record<string, unknown>).confidence === "number"
+                ? ((toolResult.patchArtifact as Record<string, unknown>).confidence as number)
+                : undefined,
+            riskLevel:
+              typeof toolResult.patchArtifact === "object" &&
+              toolResult.patchArtifact !== null &&
+              typeof (toolResult.patchArtifact as Record<string, unknown>).riskLevel === "string"
+                ? ((toolResult.patchArtifact as Record<string, unknown>).riskLevel as PatchResult["riskLevel"])
+                : undefined,
             unresolvedReason:
               !Boolean(toolResult.applied) && !Boolean(toolResult.dryRun)
                 ? validation && validation.passed === false
@@ -165,10 +220,40 @@ export async function runRemediationPipeline(
                     error: typeof validation.error === "string" ? validation.error : undefined,
                   }
                 : undefined,
+            validationPhases:
+              Array.isArray(toolResult.validationPhases)
+                ? (toolResult.validationPhases as PatchResult["validationPhases"])
+                : undefined,
           });
         }
       }
+
+      emitProgress("agent-step", `Completed agent step ${agentSteps} with ${toolResults.length} tool result(s).`, {
+        provider,
+        model: modelName,
+      });
     },
+  });
+
+  const llmUsage: LlmUsageMetrics[] = [
+    {
+      purpose: "orchestration",
+      provider,
+      model: modelName,
+      latencyMs: Date.now() - started,
+      promptChars: prompt.length + systemPrompt.length,
+      completionChars: result.text.length,
+      estimatedCostUsd: estimateModelCostUsd({
+        provider,
+        promptChars: prompt.length + systemPrompt.length,
+        completionChars: result.text.length,
+      }),
+    },
+  ];
+
+  emitProgress("pipeline-finish", `Completed remediation with ${collectedResults.length} result(s).`, {
+    provider,
+    model: modelName,
   });
 
   return {
@@ -178,6 +263,7 @@ export async function runRemediationPipeline(
     results: collectedResults,
     agentSteps,
     summary: result.text,
+    llmUsage,
     correlation: {
       requestId: options.requestId,
       sessionId: options.sessionId,
@@ -185,4 +271,3 @@ export async function runRemediationPipeline(
     },
   };
 }
-

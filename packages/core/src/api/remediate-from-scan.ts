@@ -2,6 +2,7 @@ import type { RemediationReport } from "../platform/types.js";
 import { parseScanInput, uniqueCveIds } from "../scanner/index.js";
 import { addEvidenceStep, createEvidenceLog, finalizeEvidence, writeEvidenceLog } from "../platform/evidence.js";
 import { loadPolicy } from "../platform/policy.js";
+import { resolveProvider } from "../platform/config.js";
 import type { ScanOptions, ScanReport } from "./contracts.js";
 import { resolveConstraints, resolveCorrelationContext, resolveProvenanceContext } from "./context.js";
 import { executeScanRemediations } from "./scan-execution.js";
@@ -18,6 +19,7 @@ export async function remediateFromScan(
   const findings = parseScanInput(inputPath, format);
   const cveIds = uniqueCveIds(findings);
   const policy = loadPolicy(cwd, options.policy);
+  const llmProvider = resolveProvider(options);
   const correlation = resolveCorrelationContext(options);
   const provenance = resolveProvenanceContext(options);
   const constraints = resolveConstraints(options, cwd);
@@ -26,6 +28,7 @@ export async function remediateFromScan(
     ...correlation,
     actor: provenance.actor,
     source: provenance.source,
+    llmProvider,
     idempotencyKey: options.idempotencyKey,
   });
   addEvidenceStep(evidence, "scan.parse", { inputPath, format }, { findingCount: findings.length, cveCount: cveIds.length });
@@ -45,6 +48,17 @@ export async function remediateFromScan(
   const patchCount = execution.patchCount;
   const patchValidationFailures = execution.patchValidationFailures;
 
+  let llmUsageCount = 0;
+  let estimatedCostUsd = 0;
+  let totalLlmLatencyMs = 0;
+  for (const report of reports) {
+    for (const usage of report.llmUsage ?? []) {
+      llmUsageCount += 1;
+      estimatedCostUsd += usage.estimatedCostUsd ?? 0;
+      totalLlmLatencyMs += usage.latencyMs ?? 0;
+    }
+  }
+
   const outcome = buildScanOutcome({ reports, errors });
   const { status, successCount, failedCount, strategyCounts, dependencyScopeCounts, unresolvedByReason, remediationCount } = outcome;
 
@@ -60,6 +74,9 @@ export async function remediateFromScan(
     dependencyScopeCounts,
     unresolvedByReason,
     patchesDir: patchCount > 0 ? patchesDir : undefined,
+    llmUsageCount: llmUsageCount > 0 ? llmUsageCount : undefined,
+    estimatedCostUsd: llmUsageCount > 0 ? Number(estimatedCostUsd.toFixed(6)) : undefined,
+    totalLlmLatencyMs: llmUsageCount > 0 ? totalLlmLatencyMs : undefined,
   };
 
   finalizeEvidence(evidence);
@@ -85,5 +102,8 @@ export async function remediateFromScan(
     provenance,
     constraints,
     idempotencyKey: options.idempotencyKey,
+    llmUsageCount: llmUsageCount > 0 ? llmUsageCount : undefined,
+    estimatedCostUsd: llmUsageCount > 0 ? Number(estimatedCostUsd.toFixed(6)) : undefined,
+    totalLlmLatencyMs: llmUsageCount > 0 ? totalLlmLatencyMs : undefined,
   };
 }

@@ -25,8 +25,7 @@ Related references:
 - one package manager in your target project (`pnpm`, `npm`, or `yarn`)
 - a repository with lockfile and dependency manifest
 - optional model credentials for patch generation fallback:
-	- `OPENAI_API_KEY`
-	- `ANTHROPIC_API_KEY`
+	- `AUTOREMEDIATOR_REMOTE_API_KEY`
 
 If you use `--llm-provider local`, API keys are not required for the deterministic primary flow; patch fallback for no-safe-version cases may still require remote model credentials.
 
@@ -77,6 +76,7 @@ docker run --rm -v "$PWD:/workdir" ghcr.io/rawlings/autoremediator CVE-2021-2333
 | Nightly scanner automation | scan mode (`--input`) | Batch handling with deterministic CI summary |
 | CI gate without mutation | `--dry-run --ci` | Safety-first check for unresolved risk |
 | Air-gapped or deterministic environments | `--llm-provider local` | No remote model dependency and predictable behavior |
+| Remote model-backed patch generation | `--llm-provider remote` | Uses remote adapter configuration and runtime credentials |
 | Platform service integration | SDK, MCP, or OpenAPI | Standardized orchestration across many repos |
 
 For GitHub Actions, the recommended approach is the Marketplace action:

@@ -26,13 +26,13 @@
 ### Mode 4: MCP Tool Server
 
 - Trigger: `autoremediator-mcp` (stdio)
-- Behavior: exposes `remediate`, `planRemediation`, and `remediateFromScan` as MCP tools
+- Behavior: exposes `remediate`, `planRemediation`, `remediateFromScan`, `listPatchArtifacts`, `inspectPatchArtifact`, and `validatePatchArtifact` as MCP tools
 - Source: `packages/core/src/mcp/server.ts`
 
 ### Mode 5: OpenAPI HTTP Server
 
 - Trigger: `node dist/openapi/server.js [--port 3000]`
-- Behavior: POST `/remediate`, POST `/plan-remediation`, and POST `/remediate-from-scan` over HTTP
+- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/patches/list`, POST `/patches/inspect`, and POST `/patches/validate` over HTTP
 - Source: `packages/core/src/openapi/server.ts`
 
 ## Precedence
@@ -53,6 +53,12 @@ Across SDK, CLI mapping, MCP, and OpenAPI, use canonical public terms:
 - `patchesDir`
 
 Do not introduce synonym fields for these concepts.
+
+Patch lifecycle operation naming canon:
+
+- `listPatchArtifacts`
+- `inspectPatchArtifact`
+- `validatePatchArtifact`
 
 ## Fallback Policy
 

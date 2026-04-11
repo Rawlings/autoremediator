@@ -33,6 +33,9 @@ Equivalent explicit subcommands:
 ```bash
 autoremediator cve CVE-2021-23337
 autoremediator scan --input ./audit.json --format npm-audit
+autoremediator patches list
+autoremediator patches inspect ./patches/lodash+4.17.0.patch
+autoremediator patches validate ./patches/lodash+4.17.0.patch
 ```
 
 When to use which mode:
@@ -49,7 +52,13 @@ When to use which mode:
 | `--dry-run` | simulation-only execution | validates policy and expected actions without file mutation |
 | `--preview` | non-mutating remediation preview mode | enables planning flows without write side effects |
 | `--run-tests` | post-apply validation | reduces risk of introducing breaking dependency changes |
-| `--llm-provider <openai|anthropic|local>` | patch-generation provider selection | controls determinism, cost, and fallback behavior |
+| `--llm-provider <remote|local>` | patch-generation provider selection | controls determinism, cost, and fallback behavior |
+| `--model <name>` | explicit model override | pins runtime model behavior for deterministic environments |
+| `--model-personality <analytical|pragmatic|balanced>` | prompt behavior profile | tunes reasoning style without changing tool contracts |
+| `--provider-safety-profile <strict|relaxed>` | confidence/safety profile | adjusts confidence thresholds for patch acceptance |
+| `--require-consensus-for-high-risk` | high-risk patch consensus gate | requires consensus verification before apply for high-risk patches |
+| `--dynamic-model-routing` | input-size based remote routing | enables adaptive model routing for large prompts |
+| `--dynamic-routing-threshold-chars <count>` | routing threshold | controls when dynamic model routing is activated |
 | `--request-id <id>` | request correlation id | links CLI runs to external orchestration traces |
 | `--session-id <id>` | session correlation id | groups related remediation runs |
 | `--parent-run-id <id>` | parent run linkage | supports hierarchical trace chains in evidence |
@@ -72,6 +81,30 @@ When to use which mode:
 | `--ci` | non-interactive CI behavior | deterministic summary/exit semantics for gating |
 | `--summary-file <path>` | summary artifact output | preserves auditable run metadata for dashboards |
 | `--no-evidence` | disables evidence artifact writing | use when evidence must be suppressed for a specific run |
+
+## Patch Lifecycle Commands
+
+Patch fallback now emits durable patch artifacts that can be managed separately from a remediation run.
+
+Available commands:
+
+- `autoremediator patches list`
+- `autoremediator patches inspect <patch-file>`
+- `autoremediator patches validate <patch-file>`
+
+Examples:
+
+```bash
+autoremediator patches list --patches-dir ./patches --json
+autoremediator patches inspect ./patches/lodash+4.17.0.patch --json
+autoremediator patches validate ./patches/lodash+4.17.0.patch --package-manager pnpm --json
+```
+
+What each command is for:
+
+- `list`: enumerate `.patch` artifacts and manifest metadata
+- `inspect`: read patch metadata, file scope, and diff-format validity
+- `validate`: verify manifest presence, diff validity, and dependency-version drift against current inventory
 
 ## What `--ci` Changes
 
@@ -102,8 +135,7 @@ Use `--dry-run` first when onboarding a new repository or policy file.
 | Provider | Recommended use | Considerations |
 |---|---|---|
 | `local` (deterministic primary path) | regulated or mostly-offline automation, repeatable CI | primary remediation flow avoids remote model calls; no-safe-version patch fallback may require model credentials |
-| `openai` | broad patch quality needs | external network and credential requirements |
-| `anthropic` | alternate model path with similar workflow | external network and credential requirements |
+| `remote` | remote model-backed patch generation workflows | requires remote adapter configuration and credentials |
 
 For governance implications, see [Policy and Safety](policy-and-safety.md).
 
@@ -155,6 +187,11 @@ Summary fields to watch:
 - `dependencyScopeCounts`: aggregate counts for `direct` and `transitive` remediation outcomes
 - `unresolvedByReason`: aggregate counts for machine-readable unresolved causes such as `no-safe-version`, `constraint-blocked`, and `patch-validation-failed`
 
+Patch artifact fields to watch:
+
+- `patchArtifact`: structured metadata for generated patch artifacts and manifest sidecars
+- `validationPhases`: phased patch validation details (`diff-format`, `patch-write`, `manifest-write`, `apply`, `install`, `test`, `drift`)
+
 ## Troubleshooting
 
 - output seems incomplete:
@@ -172,3 +209,4 @@ Summary fields to watch:
 - [Getting Started](getting-started.md)
 - [Policy and Safety](policy-and-safety.md)
 - [Integrations](integrations.md)
+- [Agent Ecosystems](agent-ecosystems.md)

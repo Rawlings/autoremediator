@@ -7,6 +7,11 @@ export interface AutoremediatorPolicy {
   denyPackages: string[];
   allowPackages: string[];
   constraints?: RemediationConstraints;
+  modelDefaults?: Partial<Record<"remote" | "local", string>>;
+  providerSafetyProfile?: "strict" | "relaxed";
+  requireConsensusForHighRisk?: boolean;
+  dynamicModelRouting?: boolean;
+  dynamicRoutingThresholdChars?: number;
 }
 
 export const DEFAULT_POLICY: AutoremediatorPolicy = {
@@ -17,6 +22,11 @@ export const DEFAULT_POLICY: AutoremediatorPolicy = {
     directDependenciesOnly: false,
     preferVersionBump: false,
   },
+  modelDefaults: {},
+  providerSafetyProfile: "relaxed",
+  requireConsensusForHighRisk: false,
+  dynamicModelRouting: false,
+  dynamicRoutingThresholdChars: 18000,
 };
 
 export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPolicy {
@@ -39,6 +49,22 @@ export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPo
           DEFAULT_POLICY.constraints?.preferVersionBump ??
           false,
       },
+      modelDefaults: {
+        remote: parsed.modelDefaults?.remote ?? DEFAULT_POLICY.modelDefaults?.remote,
+        local: parsed.modelDefaults?.local ?? DEFAULT_POLICY.modelDefaults?.local,
+      },
+      providerSafetyProfile:
+        parsed.providerSafetyProfile ??
+        DEFAULT_POLICY.providerSafetyProfile,
+      requireConsensusForHighRisk:
+        parsed.requireConsensusForHighRisk ??
+        DEFAULT_POLICY.requireConsensusForHighRisk,
+      dynamicModelRouting:
+        parsed.dynamicModelRouting ??
+        DEFAULT_POLICY.dynamicModelRouting,
+      dynamicRoutingThresholdChars:
+        parsed.dynamicRoutingThresholdChars ??
+        DEFAULT_POLICY.dynamicRoutingThresholdChars,
     };
   } catch {
     return DEFAULT_POLICY;
