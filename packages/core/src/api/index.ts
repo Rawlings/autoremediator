@@ -33,6 +33,7 @@ export type {
   PatchArtifactValidationReport,
   PatchMode,
   PatchRiskLevel,
+  PatchConfidenceThresholds,
   UnresolvedReason,
   UnresolvedReasonCounts,
   PatchValidationPhase,

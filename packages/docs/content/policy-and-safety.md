@@ -136,6 +136,9 @@ Provider model controls:
 
 - `llmProvider: "local"` keeps execution deterministic-first
 - `llmProvider: "remote"` enables remote model-backed patch generation
+- `requireConsensusForHighRisk: true` enforces verifier consensus for high-risk generated patches
+- `consensusProvider` and `consensusModel` pin the verifier provider/model used for high-risk consensus
+- `patchConfidenceThresholds` allows per-risk confidence gates, for example `{ "high": 0.9 }`
 
 These fields are propagated through reports and evidence outputs to support deterministic run lineage in CI, MCP hosts, and service integrations.
 

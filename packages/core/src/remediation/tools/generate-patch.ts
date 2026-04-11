@@ -111,6 +111,14 @@ export const generatePatchTool = tool({
       .enum(["strict", "relaxed"])
       .optional()
       .describe("Confidence threshold profile for patch acceptance"),
+    patchConfidenceThresholds: z
+      .object({
+        low: z.number().min(0).max(1).optional(),
+        medium: z.number().min(0).max(1).optional(),
+        high: z.number().min(0).max(1).optional(),
+      })
+      .optional()
+      .describe("Optional per-risk confidence thresholds for patch acceptance"),
     dynamicModelRouting: z
       .boolean()
       .optional()
@@ -139,6 +147,7 @@ export const generatePatchTool = tool({
     policy,
     cwd,
     providerSafetyProfile,
+    patchConfidenceThresholds,
     dynamicModelRouting,
     dynamicRoutingThresholdChars,
     modelPersonality,
@@ -283,7 +292,9 @@ Important:
 
       const confidenceThreshold = getPatchConfidenceThreshold(
         provider,
-        providerSafetyProfile ?? "relaxed"
+        providerSafetyProfile ?? "relaxed",
+        analysis.riskLevel,
+        patchConfidenceThresholds
       );
       const estimatedCostUsd = estimateModelCostUsd({
         provider,

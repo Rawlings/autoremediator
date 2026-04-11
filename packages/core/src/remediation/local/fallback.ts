@@ -3,14 +3,17 @@ import { generatePatchTool } from "../tools/generate-patch.js";
 import { applyPatchFileTool } from "../tools/apply-patch-file.js";
 import type {
   LlmUsageMetrics,
+  PatchConfidenceThresholds,
   PatchResult,
   UnresolvedReason,
 } from "../../platform/types.js";
 import { getPatchConfidenceThreshold } from "../../platform/config.js";
 
-function resolvePatchProvider(provider: "remote" | "local"): "remote" {
-  void provider;
-  return "remote";
+function resolvePatchProvider(provider: "remote" | "local"): "remote" | "local" {
+  if (provider === "local") {
+    return "remote";
+  }
+  return provider;
 }
 
 export function shouldAttemptPatchFallback(result: PatchResult, preferVersionBump: boolean): boolean {
@@ -44,6 +47,9 @@ export async function tryLocalPatchFallback(params: {
   modelPersonality?: "analytical" | "pragmatic" | "balanced";
   providerSafetyProfile?: "strict" | "relaxed";
   requireConsensusForHighRisk?: boolean;
+  consensusProvider?: "remote" | "local";
+  consensusModel?: string;
+  patchConfidenceThresholds?: PatchConfidenceThresholds;
   dynamicModelRouting?: boolean;
   dynamicRoutingThresholdChars?: number;
 }): Promise<{ result: PatchResult; steps: number; usage: LlmUsageMetrics[] }> {
@@ -92,6 +98,7 @@ export async function tryLocalPatchFallback(params: {
     cwd: params.cwd,
     modelPersonality: params.modelPersonality,
     providerSafetyProfile: params.providerSafetyProfile,
+    patchConfidenceThresholds: params.patchConfidenceThresholds,
     dynamicModelRouting: params.dynamicModelRouting,
     dynamicRoutingThresholdChars: params.dynamicRoutingThresholdChars,
   })) as {
@@ -134,7 +141,12 @@ export async function tryLocalPatchFallback(params: {
   const effectiveProvider = patchResult.llmProvider ?? primaryProvider;
   const confidenceThreshold =
     patchResult.confidenceThreshold ??
-    getPatchConfidenceThreshold(effectiveProvider, params.providerSafetyProfile ?? "relaxed");
+    getPatchConfidenceThreshold(
+      effectiveProvider,
+      params.providerSafetyProfile ?? "relaxed",
+      patchResult.riskLevel ?? "medium",
+      params.patchConfidenceThresholds
+    );
 
   if (typeof patchResult.confidence === "number" && patchResult.confidence < confidenceThreshold) {
     return {
@@ -160,6 +172,7 @@ export async function tryLocalPatchFallback(params: {
     patchResult.riskLevel === "high" &&
     !params.dryRun
   ) {
+    const consensusProvider = resolvePatchProvider(params.consensusProvider ?? primaryProvider);
     const consensus = (await (generatePatchTool as any).execute({
       packageName: params.packageName,
       vulnerableVersion: params.vulnerableVersion,
@@ -168,16 +181,22 @@ export async function tryLocalPatchFallback(params: {
       sourceFiles: sourceResult.sourceFiles,
       vulnerabilityCategory: "unknown",
       dryRun: false,
-      llmProvider: "remote",
+      llmProvider: consensusProvider,
+      model: params.consensusModel,
       policy: params.policy,
       cwd: params.cwd,
       modelPersonality: params.modelPersonality,
       providerSafetyProfile: params.providerSafetyProfile,
+      patchConfidenceThresholds: params.patchConfidenceThresholds,
       dynamicModelRouting: params.dynamicModelRouting,
       dynamicRoutingThresholdChars: params.dynamicRoutingThresholdChars,
     })) as {
       success?: boolean;
       patches?: Array<{ filePath: string; unifiedDiff: string }>;
+      llmProvider?: "remote" | "local";
+      llmModel?: string;
+      latencyMs?: number;
+      estimatedCostUsd?: number;
       confidence?: number;
       error?: string;
     };
@@ -200,6 +219,16 @@ export async function tryLocalPatchFallback(params: {
           message: consensus.error ?? "High-risk patch did not pass consensus verification.",
         },
       };
+    }
+
+    if (consensus.llmProvider && consensus.llmModel) {
+      usage.push({
+        purpose: "patch-consensus",
+        provider: consensus.llmProvider,
+        model: consensus.llmModel,
+        latencyMs: consensus.latencyMs,
+        estimatedCostUsd: consensus.estimatedCostUsd,
+      });
     }
   }
 

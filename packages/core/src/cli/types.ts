@@ -14,6 +14,11 @@ export interface CommandOptions {
   modelPersonality?: "analytical" | "pragmatic" | "balanced";
   providerSafetyProfile?: "strict" | "relaxed";
   requireConsensusForHighRisk: boolean;
+  consensusProvider?: "remote" | "local";
+  consensusModel?: string;
+  patchConfidenceLow?: number;
+  patchConfidenceMedium?: number;
+  patchConfidenceHigh?: number;
   dynamicModelRouting: boolean;
   dynamicRoutingThresholdChars?: number;
   requestId?: string;

@@ -108,6 +108,9 @@ Core options:
 - `modelPersonality`: prompt behavior profile (`analytical`, `pragmatic`, `balanced`)
 - `providerSafetyProfile`: confidence/safety posture profile (`strict`, `relaxed`)
 - `requireConsensusForHighRisk`: require consensus verification for high-risk generated patches
+- `consensusProvider`: provider override (`remote`, `local`) for high-risk consensus verification
+- `consensusModel`: model override for high-risk consensus verification
+- `patchConfidenceThresholds`: per-risk acceptance thresholds (`low`, `medium`, `high` in range 0..1)
 - `dynamicModelRouting`: enable dynamic model selection by input size
 - `dynamicRoutingThresholdChars`: threshold for dynamic routing behavior
 
@@ -198,6 +201,8 @@ Recommended handling pattern:
 - persist summaries for security reporting
 - use `llmProvider: "local"` for deterministic primary flow; if no safe version exists, patch fallback may still require remote model credentials
 - use `llmProvider: "remote"` when remote model-backed patch generation is required
+- for high-risk patch fallback, set `requireConsensusForHighRisk: true` with `consensusModel` to run verifier-model agreement checks
+- use `patchConfidenceThresholds` to tighten acceptance per risk level, for example `{ high: 0.9 }`
 - avoid retry loops that ignore policy and validation failures
 
 Common failure classes to handle:

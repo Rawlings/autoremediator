@@ -219,4 +219,137 @@ describe("runRemediationPipeline tool gating", () => {
     expect(report.results[0]?.strategy).toBe("none");
     expect(report.results[0]?.unresolvedReason).toBe("requires-llm-fallback");
   });
+
+  it("uses configurable consensus provider and model for high-risk fallback patches", async () => {
+    mocked.resolveProvider.mockReturnValue("local");
+    mocked.lookupCveOsv.mockResolvedValue({
+      id: "CVE-2021-23337",
+      summary: "demo",
+      severity: "HIGH",
+      references: [],
+      affectedPackages: [
+        {
+          name: "lodash",
+          ecosystem: "npm",
+          vulnerableRange: ">=4.0.0 <4.17.21",
+          source: "osv",
+        },
+      ],
+    });
+    mocked.checkInventoryExecute.mockResolvedValue({
+      packages: [{ name: "lodash", version: "4.17.0", type: "direct" }],
+    });
+    mocked.fetchPackageSourceExecute.mockResolvedValue({
+      success: true,
+      sourceFiles: { "index.js": "module.exports = {}\n" },
+    });
+    mocked.generatePatchExecute
+      .mockResolvedValueOnce({
+        success: true,
+        llmProvider: "remote",
+        llmModel: "claude-mythos-latest",
+        riskLevel: "high",
+        confidence: 0.96,
+        patchContent:
+          "--- a/index.js\n+++ b/index.js\n@@ -1,1 +1,1 @@\n-module.exports = {}\n+module.exports = { safe: true }\n",
+        patches: [
+          {
+            filePath: "index.js",
+            unifiedDiff:
+              "--- a/index.js\n+++ b/index.js\n@@ -1,1 +1,1 @@\n-module.exports = {}\n+module.exports = { safe: true }\n",
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        llmProvider: "remote",
+        llmModel: "claude-mythos-verifier",
+        riskLevel: "high",
+        confidence: 0.94,
+        patches: [
+          {
+            filePath: "index.js",
+            unifiedDiff:
+              "--- a/index.js\n+++ b/index.js\n@@ -1,1 +1,1 @@\n-module.exports = {}\n+module.exports = { safe: true }\n",
+          },
+        ],
+      });
+    mocked.applyPatchFileExecute.mockResolvedValue({
+      applied: true,
+      dryRun: false,
+      message: "patched",
+      patchFilePath: "./patches/lodash.patch",
+    });
+
+    const report = await runRemediationPipeline("CVE-2021-23337", {
+      cwd: "/tmp/project",
+      llmProvider: "local",
+      requireConsensusForHighRisk: true,
+      consensusProvider: "remote",
+      consensusModel: "claude-mythos-verifier",
+    });
+
+    expect(report.results[0]?.strategy).toBe("patch-file");
+    expect(mocked.generatePatchExecute).toHaveBeenCalledTimes(2);
+    expect(mocked.generatePatchExecute.mock.calls[1]?.[0]).toEqual(
+      expect.objectContaining({
+        llmProvider: "remote",
+        model: "claude-mythos-verifier",
+      })
+    );
+  });
+
+  it("uses per-risk confidence override when evaluating generated patch", async () => {
+    mocked.getPatchConfidenceThreshold.mockReturnValue(0.95);
+    mocked.resolveProvider.mockReturnValue("local");
+    mocked.lookupCveOsv.mockResolvedValue({
+      id: "CVE-2021-23337",
+      summary: "demo",
+      severity: "HIGH",
+      references: [],
+      affectedPackages: [
+        {
+          name: "lodash",
+          ecosystem: "npm",
+          vulnerableRange: ">=4.0.0 <4.17.21",
+          source: "osv",
+        },
+      ],
+    });
+    mocked.checkInventoryExecute.mockResolvedValue({
+      packages: [{ name: "lodash", version: "4.17.0", type: "direct" }],
+    });
+    mocked.fetchPackageSourceExecute.mockResolvedValue({
+      success: true,
+      sourceFiles: { "index.js": "module.exports = {}\n" },
+    });
+    mocked.generatePatchExecute.mockResolvedValue({
+      success: true,
+      llmProvider: "remote",
+      llmModel: "claude-mythos-latest",
+      riskLevel: "high",
+      confidence: 0.91,
+      patches: [
+        {
+          filePath: "index.js",
+          unifiedDiff:
+            "--- a/index.js\n+++ b/index.js\n@@ -1,1 +1,1 @@\n-module.exports = {}\n+module.exports = { safe: true }\n",
+        },
+      ],
+    });
+
+    const report = await runRemediationPipeline("CVE-2021-23337", {
+      cwd: "/tmp/project",
+      llmProvider: "local",
+      patchConfidenceThresholds: { high: 0.95 },
+    });
+
+    expect(report.results[0]?.strategy).toBe("none");
+    expect(report.results[0]?.unresolvedReason).toBe("patch-confidence-too-low");
+    expect(mocked.generatePatchExecute.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({
+        patchConfidenceThresholds: { high: 0.95 },
+      })
+    );
+  });
 });

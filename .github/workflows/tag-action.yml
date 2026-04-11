@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Resolve tags from package version
         id: vars
@@ -41,8 +43,11 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          if git rev-parse -q --verify "refs/tags/$SEMVER_TAG" >/dev/null; then
-            echo "Semver tag $SEMVER_TAG already exists"
+          if git ls-remote --exit-code --tags origin "refs/tags/$SEMVER_TAG" >/dev/null; then
+            echo "Semver tag $SEMVER_TAG already exists on origin"
+            git fetch --no-tags origin "refs/tags/$SEMVER_TAG:refs/tags/$SEMVER_TAG" || true
+          elif git rev-parse -q --verify "refs/tags/$SEMVER_TAG" >/dev/null; then
+            echo "Semver tag $SEMVER_TAG already exists locally"
           else
             git tag -a "$SEMVER_TAG" -m "Release $SEMVER_TAG"
             git push origin "$SEMVER_TAG"

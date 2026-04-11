@@ -11,12 +11,15 @@ All notable changes to this project are documented in this file.
 - Root packaging shortcuts for the VS Code extension via `pnpm build:vsix` and `pnpm extension:package`.
 - Agent ecosystem documentation page with plan-first orchestration patterns and MCP/OpenAPI setup guidance.
 - Advanced runtime control options documented across SDK/CLI surfaces (`modelPersonality`, `providerSafetyProfile`, `requireConsensusForHighRisk`, `dynamicModelRouting`, `dynamicRoutingThresholdChars`).
+- High-risk consensus controls across surfaces via `consensusProvider` and `consensusModel`.
+- Per-risk patch confidence controls via `patchConfidenceThresholds` and CLI flags (`--patch-confidence-low`, `--patch-confidence-medium`, `--patch-confidence-high`).
 
 ### Changed
 
 - Release-facing docs and README now describe transitive override remediation, direct-vs-transitive outcome reporting, and the `Node CVE Remediator` extension packaging flow.
 - **Breaking:** provider terminology is now vendor-neutral across public docs and schemas (`llmProvider: remote|local`).
 - Updated environment variable guidance for remote adapter configuration (`AUTOREMEDIATOR_REMOTE_CLIENT_MODULE`, `AUTOREMEDIATOR_REMOTE_CLIENT_FACTORY`, `AUTOREMEDIATOR_REMOTE_API_KEY`).
+- High-risk consensus fallback now supports explicit verifier provider/model selection instead of fixed-provider-only verification.
 
 ## 0.4.0
 

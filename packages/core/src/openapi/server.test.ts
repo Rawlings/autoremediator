@@ -22,6 +22,9 @@ describe("openapi server", () => {
     expect(optionsProps.resume).toBeDefined();
     expect(optionsProps.constraints).toBeDefined();
     expect(optionsProps.packageManager.enum).toEqual(["npm", "pnpm", "yarn"]);
+    expect(optionsProps.consensusProvider).toBeDefined();
+    expect(optionsProps.consensusModel).toBeDefined();
+    expect(optionsProps.patchConfidenceThresholds).toBeDefined();
   });
 
   it("declares strategy and unresolved aggregates on scan responses", () => {

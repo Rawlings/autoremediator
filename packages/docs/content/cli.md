@@ -57,6 +57,11 @@ When to use which mode:
 | `--model-personality <analytical|pragmatic|balanced>` | prompt behavior profile | tunes reasoning style without changing tool contracts |
 | `--provider-safety-profile <strict|relaxed>` | confidence/safety profile | adjusts confidence thresholds for patch acceptance |
 | `--require-consensus-for-high-risk` | high-risk patch consensus gate | requires consensus verification before apply for high-risk patches |
+| `--consensus-provider <remote|local>` | high-risk consensus provider override | selects provider used for verifier consensus patch generation |
+| `--consensus-model <name>` | high-risk consensus model override | pins verifier model for consensus checks |
+| `--patch-confidence-low <value>` | low-risk acceptance threshold (0..1) | tightens or relaxes low-risk patch acceptance |
+| `--patch-confidence-medium <value>` | medium-risk acceptance threshold (0..1) | aligns medium-risk acceptance with org policy |
+| `--patch-confidence-high <value>` | high-risk acceptance threshold (0..1) | enforces stricter confidence gates for high-risk patches |
 | `--dynamic-model-routing` | input-size based remote routing | enables adaptive model routing for large prompts |
 | `--dynamic-routing-threshold-chars <count>` | routing threshold | controls when dynamic model routing is activated |
 | `--request-id <id>` | request correlation id | links CLI runs to external orchestration traces |

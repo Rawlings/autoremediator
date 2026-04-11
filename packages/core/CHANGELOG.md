@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+### Added
+
+- Added new high-risk consensus controls across SDK, CLI, MCP, and OpenAPI: `consensusProvider` and `consensusModel`.
+- Added per-risk patch confidence override support through `patchConfidenceThresholds` (`low`, `medium`, `high`).
+
+### Changed
+
+- High-risk consensus verification now supports explicit verifier provider/model selection instead of a fixed provider fallback path.
+- Patch confidence gating is now risk-aware (`low`/`medium`/`high`) while preserving existing relaxed/strict profile defaults.
+
 ## 0.8.0
 
 ### Added

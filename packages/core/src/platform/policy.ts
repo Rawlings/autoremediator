@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { RemediationConstraints } from "./types.js";
+import type { PatchConfidenceThresholds, RemediationConstraints } from "./types.js";
 
 export interface AutoremediatorPolicy {
   allowMajorBumps: boolean;
@@ -10,6 +10,9 @@ export interface AutoremediatorPolicy {
   modelDefaults?: Partial<Record<"remote" | "local", string>>;
   providerSafetyProfile?: "strict" | "relaxed";
   requireConsensusForHighRisk?: boolean;
+  consensusProvider?: "remote" | "local";
+  consensusModel?: string;
+  patchConfidenceThresholds?: PatchConfidenceThresholds;
   dynamicModelRouting?: boolean;
   dynamicRoutingThresholdChars?: number;
 }
@@ -25,6 +28,9 @@ export const DEFAULT_POLICY: AutoremediatorPolicy = {
   modelDefaults: {},
   providerSafetyProfile: "relaxed",
   requireConsensusForHighRisk: false,
+  consensusProvider: "remote",
+  consensusModel: undefined,
+  patchConfidenceThresholds: {},
   dynamicModelRouting: false,
   dynamicRoutingThresholdChars: 18000,
 };
@@ -59,6 +65,23 @@ export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPo
       requireConsensusForHighRisk:
         parsed.requireConsensusForHighRisk ??
         DEFAULT_POLICY.requireConsensusForHighRisk,
+      consensusProvider:
+        parsed.consensusProvider ??
+        DEFAULT_POLICY.consensusProvider,
+      consensusModel:
+        parsed.consensusModel ??
+        DEFAULT_POLICY.consensusModel,
+      patchConfidenceThresholds: {
+        low:
+          parsed.patchConfidenceThresholds?.low ??
+          DEFAULT_POLICY.patchConfidenceThresholds?.low,
+        medium:
+          parsed.patchConfidenceThresholds?.medium ??
+          DEFAULT_POLICY.patchConfidenceThresholds?.medium,
+        high:
+          parsed.patchConfidenceThresholds?.high ??
+          DEFAULT_POLICY.patchConfidenceThresholds?.high,
+      },
       dynamicModelRouting:
         parsed.dynamicModelRouting ??
         DEFAULT_POLICY.dynamicModelRouting,

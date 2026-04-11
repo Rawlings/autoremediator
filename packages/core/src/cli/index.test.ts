@@ -226,6 +226,42 @@ describe("cli preview and correlation option forwarding", () => {
     expect(process.exitCode).toBe(1);
   });
 
+  it("forwards consensus and patch-confidence options in top-level CVE mode", async () => {
+    const program = createProgram();
+    await program.parseAsync(
+      [
+        "node",
+        "autoremediator",
+        "CVE-2021-23337",
+        "--require-consensus-for-high-risk",
+        "--consensus-provider",
+        "remote",
+        "--consensus-model",
+        "claude-mythos-verifier",
+        "--patch-confidence-low",
+        "0.61",
+        "--patch-confidence-medium",
+        "0.72",
+        "--patch-confidence-high",
+        "0.91",
+      ]
+    );
+
+    expect(mocked.remediate).toHaveBeenCalledWith(
+      "CVE-2021-23337",
+      expect.objectContaining({
+        requireConsensusForHighRisk: true,
+        consensusProvider: "remote",
+        consensusModel: "claude-mythos-verifier",
+        patchConfidenceThresholds: {
+          low: 0.61,
+          medium: 0.72,
+          high: 0.91,
+        },
+      })
+    );
+  });
+
   it("lists patch artifacts through the patches list command", async () => {
     const program = createProgram();
     await program.parseAsync([

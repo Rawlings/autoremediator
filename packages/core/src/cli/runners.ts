@@ -50,6 +50,13 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
     modelPersonality: opts.modelPersonality,
     providerSafetyProfile: opts.providerSafetyProfile,
     requireConsensusForHighRisk: opts.requireConsensusForHighRisk,
+    consensusProvider: opts.consensusProvider,
+    consensusModel: opts.consensusModel,
+    patchConfidenceThresholds: {
+      low: typeof opts.patchConfidenceLow === "number" ? opts.patchConfidenceLow : undefined,
+      medium: typeof opts.patchConfidenceMedium === "number" ? opts.patchConfidenceMedium : undefined,
+      high: typeof opts.patchConfidenceHigh === "number" ? opts.patchConfidenceHigh : undefined,
+    },
     dynamicModelRouting: opts.dynamicModelRouting,
     dynamicRoutingThresholdChars:
       typeof opts.dynamicRoutingThresholdChars === "number"
@@ -111,6 +118,13 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
     modelPersonality: opts.modelPersonality,
     providerSafetyProfile: opts.providerSafetyProfile,
     requireConsensusForHighRisk: opts.requireConsensusForHighRisk,
+    consensusProvider: opts.consensusProvider,
+    consensusModel: opts.consensusModel,
+    patchConfidenceThresholds: {
+      low: typeof opts.patchConfidenceLow === "number" ? opts.patchConfidenceLow : undefined,
+      medium: typeof opts.patchConfidenceMedium === "number" ? opts.patchConfidenceMedium : undefined,
+      high: typeof opts.patchConfidenceHigh === "number" ? opts.patchConfidenceHigh : undefined,
+    },
     dynamicModelRouting: opts.dynamicModelRouting,
     dynamicRoutingThresholdChars:
       typeof opts.dynamicRoutingThresholdChars === "number"

@@ -39,6 +39,17 @@ export async function runLocalRemediationPipeline(
     options.requireConsensusForHighRisk ??
     loadedPolicy.requireConsensusForHighRisk ??
     false;
+  const consensusProvider =
+    options.consensusProvider ??
+    loadedPolicy.consensusProvider ??
+    "remote";
+  const consensusModel =
+    options.consensusModel ??
+    loadedPolicy.consensusModel;
+  const patchConfidenceThresholds = {
+    ...loadedPolicy.patchConfidenceThresholds,
+    ...options.patchConfidenceThresholds,
+  };
   const dynamicModelRouting =
     options.dynamicModelRouting ??
     loadedPolicy.dynamicModelRouting ??
@@ -182,6 +193,9 @@ export async function runLocalRemediationPipeline(
         modelPersonality: options.modelPersonality,
         providerSafetyProfile,
         requireConsensusForHighRisk,
+        consensusProvider,
+        consensusModel,
+        patchConfidenceThresholds,
         dynamicModelRouting,
         dynamicRoutingThresholdChars,
       });

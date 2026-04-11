@@ -76,6 +76,8 @@ export type DependencyScope = "direct" | "transitive";
 
 export type PatchRiskLevel = "low" | "medium" | "high";
 
+export type PatchConfidenceThresholds = Partial<Record<PatchRiskLevel, number>>;
+
 export type PatchMode = "patch-package" | "native-pnpm" | "native-yarn";
 
 export type PatchValidationPhaseName =
@@ -270,6 +272,12 @@ export interface RemediateOptions extends CorrelationContext {
   providerSafetyProfile?: ProviderSafetyProfile;
   /** Require a second-provider agreement for high-risk generated patches. */
   requireConsensusForHighRisk?: boolean;
+  /** Override provider used for high-risk consensus verification. */
+  consensusProvider?: "remote" | "local";
+  /** Override model used for high-risk consensus verification. */
+  consensusModel?: string;
+  /** Optional per-risk confidence thresholds used for patch acceptance. */
+  patchConfidenceThresholds?: PatchConfidenceThresholds;
   /** Enable provider-specific dynamic model routing by prompt/input size. */
   dynamicModelRouting?: boolean;
   /** Input-size threshold used by dynamic model routing when enabled. */

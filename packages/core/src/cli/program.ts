@@ -19,6 +19,23 @@ function addSharedOptions(program: Command, includeInput = false): Command {
     .option("--model-personality <profile>", OPTION_DESCRIPTIONS.modelPersonality)
     .option("--provider-safety-profile <profile>", OPTION_DESCRIPTIONS.providerSafetyProfile)
     .option("--require-consensus-for-high-risk", OPTION_DESCRIPTIONS.requireConsensusForHighRisk, false)
+    .option("--consensus-provider <provider>", OPTION_DESCRIPTIONS.consensusProvider)
+    .option("--consensus-model <name>", OPTION_DESCRIPTIONS.consensusModel)
+    .option(
+      "--patch-confidence-low <value>",
+      OPTION_DESCRIPTIONS.patchConfidenceThresholdLow,
+      (value: string) => parseFloat(value)
+    )
+    .option(
+      "--patch-confidence-medium <value>",
+      OPTION_DESCRIPTIONS.patchConfidenceThresholdMedium,
+      (value: string) => parseFloat(value)
+    )
+    .option(
+      "--patch-confidence-high <value>",
+      OPTION_DESCRIPTIONS.patchConfidenceThresholdHigh,
+      (value: string) => parseFloat(value)
+    )
     .option("--dynamic-model-routing", OPTION_DESCRIPTIONS.dynamicModelRouting, false)
     .option(
       "--dynamic-routing-threshold-chars <count>",

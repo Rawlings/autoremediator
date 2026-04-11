@@ -1,5 +1,5 @@
 import type { LanguageModelV1 } from "ai";
-import type { RemediateOptions } from "./types.js";
+import type { PatchConfidenceThresholds, PatchRiskLevel, RemediateOptions } from "./types.js";
 import { loadPolicy } from "./policy.js";
 
 export type SupportedProvider = "remote" | "local";
@@ -121,18 +121,30 @@ export async function createModel(
 
 export function getPatchConfidenceThreshold(
   provider: SupportedProvider,
-  safetyProfile: "strict" | "relaxed" = "relaxed"
+  safetyProfile: "strict" | "relaxed" = "relaxed",
+  riskLevel: PatchRiskLevel = "medium",
+  overrides?: PatchConfidenceThresholds
 ): number {
-  void provider;
-  const relaxed: Record<SupportedProvider, number> = {
-    remote: 0.7,
-    local: 0.7,
+  const relaxed: Record<SupportedProvider, Record<PatchRiskLevel, number>> = {
+    remote: { low: 0.65, medium: 0.7, high: 0.8 },
+    local: { low: 0.65, medium: 0.7, high: 0.8 },
   };
-  const strict: Record<SupportedProvider, number> = {
-    remote: 0.85,
-    local: 0.85,
+  const strict: Record<SupportedProvider, Record<PatchRiskLevel, number>> = {
+    remote: { low: 0.8, medium: 0.85, high: 0.9 },
+    local: { low: 0.8, medium: 0.85, high: 0.9 },
   };
-  return safetyProfile === "strict" ? strict[provider] : relaxed[provider];
+
+  const baseThreshold =
+    safetyProfile === "strict"
+      ? strict[provider][riskLevel]
+      : relaxed[provider][riskLevel];
+  const override = overrides?.[riskLevel];
+
+  if (typeof override === "number" && Number.isFinite(override)) {
+    return Math.max(0, Math.min(1, override));
+  }
+
+  return baseThreshold;
 }
 
 export function estimateModelCostUsd(params: {
