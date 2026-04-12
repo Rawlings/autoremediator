@@ -92,7 +92,7 @@ When to use which mode:
 | Option | What it controls | Why it matters in automation |
 |---|---|---|
 | `--input <path>` | scanner file path | enables scanner-to-remediation pipelines |
-| `--audit` | execute package-manager-native audit command | enables scan workflows without pre-generating an audit file and honors `--workspace` for npm/pnpm |
+| `--audit` | execute package-manager-native audit command | enables scan workflows without pre-generating an audit file, honors `--workspace` for npm/pnpm, and reports command plus exit-code context on parse failure |
 | `--format <auto|npm-audit|yarn-audit|sarif>` | parser adapter selection | improves reliability for mixed scanner ecosystems |
 | `--policy <path>` | policy file path | enforces organization-specific safety controls |
 | `--evidence` | enables evidence artifact writing | explicit positive control for evidence output |
@@ -157,6 +157,20 @@ When change-request flags are provided on mutating runs, autoremediator can:
 
 Grouped scan runs use isolated worktrees for `per-cve` and `per-package` grouping so the base checkout stays clean.
 
+Native pull request and merge request creation shells out through `gh` for GitHub and `glab` for GitLab, so the matching CLI must be available in the execution environment when `--create-change-request` is enabled.
+
+## Dependency path diagnostics and override targeting
+
+During remediation analysis, autoremediator uses package-manager-native dependency path diagnostics where available:
+
+- `npm explain`
+- `pnpm why`
+- `yarn why`
+
+This helps surface why a vulnerable package is present before choosing a remediation strategy.
+
+For transitive remediation, override application can target manager-native selector keys, including nested and scoped selectors, so override results stay aligned with how each package manager models dependency edges.
+
 ## Dry-Run Semantics
 
 When `--dry-run` is enabled:
@@ -209,6 +223,8 @@ Deterministic mode run:
 autoremediator ./audit.json --format auto --llm-provider local --ci
 ```
 
+Successful version-bump and override remediations also run a best-effort package-manager dedupe pass after apply and validation to reduce duplicate transitive installs when the package manager supports it.
+
 ## CI Exit Behavior
 
 Current CI exit semantics:
@@ -237,6 +253,7 @@ Patch artifact fields to watch:
 	- write `--summary-file` and inspect unresolved details
 - scan parsing issues:
 	- specify `--format` explicitly instead of `auto`
+	- when using `--audit`, inspect the reported command and exit-code context first
 	- validate scanner file shape with [Scanner Inputs](scanner-inputs.md)
 - remediations blocked unexpectedly:
 	- verify `--policy` path and contents

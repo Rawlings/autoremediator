@@ -12,7 +12,7 @@ import apiSdk from "../content/api-sdk.md?raw";
 import integrations from "../content/integrations.md?raw";
 import agentEcosystems from "../content/agent-ecosystems.md?raw";
 import contributorGuide from "../content/contributor-guide.md?raw";
-import changelog from "../content/changelog.md?raw";
+import changelog from "../../core/CHANGELOG.md?raw";
 
 export type Doc = {
   slug: string;

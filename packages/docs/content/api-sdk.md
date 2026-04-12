@@ -155,6 +155,13 @@ Scan-specific options:
 - `format`: scanner adapter selection (`auto`, `npm-audit`, `yarn-audit`, `sarif`)
 - `audit`: when true, executes package-manager-native audit output parsing instead of reading `inputPath` (respects `constraints.workspace` for npm/pnpm)
 
+Operational behavior notes:
+
+- transitive override remediation can target manager-native selector keys, including nested and scoped selectors, when the package manager supports them
+- remediation context gathering uses package-manager-native dependency path diagnostics where available (`npm explain`, `pnpm why`, `yarn why`)
+- successful version-bump and override remediation runs perform a best-effort package-manager dedupe pass after apply and validation
+- native audit parse failures include command and exit-code context to simplify CI and local debugging
+
 ## Source Precedence
 
 Lookup and enrichment follows this precedence model:
@@ -235,6 +242,7 @@ Recommended handling pattern:
 Common failure classes to handle:
 
 - scanner parse mismatch
+- native audit command failure with command and exit-code context
 - no vulnerable installed version match
 - no safe fixed version available
 - policy denial

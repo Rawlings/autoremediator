@@ -93,11 +93,15 @@ Grouped change requests use:
 
 GitHub uses `GITHUB_TOKEN` by default. GitLab uses `GITLAB_TOKEN` by default. You can override the token env var through the public `changeRequest.tokenEnvVar` option.
 
+Execution environments must also provide the matching provider CLI: `gh` for GitHub pull requests and `glab` for GitLab merge requests.
+
 ## Portfolio Orchestration
 
 For platform-owned fleets, use `remediatePortfolio` or `autoremediator portfolio --targets-file`.
 
 Each target points at one repository root and chooses either a direct CVE flow or a scan-driven flow. The resulting portfolio report rolls up per-target status and any created change requests.
+
+Portfolio change-request aggregation uses the same native review creation path as single-repository scan runs, including grouped review strategies and provider CLI requirements.
 
 ## GitHub Actions Marketplace Action
 

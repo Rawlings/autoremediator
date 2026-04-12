@@ -27,16 +27,16 @@ The site is deployed by the repository workflow in `.github/workflows/docs-pages
 
 ## Documentation Sources
 
-The content displayed by the app is sourced from markdown files in `content/`:
+The docs app renders the published documentation experience for:
 
-- repository root `README.md` (rendered as the docs home page at `/`)
-- `content/getting-started.md`
-- `content/cli.md`
-- `content/scanner-inputs.md`
-- `content/policy-and-safety.md`
-- `content/api-sdk.md`
-- `content/integrations.md`
-- `content/contributor-guide.md`
+- the docs home page
+- getting started and first-run guidance
+- CLI usage and automation workflows
+- scanner input formats and parsing expectations
+- policy controls and safety behavior
+- API and SDK integration patterns
+- platform and workflow integrations
+- contributor-facing architecture and maintenance guidance
 
 ## Trust and Advisory Sources
 

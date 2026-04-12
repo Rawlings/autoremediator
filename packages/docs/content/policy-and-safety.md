@@ -113,6 +113,7 @@ When a safe direct version bump cannot be applied, remediation may attempt:
 Safety implications:
 
 - override-based remediation must still pass install and optional test validation
+- override targeting can use manager-native selector keys, including nested and scoped selectors, when supported by the active package manager
 - low-confidence patch output must not be applied
 - validation failures must be unresolved outcomes
 - unresolved results must remain visible for manual handling
@@ -131,9 +132,12 @@ These fields make it easier to build CI gates, dashboards, and escalation rules 
 
 - install/test validation uses the resolved package manager for the repository
 - apply and rollback install validation is lockfile-respecting by default (`npm ci`, `pnpm install --frozen-lockfile`, `yarn install --frozen-lockfile`)
+- successful version-bump and override remediation runs perform a best-effort package-manager dedupe pass after apply and validation
 - `--run-tests` enables post-apply test validation and should be used in mutation-enabled automation
 - `--dry-run` is the onboarding and policy-tuning baseline for new projects
 - `--preview` is the planning baseline for orchestration systems that need non-mutating intent before apply
+
+Dependency-path diagnostics use package-manager-native commands where available (`npm explain`, `pnpm why`, `yarn why`) so remediation context reflects the active dependency graph tooling.
 
 ## Correlation and Traceability
 
@@ -206,6 +210,9 @@ Operational behavior:
 - unresolved after fallback attempt:
   - inspect validation outcome
   - review confidence gating behavior and escalation process
+- native audit parsing failed unexpectedly:
+  - inspect the reported audit command and exit code
+  - verify the selected workspace/package-manager combination is supported by the active runner
 
 ## Related Docs
 
