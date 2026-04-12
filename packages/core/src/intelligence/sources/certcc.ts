@@ -2,9 +2,11 @@
  * CERT/CC search enrichment.
  *
  * This source tries to locate a CERT/CC page mentioning a CVE.
+ * Uses shared HTTP client for consistent error handling and timeouts.
  */
 import type { CveDetails } from "../../platform/types.js";
 import { getIntelligenceSourceConfig } from "../../platform/config.js";
+import { httpClient } from "../../platform/http-client.js";
 
 const CERTCC_HOME = "https://www.kb.cert.org/vuls/";
 
@@ -16,12 +18,13 @@ export async function findCertCcReference(cveId: string): Promise<string | undef
     const url = new URL(certCcSearchUrl);
     url.searchParams.set("query", cveId);
 
-    const res = await fetch(url.toString(), {
+    const res = await httpClient({
+      url: url.toString(),
       headers: { Accept: "text/html" },
     });
     if (!res.ok) return undefined;
 
-    const html = await res.text();
+    const html = res.text;
     const match = html.match(/https:\/\/www\.kb\.cert\.org\/vuls\/id\/\d+/i);
     return match?.[0] ?? undefined;
   } catch {

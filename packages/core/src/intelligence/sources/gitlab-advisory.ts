@@ -2,9 +2,11 @@
  * GitLab advisory enrichment client.
  *
  * Endpoint is configurable because deployment paths vary by mirror.
+ * Uses shared HTTP client for consistent error handling and timeouts.
  */
 import type { CveDetails } from "../../platform/types.js";
 import { getIntelligenceSourceConfig } from "../../platform/config.js";
+import { httpClient } from "../../platform/http-client.js";
 
 interface GitLabAdvisoryRecord {
   identifiers?: Array<{ type?: string; value?: string }>;
@@ -27,12 +29,10 @@ export async function fetchGitLabAdvisories(cveId: string): Promise<GitLabAdviso
     url.searchParams.set("identifier", cveId);
     url.searchParams.set("ecosystem", "npm");
 
-    const res = await fetch(url.toString(), {
-      headers: { Accept: "application/json" },
-    });
+    const res = await httpClient({ url: url.toString() });
     if (!res.ok) return [];
 
-    const body = (await res.json()) as unknown;
+    const body = res.data;
     return Array.isArray(body) ? (body as GitLabAdvisoryRecord[]) : [];
   } catch {
     return [];

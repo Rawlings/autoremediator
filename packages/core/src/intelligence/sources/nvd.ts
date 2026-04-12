@@ -5,9 +5,11 @@
  * NVD CPE data is too inconsistent for npm package discovery — use OSV for that.
  *
  * Rate limits: 5 req/30s without key, 50 req/30s with AUTOREMEDIATOR_NVD_API_KEY
+ * Uses shared HTTP client for consistent error handling and timeouts.
  */
 import type { CveDetails } from "../../platform/types.js";
 import { getNvdConfig } from "../../platform/config.js";
+import { httpClient } from "../../platform/http-client.js";
 
 const NVD_BASE = "https://services.nvd.nist.gov/rest/json/cves/2.0";
 
@@ -54,12 +56,13 @@ export async function fetchNvdCvss(
   cveId: string
 ): Promise<{ score: number; severity: CveDetails["severity"] } | undefined> {
   const url = `${NVD_BASE}?cveId=${encodeURIComponent(cveId)}`;
+  const headers = buildNvdHeaders();
 
   try {
-    const res = await fetch(url, { headers: buildNvdHeaders() });
+    const res = await httpClient({ url, headers });
     if (!res.ok) return undefined;
 
-    const data = (await res.json()) as NvdResponse;
+    const data = res.data as NvdResponse;
     const vuln = data.vulnerabilities?.[0];
     if (!vuln) return undefined;
 

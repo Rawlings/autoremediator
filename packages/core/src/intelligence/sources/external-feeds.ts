@@ -3,19 +3,21 @@
  *
  * Connectors are URL-based and environment configured so enterprise users can
  * plug in proprietary feeds without hard-coding dependencies.
+ * Uses shared HTTP client for consistent error handling and timeouts.
  */
 import type { CveDetails } from "../../platform/types.js";
 import { getIntelligenceSourceConfig } from "../../platform/config.js";
+import { httpClient } from "../../platform/http-client.js";
 
 async function probeFeed(url: string, cveId: string, token?: string): Promise<string | undefined> {
   try {
     const feedUrl = new URL(url);
     feedUrl.searchParams.set("cve", cveId);
 
-    const headers: Record<string, string> = { Accept: "application/json" };
+    const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
 
-    const res = await fetch(feedUrl.toString(), { headers });
+    const res = await httpClient({ url: feedUrl.toString(), headers });
     if (!res.ok) return undefined;
     return feedUrl.toString();
   } catch {

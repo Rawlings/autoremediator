@@ -3,10 +3,13 @@
  *
  * Used as the primary source for CVE → affected npm package mapping.
  * No auth required. SEMVER event ranges are machine-readable.
+ * Uses shared HTTP client for consistent error handling and timeouts.
  */
 import type { AffectedPackage, CveDetails } from "../../platform/types.js";
+import { httpClient } from "../../platform/http-client.js";
 
 const OSV_BASE = "https://api.osv.dev/v1";
+
 
 // ---------------------------------------------------------------------------
 // Raw OSV response types
@@ -63,16 +66,23 @@ interface OsvVulnerability {
  */
 export async function fetchOsvVuln(cveId: string): Promise<OsvVulnerability | null> {
   const url = `${OSV_BASE}/vulns/${encodeURIComponent(cveId)}`;
-  const res = await fetch(url, {
-    headers: { Accept: "application/json" },
-  });
 
-  if (res.status === 404) return null;
-  if (!res.ok) {
-    throw new Error(`OSV API error ${res.status} for ${cveId}: ${await res.text()}`);
+  try {
+    const res = await httpClient({ url });
+
+    if (res.status === 404) return null;
+    if (!res.ok) {
+      throw new Error(`OSV API error ${res.status} for ${cveId}: ${res.text}`);
+    }
+
+    return res.data as OsvVulnerability;
+  } catch (err) {
+    // If httpClient throws (timeout, network error), convert to HTTP error
+    if (err instanceof Error) {
+      throw new Error(`OSV API error for ${cveId}: ${err.message}`);
+    }
+    throw err;
   }
-
-  return res.json() as Promise<OsvVulnerability>;
 }
 
 /**

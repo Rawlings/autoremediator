@@ -5,8 +5,11 @@
  * - Fetch the full list of published versions for a package
  * - Find the lowest semver-compatible safe upgrade from `firstPatchedVersion`
  * - Download tarballs for patch generation (fallback path)
+ *
+ * Uses shared HTTP client for consistent error handling and timeouts.
  */
 import semver from "semver";
+import { httpClient } from "../../platform/http-client.js";
 
 const NPM_REGISTRY = "https://registry.npmjs.org";
 
@@ -40,19 +43,26 @@ interface NpmPackument {
  */
 export async function fetchPackageVersions(packageName: string): Promise<string[]> {
   const url = `${NPM_REGISTRY}/${encodeURIComponent(packageName)}`;
-  const res = await fetch(url, {
-    headers: { Accept: "application/json" },
-  });
 
-  if (res.status === 404) return [];
-  if (!res.ok) {
-    throw new Error(
-      `npm registry error ${res.status} for "${packageName}": ${await res.text()}`
-    );
+  try {
+    const res = await httpClient({ url });
+
+    if (res.status === 404) return [];
+    if (!res.ok) {
+      throw new Error(
+        `npm registry error ${res.status} for "${packageName}": ${res.text}`
+      );
+    }
+
+    const data = res.data as NpmPackument;
+    return Object.keys(data.versions);
+  } catch (err) {
+    // If httpClient throws (timeout, network error), treat as not found
+    if (err instanceof Error && err.message.includes("registry error")) {
+      throw err;
+    }
+    return [];
   }
-
-  const data = (await res.json()) as NpmPackument;
-  return Object.keys(data.versions);
 }
 
 /**
@@ -187,14 +197,17 @@ export async function getTarballUrl(
   version: string
 ): Promise<string | undefined> {
   const url = `${NPM_REGISTRY}/${encodeURIComponent(packageName)}/${encodeURIComponent(version)}`;
-  const res = await fetch(url, {
-    headers: { Accept: "application/json" },
-  });
 
-  if (!res.ok) return undefined;
+  try {
+    const res = await httpClient({ url });
 
-  const data = (await res.json()) as {
-    dist?: { tarball?: string };
-  };
-  return data.dist?.tarball;
+    if (!res.ok) return undefined;
+
+    const data = res.data as {
+      dist?: { tarball?: string };
+    };
+    return data.dist?.tarball;
+  } catch {
+    return undefined;
+  }
 }

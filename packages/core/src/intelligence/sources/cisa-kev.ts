@@ -3,11 +3,14 @@
  *
  * Used for risk-priority enrichment only. This source does not provide
  * npm package range intelligence.
+ * Uses shared HTTP client for consistent error handling and timeouts.
  */
 import type { CveDetails } from "../../platform/types.js";
+import { httpClient } from "../../platform/http-client.js";
 
 const CISA_KEV_URL =
   "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json";
+
 
 interface CisaKevVulnerability {
   cveID: string;
@@ -23,11 +26,9 @@ interface CisaKevFeed {
 
 export async function fetchCisaKevFeed(): Promise<CisaKevFeed | undefined> {
   try {
-    const res = await fetch(CISA_KEV_URL, {
-      headers: { Accept: "application/json" },
-    });
+    const res = await httpClient({ url: CISA_KEV_URL });
     if (!res.ok) return undefined;
-    return (await res.json()) as CisaKevFeed;
+    return res.data as CisaKevFeed;
   } catch {
     // KEV is enrichment only; failures are non-fatal.
     return undefined;

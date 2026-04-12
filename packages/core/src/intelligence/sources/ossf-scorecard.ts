@@ -2,9 +2,11 @@
  * OpenSSF Scorecard enrichment.
  *
  * Uses best-effort project checks from affected package names.
+ * Uses shared HTTP client for consistent error handling and timeouts.
  */
 import type { CveDetails } from "../../platform/types.js";
 import { getIntelligenceSourceConfig } from "../../platform/config.js";
+import { httpClient } from "../../platform/http-client.js";
 
 async function checkProject(project: string): Promise<boolean> {
   const { scorecardApi } = getIntelligenceSourceConfig();
@@ -13,9 +15,7 @@ async function checkProject(project: string): Promise<boolean> {
   try {
     const url = new URL(`${scorecardApi}/projects`);
     url.searchParams.set("project", project);
-    const res = await fetch(url.toString(), {
-      headers: { Accept: "application/json" },
-    });
+    const res = await httpClient({ url: url.toString() });
     return res.ok;
   } catch {
     return false;

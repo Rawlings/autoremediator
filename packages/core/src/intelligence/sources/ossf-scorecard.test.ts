@@ -7,16 +7,17 @@ vi.mock("../../platform/config.js", () => ({
   }),
 }));
 
+vi.mock("../../platform/http-client.js", () => ({
+  httpClient: vi
+    .fn()
+    .mockResolvedValueOnce({ ok: true, status: 200, data: {}, text: "" })
+    .mockResolvedValueOnce({ ok: false, status: 404, data: {}, text: "" }),
+}));
+
 import { enrichWithOssfScorecard } from "./ossf-scorecard.js";
 
 describe("ossf-scorecard source", () => {
   it("counts projects that return successful scorecard lookups", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({ ok: true })
-      .mockResolvedValueOnce({ ok: false });
-    globalThis.fetch = fetchMock as any;
-
     const details: CveDetails = {
       id: "CVE-2021-23337",
       summary: "x",

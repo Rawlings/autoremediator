@@ -2,9 +2,11 @@
  * FIRST EPSS API client.
  *
  * Adds exploitation probability metadata for prioritization.
+ * Uses shared HTTP client for consistent error handling and timeouts.
  */
 import type { CveDetails } from "../../platform/types.js";
 import { getIntelligenceSourceConfig } from "../../platform/config.js";
+import { httpClient } from "../../platform/http-client.js";
 
 interface EpssRow {
   cve: string;
@@ -25,12 +27,10 @@ export async function fetchEpss(cveId: string): Promise<EpssRow | undefined> {
     const url = new URL(epssApi);
     url.searchParams.set("cve", cveId);
 
-    const res = await fetch(url.toString(), {
-      headers: { Accept: "application/json" },
-    });
+    const res = await httpClient({ url: url.toString() });
     if (!res.ok) return undefined;
 
-    const body = (await res.json()) as EpssResponse;
+    const body = res.data as EpssResponse;
     return body.data?.[0];
   } catch {
     return undefined;

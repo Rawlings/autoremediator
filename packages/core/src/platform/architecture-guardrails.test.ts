@@ -18,8 +18,6 @@ describe("architecture guardrails", () => {
     const srcRoot = resolve(process.cwd(), "src");
 
     const allowlist: FileGuardrail[] = [
-      // Thin API facade; threshold keeps it export-only with no orchestration logic.
-      { path: resolve(srcRoot, "api/change-requests.ts"), maxLines: 40, reason: "thin export facade" },
       // High-churn entrypoint allowed to remain moderately sized while delegating evidence and CR branches.
       { path: resolve(srcRoot, "api/remediate.ts"), maxLines: 170, reason: "public entrypoint orchestration" },
       // Scan flow still coordinates evidence + aggregated report composition across CVEs.

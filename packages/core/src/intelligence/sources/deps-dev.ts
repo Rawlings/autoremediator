@@ -2,9 +2,11 @@
  * deps.dev enrichment.
  *
  * Adds package metadata lookup coverage count for affected npm packages.
+ * Uses shared HTTP client for consistent error handling and timeouts.
  */
 import type { CveDetails } from "../../platform/types.js";
 import { getIntelligenceSourceConfig } from "../../platform/config.js";
+import { httpClient } from "../../platform/http-client.js";
 
 async function fetchDepsDevPackage(name: string): Promise<boolean> {
   const { depsDevApi } = getIntelligenceSourceConfig();
@@ -12,7 +14,7 @@ async function fetchDepsDevPackage(name: string): Promise<boolean> {
 
   try {
     const url = `${depsDevApi}/systems/npm/packages/${encodeURIComponent(name)}`;
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    const res = await httpClient({ url });
     return res.ok;
   } catch {
     return false;

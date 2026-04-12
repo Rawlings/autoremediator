@@ -7,20 +7,24 @@ vi.mock("../../platform/config.js", () => ({
   }),
 }));
 
+vi.mock("../../platform/http-client.js", () => ({
+  httpClient: vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    data: [
+      {
+        identifiers: [{ type: "CVE", value: "CVE-2021-23337" }],
+        references: ["https://gitlab.example/advisory"],
+      },
+    ],
+    text: "",
+  })),
+}));
+
 import { enrichWithGitLabAdvisory } from "./gitlab-advisory.js";
 
 describe("gitlab-advisory source", () => {
   it("marks match and merges references for matching CVE", async () => {
-    globalThis.fetch = vi.fn(async () => ({
-      ok: true,
-      json: async () => [
-        {
-          identifiers: [{ type: "CVE", value: "CVE-2021-23337" }],
-          references: ["https://gitlab.example/advisory"],
-        },
-      ],
-    })) as any;
-
     const details: CveDetails = {
       id: "CVE-2021-23337",
       summary: "x",
