@@ -13,7 +13,7 @@ describe("resolveSafeUpgradeVersion", () => {
       vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        json: async () => ({
+        text: async () => JSON.stringify({
           versions: {
             "1.2.3": { version: "1.2.3", dist: { tarball: "https://example.test/1.2.3.tgz" } },
             "1.2.4": { version: "1.2.4", dist: { tarball: "https://example.test/1.2.4.tgz" } },
@@ -47,7 +47,7 @@ describe("resolveSafeUpgradeVersion", () => {
       vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        json: async () => ({
+        text: async () => JSON.stringify({
           versions: {
             "1.2.3": { version: "1.2.3", dist: { tarball: "https://example.test/1.2.3.tgz" } },
             "1.3.1": { version: "1.3.1", dist: { tarball: "https://example.test/1.3.1.tgz" } },
@@ -79,7 +79,7 @@ describe("resolveSafeUpgradeVersion", () => {
       vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        json: async () => ({
+        text: async () => JSON.stringify({
           versions: {
             "1.2.3": { version: "1.2.3", dist: { tarball: "https://example.test/1.2.3.tgz" } },
             "2.0.0": { version: "2.0.0", dist: { tarball: "https://example.test/2.0.0.tgz" } },

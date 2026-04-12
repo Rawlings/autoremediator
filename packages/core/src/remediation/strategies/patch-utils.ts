@@ -11,7 +11,7 @@
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { execa } from "execa";
-import { detectPackageManager, getPackageManagerCommands } from "../../platform/package-manager.js";
+import { detectPackageManager, getPackageManagerCommands } from "../../platform/package-manager/index.js";
 
 /**
  * Validation result type for patch diffs

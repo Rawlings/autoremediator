@@ -53,6 +53,6 @@ export {
 
 export { toCiSummary, ciExitCode } from "./reporting.js";
 export { toSarifOutput, type SarifOutput } from "./sarif.js";
-export { inspectPatchArtifact, listPatchArtifacts, validatePatchArtifact } from "./patches.js";
-export { remediate, planRemediation } from "./remediate.js";
-export { remediateFromScan } from "./remediate-from-scan.js";
+export { inspectPatchArtifact, listPatchArtifacts, validatePatchArtifact } from "./patches/index.js";
+export { remediate, planRemediation } from "./remediate/index.js";
+export { remediateFromScan } from "./remediate-from-scan/index.js";

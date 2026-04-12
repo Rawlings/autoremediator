@@ -31,7 +31,8 @@ describe("osv source", () => {
   });
 
   it("lookupCveOsv returns null on 404", async () => {
-    globalThis.fetch = vi.fn(async () => ({ status: 404, ok: false })) as any;
+    globalThis.fetch = vi
+      .fn(async () => ({ status: 404, ok: false, text: async () => "" })) as any;
     const result = await lookupCveOsv("CVE-2099-0001");
     expect(result).toBeNull();
   });

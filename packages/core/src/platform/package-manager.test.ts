@@ -10,7 +10,7 @@ import {
   resolveAuditCommand,
   resolveInstallCommand,
   resolveWhyCommand,
-} from "./package-manager.js";
+} from "./package-manager/index.js";
 
 vi.mock("execa", () => ({
   execa: vi.fn(),

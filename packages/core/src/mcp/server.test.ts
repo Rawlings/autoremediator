@@ -5,7 +5,6 @@ describe("mcp tool contracts", () => {
   it("includes planRemediation in exposed tools", () => {
     const names = TOOLS.map((t) => t.name);
     expect(names).toContain("planRemediation");
-    expect(names).toContain("remediatePortfolio");
     expect(names).toContain("listPatchArtifacts");
     expect(names).toContain("inspectPatchArtifact");
     expect(names).toContain("validatePatchArtifact");
@@ -99,25 +98,6 @@ describe("mcp tool contracts", () => {
     expect(list.content[0]?.text).toContain("foo.patch");
     expect(inspect.content[0]?.text).toContain("exists");
     expect(validate.content[0]?.text).toContain("diffValid");
-  });
-
-  it("dispatches portfolio calls through handler", async () => {
-    const deps = {
-      remediateFn: vi.fn(async () => ({ summary: "remediate" } as any)),
-      planRemediationFn: vi.fn(async () => ({ summary: "planned" } as any)),
-      remediateFromScanFn: vi.fn(async () => ({ status: "ok" } as any)),
-      remediatePortfolioFn: vi.fn(async () => ({ status: "ok", targets: [] } as any)),
-      listPatchArtifactsFn: vi.fn(async () => []),
-      inspectPatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
-      validatePatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
-    };
-
-    const result = await handleToolCall("remediatePortfolio", { targets: [{ cwd: "/tmp/project" }] }, deps);
-
-    expect(deps.remediatePortfolioFn).toHaveBeenCalledWith(
-      expect.objectContaining({ targets: [{ cwd: "/tmp/project" }], source: "mcp" })
-    );
-    expect(result.content[0]?.text).toContain("targets");
   });
 
   it("returns structured error for unknown tool", async () => {

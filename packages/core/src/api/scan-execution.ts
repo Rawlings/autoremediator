@@ -5,7 +5,7 @@ import type { EvidenceLog } from "../platform/evidence.js";
 import { isPackageAllowed } from "../platform/policy.js";
 import type { AutoremediatorPolicy } from "../platform/policy.js";
 import type { ScanOptions } from "./contracts.js";
-import { remediate } from "./remediate.js";
+import { remediate } from "./remediate/index.js";
 
 export interface ScanExecutionResult {
   reports: RemediationReport[];

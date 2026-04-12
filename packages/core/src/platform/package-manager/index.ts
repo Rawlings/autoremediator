@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { execa } from "execa";
-import type { RemediationConstraints } from "./types.js";
+import type { RemediationConstraints } from "../types.js";
+import { parsePackageManagerListOutput } from "./list-parser.js";
 
 export type PackageManager = "npm" | "pnpm" | "yarn";
 
@@ -34,11 +35,6 @@ export function detectPackageManager(cwd: string): PackageManager {
   if (existsSync(join(cwd, "pnpm-lock.yaml"))) return "pnpm";
   if (existsSync(join(cwd, "yarn.lock"))) return "yarn";
   return "npm";
-}
-
-function addFlag(command: string[], flag: string): string[] {
-  if (command.includes(flag)) return command;
-  return [...command, flag];
 }
 
 function withWorkspace(command: string[], pm: PackageManager, workspace?: string): string[] {
@@ -170,66 +166,5 @@ export function getPackageManagerCommands(pm: PackageManager): PackageManagerCom
 }
 
 export function parseListOutput(pm: PackageManager, stdout: string): Map<string, string> {
-  const versions = new Map<string, string>();
-
-  if (!stdout.trim()) return versions;
-
-  if (pm === "yarn") {
-    const lines = stdout
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean);
-
-    for (const line of lines) {
-      try {
-        const obj = JSON.parse(line) as { type?: string; data?: { trees?: Array<{ name?: string }> } };
-        if (obj.type !== "tree") continue;
-
-        for (const tree of obj.data?.trees ?? []) {
-          const raw = tree.name ?? "";
-          const at = raw.lastIndexOf("@");
-          if (at <= 0) continue;
-          const name = raw.slice(0, at);
-          const version = raw.slice(at + 1);
-          if (name && version) {
-            versions.set(name, version);
-          }
-        }
-      } catch {
-        // Ignore non-json lines from yarn output.
-      }
-    }
-    return versions;
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(stdout);
-  } catch {
-    return versions;
-  }
-
-  const root = Array.isArray(parsed) ? parsed[0] : parsed;
-
-  type DependencyTree = {
-    version?: string;
-    dependencies?: Record<string, DependencyTree>;
-  };
-
-  function collectDependencies(tree?: Record<string, DependencyTree>): void {
-    if (!tree) return;
-
-    for (const [name, entry] of Object.entries(tree)) {
-      if (!entry || typeof entry !== "object") continue;
-      const version = entry.version;
-      if (typeof version === "string" && version) {
-        versions.set(name, version);
-      }
-      collectDependencies(entry.dependencies);
-    }
-  }
-
-  collectDependencies((root as { dependencies?: Record<string, DependencyTree> } | undefined)?.dependencies);
-
-  return versions;
+  return parsePackageManagerListOutput(pm, stdout);
 }

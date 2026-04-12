@@ -4,28 +4,25 @@ import { join } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
 import { execa } from "execa";
 import semver from "semver";
-import type { PatchResult } from "../../platform/types.js";
-import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
-import { withRepoLock } from "../../platform/repo-lock.js";
+import type { PatchResult } from "../../../platform/types.js";
+import { isPackageAllowed, loadPolicy } from "../../../platform/policy.js";
+import { withRepoLock } from "../../../platform/repo-lock.js";
 import {
   detectPackageManager,
   getYarnMajorVersion,
   resolveDedupeCommand,
   resolveInstallCommand,
   resolveTestCommand,
-  resolveWhyCommand,
   type PackageManager,
-} from "../../platform/package-manager.js";
-
-interface RawPackageJson {
-  overrides?: Record<string, string>;
-  resolutions?: Record<string, string>;
-  pnpm?: {
-    overrides?: Record<string, string>;
-    [key: string]: unknown;
-  };
-  [key: string]: unknown;
-}
+} from "../../../platform/package-manager/index.js";
+import {
+  collectDependencyTrace,
+  describeOverrideField,
+  getOverrideValue,
+  restoreOverrideValue,
+  setOverrideValue,
+  type RawPackageJson,
+} from "./helpers.js";
 
 export const applyPackageOverrideTool = tool({
   description:
@@ -217,119 +214,3 @@ export const applyPackageOverrideTool = tool({
     });
   },
 });
-
-async function collectDependencyTrace(
-  cwd: string,
-  pm: PackageManager,
-  packageName: string,
-  constraints: {
-    workspace?: string;
-  }
-): Promise<string | undefined> {
-  try {
-    const whyCommand = resolveWhyCommand(pm, packageName, constraints);
-    const [whyCmd, ...whyArgs] = whyCommand;
-    const result = await execa(whyCmd, whyArgs, {
-      cwd,
-      stdio: "pipe",
-      reject: false,
-    });
-
-    const output = [result.stdout, result.stderr]
-      .filter(Boolean)
-      .join("\n")
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
-
-    if (output.length === 0) return undefined;
-    return output.slice(0, 3).join(" | ");
-  } catch {
-    return undefined;
-  }
-}
-
-function describeOverrideField(packageManager: PackageManager): string {
-  if (packageManager === "npm") return "overrides";
-  if (packageManager === "pnpm") return "pnpm.overrides";
-  return "resolutions";
-}
-
-function getOverrideValue(
-  pkgJson: RawPackageJson,
-  packageManager: PackageManager,
-  packageName: string
-): string | undefined {
-  if (packageManager === "npm") return pkgJson.overrides?.[packageName];
-  if (packageManager === "pnpm") return pkgJson.pnpm?.overrides?.[packageName];
-  return pkgJson.resolutions?.[packageName];
-}
-
-function setOverrideValue(
-  pkgJson: RawPackageJson,
-  packageManager: PackageManager,
-  packageName: string,
-  version: string
-): void {
-  if (packageManager === "npm") {
-    pkgJson.overrides = { ...(pkgJson.overrides ?? {}), [packageName]: version };
-    return;
-  }
-
-  if (packageManager === "pnpm") {
-    pkgJson.pnpm = {
-      ...(pkgJson.pnpm ?? {}),
-      overrides: {
-        ...(pkgJson.pnpm?.overrides ?? {}),
-        [packageName]: version,
-      },
-    };
-    return;
-  }
-
-  pkgJson.resolutions = { ...(pkgJson.resolutions ?? {}), [packageName]: version };
-}
-
-function restoreOverrideValue(
-  pkgJson: RawPackageJson,
-  packageManager: PackageManager,
-  packageName: string,
-  previousValue?: string
-): void {
-  if (packageManager === "npm") {
-    pkgJson.overrides = restoreRecord(pkgJson.overrides, packageName, previousValue);
-    return;
-  }
-
-  if (packageManager === "pnpm") {
-    pkgJson.pnpm = {
-      ...(pkgJson.pnpm ?? {}),
-      overrides: restoreRecord(pkgJson.pnpm?.overrides, packageName, previousValue),
-    };
-    if (!pkgJson.pnpm.overrides) {
-      delete pkgJson.pnpm.overrides;
-    }
-    if (Object.keys(pkgJson.pnpm).length === 0) {
-      delete pkgJson.pnpm;
-    }
-    return;
-  }
-
-  pkgJson.resolutions = restoreRecord(pkgJson.resolutions, packageName, previousValue);
-}
-
-function restoreRecord(
-  record: Record<string, string> | undefined,
-  key: string,
-  previousValue?: string
-): Record<string, string> | undefined {
-  const nextRecord = { ...(record ?? {}) };
-
-  if (previousValue === undefined) {
-    delete nextRecord[key];
-  } else {
-    nextRecord[key] = previousValue;
-  }
-
-  return Object.keys(nextRecord).length > 0 ? nextRecord : undefined;
-}

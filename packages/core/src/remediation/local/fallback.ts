@@ -1,6 +1,6 @@
 import { fetchPackageSourceTool } from "../tools/fetch-package-source.js";
-import { generatePatchTool } from "../tools/generate-patch.js";
-import { applyPatchFileTool } from "../tools/apply-patch-file.js";
+import { generatePatchTool } from "../tools/generate-patch/index.js";
+import { applyPatchFileTool } from "../tools/apply-patch-file/index.js";
 import type {
   LlmUsageMetrics,
   PatchConfidenceThresholds,

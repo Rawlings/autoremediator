@@ -15,7 +15,7 @@ import {
   parseListOutput,
   resolveListCommand,
   type PackageManager,
-} from "../../platform/package-manager.js";
+} from "../../platform/package-manager/index.js";
 import { loadPolicy } from "../../platform/policy.js";
 
 interface PackageJson {

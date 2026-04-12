@@ -24,27 +24,25 @@ Do not default to append-only docs or "new file first" implementation patterns.
 
 ## Multi-Agent Handoff Contract
 
-This repository uses three logical contributor roles for autonomous feature/refactor work:
+This repository uses two logical contributor roles for autonomous feature/refactor work:
 
-- Planner agent: scopes work, runs consolidation-first analysis, and produces task handoff packets.
+- Planner agent: scopes work, runs consolidation-first analysis, performs architectural thinking up front, and produces task handoff packets.
 - Developer agent: executes task packets while preserving architecture boundaries and contracts.
-- Architect agent: validates structure before execution and after implementation, and can require consolidation/refactor changes.
 
 These roles may be fulfilled by separate agents or by one agent operating in explicit phases, but all handoff gates still apply.
 
 ### Handoff Gates
 
-1. Planner -> Architect pre-check:
+1. Planner -> Developer execution handoff:
 	- Planner must provide reuse/refactor/create analysis for each proposed artifact.
 	- Planner must include explicit rationale for any new file/directory/doc.
-	- Architect must approve or request consolidation/refactor before implementation starts.
-2. Architect -> Developer execution handoff:
-	- Developer receives approved task packet with boundaries, acceptance criteria, and forbidden shortcuts.
-	- Developer must not expand scope or create new artifacts outside the packet without re-routing to planner + architect.
-3. Developer -> Architect completion review:
-	- Architect verifies module boundaries, DRY, separation of concerns, and docs consolidation behavior.
-	- Architect can reject completion when implementation introduced avoidable sprawl.
-4. Architect -> Planner closure:
+	- Planner must document the architectural thinking that justifies file placement, dependency direction, and docs consolidation before implementation starts.
+	- Developer receives an approved task packet with boundaries, acceptance criteria, and forbidden shortcuts.
+	- Developer must not expand scope or create new artifacts outside the packet without re-routing to Planner.
+2. Developer -> Planner completion review:
+	- Planner verifies the implementation still matches the packet's architectural intent, DRY expectations, separation of concerns, and docs consolidation behavior.
+	- Planner can require rework when implementation introduces avoidable sprawl.
+3. Planner closure:
 	- Planner confirms all approved tasks are complete and governance/docs updates are coherent.
 
 ### Task Packet Requirements
@@ -53,10 +51,11 @@ Every planner handoff packet must include:
 
 - Reuse candidates evaluated.
 - Refactor/consolidation decision.
+- Architectural thinking summary.
 - New artifact rationale (only when creation is required).
 - Files expected to change.
 - Required skills/instructions for execution.
-- Acceptance checks for architecture, tests, and docs.
+- Acceptance checks for architecture, tests, docs, and governance.
 
 ### Custom Agent Files
 
@@ -64,7 +63,6 @@ Use these workspace custom agents under `.github/agents/` for governed handoffs:
 
 - `Planner`: `.github/agents/planner.agent.md`
 - `Developer`: `.github/agents/developer.agent.md`
-- `Architect`: `.github/agents/architect.agent.md`
 
 Use the names exactly as defined above when invoking subagents.
 
@@ -106,10 +104,9 @@ Use these when **building or extending the tool** — adding files, changing pub
 For feature requests, default to this flow unless explicitly told otherwise:
 
 1. Planner phase: run preflight with `architecture-conventions` and `documentation-governance.instructions.md` (consolidation-first decision), then produce task packet.
-2. Architect phase: review planner packet and enforce module/documentation boundaries before execution.
-3. Developer phase: apply `feature-implementation` and `test-governance` while staying within approved packet.
-4. Architect phase: run final structural review and require fixes for avoidable sprawl.
-5. Planner phase: run `feature-completeness-gate.instructions.md` and governance validation before completion.
+2. Planner phase: include explicit architectural thinking in the packet so module/documentation boundaries are decided before execution.
+3. Developer phase: apply `feature-implementation` and `test-governance` while staying within the approved packet.
+4. Planner phase: review the completion report against the original architecture intent, then run `feature-completeness-gate.instructions.md` and governance validation before completion.
 
 ## Agentic Remediation Order
 

@@ -1,8 +1,8 @@
-import { runRemediationPipeline } from "../remediation/pipeline.js";
-import type { RemediateOptions, RemediationReport } from "../platform/types.js";
-import { readIdempotentReport, storeIdempotentReport } from "../platform/idempotency.js";
-import { resolveConstraints, resolveCorrelationContext, resolveProvenanceContext } from "./context.js";
-import { resolveProvider } from "../platform/config.js";
+import { resolveProvider } from "../../platform/config.js";
+import { readIdempotentReport, storeIdempotentReport } from "../../platform/idempotency.js";
+import type { RemediateOptions, RemediationReport } from "../../platform/types.js";
+import { runRemediationPipeline } from "../../remediation/pipeline.js";
+import { resolveConstraints, resolveCorrelationContext, resolveProvenanceContext } from "../context.js";
 import {
   addRemediateErrorStep,
   addRemediateResultSteps,
@@ -10,14 +10,11 @@ import {
   addRemediateStartStep,
   createRemediateEvidence,
   writeRemediateEvidence,
-} from "./remediate.evidence.js";
+} from "../remediate.evidence.js";
+import { assertValidCveId } from "./validators.js";
 
 export async function remediate(cveId: string, options: RemediateOptions = {}): Promise<RemediationReport> {
-  if (!/^CVE-\d{4}-\d+$/i.test(cveId)) {
-    throw new Error(
-      `Invalid CVE ID: "${cveId}". Expected format: CVE-YYYY-NNNNN (e.g. CVE-2021-23337).`
-    );
-  }
+  assertValidCveId(cveId);
 
   const normalizedCveId = cveId.toUpperCase();
   const cwd = options.cwd ?? process.cwd();

@@ -11,7 +11,8 @@ describe("nvd source", () => {
   it("fetchNvdCvss maps CVSS metric to score and severity", async () => {
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
-      json: async () => ({
+      status: 200,
+      text: async () => JSON.stringify({
         vulnerabilities: [
           {
             cve: {
@@ -40,7 +41,8 @@ describe("nvd source", () => {
   it("enrichWithNvd sets cvssScore and fills unknown severity", async () => {
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
-      json: async () => ({
+      status: 200,
+      text: async () => JSON.stringify({
         vulnerabilities: [
           {
             cve: {

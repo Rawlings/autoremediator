@@ -7,7 +7,7 @@ import { parseYarnAuditJsonFile } from "./adapters/yarn-audit.js";
 import { parseYarnAuditJsonFromString } from "./adapters/yarn-audit.js";
 import { parseSarifFile } from "./adapters/sarif.js";
 import type { ScanInputFormat } from "./index.js";
-import { detectPackageManager, resolveAuditCommand, type PackageManager } from "../platform/package-manager.js";
+import { detectPackageManager, resolveAuditCommand, type PackageManager } from "../platform/package-manager/index.js";
 
 export function parseScanInput(filePath: string, format: ScanInputFormat): NormalizedFinding[] {
   const resolved = format === "auto" ? inferFormat(filePath) : format;

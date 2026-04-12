@@ -64,7 +64,7 @@ export async function fetchGhAdvisories(cveId: string): Promise<GhAdvisory[]> {
       },
     } as any);
 
-    return response.data as GhAdvisory[];
+    return response.data as unknown as GhAdvisory[];
   } catch (err) {
     // Non-fatal: log and return empty so OSV can still succeed
     const errorMsg = err instanceof Error ? err.message : String(err);

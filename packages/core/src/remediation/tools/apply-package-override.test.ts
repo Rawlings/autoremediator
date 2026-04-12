@@ -34,7 +34,7 @@ vi.mock("../../platform/policy.js", () => ({
   isPackageAllowed: mocked.isPackageAllowed,
 }));
 
-vi.mock("../../platform/package-manager.js", () => ({
+vi.mock("../../platform/package-manager/index.js", () => ({
   detectPackageManager: mocked.detectPackageManager,
   getPackageManagerCommands: mocked.getPackageManagerCommands,
   getYarnMajorVersion: mocked.getYarnMajorVersion,
@@ -48,7 +48,7 @@ vi.mock("../../platform/repo-lock.js", () => ({
   withRepoLock: mocked.withRepoLock,
 }));
 
-import { applyPackageOverrideTool } from "./apply-package-override.js";
+import { applyPackageOverrideTool } from "./apply-package-override/index.js";
 
 describe("apply-package-override", () => {
   beforeEach(() => {

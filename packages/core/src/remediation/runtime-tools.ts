@@ -3,10 +3,10 @@ import { checkInventoryTool } from "./tools/check-inventory.js";
 import { checkVersionMatchTool } from "./tools/check-version-match.js";
 import { findFixedVersionTool } from "./tools/find-fixed-version.js";
 import { applyVersionBumpTool } from "./tools/apply-version-bump.js";
-import { applyPackageOverrideTool } from "./tools/apply-package-override.js";
+import { applyPackageOverrideTool } from "./tools/apply-package-override/index.js";
 import { fetchPackageSourceTool } from "./tools/fetch-package-source.js";
-import { generatePatchTool } from "./tools/generate-patch.js";
-import { applyPatchFileTool } from "./tools/apply-patch-file.js";
+import { generatePatchTool } from "./tools/generate-patch/index.js";
+import { applyPatchFileTool } from "./tools/apply-patch-file/index.js";
 
 interface RuntimeToolContext {
   checkInventoryToolForRun: typeof checkInventoryTool;

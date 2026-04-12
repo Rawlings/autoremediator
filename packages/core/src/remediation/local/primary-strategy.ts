@@ -1,6 +1,6 @@
 import { resolveSafeUpgradeVersion } from "../../intelligence/sources/registry.js";
 import { applyVersionBumpTool } from "../tools/apply-version-bump.js";
-import { applyPackageOverrideTool } from "../tools/apply-package-override.js";
+import { applyPackageOverrideTool } from "../tools/apply-package-override/index.js";
 import type { PatchResult, VulnerablePackage } from "../../platform/types.js";
 
 export async function resolvePrimaryResult(params: {

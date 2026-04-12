@@ -32,7 +32,7 @@ vi.mock("execa", () => ({
   execa: mocked.execa,
 }));
 
-vi.mock("../../platform/package-manager.js", () => ({
+vi.mock("../../platform/package-manager/index.js", () => ({
   detectPackageManager: mocked.detectPackageManager,
   getPackageManagerCommands: mocked.getPackageManagerCommands,
   getYarnMajorVersion: mocked.getYarnMajorVersion,
@@ -48,7 +48,7 @@ vi.mock("../../platform/repo-lock.js", () => ({
   withRepoLock: mocked.withRepoLock,
 }));
 
-import { applyPatchFileTool } from "./apply-patch-file.js";
+import { applyPatchFileTool } from "./apply-patch-file/index.js";
 
 describe("apply-patch-file lock integration", () => {
   beforeEach(() => {

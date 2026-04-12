@@ -44,7 +44,7 @@
 ### Mode 6: Governed Multi-Agent Delivery
 
 - Trigger: feature work, refactors, or architecture-affecting contributor tasks
-- Behavior: planner/developer/architect handoff model for autonomous delivery
+- Behavior: planner/developer handoff model for autonomous delivery, with architectural thinking handled during planning instead of a separate architect gate
 - Instruction set:
   - .github/copilot-instructions.md (Agent Autopilot Contract + Multi-Agent Handoff Contract)
   - .github/instructions/architecture.instructions.md
@@ -54,7 +54,6 @@
 - Custom agents:
   - .github/agents/planner.agent.md
   - .github/agents/developer.agent.md
-  - .github/agents/architect.agent.md
 
 Mode 6 handoff stages and packet requirements are canonical in .github/copilot-instructions.md.
 

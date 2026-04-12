@@ -33,7 +33,7 @@ vi.mock("../../platform/policy.js", () => ({
   isPackageAllowed: mocked.isPackageAllowed,
 }));
 
-vi.mock("../../platform/package-manager.js", () => ({
+vi.mock("../../platform/package-manager/index.js", () => ({
   detectPackageManager: mocked.detectPackageManager,
   getPackageManagerCommands: mocked.getPackageManagerCommands,
   getYarnMajorVersion: mocked.getYarnMajorVersion,

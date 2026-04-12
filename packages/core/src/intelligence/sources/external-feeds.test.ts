@@ -13,7 +13,8 @@ import { enrichWithExternalFeeds } from "./external-feeds.js";
 
 describe("external-feeds source", () => {
   it("records vendor and commercial feed hits and merges references", async () => {
-    globalThis.fetch = vi.fn(async () => ({ ok: true })) as any;
+    globalThis.fetch = vi
+      .fn(async () => ({ ok: true, status: 200, text: async () => "{}" })) as any;
 
     const details: CveDetails = {
       id: "CVE-2021-23337",

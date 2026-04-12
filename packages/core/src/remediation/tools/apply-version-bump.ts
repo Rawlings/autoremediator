@@ -20,7 +20,7 @@ import {
   resolveInstallCommand,
   resolveTestCommand,
   type PackageManager,
-} from "../../platform/package-manager.js";
+} from "../../platform/package-manager/index.js";
 
 interface RawPackageJson {
   dependencies?: Record<string, string>;

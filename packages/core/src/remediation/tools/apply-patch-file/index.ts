@@ -7,42 +7,39 @@
  */
 import { tool } from "ai";
 import { z } from "zod";
-import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { execa } from "execa";
 import {
   detectPackageManager,
-  getPackageManagerCommands,
   getYarnMajorVersion,
   resolveInstallCommand,
   resolveTestCommand,
   type PackageManager,
-} from "../../platform/package-manager.js";
-import { withRepoLock } from "../../platform/repo-lock.js";
-import { loadPolicy } from "../../platform/policy.js";
-import { validatePatchDiff } from "../strategies/patch-utils.js";
+} from "../../../platform/package-manager/index.js";
+import { withRepoLock } from "../../../platform/repo-lock.js";
+import { loadPolicy } from "../../../platform/policy.js";
+import { validatePatchDiff } from "../../strategies/patch-utils.js";
 import type {
   PatchArtifact,
   PatchMode,
-  PatchRiskLevel,
   PatchValidationPhase,
-} from "../../platform/types.js";
+} from "../../../platform/types.js";
+import {
+  applyNativePatch,
+  buildPatchFileName,
+  capturePackageJsonSnapshot,
+  cleanupPatchArtifacts,
+  configurePatchPackagePostinstall,
+  countPatchHunks,
+  extractPatchedFiles,
+  patchModeRequiresPackageJsonSnapshot,
+  resolvePatchMode,
+  validatePatchWithTests,
+  writePatchManifest,
+  type ValidationResult,
+} from "./helpers.js";
 
-/**
- * Validation result object.
- */
-interface ValidationResult {
-  passed: boolean;
-  error?: string;
-  output?: string;
-  failedTests?: string[];
-}
-
-/**
- * Tool result interface.
- */
 interface ApplyPatchFileResult {
   success: boolean;
   packageName: string;
@@ -59,15 +56,6 @@ interface ApplyPatchFileResult {
   validation?: ValidationResult;
   validationPhases?: PatchValidationPhase[];
   error?: string;
-}
-
-/**
- * Raw package.json structure for type safety.
- */
-interface RawPackageJson {
-  devDependencies?: Record<string, string>;
-  scripts?: Record<string, string>;
-  [key: string]: unknown;
 }
 
 export const applyPatchFileTool = tool({
@@ -227,15 +215,13 @@ export const applyPatchFileTool = tool({
 
       return withRepoLock(cwd, async () => {
         const packageJsonSnapshot =
-          patchModeRequiresPackageJsonSnapshot(pm, cwd)
+          patchModeRequiresPackageJsonSnapshot(pm)
             ? await capturePackageJsonSnapshot(cwd)
             : undefined;
 
-        // Step 1: Create patches directory if it doesn't exist
         const patchesDirPath = join(cwd, patchesDir);
         await mkdir(patchesDirPath, { recursive: true });
 
-        // Step 2: Write patch file with proper naming convention
         await writeFile(patchFilePath, selectedPatch, "utf8");
         validationPhases.push({
           phase: "patch-write",
@@ -260,8 +246,6 @@ export const applyPatchFileTool = tool({
         artifact.validationPhases = validationPhases;
         await writePatchManifest(manifestFilePath, artifact);
 
-        // Step 3: Apply patch via native package-manager workflow when available.
-        // npm always uses patch-package, yarn v1 falls back to patch-package.
         const applyResult =
           patchMode === "patch-package"
             ? await configurePatchPackagePostinstall(cwd, pm)
@@ -363,7 +347,6 @@ export const applyPatchFileTool = tool({
           }
         }
 
-        // Step 4: Validate with tests if requested
         if (validateWithTests) {
           validationResult = await validatePatchWithTests(cwd, testCommand);
           if (!validationResult.passed) {
@@ -452,321 +435,3 @@ export const applyPatchFileTool = tool({
     }
   },
 });
-
-interface PackageJsonSnapshot {
-  path: string;
-  content: string;
-}
-
-async function resolvePatchMode(packageManager: PackageManager, cwd: string): Promise<PatchMode> {
-  if (packageManager === "npm") return "patch-package";
-  if (packageManager === "pnpm") return "native-pnpm";
-
-  // Yarn v1 does not provide native patch commands; use patch-package compatibility path.
-  const major = await getYarnMajorVersion(cwd);
-  return major >= 2 ? "native-yarn" : "patch-package";
-}
-
-function patchModeRequiresPackageJsonSnapshot(packageManager: PackageManager, cwd: string): boolean {
-  if (packageManager === "npm") return true;
-  if (packageManager === "pnpm") return false;
-
-  return true;
-}
-
-function buildPatchFileName(packageName: string, vulnerableVersion: string): string {
-  const safeName = packageName.replace(/^@/, "").replace(/\//g, "+");
-  return `${safeName}+${vulnerableVersion}.patch`;
-}
-
-async function configurePatchPackagePostinstall(cwd: string, packageManager: PackageManager): Promise<{ success: true } | { success: false; error: string }> {
-  const pkgJsonPath = join(cwd, "package.json");
-  let pkgJson: RawPackageJson;
-
-  try {
-    pkgJson = JSON.parse(await readFile(pkgJsonPath, "utf8")) as RawPackageJson;
-  } catch {
-    return {
-      success: false,
-      error: `Could not read package.json at ${pkgJsonPath}`,
-    };
-  }
-
-  const devDependencies = pkgJson.devDependencies ?? {};
-  if (!devDependencies["patch-package"]) {
-    try {
-      const commands = getPackageManagerCommands(packageManager);
-      const [cmd, ...args] = commands.installDev("patch-package");
-      await execa(cmd, args, {
-        cwd,
-        stdio: "pipe",
-      });
-    } catch (err) {
-      return {
-        success: false,
-        error: `Failed to install patch-package: ${err instanceof Error ? err.message : String(err)}`,
-      };
-    }
-  }
-
-  if (!pkgJson.scripts) {
-    pkgJson.scripts = {};
-  }
-
-  const patchApplyCmd = "patch-package";
-  const currentPostinstall = pkgJson.scripts.postinstall || "";
-
-  if (currentPostinstall && !currentPostinstall.includes("patch-package")) {
-    pkgJson.scripts.postinstall = `${currentPostinstall} && ${patchApplyCmd}`;
-  } else if (!currentPostinstall) {
-    pkgJson.scripts.postinstall = patchApplyCmd;
-  }
-
-  await writeFile(pkgJsonPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
-  return { success: true };
-}
-
-async function capturePackageJsonSnapshot(cwd: string): Promise<PackageJsonSnapshot | undefined> {
-  const path = join(cwd, "package.json");
-
-  try {
-    const content = await readFile(path, "utf8");
-    return { path, content };
-  } catch {
-    return undefined;
-  }
-}
-
-async function cleanupPatchArtifacts(params: {
-  cwd: string;
-  patchFilePath: string;
-  manifestFilePath?: string;
-  patchMode: PatchMode;
-  packageJsonSnapshot?: PackageJsonSnapshot;
-  installCommand: string[];
-  rerunInstall: boolean;
-}): Promise<void> {
-  const {
-    cwd,
-    patchFilePath,
-    manifestFilePath,
-    patchMode,
-    packageJsonSnapshot,
-    installCommand,
-    rerunInstall,
-  } = params;
-
-  await rm(patchFilePath, { force: true }).catch(() => undefined);
-  if (manifestFilePath) {
-    await rm(manifestFilePath, { force: true }).catch(() => undefined);
-  }
-
-  if (patchMode === "patch-package" && packageJsonSnapshot) {
-    await writeFile(packageJsonSnapshot.path, packageJsonSnapshot.content, "utf8").catch(() => undefined);
-  }
-
-  if (!rerunInstall) return;
-
-  try {
-    const [installCmd, ...installArgs] = installCommand;
-    await execa(installCmd, installArgs, {
-      cwd,
-      stdio: "pipe",
-    });
-  } catch {
-    // Ignore cleanup install failures and preserve the original remediation error.
-  }
-}
-
-async function applyNativePatch(params: {
-  cwd: string;
-  packageName: string;
-  vulnerableVersion: string;
-  patchContent: string;
-  patchMode: "native-pnpm" | "native-yarn";
-  validationPhases: PatchValidationPhase[];
-}): Promise<{ success: true } | { success: false; error: string }> {
-  const { cwd, packageName, vulnerableVersion, patchContent, patchMode, validationPhases } = params;
-  const packageSpec = `${packageName}@${vulnerableVersion}`;
-
-  const createCommand = patchMode === "native-pnpm" ? "pnpm" : "yarn";
-  const createArgs = ["patch", packageSpec];
-
-  let patchDir: string;
-  try {
-    const createResult = await execa(createCommand, createArgs, {
-      cwd,
-      stdio: "pipe",
-    });
-    patchDir = extractPatchDirectory(`${createResult.stdout}\n${createResult.stderr}`);
-  } catch (err) {
-    validationPhases.push({
-      phase: "apply",
-      passed: false,
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return {
-      success: false,
-      error: `Failed to create native patch workspace for ${packageSpec}: ${
-        err instanceof Error ? err.message : String(err)
-      }`,
-    };
-  }
-
-  if (!patchDir) {
-    validationPhases.push({
-      phase: "apply",
-      passed: false,
-      error: `Could not determine native patch directory for ${packageSpec}.`,
-    });
-    return {
-      success: false,
-      error: `Could not determine native patch directory for ${packageSpec}.`,
-    };
-  }
-
-  const tempPatchDir = await mkdtemp(join(tmpdir(), "autoremediator-native-patch-"));
-  const tempPatchFile = join(tempPatchDir, "change.patch");
-
-  try {
-    await writeFile(tempPatchFile, patchContent, "utf8");
-    await execa("patch", ["-p1", "-i", tempPatchFile], {
-      cwd: patchDir,
-      stdio: "pipe",
-    });
-
-    const commitCommand = patchMode === "native-pnpm" ? "pnpm" : "yarn";
-    const commitArgs =
-      patchMode === "native-pnpm"
-        ? ["patch-commit", patchDir]
-        : ["patch-commit", "-s", patchDir];
-
-    await execa(commitCommand, commitArgs, {
-      cwd,
-      stdio: "pipe",
-    });
-  } catch (err) {
-    validationPhases.push({
-      phase: "apply",
-      passed: false,
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return {
-      success: false,
-      error: `Failed to apply native patch for ${packageSpec}: ${
-        err instanceof Error ? err.message : String(err)
-      }`,
-    };
-  } finally {
-    await rm(tempPatchDir, { recursive: true, force: true });
-  }
-
-  return { success: true };
-}
-
-async function writePatchManifest(manifestFilePath: string, artifact: PatchArtifact): Promise<void> {
-  await writeFile(manifestFilePath, JSON.stringify(artifact, null, 2) + "\n", "utf8");
-}
-
-function extractPatchedFiles(patchContent: string): string[] {
-  return Array.from(
-    new Set(
-      patchContent
-        .split(/\r?\n/)
-        .filter((line) => line.startsWith("+++ b/"))
-        .map((line) => line.slice("+++ b/".length))
-    )
-  );
-}
-
-function countPatchHunks(patchContent: string): number {
-  return patchContent
-    .split(/\r?\n/)
-    .filter((line) => line.startsWith("@@ ")).length;
-}
-
-function extractPatchDirectory(output: string): string {
-  const lines = output
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  for (const line of lines) {
-    if (existsSync(line)) {
-      return line;
-    }
-
-    const tokens = line.split(/\s+/).map((token) => token.replace(/^['"]|['"]$/g, ""));
-    for (const token of tokens) {
-      if (token.startsWith("/") && existsSync(token)) {
-        return token;
-      }
-    }
-  }
-
-  return "";
-}
-
-/**
- * Validate patch by running tests in the project.
- */
-async function validatePatchWithTests(cwd: string, testCommand: string[]): Promise<ValidationResult> {
-  try {
-    const [cmd, ...args] = testCommand;
-
-    // Run package manager test command with a timeout
-    const result = await execa(cmd, args, {
-      cwd,
-      timeout: 60000, // 60 second timeout
-      stdio: "pipe",
-    });
-
-    return {
-      passed: true,
-      output: result.stdout,
-    };
-  } catch (err) {
-    // Extract useful error information
-    const errorOutput =
-      typeof err === "object" && err !== null && "stdout" in err
-        ? String((err as Record<string, unknown>).stdout ?? "")
-        : "";
-    const failedTests = extractFailedTests(errorOutput);
-
-    return {
-      passed: false,
-      error:
-        failedTests.length > 0
-          ? `Failed tests: ${failedTests.join(", ")}`
-          : "Package-manager test validation failed.",
-      output: errorOutput,
-      failedTests,
-    };
-  }
-}
-
-/**
- * Parse test output to extract names of failed tests.
- * (Basic implementation; real implementation would parse different test runners)
- */
-function extractFailedTests(output: string): string[] {
-  const failedTests: string[] = [];
-
-  // Common test failure patterns
-  const patterns = [
-    /✖\s+(.+?)(?:\n|$)/g, // Mocha style
-    /●\s+(.+)(?:\n|$)/g, // Jest style
-    /^FAIL\s+(.+?)(?:\n|$)/gm, // Generic FAIL
-  ];
-
-  for (const pattern of patterns) {
-    let match;
-    while ((match = pattern.exec(output)) !== null) {
-      if (match[1]) {
-        failedTests.push(match[1].trim());
-      }
-    }
-  }
-
-  return failedTests.slice(0, 5); // Return first 5 failures
-}

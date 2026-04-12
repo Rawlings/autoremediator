@@ -12,16 +12,14 @@ import {
   estimateModelCostUsd,
   getPatchConfidenceThreshold,
   resolveProvider,
-} from "../../platform/config.js";
-import { buildPatchPrompt } from "../strategies/patch-synthesis-prompt.js";
-
-/**
- * Represents a single generated patch file.
- */
-interface GeneratedPatch {
-  filePath: string;
-  unifiedDiff: string;
-}
+} from "../../../platform/config.js";
+import { buildPatchPrompt } from "../../strategies/patch-synthesis-prompt.js";
+import {
+  buildGeneratedPatches,
+  isValidLlmAnalysis,
+  parseLlmAnalysisResponse,
+  type GeneratedPatch,
+} from "./helpers.js";
 
 /**
  * Result from the patch generation tool.
@@ -38,16 +36,6 @@ interface GeneratePatchResult {
   riskLevel: "low" | "medium" | "high";
   confidenceThreshold?: number;
   error?: string;
-}
-
-/**
- * LLM analysis response schema.
- */
-interface LlmAnalysis {
-  analysis: string;
-  fixedCode: Record<string, string>;
-  confidence: number;
-  riskLevel: "low" | "medium" | "high";
 }
 
 export const generatePatchTool = tool({
@@ -163,7 +151,6 @@ export const generatePatchTool = tool({
         };
       }
 
-      // Create LLM model
       const inputChars = JSON.stringify(resolvedSourceFiles).length + cveSummary.length;
       const modelInstance = await createModel(effectiveOptions, { inputChars });
       const modelName = modelInstance.modelId || "unknown-model";
@@ -178,25 +165,16 @@ export const generatePatchTool = tool({
         modelPersonality,
       });
 
-      // Call LLM
       const started = Date.now();
       const { text } = await generateText({
         model: modelInstance,
         prompt,
-        temperature: 0.3, // Lower temperature for more consistent code generation
+        temperature: 0.3,
       });
       const latencyMs = Date.now() - started;
 
-      // Parse LLM response
-      let analysis: LlmAnalysis;
-      try {
-        // Extract JSON from response (in case LLM includes extra text)
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-          throw new Error("No JSON found in LLM response");
-        }
-        analysis = JSON.parse(jsonMatch[0]) as LlmAnalysis;
-      } catch (err) {
+      const parsed = parseLlmAnalysisResponse(text);
+      if (!parsed.ok) {
         return {
           success: false,
           llmProvider: provider,
@@ -204,17 +182,12 @@ export const generatePatchTool = tool({
           confidence: 0,
           riskLevel: "high",
           latencyMs,
-          error: `Failed to parse LLM response: ${err instanceof Error ? err.message : "unknown error"}`,
+          error: `Failed to parse LLM response: ${parsed.error}`,
         };
       }
+      const analysis = parsed.analysis;
 
-      // Validate analysis structure
-      if (
-        !analysis.analysis ||
-        !analysis.fixedCode ||
-        typeof analysis.confidence !== "number" ||
-        !["low", "medium", "high"].includes(analysis.riskLevel)
-      ) {
+      if (!isValidLlmAnalysis(analysis)) {
         return {
           success: false,
           llmProvider: provider,
@@ -251,32 +224,7 @@ export const generatePatchTool = tool({
         };
       }
 
-      // Step 3: Generate unified diffs
-      const patches: GeneratedPatch[] = [];
-
-      for (const [filePath, fixedCode] of Object.entries(
-        analysis.fixedCode
-      )) {
-        const sourceFile = resolvedSourceFiles[filePath];
-
-        if (!sourceFile) {
-          continue; // Skip files not in original source
-        }
-
-        // Generate unified diff
-        const unifiedDiff = generateUnifiedDiff(
-          sourceFile,
-          fixedCode,
-          filePath
-        );
-
-        if (unifiedDiff) {
-          patches.push({
-            filePath,
-            unifiedDiff,
-          });
-        }
-      }
+      const patches = buildGeneratedPatches(resolvedSourceFiles, analysis.fixedCode);
 
       if (patches.length === 0) {
         return {
@@ -318,49 +266,3 @@ export const generatePatchTool = tool({
     }
   },
 });
-
-/**
- * Generate a unified diff between two strings.
- * Returns a unified diff format or null if there are no differences.
- */
-function generateUnifiedDiff(
-  original: string,
-  fixed: string,
-  filePath: string
-): string | null {
-  if (original === fixed) {
-    return null;
-  }
-
-  const originalLines = original.split("\n");
-  const fixedLines = fixed.split("\n");
-
-  // Simple unified diff generation
-  // In a production system, use a library like 'diff' for more accurate diffs
-  const diff: string[] = [];
-  diff.push(`--- a/${filePath}`);
-  diff.push(`+++ b/${filePath}`);
-  diff.push("@@ -1," + originalLines.length + " +1," + fixedLines.length + " @@");
-
-  // Find longest common subsequence for better diff
-  // For now, simple line-by-line comparison
-  const maxLen = Math.max(originalLines.length, fixedLines.length);
-
-  for (let i = 0; i < maxLen; i++) {
-    const origLine = originalLines[i] || "";
-    const fixedLine = fixedLines[i] || "";
-
-    if (origLine !== fixedLine) {
-      if (origLine) {
-        diff.push("-" + origLine);
-      }
-      if (fixedLine) {
-        diff.push("+" + fixedLine);
-      }
-    } else if (origLine) {
-      diff.push(" " + origLine);
-    }
-  }
-
-  return diff.join("\n");
-}

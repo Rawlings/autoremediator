@@ -1,7 +1,7 @@
 import { resolveProvider } from "../../platform/config.js";
 import { loadPolicy } from "../../platform/policy.js";
 import type { PatchConfidenceThresholds, RemediateOptions } from "../../platform/types.js";
-import { detectPackageManager } from "../../platform/package-manager.js";
+import { detectPackageManager } from "../../platform/package-manager/index.js";
 
 export interface LocalRunOptions {
   cwd: string;

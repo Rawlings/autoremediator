@@ -1,12 +1,13 @@
-import type { RemediationReport } from "../platform/types.js";
-import { parseScanInput, parseScanInputFromAudit, uniqueCveIds } from "../scanner/index.js";
-import { addEvidenceStep, createEvidenceLog, finalizeEvidence, writeEvidenceLog } from "../platform/evidence.js";
-import { loadPolicy } from "../platform/policy.js";
-import { resolveProvider } from "../platform/config.js";
-import type { ScanOptions, ScanReport } from "./contracts.js";
-import { resolveConstraints, resolveCorrelationContext, resolveProvenanceContext } from "./context.js";
-import { executeScanRemediations } from "./scan-execution.js";
-import { buildScanOutcome } from "./scan-outcome.js";
+import type { RemediationReport } from "../../platform/types.js";
+import { resolveProvider } from "../../platform/config.js";
+import { addEvidenceStep, createEvidenceLog, finalizeEvidence, writeEvidenceLog } from "../../platform/evidence.js";
+import { loadPolicy } from "../../platform/policy.js";
+import { parseScanInput, parseScanInputFromAudit, uniqueCveIds } from "../../scanner/index.js";
+import type { ScanOptions, ScanReport } from "../contracts.js";
+import { resolveConstraints, resolveCorrelationContext, resolveProvenanceContext } from "../context.js";
+import { executeScanRemediations } from "../scan-execution.js";
+import { buildScanOutcome } from "../scan-outcome.js";
+import { aggregateScanLlmUsage } from "./report-metrics.js";
 
 export async function remediateFromScan(
   inputPath: string,
@@ -59,23 +60,19 @@ export async function remediateFromScan(
     evidence,
   });
   const reports: RemediationReport[] = execution.reports;
-  const errors = execution.errors;
-  const patchCount = execution.patchCount;
-  const patchValidationFailures = execution.patchValidationFailures;
+  const { errors, patchCount, patchValidationFailures } = execution;
 
-  let llmUsageCount = 0;
-  let estimatedCostUsd = 0;
-  let totalLlmLatencyMs = 0;
-  for (const report of reports) {
-    for (const usage of report.llmUsage ?? []) {
-      llmUsageCount += 1;
-      estimatedCostUsd += usage.estimatedCostUsd ?? 0;
-      totalLlmLatencyMs += usage.latencyMs ?? 0;
-    }
-  }
-
+  const llmUsageTotals = aggregateScanLlmUsage(reports);
   const outcome = buildScanOutcome({ reports, errors });
-  const { status, successCount, failedCount, strategyCounts, dependencyScopeCounts, unresolvedByReason, remediationCount } = outcome;
+  const {
+    status,
+    successCount,
+    failedCount,
+    strategyCounts,
+    dependencyScopeCounts,
+    unresolvedByReason,
+    remediationCount,
+  } = outcome;
 
   evidence.summary = {
     status,
@@ -89,14 +86,15 @@ export async function remediateFromScan(
     dependencyScopeCounts,
     unresolvedByReason,
     patchesDir: patchCount > 0 ? patchesDir : undefined,
-    llmUsageCount: llmUsageCount > 0 ? llmUsageCount : undefined,
-    estimatedCostUsd: llmUsageCount > 0 ? Number(estimatedCostUsd.toFixed(6)) : undefined,
-    totalLlmLatencyMs: llmUsageCount > 0 ? totalLlmLatencyMs : undefined,
+    llmUsageCount: llmUsageTotals.llmUsageCount > 0 ? llmUsageTotals.llmUsageCount : undefined,
+    estimatedCostUsd: llmUsageTotals.estimatedCostUsd,
+    totalLlmLatencyMs: llmUsageTotals.totalLlmLatencyMs,
   };
 
   finalizeEvidence(evidence);
   const evidenceFile = options.evidence === false ? undefined : writeEvidenceLog(cwd, evidence);
-  const scanReportBase: ScanReport = {
+
+  return {
     schemaVersion: "1.0",
     status,
     generatedAt: new Date().toISOString(),
@@ -116,10 +114,8 @@ export async function remediateFromScan(
     provenance,
     constraints,
     idempotencyKey: options.idempotencyKey,
-    llmUsageCount: llmUsageCount > 0 ? llmUsageCount : undefined,
-    estimatedCostUsd: llmUsageCount > 0 ? Number(estimatedCostUsd.toFixed(6)) : undefined,
-    totalLlmLatencyMs: llmUsageCount > 0 ? totalLlmLatencyMs : undefined,
+    llmUsageCount: llmUsageTotals.llmUsageCount > 0 ? llmUsageTotals.llmUsageCount : undefined,
+    estimatedCostUsd: llmUsageTotals.estimatedCostUsd,
+    totalLlmLatencyMs: llmUsageTotals.totalLlmLatencyMs,
   };
-
-  return scanReportBase;
 }

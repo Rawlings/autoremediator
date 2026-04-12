@@ -3,57 +3,15 @@ import {
   createScanOptionSchemaProperties,
   createScanReportSchemaProperties,
   OPTION_DESCRIPTIONS,
-} from "../api/index.js";
-import { PACKAGE_VERSION } from "../version.js";
+} from "../../api/index.js";
+import {
+  ERROR_RESPONSE_SCHEMA,
+  PATCH_ARTIFACT_OPTION_PROPERTIES,
+  REMEDIATION_REPORT_SCHEMA,
+} from "./schemas.js";
 
-const PATCH_ARTIFACT_OPTION_PROPERTIES = {
-  cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
-  patchesDir: { type: "string", description: OPTION_DESCRIPTIONS.patchesDir },
-  packageManager: {
-    type: "string",
-    enum: ["npm", "pnpm", "yarn"],
-    description: OPTION_DESCRIPTIONS.packageManager,
-  },
-} as const;
-
-const REMEDIATION_REPORT_SCHEMA = {
-  type: "object",
-  properties: {
-    cveId: { type: "string" },
-    cveDetails: { type: ["object", "null"] },
-    vulnerablePackages: { type: "array", items: { type: "object" } },
-    results: { type: "array", items: { type: "object" } },
-    agentSteps: { type: "number" },
-    summary: { type: "string" },
-    evidenceFile: { type: "string" },
-    llmUsage: { type: "array", items: { type: "object" } },
-    correlation: { type: "object" },
-    provenance: { type: "object" },
-    constraints: { type: "object" },
-    resumedFromCache: { type: "boolean" },
-  },
-} as const;
-
-export const OPENAPI_SPEC = {
-  openapi: "3.1.0",
-  info: {
-    title: "autoremediator",
-    version: PACKAGE_VERSION,
-    description: "Agentic CVE remediation for Node.js dependency projects",
-  },
-  servers: [
-    {
-      url: "http://localhost:3000",
-      description: "Local development server",
-    },
-  ],
-  "x-agent-compatible": true,
-  "x-agent-use-cases": [
-    "plan-first remediation",
-    "scanner-driven batch remediation",
-    "patch lifecycle validation",
-  ],
-  paths: {
+export function createOpenApiPaths() {
+  return {
     "/remediate": {
       post: {
         operationId: "remediate",
@@ -88,14 +46,7 @@ export const OPENAPI_SPEC = {
           },
           "400": {
             description: "Invalid input or remediation error",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: { error: { type: "string" } },
-                },
-              },
-            },
+            content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } },
           },
         },
       },
@@ -138,14 +89,7 @@ export const OPENAPI_SPEC = {
           },
           "400": {
             description: "Invalid input or remediation error",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: { error: { type: "string" } },
-                },
-              },
-            },
+            content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } },
           },
         },
       },
@@ -190,14 +134,7 @@ export const OPENAPI_SPEC = {
           },
           "400": {
             description: "Invalid input or remediation error",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: { error: { type: "string" } },
-                },
-              },
-            },
+            content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } },
           },
         },
       },
@@ -232,11 +169,7 @@ export const OPENAPI_SPEC = {
           },
           "400": {
             description: "Invalid input",
-            content: {
-              "application/json": {
-                schema: { type: "object", properties: { error: { type: "string" } } },
-              },
-            },
+            content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } },
           },
         },
       },
@@ -273,11 +206,7 @@ export const OPENAPI_SPEC = {
           },
           "400": {
             description: "Invalid input",
-            content: {
-              "application/json": {
-                schema: { type: "object", properties: { error: { type: "string" } } },
-              },
-            },
+            content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } },
           },
         },
       },
@@ -312,9 +241,7 @@ export const OPENAPI_SPEC = {
           },
           "400": {
             description: "Invalid input",
-            content: {
-              "application/json": { schema: { type: "object", properties: { error: { type: "string" } } } },
-            },
+            content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } },
           },
         },
       },
@@ -338,5 +265,5 @@ export const OPENAPI_SPEC = {
         },
       },
     },
-  },
-} as const;
+  } as const;
+}

@@ -13,8 +13,8 @@ describe("deps-dev source", () => {
   it("sets enriched package count based on successful lookups", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ ok: true })
-      .mockResolvedValueOnce({ ok: false });
+      .mockResolvedValueOnce({ ok: true, status: 200, text: async () => "{}" })
+      .mockResolvedValueOnce({ ok: false, status: 404, text: async () => "{}" });
     globalThis.fetch = fetchMock as any;
 
     const details: CveDetails = {

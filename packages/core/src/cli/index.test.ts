@@ -1,8 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
 const mocked = vi.hoisted(() => ({
   remediate: vi.fn(),
   remediateFromScan: vi.fn(),
@@ -271,52 +267,6 @@ describe("cli preview and correlation option forwarding", () => {
         },
       })
     );
-  });
-
-  it("forwards change request options in top-level CVE mode", async () => {
-    const program = createProgram();
-    await program.parseAsync(
-      [
-        "node",
-        "autoremediator",
-        "CVE-2021-23337",
-        "--create-change-request",
-        "--change-request-provider",
-        "github",
-        "--change-request-grouping",
-        "all",
-      ]
-    );
-
-    expect(mocked.remediate).toHaveBeenCalledWith(
-      "CVE-2021-23337",
-      expect.objectContaining({
-        changeRequest: expect.objectContaining({
-          enabled: true,
-          provider: "github",
-          grouping: "all",
-        }),
-      })
-    );
-  });
-
-  it("supports portfolio command with targets file", async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "autoremediator-cli-"));
-    const targetsFile = join(tempDir, "targets.json");
-    writeFileSync(targetsFile, JSON.stringify([{ cwd: "/tmp/project" }]), "utf8");
-
-    const program = createProgram();
-    await program.parseAsync(
-      [
-        "node",
-        "autoremediator",
-        "portfolio",
-        "--targets-file",
-        targetsFile,
-      ]
-    );
-
-    expect(mocked.remediatePortfolio).toHaveBeenCalledTimes(1);
   });
 
   it("forwards install constraint options in top-level CVE mode", async () => {

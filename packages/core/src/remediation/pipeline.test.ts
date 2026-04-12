@@ -34,7 +34,7 @@ vi.mock("../platform/config.js", () => ({
   getPatchConfidenceThreshold: mocked.getPatchConfidenceThreshold,
 }));
 
-vi.mock("../platform/package-manager.js", () => ({
+vi.mock("../platform/package-manager/index.js", () => ({
   detectPackageManager: mocked.detectPackageManager,
 }));
 
@@ -63,7 +63,7 @@ vi.mock("./tools/apply-version-bump.js", () => ({
   applyVersionBumpTool: { execute: mocked.applyVersionBumpExecute },
 }));
 
-vi.mock("./tools/apply-package-override.js", () => ({
+vi.mock("./tools/apply-package-override/index.js", () => ({
   applyPackageOverrideTool: { execute: mocked.applyPackageOverrideExecute },
 }));
 
@@ -71,11 +71,11 @@ vi.mock("./tools/fetch-package-source.js", () => ({
   fetchPackageSourceTool: { execute: mocked.fetchPackageSourceExecute },
 }));
 
-vi.mock("./tools/generate-patch.js", () => ({
+vi.mock("./tools/generate-patch/index.js", () => ({
   generatePatchTool: { execute: mocked.generatePatchExecute },
 }));
 
-vi.mock("./tools/apply-patch-file.js", () => ({
+vi.mock("./tools/apply-patch-file/index.js", () => ({
   applyPatchFileTool: { execute: mocked.applyPatchFileExecute },
 }));
 

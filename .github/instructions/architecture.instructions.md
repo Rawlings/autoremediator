@@ -113,7 +113,14 @@ When splitting files:
 - Preserve existing public exports and compatibility.
 - Add/update tests around extracted behavior.
 - Prefer feature-local helper files before introducing new cross-module dependencies.
-- Do not create new directories when a file-level extraction in the existing module is sufficient.
+- Prefer feature subdirectories when one concern grows to multiple collaborating files.
+
+Subdirectory guidance:
+
+- If a concern has 2+ files (for example parser + commands + types), place them under a feature folder with an `index.ts` entrypoint.
+- Use thin compatibility shims at old paths during migrations when needed to avoid broad import churn.
+- Keep each feature folder narrow in scope; do not create generic catch-all folders.
+- Avoid creating a subdirectory for a single helper file unless more files are expected in the same concern.
 
 ## Import Style
 

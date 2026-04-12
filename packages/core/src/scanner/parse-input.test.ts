@@ -10,7 +10,7 @@ vi.mock("execa", () => ({
   execa: mocked.execa,
 }));
 
-vi.mock("../platform/package-manager.js", () => ({
+vi.mock("../platform/package-manager/index.js", () => ({
   detectPackageManager: mocked.detectPackageManager,
   resolveAuditCommand: mocked.resolveAuditCommand,
 }));
