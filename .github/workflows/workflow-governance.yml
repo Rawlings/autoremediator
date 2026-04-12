@@ -1,0 +1,97 @@
+name: Workflow Governance
+
+on:
+  pull_request:
+    paths:
+      - action.yml
+      - .github/workflows/**
+      - .github/workflow-templates/**
+      - packages/docs/content/getting-started.md
+      - packages/docs/content/integrations.md
+      - README.md
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - action.yml
+      - .github/workflows/**
+      - .github/workflow-templates/**
+      - packages/docs/content/getting-started.md
+      - packages/docs/content/integrations.md
+      - README.md
+  workflow_dispatch:
+
+concurrency:
+  group: workflow-governance-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint-workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Lint workflows with actionlint
+        uses: reviewdog/action-actionlint@v1
+
+  enforce-stable-references:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Enforce stable reusable-workflow references
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if rg --line-number --no-heading "reusable-remediate-from-audit\.yml@main" \
+            .github/workflow-templates \
+            packages/docs/content/getting-started.md \
+            packages/docs/content/integrations.md \
+            README.md; then
+            echo "Found unstable @main reference for reusable workflow; use @v1 or a pinned SHA instead."
+            exit 1
+          fi
+
+  validate-templates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate workflow template metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for metadata in .github/workflow-templates/*.properties.json; do
+            [ -f "$metadata" ] || continue
+
+            workflow="${metadata%.properties.json}.yml"
+            if [ ! -f "$workflow" ]; then
+              echo "Missing workflow template for metadata file: $metadata"
+              exit 1
+            fi
+
+            jq -e '
+              .name | type == "string" and length > 0
+            ' "$metadata" >/dev/null
+
+            jq -e '
+              .description | type == "string" and length > 0
+            ' "$metadata" >/dev/null
+
+            jq -e '
+              .iconName | type == "string" and length > 0
+            ' "$metadata" >/dev/null
+
+            jq -e '
+              .categories | type == "array" and length > 0
+            ' "$metadata" >/dev/null
+          done

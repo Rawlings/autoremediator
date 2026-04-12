@@ -70,7 +70,7 @@ docker run --rm -v "$PWD:/workdir" ghcr.io/rawlings/autoremediator CVE-2021-2333
 
 | Use case | Recommended mode | Why |
 |---|---|---|
-| GitHub Actions CI (recommended) | `uses: rawlings/autoremediator@v1` | Zero boilerplate, works with pnpm/npm/yarn |
+| GitHub Actions CI (recommended) | reusable workflow or repo templates | Fast setup with audit mode, CI gating, and optional PR automation |
 | Urgent single CVE | direct CVE mode | Fast, focused remediation and clear operator feedback |
 | Non-mutating orchestration planning | `--preview` or `planRemediation()` | Evaluate intended remediation actions before mutation |
 | Nightly scanner automation | scan mode (`--input`) | Batch handling with deterministic CI summary |
@@ -89,18 +89,22 @@ Recent remediation reports can include:
 - human-readable fix explanations per package result
 - optional pull request / merge request creation metadata
 
-For GitHub Actions, the recommended approach is the Marketplace action:
+For GitHub Actions, the recommended approach is the reusable workflow or the copyable templates in this repository:
 
 ```yaml
-- uses: actions/checkout@v4
-- run: pnpm audit --json > audit.json || true  # or: npm audit / yarn audit
-- uses: rawlings/autoremediator@v1
-  with:
-    scan-file: audit.json
-    ci: 'true'
+jobs:
+  gate:
+    uses: rawlings/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v1
+    with:
+      audit: true
+      dry-run: true
+      ci: true
 ```
 
-Works with pnpm, npm, and yarn. See [Integrations](integrations.md) for all patterns.
+The reusable workflow runs audit mode by default and can also create a pull request for mutating remediation runs.
+By default it keeps the generated summary JSON in runner temp so CI artifacts and PR generation do not add that file to your repository diff.
+The workflow-template files under `.github/workflow-templates/` are copyable examples, not GitHub UI-discoverable starter workflows from this repository alone.
+See [Integrations](integrations.md) for the action-level path, reusable workflow inputs, and template scenarios.
 
 For full mode semantics, see [CLI Reference](cli.md) and [Integrations](integrations.md).
 

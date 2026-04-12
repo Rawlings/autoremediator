@@ -7,6 +7,8 @@ on:
       - master
     paths:
       - action.yml
+      - .github/workflows/reusable-remediate-from-audit.yml
+      - .github/workflow-templates/**
       - packages/core/package.json
   workflow_dispatch:
 

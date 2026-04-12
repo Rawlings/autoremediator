@@ -96,6 +96,21 @@ Patch lifecycle operations are exposed consistently:
 - SDK: `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`
 - MCP and OpenAPI: equivalent patch lifecycle operations
 
+GitHub Actions quick start:
+
+```yaml
+jobs:
+  gate:
+    uses: rawlings/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v1
+    with:
+      audit: true
+      dry-run: true
+      ci: true
+```
+
+The reusable workflow wraps the Marketplace action and supports optional PR creation plus summary artifact upload.
+For release tags, detailed input reference, and template variants, see the Integrations guide.
+
 ## Designed for agentic workflows
 
 Recommended orchestration flow:

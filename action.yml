@@ -15,12 +15,20 @@ inputs:
     description: >
       Path to scanner output file (npm audit --json, pnpm audit --json,
       yarn audit --json, or SARIF). Mutually exclusive with cve-id.
-      Required if cve-id is not set.
+      Mutually exclusive with audit. Required if cve-id and audit are not set.
     required: false
+  audit:
+    description: >
+      Run a package-manager-native audit command instead of reading scan-file.
+      Mutually exclusive with scan-file and cve-id. Uses npm directly and
+      enables Corepack shims for pnpm and yarn audit mode.
+    required: false
+    default: 'false'
   cve-id:
     description: >
       Single CVE ID to remediate directly (e.g. CVE-2021-23337).
-      Mutually exclusive with scan-file. Required if scan-file is not set.
+      Mutually exclusive with scan-file and audit. Required if scan-file and
+      audit are not set.
     required: false
   format:
     description: >
@@ -86,10 +94,43 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Validate action inputs
+      shell: bash
+      env:
+        INPUT_SCAN_FILE: ${{ inputs.scan-file }}
+        INPUT_AUDIT: ${{ inputs.audit }}
+        INPUT_CVE_ID: ${{ inputs.cve-id }}
+        INPUT_FORMAT: ${{ inputs.format }}
+      run: |
+        if [ -n "$INPUT_CVE_ID" ] && { [ -n "$INPUT_SCAN_FILE" ] || [ "$INPUT_AUDIT" = "true" ]; }; then
+          echo "cve-id is mutually exclusive with scan-file and audit."
+          exit 1
+        fi
+
+        if [ -n "$INPUT_SCAN_FILE" ] && [ "$INPUT_AUDIT" = "true" ]; then
+          echo "scan-file is mutually exclusive with audit."
+          exit 1
+        fi
+
+        if [ -z "$INPUT_CVE_ID" ] && [ -z "$INPUT_SCAN_FILE" ] && [ "$INPUT_AUDIT" != "true" ]; then
+          echo "Set one of cve-id, scan-file, or audit."
+          exit 1
+        fi
+
+        if [ "$INPUT_AUDIT" = "true" ] && [ "$INPUT_FORMAT" = "sarif" ]; then
+          echo "audit mode does not support sarif format."
+          exit 1
+        fi
+
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
+
+    - name: Enable Corepack shims for audit mode
+      if: ${{ inputs.audit == 'true' }}
+      shell: bash
+      run: corepack enable
 
     - name: Install autoremediator
       shell: bash
@@ -115,11 +156,12 @@ runs:
         [ -n "$INPUT_LLM_PROVIDER" ]       && ARGS+=("--llm-provider" "$INPUT_LLM_PROVIDER")
         autoremediator "${ARGS[@]}"
 
-    - name: Remediate from scan file
-      if: ${{ inputs.scan-file != '' }}
+    - name: Remediate from scan input or audit mode
+      if: ${{ inputs.scan-file != '' || inputs.audit == 'true' }}
       shell: bash
       env:
         INPUT_SCAN_FILE: ${{ inputs.scan-file }}
+        INPUT_AUDIT: ${{ inputs.audit }}
         INPUT_FORMAT: ${{ inputs.format }}
         INPUT_CWD: ${{ inputs.cwd }}
         INPUT_PKG_MANAGER: ${{ inputs.package-manager }}
@@ -130,7 +172,9 @@ runs:
         INPUT_POLICY: ${{ inputs.policy }}
         INPUT_LLM_PROVIDER: ${{ inputs.llm-provider }}
       run: |
-        ARGS=("scan" "--input" "$INPUT_SCAN_FILE" "--format" "$INPUT_FORMAT" "--cwd" "$INPUT_CWD")
+        ARGS=("scan" "--format" "$INPUT_FORMAT" "--cwd" "$INPUT_CWD")
+        [ -n "$INPUT_SCAN_FILE" ]           && ARGS+=("--input" "$INPUT_SCAN_FILE")
+        [ "$INPUT_AUDIT"      = "true" ]   && ARGS+=("--audit")
         [ -n "$INPUT_PKG_MANAGER" ]        && ARGS+=("--package-manager" "$INPUT_PKG_MANAGER")
         [ "$INPUT_DRY_RUN"    = "true" ]   && ARGS+=("--dry-run")
         [ "$INPUT_RUN_TESTS"  = "true" ]   && ARGS+=("--run-tests")

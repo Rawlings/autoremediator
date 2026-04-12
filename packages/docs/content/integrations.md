@@ -131,11 +131,25 @@ Works with **pnpm, npm, and yarn**. Run your package manager's audit first to pr
     format: yarn-audit
 ```
 
+The action also supports audit-driven execution directly:
+
+```yaml
+- uses: actions/checkout@v4
+- uses: rawlings/autoremediator@v1
+  with:
+    audit: 'true'
+    ci: 'true'
+```
+
+Audit mode uses `npm audit --json` directly and enables Corepack shims for `pnpm` and `yarn`.
+If your repository needs a specific `pnpm` or `yarn` version, set that up before calling the action or declare the package manager version in `package.json`.
+
 All scan-mode flags are available as inputs:
 
 | Input | Description | Default |
 |---|---|---|
 | `scan-file` | Path to scanner output file | — |
+| `audit` | Run package-manager-native audit instead of reading `scan-file` | `false` |
 | `cve-id` | Single CVE ID to remediate (instead of scan-file) | — |
 | `format` | `auto`, `npm-audit`, `yarn-audit`, `sarif` | `auto` |
 | `cwd` | Target project directory | `.` |
@@ -148,10 +162,131 @@ All scan-mode flags are available as inputs:
 | `llm-provider` | `remote`, `local` | `local` |
 | `node-version` | Node.js version (24+) | `24` |
 
+`scan-file`, `audit`, and `cve-id` are mutually exclusive.
+
+## GitHub Actions Reusable Workflow
+
+For repositories that want a Dependabot-like setup without copying several job steps, use the reusable workflow in this repository.
+It wraps the Marketplace action, runs audit mode by default, and can optionally create a pull request when changes are applied.
+
+```yaml
+name: autoremediator-gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  gate:
+    uses: rawlings/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v1
+    with:
+      audit: true
+      dry-run: true
+      ci: true
+```
+
+The reusable workflow exposes the same remediation inputs as the action plus workflow-only controls for:
+
+- `create-pull-request`
+- `pull-request-branch`
+- `pull-request-title`
+- `pull-request-commit-message`
+- `pull-request-body-header`
+- `upload-summary-artifact`
+- `summary-artifact-name`
+
+When `summary-file` is omitted, the reusable workflow writes the summary JSON into the runner temp directory so it can be uploaded or used for PR composition without being committed into the repository.
+
+Use a pinned commit SHA for strict reproducibility, or use the floating major tag (`@v1`) for convenient upgrades.
+
+## Starter Workflow Templates
+
+This repository now includes copyable workflow templates under `.github/workflow-templates/` for:
+
+- enforcement-only gating
+- nightly remediation pull requests
+- SARIF upload to GitHub code scanning
+
+These files are intended as copyable examples in this repository.
+They are not GitHub UI-discoverable starter workflows unless they are also published from a dedicated public `.github` template repository.
+
+## GitHub App Runtime (Production Mode)
+
+The `packages/github-app` runtime provides signed webhook intake, delivery idempotency, installation lifecycle state, installation token exchange, persistent queue execution, and optional scheduled orchestration.
+
+Environment variables:
+
+| Variable | Description | Required |
+|---|---|---|
+| `AUTOREMEDIATOR_GITHUB_APP_ID` | GitHub App ID | yes |
+| `AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY` | GitHub App private key (PEM) | yes |
+| `AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET` | Webhook signature secret | yes |
+| `AUTOREMEDIATOR_GITHUB_APP_PORT` | HTTP listen port (default `3001`) | no |
+| `AUTOREMEDIATOR_GITHUB_APP_DATA_DIR` | Optional persistent state directory for restart-safe dedupe and installation state | no |
+| `AUTOREMEDIATOR_GITHUB_APP_TRIGGER_TIMEOUT_MS` | Optional callback timeout in ms for remediation trigger handlers | no |
+| `AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION` | Enable built-in remediation adapter for `check_suite` and `workflow_dispatch` events | no |
+| `AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_CWD` | Project directory used by default remediation adapter | no |
+| `AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_DRY_RUN` | Dry-run mode for default remediation adapter (default `true`) | no |
+| `AUTOREMEDIATOR_GITHUB_APP_LOG_EVENT_TRACES` | Emit one JSON line per processed webhook event with status and reason | no |
+| `AUTOREMEDIATOR_GITHUB_APP_MAX_WEBHOOK_BODY_BYTES` | Maximum accepted webhook request body size in bytes (default `262144`) | no |
+| `AUTOREMEDIATOR_GITHUB_APP_REQUIRE_JSON_CONTENT_TYPE` | Require `application/json` content type for webhook requests (default `true`) | no |
+| `AUTOREMEDIATOR_GITHUB_APP_ALLOWED_EVENTS` | Comma-separated allowlist of accepted webhook event names | no |
+| `AUTOREMEDIATOR_GITHUB_APP_REQUIRE_DELIVERY_ID` | Require `x-github-delivery` header for webhook requests | no |
+| `AUTOREMEDIATOR_GITHUB_APP_ENABLE_JOB_QUEUE` | Enable queue-backed asynchronous remediation execution (default `true`) | no |
+| `AUTOREMEDIATOR_GITHUB_APP_QUEUE_POLL_INTERVAL_MS` | Job worker poll interval in milliseconds (default `2000`) | no |
+| `AUTOREMEDIATOR_GITHUB_APP_QUEUE_RETRY_DELAY_MS` | Delay before retrying failed jobs in milliseconds (default `15000`) | no |
+| `AUTOREMEDIATOR_GITHUB_APP_QUEUE_MAX_ATTEMPTS` | Maximum attempts per queued remediation job (default `3`) | no |
+| `AUTOREMEDIATOR_GITHUB_APP_WORKER_CONCURRENCY` | Maximum number of concurrent queue jobs (default `1`) | no |
+| `AUTOREMEDIATOR_GITHUB_APP_ENABLE_SCHEDULER` | Enable interval scheduler that enqueues `workflow_dispatch` jobs | no |
+| `AUTOREMEDIATOR_GITHUB_APP_SCHEDULE_INTERVAL_MS` | Scheduler interval in milliseconds (default `3600000`) | no |
+
+When `AUTOREMEDIATOR_GITHUB_APP_DATA_DIR` is set, webhook state and job queue state are persisted across restarts.
+When `AUTOREMEDIATOR_GITHUB_APP_DATA_DIR` is not set, runtime state and queue are in-memory only.
+When `AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION` is `true`, queued trigger jobs run `remediateFromScan` in audit mode.
+For jobs with an installation context, the app exchanges installation tokens through GitHub App authentication before invoking remediation callbacks.
+
+Webhook responses include an `x-request-id` header (propagated when provided by caller, otherwise generated).
+The `/health` endpoint includes in-memory runtime counters (`totalRequests`, `webhookRequests`, `handled`, `ignored`, `duplicate`, `rejected`) and grouped maps (`byEvent`, `byStatusCode`) for operational visibility.
+It also includes `latency.averageMs` and `latency.maxMs` derived from processed and rejected webhook requests.
+
+Local run commands:
+
+```bash
+pnpm build:github-app
+pnpm start:github-app
+```
+
+### Operator Runbook (Recommended Production Defaults)
+
+Use these defaults as a baseline for production rollout, then tune by repository size and runner capacity:
+
+```bash
+AUTOREMEDIATOR_GITHUB_APP_REQUIRE_JSON_CONTENT_TYPE=true
+AUTOREMEDIATOR_GITHUB_APP_REQUIRE_DELIVERY_ID=true
+AUTOREMEDIATOR_GITHUB_APP_MAX_WEBHOOK_BODY_BYTES=262144
+AUTOREMEDIATOR_GITHUB_APP_ENABLE_JOB_QUEUE=true
+AUTOREMEDIATOR_GITHUB_APP_QUEUE_POLL_INTERVAL_MS=2000
+AUTOREMEDIATOR_GITHUB_APP_QUEUE_RETRY_DELAY_MS=30000
+AUTOREMEDIATOR_GITHUB_APP_QUEUE_MAX_ATTEMPTS=4
+AUTOREMEDIATOR_GITHUB_APP_WORKER_CONCURRENCY=2
+AUTOREMEDIATOR_GITHUB_APP_ENABLE_SCHEDULER=false
+AUTOREMEDIATOR_GITHUB_APP_SCHEDULE_INTERVAL_MS=3600000
+AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION=false
+AUTOREMEDIATOR_GITHUB_APP_LOG_EVENT_TRACES=true
+```
+
+Rollout checklist:
+
+1. Set `AUTOREMEDIATOR_GITHUB_APP_DATA_DIR` to durable storage so webhook and queue state survive restarts.
+2. Start with `AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION=false` and wire a custom callback first.
+3. Keep `AUTOREMEDIATOR_GITHUB_APP_ENABLE_SCHEDULER=false` until webhook-triggered flow is stable.
+4. Monitor `/health` for webhook counters, latency, and queue depth/failed-job growth.
+5. Increase `AUTOREMEDIATOR_GITHUB_APP_WORKER_CONCURRENCY` only after repository test/install capacity is validated.
+
 ## GitHub Actions: Scheduled Auto-Remediation PRs
 
-Nightly remediation with automatic PR creation. The action handles Node.js and autoremediator installation —
-you only need the audit step and the PR creator.
+Nightly remediation with automatic PR creation can now be packaged through the reusable workflow.
 
 ```yaml
 name: autoremediator-nightly
@@ -163,25 +298,21 @@ on:
 
 jobs:
   remediate:
-    runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-      - run: pnpm audit --json > audit.json || true   # or: npm audit / yarn audit
-      - uses: rawlings/autoremediator@v1
-        with:
-          scan-file: audit.json
-          summary-file: autoremediator-summary.json
-      - uses: peter-evans/create-pull-request@v6
-        with:
-          branch: chore/autoremediator-nightly
-          commit-message: "chore: automated CVE remediation"
-          title: "chore: automated CVE remediation"
+    uses: rawlings/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v1
+    with:
+      audit: true
+      upload-summary-artifact: true
+      create-pull-request: true
+      pull-request-branch: chore/autoremediator-nightly
+      pull-request-title: "chore: automated CVE remediation"
+      pull-request-commit-message: "chore: automated CVE remediation"
 ```
 
-This works for npm and yarn too — substitute the audit command on the `run:` line and set `format: yarn-audit` if using yarn.
+This workflow-layer PR automation is distinct from autoremediator's native change-request capabilities.
+Use it when you want GitHub Actions-managed pull request creation without enabling provider-specific change-request logic in the runtime.
 
 The generated summary file includes aggregate fields such as `strategyCounts`, `dependencyScopeCounts`, and `unresolvedByReason`, which are useful for PR descriptions, dashboards, and CI policy checks.
 
@@ -199,16 +330,12 @@ on:
 
 jobs:
   gate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: pnpm audit --json > audit.json || true   # or: npm audit / yarn audit
-      - uses: rawlings/autoremediator@v1
-        with:
-          scan-file: audit.json
-          dry-run: 'true'
-          ci: 'true'
-          summary-file: summary.json
+    uses: rawlings/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v1
+    with:
+      audit: true
+      dry-run: true
+      ci: true
+      upload-summary-artifact: true
 ```
 
 The summary JSON is designed for automation consumption: `strategyCounts` shows which remediation path was used, `dependencyScopeCounts` distinguishes direct dependency work from transitive remediation, and `unresolvedByReason` lets CI react to specific failure classes without parsing human-readable messages.

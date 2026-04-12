@@ -1,0 +1,9 @@
+{
+  "name": "Autoremediator nightly remediation PR",
+  "description": "Scheduled dependency remediation with automatic pull request creation.",
+  "iconName": "shield",
+  "categories": [
+    "security",
+    "automation"
+  ]
+}

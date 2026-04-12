@@ -1,0 +1,20 @@
+name: autoremediator-nightly
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  remediate:
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: rawlings/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v1
+    with:
+      audit: true
+      upload-summary-artifact: true
+      create-pull-request: true
+      pull-request-branch: chore/autoremediator-nightly
+      pull-request-title: "chore: automated CVE remediation"
+      pull-request-commit-message: "chore: automated CVE remediation"

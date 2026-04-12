@@ -1,5 +1,14 @@
 # Changelog
 
+All notable changes to this project are documented in this file.
+
+## Unreleased
+
+### Added
+
+- Added GitHub workflow packaging for audit-driven setup, including action-level `audit` mode, a reusable remediation workflow with optional PR creation, and copyable workflow templates for enforcement gates, nightly remediation PRs, and SARIF upload.
+- Added workflow governance automation for GitHub delivery assets, including workflow linting, template metadata validation, stable reusable-workflow reference enforcement, and fixture-based smoke coverage for action and reusable-workflow paths.
+
 ## 0.9.0
 
 ### Added
@@ -23,48 +32,6 @@
 - Native scan audit mode now honors workspace-scoped execution for npm/pnpm when `workspace` constraints are provided.
 - Native scan audit mode parse failures now include command and exit-code context to improve debugging in CI and local runs.
 - Version-bump and override remediation now run a best-effort package-manager dedupe pass after successful apply/validation.
-
-## 0.8.0
-
-### Added
-
-- Added first-class patch lifecycle workflows across SDK, CLI, MCP, and OpenAPI with patch listing, inspection, and validation operations.
-- Added patch manifest sidecars (`.patch.json`) so patch artifacts can be inspected and validated as durable outputs.
-- Added `modelPersonality`, `providerSafetyProfile`, `requireConsensusForHighRisk`, `dynamicModelRouting`, and `dynamicRoutingThresholdChars` options for advanced model orchestration controls.
-- Added `llmUsage` telemetry on remediation reports and aggregate LLM telemetry fields (`llmUsageCount`, `estimatedCostUsd`, `totalLlmLatencyMs`) on scan/CI summary surfaces.
-- Added provider-aware orchestration prompt addendum support with non-mutating plan-first guidance.
-
-### Changed
-
-- Expanded patch-file remediation results with patch artifact metadata and phased validation details for better machine-readable automation.
-- Added CLI patch lifecycle commands: `autoremediator patches list`, `autoremediator patches inspect`, and `autoremediator patches validate`.
-- **Breaking:** public provider surface is now vendor-neutral: `llmProvider` uses `remote|local` instead of vendor-specific values.
-- **Breaking:** remote model wiring now uses generic adapter environment variables: `AUTOREMEDIATOR_REMOTE_CLIENT_MODULE`, `AUTOREMEDIATOR_REMOTE_CLIENT_FACTORY`, and `AUTOREMEDIATOR_REMOTE_API_KEY`.
-
-## 0.7.0
-
-### Changed
-
-- Improved consistency across SDK, CLI, MCP, and OpenAPI so shared options and report fields behave the same way across interfaces.
-- Expanded local-mode remediation behavior with deterministic-first execution and controlled patch fallback handling when safe upgrades are unavailable.
-- Improved single-CVE CLI parity with CI and SARIF workflows so `cve` mode aligns with scan-mode automation expectations.
-- Enhanced remediation reporting and evidence outputs with clearer aggregate summaries for strategy, dependency scope, unresolved reasons, and patch activity.
-
-## 0.6.0
-
-### Changed
-
-- This release turns autoremediator into a more complete remediation platform rather than a version-bump-only tool. It now handles direct upgrades, transitive dependency overrides or resolutions, and controlled patch fallback under one policy-driven workflow.
-- Reporting and governance were tightened across every surface. SDK, CLI, MCP, OpenAPI, and evidence outputs now expose clearer rollups for remediation strategy, dependency scope, unresolved reasons, patch activity, and replay or provenance context.
-- The public contract was cleaned up and aligned across touchpoints so the same concepts, option names, and summary fields behave consistently whether the tool is used in CI, through code, or from an agent or service integration.
-- Operational readiness improved with stronger fallback validation, better constraint enforcement, richer documentation, and a cleaner release path for the VS Code extension and CI-facing packaging flows.
-
-## 0.4.1
-
-### Changed
-
-- Updated project dependencies to latest compatible versions.
-- Updated supported Node.js runtime version requirements.
 
 ## 0.4.0
 

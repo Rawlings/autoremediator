@@ -323,6 +323,30 @@
 				"packages/core/src/intelligence/sources/alternative-packages.ts",
 				"packages/core/src/remediation/tools/check-reachability.ts"
 			]
+		},
+		{
+			"label": "github-app typecheck verify",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"--dir",
+				"packages/github-app",
+				"exec",
+				"tsc",
+				"--noEmit"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "github-app test verify",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"--dir",
+				"packages/github-app",
+				"test"
+			],
+			"isBackground": false
 		}
 	]
 }

@@ -1,0 +1,101 @@
+name: GitHub Integration Smoke
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - action.yml
+      - .github/workflows/reusable-remediate-from-audit.yml
+      - .github/workflow-templates/**
+      - .github/workflows/github-integration-smoke.yml
+      - .github/fixtures/**
+  pull_request:
+    paths:
+      - action.yml
+      - .github/workflows/reusable-remediate-from-audit.yml
+      - .github/workflow-templates/**
+      - .github/workflows/github-integration-smoke.yml
+      - .github/fixtures/**
+  workflow_dispatch:
+
+concurrency:
+  group: github-integration-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  reusable-workflow-smoke:
+    uses: ./.github/workflows/reusable-remediate-from-audit.yml
+    with:
+      scan-file: .github/fixtures/npm-audit-empty.json
+      audit: false
+      dry-run: true
+      ci: true
+
+  action-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run composite action in scan-file mode
+        uses: ./
+        with:
+          scan-file: .github/fixtures/npm-audit-empty.json
+          dry-run: 'true'
+          ci: 'true'
+
+      - name: Run composite action in single-CVE mode
+        uses: ./
+        with:
+          cve-id: CVE-2021-23337
+          dry-run: 'true'
+
+      - name: Verify input validation for mutually-exclusive modes
+        id: invalid-inputs
+        continue-on-error: true
+        uses: ./
+        with:
+          scan-file: .github/fixtures/npm-audit-empty.json
+          audit: 'true'
+
+      - name: Assert invalid input failure
+        if: ${{ steps.invalid-inputs.outcome != 'failure' }}
+        shell: bash
+        run: |
+          echo "Expected composite action to fail for scan-file + audit input combination."
+          exit 1
+
+      - name: Verify input validation for cve-id plus scan-file
+        id: invalid-cve-scan
+        continue-on-error: true
+        uses: ./
+        with:
+          cve-id: CVE-2021-23337
+          scan-file: .github/fixtures/npm-audit-empty.json
+
+      - name: Assert cve-id plus scan-file failure
+        if: ${{ steps.invalid-cve-scan.outcome != 'failure' }}
+        shell: bash
+        run: |
+          echo "Expected composite action to fail for cve-id + scan-file input combination."
+          exit 1
+
+      - name: Verify input validation for audit plus sarif format
+        id: invalid-audit-sarif
+        continue-on-error: true
+        uses: ./
+        with:
+          audit: 'true'
+          format: sarif
+
+      - name: Assert audit plus sarif failure
+        if: ${{ steps.invalid-audit-sarif.outcome != 'failure' }}
+        shell: bash
+        run: |
+          echo "Expected composite action to fail for audit + sarif input combination."
+          exit 1

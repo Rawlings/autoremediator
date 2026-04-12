@@ -1,0 +1,29 @@
+name: autoremediator-sarif
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 3 * * *"
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Enable Corepack shims
+        run: corepack enable
+      - name: Install autoremediator
+        run: npm install -g autoremediator@latest
+      - name: Run autoremediator in SARIF mode
+        run: autoremediator scan --audit --dry-run --output-format sarif > results.sarif
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif

@@ -44,6 +44,38 @@ Runtime source currently lives under packages/core/src with feature-first module
 - packages/core/src/api/
 - packages/core/src/cli/
 
+GitHub App foundation runtime for Phase 3 lives under packages/github-app/src:
+
+- packages/github-app/src/config.ts
+- packages/github-app/src/signature.ts
+- packages/github-app/src/events.ts
+- packages/github-app/src/server.ts
+
+GitHub App foundation environment variables:
+
+- AUTOREMEDIATOR_GITHUB_APP_ID
+- AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY
+- AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET
+- AUTOREMEDIATOR_GITHUB_APP_PORT (optional)
+- AUTOREMEDIATOR_GITHUB_APP_DATA_DIR (optional; enables restart-safe state)
+- AUTOREMEDIATOR_GITHUB_APP_TRIGGER_TIMEOUT_MS (optional)
+- AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION (optional)
+- AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_CWD (optional)
+- AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_DRY_RUN (optional)
+- AUTOREMEDIATOR_GITHUB_APP_LOG_EVENT_TRACES (optional)
+- AUTOREMEDIATOR_GITHUB_APP_MAX_WEBHOOK_BODY_BYTES (optional)
+- AUTOREMEDIATOR_GITHUB_APP_REQUIRE_JSON_CONTENT_TYPE (optional)
+- AUTOREMEDIATOR_GITHUB_APP_ALLOWED_EVENTS (optional)
+- AUTOREMEDIATOR_GITHUB_APP_REQUIRE_DELIVERY_ID (optional)
+
+GitHub App foundation local commands:
+
+- `pnpm build:github-app`
+- `pnpm start:github-app`
+
+GitHub App `/health` response includes runtime counters for handled/ignored/duplicate/rejected webhook requests.
+GitHub App webhook responses include `x-request-id` for request-level correlation.
+
 ## Documentation Layout
 
 - Root README.md is intentionally high-level.

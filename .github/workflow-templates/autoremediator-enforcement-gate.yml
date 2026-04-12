@@ -1,0 +1,15 @@
+name: autoremediator-gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  gate:
+    uses: rawlings/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v1
+    with:
+      audit: true
+      dry-run: true
+      ci: true
+      upload-summary-artifact: true
