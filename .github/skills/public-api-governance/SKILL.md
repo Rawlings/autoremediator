@@ -39,10 +39,12 @@ This skill does not govern remediation pipeline step order or internal tool algo
 
 ## Extensibility Rules
 
-- Prefer bounded domain grouping before adding many new root fields.
-- Add fields only when the concept is user-visible and stable enough to document.
-- Avoid synonym growth for already-canonical concepts.
-- Any new field must be introduced with exact naming parity in SDK, CLI, MCP, OpenAPI, and docs in the same change set.
+- **Group before you grow.** Related options must be grouped under a domain object (`changeRequest`, `constraints`, `provenance`) rather than added as new root fields. A flat root field is only acceptable for a standalone concept with no plausible siblings.
+- **Name the concept, not the implementation.** Use the term the underlying API or protocol uses when it already exists (e.g., `head`/`base` from GitHub's PR API, not `headBranch`/`baseBranch`). Do not invent synonyms for established terms.
+- **Stable enough to document.** Add a field only when the concept is user-visible, fully named, and ready to appear in docs unchanged.
+- **No synonym growth.** If a canonical field name exists, all surfaces must use it. Do not introduce aliased or abbreviated versions.
+- **Parity in the same changeset.** Any new field must be introduced with exact naming parity across SDK, CLI, MCP, OpenAPI, and docs in one atomic change. Partial rollout is a governance defect.
+- **Think one version ahead.** Before finalizing a name, ask whether it can accommodate the next likely extension without a rename. If it cannot, find a better name now.
 
 ## Required Update Set
 

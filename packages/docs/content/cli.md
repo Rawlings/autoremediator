@@ -33,6 +33,7 @@ Equivalent explicit subcommands:
 ```bash
 autoremediator cve CVE-2021-23337
 autoremediator scan --input ./audit.json --format npm-audit
+autoremediator portfolio --targets-file ./targets.json
 autoremediator patches list
 autoremediator patches inspect ./patches/lodash+4.17.0.patch
 autoremediator patches validate ./patches/lodash+4.17.0.patch
@@ -77,6 +78,13 @@ When to use which mode:
 | `--install-prefer-offline <true|false>` | force prefer-offline flag behavior | useful for cache-heavy CI or when diagnosing stale cache issues |
 | `--enforce-frozen-lockfile <true|false>` | force lockfile-strict install behavior | controls whether install steps must preserve lockfile determinism |
 | `--workspace <name>` | workspace/package selector for scoped monorepo remediation | limits install/list/test operations to a target workspace when supported |
+| `--create-change-request` | open a native pull request / merge request after remediation | turns successful mutation runs into reviewable branches automatically |
+| `--change-request-provider <github|gitlab>` | VCS provider for PR/MR creation | selects the remote API used for branch promotion |
+| `--change-request-grouping <all|per-cve|per-package>` | grouping strategy for scan and portfolio change requests | supports one batched change, one per CVE, or package-based grouping plans |
+| `--change-request-repository <slug>` | override repo slug used for remote API calls | useful when git remote parsing is not enough |
+| `--change-request-base-branch <branch>` | base branch for PR/MR targeting | supports release branches and protected default branches |
+| `--change-request-branch-prefix <prefix>` | prefix for generated remediation branches | aligns branch naming with org conventions |
+| `--change-request-title-prefix <prefix>` | prefix for generated PR/MR titles | keeps automated reviews recognizable in queue views |
 | `--json` | machine-readable output | simplifies CI parsing and SIEM ingestion |
 
 ## Scan Mode Options
@@ -101,6 +109,16 @@ Available commands:
 - `autoremediator patches list`
 - `autoremediator patches inspect <patch-file>`
 - `autoremediator patches validate <patch-file>`
+- `autoremediator portfolio --targets-file ./targets.json`
+
+Portfolio target files are JSON arrays. Each element provides a `cwd` and either `cveId` or `inputPath`/`audit`:
+
+```json
+[
+	{ "cwd": "./services/api", "cveId": "CVE-2021-23337" },
+	{ "cwd": "./services/web", "inputPath": "./audit.json", "format": "npm-audit" }
+]
+```
 
 Examples:
 
@@ -128,6 +146,16 @@ Pairing recommendations:
 
 - `--ci --summary-file ./summary.json` for machine-consumed gate results
 - `--ci --dry-run` for pre-merge guardrails that do not mutate dependencies
+
+## Review-Ready Automation
+
+When change-request flags are provided on mutating runs, autoremediator can:
+
+- create remediation branches locally
+- push them to GitHub or GitLab remotes
+- open pull requests / merge requests when the corresponding API token is available
+
+Grouped scan runs use isolated worktrees for `per-cve` and `per-package` grouping so the base checkout stays clean.
 
 ## Dry-Run Semantics
 

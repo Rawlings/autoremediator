@@ -1,6 +1,6 @@
 # autoremediator
 
-> Agentic CVE remediation for Node.js projects — MCP tool server, OpenAPI HTTP API, CLI, and patch lifecycle workflows.
+> Agentic CVE remediation for Node.js projects — MCP tool server, OpenAPI HTTP API, CLI, patch lifecycle workflows, portfolio orchestration, and native review creation.
 
 ## What it does
 
@@ -27,6 +27,7 @@ import {
 	inspectPatchArtifact,
 	listPatchArtifacts,
 	remediate,
+	remediatePortfolio,
 	remediateFromScan,
 	validatePatchArtifact,
 } from "autoremediator";
@@ -36,6 +37,10 @@ const report = await remediate("CVE-2021-23337", { cwd: "/my/project" });
 
 // From scanner output
 const scanReport = await remediateFromScan("./npm-audit.json", { cwd: "/my/project" });
+
+const portfolioReport = await remediatePortfolio({
+	targets: [{ cwd: "/my/project", cveId: "CVE-2021-23337" }],
+});
 
 const patches = await listPatchArtifacts({ cwd: "/my/project" });
 const inspection = await inspectPatchArtifact("./patches/lodash+4.17.0.patch", { cwd: "/my/project" });
@@ -47,6 +52,7 @@ const validation = await validatePatchArtifact("./patches/lodash+4.17.0.patch", 
 ```
 autoremediator CVE-2021-23337 --cwd ./my-project [--dry-run] [--llm-provider local]
 autoremediator ./npm-audit.json --cwd ./my-project --ci
+autoremediator portfolio --targets-file ./targets.json
 autoremediator patches list --cwd ./my-project
 autoremediator patches inspect ./my-project/patches/lodash+4.17.0.patch
 autoremediator patches validate ./my-project/patches/lodash+4.17.0.patch
@@ -58,7 +64,7 @@ autoremediator patches validate ./my-project/patches/lodash+4.17.0.patch
 autoremediator-mcp   # stdio transport — register with any MCP host
 ```
 
-Available MCP tools: `remediate`, `planRemediation`, `remediateFromScan`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`
+Available MCP tools: `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`
 
 ## Tools (agent / MCP)
 

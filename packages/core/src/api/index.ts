@@ -5,8 +5,6 @@
  *   import { remediate } from 'autoremediator';
  *   const report = await remediate('CVE-2021-23337', { cwd: '/my/project' });
  */
-export { runRemediationPipeline } from "../remediation/pipeline.js";
-
 export type {
   CorrelationContext,
   LlmUsageMetrics,

@@ -6,6 +6,9 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- Added portfolio remediation public operation support across surfaces, including SDK `remediatePortfolio`, CLI `portfolio` command wiring, and MCP/OpenAPI parity.
+- Added change-request enhancements for grouped scan execution and portfolio-level change-request aggregation. Pull request and merge request creation uses the `gh` (GitHub CLI) and `glab` (GitLab CLI) tools, so those CLIs must be available in the execution environment when change request creation is enabled.
+- Added remediation report enrichments for reachability assessment and fix explanation fields.
 - Added new high-risk consensus controls across SDK, CLI, MCP, and OpenAPI: `consensusProvider` and `consensusModel`.
 - Added per-risk patch confidence override support through `patchConfidenceThresholds` (`low`, `medium`, `high`).
 - Added install behavior constraints (`installMode`, `installPreferOffline`, `enforceFrozenLockfile`) to give consumers explicit control over remediation apply/rollback install commands.

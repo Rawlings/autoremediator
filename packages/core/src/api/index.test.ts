@@ -13,10 +13,8 @@ const mocked = vi.hoisted(() => ({
   writeEvidenceLog: vi.fn(),
   readIdempotentReport: vi.fn(),
   storeIdempotentReport: vi.fn(),
-}));
-
-vi.mock("../remediation/pipeline.js", () => ({
-  runRemediationPipeline: mocked.runRemediationPipeline,
+  findAlternativePackages: vi.fn(),
+  assessPackageReachability: vi.fn(),
 }));
 
 vi.mock("../scanner/index.js", () => ({
@@ -42,7 +40,20 @@ vi.mock("../platform/idempotency.js", () => ({
   storeIdempotentReport: mocked.storeIdempotentReport,
 }));
 
-import { planRemediation, remediate, remediateFromScan, toCiSummary } from "./index.js";
+vi.mock("../intelligence/index.js", () => ({
+  findAlternativePackages: mocked.findAlternativePackages,
+}));
+
+vi.mock("../remediation/pipeline.js", async () => {
+  const actual = await vi.importActual<typeof import("../remediation/pipeline.js")>("../remediation/pipeline.js");
+  return {
+    ...actual,
+    runRemediationPipeline: mocked.runRemediationPipeline,
+    assessPackageReachability: mocked.assessPackageReachability,
+  };
+});
+
+import { planRemediation, remediate, remediateFromScan, remediatePortfolio, toCiSummary } from "./index.js";
 
 describe("api preview and correlation behavior", () => {
   beforeEach(() => {
@@ -66,6 +77,13 @@ describe("api preview and correlation behavior", () => {
     });
     mocked.writeEvidenceLog.mockReturnValue("/tmp/project/.autoremediator/evidence/run-1.json");
     mocked.readIdempotentReport.mockReturnValue(undefined);
+    mocked.findAlternativePackages.mockResolvedValue([]);
+    mocked.assessPackageReachability.mockReturnValue({
+      packageName: "minimist",
+      status: "reachable",
+      reason: "Found import",
+      evidence: [{ filePath: "src/index.ts", matchType: "import" }],
+    });
   });
 
   it("planRemediation forces preview and dryRun even when disabled in options", async () => {
@@ -237,6 +255,61 @@ describe("api preview and correlation behavior", () => {
       "CVE-2021-23337",
       expect.objectContaining({ resumedFromCache: false })
     );
+  });
+
+  it("adds reachability and fix explanation fields to remediation results", async () => {
+    mocked.runRemediationPipeline.mockResolvedValue({
+      cveId: "CVE-2021-23337",
+      cveDetails: { severity: "HIGH", summary: "Prototype pollution" },
+      vulnerablePackages: [],
+      results: [
+        {
+          packageName: "minimist",
+          strategy: "none",
+          fromVersion: "1.2.0",
+          applied: false,
+          dryRun: false,
+          unresolvedReason: "no-safe-version",
+          message: "no fix",
+        },
+      ],
+      agentSteps: 1,
+      summary: "done",
+    });
+    mocked.findAlternativePackages.mockResolvedValue([
+      {
+        packageName: "mri",
+        reason: "search result",
+        confidence: 0.71,
+        source: "npm-search",
+      },
+    ]);
+
+    const report = await remediate("CVE-2021-23337", { cwd: "/tmp/project", evidence: false });
+
+    expect(report.results[0]?.reachability?.status).toBe("reachable");
+    expect(report.results[0]?.fixExplanation?.summary).toContain("No automated safe remediation");
+    expect(report.results[0]?.alternativeSuggestions?.[0]?.packageName).toBe("mri");
+  });
+
+  it("runs portfolio remediation across target repositories", async () => {
+    mocked.runRemediationPipeline.mockResolvedValue({
+      cveId: "CVE-2021-23337",
+      cveDetails: null,
+      vulnerablePackages: [],
+      results: [],
+      agentSteps: 1,
+      summary: "done",
+    });
+
+    const report = await remediatePortfolio({
+      targets: [{ cwd: "/tmp/project-a", cveId: "CVE-2021-23337" }],
+      evidence: false,
+    });
+
+    expect(report.targets).toHaveLength(1);
+    expect(report.status).toBe("ok");
+    expect(report.successCount).toBe(1);
   });
 
   it("passes constraints to pipeline without post-hoc result rewrites", async () => {

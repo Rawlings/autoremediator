@@ -21,6 +21,7 @@ import type {
 import { runLocalRemediationPipeline } from "./local/index.js";
 import { loadOrchestrationPrompt } from "./orchestration-prompt.js";
 import { buildRuntimeTools } from "./runtime-tools.js";
+import { accumulateStepResults } from "./strategies/pipeline-telemetry.js";
 import { checkInventoryTool } from "./tools/check-inventory.js";
 
 export async function runRemediationPipeline(
@@ -76,8 +77,8 @@ export async function runRemediationPipeline(
     constraints,
   });
 
-  const collectedResults: PatchResult[] = [];
-  const vulnerablePackages: VulnerablePackage[] = [];
+  let collectedResults: PatchResult[] = [];
+  let vulnerablePackages: VulnerablePackage[] = [];
   let cveDetails: CveDetails | null = null;
   let agentSteps = 0;
 
@@ -160,103 +161,16 @@ export async function runRemediationPipeline(
         result?: unknown;
       }>;
 
-      for (const tr of toolResults) {
-        const toolResult = tr.result as Record<string, unknown> | undefined;
-
-        if (tr.toolName === "lookup-cve" && toolResult?.data) {
-          cveDetails = toolResult.data as CveDetails;
-        }
-
-        if (tr.toolName === "check-version-match" && toolResult?.vulnerablePackages) {
-          vulnerablePackages.push(...(toolResult.vulnerablePackages as VulnerablePackage[]));
-        }
-
-        if (tr.toolName === "apply-version-bump") {
-          const typed = toolResult as unknown as PatchResult;
-          collectedResults.push({
-            ...typed,
-            dependencyScope: typed.packageName ? getDependencyScope(typed.packageName) : typed.dependencyScope,
-          });
-        }
-
-        if (tr.toolName === "apply-package-override") {
-          const typed = toolResult as unknown as PatchResult;
-          collectedResults.push({
-            ...typed,
-            dependencyScope: typed.packageName ? getDependencyScope(typed.packageName) : typed.dependencyScope,
-          });
-        }
-
-        if (tr.toolName === "apply-patch-file" && toolResult) {
-          const validation = toolResult.validation as
-            | { passed?: boolean; error?: string }
-            | undefined;
-          const message =
-            typeof toolResult.message === "string"
-              ? toolResult.message
-              : typeof toolResult.error === "string"
-                ? toolResult.error
-                : "Patch-file strategy finished.";
-
-          collectedResults.push({
-            packageName:
-              typeof toolResult.packageName === "string"
-                ? toolResult.packageName
-                : "unknown-package",
-            strategy: "patch-file",
-            fromVersion:
-              typeof toolResult.vulnerableVersion === "string"
-                ? toolResult.vulnerableVersion
-                : "unknown",
-            patchFilePath:
-              typeof toolResult.patchFilePath === "string"
-                ? toolResult.patchFilePath
-                : typeof toolResult.patchPath === "string"
-                  ? toolResult.patchPath
-                  : undefined,
-            patchArtifact:
-              typeof toolResult.patchArtifact === "object" && toolResult.patchArtifact !== null
-                ? (toolResult.patchArtifact as PatchResult["patchArtifact"])
-                : undefined,
-            applied: Boolean(toolResult.applied),
-            dryRun: Boolean(toolResult.dryRun),
-            dependencyScope:
-              typeof toolResult.packageName === "string"
-                ? getDependencyScope(toolResult.packageName)
-                : undefined,
-            confidence:
-              typeof toolResult.patchArtifact === "object" &&
-              toolResult.patchArtifact !== null &&
-              typeof (toolResult.patchArtifact as Record<string, unknown>).confidence === "number"
-                ? ((toolResult.patchArtifact as Record<string, unknown>).confidence as number)
-                : undefined,
-            riskLevel:
-              typeof toolResult.patchArtifact === "object" &&
-              toolResult.patchArtifact !== null &&
-              typeof (toolResult.patchArtifact as Record<string, unknown>).riskLevel === "string"
-                ? ((toolResult.patchArtifact as Record<string, unknown>).riskLevel as PatchResult["riskLevel"])
-                : undefined,
-            unresolvedReason:
-              !Boolean(toolResult.applied) && !Boolean(toolResult.dryRun)
-                ? validation && validation.passed === false
-                  ? "patch-validation-failed"
-                  : "patch-apply-failed"
-                : undefined,
-            message,
-            validation:
-              validation && typeof validation.passed === "boolean"
-                ? {
-                    passed: validation.passed,
-                    error: typeof validation.error === "string" ? validation.error : undefined,
-                  }
-                : undefined,
-            validationPhases:
-              Array.isArray(toolResult.validationPhases)
-                ? (toolResult.validationPhases as PatchResult["validationPhases"])
-                : undefined,
-          });
-        }
-      }
+      const aggregation = accumulateStepResults({
+        toolResults,
+        cveDetails,
+        vulnerablePackages,
+        collectedResults,
+        getDependencyScope,
+      });
+      cveDetails = aggregation.cveDetails;
+      vulnerablePackages = aggregation.vulnerablePackages;
+      collectedResults = aggregation.collectedResults;
 
       emitProgress("agent-step", `Completed agent step ${agentSteps} with ${toolResults.length} tool result(s).`, {
         provider,

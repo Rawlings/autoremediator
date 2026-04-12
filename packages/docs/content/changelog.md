@@ -4,8 +4,14 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## 0.9.0
+
 ### Added
 
+- Native GitHub/GitLab pull request and merge request creation controls with grouped scan workflows (`all`, `per-cve`, `per-package`).
+- Portfolio remediation across multiple repository roots through `remediatePortfolio` and the `portfolio` CLI command.
+- Heuristic reachability analysis and human-readable fix explanations on remediation results.
+- Alternative package suggestions for no-safe-version outcomes.
 - Aggregate dependency-scope reporting via `dependencyScopeCounts` across SDK, CLI summaries, OpenAPI responses, and documentation.
 - Evidence log summary rollups for strategy counts, dependency scope counts, unresolved reasons, patch validation failures, and patch output location.
 - Root packaging shortcuts for the VS Code extension via `pnpm build:vsix` and `pnpm extension:package`.

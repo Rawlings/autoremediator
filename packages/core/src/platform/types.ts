@@ -187,6 +187,108 @@ export type DependencyScopeCounts = Partial<Record<DependencyScope, number>>;
 
 export type UnresolvedReasonCounts = Partial<Record<UnresolvedReason, number>>;
 
+export interface ReachabilityEvidence {
+  filePath: string;
+  matchType: "import" | "require" | "dynamic-import" | "manifest";
+}
+
+export interface ReachabilityAssessment {
+  packageName: string;
+  status: "reachable" | "not-reachable" | "unknown";
+  reason: string;
+  evidence?: ReachabilityEvidence[];
+}
+
+export interface AlternativePackageSuggestion {
+  packageName: string;
+  reason: string;
+  confidence: number;
+  source: "npm-search";
+  npmUrl?: string;
+  description?: string;
+}
+
+export interface FixExplanation {
+  title: string;
+  summary: string;
+  riskSummary?: string;
+  reachabilitySummary?: string;
+  recommendedAction?: string;
+}
+
+export type ChangeRequestProvider = "github" | "gitlab";
+
+export type ChangeRequestGrouping = "all" | "per-cve" | "per-package";
+
+export interface ChangeRequestOptions {
+  enabled?: boolean;
+  provider: ChangeRequestProvider;
+  grouping?: ChangeRequestGrouping;
+  repository?: string;
+  baseBranch?: string;
+  branchPrefix?: string;
+  titlePrefix?: string;
+  bodyFooter?: string;
+  draft?: boolean;
+  pushRemote?: string;
+  tokenEnvVar?: string;
+}
+
+export interface ChangeRequestResult {
+  provider: ChangeRequestProvider;
+  grouping: ChangeRequestGrouping;
+  repository?: string;
+  branchName: string;
+  title: string;
+  body: string;
+  created: boolean;
+  draft?: boolean;
+  url?: string;
+  cveIds: string[];
+  packageNames: string[];
+  error?: string;
+}
+
+export interface PortfolioTarget {
+  cwd: string;
+  label?: string;
+  cveId?: string;
+  inputPath?: string;
+  format?: "auto" | "npm-audit" | "yarn-audit" | "sarif";
+  audit?: boolean;
+}
+
+export interface PortfolioTargetResult {
+  target: PortfolioTarget;
+  status: "ok" | "partial" | "failed";
+  remediationReport?: RemediationReport;
+  scanReport?: ScanReportLike;
+  error?: string;
+  changeRequests?: ChangeRequestResult[];
+}
+
+export interface PortfolioReport {
+  schemaVersion: "1.0";
+  status: "ok" | "partial" | "failed";
+  generatedAt: string;
+  targets: PortfolioTargetResult[];
+  successCount: number;
+  failedCount: number;
+  changeRequests?: ChangeRequestResult[];
+  correlation?: CorrelationContext;
+  provenance?: ProvenanceContext;
+  constraints?: RemediationConstraints;
+}
+
+export interface ScanReportLike {
+  schemaVersion: "1.0";
+  status: "ok" | "partial" | "failed";
+  generatedAt: string;
+  cveIds: string[];
+  successCount: number;
+  failedCount: number;
+}
+
 export interface PatchResult {
   packageName: string;
   strategy: PatchStrategy;
@@ -201,6 +303,9 @@ export interface PatchResult {
   confidence?: number;
   riskLevel?: PatchRiskLevel;
   unresolvedReason?: UnresolvedReason;
+  reachability?: ReachabilityAssessment;
+  alternativeSuggestions?: AlternativePackageSuggestion[];
+  fixExplanation?: FixExplanation;
   validation?: {
     passed: boolean;
     error?: string;
@@ -305,6 +410,8 @@ export interface RemediateOptions extends CorrelationContext {
   source?: "cli" | "sdk" | "mcp" | "openapi" | "unknown";
   /** Optional orchestration constraints for result enforcement. */
   constraints?: RemediationConstraints;
+  /** Optional native pull request / merge request creation controls. */
+  changeRequest?: ChangeRequestOptions;
 }
 
 /** Final report returned by the remediation pipeline */
@@ -321,4 +428,5 @@ export interface RemediationReport {
   constraints?: RemediationConstraints;
   resumedFromCache?: boolean;
   llmUsage?: LlmUsageMetrics[];
+  changeRequests?: ChangeRequestResult[];
 }

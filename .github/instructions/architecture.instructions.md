@@ -15,6 +15,8 @@ The source tree is organized into feature-first modules. Each module has a singl
 | `packages/core/src/intelligence/` | CVE data acquisition and enrichment from external sources        |
 | `packages/core/src/scanner/`      | Scanner output parsing and CVE extraction                        |
 | `packages/core/src/remediation/`  | Remediation pipeline, AI tool implementations, patch utilities   |
+| `packages/core/src/detection/`    | [reserved — no implementation; routing anchor only]              |
+| `packages/core/src/exposure/`     | [reserved — no implementation; routing anchor only]              |
 | `packages/core/src/mcp/`          | MCP server — exposes tools to LLM hosts                          |
 | `packages/core/src/openapi/`      | OpenAPI / HTTP server surface                                    |
 | `packages/core/src/api/`          | Public SDK surface (index.ts + focused modules)                 |
@@ -28,6 +30,8 @@ Keep this module split stable. New capabilities should usually extend an existin
 - `intelligence/` imports from `platform/` only.
 - `scanner/` imports from `platform/` only.
 - `remediation/` imports from `platform/`, `intelligence/`, and `scanner/`.
+- `detection/` [reserved — no implementation; routing anchor only].
+- `exposure/` [reserved — no implementation; routing anchor only].
 - `api/index.ts` and `cli/index.ts` import from `remediation/` and `scanner/` barrels.
 - `mcp/` and `openapi/` import from `api/index.ts` only.
 - Entrypoint index.ts files should be thin export surfaces; move orchestration logic into dedicated modules.
@@ -60,6 +64,17 @@ Valid rationale examples:
 
 - Existing file already handles unrelated concerns and would become multi-domain if extended.
 - Refactor would create forbidden dependency direction or circular imports.
+
+## External Service Dependencies
+
+When calling any external HTTP service (GitHub, GitLab, npm registry, osv.dev, etc.):
+
+1. Check whether an official or widely-adopted npm SDK exists first (e.g., `@octokit/rest` for GitHub, `@gitbeaker/rest` for GitLab).
+2. Prefer the SDK. Do not implement authentication headers, request building, response parsing, or pagination by hand when an SDK handles it.
+3. Shelling out to a CLI tool (`gh`, `glab`, `curl`) is only acceptable when no npm SDK exists and the CLI is a documented first-class interface for the operation.
+4. Raw `fetch` against a JSON API is only acceptable for simple, narrow, one-off lookups where no SDK exists and the surface is stable (e.g., a read-only registry metadata endpoint).
+
+Violating this rule by reimplementing SDK functionality via raw fetch or subprocess is an architectural defect and must be fixed before merging.
 
 ## File Placement Rules
 

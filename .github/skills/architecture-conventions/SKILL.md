@@ -44,6 +44,8 @@ packages/core/src/
     adapters/     ← per-format adapters (npm-audit, yarn-audit, sarif)
   remediation/    ← patching pipeline, tool implementations, patch utilities
     tools/        ← individual AI tool definitions (lookup-cve, apply-version-bump, …)
+  detection/      ← [reserved — no implementation; routing anchor only]
+  exposure/       ← [reserved — no implementation; routing anchor only]
   mcp/            ← Model Context Protocol server surface
   openapi/        ← OpenAPI / HTTP server surface
   api/            ← public SDK surface (index.ts thin export surface + focused modules)
@@ -71,6 +73,17 @@ packages/core/src/
 - `mcp/` and `openapi/` import only from `api/index.ts`.
 - Never import from `dist/` at runtime.
 
+## External Service Dependency Guardrail
+
+Before calling any external HTTP API:
+
+1. Check npm for an official or widely-adopted SDK (e.g., `@octokit/rest` for GitHub, `@gitbeaker/rest` for GitLab).
+2. If one exists, use it. Do not reimplement auth, request building, or response parsing by hand.
+3. Shelling out to a CLI binary is only acceptable when no npm SDK exists and the binary is a documented first-class interface.
+4. Raw `fetch` is only acceptable for narrow, read-only, stable endpoints with no SDK coverage.
+
+Reimplementing SDK behavior via raw `fetch` or subprocess is an architectural defect.
+
 ## Verification Checklist
 
 - New file is placed in the module that matches its single responsibility.
@@ -78,3 +91,4 @@ packages/core/src/
 - No circular dependencies introduced (use `tsc --noEmit` to verify).
 - Barrel `index.ts` updated if the new export is part of the public module surface.
 - Import paths use `.js` extension (ESM Node.js requirement).
+- Reserved modules (`detection/`, `exposure/`) contain no implementation files and carry the marker `[reserved — no implementation; routing anchor only]`.

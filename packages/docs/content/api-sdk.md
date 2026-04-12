@@ -16,6 +16,7 @@ Related references:
 - `remediate(cveId, options?)`
 - `planRemediation(cveId, options?)`
 - `remediateFromScan(inputPath, options?)`
+- `remediatePortfolio(options)`
 - `listPatchArtifacts(options?)`
 - `inspectPatchArtifact(patchFilePath, options?)`
 - `validatePatchArtifact(patchFilePath, options?)`
@@ -24,6 +25,7 @@ Related references:
 
 New integrations should use `remediate`, `planRemediation`, and `remediateFromScan`.
 Patch-heavy integrations should also use the patch lifecycle functions when they need to reuse or verify generated patch artifacts.
+Multi-repository automation can use `remediatePortfolio` when one controller needs to fan remediation across many repository roots.
 
 ## Function Reference
 
@@ -43,6 +45,8 @@ Why: best for scheduled CI and batch remediation operations.
 
 How: normalizes scanner findings, deduplicates CVEs, and delegates each CVE to the remediation pipeline.
 
+Grouped change-request creation is available through `options.changeRequest` when you want scan runs to open one batched change request, one per CVE, or one planned group per package.
+
 ### `planRemediation(cveId, options?)`
 
 What: runs a non-mutating remediation preview for a single CVE.
@@ -50,6 +54,14 @@ What: runs a non-mutating remediation preview for a single CVE.
 Why: best for agent orchestration systems that need to inspect intended actions before allowing write operations.
 
 How: forces preview semantics and returns a standard remediation report shape with dry-run outcomes.
+
+### `remediatePortfolio(options)`
+
+What: runs direct-CVE or scan-based remediation across multiple repository targets.
+
+Why: best for platform teams that coordinate many services from one scheduler or control plane.
+
+How: accepts a `targets` array where each target provides a `cwd` and either `cveId` or `inputPath`/`audit` metadata, then aggregates per-target outcomes into one portfolio report.
 
 ### `toCiSummary(scanReport)`
 
@@ -96,8 +108,16 @@ Core options:
 - `policy`: path to `.autoremediator.json`
 - `evidence`: enable/disable evidence artifact writing for direct and scan workflows
 - `patchesDir`: patch output/apply location when fallback patching is used
+- `changeRequest`: optional native pull request / merge request creation controls (`provider`, `grouping`, branch naming, repository override)
 - `requestId`: request-level correlation identifier
 - `sessionId`: session-level correlation identifier
+
+Result details now include:
+
+- `reachability`: heuristic source-reference analysis for each remediated package
+- `alternativeSuggestions`: npm-search-based replacement candidates when no safe version exists
+- `fixExplanation`: developer-readable summary of what changed, why, and what to review next
+- `changeRequests`: created or planned pull request / merge request metadata when requested
 - `parentRunId`: optional parent run linkage for hierarchical traces
 - `idempotencyKey`: deterministic replay key for cached resume flows
 - `resume`: reuse cached report for matching `idempotencyKey` + CVE when available

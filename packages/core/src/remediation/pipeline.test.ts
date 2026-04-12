@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { buildPatchPrompt } from "./strategies/patch-synthesis-prompt.js";
+import { accumulateStepResults } from "./strategies/pipeline-telemetry.js";
 
 const mocked = vi.hoisted(() => ({
   generateText: vi.fn(),
@@ -349,6 +351,143 @@ describe("runRemediationPipeline tool gating", () => {
     expect(mocked.generatePatchExecute.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({
         patchConfidenceThresholds: { high: 0.95 },
+      })
+    );
+  });
+});
+
+describe("buildPatchPrompt", () => {
+  const baseParams = {
+    cveId: "CVE-2021-23337",
+    packageName: "lodash",
+    vulnerableVersion: "4.17.20",
+    vulnerabilityCategory: "redos",
+    cveSummary: "Regular expression denial of service vulnerability in lodash.",
+    sourceFiles: {
+      "index.js": "module.exports = function value() { return true; }\n",
+    },
+  };
+
+  it.each([
+    ["analytical", "Provide concise analysis with explicit risk tradeoffs."],
+    ["pragmatic", "Prioritize minimal, safe changes with low operational risk."],
+    ["balanced", "Balance analytical explanation with practical remediation."],
+    [undefined, "Balance analytical explanation with practical remediation."],
+  ])("builds the expected prompt for personality %s", (modelPersonality, expectedDirective) => {
+    const prompt = buildPatchPrompt({
+      ...baseParams,
+      modelPersonality,
+    });
+
+    expect(prompt.trim().length).toBeGreaterThan(0);
+    expect(prompt).toContain("CVE-2021-23337");
+    expect(prompt).toContain("lodash@4.17.20");
+    expect(prompt).toContain("Regular Expression Denial of Service (ReDoS)");
+    expect(prompt).toContain("### File: index.js");
+    expect(prompt).toContain(expectedDirective);
+  });
+});
+
+describe("accumulateStepResults", () => {
+  it("accumulates results for each supported tool name", () => {
+    const cveDetails = { id: "CVE-2021-23337" } as any;
+    const vulnerablePackage = {
+      installed: { name: "lodash", version: "4.17.20", type: "direct" },
+    } as any;
+    const patchArtifact = { confidence: 0.92, riskLevel: "medium" };
+
+    const result = accumulateStepResults({
+      toolResults: [
+        { toolName: "lookup-cve", result: { data: cveDetails } },
+        {
+          toolName: "check-version-match",
+          result: { vulnerablePackages: [vulnerablePackage] },
+        },
+        {
+          toolName: "apply-version-bump",
+          result: { packageName: "lodash", strategy: "version-bump", applied: true },
+        },
+        {
+          toolName: "apply-package-override",
+          result: { packageName: "lodash", strategy: "package-override", applied: true },
+        },
+        {
+          toolName: "apply-patch-file",
+          result: {
+            packageName: "lodash",
+            vulnerableVersion: "4.17.20",
+            patchFilePath: "./patches/lodash.patch",
+            patchArtifact,
+            applied: true,
+            dryRun: false,
+            message: "patched",
+            validation: { passed: true },
+          },
+        },
+      ],
+      cveDetails: null,
+      vulnerablePackages: [],
+      collectedResults: [],
+      getDependencyScope: (packageName) => (packageName === "lodash" ? "direct" : undefined),
+    });
+
+    expect(result.cveDetails).toBe(cveDetails);
+    expect(result.vulnerablePackages).toEqual([vulnerablePackage]);
+    expect(result.collectedResults).toHaveLength(3);
+    expect(result.collectedResults[0]).toEqual(
+      expect.objectContaining({
+        packageName: "lodash",
+        strategy: "version-bump",
+        dependencyScope: "direct",
+      })
+    );
+    expect(result.collectedResults[1]).toEqual(
+      expect.objectContaining({
+        packageName: "lodash",
+        strategy: "package-override",
+        dependencyScope: "direct",
+      })
+    );
+    expect(result.collectedResults[2]).toEqual(
+      expect.objectContaining({
+        packageName: "lodash",
+        strategy: "patch-file",
+        patchFilePath: "./patches/lodash.patch",
+        dependencyScope: "direct",
+        confidence: 0.92,
+        riskLevel: "medium",
+      })
+    );
+  });
+
+  it("records validation failure when apply-patch-file does not apply", () => {
+    const result = accumulateStepResults({
+      toolResults: [
+        {
+          toolName: "apply-patch-file",
+          result: {
+            packageName: "lodash",
+            vulnerableVersion: "4.17.20",
+            applied: false,
+            dryRun: false,
+            error: "validation failed",
+            validation: { passed: false, error: "tests failed" },
+          },
+        },
+      ],
+      cveDetails: null,
+      vulnerablePackages: [],
+      collectedResults: [],
+      getDependencyScope: () => "transitive",
+    });
+
+    expect(result.collectedResults[0]).toEqual(
+      expect.objectContaining({
+        strategy: "patch-file",
+        unresolvedReason: "patch-validation-failed",
+        dependencyScope: "transitive",
+        message: "validation failed",
+        validation: { passed: false, error: "tests failed" },
       })
     );
   });

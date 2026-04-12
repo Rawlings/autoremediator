@@ -18,7 +18,7 @@ It correlates OSV package intelligence with CISA KEV known-exploited signals and
 
 It is built for teams that want security remediation to run as part of delivery infrastructure, not as ad hoc manual activity or semver-only triage.
 
-It supports direct CVE remediation, scanner-driven batch remediation, deterministic CI gating, and service/agent integrations (SDK, MCP, OpenAPI).
+It supports direct CVE remediation, scanner-driven batch remediation, portfolio-scale multi-repo orchestration, deterministic CI gating, and service/agent integrations (SDK, MCP, OpenAPI).
 
 It is standards-first and interoperable with major agent ecosystems through MCP and OpenAPI, including common MCP hosts, Claude Mythos workflows, and custom automation runtimes.
 
@@ -36,6 +36,8 @@ See the [documentation](https://rawlings.github.io/autoremediator/docs/getting-s
 - Risk-informed prioritization with KEV and EPSS enrichment
 - Scanner-to-remediation automation for batch workflows
 - Cross-surface integration via CLI, SDK, MCP, and OpenAPI
+- Native GitHub/GitLab change request creation with grouped scan strategies
+- Portfolio remediation for many repositories from one control plane
 - Structured evidence and CI summaries for governance and routing
 - Patch lifecycle workflows for listing, inspecting, and validating generated patch artifacts
 
@@ -55,6 +57,8 @@ Safety gates are applied throughout the flow, including policy enforcement, dry-
 Patch artifacts are stored in `patchesDir` and include `.patch.json` manifests that can be inspected and validated by follow-up automation.
 
 Operational outputs stay deterministic across CLI, SDK, MCP, and OpenAPI surfaces, including `strategyCounts`, `dependencyScopeCounts`, and `unresolvedByReason` for CI routing and dashboards.
+
+Remediation results now also include heuristic reachability signals, developer-readable fix explanations, and alternative package suggestions when no safe version exists.
 
 Patch lifecycle operations are available through:
 

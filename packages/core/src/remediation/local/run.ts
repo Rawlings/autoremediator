@@ -1,4 +1,3 @@
-import semver from "semver";
 import { lookupCveOsv } from "../../intelligence/sources/osv.js";
 import { lookupCveGitHub, mergeGhDataIntoCveDetails } from "../../intelligence/sources/github-advisory.js";
 import { enrichWithNvd } from "../../intelligence/sources/nvd.js";
@@ -10,57 +9,39 @@ import type {
   RemediationReport,
   VulnerablePackage,
 } from "../../platform/types.js";
-import { detectPackageManager } from "../../platform/package-manager.js";
-import { resolveProvider } from "../../platform/config.js";
-import { loadPolicy } from "../../platform/policy.js";
 import { checkInventoryTool } from "../tools/check-inventory.js";
 import { resolvePrimaryResult } from "./primary-strategy.js";
 import { shouldAttemptPatchFallback, tryLocalPatchFallback } from "./fallback.js";
+import { resolveLocalRunOptions } from "./options.js";
+import { findVulnerablePackages } from "./vulnerability-match.js";
+import { buildLocalSummary } from "./summary.js";
 
 export async function runLocalRemediationPipeline(
   cveId: string,
   options: RemediateOptions = {}
 ): Promise<RemediationReport> {
-  const cwd = options.cwd ?? process.cwd();
-  const packageManager = options.packageManager ?? detectPackageManager(cwd);
-  const preview = options.preview ?? false;
-  const dryRun = (options.dryRun ?? false) || preview;
-  const runTests = options.runTests ?? false;
-  const policy = options.policy ?? "";
-  const patchesDir = options.patchesDir || "./patches";
-  const constraints = options.constraints ?? {};
-  const loadedPolicy = loadPolicy(cwd, options.policy);
-  const llmProvider = resolveProvider(options);
-  const providerSafetyProfile =
-    options.providerSafetyProfile ??
-    loadedPolicy.providerSafetyProfile ??
-    "relaxed";
-  const requireConsensusForHighRisk =
-    options.requireConsensusForHighRisk ??
-    loadedPolicy.requireConsensusForHighRisk ??
-    false;
-  const consensusProvider =
-    options.consensusProvider ??
-    loadedPolicy.consensusProvider ??
-    "remote";
-  const consensusModel =
-    options.consensusModel ??
-    loadedPolicy.consensusModel;
-  const patchConfidenceThresholds = {
-    ...loadedPolicy.patchConfidenceThresholds,
-    ...options.patchConfidenceThresholds,
-  };
-  const dynamicModelRouting =
-    options.dynamicModelRouting ??
-    loadedPolicy.dynamicModelRouting ??
-    false;
-  const dynamicRoutingThresholdChars =
-    options.dynamicRoutingThresholdChars ??
-    loadedPolicy.dynamicRoutingThresholdChars;
+  const resolved = resolveLocalRunOptions(options);
+  const {
+    cwd,
+    packageManager,
+    dryRun,
+    runTests,
+    policy,
+    patchesDir,
+    constraints,
+    llmProvider,
+    providerSafetyProfile,
+    requireConsensusForHighRisk,
+    consensusProvider,
+    consensusModel,
+    patchConfidenceThresholds,
+    dynamicModelRouting,
+    dynamicRoutingThresholdChars,
+  } = resolved;
 
   const collectedResults: PatchResult[] = [];
   const llmUsage: LlmUsageMetrics[] = [];
-  const vulnerablePackages: VulnerablePackage[] = [];
+  let vulnerablePackages: VulnerablePackage[] = [];
   let cveDetails: CveDetails | null = null;
   let agentSteps = 0;
 
@@ -146,26 +127,7 @@ export async function runLocalRemediationPipeline(
     type: "direct" | "indirect";
   }>;
 
-  for (const affected of cveDetails.affectedPackages) {
-    if (!affected || typeof affected !== "object") continue;
-    if (!affected.name || !affected.vulnerableRange) continue;
-    if (affected.ecosystem !== "npm") continue;
-    const matches = installedPackages.filter((pkg) => pkg.name === affected.name);
-    for (const installed of matches) {
-      if (!semver.valid(installed.version)) continue;
-      let isVulnerable = false;
-      try {
-        isVulnerable = semver.satisfies(installed.version, affected.vulnerableRange, {
-          includePrerelease: false,
-        });
-      } catch {
-        continue;
-      }
-      if (isVulnerable) {
-        vulnerablePackages.push({ installed, affected });
-      }
-    }
-  }
+  vulnerablePackages = findVulnerablePackages(cveDetails, installedPackages);
   agentSteps += 1;
 
   for (const vulnerable of vulnerablePackages) {
@@ -222,17 +184,13 @@ export async function runLocalRemediationPipeline(
     });
   }
 
-  const appliedCount = collectedResults.filter((result) => result.applied).length;
-  const unresolvedCount = collectedResults.filter((result) => !result.applied && !result.dryRun).length;
-  const dryRunCount = collectedResults.filter((result) => result.dryRun).length;
-
   return {
     cveId,
     cveDetails,
     vulnerablePackages,
     results: collectedResults,
     agentSteps,
-    summary: `Local mode completed: vulnerable=${vulnerablePackages.length}, applied=${appliedCount}, dryRun=${dryRunCount}, unresolved=${unresolvedCount}`,
+    summary: buildLocalSummary(vulnerablePackages, collectedResults),
     llmUsage: llmUsage.length > 0 ? llmUsage : undefined,
     correlation: {
       requestId: options.requestId,

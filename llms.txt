@@ -1,6 +1,6 @@
 # autoremediator
 
-> Agentic CVE remediation for Node.js projects — MCP tool server, OpenAPI HTTP API, and CLI.
+> Agentic CVE remediation for Node.js projects — MCP tool server, OpenAPI HTTP API, CLI, portfolio orchestration, and native review creation.
 
 ## What it does
 
@@ -29,6 +29,11 @@ const report = await remediate("CVE-2021-23337", { cwd: "/my/project" });
 
 // From scanner output
 const scanReport = await remediateFromScan("./npm-audit.json", { cwd: "/my/project" });
+
+// Across many repositories
+const portfolioReport = await remediatePortfolio({
+  targets: [{ cwd: "/my/project", cveId: "CVE-2021-23337" }],
+});
 ```
 
 ### CLI
@@ -36,6 +41,7 @@ const scanReport = await remediateFromScan("./npm-audit.json", { cwd: "/my/proje
 ```
 autoremediator CVE-2021-23337 --cwd ./my-project [--dry-run] [--llm-provider local]
 autoremediator ./npm-audit.json --cwd ./my-project --ci
+autoremediator portfolio --targets-file ./targets.json
 ```
 
 ### MCP Tool Server
@@ -44,7 +50,7 @@ autoremediator ./npm-audit.json --cwd ./my-project --ci
 autoremediator-mcp   # stdio transport — register with any MCP host
 ```
 
-Available MCP tools: `remediate`, `planRemediation`, `remediateFromScan`
+Available MCP tools: `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`
 
 ## Tools (agent / MCP)
 
@@ -78,6 +84,8 @@ lookup-cve → check-inventory → check-version-match → find-fixed-version �
 | `packageManager` | `npm\|pnpm\|yarn` | auto-detect | Override package manager selection |
 | `llmProvider` | `remote\|local` | `remote` | Provider model (`local` = deterministic primary path; `remote` = model-backed patch generation) |
 | `patchesDir` | string | `./patches` | Directory for .patch files |
+| `changeRequest.provider` | `github\|gitlab` | unset | Open a native PR/MR after mutation-enabled runs |
+| `changeRequest.grouping` | `all\|per-cve\|per-package` | `all` | Group scan and portfolio change requests |
 | `policy` | string | `.autoremediator.json` | Policy file path |
 | `preview` | boolean | `false` | Non-mutating remediation preview (forces dry-run behavior) |
 | `evidence` | boolean | `true` | Write evidence JSON output |

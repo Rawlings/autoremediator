@@ -17,6 +17,12 @@
 - Behavior: parse scanner findings, deduplicate CVEs, run Mode 1 for each CVE
 - Instruction set: Mode 1 + scanner parser skill
 
+### Mode 2b: Portfolio Input
+
+- Trigger: `autoremediator portfolio --targets-file <json>` or `remediatePortfolio({ targets, ...options })`
+- Behavior: run Mode 1 or Mode 2 across multiple repository targets and aggregate per-target outcomes
+- Instruction set: Mode 2 + contributor API-surface rules for the portfolio contract
+
 ### Mode 3: CI
 
 - Trigger: `--ci`
@@ -26,13 +32,13 @@
 ### Mode 4: MCP Tool Server
 
 - Trigger: `autoremediator-mcp` (stdio)
-- Behavior: exposes `remediate`, `planRemediation`, `remediateFromScan`, `listPatchArtifacts`, `inspectPatchArtifact`, and `validatePatchArtifact` as MCP tools
+- Behavior: exposes `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `listPatchArtifacts`, `inspectPatchArtifact`, and `validatePatchArtifact` as MCP tools
 - Source: `packages/core/src/mcp/server.ts`
 
 ### Mode 5: OpenAPI HTTP Server
 
 - Trigger: `node dist/openapi/server.js [--port 3000]`
-- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/patches/list`, POST `/patches/inspect`, and POST `/patches/validate` over HTTP
+- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/remediate-portfolio`, POST `/patches/list`, POST `/patches/inspect`, and POST `/patches/validate` over HTTP
 - Source: `packages/core/src/openapi/server.ts`
 
 ### Mode 6: Governed Multi-Agent Delivery

@@ -25,6 +25,7 @@ Related references:
 | SDK integration | you need custom control flow in internal tooling | programmable orchestration and reporting |
 | MCP server | you integrate with AI-host tool ecosystems | standardized tool interface for remediation workflows |
 | OpenAPI server | you need service-based central remediation execution | networked API access for multi-system orchestration |
+| Portfolio orchestration | you coordinate many repositories from one control plane | one aggregated report plus optional per-target change requests |
 
 ## GitHub Code Scanning: SARIF Upload
 
@@ -68,6 +69,35 @@ jobs:
 For npm or yarn, substitute the audit and exec commands accordingly.
 
 The `--dry-run` flag ensures this job is read-only — no changes are made to the project.
+
+## Native Review Creation
+
+Autoremediator can create native GitHub pull requests or GitLab merge requests directly from remediation runs.
+
+Typical CLI pattern:
+
+```bash
+autoremediator ./audit.json \
+  --create-change-request \
+  --change-request-provider github \
+  --change-request-grouping per-cve
+```
+
+This is useful when you want the remediation controller to finish with a reviewable branch instead of leaving changed files in place.
+
+Grouped change requests use:
+
+- `all`: one batched review for the whole run
+- `per-cve`: one review branch per CVE
+- `per-package`: package-group planning with isolated worktrees
+
+GitHub uses `GITHUB_TOKEN` by default. GitLab uses `GITLAB_TOKEN` by default. You can override the token env var through the public `changeRequest.tokenEnvVar` option.
+
+## Portfolio Orchestration
+
+For platform-owned fleets, use `remediatePortfolio` or `autoremediator portfolio --targets-file`.
+
+Each target points at one repository root and chooses either a direct CVE flow or a scan-driven flow. The resulting portfolio report rolls up per-target status and any created change requests.
 
 ## GitHub Actions Marketplace Action
 

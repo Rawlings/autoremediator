@@ -253,6 +253,76 @@
 				"-lc",
 				"node tmp-mark-sjcl-js.mjs && (cd demo-vuln-app && pnpm exec patch-package sjcl)"
 			]
+		},
+		{
+			"label": "core typecheck",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"--dir",
+				"packages/core",
+				"exec",
+				"tsc",
+				"--noEmit"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "core test",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"--dir",
+				"packages/core",
+				"test"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "docs build",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"docs:build"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "core typecheck final",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"--dir",
+				"packages/core",
+				"exec",
+				"tsc",
+				"--noEmit"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "packet0-delete-files",
+			"type": "shell",
+			"command": "rm",
+			"args": [
+				"-f",
+				"packages/core/src/api/enrichment.ts",
+				"packages/core/src/api/change-requests.ts",
+				"packages/core/src/api/change-requests.git.ts",
+				"packages/core/src/api/change-requests.remote.ts",
+				"packages/core/src/api/change-requests.grouping.ts",
+				"packages/core/src/api/change-requests.grouping.test.ts",
+				"packages/core/src/api/change-requests.current-repo.ts",
+				"packages/core/src/api/change-requests.grouped.ts",
+				"packages/core/src/api/change-requests.test.ts",
+				"packages/core/src/api/remediate.change-request.ts",
+				"packages/core/src/api/remediate.change-request.test.ts",
+				"packages/core/src/api/remediate-from-scan.change-request.ts",
+				"packages/core/src/api/remediate-from-scan.change-request.test.ts",
+				"packages/core/src/api/portfolio.ts",
+				"packages/core/src/intelligence/sources/alternative-packages.ts",
+				"packages/core/src/remediation/tools/check-reachability.ts"
+			]
 		}
 	]
 }

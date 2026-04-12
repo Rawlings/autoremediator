@@ -1,7 +1,7 @@
 ---
 description: "Use when implementing an approved task packet; enforces architecture boundaries, DRY, and consolidation-first execution without scope drift."
 name: "Developer"
-tools: [read, search, edit, execute, todo, agent]
+tools: [execute/runNotebookCell, execute/testFailure, execute/runTask, execute/createAndRunTask, read/getNotebookSummary, read/problems, read/readFile, read/viewImage, read/getTaskOutput, agent/runSubagent, edit/createDirectory, edit/createFile, edit/createJupyterNotebook, edit/editFiles, edit/editNotebook, edit/rename, search/changes, search/codebase, search/fileSearch, search/listDirectory, search/searchResults, search/textSearch, search/usages, todo]
 agents: [Architect, Planner]
 handoffs:
   - label: "Completion review"

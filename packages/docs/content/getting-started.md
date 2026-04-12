@@ -74,10 +74,20 @@ docker run --rm -v "$PWD:/workdir" ghcr.io/rawlings/autoremediator CVE-2021-2333
 | Urgent single CVE | direct CVE mode | Fast, focused remediation and clear operator feedback |
 | Non-mutating orchestration planning | `--preview` or `planRemediation()` | Evaluate intended remediation actions before mutation |
 | Nightly scanner automation | scan mode (`--input`) | Batch handling with deterministic CI summary |
+| Multi-repo remediation controller | `portfolio --targets-file` or `remediatePortfolio()` | Aggregate many repositories into one coordinated run |
 | CI gate without mutation | `--dry-run --ci` | Safety-first check for unresolved risk |
 | Air-gapped or deterministic environments | `--llm-provider local` | No remote model dependency and predictable behavior |
 | Remote model-backed patch generation | `--llm-provider remote` | Uses remote adapter configuration and runtime credentials |
 | Platform service integration | SDK, MCP, or OpenAPI | Standardized orchestration across many repos |
+
+## What Newer Runs Include
+
+Recent remediation reports can include:
+
+- heuristic package reachability assessment based on repository imports
+- alternative package suggestions when no safe upgrade exists
+- human-readable fix explanations per package result
+- optional pull request / merge request creation metadata
 
 For GitHub Actions, the recommended approach is the Marketplace action:
 

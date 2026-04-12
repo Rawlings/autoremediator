@@ -13,6 +13,7 @@ export async function remediateFromScan(
   options: ScanOptions = {}
 ): Promise<ScanReport> {
   const cwd = options.cwd ?? process.cwd();
+
   const policy = loadPolicy(cwd, options.policy);
   const format = options.format ?? "auto";
   const patchesDir = options.patchesDir ?? "./patches";
@@ -95,8 +96,7 @@ export async function remediateFromScan(
 
   finalizeEvidence(evidence);
   const evidenceFile = options.evidence === false ? undefined : writeEvidenceLog(cwd, evidence);
-
-  return {
+  const scanReportBase: ScanReport = {
     schemaVersion: "1.0",
     status,
     generatedAt: new Date().toISOString(),
@@ -120,4 +120,6 @@ export async function remediateFromScan(
     estimatedCostUsd: llmUsageCount > 0 ? Number(estimatedCostUsd.toFixed(6)) : undefined,
     totalLlmLatencyMs: llmUsageCount > 0 ? totalLlmLatencyMs : undefined,
   };
+
+  return scanReportBase;
 }

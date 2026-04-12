@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const mocked = vi.hoisted(() => ({
   remediate: vi.fn(),
   remediateFromScan: vi.fn(),
+  remediatePortfolio: vi.fn(),
   inspectPatchArtifact: vi.fn(),
   listPatchArtifacts: vi.fn(),
   toCiSummary: vi.fn(),
@@ -42,6 +46,7 @@ const mocked = vi.hoisted(() => ({
 vi.mock("../api/index.js", () => ({
   remediate: mocked.remediate,
   remediateFromScan: mocked.remediateFromScan,
+  remediatePortfolio: mocked.remediatePortfolio,
   inspectPatchArtifact: mocked.inspectPatchArtifact,
   listPatchArtifacts: mocked.listPatchArtifacts,
   toCiSummary: mocked.toCiSummary,
@@ -67,6 +72,7 @@ describe("cli preview and correlation option forwarding", () => {
       patchCount: 0,
     });
     mocked.listPatchArtifacts.mockResolvedValue([]);
+    mocked.remediatePortfolio.mockResolvedValue({ targets: [], successCount: 0, failedCount: 0 });
     mocked.inspectPatchArtifact.mockResolvedValue({ patchFilePath: "./patches/lodash.patch", exists: true, diffValid: true });
     mocked.validatePatchArtifact.mockResolvedValue({ patchFilePath: "./patches/lodash.patch", exists: true, manifestFound: true, diffValid: true, driftDetected: false, validationPhases: [] });
     mocked.toCiSummary.mockReturnValue({ failedCount: 0 });
@@ -265,6 +271,52 @@ describe("cli preview and correlation option forwarding", () => {
         },
       })
     );
+  });
+
+  it("forwards change request options in top-level CVE mode", async () => {
+    const program = createProgram();
+    await program.parseAsync(
+      [
+        "node",
+        "autoremediator",
+        "CVE-2021-23337",
+        "--create-change-request",
+        "--change-request-provider",
+        "github",
+        "--change-request-grouping",
+        "all",
+      ]
+    );
+
+    expect(mocked.remediate).toHaveBeenCalledWith(
+      "CVE-2021-23337",
+      expect.objectContaining({
+        changeRequest: expect.objectContaining({
+          enabled: true,
+          provider: "github",
+          grouping: "all",
+        }),
+      })
+    );
+  });
+
+  it("supports portfolio command with targets file", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "autoremediator-cli-"));
+    const targetsFile = join(tempDir, "targets.json");
+    writeFileSync(targetsFile, JSON.stringify([{ cwd: "/tmp/project" }]), "utf8");
+
+    const program = createProgram();
+    await program.parseAsync(
+      [
+        "node",
+        "autoremediator",
+        "portfolio",
+        "--targets-file",
+        targetsFile,
+      ]
+    );
+
+    expect(mocked.remediatePortfolio).toHaveBeenCalledTimes(1);
   });
 
   it("forwards install constraint options in top-level CVE mode", async () => {
