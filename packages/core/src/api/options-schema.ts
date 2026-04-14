@@ -25,7 +25,7 @@ export const OPTION_DESCRIPTIONS = {
   dynamicModelRouting: "Enable dynamic model selection by input size",
   dynamicRoutingThresholdChars: "Input size threshold used by dynamic model routing",
   patchesDir: "Directory to write .patch files (default: ./patches)",
-  policy: "Optional path to .autoremediator policy file",
+  policy: "Optional path to .github/autoremediator.yml policy file",
   requestId: "Request correlation ID",
   sessionId: "Session correlation ID",
   parentRunId: "Parent run correlation ID",
@@ -42,6 +42,8 @@ export const OPTION_DESCRIPTIONS = {
   installPreferOffline: "Override prefer-offline flag behavior for install commands",
   enforceFrozenLockfile: "Override frozen lockfile behavior for install commands",
   workspace: "Workspace/package selector for scoped remediation in monorepos",
+  includeTransitive: "Include indirect/transitive dependencies in the outdated check. Default: false.",
+  updateOutdated: "Run in update-outdated mode: bump all outdated npm packages without requiring a CVE.",
 } as const;
 
 export function createConstraintSchemaProperties(): Record<string, JsonSchemaProperty> {
@@ -149,5 +151,12 @@ export function createScanReportSchemaProperties(): Record<string, JsonSchemaPro
     llmUsageCount: { type: "number" },
     estimatedCostUsd: { type: "number" },
     totalLlmLatencyMs: { type: "number" },
+  };
+}
+
+export function createUpdateOutdatedOptionSchemaProperties(): Record<string, JsonSchemaProperty> {
+  return {
+    ...createRemediateOptionSchemaProperties({ includeEvidence: true }),
+    includeTransitive: { type: "boolean", description: OPTION_DESCRIPTIONS.includeTransitive },
   };
 }

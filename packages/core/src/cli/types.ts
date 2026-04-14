@@ -41,6 +41,7 @@ export interface CommandOptions {
   evidence: boolean;
   ci: boolean;
   summaryFile?: string;
+  includeTransitive?: boolean;
 }
 
 export function isCveId(value: string): boolean {

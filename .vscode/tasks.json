@@ -347,6 +347,23 @@
 				"test"
 			],
 			"isBackground": false
+		},
+		{
+			"label": "core build",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"--dir",
+				"packages/core",
+				"build"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "install yaml dep",
+			"type": "shell",
+			"command": "pnpm add yaml --filter autoremediator && pnpm add yaml --filter @autoremediator/github-app",
+			"isBackground": false
 		}
 	]
 }

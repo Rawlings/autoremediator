@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
+import type { CveSeverity } from "../../platform/types.js";
 
 export interface NormalizedFinding {
   cveId: string;
   source: "npm-audit" | "yarn-audit" | "sarif";
   packageName?: string;
-  severity?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | "UNKNOWN";
+  severity?: CveSeverity;
 }
 
 interface NpmAuditVulnerability {
@@ -22,9 +23,8 @@ const CVE_REGEX = /CVE-\d{4}-\d+/gi;
 function normalizeSeverity(raw?: string): NormalizedFinding["severity"] {
   if (!raw) return "UNKNOWN";
   const up = raw.toUpperCase();
-  if (up === "CRITICAL" || up === "HIGH" || up === "MEDIUM" || up === "LOW") {
-    return up;
-  }
+  if (up === "CRITICAL" || up === "HIGH" || up === "LOW") return up;
+  if (up === "MEDIUM" || up === "MODERATE") return "MEDIUM";
   return "UNKNOWN";
 }
 

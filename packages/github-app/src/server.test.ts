@@ -219,7 +219,7 @@ describe("github app server", () => {
 
     const address = server.address() as AddressInfo;
     const baseUrl = `http://127.0.0.1:${address.port}`;
-    const payload = JSON.stringify({ installation: { id: 431 } });
+    const payload = JSON.stringify({ action: "requested", installation: { id: 431 } });
     const signature = computeWebhookSignature(secret, payload);
 
     const webhookResponse = await fetch(`${baseUrl}/webhook`, {
@@ -644,7 +644,7 @@ describe("github app server", () => {
 
     const address = server.address() as AddressInfo;
     const baseUrl = `http://127.0.0.1:${address.port}`;
-    const payload = JSON.stringify({ installation: { id: 321 } });
+    const payload = JSON.stringify({ action: "requested", installation: { id: 321 } });
     const signature = computeWebhookSignature(secret, payload);
 
     const response = await fetch(`${baseUrl}/webhook`, {

@@ -19,7 +19,7 @@ const mocked = vi.hoisted(() => ({
     runTests: "Run package-manager test command after applying fix",
     llmProvider: "LLM provider override",
     patchesDir: "Directory to write .patch files (default: ./patches)",
-    policy: "Optional path to .autoremediator policy file",
+    policy: "Optional path to .github/autoremediator.yml policy file",
     requestId: "Request correlation ID",
     sessionId: "Session correlation ID",
     parentRunId: "Parent run correlation ID",

@@ -70,7 +70,10 @@ docker run --rm -v "$PWD:/workdir" ghcr.io/rawlings/autoremediator CVE-2021-2333
 
 | Use case | Recommended mode | Why |
 |---|---|---|
-| GitHub Actions CI (recommended) | reusable workflow or repo templates | Fast setup with audit mode, CI gating, and optional PR automation |
+| Installable GitHub-native automation | GitHub App runtime (`packages/github-app`) | Webhook-driven remediation with native app authentication and optional automatic PR creation |
+| GitHub Actions CI (recommended) | reusable workflow with PR automation | Fast setup for automatic remediation with reviewable pull requests |
+| Scheduled PR automation | reusable workflow with `on.schedule` cron | Continuous improvement with reviewable remediation PRs on a cadence — see [Integrations](integrations.md#github-actions-scheduled-auto-remediation-prs) |
+| Update all outdated packages (no CVE required) | `update-outdated` mode | Bump all outdated npm packages with policy controls, evidence, and optional PR creation — see [CLI Reference](cli.md#update-outdated-mode) |
 | Urgent single CVE | direct CVE mode | Fast, focused remediation and clear operator feedback |
 | Non-mutating orchestration planning | `--preview` or `planRemediation()` | Evaluate intended remediation actions before mutation |
 | Nightly scanner automation | scan mode (`--input`) | Batch handling with deterministic CI summary |
@@ -89,24 +92,27 @@ Recent remediation reports can include:
 - human-readable fix explanations per package result
 - optional pull request / merge request creation metadata
 
-For GitHub Actions, the recommended approach is the reusable workflow or the copyable templates in this repository:
+For GitHub Actions, the recommended approach is the reusable workflow with pull request automation enabled:
 
 ```yaml
 jobs:
-  gate:
+	remediate:
     uses: rawlings/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v1
     with:
       audit: true
-      dry-run: true
+			dry-run: false
       ci: true
+			create-pull-request: true
 ```
 
-The reusable workflow runs audit mode by default and can also create a pull request for mutating remediation runs.
+Use audit-only gating when you want detection and enforcement without applying changes.
 By default it keeps the generated summary JSON in runner temp so CI artifacts and PR generation do not add that file to your repository diff.
 The workflow-template files under `.github/workflow-templates/` are copyable examples, not GitHub UI-discoverable starter workflows from this repository alone.
 See [Integrations](integrations.md) for the action-level path, reusable workflow inputs, and template scenarios.
 
 For full mode semantics, see [CLI Reference](cli.md) and [Integrations](integrations.md).
+If you want a long-running installable app model instead of workflow-only automation, use the GitHub App runtime setup in [Integrations](integrations.md#github-app-runtime-production-mode).
+The default GitHub App remediation handler applies scan filtering with `AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_MINIMUM_SEVERITY=HIGH` unless you override it.
 
 ## First Commands (What and Why)
 

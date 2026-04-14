@@ -2,11 +2,18 @@
 // Core domain types for autoremediator
 // ---------------------------------------------------------------------------
 
+/**
+ * CVSS v3 qualitative severity rating.
+ * Anchored to the CVSS v3 standard (none/low/medium/high/critical).
+ * Values are uppercase; incoming 'moderate' (npm audit, GitHub Advisory) is normalised to 'MEDIUM'.
+ */
+export type CveSeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | "UNKNOWN";
+
 /** A resolved CVE entry with affected npm package info */
 export interface CveDetails {
   id: string; // e.g. "CVE-2021-23337"
   summary: string;
-  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | "UNKNOWN";
+  severity: CveSeverity;
   cvssScore?: number;
   epss?: {
     score: number;
@@ -393,7 +400,7 @@ export interface RemediateOptions extends CorrelationContext {
   dynamicRoutingThresholdChars?: number;
   /** Optional SDK callback for progress events during remediation execution. */
   onProgress?: (event: ProgressEvent) => void;
-  /** Optional path to a policy file (.autoremediator.json) */
+  /** Optional path to a policy file (.github/autoremediator.yml) */
   policy?: string;
   /** If false, do not write evidence JSON for this run (default: true). */
   evidence?: boolean;
@@ -429,4 +436,41 @@ export interface RemediationReport {
   resumedFromCache?: boolean;
   llmUsage?: LlmUsageMetrics[];
   changeRequests?: ChangeRequestResult[];
+}
+
+// ---------------------------------------------------------------------------
+// Non-security update types (updateOutdated)
+// ---------------------------------------------------------------------------
+
+/** A single package found to be outdated during an updateOutdated run */
+export interface OutdatedPackage {
+  name: string;
+  currentVersion: string;
+  wantedVersion: string;
+  latestVersion: string;
+  isMajorBump: boolean;
+  dependencyScope: "direct" | "indirect";
+}
+
+/** Options for the updateOutdated() operation */
+export interface UpdateOutdatedOptions extends RemediateOptions {
+  /** Include indirect/transitive dependencies in the outdated check. Default: false. */
+  includeTransitive?: boolean;
+}
+
+/** Report returned by updateOutdated() */
+export interface UpdateOutdatedReport {
+  schemaVersion: "1.0";
+  status: "ok" | "partial" | "failed";
+  generatedAt: string;
+  outdatedPackages: OutdatedPackage[];
+  successCount: number;
+  failedCount: number;
+  skippedCount: number;
+  errors: Array<{ packageName: string; message: string }>;
+  evidenceFile?: string;
+  patchCount: number;
+  constraints?: RemediationConstraints;
+  correlation?: CorrelationContext;
+  provenance?: ProvenanceContext;
 }

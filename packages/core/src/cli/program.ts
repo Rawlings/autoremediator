@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { OPTION_DESCRIPTIONS } from "../api/index.js";
 import { existsSync } from "node:fs";
 import { PACKAGE_VERSION } from "../version";
-import { runInspectPatch, runListPatches, runScanInput, runSingleCve, runValidatePatch } from "./runners.js";
+import { runInspectPatch, runListPatches, runScanInput, runSingleCve, runUpdateOutdated, runValidatePatch } from "./runners.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
 
@@ -121,6 +121,20 @@ export function createProgram(): Command {
       throw new Error("scan mode requires --input unless --audit is enabled.");
     }
     await runScanInput(merged.input ?? "", merged);
+  });
+
+  addSharedOptions(
+    program
+      .command("update-outdated")
+      .description("Bump all outdated npm packages to their latest versions")
+      .option("--include-transitive", OPTION_DESCRIPTIONS.includeTransitive, false),
+    false
+  ).action(async (opts: CommandOptions, command: Command) => {
+    const merged = {
+      ...opts,
+      ...(command.optsWithGlobals() as Partial<CommandOptions>),
+    } as CommandOptions;
+    await runUpdateOutdated(merged);
   });
 
   const patches = program.command("patches").description("Inspect and validate stored patch artifacts");

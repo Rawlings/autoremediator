@@ -30,7 +30,7 @@ export const checkInventoryTool = tool({
   parameters: z.object({
     cwd: z.string().describe("Absolute path to the consumer project's root directory"),
     packageManager: z.enum(["npm", "pnpm", "yarn"]).optional().describe("Package manager used by the target project (auto-detected if omitted)"),
-    policy: z.string().optional().describe("Optional path to .autoremediator policy file"),
+    policy: z.string().optional().describe("Optional path to .github/autoremediator.yml policy file"),
     workspace: z.string().optional().describe("Optional workspace/package selector for monorepos"),
   }),
   execute: async ({ cwd, packageManager, policy, workspace }): Promise<{ packages: InventoryPackage[]; error?: string }> => {

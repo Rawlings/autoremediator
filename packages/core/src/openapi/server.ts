@@ -14,6 +14,7 @@ import {
   planRemediation,
   remediate,
   remediateFromScan,
+  updateOutdated,
   validatePatchArtifact,
 } from "../api/index.js";
 import { OPENAPI_SPEC } from "./spec/index.js";
@@ -26,6 +27,7 @@ export interface OpenApiServerDeps {
   remediateFn: typeof remediate;
   remediateFromScanFn: typeof remediateFromScan;
   planRemediationFn: typeof planRemediation;
+  updateOutdatedFn: typeof updateOutdated;
   listPatchArtifactsFn: typeof listPatchArtifacts;
   inspectPatchArtifactFn: typeof inspectPatchArtifact;
   validatePatchArtifactFn: typeof validatePatchArtifact;
@@ -35,6 +37,7 @@ const defaultDeps: OpenApiServerDeps = {
   remediateFn: remediate,
   remediateFromScanFn: remediateFromScan,
   planRemediationFn: planRemediation,
+  updateOutdatedFn: updateOutdated,
   listPatchArtifactsFn: listPatchArtifacts,
   inspectPatchArtifactFn: inspectPatchArtifact,
   validatePatchArtifactFn: validatePatchArtifact,

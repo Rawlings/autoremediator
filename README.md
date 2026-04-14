@@ -85,7 +85,7 @@ Trust model principles:
 ## Built for every surface
 
 - CLI: workflow jobs and CI runs
-- SDK: `remediate`, `planRemediation`, `remediateFromScan`
+- SDK: `remediate`, `planRemediation`, `remediateFromScan`, `updateOutdated`
 - MCP server: agent ecosystem integration, tool invocation, and LLM-orchestrated workflows
 - OpenAPI server: service-based integration and centralized remediation operations
 - VS Code extension: Node CVE Remediator for editor-side scanning and fix actions
@@ -96,7 +96,7 @@ Patch lifecycle operations are exposed consistently:
 - SDK: `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`
 - MCP and OpenAPI: equivalent patch lifecycle operations
 
-GitHub Actions quick start:
+Non-security maintenance via `updateOutdated` (CLI: `autoremediator update-outdated`) bumps all outdated npm packages with policy controls, evidence, and optional PR creation — no CVE ID required.
 
 ```yaml
 jobs:

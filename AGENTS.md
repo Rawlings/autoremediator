@@ -32,7 +32,7 @@
 ### Mode 4: MCP Tool Server
 
 - Trigger: `autoremediator-mcp` (stdio)
-- Behavior: exposes `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `listPatchArtifacts`, `inspectPatchArtifact`, and `validatePatchArtifact` as MCP tools
+- Behavior: exposes `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, and `updateOutdated` as MCP tools
 - Source: `packages/core/src/mcp/server.ts`
 
 ### Mode 5: OpenAPI HTTP Server
@@ -60,7 +60,7 @@ Mode 6 handoff stages and packet requirements are canonical in .github/copilot-i
 ## Precedence
 
 1. Explicit CLI/API options
-2. Policy file (`.autoremediator.json`)
+2. Policy file (`.github/autoremediator.yml`)
 3. Tool contracts
 4. Default behavior
 

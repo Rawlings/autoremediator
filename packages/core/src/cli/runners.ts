@@ -7,6 +7,7 @@ import {
   type ScanReport,
   toCiSummary,
   toSarifOutput,
+  updateOutdated,
   validatePatchArtifact,
 } from "../api/index.js";
 import { writeFileSync } from "node:fs";
@@ -291,5 +292,51 @@ export async function runValidatePatch(
       process.stdout.write(` (${phase.error})`);
     }
     process.stdout.write(`\n`);
+  }
+}
+
+export async function runUpdateOutdated(opts: CommandOptions): Promise<void> {
+  const report = await updateOutdated({
+    cwd: opts.cwd,
+    packageManager: opts.packageManager,
+    dryRun: opts.dryRun,
+    runTests: opts.runTests,
+    evidence: opts.evidence,
+    policy: opts.policy,
+    patchesDir: opts.patchesDir,
+    includeTransitive: opts.includeTransitive,
+    requestId: opts.requestId,
+    sessionId: opts.sessionId,
+    parentRunId: opts.parentRunId,
+    idempotencyKey: opts.idempotencyKey,
+    resume: opts.resume,
+    actor: opts.actor,
+    source: opts.source ?? "cli",
+    constraints: {
+      directDependenciesOnly: opts.directDependenciesOnly,
+      preferVersionBump: opts.preferVersionBump,
+      installMode: opts.installMode,
+      installPreferOffline: opts.installPreferOffline,
+      enforceFrozenLockfile: opts.enforceFrozenLockfile,
+      workspace: opts.workspace,
+    },
+  });
+
+  if (opts.json) {
+    logJson(report);
+    return;
+  }
+
+  process.stdout.write(`Outdated packages found: ${report.outdatedPackages.length}\n`);
+  process.stdout.write(`Successful updates: ${report.successCount}\n`);
+  process.stdout.write(`Skipped (major bumps): ${report.skippedCount}\n`);
+  process.stdout.write(`Failed updates: ${report.failedCount}\n`);
+  if (report.evidenceFile) {
+    process.stdout.write(`Evidence: ${report.evidenceFile}\n`);
+  }
+  if (report.errors.length > 0) {
+    for (const error of report.errors) {
+      process.stdout.write(`Error ${error.packageName}: ${error.message}\n`);
+    }
   }
 }

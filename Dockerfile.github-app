@@ -1,0 +1,28 @@
+FROM node:24-alpine
+
+WORKDIR /app
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy workspace manifests for dependency installation
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY packages/github-app/package.json ./packages/github-app/
+COPY packages/core/package.json ./packages/core/
+
+# Install production dependencies only
+RUN pnpm install --frozen-lockfile --prod
+
+# Copy source and build artifacts
+COPY packages/core/dist ./packages/core/dist
+COPY packages/github-app/dist ./packages/github-app/dist
+
+# Non-root user for security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
+EXPOSE 3001
+
+ENV NODE_ENV=production
+
+ENTRYPOINT ["node", "packages/github-app/dist/index.js"]

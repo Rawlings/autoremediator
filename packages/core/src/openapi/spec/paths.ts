@@ -2,6 +2,7 @@ import {
   createRemediateOptionSchemaProperties,
   createScanOptionSchemaProperties,
   createScanReportSchemaProperties,
+  createUpdateOutdatedOptionSchemaProperties,
   OPTION_DESCRIPTIONS,
 } from "../../api/index.js";
 import {
@@ -261,6 +262,60 @@ export function createOpenApiPaths() {
                 },
               },
             },
+          },
+        },
+      },
+    },
+    "/update-outdated": {
+      post: {
+        operationId: "updateOutdated",
+        summary: "Bump all outdated npm packages to their latest versions",
+        requestBody: {
+          required: false,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  options: {
+                    type: "object",
+                    description: "UpdateOutdatedOptions",
+                    properties: createUpdateOutdatedOptionSchemaProperties(),
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "UpdateOutdatedReport",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    schemaVersion: { type: "string" },
+                    status: { type: "string", enum: ["ok", "partial", "failed"] },
+                    generatedAt: { type: "string" },
+                    outdatedPackages: { type: "array", items: { type: "object" } },
+                    successCount: { type: "number" },
+                    failedCount: { type: "number" },
+                    skippedCount: { type: "number" },
+                    errors: { type: "array", items: { type: "object" } },
+                    evidenceFile: { type: "string" },
+                    patchCount: { type: "number" },
+                    constraints: { type: "object" },
+                    correlation: { type: "object" },
+                    provenance: { type: "object" },
+                  },
+                },
+              },
+            },
+          },
+          "400": {
+            description: "Invalid input or update error",
+            content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } },
           },
         },
       },

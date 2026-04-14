@@ -17,12 +17,14 @@ import { fileURLToPath } from "node:url";
 import {
   createRemediateOptionSchemaProperties,
   createScanOptionSchemaProperties,
+  createUpdateOutdatedOptionSchemaProperties,
   inspectPatchArtifact,
   listPatchArtifacts,
   OPTION_DESCRIPTIONS,
   planRemediation,
   remediate,
   remediateFromScan,
+  updateOutdated,
   validatePatchArtifact,
 } from "../api/index.js";
 import { PACKAGE_VERSION } from "../version";
@@ -41,6 +43,7 @@ interface McpApiDeps {
   remediateFn: typeof remediate;
   planRemediationFn: typeof planRemediation;
   remediateFromScanFn: typeof remediateFromScan;
+  updateOutdatedFn: typeof updateOutdated;
   listPatchArtifactsFn: typeof listPatchArtifacts;
   inspectPatchArtifactFn: typeof inspectPatchArtifact;
   validatePatchArtifactFn: typeof validatePatchArtifact;
@@ -50,6 +53,7 @@ const defaultDeps: McpApiDeps = {
   remediateFn: remediate,
   planRemediationFn: planRemediation,
   remediateFromScanFn: remediateFromScan,
+  updateOutdatedFn: updateOutdated,
   listPatchArtifactsFn: listPatchArtifacts,
   inspectPatchArtifactFn: inspectPatchArtifact,
   validatePatchArtifactFn: validatePatchArtifact,
@@ -143,6 +147,15 @@ export const TOOLS = [
       },
     },
   },
+  {
+    name: "updateOutdated",
+    description:
+      "Bump all outdated npm packages to their latest versions without requiring a CVE ID. Respects policy (allowMajorBumps) and supports dry-run. Returns an UpdateOutdatedReport.",
+    inputSchema: {
+      type: "object",
+      properties: createUpdateOutdatedOptionSchemaProperties(),
+    },
+  },
 ];
 
 export async function handleToolCall(
@@ -171,6 +184,11 @@ export async function handleToolCall(
     if (name === "remediateFromScan") {
       const { inputPath, ...options } = args as { inputPath: string; [key: string]: unknown };
       const report = await deps.remediateFromScanFn(inputPath, withMcpSource(options) as Parameters<typeof remediateFromScan>[1]);
+      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
+    }
+
+    if (name === "updateOutdated") {
+      const report = await deps.updateOutdatedFn(withMcpSource(args) as Parameters<typeof updateOutdated>[0]);
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 

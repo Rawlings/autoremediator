@@ -46,6 +46,35 @@ function parsePositiveIntEnv(name: string, value: string | undefined, defaultVal
   return parsed;
 }
 
+function parseOptionalStringEnv(name: string, value: string | undefined): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const parsed = value.trim();
+  if (parsed.length === 0) {
+    throw new Error(`Invalid ${name}: expected a non-empty string`);
+  }
+
+  return parsed;
+}
+
+function parseEnumEnv<T extends string>(
+  name: string,
+  value: string | undefined,
+  allowed: readonly T[]
+): T | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if ((allowed as readonly string[]).includes(value)) {
+    return value as T;
+  }
+
+  throw new Error(`Invalid ${name}: ${value}. Expected one of: ${allowed.join(", ")}`);
+}
+
 export function loadGitHubAppConfig(env: NodeJS.ProcessEnv = process.env): GitHubAppConfig {
   const appId = env.AUTOREMEDIATOR_GITHUB_APP_ID;
   const privateKey = env.AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY;
@@ -91,12 +120,6 @@ export function loadGitHubAppConfig(env: NodeJS.ProcessEnv = process.env): GitHu
     "AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION",
     env.AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION,
     false
-  );
-
-  const remediationDryRun = parseBooleanEnv(
-    "AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_DRY_RUN",
-    env.AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_DRY_RUN,
-    true
   );
 
   const logEventTraces = parseBooleanEnv(
@@ -164,6 +187,43 @@ export function loadGitHubAppConfig(env: NodeJS.ProcessEnv = process.env): GitHu
     3_600_000
   );
 
+  const enableStatusPublishing = parseBooleanEnv(
+    "AUTOREMEDIATOR_GITHUB_APP_ENABLE_STATUS_PUBLISHING",
+    env.AUTOREMEDIATOR_GITHUB_APP_ENABLE_STATUS_PUBLISHING,
+    false
+  );
+
+  const statusCheckName = parseOptionalStringEnv(
+    "AUTOREMEDIATOR_GITHUB_APP_STATUS_CHECK_NAME",
+    env.AUTOREMEDIATOR_GITHUB_APP_STATUS_CHECK_NAME
+  );
+
+  const baseUrl = parseOptionalStringEnv(
+    "AUTOREMEDIATOR_GITHUB_APP_BASE_URL",
+    env.AUTOREMEDIATOR_GITHUB_APP_BASE_URL
+  );
+
+  const enableSetupRoutes = parseBooleanEnv(
+    "AUTOREMEDIATOR_GITHUB_APP_ENABLE_SETUP_ROUTES",
+    env.AUTOREMEDIATOR_GITHUB_APP_ENABLE_SETUP_ROUTES,
+    true
+  );
+
+  const setupSecret = parseOptionalStringEnv(
+    "AUTOREMEDIATOR_GITHUB_APP_SETUP_SECRET",
+    env.AUTOREMEDIATOR_GITHUB_APP_SETUP_SECRET
+  );
+
+  const githubUrl = parseOptionalStringEnv(
+    "AUTOREMEDIATOR_GITHUB_APP_GITHUB_URL",
+    env.AUTOREMEDIATOR_GITHUB_APP_GITHUB_URL
+  );
+
+  const githubApiUrl = parseOptionalStringEnv(
+    "AUTOREMEDIATOR_GITHUB_APP_GITHUB_API_URL",
+    env.AUTOREMEDIATOR_GITHUB_APP_GITHUB_API_URL
+  );
+
   return {
     appId,
     privateKey,
@@ -172,8 +232,6 @@ export function loadGitHubAppConfig(env: NodeJS.ProcessEnv = process.env): GitHu
     dataDir: env.AUTOREMEDIATOR_GITHUB_APP_DATA_DIR,
     remediationTriggerTimeoutMs,
     enableDefaultRemediationHandler,
-    remediationCwd: env.AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_CWD,
-    remediationDryRun,
     logEventTraces,
     maxWebhookBodyBytes,
     requireJsonContentType,
@@ -186,6 +244,13 @@ export function loadGitHubAppConfig(env: NodeJS.ProcessEnv = process.env): GitHu
     jobWorkerConcurrency,
     enableScheduler,
     scheduleIntervalMs,
+    enableStatusPublishing,
+    statusCheckName,
+    baseUrl,
+    enableSetupRoutes,
+    setupSecret,
+    githubUrl,
+    githubApiUrl,
   };
 }
 

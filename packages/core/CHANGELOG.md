@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.10.0
+
+### Added
+
+- Added `updateOutdated()` SDK function to bump all non-CVE outdated packages to their latest compatible versions. Respects `allowMajorBumps` policy (major bumps are skipped by default), supports `includeTransitive`, `dryRun`, `runTests`, `changeRequest`, and `evidence` options, and returns an `UpdateOutdatedReport` with updated/skipped/failed counts.
+- Added `autoremediator update-outdated` CLI command with `--include-transitive` flag.
+- Added `updateOutdated` MCP tool and `POST /update-outdated` OpenAPI route, maintaining full cross-surface parity.
+- Added `OutdatedPackage`, `UpdateOutdatedOptions`, and `UpdateOutdatedReport` types to the public SDK.
+- Added `CveSeverity` to the public SDK type exports.
+- Added `action.yml` inputs: `token` (defaults to `${{ github.token }}`), `create-pull-request`, `pull-request-branch`, `pull-request-title`, and `pull-request-commit-message` for native pull request creation from the GitHub Action. Pull request creation is skipped when `dry-run` is `true`.
+- Added `pull-request-url` output to `action.yml`.
+- Added `update-outdated` and `include-transitive` inputs to `action.yml` and the reusable `reusable-remediate-from-audit.yml` workflow.
+- Added GitHub App per-repository configuration via `.github/autoremediator.yml` fetched from each target repository on every webhook delivery. All remediation behavior (dryRun, runTests, minimumSeverity, pullRequest, policy constraints) is now dynamically resolved per-repo.
+- Added `AutoremediatorRepoConfig`, `DEFAULT_REPO_CONFIG`, and `fetchRepoConfig()` to the GitHub App public exports.
+- Added GitHub App status publishing: remediation job lifecycle (queued → in_progress → completed) is now reported as GitHub check runs when `AUTOREMEDIATOR_GITHUB_APP_ENABLE_STATUS_PUBLISHING=true`. Check name customizable via `AUTOREMEDIATOR_GITHUB_APP_STATUS_CHECK_NAME`.
+- Added GitHub App manifest-based one-click registration flow: `GET /setup` renders a pre-filled GitHub App manifest form; `GET /setup/complete` exchanges the manifest code for credentials (CSRF protected via state cookie); `GET /install` confirms installation. Setup can be protected with `AUTOREMEDIATOR_GITHUB_APP_SETUP_SECRET`.
+- Added push event support to the GitHub App: pushes to the default branch now trigger remediation (in addition to `check_suite.requested` and `workflow_dispatch`).
+- Added `installation.new_permissions_accepted` as a handled activation action in the GitHub App event dispatcher.
+- Added minimum severity filtering in the GitHub App default remediation handler. When `minimumSeverity` is set in `.github/autoremediator.yml`, audit findings below the threshold are filtered before remediation; filtered CVEs are written to a temp SARIF file and passed directly to `remediateFromScan`.
+- Added GitHub Enterprise Server support via `AUTOREMEDIATOR_GITHUB_APP_GITHUB_URL` and `AUTOREMEDIATOR_GITHUB_APP_GITHUB_API_URL` environment variables.
+- Added `AUTOREMEDIATOR_GITHUB_APP_BASE_URL` for explicit webhook URL override and `AUTOREMEDIATOR_GITHUB_APP_ENABLE_SETUP_ROUTES` to disable setup endpoints in production.
+
+### Changed
+
+- **Breaking:** Policy file format changed from `.autoremediator.json` (JSON) to `.github/autoremediator.yml` (YAML). Update any existing policy files accordingly.
+- **Breaking (GitHub App):** `AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_CWD` and `AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_DRY_RUN` environment variables removed. Remediation behavior is now controlled per-repository via `.github/autoremediator.yml` fetched from each target repo.
+- **Breaking (GitHub App):** `createDefaultRemediationHandler` no longer accepts `cwd`/`dryRun` options. It now requires an `octokitFactory` function and accepts an optional `repoConfigProvider` for testing. Per-repo config is fetched automatically via the GitHub API.
+- `check_suite.completed` action is now explicitly ignored by the event dispatcher; only `requested` and `rerequested` actions trigger remediation (previously both actions were treated as equivalent).
+
+### Fixed
+
+- Scanner adapters: `moderate` severity from npm/yarn audit output is now correctly normalized to `MEDIUM` (was previously mapped to `UNKNOWN`).
+
 ## 0.9.0
 
 ### Added

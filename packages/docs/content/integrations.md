@@ -158,19 +158,52 @@ All scan-mode flags are available as inputs:
 | `run-tests` | Validate changes with test command | `false` |
 | `ci` | Exit non-zero on unresolved CVEs | `false` |
 | `summary-file` | Write machine-readable summary JSON | — |
-| `policy` | Path to `.autoremediator.json` | — |
+| `policy` | Path to `.github/autoremediator.yml` | — |
 | `llm-provider` | `remote`, `local` | `local` |
 | `node-version` | Node.js version (24+) | `24` |
+| `token` | GitHub token for PR creation | `github.token` |
+| `create-pull-request` | Open a pull request with remediated changes | `false` |
+| `pull-request-branch` | Branch name prefix for the fix branch | — |
+| `pull-request-title` | Title for the pull request | — |
+| `pull-request-commit-message` | Commit message for remediation commits | — |
 
 `scan-file`, `audit`, and `cve-id` are mutually exclusive.
+
+### Pull Request Creation
+
+Composite actions cannot declare `permissions` — the calling job must grant them.
+When using `create-pull-request: 'true'`, the job needs write access to repository contents and pull requests:
+
+```yaml
+jobs:
+  remediate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - run: pnpm audit --json > audit.json || true
+      - uses: rawlings/autoremediator@v1
+        with:
+          scan-file: audit.json
+          create-pull-request: 'true'
+```
+
+The `token` input defaults to `${{ github.token }}`. Explicitly passing a token is only needed when using a custom app token or a PAT scoped to a different repository.
+
+When `dry-run: 'true'` is set, `create-pull-request` is ignored — no remote mutations occur in dry-run mode.
 
 ## GitHub Actions Reusable Workflow
 
 For repositories that want a Dependabot-like setup without copying several job steps, use the reusable workflow in this repository.
-It wraps the Marketplace action, runs audit mode by default, and can optionally create a pull request when changes are applied.
+It wraps the Marketplace action and is designed to support automatic remediation with reviewable pull requests.
 
 ```yaml
-name: autoremediator-gate
+name: autoremediator-remediate
 
 on:
   pull_request:
@@ -178,13 +211,16 @@ on:
     branches: [main]
 
 jobs:
-  gate:
+  remediate:
     uses: rawlings/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v1
     with:
       audit: true
-      dry-run: true
+      dry-run: false
       ci: true
+      create-pull-request: true
 ```
+
+If you only want an enforcement gate without applying changes, keep `dry-run: true` and omit `create-pull-request`.
 
 The reusable workflow exposes the same remediation inputs as the action plus workflow-only controls for:
 
@@ -215,6 +251,25 @@ They are not GitHub UI-discoverable starter workflows unless they are also publi
 
 The `packages/github-app` runtime provides signed webhook intake, delivery idempotency, installation lifecycle state, installation token exchange, persistent queue execution, and optional scheduled orchestration.
 
+### Real GitHub App Setup
+
+The server exposes a `/setup` endpoint that registers the app on GitHub automatically using the [App Manifest API](https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-from-a-manifest). Permissions, events, and the webhook URL are all pre-filled — no manual GitHub App configuration required.
+
+1. Set `AUTOREMEDIATOR_GITHUB_APP_BASE_URL` to the public URL of this server (e.g. `https://autoremediator.example.com`) and start the server without the `APP_ID` / `PRIVATE_KEY` / `WEBHOOK_SECRET` credentials.
+2. Navigate to `https://<your-host>/setup` in a browser. The page renders a one-click registration form.
+3. Click **Create GitHub App on GitHub**. GitHub pre-fills the form from this server's manifest and redirects back to `/setup/complete` with your credentials on confirmation.
+4. Copy the three env vars shown (`AUTOREMEDIATOR_GITHUB_APP_ID`, `AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY`, `AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET`), set them, and restart the server.
+5. Install the app on the repositories you want to remediate. GitHub calls `/install` on successful installation, which the server acknowledges and tracks.
+
+Permissions declared in the manifest:
+
+- `Contents`: Read and write (version bumps and lockfile mutations)
+- `Pull requests`: Read and write (native PR creation)
+- `Checks`: Read and write (check run status publishing)
+- `Metadata`: Read-only (default)
+
+Events: `check_suite`, `installation`, `installation_repositories`, `workflow_dispatch`
+
 Environment variables:
 
 | Variable | Description | Required |
@@ -223,11 +278,13 @@ Environment variables:
 | `AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY` | GitHub App private key (PEM) | yes |
 | `AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET` | Webhook signature secret | yes |
 | `AUTOREMEDIATOR_GITHUB_APP_PORT` | HTTP listen port (default `3001`) | no |
+| `AUTOREMEDIATOR_GITHUB_APP_BASE_URL` | Public URL of this server, used by `/setup` to build the app manifest (e.g. `https://autoremediator.example.com`) | no |
+| `AUTOREMEDIATOR_GITHUB_APP_ENABLE_SETUP_ROUTES` | Enable `/setup`, `/setup/complete`, and `/install` registration routes (default `true`) | no |
+| `AUTOREMEDIATOR_GITHUB_APP_GITHUB_URL` | GitHub base URL for GitHub Enterprise Server (default `https://github.com`) | no |
+| `AUTOREMEDIATOR_GITHUB_APP_GITHUB_API_URL` | GitHub API base URL for GitHub Enterprise Server (default `https://api.github.com`) | no |
 | `AUTOREMEDIATOR_GITHUB_APP_DATA_DIR` | Optional persistent state directory for restart-safe dedupe and installation state | no |
 | `AUTOREMEDIATOR_GITHUB_APP_TRIGGER_TIMEOUT_MS` | Optional callback timeout in ms for remediation trigger handlers | no |
 | `AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION` | Enable built-in remediation adapter for `check_suite` and `workflow_dispatch` events | no |
-| `AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_CWD` | Project directory used by default remediation adapter | no |
-| `AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_DRY_RUN` | Dry-run mode for default remediation adapter (default `true`) | no |
 | `AUTOREMEDIATOR_GITHUB_APP_LOG_EVENT_TRACES` | Emit one JSON line per processed webhook event with status and reason | no |
 | `AUTOREMEDIATOR_GITHUB_APP_MAX_WEBHOOK_BODY_BYTES` | Maximum accepted webhook request body size in bytes (default `262144`) | no |
 | `AUTOREMEDIATOR_GITHUB_APP_REQUIRE_JSON_CONTENT_TYPE` | Require `application/json` content type for webhook requests (default `true`) | no |
@@ -240,11 +297,17 @@ Environment variables:
 | `AUTOREMEDIATOR_GITHUB_APP_WORKER_CONCURRENCY` | Maximum number of concurrent queue jobs (default `1`) | no |
 | `AUTOREMEDIATOR_GITHUB_APP_ENABLE_SCHEDULER` | Enable interval scheduler that enqueues `workflow_dispatch` jobs | no |
 | `AUTOREMEDIATOR_GITHUB_APP_SCHEDULE_INTERVAL_MS` | Scheduler interval in milliseconds (default `3600000`) | no |
+| `AUTOREMEDIATOR_GITHUB_APP_ENABLE_STATUS_PUBLISHING` | Publish GitHub check run results for queued and completed remediation jobs (requires app credentials; default `false`) | no |
+| `AUTOREMEDIATOR_GITHUB_APP_STATUS_CHECK_NAME` | Name displayed on the GitHub check run (default `autoremediator/remediation`) | no |
 
 When `AUTOREMEDIATOR_GITHUB_APP_DATA_DIR` is set, webhook state and job queue state are persisted across restarts.
 When `AUTOREMEDIATOR_GITHUB_APP_DATA_DIR` is not set, runtime state and queue are in-memory only.
 When `AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION` is `true`, queued trigger jobs run `remediateFromScan` in audit mode.
 For jobs with an installation context, the app exchanges installation tokens through GitHub App authentication before invoking remediation callbacks.
+
+Per-repository remediation behavior (dry-run mode, severity filter, pull request settings, and upgrade constraints) is configured through `.github/autoremediator.yml` checked in to each target repository.
+The GitHub App fetches this file via the GitHub API on each webhook delivery and falls back to safe defaults when the file is absent.
+See [Policy and Safety](policy-and-safety.md) for the full YAML schema and field reference.
 
 Webhook responses include an `x-request-id` header (propagated when provided by caller, otherwise generated).
 The `/health` endpoint includes in-memory runtime counters (`totalRequests`, `webhookRequests`, `handled`, `ignored`, `duplicate`, `rejected`) and grouped maps (`byEvent`, `byStatusCode`) for operational visibility.
@@ -255,6 +318,24 @@ Local run commands:
 ```bash
 pnpm build:github-app
 pnpm start:github-app
+```
+
+### Quickstart Profile (Automatic PRs)
+
+Use this profile when you want the runtime to remediate and open pull requests automatically. Enable the default remediation handler via env var, then configure per-repo behavior in `.github/autoremediator.yml`:
+
+```bash
+AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION=true
+```
+
+```yaml
+# .github/autoremediator.yml (committed to each target repository)
+dryRun: false
+runTests: true
+minimumSeverity: HIGH
+pullRequest:
+  enabled: true
+  grouping: per-cve
 ```
 
 ### Operator Runbook (Recommended Production Defaults)

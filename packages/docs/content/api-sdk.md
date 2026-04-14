@@ -17,6 +17,7 @@ Related references:
 - `planRemediation(cveId, options?)`
 - `remediateFromScan(inputPath, options?)`
 - `remediatePortfolio(options)`
+- `updateOutdated(options?)`
 - `listPatchArtifacts(options?)`
 - `inspectPatchArtifact(patchFilePath, options?)`
 - `validatePatchArtifact(patchFilePath, options?)`
@@ -54,6 +55,27 @@ What: runs a non-mutating remediation preview for a single CVE.
 Why: best for agent orchestration systems that need to inspect intended actions before allowing write operations.
 
 How: forces preview semantics and returns a standard remediation report shape with dry-run outcomes.
+
+### `updateOutdated(options?)`
+
+What: bumps all outdated npm packages to their latest versions without requiring a CVE ID.
+
+Why: best for routine maintenance automation alongside security remediation — replaces manual `npm update` workflows with a policy-aware, evidence-tracked operation.
+
+How: reads `package.json` at `cwd`, queries the npm registry for outdated packages, skips major bumps when `allowMajorBumps` is `false` (default), applies version bumps, and optionally runs tests and creates a pull request.
+
+Options (`UpdateOutdatedOptions` extends `RemediateOptions`):
+
+- `includeTransitive`: include indirect dependencies (default: `false`, direct only)
+- All standard `RemediateOptions` — `dryRun`, `runTests`, `changeRequest`, `policy`, `evidence`, etc.
+
+Report shape (`UpdateOutdatedReport`):
+
+- `status`: `"ok"` | `"partial"` | `"failed"`
+- `outdatedPackages`: array of `OutdatedPackage` — `name`, `currentVersion`, `wantedVersion`, `latestVersion`, `isMajorBump`, `dependencyScope`
+- `successCount`, `failedCount`, `skippedCount` — skipped packages are those blocked by `allowMajorBumps: false`
+- `errors`: per-package errors (e.g. private registry packages not found)
+- `patchCount`, `evidenceFile`, `constraints`, `correlation`, `provenance`
 
 ### `remediatePortfolio(options)`
 
@@ -105,7 +127,7 @@ Core options:
 - `preview`: non-mutating planning mode for orchestration/approval workflows
 - `runTests`: enables post-apply test validation
 - `llmProvider`: provider selection (`remote` or `local` deterministic primary path)
-- `policy`: path to `.autoremediator.json`
+- `policy`: path to `.github/autoremediator.yml`
 - `evidence`: enable/disable evidence artifact writing for direct and scan workflows
 - `patchesDir`: patch output/apply location when fallback patching is used
 - `changeRequest`: optional native pull request / merge request creation controls (`provider`, `grouping`, branch naming, repository override)
@@ -196,7 +218,7 @@ const report = await remediate("CVE-2021-23337", {
 
 const scanReport = await remediateFromScan("./audit.json", {
 	format: "npm-audit",
-	policy: "./.autoremediator.json"
+	policy: "./.github/autoremediator.yml"
 });
 
 const preview = await planRemediation("CVE-2021-23337", {

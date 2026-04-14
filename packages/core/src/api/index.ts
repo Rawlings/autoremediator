@@ -7,6 +7,7 @@
  */
 export type {
   CorrelationContext,
+  CveSeverity,
   LlmUsageMetrics,
   ModelPersonality,
   RemediationConstraints,
@@ -36,6 +37,9 @@ export type {
   UnresolvedReasonCounts,
   PatchValidationPhase,
   PatchValidationPhaseName,
+  OutdatedPackage,
+  UpdateOutdatedOptions,
+  UpdateOutdatedReport,
 } from "../platform/types.js";
 export type { ScanInputFormat } from "../scanner/index.js";
 export type { ScanOptions, ScanReport, CiSummary } from "./contracts.js";
@@ -49,6 +53,7 @@ export {
   createRemediateOptionSchemaProperties,
   createScanOptionSchemaProperties,
   createScanReportSchemaProperties,
+  createUpdateOutdatedOptionSchemaProperties,
 } from "./options-schema.js";
 
 export { toCiSummary, ciExitCode } from "./reporting.js";
@@ -56,3 +61,4 @@ export { toSarifOutput, type SarifOutput } from "./sarif.js";
 export { inspectPatchArtifact, listPatchArtifacts, validatePatchArtifact } from "./patches/index.js";
 export { remediate, planRemediation } from "./remediate/index.js";
 export { remediateFromScan } from "./remediate-from-scan/index.js";
+export { updateOutdated } from "./update-outdated/index.js";

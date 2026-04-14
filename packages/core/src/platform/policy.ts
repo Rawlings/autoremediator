@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { parse as yamlParse } from "yaml";
 import type { PatchConfidenceThresholds, RemediationConstraints } from "./types.js";
 
 export interface AutoremediatorPolicy {
@@ -40,11 +41,11 @@ export const DEFAULT_POLICY: AutoremediatorPolicy = {
 };
 
 export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPolicy {
-  const candidate = explicitPath ?? join(cwd, ".autoremediator.json");
+  const candidate = explicitPath ?? join(cwd, ".github", "autoremediator.yml");
   if (!existsSync(candidate)) return DEFAULT_POLICY;
 
   try {
-    const parsed = JSON.parse(readFileSync(candidate, "utf8")) as Partial<AutoremediatorPolicy>;
+    const parsed = yamlParse(readFileSync(candidate, "utf8")) as Partial<AutoremediatorPolicy>;
     return {
       allowMajorBumps: parsed.allowMajorBumps ?? DEFAULT_POLICY.allowMajorBumps,
       denyPackages: parsed.denyPackages ?? DEFAULT_POLICY.denyPackages,

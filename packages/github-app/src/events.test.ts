@@ -61,7 +61,7 @@ describe("dispatchGitHubEvent", () => {
 
     const result = await dispatchGitHubEvent(
       { eventName: "check_suite", deliveryId: "delivery-check" },
-      { installation: { id: 99 } },
+      { action: "requested", installation: { id: 99 } },
       { stateStore }
     );
 
@@ -69,7 +69,17 @@ describe("dispatchGitHubEvent", () => {
     expect(result.reason).toContain("not active");
   });
 
-  it("fires remediation callback for active check_suite", async () => {
+  it("ignores check_suite.completed action", async () => {
+    const result = await dispatchGitHubEvent(
+      { eventName: "check_suite", deliveryId: "delivery-completed" },
+      { action: "completed" }
+    );
+
+    expect(result.status).toBe("ignored");
+    expect(result.reason).toContain("check_suite action not triggerable");
+  });
+
+  it("fires remediation callback for active check_suite.requested", async () => {
     const stateStore = createInMemoryAppStateStore();
     await dispatchGitHubEvent(
       { eventName: "installation", deliveryId: "delivery-activate" },
@@ -81,7 +91,7 @@ describe("dispatchGitHubEvent", () => {
 
     const result = await dispatchGitHubEvent(
       { eventName: "check_suite", deliveryId: "delivery-trigger" },
-      { installation: { id: 7 } },
+      { action: "requested", installation: { id: 7 } },
       {
         stateStore,
         onRemediationRequested: (context) => {
@@ -99,6 +109,61 @@ describe("dispatchGitHubEvent", () => {
     expect(calls[0]?.eventName).toBe("check_suite");
     expect(calls[0]?.installationId).toBe(7);
     expect(calls[0]?.deliveryId).toBe("delivery-trigger");
+  });
+
+  it("fires remediation callback for push to default branch", async () => {
+    const stateStore = createInMemoryAppStateStore();
+    await dispatchGitHubEvent(
+      { eventName: "installation", deliveryId: "delivery-push-install" },
+      { action: "created", installation: { id: 20 } },
+      { stateStore }
+    );
+
+    const calls: string[] = [];
+
+    const result = await dispatchGitHubEvent(
+      { eventName: "push", deliveryId: "delivery-push" },
+      {
+        ref: "refs/heads/main",
+        installation: { id: 20 },
+        repository: { default_branch: "main" },
+      },
+      {
+        stateStore,
+        onRemediationRequested: (context) => {
+          calls.push(context.eventName);
+        },
+      }
+    );
+
+    expect(result.status).toBe("handled");
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toBe("push");
+  });
+
+  it("ignores push to non-default branch", async () => {
+    const result = await dispatchGitHubEvent(
+      { eventName: "push", deliveryId: "delivery-push-feature" },
+      {
+        ref: "refs/heads/feature/my-branch",
+        repository: { default_branch: "main" },
+      }
+    );
+
+    expect(result.status).toBe("ignored");
+    expect(result.reason).toContain("non-default branch");
+  });
+
+  it("handles installation.new_permissions_accepted", async () => {
+    const stateStore = createInMemoryAppStateStore();
+    const result = await dispatchGitHubEvent(
+      { eventName: "installation", deliveryId: "delivery-perms" },
+      { action: "new_permissions_accepted", installation: { id: 55 } },
+      { stateStore }
+    );
+
+    expect(result.status).toBe("handled");
+    expect(stateStore.isInstallationActive(55)).toBe(true);
   });
 
   it("does not fail event dispatch when remediation callback throws", async () => {

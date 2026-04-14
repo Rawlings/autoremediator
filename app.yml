@@ -1,0 +1,40 @@
+name: autoremediator
+url: https://github.com/rawlings/autoremediator
+
+# Webhook URL is set dynamically by the /setup manifest flow.
+# For manual registration, replace <your-host> with your server's public URL.
+hook_attributes:
+  url: https://<your-host>/webhook
+
+# GitHub redirects here after the manifest flow completes.
+redirect_url: https://<your-host>/setup/complete
+
+# GitHub calls this URL after a user installs or updates the app on their repositories.
+setup_url: https://<your-host>/install
+setup_on_update: true
+
+# Set to true if you want other GitHub users to install via the Marketplace.
+public: false
+
+default_permissions:
+  # Read and write access for version-bump commits and lockfile mutations.
+  contents: write
+  # Read and write access for native pull request creation.
+  pull_requests: write
+  # Read and write access for check run status publishing.
+  checks: write
+  # Required by GitHub for all apps.
+  metadata: read
+
+default_events:
+  # Triggers remediation after a push causes CI to request a new check suite.
+  - check_suite
+  # Tracks app installation and suspension lifecycle.
+  - installation
+  # Tracks per-repository installation changes.
+  - installation_repositories
+  # Triggers remediation on push events to the default branch only.
+  # Non-default branches are ignored to avoid duplicate runs with PR workflows.
+  - push
+  # Triggers remediation via manual or scheduled workflow dispatch.
+  - workflow_dispatch

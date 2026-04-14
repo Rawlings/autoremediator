@@ -100,6 +100,23 @@ When to use which mode:
 | `--summary-file <path>` | summary artifact output | preserves auditable run metadata for dashboards |
 | `--no-evidence` | disables evidence artifact writing | use when evidence must be suppressed for a specific run |
 
+## Update-Outdated Mode
+
+Bumps all outdated npm packages to their latest versions without requiring a CVE ID. Useful for routine maintenance alongside security remediation.
+
+```bash
+autoremediator update-outdated
+autoremediator update-outdated --include-transitive
+autoremediator update-outdated --dry-run --json
+autoremediator update-outdated --run-tests --create-change-request --change-request-provider github
+```
+
+| Option | What it controls |
+|---|---|
+| `--include-transitive` | Include indirect/transitive dependencies (default: direct only) |
+
+Packages where only a major version bump is available are skipped when `allowMajorBumps: false` (the default). They appear in `skippedCount` in the report, not `failedCount`.
+
 ## Patch Lifecycle Commands
 
 Patch fallback now emits durable patch artifacts that can be managed separately from a remediation run.
@@ -110,6 +127,7 @@ Available commands:
 - `autoremediator patches inspect <patch-file>`
 - `autoremediator patches validate <patch-file>`
 - `autoremediator portfolio --targets-file ./targets.json`
+- `autoremediator update-outdated`
 
 Portfolio target files are JSON arrays. Each element provides a `cwd` and either `cveId` or `inputPath`/`audit`:
 
@@ -214,7 +232,7 @@ autoremediator scan --input ./audit.json --format auto --ci --summary-file ./sum
 Policy-controlled remediation with validation:
 
 ```bash
-autoremediator CVE-2021-23337 --policy ./.autoremediator.json --run-tests
+autoremediator CVE-2021-23337 --policy ./.github/autoremediator.yml --run-tests
 ```
 
 Deterministic mode run:

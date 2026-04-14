@@ -54,7 +54,7 @@ on:
         type: string
         default: ""
       policy:
-        description: Optional .autoremediator.json policy path.
+        description: Optional .github/autoremediator.yml policy path.
         required: false
         type: string
         default: ""
@@ -68,6 +68,16 @@ on:
         required: false
         type: string
         default: "24"
+      update-outdated:
+        description: Bump all outdated npm packages to their latest versions (no CVE required).
+        required: false
+        type: boolean
+        default: false
+      include-transitive:
+        description: Include indirect/transitive dependencies in the outdated check. Only used when update-outdated is true.
+        required: false
+        type: boolean
+        default: false
       create-pull-request:
         description: Create or update a pull request when remediation changes files.
         required: false
@@ -178,6 +188,8 @@ jobs:
           policy: ${{ inputs.policy }}
           llm-provider: ${{ inputs.llm-provider }}
           node-version: ${{ inputs.node-version }}
+          update-outdated: ${{ inputs.update-outdated && 'true' || 'false' }}
+          include-transitive: ${{ inputs.include-transitive && 'true' || 'false' }}
 
       - name: Remove checked out action source
         if: ${{ always() }}

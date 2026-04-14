@@ -11,8 +11,6 @@ describe("loadGitHubAppConfig", () => {
       AUTOREMEDIATOR_GITHUB_APP_DATA_DIR: ".autoremediator/github-app",
       AUTOREMEDIATOR_GITHUB_APP_TRIGGER_TIMEOUT_MS: "2500",
       AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION: "true",
-      AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_CWD: "./demo-vuln-app",
-      AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_DRY_RUN: "false",
       AUTOREMEDIATOR_GITHUB_APP_LOG_EVENT_TRACES: "true",
       AUTOREMEDIATOR_GITHUB_APP_MAX_WEBHOOK_BODY_BYTES: "4096",
       AUTOREMEDIATOR_GITHUB_APP_REQUIRE_JSON_CONTENT_TYPE: "false",
@@ -25,6 +23,8 @@ describe("loadGitHubAppConfig", () => {
       AUTOREMEDIATOR_GITHUB_APP_WORKER_CONCURRENCY: "2",
       AUTOREMEDIATOR_GITHUB_APP_ENABLE_SCHEDULER: "true",
       AUTOREMEDIATOR_GITHUB_APP_SCHEDULE_INTERVAL_MS: "60000",
+      AUTOREMEDIATOR_GITHUB_APP_ENABLE_STATUS_PUBLISHING: "true",
+      AUTOREMEDIATOR_GITHUB_APP_STATUS_CHECK_NAME: "autoremediator/check",
     });
 
     expect(config.appId).toBe("12345");
@@ -32,8 +32,6 @@ describe("loadGitHubAppConfig", () => {
     expect(config.dataDir).toBe(".autoremediator/github-app");
     expect(config.remediationTriggerTimeoutMs).toBe(2500);
     expect(config.enableDefaultRemediationHandler).toBe(true);
-    expect(config.remediationCwd).toBe("./demo-vuln-app");
-    expect(config.remediationDryRun).toBe(false);
     expect(config.logEventTraces).toBe(true);
     expect(config.maxWebhookBodyBytes).toBe(4096);
     expect(config.requireJsonContentType).toBe(false);
@@ -46,6 +44,8 @@ describe("loadGitHubAppConfig", () => {
     expect(config.jobWorkerConcurrency).toBe(2);
     expect(config.enableScheduler).toBe(true);
     expect(config.scheduleIntervalMs).toBe(60000);
+    expect(config.enableStatusPublishing).toBe(true);
+    expect(config.statusCheckName).toBe("autoremediator/check");
   });
 
   it("uses defaults for optional hardening options", () => {
@@ -64,6 +64,8 @@ describe("loadGitHubAppConfig", () => {
     expect(config.jobWorkerConcurrency).toBe(1);
     expect(config.enableScheduler).toBe(false);
     expect(config.scheduleIntervalMs).toBe(3_600_000);
+    expect(config.enableStatusPublishing).toBe(false);
+    expect(config.statusCheckName).toBeUndefined();
   });
 
   it("fails when required values are missing", () => {
@@ -180,3 +182,4 @@ describe("loadGitHubAppConfig", () => {
     ).toThrow("Invalid AUTOREMEDIATOR_GITHUB_APP_SCHEDULE_INTERVAL_MS");
   });
 });
+

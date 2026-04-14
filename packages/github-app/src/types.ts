@@ -1,3 +1,55 @@
+import type { CveSeverity } from "autoremediator";
+
+export interface AutoremediatorRepoConfig {
+  // Remediation behavior
+  dryRun: boolean;
+  runTests: boolean;
+  minimumSeverity: CveSeverity;
+  cwd?: string;
+  // Policy / constraints  (mirrors AutoremediatorPolicy fields)
+  allowMajorBumps: boolean;
+  denyPackages: string[];
+  allowPackages: string[];
+  constraints?: {
+    directDependenciesOnly?: boolean;
+    preferVersionBump?: boolean;
+    installMode?: "standard" | "prefer-offline" | "deterministic";
+    installPreferOffline?: boolean;
+    enforceFrozenLockfile?: boolean;
+    workspace?: string;
+  };
+  modelDefaults?: Partial<Record<"remote" | "local", string>>;
+  providerSafetyProfile?: "strict" | "relaxed";
+  requireConsensusForHighRisk?: boolean;
+  consensusProvider?: "remote" | "local";
+  consensusModel?: string;
+  patchConfidenceThresholds?: Partial<Record<"low" | "medium" | "high", number>>;
+  dynamicModelRouting?: boolean;
+  dynamicRoutingThresholdChars?: number;
+  // Pull request creation
+  pullRequest?: {
+    enabled?: boolean;
+    grouping?: "all" | "per-cve" | "per-package";
+    repository?: string;
+    baseBranch?: string;
+    branchPrefix?: string;
+    titlePrefix?: string;
+    bodyFooter?: string;
+    draft?: boolean;
+    pushRemote?: string;
+    tokenEnvVar?: string;
+  };
+}
+
+export const DEFAULT_REPO_CONFIG: AutoremediatorRepoConfig = {
+  dryRun: true,
+  runTests: false,
+  minimumSeverity: "HIGH",
+  allowMajorBumps: false,
+  denyPackages: [],
+  allowPackages: [],
+};
+
 export interface GitHubAppConfig {
   appId: string;
   privateKey: string;
@@ -6,8 +58,6 @@ export interface GitHubAppConfig {
   dataDir?: string;
   remediationTriggerTimeoutMs?: number;
   enableDefaultRemediationHandler?: boolean;
-  remediationCwd?: string;
-  remediationDryRun?: boolean;
   logEventTraces?: boolean;
   maxWebhookBodyBytes?: number;
   requireJsonContentType?: boolean;
@@ -20,6 +70,13 @@ export interface GitHubAppConfig {
   jobWorkerConcurrency?: number;
   enableScheduler?: boolean;
   scheduleIntervalMs?: number;
+  enableStatusPublishing?: boolean;
+  statusCheckName?: string;
+  baseUrl?: string;
+  enableSetupRoutes?: boolean;
+  setupSecret?: string;
+  githubUrl?: string;
+  githubApiUrl?: string;
 }
 
 export interface DispatchResult {
@@ -33,18 +90,25 @@ export interface WebhookContext {
 }
 
 export interface RemediationTriggerContext {
-  eventName: "check_suite" | "workflow_dispatch";
+  eventName: "check_suite" | "push" | "workflow_dispatch";
   installationId?: number;
   deliveryId?: string;
   payload: Record<string, unknown>;
   installationToken?: string;
 }
 
+export type RemediationJobCompletion = "success" | "partial" | "failed";
+
+export interface RemediationJobResult {
+  status: RemediationJobCompletion;
+  reason?: string;
+}
+
 export type JobStatus = "queued" | "running" | "completed" | "failed";
 
 export interface QueueJob {
   id: string;
-  eventName: "check_suite" | "workflow_dispatch";
+  eventName: "check_suite" | "push" | "workflow_dispatch";
   installationId?: number;
   deliveryId?: string;
   payload: Record<string, unknown>;

@@ -27,7 +27,7 @@ interface GhAdvisory {
   ghsa_id: string;
   cve_id: string | null;
   summary: string;
-  severity: "low" | "medium" | "high" | "critical" | "unknown";
+  severity: "low" | "moderate" | "high" | "critical" | "unknown";
   vulnerabilities: GhVulnerability[];
   cvss?: { score: number; vector_string: string };
   references: Array<{ url: string }>;

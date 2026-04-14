@@ -70,7 +70,7 @@ inputs:
     required: false
   policy:
     description: >
-      Path to a policy file (.autoremediator.json) that controls upgrade
+      Path to a policy file (.github/autoremediator.yml) that controls upgrade
       constraints, allow/deny lists, and remediation behavior.
     required: false
   llm-provider:
@@ -84,12 +84,44 @@ inputs:
     description: Node.js version to use. Must be 24 or higher.
     required: false
     default: '24'
+  token:
+    description: GitHub token for PR creation. Defaults to github.token.
+    required: false
+    default: ${{ github.token }}
+  create-pull-request:
+    description: Open a pull request with remediated changes.
+    required: false
+    default: 'false'
+  pull-request-branch:
+    description: Branch name prefix for the fix branch.
+    required: false
+  pull-request-title:
+    description: Title for the pull request.
+    required: false
+  pull-request-commit-message:
+    description: Commit message for remediation commits.
+    required: false
+  update-outdated:
+    description: >
+      Run update-outdated mode: bump all outdated npm packages to their latest
+      versions without requiring a CVE ID. Cannot be combined with cve-id or scan-file.
+    required: false
+    default: 'false'
+  include-transitive:
+    description: >
+      Include indirect/transitive dependencies in the outdated check.
+      Only applicable when update-outdated is true.
+    required: false
+    default: 'false'
 
 outputs:
   summary-file:
     description: >
       Path to the generated summary JSON file (if summary-file input was set).
     value: ${{ inputs.summary-file }}
+  pull-request-url:
+    description: URL of the created pull request, if any.
+    value: ${{ steps.scan.outputs.pull-request-url }}
 
 runs:
   using: composite
@@ -140,6 +172,7 @@ runs:
       if: ${{ inputs.cve-id != '' }}
       shell: bash
       env:
+        GH_TOKEN: ${{ inputs.token }}
         INPUT_CVE_ID: ${{ inputs.cve-id }}
         INPUT_CWD: ${{ inputs.cwd }}
         INPUT_PKG_MANAGER: ${{ inputs.package-manager }}
@@ -157,9 +190,11 @@ runs:
         autoremediator "${ARGS[@]}"
 
     - name: Remediate from scan input or audit mode
+      id: scan
       if: ${{ inputs.scan-file != '' || inputs.audit == 'true' }}
       shell: bash
       env:
+        GH_TOKEN: ${{ inputs.token }}
         INPUT_SCAN_FILE: ${{ inputs.scan-file }}
         INPUT_AUDIT: ${{ inputs.audit }}
         INPUT_FORMAT: ${{ inputs.format }}
@@ -171,6 +206,10 @@ runs:
         INPUT_SUMMARY_FILE: ${{ inputs.summary-file }}
         INPUT_POLICY: ${{ inputs.policy }}
         INPUT_LLM_PROVIDER: ${{ inputs.llm-provider }}
+        INPUT_CREATE_PR: ${{ inputs.create-pull-request }}
+        INPUT_PR_BRANCH: ${{ inputs.pull-request-branch }}
+        INPUT_PR_TITLE: ${{ inputs.pull-request-title }}
+        INPUT_PR_COMMIT_MSG: ${{ inputs.pull-request-commit-message }}
       run: |
         ARGS=("scan" "--format" "$INPUT_FORMAT" "--cwd" "$INPUT_CWD")
         [ -n "$INPUT_SCAN_FILE" ]           && ARGS+=("--input" "$INPUT_SCAN_FILE")
@@ -182,4 +221,33 @@ runs:
         [ -n "$INPUT_SUMMARY_FILE" ]       && ARGS+=("--summary-file" "$INPUT_SUMMARY_FILE")
         [ -n "$INPUT_POLICY" ]             && ARGS+=("--policy" "$INPUT_POLICY")
         [ -n "$INPUT_LLM_PROVIDER" ]       && ARGS+=("--llm-provider" "$INPUT_LLM_PROVIDER")
+        if [ "$INPUT_CREATE_PR" = "true" ] && [ "$INPUT_DRY_RUN" != "true" ]; then
+          ARGS+=("--create-change-request" "--change-request-provider" "github")
+        fi
+        autoremediator "${ARGS[@]}"
+        PR_URL=""
+        if [ "$INPUT_CREATE_PR" = "true" ] && [ "$INPUT_DRY_RUN" != "true" ]; then
+          BRANCH="${INPUT_PR_BRANCH:-chore/autoremediator}"
+          PR_URL="$(gh pr list --head "$BRANCH" --json url -q '.[0].url' 2>/dev/null || true)"
+        fi
+        echo "pull-request-url=${PR_URL}" >> "$GITHUB_OUTPUT"
+
+    - name: Update outdated packages
+      id: update-outdated
+      if: ${{ inputs.update-outdated == 'true' }}
+      shell: bash
+      env:
+        INPUT_CWD: ${{ inputs.cwd }}
+        INPUT_PKG_MANAGER: ${{ inputs.package-manager }}
+        INPUT_DRY_RUN: ${{ inputs.dry-run }}
+        INPUT_RUN_TESTS: ${{ inputs.run-tests }}
+        INPUT_POLICY: ${{ inputs.policy }}
+        INPUT_INCLUDE_TRANSITIVE: ${{ inputs.include-transitive }}
+      run: |
+        ARGS=("update-outdated" "--cwd" "$INPUT_CWD")
+        [ -n "$INPUT_PKG_MANAGER" ]              && ARGS+=("--package-manager" "$INPUT_PKG_MANAGER")
+        [ "$INPUT_DRY_RUN"         = "true" ]    && ARGS+=("--dry-run")
+        [ "$INPUT_RUN_TESTS"       = "true" ]    && ARGS+=("--run-tests")
+        [ -n "$INPUT_POLICY" ]                   && ARGS+=("--policy" "$INPUT_POLICY")
+        [ "$INPUT_INCLUDE_TRANSITIVE" = "true" ] && ARGS+=("--include-transitive")
         autoremediator "${ARGS[@]}"

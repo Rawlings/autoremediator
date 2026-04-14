@@ -9,7 +9,9 @@ export { verifyWebhookSignature, computeWebhookSignature } from "./signature.js"
 export { dispatchGitHubEvent } from "./events.js";
 export { createInMemoryAppStateStore, createFileAppStateStore } from "./state.js";
 export { createDefaultRemediationHandler } from "./remediation-handler.js";
-export type { GitHubAppConfig, DispatchResult, WebhookContext, EventProcessingTrace } from "./types.js";
+export { fetchRepoConfig } from "./repo-config.js";
+export { DEFAULT_REPO_CONFIG } from "./types.js";
+export type { GitHubAppConfig, AutoremediatorRepoConfig, DispatchResult, WebhookContext, EventProcessingTrace } from "./types.js";
 
 export async function startGitHubAppServer(): Promise<void> {
   const config = loadGitHubAppConfig();
@@ -21,8 +23,6 @@ export async function startGitHubAppServer(): Promise<void> {
     stateStore: config.dataDir ? createFileAppStateStore(config.dataDir) : undefined,
     remediationTriggerTimeoutMs: config.remediationTriggerTimeoutMs,
     enableDefaultRemediationHandler: config.enableDefaultRemediationHandler,
-    remediationCwd: config.remediationCwd,
-    remediationDryRun: config.remediationDryRun,
     maxWebhookBodyBytes: config.maxWebhookBodyBytes,
     requireJsonContentType: config.requireJsonContentType,
     allowedEvents: config.allowedEvents,
@@ -34,10 +34,23 @@ export async function startGitHubAppServer(): Promise<void> {
     jobWorkerConcurrency: config.jobWorkerConcurrency,
     enableScheduler: config.enableScheduler,
     scheduleIntervalMs: config.scheduleIntervalMs,
+    enableStatusPublishing: config.enableStatusPublishing,
+    statusCheckName: config.statusCheckName,
+    baseUrl: config.baseUrl,
+    enableSetupRoutes: config.enableSetupRoutes,
+    setupSecret: config.setupSecret,
+    githubUrl: config.githubUrl,
+    githubApiUrl: config.githubApiUrl,
     onEventProcessed: config.logEventTraces
       ? (trace) => {
           // eslint-disable-next-line no-console
           console.log(JSON.stringify({ source: "github-app", type: "event-trace", ...trace }));
+        }
+      : undefined,
+    onStatusTrace: config.logEventTraces
+      ? (message) => {
+          // eslint-disable-next-line no-console
+          console.log(JSON.stringify({ source: "github-app", type: "status-trace", message }));
         }
       : undefined,
   });

@@ -1,5 +1,5 @@
 import http from "node:http";
-import type { PatchArtifactQueryOptions, RemediateOptions, ScanOptions } from "../../api/index.js";
+import type { PatchArtifactQueryOptions, RemediateOptions, ScanOptions, UpdateOutdatedOptions } from "../../api/index.js";
 import { OPENAPI_SPEC } from "../spec/index.js";
 import { sendJson, withOpenApiSource } from "../http-utils.js";
 import type { OpenApiServerDeps } from "../server.js";
@@ -84,6 +84,14 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
     if (!patchFilePath) return;
     await runRequest(res, () =>
       deps.validatePatchArtifactFn(patchFilePath, body?.options as PatchArtifactQueryOptions)
+    );
+  });
+
+  routes.set("POST /update-outdated", async (req, res) => {
+    const body = await readJsonBody<{ options?: unknown }>(req, res);
+    if (!body) return;
+    await runRequest(res, () =>
+      deps.updateOutdatedFn(withOpenApiSource(body.options) as UpdateOutdatedOptions)
     );
   });
 

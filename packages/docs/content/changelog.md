@@ -6,6 +6,8 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- Added GitHub App runtime v1 feature set: automatic pull request creation from remediation runs, GitHub check run status publishing (queued → running → completed), minimum severity threshold filtering (`LOW`/`MEDIUM`/`HIGH`/`CRITICAL`/`UNKNOWN`, default `HIGH`), and native PR grouping strategies (`all`, `per-cve`, `per-package`).
+- Added GitHub App env var surface for PR automation (`AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_CREATE_PULL_REQUEST`, `AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_PR_*` variants), status publishing (`AUTOREMEDIATOR_GITHUB_APP_ENABLE_STATUS_PUBLISHING`, `AUTOREMEDIATOR_GITHUB_APP_STATUS_CHECK_NAME`), and severity gating (`AUTOREMEDIATOR_GITHUB_APP_REMEDIATION_MINIMUM_SEVERITY`).
 - Added GitHub workflow packaging for audit-driven setup, including action-level `audit` mode, a reusable remediation workflow with optional PR creation, and copyable workflow templates for enforcement gates, nightly remediation PRs, and SARIF upload.
 - Added workflow governance automation for GitHub delivery assets, including workflow linting, template metadata validation, stable reusable-workflow reference enforcement, and fixture-based smoke coverage for action and reusable-workflow paths.
 

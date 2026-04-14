@@ -48,4 +48,27 @@ describe("parseYarnAuditJsonFromString", () => {
     expect(findings).toHaveLength(1);
     expect(findings[0]?.cveId).toBe("CVE-2021-44906");
   });
+
+  it("normalises 'moderate' severity to MEDIUM", () => {
+    const input = [
+      JSON.stringify({
+        type: "auditAdvisory",
+        data: {
+          advisory: {
+            module_name: "semver",
+            severity: "moderate",
+            cves: ["CVE-2022-25883"],
+          },
+        },
+      }),
+    ].join("\n");
+
+    const findings = parseYarnAuditJsonFromString(input);
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      cveId: "CVE-2022-25883",
+      severity: "MEDIUM",
+    });
+  });
 });
