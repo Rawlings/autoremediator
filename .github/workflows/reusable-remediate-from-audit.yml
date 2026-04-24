@@ -140,7 +140,7 @@ jobs:
       pull-request-url: ${{ steps.create-pr.outputs.pull-request-url }}
     steps:
       - name: Check out caller repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Resolve reusable workflow source
         id: workflow-source
@@ -151,7 +151,7 @@ jobs:
           echo "ref=${WORKFLOW_REF#*@}" >> "$GITHUB_OUTPUT"
 
       - name: Check out autoremediator action source
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           repository: ${{ steps.workflow-source.outputs.repository }}
           ref: ${{ steps.workflow-source.outputs.ref }}
@@ -270,7 +270,7 @@ jobs:
       - name: Create remediation pull request
         id: create-pr
         if: ${{ success() && inputs.create-pull-request && !inputs.dry-run && steps.changes.outputs.changed == 'true' }}
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6
         with:
           branch: ${{ inputs.pull-request-branch }}
           commit-message: ${{ inputs.pull-request-commit-message }}
@@ -279,7 +279,7 @@ jobs:
 
       - name: Upload summary artifact
         if: ${{ always() && inputs.upload-summary-artifact && steps.summary-output.outputs.exists == 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ${{ inputs.summary-artifact-name }}
           path: ${{ steps.paths.outputs.summary_file }}
