@@ -29,6 +29,9 @@ permissions:
 
 jobs:
   reusable-workflow-smoke:
+    permissions:
+      contents: write
+      pull-requests: write
     uses: ./.github/workflows/reusable-remediate-from-audit.yml
     with:
       scan-file: .github/fixtures/npm-audit-empty.json
