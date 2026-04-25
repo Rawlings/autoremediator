@@ -1,7 +1,15 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse as yamlParse } from "yaml";
-import type { PatchConfidenceThresholds, RemediationConstraints } from "./types.js";
+import type {
+  CveSeverity,
+  ExploitSignalOverridePolicy,
+  PatchConfidenceThresholds,
+  RemediationConstraints,
+  SlaBreach,
+  SlaPolicy,
+  VexSuppression,
+} from "./types.js";
 
 export interface AutoremediatorPolicy {
   allowMajorBumps: boolean;
@@ -16,6 +24,10 @@ export interface AutoremediatorPolicy {
   patchConfidenceThresholds?: PatchConfidenceThresholds;
   dynamicModelRouting?: boolean;
   dynamicRoutingThresholdChars?: number;
+  exploitSignalOverride?: ExploitSignalOverridePolicy;
+  suppressions?: VexSuppression[];
+  sla?: SlaPolicy;
+  skipUnreachable?: boolean;
 }
 
 export const DEFAULT_POLICY: AutoremediatorPolicy = {
@@ -38,6 +50,10 @@ export const DEFAULT_POLICY: AutoremediatorPolicy = {
   patchConfidenceThresholds: {},
   dynamicModelRouting: false,
   dynamicRoutingThresholdChars: 18000,
+  exploitSignalOverride: undefined,
+  suppressions: [],
+  sla: undefined,
+  skipUnreachable: false,
 };
 
 export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPolicy {
@@ -106,6 +122,24 @@ export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPo
       dynamicRoutingThresholdChars:
         parsed.dynamicRoutingThresholdChars ??
         DEFAULT_POLICY.dynamicRoutingThresholdChars,
+      exploitSignalOverride: parsed.exploitSignalOverride
+        ? {
+            kev: parsed.exploitSignalOverride.kev ?? undefined,
+            epss: parsed.exploitSignalOverride.epss ?? undefined,
+          }
+        : undefined,
+      suppressions: Array.isArray(parsed.suppressions)
+        ? (parsed.suppressions as VexSuppression[])
+        : DEFAULT_POLICY.suppressions,
+      sla: parsed.sla
+        ? {
+            critical: (parsed.sla as SlaPolicy).critical,
+            high: (parsed.sla as SlaPolicy).high,
+            medium: (parsed.sla as SlaPolicy).medium,
+            low: (parsed.sla as SlaPolicy).low,
+          }
+        : undefined,
+      skipUnreachable: (parsed as AutoremediatorPolicy).skipUnreachable ?? DEFAULT_POLICY.skipUnreachable,
     };
   } catch {
     return DEFAULT_POLICY;
@@ -118,4 +152,55 @@ export function isPackageAllowed(policy: AutoremediatorPolicy, packageName: stri
     return false;
   }
   return true;
+}
+
+export function isActiveSuppression(suppression: VexSuppression): boolean {
+  if (!suppression.expiresAt) return true;
+  return new Date(suppression.expiresAt) > new Date();
+}
+
+export function findSuppression(
+  policy: AutoremediatorPolicy,
+  cveId: string
+): VexSuppression | undefined {
+  return (policy.suppressions ?? []).find(
+    (s) => s.cveId === cveId && isActiveSuppression(s)
+  );
+}
+
+export function loadSuppressionsFile(filePath: string): VexSuppression[] {
+  try {
+    const content = readFileSync(filePath, "utf8");
+    const parsed = yamlParse(content) as { suppressions?: unknown };
+    return Array.isArray(parsed?.suppressions) ? (parsed.suppressions as VexSuppression[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function checkSlaBreach(
+  cveId: string,
+  severity: CveSeverity,
+  publishedAt: string,
+  slaPolicy: SlaPolicy
+): SlaBreach | null {
+  const severityKey = severity.toLowerCase() as keyof SlaPolicy;
+  const deadlineHours = slaPolicy[severityKey];
+  if (typeof deadlineHours !== "number") return null;
+
+  const publishedMs = new Date(publishedAt).getTime();
+  if (isNaN(publishedMs)) return null;
+
+  const deadlineMs = publishedMs + deadlineHours * 60 * 60 * 1000;
+  const nowMs = Date.now();
+  if (nowMs <= deadlineMs) return null;
+
+  const hoursOverdue = Math.round((nowMs - deadlineMs) / (60 * 60 * 1000));
+  return {
+    cveId,
+    severity,
+    publishedAt,
+    deadlineAt: new Date(deadlineMs).toISOString(),
+    hoursOverdue,
+  };
 }

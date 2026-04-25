@@ -80,6 +80,8 @@ export function addRemediateResultSteps(
         unresolvedReason: result.unresolvedReason,
         reachability: result.reachability?.status,
         hasAlternatives: Boolean(result.alternativeSuggestions?.length),
+        suppressedBy: result.suppressedBy?.justification,
+        regressionDetected: result.regressionDetected,
       }
     );
   }
@@ -92,6 +94,10 @@ export function addRemediateResultSteps(
       resultCount: report.results.length,
       vulnerableCount: report.vulnerablePackages.length,
       llmUsage: report.llmUsage,
+      exploitSignalTriggered: report.exploitSignalTriggered ?? false,
+      slaBreachCount: report.slaBreaches?.length ?? 0,
+      regressionDetectedCount: report.results.filter((r) => r.regressionDetected).length,
+      sbomEntryCount: report.sbom?.length ?? 0,
     }
   );
   finalizeEvidence(evidence);

@@ -78,6 +78,16 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
       enforceFrozenLockfile: opts.enforceFrozenLockfile,
       workspace: opts.workspace,
     },
+    exploitSignalOverride: (opts.kevMandatory || opts.epssThreshold != null)
+      ? {
+          kev: opts.kevMandatory ? { mandatory: true } : undefined,
+          epss: opts.epssThreshold != null ? { mandatory: true, threshold: opts.epssThreshold } : undefined,
+        }
+      : undefined,
+    suppressionsFile: opts.suppressionsFile,
+    slaCheck: opts.slaCheck,
+    skipUnreachable: opts.skipUnreachable,
+    regressionCheck: opts.regressionCheck,
   });
 
   const reportAsScan = asSingleCveScanReport(report);
@@ -152,6 +162,16 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
       enforceFrozenLockfile: opts.enforceFrozenLockfile,
       workspace: opts.workspace,
     },
+    exploitSignalOverride: (opts.kevMandatory || opts.epssThreshold != null)
+      ? {
+          kev: opts.kevMandatory ? { mandatory: true } : undefined,
+          epss: opts.epssThreshold != null ? { mandatory: true, threshold: opts.epssThreshold } : undefined,
+        }
+      : undefined,
+    suppressionsFile: opts.suppressionsFile,
+    slaCheck: opts.slaCheck,
+    skipUnreachable: opts.skipUnreachable,
+    regressionCheck: opts.regressionCheck,
   });
 
   if (opts.summaryFile) {

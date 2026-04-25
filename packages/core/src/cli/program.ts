@@ -71,7 +71,17 @@ function addSharedOptions(program: Command, includeInput = false): Command {
     .option("--no-evidence", "Disable evidence file output")
     .option("--ci", "Enable CI behavior (non-zero exit on failed remediations)", false)
     .option("--output-format <format>", "Output format: json|sarif", "json")
-    .option("--json", "Print JSON output", false);
+    .option("--json", "Print JSON output", false)
+    .option("--kev-mandatory", OPTION_DESCRIPTIONS.kevMandatory, false)
+    .option(
+      "--epss-threshold <value>",
+      OPTION_DESCRIPTIONS.epssThreshold,
+      (v: string) => parseFloat(v)
+    )
+    .option("--suppressions-file <path>", OPTION_DESCRIPTIONS.suppressionsFile)
+    .option("--sla-check", OPTION_DESCRIPTIONS.slaCheck, false)
+    .option("--skip-unreachable", OPTION_DESCRIPTIONS.skipUnreachable, false)
+    .option("--regression-check", OPTION_DESCRIPTIONS.regressionCheck, false);
 
   if (includeInput) {
     program.option("--input <path>", `${OPTION_DESCRIPTIONS.inputPath} (scanner-first mode)`);

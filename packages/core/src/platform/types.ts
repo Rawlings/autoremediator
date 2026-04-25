@@ -15,6 +15,7 @@ export interface CveDetails {
   summary: string;
   severity: CveSeverity;
   cvssScore?: number;
+  publishedAt?: string; // ISO 8601 date string from OSV
   epss?: {
     score: number;
     percentile: number;
@@ -85,7 +86,40 @@ export type PatchRiskLevel = "low" | "medium" | "high";
 
 export type PatchConfidenceThresholds = Partial<Record<PatchRiskLevel, number>>;
 
+export interface ExploitSignalOverridePolicy {
+  kev?: { mandatory: boolean };
+  epss?: { mandatory: boolean; threshold: number };
+}
+
 export type PatchMode = "patch-package" | "native-pnpm" | "native-yarn";
+
+export type VexJustification =
+  | "not_affected"
+  | "fixed"
+  | "mitigated"
+  | "under_investigation";
+
+export interface VexSuppression {
+  cveId: string;
+  justification: VexJustification;
+  notes?: string;
+  expiresAt?: string; // ISO 8601 date string
+}
+
+export interface SlaPolicy {
+  critical?: number; // hours
+  high?: number;
+  medium?: number;
+  low?: number;
+}
+
+export interface SlaBreach {
+  cveId: string;
+  severity: CveSeverity;
+  publishedAt: string; // ISO 8601
+  deadlineAt: string;  // ISO 8601
+  hoursOverdue: number;
+}
 
 export type PatchValidationPhaseName =
   | "diff-format"
@@ -120,6 +154,8 @@ export interface PatchArtifact {
   hunkCount?: number;
   applied: boolean;
   dryRun: boolean;
+  /** SHA-256 integrity hash of the patch file content (format: sha256:<hex>) */
+  integrity?: string;
   validationPhases?: PatchValidationPhase[];
 }
 
@@ -137,6 +173,7 @@ export interface PatchArtifactSummary {
   files?: string[];
   hunkCount?: number;
   diffValid?: boolean;
+  integrity?: string;
 }
 
 export interface PatchArtifactInspection extends PatchArtifactSummary {
@@ -203,6 +240,7 @@ export interface ReachabilityAssessment {
   packageName: string;
   status: "reachable" | "not-reachable" | "unknown";
   reason: string;
+  reachabilityBasis?: "import-present" | "symbol-present" | "call-path-found" | "unknown";
   evidence?: ReachabilityEvidence[];
 }
 
@@ -313,6 +351,9 @@ export interface PatchResult {
   reachability?: ReachabilityAssessment;
   alternativeSuggestions?: AlternativePackageSuggestion[];
   fixExplanation?: FixExplanation;
+  suppressedBy?: { justification: VexJustification; notes?: string };
+  /** True when a post-apply inventory re-check finds the package is still in the vulnerable range. */
+  regressionDetected?: boolean;
   validation?: {
     passed: boolean;
     error?: string;
@@ -419,6 +460,28 @@ export interface RemediateOptions extends CorrelationContext {
   constraints?: RemediationConstraints;
   /** Optional native pull request / merge request creation controls. */
   changeRequest?: ChangeRequestOptions;
+  /** Exploit-signal gate: treat KEV/EPSS-flagged CVEs as mandatory regardless of severity filtering. */
+  exploitSignalOverride?: ExploitSignalOverridePolicy;
+  /** Path to a YAML file containing additional VEX suppression entries to merge with policy-inline suppressions. */
+  suppressionsFile?: string;
+  /** Compare CVE publication dates against configured SLA windows. */
+  slaCheck?: boolean;
+  /** Skip remediation for CVEs where the vulnerable package cannot be reached from any project entry point. */
+  skipUnreachable?: boolean;
+  /** After applying a fix, re-check the inventory to verify the package version is no longer in the vulnerable range. */
+  regressionCheck?: boolean;
+}
+
+export type SbomStatus = "patched" | "unpatched" | "skipped" | "suppressed";
+
+export interface SbomEntry {
+  name: string;
+  version: string;
+  scope: "direct" | "indirect";
+  /** CVE IDs that affect this package in the current run, if any */
+  cveIds?: string[];
+  /** Remediation outcome for this package */
+  status?: SbomStatus;
 }
 
 /** Final report returned by the remediation pipeline */
@@ -436,6 +499,10 @@ export interface RemediationReport {
   resumedFromCache?: boolean;
   llmUsage?: LlmUsageMetrics[];
   changeRequests?: ChangeRequestResult[];
+  exploitSignalTriggered?: boolean;
+  slaBreaches?: SlaBreach[];
+  /** Software Bill of Materials — installed packages with CVE and remediation status */
+  sbom?: SbomEntry[];
 }
 
 // ---------------------------------------------------------------------------

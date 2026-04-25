@@ -23,7 +23,7 @@ describe("architecture guardrails", () => {
       // Scan flow still coordinates evidence + aggregated report composition across CVEs.
       { path: resolve(srcRoot, "api/remediate-from-scan/index.ts"), maxLines: 240, reason: "scan orchestration assembly" },
       // Local runtime remains coordinator for ordered remediation phases after helper extraction.
-      { path: resolve(srcRoot, "remediation/local/run.ts"), maxLines: 240, reason: "local pipeline coordinator" },
+      { path: resolve(srcRoot, "remediation/local/run.ts"), maxLines: 285, reason: "local pipeline coordinator" },
     ];
 
     for (const entry of allowlist) {

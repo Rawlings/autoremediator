@@ -7,6 +7,9 @@ import { applyPackageOverrideTool } from "./tools/apply-package-override/index.j
 import { fetchPackageSourceTool } from "./tools/fetch-package-source.js";
 import { generatePatchTool } from "./tools/generate-patch/index.js";
 import { applyPatchFileTool } from "./tools/apply-patch-file/index.js";
+import { checkSuppressionTool } from "./tools/check-suppression.js";
+import { checkExploitSignalTool } from "./tools/check-exploit-signal.js";
+import { checkReachabilityTool } from "./tools/check-reachability.js";
 
 interface RuntimeToolContext {
   checkInventoryToolForRun: typeof checkInventoryTool;
@@ -30,6 +33,9 @@ export function buildRuntimeTools(ctx: RuntimeToolContext): Record<string, unkno
     "check-version-match": checkVersionMatchTool,
     "find-fixed-version": findFixedVersionTool,
     "apply-version-bump": ctx.applyVersionBumpToolForRun,
+    "check-suppression": checkSuppressionTool,
+    "check-exploit-signal": checkExploitSignalTool,
+    "check-reachability": checkReachabilityTool,
   } as Record<string, unknown>;
 
   if (!ctx.constraints.directDependenciesOnly && !ctx.constraints.preferVersionBump) {

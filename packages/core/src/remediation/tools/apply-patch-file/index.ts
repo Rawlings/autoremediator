@@ -30,6 +30,7 @@ import {
   buildPatchFileName,
   capturePackageJsonSnapshot,
   cleanupPatchArtifacts,
+  computePatchIntegrity,
   configurePatchPackagePostinstall,
   countPatchHunks,
   extractPatchedFiles,
@@ -194,6 +195,7 @@ export const applyPatchFileTool = tool({
         hunkCount,
         applied: false,
         dryRun,
+        integrity: computePatchIntegrity(selectedPatch),
         validationPhases,
       };
 

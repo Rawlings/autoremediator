@@ -35,6 +35,29 @@ constraints:
   installPreferOffline: true
   enforceFrozenLockfile: true
   workspace: "@apps/web"
+
+# SecOps controls
+skipUnreachable: false
+
+exploitSignalOverride:
+  kev:
+    mandatory: true          # treat CISA KEV-listed CVEs as mandatory
+  epss:
+    mandatory: true
+    threshold: 0.7           # promote CVEs with EPSS score >= 0.7
+
+suppressions:
+  - cveId: CVE-2021-99999
+    justification: not_affected
+    notes: Vulnerable code path is not reachable in this deployment
+  - cveId: CVE-2022-11111
+    justification: inline_mitigations_already_exist
+
+sla:
+  critical: 24    # hours
+  high: 72
+  medium: 168
+  low: 720
 ```
 
 Field intent:
@@ -67,6 +90,67 @@ Field intent:
 - `constraints.workspace`:
   - what: scopes install/list/test operations to a specific workspace/package selector
   - why: reduces remediation blast radius in monorepos and improves run performance
+- `skipUnreachable`:
+  - what: skips packages not imported from project source files
+  - why: reduces noise from packages that cannot be reached by the running application
+- `exploitSignalOverride.kev.mandatory`:
+  - what: treats CVEs with active CISA KEV status as unconditionally mandatory
+  - why: ensures actively-exploited CVEs bypass severity filtering
+- `exploitSignalOverride.epss.mandatory` + `threshold`:
+  - what: treats CVEs above the configured EPSS probability as mandatory
+  - why: aligns automation priority with statistically likely exploitation
+- `suppressions`:
+  - what: inline VEX suppression entries matched by `cveId`
+  - why: suppresses false positives without modifying installed packages or ignoring the CVE entirely
+  - justification values: `not_affected`, `vulnerable_code_not_in_execute_path`, `inline_mitigations_already_exist`, `component_not_present`, `not_affected_vulnerable_code_unreachable`
+- `sla`:
+  - what: per-severity breach windows in hours
+  - why: makes breach detection deterministic and auditable without requiring external tracking
+
+## SecOps Controls
+
+### VEX Suppression
+
+Suppress a CVE before inventory analysis using VEX justification entries. Suppressed CVEs do not reach the remediation pipeline and appear as zero-result runs with the justification in the summary.
+
+Options:
+- `suppressionsFile` (CLI/SDK): path to an external YAML file containing additional suppression entries (merged with policy-inline suppressions)
+- `suppressions` (policy): inline entries in `.github/autoremediator.yml`
+
+### Exploit Signal Prioritization
+
+`exploitSignalOverride` elevates CVEs above standard severity filtering when exploitation signals are active:
+
+- CISA KEV: CVEs flagged in the Known Exploited Vulnerabilities catalog
+- FIRST EPSS: CVEs with a probability score above the configured threshold
+
+When a signal fires, `exploitSignalTriggered: true` appears in the report.
+
+### SLA Breach Alerting
+
+When `slaCheck: true` and `sla` windows are configured, CVE publication age is compared against window thresholds. Breached CVEs appear in `slaBreaches` on the report with `cveId`, `severity`, `publishedAt`, and `hoursOverdue`.
+
+Enable with `--sla-check` (CLI) or `slaCheck: true` (SDK).
+
+### Static Reachability Filtering
+
+When `skipUnreachable: true`, the local pipeline performs a static import scan across project source files (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`) before remediation. Packages not reachable from source are skipped, and the skip reason appears on the result.
+
+Enable with `--skip-unreachable` (CLI) or `skipUnreachable: true` (SDK).
+
+### Patch Integrity
+
+Every generated patch artifact includes an `integrity` field with a SHA-256 content hash (`sha256:<hex>`). Integrity values are included in `PatchArtifact` and `PatchArtifactSummary` results.
+
+### SBOM Output
+
+`RemediationReport.sbom` is an array of `SbomEntry` records covering all installed packages with status tracking: `patched`, `unpatched`, `skipped` (reachability), or `suppressed` (VEX). Each entry includes `name`, `version`, `type`, and optional `cveId`.
+
+### Regression Detection
+
+When `regressionCheck: true`, the patched version is tested against the CVE's vulnerable semver range after apply. If it still satisfies the range, `regressionDetected: true` is set on the result.
+
+Enable with `--regression-check` (CLI) or `regressionCheck: true` (SDK).
 
 ## GitHub App: Per-Repository Settings
 

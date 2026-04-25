@@ -159,6 +159,17 @@ Result details now include:
 - `patchConfidenceThresholds`: per-risk acceptance thresholds (`low`, `medium`, `high` in range 0..1)
 - `dynamicModelRouting`: enable dynamic model selection by input size
 - `dynamicRoutingThresholdChars`: threshold for dynamic routing behavior
+- `suppressedBy`: VEX suppression justification when a result was suppressed before remediation
+- `regressionDetected`: `true` when the patched version still satisfies the CVE's vulnerable range (set when `regressionCheck: true`)
+- `exploitSignalTriggered`: `true` when a KEV or EPSS threshold signal fired for this CVE
+- `slaBreaches`: array of SLA breach records when `slaCheck: true` and windows are configured (`cveId`, `severity`, `publishedAt`, `hoursOverdue`)
+- `sbom`: array of `SbomEntry` records for all installed packages (`name`, `version`, `type`, `status`: `patched`|`unpatched`|`skipped`|`suppressed`)
+- Patch artifacts include `integrity`: SHA-256 content hash (`sha256:<hex>`) for every generated patch
+- `suppressionsFile`: path to a YAML file with VEX suppression entries merged with policy-inline suppressions
+- `exploitSignalOverride`: configures exploit-signal prioritization — `kev.mandatory` and/or `epss.mandatory`+`epss.threshold`
+- `slaCheck`: when `true`, compares CVE publication age against policy SLA windows and writes `slaBreaches` to the report
+- `skipUnreachable`: when `true`, skips packages not reachable from project source files (static import analysis)
+- `regressionCheck`: when `true`, verifies the patched version is outside the CVE's vulnerable range after apply
 
 Scan and CI summary aggregates:
 

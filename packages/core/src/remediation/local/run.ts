@@ -1,8 +1,10 @@
+import semver from "semver";
 import { lookupCveOsv } from "../../intelligence/sources/osv.js";
 import { lookupCveGitHub, mergeGhDataIntoCveDetails } from "../../intelligence/sources/github-advisory.js";
 import { enrichWithNvd } from "../../intelligence/sources/nvd.js";
 import type {
   CveDetails,
+  InventoryPackage,
   LlmUsageMetrics,
   PatchResult,
   RemediateOptions,
@@ -10,6 +12,9 @@ import type {
   VulnerablePackage,
 } from "../../platform/types.js";
 import { checkInventoryTool } from "../tools/check-inventory.js";
+import { assessPackageReachability } from "../tools/check-reachability.js";
+import { runSecOpsPreflight } from "./secops-preflight.js";
+import { buildSbom } from "./sbom.js";
 import { resolvePrimaryResult } from "./primary-strategy.js";
 import { shouldAttemptPatchFallback, tryLocalPatchFallback } from "./fallback.js";
 import { resolveLocalRunOptions } from "./options.js";
@@ -37,6 +42,13 @@ export async function runLocalRemediationPipeline(
     patchConfidenceThresholds,
     dynamicModelRouting,
     dynamicRoutingThresholdChars,
+    exploitSignalOverride,
+    suppressions,
+    suppressionsFile,
+    slaCheck,
+    slaPolicy,
+    skipUnreachable,
+    regressionCheck,
   } = resolved;
 
   const collectedResults: PatchResult[] = [];
@@ -81,6 +93,32 @@ export async function runLocalRemediationPipeline(
   }
   cveDetails = await enrichWithNvd(cveDetails);
 
+  const preflight = await runSecOpsPreflight(normalizedId, cveDetails, {
+    suppressions,
+    suppressionsFile,
+    exploitSignalOverride,
+    slaCheck,
+    slaPolicy,
+  });
+
+  if (preflight.suppressed) {
+    return {
+      cveId,
+      cveDetails,
+      vulnerablePackages: [],
+      results: [],
+      agentSteps,
+      summary: preflight.summary,
+      correlation: {
+        requestId: options.requestId,
+        sessionId: options.sessionId,
+        parentRunId: options.parentRunId,
+      },
+    };
+  }
+
+  const { exploitSignalTriggered, slaBreaches } = preflight;
+
   if (cveDetails.affectedPackages.length === 0) {
     return {
       cveId,
@@ -89,6 +127,8 @@ export async function runLocalRemediationPipeline(
       results: collectedResults,
       agentSteps,
       summary: `Local mode lookup succeeded but no npm affected packages were found for ${normalizedId}.`,
+      exploitSignalTriggered,
+      slaBreaches,
       correlation: {
         requestId: options.requestId,
         sessionId: options.sessionId,
@@ -113,6 +153,8 @@ export async function runLocalRemediationPipeline(
       results: collectedResults,
       agentSteps,
       summary: `Local mode failed at check-inventory: ${inventory.error}`,
+      exploitSignalTriggered,
+      slaBreaches,
       correlation: {
         requestId: options.requestId,
         sessionId: options.sessionId,
@@ -131,6 +173,21 @@ export async function runLocalRemediationPipeline(
   agentSteps += 1;
 
   for (const vulnerable of vulnerablePackages) {
+    if (skipUnreachable) {
+      const reach = assessPackageReachability(cwd, vulnerable.installed.name);
+      if (reach.status === "not-reachable") {
+        collectedResults.push({
+          packageName: vulnerable.installed.name,
+          fromVersion: vulnerable.installed.version,
+          strategy: "none",
+          applied: false,
+          dryRun,
+          message: `Skipped: '${vulnerable.installed.name}' is not reachable from source code.`,
+          reachability: reach,
+        });
+        continue;
+      }
+    }
     const primary = await resolvePrimaryResult({
       vulnerable,
       cwd,
@@ -178,11 +235,26 @@ export async function runLocalRemediationPipeline(
       continue;
     }
 
-    collectedResults.push({
+    const primaryResult: PatchResult = {
       ...primary.result,
       dependencyScope: vulnerable.installed.type === "direct" ? "direct" : "transitive",
-    });
+    };
+
+    if (regressionCheck && primaryResult.applied && !dryRun && primaryResult.toVersion) {
+      try {
+        if (semver.satisfies(primaryResult.toVersion, vulnerable.affected.vulnerableRange, { includePrerelease: false })) {
+          primaryResult.regressionDetected = true;
+        }
+      } catch {
+        // ignore malformed range
+      }
+    }
+
+    collectedResults.push(primaryResult);
   }
+
+  const vulnerableNames = new Set(vulnerablePackages.map((v) => v.installed.name));
+  const sbom = buildSbom(installedPackages as InventoryPackage[], vulnerableNames, collectedResults);
 
   return {
     cveId,
@@ -192,6 +264,9 @@ export async function runLocalRemediationPipeline(
     agentSteps,
     summary: buildLocalSummary(vulnerablePackages, collectedResults),
     llmUsage: llmUsage.length > 0 ? llmUsage : undefined,
+    exploitSignalTriggered,
+    slaBreaches,
+    sbom,
     correlation: {
       requestId: options.requestId,
       sessionId: options.sessionId,

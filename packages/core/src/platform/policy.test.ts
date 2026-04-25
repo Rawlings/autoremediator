@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { loadPolicy, DEFAULT_POLICY } from "./policy.js";
+import { loadPolicy, DEFAULT_POLICY, loadSuppressionsFile, checkSlaBreach } from "./policy.js";
 
 function makeTmpDir(): string {
   return mkdtempSync(join(tmpdir(), "autoremediator-policy-test-"));
@@ -116,5 +116,108 @@ describe("loadPolicy", () => {
     expect(result.patchConfidenceThresholds?.low).toBe(0.3);
     expect(result.patchConfidenceThresholds?.medium).toBe(0.6);
     expect(result.patchConfidenceThresholds?.high).toBe(0.9);
+  });
+});
+
+describe("loadSuppressionsFile", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "autoremediator-supp-test-"));
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("returns suppressions array from a valid YAML file", () => {
+    const filePath = join(tmpDir, "suppressions.yml");
+    writeFileSync(
+      filePath,
+      [
+        "suppressions:",
+        "  - cveId: CVE-2024-0001",
+        "    justification: not_affected",
+        "    notes: Only affects Linux builds",
+        "  - cveId: CVE-2024-0002",
+        "    justification: fixed",
+      ].join("\n"),
+      "utf8"
+    );
+
+    const result = loadSuppressionsFile(filePath);
+    expect(result).toHaveLength(2);
+    expect(result[0]?.cveId).toBe("CVE-2024-0001");
+    expect(result[0]?.justification).toBe("not_affected");
+    expect(result[0]?.notes).toBe("Only affects Linux builds");
+    expect(result[1]?.cveId).toBe("CVE-2024-0002");
+  });
+
+  it("returns empty array when file does not exist", () => {
+    const result = loadSuppressionsFile(join(tmpDir, "does-not-exist.yml"));
+    expect(result).toEqual([]);
+  });
+
+  it("returns empty array when YAML is malformed", () => {
+    const filePath = join(tmpDir, "bad.yml");
+    writeFileSync(filePath, "suppressions: :\n  broken: yaml:", "utf8");
+    const result = loadSuppressionsFile(filePath);
+    expect(result).toEqual([]);
+  });
+
+  it("returns empty array when YAML has no suppressions key", () => {
+    const filePath = join(tmpDir, "empty.yml");
+    writeFileSync(filePath, "allowMajorBumps: true", "utf8");
+    const result = loadSuppressionsFile(filePath);
+    expect(result).toEqual([]);
+  });
+});
+
+describe("checkSlaBreach", () => {
+  // Current date for tests: April 25, 2026
+  const MS_PER_HOUR = 60 * 60 * 1000;
+  const slaPolicy = { critical: 72, high: 168, medium: 720 };
+
+  it("returns SlaBreach when CVE is overdue for its severity", () => {
+    // Published 200 hours ago; critical SLA is 72 hours → 128 hours overdue
+    const publishedAt = new Date(Date.now() - 200 * MS_PER_HOUR).toISOString();
+    const result = checkSlaBreach("CVE-2024-0001", "CRITICAL", publishedAt, slaPolicy);
+    expect(result).not.toBeNull();
+    expect(result?.cveId).toBe("CVE-2024-0001");
+    expect(result?.severity).toBe("CRITICAL");
+    expect(result?.hoursOverdue).toBeGreaterThanOrEqual(127);
+    expect(result?.deadlineAt).toBeDefined();
+  });
+
+  it("returns null when CVE has not yet exceeded SLA", () => {
+    // Published 10 hours ago; critical SLA is 72 hours
+    const publishedAt = new Date(Date.now() - 10 * MS_PER_HOUR).toISOString();
+    const result = checkSlaBreach("CVE-2024-0002", "CRITICAL", publishedAt, slaPolicy);
+    expect(result).toBeNull();
+  });
+
+  it("returns null when severity has no configured SLA window", () => {
+    const publishedAt = new Date(Date.now() - 1000 * MS_PER_HOUR).toISOString();
+    const result = checkSlaBreach("CVE-2024-0003", "LOW", publishedAt, slaPolicy);
+    expect(result).toBeNull();
+  });
+
+  it("returns null for UNKNOWN severity when no matching SLA is configured", () => {
+    const publishedAt = new Date(Date.now() - 1000 * MS_PER_HOUR).toISOString();
+    const result = checkSlaBreach("CVE-2024-0004", "UNKNOWN", publishedAt, slaPolicy);
+    expect(result).toBeNull();
+  });
+
+  it("returns null when publishedAt is not a valid date string", () => {
+    const result = checkSlaBreach("CVE-2024-0005", "HIGH", "not-a-date", slaPolicy);
+    expect(result).toBeNull();
+  });
+
+  it("includes correct deadlineAt in the breach", () => {
+    const publishedAt = new Date(Date.now() - 200 * MS_PER_HOUR).toISOString();
+    const result = checkSlaBreach("CVE-2024-0006", "HIGH", publishedAt, { high: 72 });
+    expect(result).not.toBeNull();
+    const expected = new Date(new Date(publishedAt).getTime() + 72 * MS_PER_HOUR).toISOString();
+    expect(result?.deadlineAt).toBe(expected);
   });
 });

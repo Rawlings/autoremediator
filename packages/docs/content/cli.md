@@ -85,6 +85,12 @@ When to use which mode:
 | `--change-request-base-branch <branch>` | base branch for PR/MR targeting | supports release branches and protected default branches |
 | `--change-request-branch-prefix <prefix>` | prefix for generated remediation branches | aligns branch naming with org conventions |
 | `--change-request-title-prefix <prefix>` | prefix for generated PR/MR titles | keeps automated reviews recognizable in queue views |
+| `--kev-mandatory` | treat CVEs with active CISA KEV status as mandatory regardless of severity | ensures critical actively-exploited CVEs are never filtered by severity thresholds |
+| `--epss-threshold <value>` | EPSS probability threshold (0..1) above which a CVE is treated as mandatory | promotes high-probability exploitation CVEs in prioritization without manual triage |
+| `--suppressions-file <path>` | path to YAML file containing additional VEX suppression entries | allows context-specific suppression of false positives without modifying the policy file |
+| `--sla-check` | compare CVE publication dates against configured SLA windows | surfaces breach records when a CVE has exceeded the configured remediation deadline |
+| `--skip-unreachable` | skip remediation for packages not reachable from project source code | reduces noise by excluding packages that cannot be triggered by the running application |
+| `--regression-check` | verify patched version is outside the vulnerable range after apply | catches cases where a fix lands within a still-vulnerable range and flags the result |
 | `--json` | machine-readable output | simplifies CI parsing and SIEM ingestion |
 
 ## Scan Mode Options

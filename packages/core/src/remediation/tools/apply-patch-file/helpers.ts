@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execa } from "execa";
@@ -66,6 +67,11 @@ export function countPatchHunks(patchContent: string): number {
   return patchContent
     .split(/\r?\n/)
     .filter((line) => line.startsWith("@@ ")).length;
+}
+
+export function computePatchIntegrity(patchContent: string): string {
+  const hex = createHash("sha256").update(patchContent, "utf8").digest("hex");
+  return `sha256:${hex}`;
 }
 
 export async function writePatchManifest(manifestFilePath: string, artifact: PatchArtifact): Promise<void> {

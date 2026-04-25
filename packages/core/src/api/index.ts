@@ -40,6 +40,15 @@ export type {
   OutdatedPackage,
   UpdateOutdatedOptions,
   UpdateOutdatedReport,
+  ExploitSignalOverridePolicy,
+  VexJustification,
+  VexSuppression,
+  SlaPolicy,
+  SlaBreach,
+  ReachabilityAssessment,
+  ReachabilityEvidence,
+  SbomEntry,
+  SbomStatus,
 } from "../platform/types.js";
 export type { ScanInputFormat } from "../scanner/index.js";
 export type { ScanOptions, ScanReport, CiSummary } from "./contracts.js";

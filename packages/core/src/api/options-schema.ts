@@ -44,6 +44,12 @@ export const OPTION_DESCRIPTIONS = {
   workspace: "Workspace/package selector for scoped remediation in monorepos",
   includeTransitive: "Include indirect/transitive dependencies in the outdated check. Default: false.",
   updateOutdated: "Run in update-outdated mode: bump all outdated npm packages without requiring a CVE.",
+  kevMandatory: "If true, CVEs with active CISA KEV status bypass severity filtering and are treated as mandatory",
+  epssThreshold: "EPSS probability threshold (0..1) above which a CVE is treated as mandatory regardless of severity",
+  suppressionsFile: "Path to a YAML file containing additional VEX suppression entries to merge with policy-inline suppressions",
+  slaCheck: "Compare CVE publication dates against configured SLA windows and include breach records in the report output",
+  skipUnreachable: "Skip remediation for CVEs where the vulnerable package cannot be reached from any project entry point (requires static import analysis)",
+  regressionCheck: "After applying a fix, verify the patched version falls outside the CVE's vulnerable range and flag any regression in the report",
 } as const;
 
 export function createConstraintSchemaProperties(): Record<string, JsonSchemaProperty> {
@@ -107,6 +113,12 @@ export function createRemediateOptionSchemaProperties(options?: {
       type: "object",
       properties: createConstraintSchemaProperties(),
     },
+    kevMandatory: { type: "boolean", description: OPTION_DESCRIPTIONS.kevMandatory },
+    epssThreshold: { type: "number", minimum: 0, maximum: 1, description: OPTION_DESCRIPTIONS.epssThreshold },
+    suppressionsFile: { type: "string", description: OPTION_DESCRIPTIONS.suppressionsFile },
+    slaCheck: { type: "boolean", description: OPTION_DESCRIPTIONS.slaCheck },
+    skipUnreachable: { type: "boolean", description: OPTION_DESCRIPTIONS.skipUnreachable },
+    regressionCheck: { type: "boolean", description: OPTION_DESCRIPTIONS.regressionCheck },
   };
 }
 
@@ -115,6 +127,7 @@ export function createScanOptionSchemaProperties(): Record<string, JsonSchemaPro
     ...createRemediateOptionSchemaProperties({ includeEvidence: true }),
     format: { type: "string", enum: ["npm-audit", "yarn-audit", "sarif", "auto"], description: OPTION_DESCRIPTIONS.format },
     audit: { type: "boolean", description: OPTION_DESCRIPTIONS.audit },
+    slaCheck: { type: "boolean", description: OPTION_DESCRIPTIONS.slaCheck },
   };
 }
 

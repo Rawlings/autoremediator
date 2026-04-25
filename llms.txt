@@ -69,6 +69,9 @@ Available MCP tools: `remediate`, `planRemediation`, `remediateFromScan`, `remed
 | `fetch-package-source`| Download package tarball for patch generation |
 | `generate-patch`      | Generate unified diff patch via LLM |
 | `apply-patch-file`    | Write/apply patch file via native or compatibility patch flow |
+| `check-suppression`   | Evaluate VEX suppression entries against the current CVE |
+| `check-exploit-signal`| Assess CISA KEV and EPSS exploitation signals against configured thresholds |
+| `check-reachability`  | Static import scan to determine if a package is reachable from project source |
 
 ## Remediation Order
 

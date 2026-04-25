@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.11.0
+
+### Added
+
+- Added VEX suppression support: `suppressionsFile` option accepts a path to a YAML file containing `{ suppressions: [] }` entries. Each suppression matches a `cveId` with a VEX `justification` (`not_affected`, `vulnerable_code_not_in_execute_path`, `inline_mitigations_already_exist`, `component_not_present`, `not_affected_vulnerable_code_unreachable`). Matched CVEs are skipped before inventory analysis, and the suppression justification appears in the report summary.
+- Added exploit-signal prioritization via `exploitSignalOverride` option: `kev.mandatory: true` treats CVEs with active CISA KEV status as unconditionally mandatory; `epss.mandatory: true` with `epss.threshold` promotes CVEs above a given EPSS probability. When a signal fires, `exploitSignalTriggered: true` appears on the report. Both controls are configurable from `.github/autoremediator.yml`.
+- Added SLA breach alerting via `slaCheck` option and `sla` policy field. When `slaCheck: true` and SLA windows are configured (`sla.critical`, `sla.high`, `sla.medium`, `sla.low` in hours), CVE publication age is compared against the window. Breaches appear in `slaBreaches` on the report, each including `cveId`, `severity`, `publishedAt`, and `hoursOverdue`.
+- Added static reachability filtering via `skipUnreachable` option. When enabled, packages not imported from project source (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`) are skipped. Skip reason and `reachability` assessment are included on the result.
+- Added SBOM generation: `RemediationReport.sbom` is an array of `SbomEntry` records (one per installed package) with `name`, `version`, `type`, `status` (`patched` | `unpatched` | `skipped` | `suppressed`), and optional `cveId`.
+- Added patch integrity signing: every generated patch artifact now includes an `integrity` field containing a SHA-256 content hash (`sha256:<hex>`). `PatchArtifact.integrity` and `PatchArtifactSummary.integrity` are included in patch lifecycle results.
+- Added regression detection via `regressionCheck` option. When enabled, the patched version is verified against the CVE's vulnerable semver range after apply. If the installed version still falls within the range, `regressionDetected: true` is set on the `PatchResult`.
+- Added `SbomEntry`, `SbomStatus`, and related types to the public SDK exports.
+- Added `--suppressions-file`, `--sla-check`, `--skip-unreachable`, and `--regression-check` CLI flags.
+- Evidence output now includes per-result `suppressedBy` justification and `regressionDetected` flag, and per-run `exploitSignalTriggered`, `slaBreachCount`, `regressionDetectedCount`, and `sbomEntryCount` in the finish step.
+
 ## 0.10.0
 
 ### Added

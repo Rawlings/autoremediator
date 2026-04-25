@@ -15,6 +15,7 @@ import type {
   VulnerablePackage,
 } from "../platform/types.js";
 import { runLocalRemediationPipeline } from "./local/index.js";
+export { assessPackageReachability } from "./tools/check-reachability.js";
 import { accumulateStepResults } from "./strategies/pipeline-telemetry.js";
 import {
   createPipelineRuntime,

@@ -29,6 +29,8 @@ export interface EvidenceSummary {
   llmUsageCount?: number;
   estimatedCostUsd?: number;
   totalLlmLatencyMs?: number;
+  exploitSignalCount?: number;
+  slaBreachCount?: number;
 }
 
 export interface EvidenceLog {

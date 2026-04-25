@@ -1,6 +1,12 @@
 import { resolveProvider } from "../../platform/config.js";
 import { loadPolicy } from "../../platform/policy.js";
-import type { PatchConfidenceThresholds, RemediateOptions } from "../../platform/types.js";
+import type {
+  ExploitSignalOverridePolicy,
+  PatchConfidenceThresholds,
+  RemediateOptions,
+  SlaPolicy,
+  VexSuppression,
+} from "../../platform/types.js";
 import { detectPackageManager } from "../../platform/package-manager/index.js";
 
 export interface LocalRunOptions {
@@ -20,6 +26,13 @@ export interface LocalRunOptions {
   patchConfidenceThresholds?: PatchConfidenceThresholds;
   dynamicModelRouting: boolean;
   dynamicRoutingThresholdChars?: number;
+  exploitSignalOverride?: ExploitSignalOverridePolicy;
+  suppressions: VexSuppression[];
+  suppressionsFile?: string;
+  slaCheck: boolean;
+  slaPolicy?: SlaPolicy;
+  skipUnreachable: boolean;
+  regressionCheck: boolean;
 }
 
 export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptions {
@@ -57,5 +70,12 @@ export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptio
     dynamicModelRouting: options.dynamicModelRouting ?? loadedPolicy.dynamicModelRouting ?? false,
     dynamicRoutingThresholdChars:
       options.dynamicRoutingThresholdChars ?? loadedPolicy.dynamicRoutingThresholdChars,
+    exploitSignalOverride: options.exploitSignalOverride ?? loadedPolicy.exploitSignalOverride,
+    suppressions: loadedPolicy.suppressions ?? [],
+    suppressionsFile: options.suppressionsFile,
+    slaCheck: options.slaCheck ?? false,
+    slaPolicy: loadedPolicy.sla,
+    skipUnreachable: options.skipUnreachable ?? loadedPolicy.skipUnreachable ?? false,
+    regressionCheck: options.regressionCheck ?? false,
   };
 }

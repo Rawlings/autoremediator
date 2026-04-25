@@ -42,6 +42,12 @@ export interface CommandOptions {
   ci: boolean;
   summaryFile?: string;
   includeTransitive?: boolean;
+  kevMandatory?: boolean;
+  epssThreshold?: number;
+  suppressionsFile?: string;
+  slaCheck?: boolean;
+  skipUnreachable?: boolean;
+  regressionCheck?: boolean;
 }
 
 export function isCveId(value: string): boolean {
