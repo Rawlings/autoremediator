@@ -16,7 +16,7 @@ Related references:
 - `remediate(cveId, options?)`
 - `planRemediation(cveId, options?)`
 - `remediateFromScan(inputPath, options?)`
-- `remediatePortfolio(options)`
+- `remediatePortfolio(targets, options?)`
 - `updateOutdated(options?)`
 - `listPatchArtifacts(options?)`
 - `inspectPatchArtifact(patchFilePath, options?)`
@@ -46,7 +46,7 @@ Why: best for scheduled CI and batch remediation operations.
 
 How: normalizes scanner findings, deduplicates CVEs, and delegates each CVE to the remediation pipeline.
 
-Grouped change-request creation is available through `options.changeRequest` when you want scan runs to open one batched change request, one per CVE, or one planned group per package.
+Change-request creation is available through `options.changeRequest` and currently supports deterministic batched grouping (`all`).
 
 ### `planRemediation(cveId, options?)`
 
@@ -66,7 +66,7 @@ How: reads `package.json` at `cwd`, queries the npm registry for outdated packag
 
 Options (`UpdateOutdatedOptions` extends `RemediateOptions`):
 
-- `includeTransitive`: include indirect dependencies (default: `false`, direct only)
+- `includeTransitive`: include transitive dependencies (default: `false`, direct only)
 - All standard `RemediateOptions` — `dryRun`, `runTests`, `changeRequest`, `policy`, `evidence`, etc.
 
 Report shape (`UpdateOutdatedReport`):
@@ -77,7 +77,7 @@ Report shape (`UpdateOutdatedReport`):
 - `errors`: per-package errors (e.g. private registry packages not found)
 - `patchCount`, `evidenceFile`, `constraints`, `correlation`, `provenance`
 
-### `remediatePortfolio(options)`
+### `remediatePortfolio(targets, options?)`
 
 What: runs direct-CVE or scan-based remediation across multiple repository targets.
 
@@ -145,7 +145,7 @@ Result details now include:
 - `resume`: reuse cached report for matching `idempotencyKey` + CVE when available
 - `actor`: actor identity string written to evidence metadata
 - `source`: provenance source (`cli`, `sdk`, `mcp`, `openapi`, `unknown`)
-- `constraints.directDependenciesOnly`: block remediation outcomes for indirect dependencies
+- `constraints.directDependenciesOnly`: block remediation outcomes for transitive dependencies
 - `constraints.preferVersionBump`: reject patch-file outcomes in favor of bump-only policy
 - `constraints.installMode`: install profile (`deterministic`, `prefer-offline`, `standard`) used for apply and rollback installs
 - `constraints.installPreferOffline`: explicit override for `--prefer-offline` install flag behavior

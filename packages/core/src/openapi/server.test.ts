@@ -4,7 +4,9 @@ import { OPENAPI_SPEC, createOpenApiServer } from "./server.js";
 describe("openapi server", () => {
   it("exposes plan-remediation route in OpenAPI spec", () => {
     const paths = OPENAPI_SPEC.paths as Record<string, unknown>;
+    expect(paths["/openapi.json"]).toBeDefined();
     expect(paths["/plan-remediation"]).toBeDefined();
+    expect(paths["/remediate-portfolio"]).toBeDefined();
     expect(paths["/patches/list"]).toBeDefined();
     expect(paths["/patches/inspect"]).toBeDefined();
     expect(paths["/patches/validate"]).toBeDefined();
@@ -42,6 +44,8 @@ describe("openapi server", () => {
       remediateFn: vi.fn(async () => ({ cveId: "CVE-2021-23337" } as any)),
       planRemediationFn: vi.fn(async () => ({ cveId: "CVE-2021-23337" } as any)),
       remediateFromScanFn: vi.fn(async () => ({ schemaVersion: "1.0" } as any)),
+      remediatePortfolioFn: vi.fn(async () => ({ schemaVersion: "1.0", status: "ok", targets: [] } as any)),
+      updateOutdatedFn: vi.fn(async () => ({ schemaVersion: "1.0", status: "ok" } as any)),
       listPatchArtifactsFn: vi.fn(async () => []),
       inspectPatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
       validatePatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
@@ -57,6 +61,11 @@ describe("openapi server", () => {
     expect(paths["/patches/list"].post.operationId).toBe("listPatchArtifacts");
     expect(paths["/patches/inspect"].post.operationId).toBe("inspectPatchArtifact");
     expect(paths["/patches/validate"].post.operationId).toBe("validatePatchArtifact");
+    expect(paths["/remediate-portfolio"].post.operationId).toBe("remediatePortfolio");
+    const inspectOptions =
+      paths["/patches/inspect"].post.requestBody.content["application/json"].schema.properties.options
+        .properties;
+    expect(inspectOptions.patchesDir).toBeDefined();
   });
 
 });

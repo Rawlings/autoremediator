@@ -64,4 +64,4 @@ When adding a new public operation, keep naming and request/response shape align
 
 The CLI (`autoremediator` bin) is a stable interface. Option names and exit codes must not change without a CHANGELOG note.
 
-Patch lifecycle CLI commands (`patches list`, `patches inspect`, `patches validate`) are part of the public automation contract and must remain machine-readable with `--json`.
+Patch lifecycle CLI commands (`patches list`, `patches inspect`, `patches validate`) are part of the public automation contract and must remain machine-readable with `--output-format json`.

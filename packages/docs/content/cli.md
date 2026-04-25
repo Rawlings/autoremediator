@@ -80,7 +80,7 @@ When to use which mode:
 | `--workspace <name>` | workspace/package selector for scoped monorepo remediation | limits install/list/test operations to a target workspace when supported |
 | `--create-change-request` | open a native pull request / merge request after remediation | turns successful mutation runs into reviewable branches automatically |
 | `--change-request-provider <github|gitlab>` | VCS provider for PR/MR creation | selects the remote API used for branch promotion |
-| `--change-request-grouping <all|per-cve|per-package>` | grouping strategy for scan and portfolio change requests | supports one batched change, one per CVE, or package-based grouping plans |
+| `--change-request-grouping <all>` | grouping strategy for change requests | currently supports deterministic batched change requests only |
 | `--change-request-repository <slug>` | override repo slug used for remote API calls | useful when git remote parsing is not enough |
 | `--change-request-base-branch <branch>` | base branch for PR/MR targeting | supports release branches and protected default branches |
 | `--change-request-branch-prefix <prefix>` | prefix for generated remediation branches | aligns branch naming with org conventions |
@@ -91,7 +91,7 @@ When to use which mode:
 | `--sla-check` | compare CVE publication dates against configured SLA windows | surfaces breach records when a CVE has exceeded the configured remediation deadline |
 | `--skip-unreachable` | skip remediation for packages not reachable from project source code | reduces noise by excluding packages that cannot be triggered by the running application |
 | `--regression-check` | verify patched version is outside the vulnerable range after apply | catches cases where a fix lands within a still-vulnerable range and flags the result |
-| `--json` | machine-readable output | simplifies CI parsing and SIEM ingestion |
+| `--output-format <text|json|sarif>` | machine-readable or standardized output selection | uses `json` for automation and `sarif` for security tooling integration |
 
 ## Scan Mode Options
 
@@ -113,13 +113,13 @@ Bumps all outdated npm packages to their latest versions without requiring a CVE
 ```bash
 autoremediator update-outdated
 autoremediator update-outdated --include-transitive
-autoremediator update-outdated --dry-run --json
+autoremediator update-outdated --dry-run --output-format json
 autoremediator update-outdated --run-tests --create-change-request --change-request-provider github
 ```
 
 | Option | What it controls |
 |---|---|
-| `--include-transitive` | Include indirect/transitive dependencies (default: direct only) |
+| `--include-transitive` | Include transitive dependencies in the outdated check (default: direct only) |
 
 Packages where only a major version bump is available are skipped when `allowMajorBumps: false` (the default). They appear in `skippedCount` in the report, not `failedCount`.
 
@@ -147,9 +147,9 @@ Portfolio target files are JSON arrays. Each element provides a `cwd` and either
 Examples:
 
 ```bash
-autoremediator patches list --patches-dir ./patches --json
-autoremediator patches inspect ./patches/lodash+4.17.0.patch --json
-autoremediator patches validate ./patches/lodash+4.17.0.patch --package-manager pnpm --json
+autoremediator patches list --patches-dir ./patches --output-format json
+autoremediator patches inspect ./patches/lodash+4.17.0.patch --output-format json
+autoremediator patches validate ./patches/lodash+4.17.0.patch --package-manager pnpm --output-format json
 ```
 
 What each command is for:
@@ -179,7 +179,7 @@ When change-request flags are provided on mutating runs, autoremediator can:
 - push them to GitHub or GitLab remotes
 - open pull requests / merge requests when the corresponding API token is available
 
-Grouped scan runs use isolated worktrees for `per-cve` and `per-package` grouping so the base checkout stays clean.
+Change request execution currently supports batched grouping (`all`) for deterministic branch creation.
 
 Native pull request and merge request creation shells out through `gh` for GitHub and `glab` for GitLab, so the matching CLI must be available in the execution environment when `--create-change-request` is enabled.
 
@@ -220,13 +220,13 @@ For governance implications, see [Policy and Safety](policy-and-safety.md).
 Single CVE dry-run preview:
 
 ```bash
-autoremediator CVE-2021-23337 --dry-run --json
+autoremediator CVE-2021-23337 --dry-run --output-format json
 
 # explicit preview + correlation context
-autoremediator cve CVE-2021-23337 --preview --request-id req-42 --session-id nightly-security --json
+autoremediator cve CVE-2021-23337 --preview --request-id req-42 --session-id nightly-security --output-format json
 
 # resumable + constrained run
-autoremediator CVE-2021-23337 --idempotency-key nightly-cve-2021-23337 --resume --direct-dependencies-only --prefer-version-bump --actor sec-bot --source cli --json
+autoremediator CVE-2021-23337 --idempotency-key nightly-cve-2021-23337 --resume --direct-dependencies-only --prefer-version-bump --actor sec-bot --source cli --output-format json
 ```
 
 CI scanner gate with summary artifact:
@@ -273,7 +273,7 @@ Patch artifact fields to watch:
 ## Troubleshooting
 
 - output seems incomplete:
-	- add `--json` for structured parsing
+	- add `--output-format json` for structured parsing
 	- write `--summary-file` and inspect unresolved details
 - scan parsing issues:
 	- specify `--format` explicitly instead of `auto`

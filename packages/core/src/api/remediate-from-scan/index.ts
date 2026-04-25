@@ -4,6 +4,7 @@ import { addEvidenceStep, createEvidenceLog, finalizeEvidence, writeEvidenceLog 
 import { loadPolicy } from "../../platform/policy.js";
 import { parseScanInput, parseScanInputFromAudit, uniqueCveIds } from "../../scanner/index.js";
 import type { ScanOptions, ScanReport } from "../contracts.js";
+import { createChangeRequestsForReports } from "../change-request/index.js";
 import { resolveConstraints, resolveCorrelationContext, resolveProvenanceContext } from "../context.js";
 import { executeScanRemediations } from "../scan-execution.js";
 import { buildScanOutcome } from "../scan-outcome.js";
@@ -94,6 +95,14 @@ export async function remediateFromScan(
   finalizeEvidence(evidence);
   const evidenceFile = options.evidence === false ? undefined : writeEvidenceLog(cwd, evidence);
 
+  const changeRequests = options.changeRequest?.enabled
+    ? await createChangeRequestsForReports({
+        cwd,
+        options: options.changeRequest,
+        reports,
+      })
+    : undefined;
+
   return {
     schemaVersion: "1.0",
     status,
@@ -117,5 +126,6 @@ export async function remediateFromScan(
     llmUsageCount: llmUsageTotals.llmUsageCount > 0 ? llmUsageTotals.llmUsageCount : undefined,
     estimatedCostUsd: llmUsageTotals.estimatedCostUsd,
     totalLlmLatencyMs: llmUsageTotals.totalLlmLatencyMs,
+    changeRequests,
   };
 }

@@ -65,8 +65,8 @@ export interface AffectedPackage {
 export interface InventoryPackage {
   name: string;
   version: string;
-  /** "direct" = listed in package.json; "indirect" = transitive dep */
-  type: "direct" | "indirect";
+  /** "direct" = listed in package.json; "transitive" = nested dependency */
+  type: "direct" | "transitive";
 }
 
 /** A package that is both installed and matches a vulnerable range */
@@ -210,7 +210,7 @@ export interface PatchArtifactQueryOptions {
 export type UnresolvedReason =
   | "consensus-failed"
   | "constraint-blocked"
-  | "indirect-dependency"
+  | "transitive-dependency"
   | "install-failed"
   | "major-bump-required"
   | "no-safe-version"
@@ -477,7 +477,7 @@ export type SbomStatus = "patched" | "unpatched" | "skipped" | "suppressed";
 export interface SbomEntry {
   name: string;
   version: string;
-  scope: "direct" | "indirect";
+  scope: "direct" | "transitive";
   /** CVE IDs that affect this package in the current run, if any */
   cveIds?: string[];
   /** Remediation outcome for this package */
@@ -516,12 +516,12 @@ export interface OutdatedPackage {
   wantedVersion: string;
   latestVersion: string;
   isMajorBump: boolean;
-  dependencyScope: "direct" | "indirect";
+  dependencyScope: "direct" | "transitive";
 }
 
 /** Options for the updateOutdated() operation */
 export interface UpdateOutdatedOptions extends RemediateOptions {
-  /** Include indirect/transitive dependencies in the outdated check. Default: false. */
+  /** Include transitive dependencies in the outdated check. Default: false. */
   includeTransitive?: boolean;
 }
 
@@ -540,4 +540,5 @@ export interface UpdateOutdatedReport {
   constraints?: RemediationConstraints;
   correlation?: CorrelationContext;
   provenance?: ProvenanceContext;
+  changeRequests?: ChangeRequestResult[];
 }

@@ -11,11 +11,16 @@ import { checkSuppressionTool } from "./tools/check-suppression.js";
 import { checkExploitSignalTool } from "./tools/check-exploit-signal.js";
 import { checkReachabilityTool } from "./tools/check-reachability.js";
 
+interface RuntimeToolLike {
+  execute: (input: Record<string, unknown>) => Promise<unknown> | unknown;
+  [key: string]: unknown;
+}
+
 interface RuntimeToolContext {
-  checkInventoryToolForRun: typeof checkInventoryTool;
-  applyVersionBumpToolForRun: typeof applyVersionBumpTool;
-  applyPackageOverrideToolForRun: typeof applyPackageOverrideTool;
-  applyPatchFileToolForRun: typeof applyPatchFileTool;
+  checkInventoryToolForRun: RuntimeToolLike;
+  applyVersionBumpToolForRun: RuntimeToolLike;
+  applyPackageOverrideToolForRun: RuntimeToolLike;
+  applyPatchFileToolForRun: RuntimeToolLike;
   constraints: {
     directDependenciesOnly?: boolean;
     preferVersionBump?: boolean;

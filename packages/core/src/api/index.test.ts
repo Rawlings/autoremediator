@@ -86,7 +86,29 @@ describe("api preview and correlation behavior", () => {
     });
   });
 
-  it("planRemediation forces preview and dryRun even when disabled in options", async () => {
+  it("planRemediation rejects explicit dryRun/preview options", async () => {
+    await expect(
+      planRemediation("CVE-2021-23337", {
+        dryRun: false,
+        requestId: "req-123",
+      })
+    ).rejects.toThrow(
+      "planRemediation always runs with dryRun=true and preview=true. Remove dryRun/preview from options."
+    );
+
+    await expect(
+      planRemediation("CVE-2021-23337", {
+        preview: false,
+        requestId: "req-123",
+      })
+    ).rejects.toThrow(
+      "planRemediation always runs with dryRun=true and preview=true. Remove dryRun/preview from options."
+    );
+
+    expect(mocked.runRemediationPipeline).not.toHaveBeenCalled();
+  });
+
+  it("planRemediation forces preview and dryRun for valid options", async () => {
     mocked.runRemediationPipeline.mockResolvedValue({
       cveId: "CVE-2021-23337",
       cveDetails: null,
@@ -97,8 +119,6 @@ describe("api preview and correlation behavior", () => {
     });
 
     await planRemediation("CVE-2021-23337", {
-      dryRun: false,
-      preview: false,
       requestId: "req-123",
       sessionId: "session-abc",
       parentRunId: "parent-1",
@@ -263,7 +283,7 @@ describe("api preview and correlation behavior", () => {
       cveDetails: null,
       vulnerablePackages: [
         {
-          installed: { name: "minimist", version: "1.2.0", type: "indirect" },
+          installed: { name: "minimist", version: "1.2.0", type: "transitive" },
           affected: {
             name: "minimist",
             ecosystem: "npm",
@@ -362,7 +382,7 @@ describe("api preview and correlation behavior", () => {
           },
         },
         {
-          installed: { name: "minimist", version: "1.2.0", type: "indirect" },
+          installed: { name: "minimist", version: "1.2.0", type: "transitive" },
           affected: {
             name: "minimist",
             ecosystem: "npm",
@@ -371,7 +391,7 @@ describe("api preview and correlation behavior", () => {
           },
         },
         {
-          installed: { name: "debug", version: "2.6.8", type: "indirect" },
+          installed: { name: "debug", version: "2.6.8", type: "transitive" },
           affected: {
             name: "debug",
             ecosystem: "npm",

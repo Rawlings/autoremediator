@@ -200,7 +200,7 @@ describe("createDefaultRemediationHandler", () => {
     });
 
     const result = await handler({
-      eventName: "issues",
+      eventName: "issues" as "push",
       payload: {},
     });
 

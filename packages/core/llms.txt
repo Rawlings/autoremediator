@@ -38,9 +38,9 @@ const report = await remediate("CVE-2021-23337", { cwd: "/my/project" });
 // From scanner output
 const scanReport = await remediateFromScan("./npm-audit.json", { cwd: "/my/project" });
 
-const portfolioReport = await remediatePortfolio({
-	targets: [{ cwd: "/my/project", cveId: "CVE-2021-23337" }],
-});
+const portfolioReport = await remediatePortfolio(
+	[{ cwd: "/my/project", cveId: "CVE-2021-23337" }]
+);
 
 const patches = await listPatchArtifacts({ cwd: "/my/project" });
 const inspection = await inspectPatchArtifact("./patches/lodash+4.17.0.patch", { cwd: "/my/project" });
@@ -65,7 +65,7 @@ autoremediator update-outdated --cwd ./my-project [--include-transitive] [--dry-
 autoremediator-mcp   # stdio transport — register with any MCP host
 ```
 
-Available MCP tools: `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `updateOutdated`
+Available MCP tools: `health`, `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `updateOutdated`
 
 ## Tools (agent / MCP)
 

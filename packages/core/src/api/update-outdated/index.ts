@@ -14,6 +14,7 @@ import {
 import type { OutdatedPackage, UpdateOutdatedOptions, UpdateOutdatedReport } from "../../platform/types.js";
 import { resolveConstraints, resolveCorrelationContext, resolveProvenanceContext } from "../context.js";
 import { queryOutdatedPackages } from "../../intelligence/sources/registry.js";
+import { createChangeRequestsForReports } from "../change-request/index.js";
 
 // ---------------------------------------------------------------------------
 // Internal types
@@ -287,6 +288,34 @@ export async function updateOutdated(options: UpdateOutdatedOptions = {}): Promi
   finalizeEvidence(evidence);
   const evidenceFile = options.evidence === false ? undefined : writeEvidenceLog(cwd, evidence);
 
+  const changeRequests =
+    options.changeRequest?.enabled && successCount > 0
+      ? await createChangeRequestsForReports({
+          cwd,
+          options: options.changeRequest,
+          reports: [
+            {
+              cveId: "UPDATE-OUTDATED",
+              cveDetails: null,
+              vulnerablePackages: [],
+              results: outdatedPackages
+                .filter((pkg) => !pkg.isMajorBump)
+                .map((pkg) => ({
+                  packageName: pkg.name,
+                  strategy: "version-bump" as const,
+                  fromVersion: pkg.currentVersion,
+                  toVersion: pkg.latestVersion,
+                  applied: true,
+                  dryRun: Boolean(options.dryRun),
+                  message: `Updated ${pkg.name} to ${pkg.latestVersion}`,
+                })),
+              agentSteps: 0,
+              summary: "update-outdated",
+            },
+          ],
+        })
+      : undefined;
+
   return {
     schemaVersion: "1.0",
     status,
@@ -301,5 +330,6 @@ export async function updateOutdated(options: UpdateOutdatedOptions = {}): Promi
     constraints,
     correlation,
     provenance,
+    changeRequests,
   };
 }

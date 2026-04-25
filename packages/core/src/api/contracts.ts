@@ -1,4 +1,5 @@
 import type {
+  ChangeRequestResult,
   CorrelationContext,
   DependencyScopeCounts,
   PatchStrategyCounts,
@@ -45,6 +46,7 @@ export interface ScanReport {
   estimatedCostUsd?: number;
   totalLlmLatencyMs?: number;
   slaBreaches?: SlaBreach[];
+  changeRequests?: ChangeRequestResult[];
 }
 
 export interface CiSummary {
@@ -75,4 +77,5 @@ export interface CiSummary {
   estimatedCostUsd?: number;
   totalLlmLatencyMs?: number;
   slaBreaches?: SlaBreach[];
+  changeRequests?: ChangeRequestResult[];
 }

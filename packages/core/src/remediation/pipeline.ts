@@ -58,7 +58,7 @@ export async function runRemediationPipeline(
     system: systemPrompt,
     prompt,
     tools: tools as any,
-    maxSteps: 25,
+    stopWhen: ({ steps }) => steps.length >= 25,
     onStepFinish(stepResult) {
       agentSteps += 1;
 

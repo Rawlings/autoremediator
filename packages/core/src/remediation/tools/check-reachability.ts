@@ -11,7 +11,7 @@
  * and common build output directories). A "not-reachable" result means no
  * evidence of import was found — not that the package is provably unused.
  */
-import { tool } from "ai";
+import { defineTool } from "./tool-compat.js";
 import { z } from "zod";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
@@ -104,7 +104,7 @@ export function assessPackageReachability(cwd: string, packageName: string): Rea
   };
 }
 
-export const checkReachabilityTool = tool({
+export const checkReachabilityTool = defineTool({
   description:
     "Assess whether an npm package is statically reachable (imported) from the project's source files. Returns reachable, not-reachable, or unknown.",
   parameters: z.object({

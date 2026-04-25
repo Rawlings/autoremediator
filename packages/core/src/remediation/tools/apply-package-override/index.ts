@@ -1,4 +1,4 @@
-import { tool } from "ai";
+import { defineTool } from "../tool-compat.js";
 import { z } from "zod";
 import { join } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -24,7 +24,7 @@ import {
   type RawPackageJson,
 } from "./helpers.js";
 
-export const applyPackageOverrideTool = tool({
+export const applyPackageOverrideTool = defineTool({
   description:
     "Apply a package-manager-native package.json override for a vulnerable transitive dependency and reinstall. Uses npm overrides, pnpm.overrides, or yarn resolutions.",
   parameters: z.object({

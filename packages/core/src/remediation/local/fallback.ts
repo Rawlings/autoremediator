@@ -26,7 +26,7 @@ export function shouldAttemptPatchFallback(result: PatchResult, preferVersionBum
     result.unresolvedReason === "override-apply-failed" ||
     result.unresolvedReason === "validation-failed" ||
     result.unresolvedReason === "major-bump-required" ||
-    result.unresolvedReason === "indirect-dependency"
+    result.unresolvedReason === "transitive-dependency"
   );
 }
 

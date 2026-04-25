@@ -37,6 +37,9 @@ export type {
   UnresolvedReasonCounts,
   PatchValidationPhase,
   PatchValidationPhaseName,
+  PortfolioReport,
+  PortfolioTarget,
+  PortfolioTargetResult,
   OutdatedPackage,
   UpdateOutdatedOptions,
   UpdateOutdatedReport,
@@ -68,6 +71,7 @@ export {
 export { toCiSummary, ciExitCode } from "./reporting.js";
 export { toSarifOutput, type SarifOutput } from "./sarif.js";
 export { inspectPatchArtifact, listPatchArtifacts, validatePatchArtifact } from "./patches/index.js";
+export { remediatePortfolio } from "./portfolio/index.js";
 export { remediate, planRemediation } from "./remediate/index.js";
 export { remediateFromScan } from "./remediate-from-scan/index.js";
 export { updateOutdated } from "./update-outdated/index.js";

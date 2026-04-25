@@ -230,8 +230,8 @@ export interface NpmRegistryPackageInfo {
   latestVersion: string;
   /** True when latestVersion crosses a major boundary from currentVersion */
   isMajorBump: boolean;
-  /** "direct" if listed in root package.json; "indirect" otherwise */
-  dependencyScope: "direct" | "indirect";
+  /** "direct" if listed in root package.json; "transitive" otherwise */
+  dependencyScope: "direct" | "transitive";
 }
 
 interface NpmOutdatedEntry {
@@ -363,7 +363,7 @@ export async function queryOutdatedPackages(
     }
   }
 
-  // Read package.json to determine direct vs indirect deps
+  // Read package.json to determine direct vs transitive deps
   let directDeps: Set<string>;
   try {
     const pkgRaw = JSON.parse(readFileSync(join(cwd, "package.json"), "utf8")) as {
@@ -387,10 +387,10 @@ export async function queryOutdatedPackages(
 
     if (!currentVersion || !latestVersion) continue;
 
-    const dependencyScope: "direct" | "indirect" = directDeps.has(name) ? "direct" : "indirect";
+    const dependencyScope: "direct" | "transitive" = directDeps.has(name) ? "direct" : "transitive";
 
-    // Skip indirect if not requested
-    if (!options.includeTransitive && dependencyScope === "indirect") continue;
+    // Skip transitive if not requested
+    if (!options.includeTransitive && dependencyScope === "transitive") continue;
 
     const isMajorBump =
       semver.valid(currentVersion) !== null &&

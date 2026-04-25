@@ -5,7 +5,7 @@
  * patch mechanisms (native pnpm/yarn when available, patch-package compatibility otherwise).
  * Optionally validates patches by running tests.
  */
-import { tool } from "ai";
+import { defineTool } from "../tool-compat.js";
 import { z } from "zod";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -59,7 +59,7 @@ interface ApplyPatchFileResult {
   error?: string;
 }
 
-export const applyPatchFileTool = tool({
+export const applyPatchFileTool = defineTool({
   description:
     "Write generated patch file and apply it using package-manager-native patch flow when available, falling back to patch-package when needed.",
   parameters: z.object({

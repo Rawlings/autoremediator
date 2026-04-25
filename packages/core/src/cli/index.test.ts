@@ -1,4 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 const mocked = vi.hoisted(() => ({
   remediate: vi.fn(),
   remediateFromScan: vi.fn(),
@@ -194,6 +197,37 @@ describe("cli preview and correlation option forwarding", () => {
     );
   });
 
+  it("forwards change-request options in explicit cve command", async () => {
+    const program = createProgram();
+    await program.parseAsync(
+      [
+        "node",
+        "autoremediator",
+        "cve",
+        "CVE-2021-23337",
+        "--create-change-request",
+        "--change-request-provider",
+        "github",
+        "--change-request-grouping",
+        "all",
+        "--change-request-repository",
+        "acme/repo",
+      ]
+    );
+
+    expect(mocked.remediate).toHaveBeenCalledWith(
+      "CVE-2021-23337",
+      expect.objectContaining({
+        changeRequest: expect.objectContaining({
+          enabled: true,
+          provider: "github",
+          grouping: "all",
+          repository: "acme/repo",
+        }),
+      })
+    );
+  });
+
   it("supports ci and sarif output in explicit cve command", async () => {
     mocked.remediate.mockResolvedValue({
       cveId: "CVE-2021-23337",
@@ -346,12 +380,15 @@ describe("cli preview and correlation option forwarding", () => {
       "patches",
       "inspect",
       "./patches/lodash+4.17.0.patch",
-      "--json",
+      "--patches-dir",
+      "./custom-patches",
+      "--output-format",
+      "json",
     ]);
 
     expect(mocked.inspectPatchArtifact).toHaveBeenCalledWith(
       "./patches/lodash+4.17.0.patch",
-      expect.objectContaining({ cwd: expect.any(String) })
+      expect.objectContaining({ cwd: expect.any(String), patchesDir: "./custom-patches" })
     );
   });
 
@@ -363,13 +400,74 @@ describe("cli preview and correlation option forwarding", () => {
       "patches",
       "validate",
       "./patches/lodash+4.17.0.patch",
+      "--patches-dir",
+      "./custom-patches",
       "--package-manager",
       "pnpm",
+      "--output-format",
+      "json",
     ]);
 
     expect(mocked.validatePatchArtifact).toHaveBeenCalledWith(
       "./patches/lodash+4.17.0.patch",
-      expect.objectContaining({ packageManager: "pnpm" })
+      expect.objectContaining({ packageManager: "pnpm", patchesDir: "./custom-patches" })
     );
+  });
+
+  it("dispatches portfolio command with targets file", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "autoremediator-portfolio-"));
+    const targetsFile = join(tempDir, "targets.json");
+    writeFileSync(
+      targetsFile,
+      JSON.stringify([
+        { cwd: "/tmp/service-a", cveId: "CVE-2021-23337" },
+        { cwd: "/tmp/service-b", inputPath: "./audit.json", format: "npm-audit" },
+      ]),
+      "utf8"
+    );
+
+    const program = createProgram();
+    await program.parseAsync([
+      "node",
+      "autoremediator",
+      "portfolio",
+      "--targets-file",
+      targetsFile,
+      "--output-format",
+      "json",
+    ]);
+
+    expect(mocked.remediatePortfolio).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ cwd: "/tmp/service-a", cveId: "CVE-2021-23337" }),
+        expect.objectContaining({ cwd: "/tmp/service-b", inputPath: "./audit.json", format: "npm-audit" }),
+      ]),
+      expect.objectContaining({ source: "cli" })
+    );
+  });
+
+  it("fails when resume is set without idempotency key", async () => {
+    const program = createProgram();
+    await expect(
+      program.parseAsync([
+        "node",
+        "autoremediator",
+        "CVE-2021-23337",
+        "--resume",
+      ])
+    ).rejects.toThrow("--resume requires --idempotency-key.");
+  });
+
+  it("fails when change-request overrides are set without create-change-request", async () => {
+    const program = createProgram();
+    await expect(
+      program.parseAsync([
+        "node",
+        "autoremediator",
+        "CVE-2021-23337",
+        "--change-request-provider",
+        "github",
+      ])
+    ).rejects.toThrow("change-request override flags require --create-change-request.");
   });
 });

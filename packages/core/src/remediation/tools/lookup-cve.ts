@@ -4,7 +4,7 @@
  * Fetches CVE details from OSV (primary) and GitHub Advisory (secondary),
  * merges them, and optionally enriches with supplemental intelligence data.
  */
-import { tool } from "ai";
+import { defineTool } from "./tool-compat.js";
 import { z } from "zod";
 import { lookupCveOsv } from "../../intelligence/sources/osv.js";
 import { lookupCveGitHub, mergeGhDataIntoCveDetails } from "../../intelligence/sources/github-advisory.js";
@@ -19,7 +19,7 @@ import { enrichWithOssfScorecard } from "../../intelligence/sources/ossf-scoreca
 import { enrichWithExternalFeeds } from "../../intelligence/sources/external-feeds.js";
 import type { CveDetails } from "../../platform/types.js";
 
-export const lookupCveTool = tool({
+export const lookupCveTool = defineTool({
   description:
     "Look up a CVE ID and return the list of affected npm packages, their vulnerable version ranges, and the first patched version. Always call this first.",
   parameters: z.object({

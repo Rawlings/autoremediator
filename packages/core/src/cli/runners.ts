@@ -2,6 +2,7 @@ import {
   ciExitCode,
   inspectPatchArtifact,
   listPatchArtifacts,
+  remediatePortfolio,
   remediate,
   remediateFromScan,
   type ScanReport,
@@ -10,9 +11,39 @@ import {
   updateOutdated,
   validatePatchArtifact,
 } from "../api/index.js";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { formatCountMap, logJson } from "./output.js";
 import type { CommandOptions } from "./types.js";
+
+function assertPatchOutputFormat(format: string): void {
+  if (format !== "text" && format !== "json") {
+    throw new Error('Patch commands support --output-format "text" or "json".');
+  }
+}
+
+function resolveChangeRequestOptions(opts: CommandOptions): {
+  enabled?: boolean;
+  provider: "github" | "gitlab";
+  grouping?: "all" | "per-cve" | "per-package";
+  repository?: string;
+  baseBranch?: string;
+  branchPrefix?: string;
+  titlePrefix?: string;
+} | undefined {
+  if (!opts.createChangeRequest) {
+    return undefined;
+  }
+
+  return {
+    enabled: true,
+    provider: opts.changeRequestProvider ?? "github",
+    grouping: opts.changeRequestGrouping,
+    repository: opts.changeRequestRepository,
+    baseBranch: opts.changeRequestBaseBranch,
+    branchPrefix: opts.changeRequestBranchPrefix,
+    titlePrefix: opts.changeRequestTitlePrefix,
+  };
+}
 
 function asSingleCveScanReport(report: Awaited<ReturnType<typeof remediate>>): ScanReport {
   return {
@@ -37,6 +68,8 @@ function asSingleCveScanReport(report: Awaited<ReturnType<typeof remediate>>): S
 }
 
 export async function runSingleCve(cveId: string, opts: CommandOptions): Promise<void> {
+  const changeRequest = resolveChangeRequestOptions(opts);
+
   const report = await remediate(cveId, {
     cwd: opts.cwd,
     packageManager: opts.packageManager,
@@ -88,6 +121,7 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
     slaCheck: opts.slaCheck,
     skipUnreachable: opts.skipUnreachable,
     regressionCheck: opts.regressionCheck,
+    changeRequest,
   });
 
   const reportAsScan = asSingleCveScanReport(report);
@@ -100,7 +134,7 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
     return;
   }
 
-  if (opts.json) {
+  if (opts.outputFormat === "json") {
     logJson(report);
     if (opts.ci) {
       process.exitCode = ciExitCode(toCiSummary(reportAsScan));
@@ -119,6 +153,8 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
 }
 
 export async function runScanInput(inputPath: string, opts: CommandOptions): Promise<void> {
+  const changeRequest = resolveChangeRequestOptions(opts);
+
   const report = await remediateFromScan(inputPath, {
     cwd: opts.cwd,
     packageManager: opts.packageManager,
@@ -172,6 +208,7 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
     slaCheck: opts.slaCheck,
     skipUnreachable: opts.skipUnreachable,
     regressionCheck: opts.regressionCheck,
+    changeRequest,
   });
 
   if (opts.summaryFile) {
@@ -187,7 +224,7 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
     return;
   }
 
-  if (opts.json) {
+  if (opts.outputFormat === "json") {
     logJson(report);
     if (opts.ci) {
       process.exitCode = ciExitCode(toCiSummary(report));
@@ -226,13 +263,15 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
   }
 }
 
-export async function runListPatches(opts: Pick<CommandOptions, "cwd" | "patchesDir" | "json">): Promise<void> {
+export async function runListPatches(opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">): Promise<void> {
+  assertPatchOutputFormat(opts.outputFormat);
+
   const patches = await listPatchArtifacts({
     cwd: opts.cwd,
     patchesDir: opts.patchesDir,
   });
 
-  if (opts.json) {
+  if (opts.outputFormat === "json") {
     logJson(patches);
     return;
   }
@@ -255,11 +294,16 @@ export async function runListPatches(opts: Pick<CommandOptions, "cwd" | "patches
 
 export async function runInspectPatch(
   patchPath: string,
-  opts: Pick<CommandOptions, "cwd" | "json">
+  opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">
 ): Promise<void> {
-  const inspection = await inspectPatchArtifact(patchPath, { cwd: opts.cwd });
+  assertPatchOutputFormat(opts.outputFormat);
 
-  if (opts.json) {
+  const inspection = await inspectPatchArtifact(patchPath, {
+    cwd: opts.cwd,
+    patchesDir: opts.patchesDir,
+  });
+
+  if (opts.outputFormat === "json") {
     logJson(inspection);
     return;
   }
@@ -283,14 +327,17 @@ export async function runInspectPatch(
 
 export async function runValidatePatch(
   patchPath: string,
-  opts: Pick<CommandOptions, "cwd" | "packageManager" | "json">
+  opts: Pick<CommandOptions, "cwd" | "patchesDir" | "packageManager" | "outputFormat">
 ): Promise<void> {
+  assertPatchOutputFormat(opts.outputFormat);
+
   const report = await validatePatchArtifact(patchPath, {
     cwd: opts.cwd,
+    patchesDir: opts.patchesDir,
     packageManager: opts.packageManager,
   });
 
-  if (opts.json) {
+  if (opts.outputFormat === "json") {
     logJson(report);
     return;
   }
@@ -316,6 +363,8 @@ export async function runValidatePatch(
 }
 
 export async function runUpdateOutdated(opts: CommandOptions): Promise<void> {
+  const changeRequest = resolveChangeRequestOptions(opts);
+
   const report = await updateOutdated({
     cwd: opts.cwd,
     packageManager: opts.packageManager,
@@ -340,9 +389,10 @@ export async function runUpdateOutdated(opts: CommandOptions): Promise<void> {
       enforceFrozenLockfile: opts.enforceFrozenLockfile,
       workspace: opts.workspace,
     },
+    changeRequest,
   });
 
-  if (opts.json) {
+  if (opts.outputFormat === "json") {
     logJson(report);
     return;
   }
@@ -358,5 +408,91 @@ export async function runUpdateOutdated(opts: CommandOptions): Promise<void> {
     for (const error of report.errors) {
       process.stdout.write(`Error ${error.packageName}: ${error.message}\n`);
     }
+  }
+}
+
+export async function runPortfolio(targetsFilePath: string, opts: CommandOptions): Promise<void> {
+  const changeRequest = resolveChangeRequestOptions(opts);
+
+  let parsedTargets: unknown;
+  try {
+    parsedTargets = JSON.parse(readFileSync(targetsFilePath, "utf8"));
+  } catch (error) {
+    throw new Error(
+      `Could not read targets file at "${targetsFilePath}": ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
+  if (!Array.isArray(parsedTargets)) {
+    throw new Error("Portfolio targets file must be a JSON array.");
+  }
+
+  const report = await remediatePortfolio(parsedTargets, {
+    cwd: opts.cwd,
+    packageManager: opts.packageManager,
+    dryRun: opts.dryRun,
+    preview: opts.preview,
+    runTests: opts.runTests,
+    patchesDir: opts.patchesDir,
+    policy: opts.policy,
+    evidence: opts.evidence,
+    llmProvider: opts.llmProvider,
+    model: opts.model,
+    modelPersonality: opts.modelPersonality,
+    providerSafetyProfile: opts.providerSafetyProfile,
+    requireConsensusForHighRisk: opts.requireConsensusForHighRisk,
+    consensusProvider: opts.consensusProvider,
+    consensusModel: opts.consensusModel,
+    patchConfidenceThresholds: {
+      low: typeof opts.patchConfidenceLow === "number" ? opts.patchConfidenceLow : undefined,
+      medium: typeof opts.patchConfidenceMedium === "number" ? opts.patchConfidenceMedium : undefined,
+      high: typeof opts.patchConfidenceHigh === "number" ? opts.patchConfidenceHigh : undefined,
+    },
+    dynamicModelRouting: opts.dynamicModelRouting,
+    dynamicRoutingThresholdChars:
+      typeof opts.dynamicRoutingThresholdChars === "number"
+        ? opts.dynamicRoutingThresholdChars
+        : undefined,
+    requestId: opts.requestId,
+    sessionId: opts.sessionId,
+    parentRunId: opts.parentRunId,
+    idempotencyKey: opts.idempotencyKey,
+    resume: opts.resume,
+    actor: opts.actor,
+    source: opts.source ?? "cli",
+    constraints: {
+      directDependenciesOnly: opts.directDependenciesOnly,
+      preferVersionBump: opts.preferVersionBump,
+      installMode: opts.installMode,
+      installPreferOffline: opts.installPreferOffline,
+      enforceFrozenLockfile: opts.enforceFrozenLockfile,
+      workspace: opts.workspace,
+    },
+    exploitSignalOverride: (opts.kevMandatory || opts.epssThreshold != null)
+      ? {
+          kev: opts.kevMandatory ? { mandatory: true } : undefined,
+          epss: opts.epssThreshold != null ? { mandatory: true, threshold: opts.epssThreshold } : undefined,
+        }
+      : undefined,
+    suppressionsFile: opts.suppressionsFile,
+    slaCheck: opts.slaCheck,
+    skipUnreachable: opts.skipUnreachable,
+    regressionCheck: opts.regressionCheck,
+    changeRequest,
+  });
+
+  if (opts.outputFormat === "json") {
+    logJson(report);
+    if (opts.ci) {
+      process.exitCode = report.failedCount > 0 ? 1 : 0;
+    }
+    return;
+  }
+
+  process.stdout.write(`Portfolio targets: ${report.targets.length}\n`);
+  process.stdout.write(`Successful targets: ${report.successCount}\n`);
+  process.stdout.write(`Failed targets: ${report.failedCount}\n`);
+  if (opts.ci) {
+    process.exitCode = report.failedCount > 0 ? 1 : 0;
   }
 }

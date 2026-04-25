@@ -1,4 +1,5 @@
 export type ScanFormat = "auto" | "npm-audit" | "yarn-audit" | "sarif";
+export type OutputFormat = "text" | "json" | "sarif";
 
 export interface CommandOptions {
   cwd: string;
@@ -7,8 +8,7 @@ export interface CommandOptions {
   dryRun: boolean;
   preview: boolean;
   runTests: boolean;
-  json: boolean;
-  outputFormat: "json" | "sarif";
+  outputFormat: OutputFormat;
   llmProvider?: "remote" | "local";
   model?: string;
   modelPersonality?: "analytical" | "pragmatic" | "balanced";
@@ -41,6 +41,7 @@ export interface CommandOptions {
   evidence: boolean;
   ci: boolean;
   summaryFile?: string;
+  targetsFile?: string;
   includeTransitive?: boolean;
   kevMandatory?: boolean;
   epssThreshold?: number;
@@ -48,6 +49,13 @@ export interface CommandOptions {
   slaCheck?: boolean;
   skipUnreachable?: boolean;
   regressionCheck?: boolean;
+  createChangeRequest?: boolean;
+  changeRequestProvider?: "github" | "gitlab";
+  changeRequestGrouping?: "all" | "per-cve" | "per-package";
+  changeRequestRepository?: string;
+  changeRequestBaseBranch?: string;
+  changeRequestBranchPrefix?: string;
+  changeRequestTitlePrefix?: string;
 }
 
 export function isCveId(value: string): boolean {

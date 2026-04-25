@@ -2,6 +2,7 @@ import { resolveProvider } from "../../platform/config.js";
 import { readIdempotentReport, storeIdempotentReport } from "../../platform/idempotency.js";
 import type { RemediateOptions, RemediationReport } from "../../platform/types.js";
 import { runRemediationPipeline } from "../../remediation/pipeline.js";
+import { createChangeRequestsForReports } from "../change-request/index.js";
 import { resolveConstraints, resolveCorrelationContext, resolveProvenanceContext } from "../context.js";
 import {
   addRemediateErrorStep,
@@ -82,6 +83,14 @@ export async function remediate(cveId: string, options: RemediateOptions = {}): 
     resumedFromCache: false,
   };
 
+  if (options.changeRequest?.enabled) {
+    finalReport.changeRequests = await createChangeRequestsForReports({
+      cwd,
+      options: options.changeRequest,
+      reports: [finalReport],
+    });
+  }
+
   if (options.idempotencyKey && !options.dryRun && !options.preview) {
     storeIdempotentReport(cwd, options.idempotencyKey, normalizedCveId, finalReport);
   }
@@ -93,6 +102,12 @@ export async function planRemediation(
   cveId: string,
   options: RemediateOptions = {}
 ): Promise<RemediationReport> {
+  if (Object.hasOwn(options, "dryRun") || Object.hasOwn(options, "preview")) {
+    throw new Error(
+      "planRemediation always runs with dryRun=true and preview=true. Remove dryRun/preview from options."
+    );
+  }
+
   return remediate(cveId, {
     ...options,
     preview: true,

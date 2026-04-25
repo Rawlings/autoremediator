@@ -42,7 +42,14 @@ export const OPTION_DESCRIPTIONS = {
   installPreferOffline: "Override prefer-offline flag behavior for install commands",
   enforceFrozenLockfile: "Override frozen lockfile behavior for install commands",
   workspace: "Workspace/package selector for scoped remediation in monorepos",
-  includeTransitive: "Include indirect/transitive dependencies in the outdated check. Default: false.",
+  createChangeRequest: "Enable creation of native pull request / merge request after remediation",
+  changeRequestProvider: "Change request provider (github|gitlab)",
+  changeRequestGrouping: "Grouping strategy for change requests (all|per-cve|per-package)",
+  changeRequestRepository: "Repository slug override for change request creation",
+  changeRequestBaseBranch: "Base branch used for change request targeting",
+  changeRequestBranchPrefix: "Branch prefix for generated change request branches",
+  changeRequestTitlePrefix: "Title prefix for generated change requests",
+  includeTransitive: "Include transitive dependencies in the outdated check. Default: false.",
   updateOutdated: "Run in update-outdated mode: bump all outdated npm packages without requiring a CVE.",
   kevMandatory: "If true, CVEs with active CISA KEV status bypass severity filtering and are treated as mandatory",
   epssThreshold: "EPSS probability threshold (0..1) above which a CVE is treated as mandatory regardless of severity",
@@ -113,6 +120,26 @@ export function createRemediateOptionSchemaProperties(options?: {
       type: "object",
       properties: createConstraintSchemaProperties(),
     },
+    changeRequest: {
+      type: "object",
+      properties: {
+        enabled: { type: "boolean", description: OPTION_DESCRIPTIONS.createChangeRequest },
+        provider: {
+          type: "string",
+          enum: ["github", "gitlab"],
+          description: OPTION_DESCRIPTIONS.changeRequestProvider,
+        },
+        grouping: {
+          type: "string",
+          enum: ["all", "per-cve", "per-package"],
+          description: OPTION_DESCRIPTIONS.changeRequestGrouping,
+        },
+        repository: { type: "string", description: OPTION_DESCRIPTIONS.changeRequestRepository },
+        baseBranch: { type: "string", description: OPTION_DESCRIPTIONS.changeRequestBaseBranch },
+        branchPrefix: { type: "string", description: OPTION_DESCRIPTIONS.changeRequestBranchPrefix },
+        titlePrefix: { type: "string", description: OPTION_DESCRIPTIONS.changeRequestTitlePrefix },
+      },
+    },
     kevMandatory: { type: "boolean", description: OPTION_DESCRIPTIONS.kevMandatory },
     epssThreshold: { type: "number", minimum: 0, maximum: 1, description: OPTION_DESCRIPTIONS.epssThreshold },
     suppressionsFile: { type: "string", description: OPTION_DESCRIPTIONS.suppressionsFile },
@@ -164,6 +191,7 @@ export function createScanReportSchemaProperties(): Record<string, JsonSchemaPro
     llmUsageCount: { type: "number" },
     estimatedCostUsd: { type: "number" },
     totalLlmLatencyMs: { type: "number" },
+    changeRequests: { type: "array", items: { type: "object" } },
   };
 }
 

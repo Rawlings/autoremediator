@@ -4,7 +4,7 @@
  * Reads the consumer's package.json and installed dependency tree to produce
  * a flat list of installed packages and their resolved versions.
  */
-import { tool } from "ai";
+import { defineTool } from "./tool-compat.js";
 import { z } from "zod";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -24,7 +24,7 @@ interface PackageJson {
   peerDependencies?: Record<string, string>;
 }
 
-export const checkInventoryTool = tool({
+export const checkInventoryTool = defineTool({
   description:
     "Read the project's package.json and installed dependencies to list packages and exact versions. Must be called before checking version matches.",
   parameters: z.object({
@@ -76,7 +76,7 @@ export const checkInventoryTool = tool({
       packages.push({
         name,
         version,
-        type: isDirect ? "direct" : "indirect",
+        type: isDirect ? "direct" : "transitive",
       });
     }
 

@@ -31,7 +31,7 @@ Canonical ordering authority: `.github/instructions/tool-contracts.instructions.
 3. Call check-version-match using CVE + inventory results.
 4. For each vulnerable package, call find-fixed-version.
 5. Attempt apply-version-bump for direct vulnerable packages.
-6. Attempt apply-package-override for indirect vulnerable packages when a safe version exists and constraints allow it.
+6. Attempt apply-package-override for transitive vulnerable packages when a safe version exists and constraints allow it.
 
 Do not reorder steps 1-6 without updating `.github/instructions/tool-contracts.instructions.md` and governance docs in the same PR.
 
@@ -52,7 +52,7 @@ Fallback is only valid when safe bump and override paths cannot remediate.
 - Include packageManager, policy, and runTests in apply-version-bump inputs.
 - Include packageManager, policy, and runTests in apply-package-override inputs.
 - Include vulnerableRange in find-fixed-version inputs when available.
-- When `directDependenciesOnly` is true, do not attempt override remediation for indirect dependencies.
+- When `directDependenciesOnly` is true, do not attempt override remediation for transitive dependencies.
 - When `preferVersionBump` is true, do not attempt override or patch-file remediation.
 - Do not skip tools due to assumptions.
 - Keep reasoning concise and structured.

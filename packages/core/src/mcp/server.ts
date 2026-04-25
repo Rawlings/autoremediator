@@ -23,6 +23,7 @@ import {
   OPTION_DESCRIPTIONS,
   planRemediation,
   remediate,
+  remediatePortfolio,
   remediateFromScan,
   updateOutdated,
   validatePatchArtifact,
@@ -43,7 +44,9 @@ interface McpApiDeps {
   remediateFn: typeof remediate;
   planRemediationFn: typeof planRemediation;
   remediateFromScanFn: typeof remediateFromScan;
+  remediatePortfolioFn: typeof remediatePortfolio;
   updateOutdatedFn: typeof updateOutdated;
+  healthFn: () => Promise<{ status: "ok" }>;
   listPatchArtifactsFn: typeof listPatchArtifacts;
   inspectPatchArtifactFn: typeof inspectPatchArtifact;
   validatePatchArtifactFn: typeof validatePatchArtifact;
@@ -53,7 +56,9 @@ const defaultDeps: McpApiDeps = {
   remediateFn: remediate,
   planRemediationFn: planRemediation,
   remediateFromScanFn: remediateFromScan,
+  remediatePortfolioFn: remediatePortfolio,
   updateOutdatedFn: updateOutdated,
+  healthFn: async () => ({ status: "ok" }),
   listPatchArtifactsFn: listPatchArtifacts,
   inspectPatchArtifactFn: inspectPatchArtifact,
   validatePatchArtifactFn: validatePatchArtifact,
@@ -71,6 +76,14 @@ function createBaseServer(): Server {
 // ---------------------------------------------------------------------------
 
 export const TOOLS = [
+  {
+    name: "health",
+    description: "Health check tool that returns server readiness status.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
   {
     name: "remediate",
     description:
@@ -111,6 +124,33 @@ export const TOOLS = [
     },
   },
   {
+    name: "remediatePortfolio",
+    description:
+      "Run CVE or scan remediation across multiple targets and return an aggregated PortfolioReport.",
+    inputSchema: {
+      type: "object",
+      required: ["targets"],
+      properties: {
+        targets: {
+          type: "array",
+          items: {
+            type: "object",
+            required: ["cwd"],
+            properties: {
+              cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
+              label: { type: "string" },
+              cveId: { type: "string", description: OPTION_DESCRIPTIONS.cveId },
+              inputPath: { type: "string", description: OPTION_DESCRIPTIONS.inputPath },
+              format: { type: "string", enum: ["auto", "npm-audit", "yarn-audit", "sarif"] },
+              audit: { type: "boolean", description: OPTION_DESCRIPTIONS.audit },
+            },
+          },
+        },
+        ...createRemediateOptionSchemaProperties(),
+      },
+    },
+  },
+  {
     name: "listPatchArtifacts",
     description:
       "List stored patch artifacts in the configured patches directory. Returns patch summaries with manifest metadata when available.",
@@ -130,7 +170,7 @@ export const TOOLS = [
       required: ["patchFilePath"],
       properties: {
         patchFilePath: { type: "string", description: "Path to the .patch file" },
-        cwd: PATCH_ARTIFACT_SCHEMA_PROPERTIES.cwd,
+        ...PATCH_ARTIFACT_SCHEMA_PROPERTIES,
       },
     },
   },
@@ -169,6 +209,11 @@ export async function handleToolCall(
   });
 
   try {
+    if (name === "health") {
+      const report = await deps.healthFn();
+      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
+    }
+
     if (name === "remediate") {
       const { cveId, ...options } = args as { cveId: string; [key: string]: unknown };
       const report = await deps.remediateFn(cveId, withMcpSource(options) as Parameters<typeof remediate>[1]);
@@ -184,6 +229,15 @@ export async function handleToolCall(
     if (name === "remediateFromScan") {
       const { inputPath, ...options } = args as { inputPath: string; [key: string]: unknown };
       const report = await deps.remediateFromScanFn(inputPath, withMcpSource(options) as Parameters<typeof remediateFromScan>[1]);
+      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
+    }
+
+    if (name === "remediatePortfolio") {
+      const { targets, ...options } = args as { targets: unknown[]; [key: string]: unknown };
+      const report = await deps.remediatePortfolioFn(
+        targets as Parameters<typeof remediatePortfolio>[0],
+        withMcpSource(options) as Parameters<typeof remediatePortfolio>[1]
+      );
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 

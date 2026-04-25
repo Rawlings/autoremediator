@@ -2,6 +2,26 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.12.0
+
+### Breaking Changes
+
+- `"indirect"` dependency type renamed to `"transitive"` across `InventoryPackage.type`, `SbomEntry.scope`, `OutdatedPackage.dependencyScope`, and the `UnresolvedReason` enum value (`indirect-dependency` → `transitive-dependency`).
+- `--json` CLI flag removed from all commands. Replace with `--output-format json`.
+- `planRemediation` now throws when `dryRun` or `preview` are passed in options.
+
+### Added
+
+- `remediatePortfolio(targets, options?)` — run CVE or scan remediation across many repository targets and get an aggregated `PortfolioReport`.
+- `portfolio` CLI command — `autoremediator portfolio --targets-file targets.json`.
+- `remediatePortfolio` MCP tool and `POST /remediate-portfolio` OpenAPI route.
+- `health` MCP tool for server readiness checks.
+- `GET /openapi.json` endpoint on the OpenAPI HTTP server.
+- Change-request CLI flags on all mutating commands (`--create-change-request`, `--change-request-provider`, and related options).
+- `--patches-dir` option on `patches inspect` and `patches validate` commands.
+- Fail-fast CLI validation for conflicting option combinations (resume/idempotency, consensus dependencies, change-request overrides).
+- `changeRequests` field on `UpdateOutdatedReport`, `ScanReport`, and `CiSummary`.
+
 ## Unreleased
 
 ### Added

@@ -166,7 +166,7 @@ export async function runLocalRemediationPipeline(
   const installedPackages = (inventory.packages ?? []) as Array<{
     name: string;
     version: string;
-    type: "direct" | "indirect";
+    type: "direct" | "transitive";
   }>;
 
   vulnerablePackages = findVulnerablePackages(cveDetails, installedPackages);

@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.12.0
+
+### Breaking Changes
+
+- **Breaking:** `InventoryPackage.type`, `SbomEntry.scope`, `OutdatedPackage.dependencyScope`, and `UnresolvedReason` now use `"transitive"` instead of `"indirect"`. Any consumer comparing or constructing these literals must update to `"transitive"`.
+- **Breaking:** `UnresolvedReason` value `"indirect-dependency"` renamed to `"transitive-dependency"`.
+- **Breaking:** `--json` CLI flag removed from all commands. Use `--output-format json` instead. Applies to all CVE, scan, update-outdated, portfolio, and patch lifecycle commands.
+- **Breaking:** `planRemediation` now throws when `dryRun` or `preview` are explicitly set in options. Remove those fields from callers — `planRemediation` always runs non-mutating by contract.
+
+### Added
+
+- Added `remediatePortfolio(targets, options?)` public SDK function for running CVE or scan remediation across multiple repository targets and aggregating outcomes into a `PortfolioReport`.
+- Added `portfolio` CLI command: `autoremediator portfolio --targets-file <path>` reads a JSON array of targets and runs full portfolio remediation.
+- Added `remediatePortfolio` MCP tool and `POST /remediate-portfolio` OpenAPI route, completing cross-surface parity for portfolio operations.
+- Added `health` MCP tool that returns server readiness status.
+- Added `GET /openapi.json` to the OpenAPI HTTP server for spec self-discovery.
+- Added change-request flags across all mutating commands: `--create-change-request`, `--change-request-provider`, `--change-request-grouping`, `--change-request-repository`, `--change-request-base-branch`, `--change-request-branch-prefix`, `--change-request-title-prefix`.
+- Added fail-fast CLI validation guardrails: `--resume` requires `--idempotency-key`; consensus flags require `--require-consensus-for-high-risk`; change-request overrides require `--create-change-request`; `--create-change-request` cannot combine with `--dry-run` or `--preview`.
+- Added `--patches-dir` option to `patches inspect` and `patches validate` commands for parity with `patches list`.
+- Added `changeRequests` field to `UpdateOutdatedReport`, `ScanReport`, and `CiSummary`.
+- Added `PortfolioReport`, `PortfolioTarget`, and `PortfolioTargetResult` to public SDK exports.
+
 ## 0.11.0
 
 ### Added

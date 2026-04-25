@@ -53,6 +53,19 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
     );
   });
 
+  routes.set("POST /remediate-portfolio", async (req, res) => {
+    const body = await readJsonBody<{ targets?: unknown; options?: unknown }>(req, res);
+    if (!body) return;
+    if (!Array.isArray(body.targets)) {
+      sendJson(res, 400, { error: "targets is required (array)" });
+      return;
+    }
+
+    await runRequest(res, () =>
+      deps.remediatePortfolioFn(body.targets as Parameters<OpenApiServerDeps["remediatePortfolioFn"]>[0], withOpenApiSource(body.options) as RemediateOptions)
+    );
+  });
+
   routes.set("POST /patches/list", async (req, res) => {
     const body = await readJsonBody<{ options?: unknown }>(req, res);
     if (!body) return;

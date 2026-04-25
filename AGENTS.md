@@ -19,7 +19,7 @@
 
 ### Mode 2b: Portfolio Input
 
-- Trigger: `autoremediator portfolio --targets-file <json>` or `remediatePortfolio({ targets, ...options })`
+- Trigger: `autoremediator portfolio --targets-file <json>` or `remediatePortfolio(targets, options?)`
 - Behavior: run Mode 1 or Mode 2 across multiple repository targets and aggregate per-target outcomes
 - Instruction set: Mode 2 + contributor API-surface rules for the portfolio contract
 
@@ -34,6 +34,7 @@
 - Trigger: `autoremediator-mcp` (stdio)
 - Behavior: exposes `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, and `updateOutdated` as MCP tools
 - Source: `packages/core/src/mcp/server.ts`
+- Exposed MCP tools: `health`, `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`
 
 ### Mode 5: OpenAPI HTTP Server
 

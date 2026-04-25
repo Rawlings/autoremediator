@@ -19,7 +19,7 @@ export function buildStrategyCounts(reports: RemediationReport[]): PatchStrategy
   return Object.keys(counts).length > 0 ? counts : undefined;
 }
 
-function toDependencyScope(installedType: "direct" | "indirect"): DependencyScope {
+function toDependencyScope(installedType: "direct" | "transitive"): DependencyScope {
   return installedType === "direct" ? "direct" : "transitive";
 }
 

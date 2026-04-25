@@ -215,7 +215,7 @@ describe("updateOutdated", () => {
           wantedVersion: "8.1.1",
           latestVersion: "9.4.0",
           isMajorBump: true,
-          dependencyScope: "indirect" as const,
+          dependencyScope: "transitive" as const,
         },
       ],
     ]);
@@ -231,7 +231,7 @@ describe("updateOutdated", () => {
     );
     expect(report.outdatedPackages).toHaveLength(2);
     const transitivePkg = report.outdatedPackages.find((p) => p.name === "supports-color");
-    expect(transitivePkg?.dependencyScope).toBe("indirect");
+    expect(transitivePkg?.dependencyScope).toBe("transitive");
   });
 
   it("returns failed status when registry query throws", async () => {

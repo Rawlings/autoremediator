@@ -4,7 +4,7 @@
  * Calls the LLM to analyze vulnerable source code and generate a unified diff patch.
  * Parses LLM response and validates patch format.
  */
-import { tool } from "ai";
+import { defineTool } from "../tool-compat.js";
 import { z } from "zod";
 import { generateText } from "ai";
 import {
@@ -38,7 +38,7 @@ interface GeneratePatchResult {
   error?: string;
 }
 
-export const generatePatchTool = tool({
+export const generatePatchTool = defineTool({
   description:
     "Generate a unified diff patch for a CVE using LLM analysis of vulnerable source code.",
   parameters: z.object({
@@ -52,7 +52,7 @@ export const generatePatchTool = tool({
       .describe("CVE ID (e.g., CVE-2021-23337)"),
     cveSummary: z.string().min(10).describe("CVE description and impact"),
     sourceFiles: z
-      .record(z.string())
+      .record(z.string(), z.string())
       .describe(
         "Map of file paths to source code contents from fetch-package-source"
       ),
@@ -153,7 +153,12 @@ export const generatePatchTool = tool({
 
       const inputChars = JSON.stringify(resolvedSourceFiles).length + cveSummary.length;
       const modelInstance = await createModel(effectiveOptions, { inputChars });
-      const modelName = modelInstance.modelId || "unknown-model";
+      const modelName =
+        typeof modelInstance === "string"
+          ? modelInstance
+          : "modelId" in modelInstance && typeof modelInstance.modelId === "string"
+            ? modelInstance.modelId
+            : "unknown-model";
 
       const prompt = buildPatchPrompt({
         cveId,

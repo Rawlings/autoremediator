@@ -1,7 +1,7 @@
 {
   "name": "autoremediator",
   "private": false,
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Risk-aware CVE remediation for Node.js with agentic MCP/OpenAPI integrations, safe upgrade and patch fallback, policy controls, and evidence outputs.",
   "keywords": [
     "security-remediation",

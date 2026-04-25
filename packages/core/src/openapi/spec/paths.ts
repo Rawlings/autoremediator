@@ -13,6 +13,24 @@ import {
 
 export function createOpenApiPaths() {
   return {
+    "/openapi.json": {
+      get: {
+        operationId: "openapiJson",
+        summary: "Get the OpenAPI specification document",
+        responses: {
+          "200": {
+            description: "OpenAPI specification",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     "/remediate": {
       post: {
         operationId: "remediate",
@@ -140,6 +158,58 @@ export function createOpenApiPaths() {
         },
       },
     },
+    "/remediate-portfolio": {
+      post: {
+        operationId: "remediatePortfolio",
+        summary: "Run remediation across multiple targets",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["targets"],
+                properties: {
+                  targets: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      required: ["cwd"],
+                      properties: {
+                        cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
+                        label: { type: "string" },
+                        cveId: { type: "string", description: OPTION_DESCRIPTIONS.cveId },
+                        inputPath: { type: "string", description: OPTION_DESCRIPTIONS.inputPath },
+                        format: {
+                          type: "string",
+                          enum: ["auto", "npm-audit", "yarn-audit", "sarif"],
+                        },
+                        audit: { type: "boolean", description: OPTION_DESCRIPTIONS.audit },
+                      },
+                    },
+                  },
+                  options: {
+                    type: "object",
+                    description: "RemediateOptions",
+                    properties: createRemediateOptionSchemaProperties(),
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "PortfolioReport",
+            content: { "application/json": { schema: { type: "object" } } },
+          },
+          "400": {
+            description: "Invalid input or remediation error",
+            content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } },
+          },
+        },
+      },
+    },
     "/patches/list": {
       post: {
         operationId: "listPatchArtifacts",
@@ -191,9 +261,7 @@ export function createOpenApiPaths() {
                   options: {
                     type: "object",
                     description: "PatchArtifactQueryOptions",
-                    properties: {
-                      cwd: PATCH_ARTIFACT_OPTION_PROPERTIES.cwd,
-                    },
+                    properties: PATCH_ARTIFACT_OPTION_PROPERTIES,
                   },
                 },
               },

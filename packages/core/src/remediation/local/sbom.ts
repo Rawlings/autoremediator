@@ -28,7 +28,7 @@ export function buildSbom(
     const entry: SbomEntry = {
       name: pkg.name,
       version: pkg.version,
-      scope: pkg.type === "direct" ? "direct" : "indirect",
+      scope: pkg.type === "direct" ? "direct" : "transitive",
     };
     if (isVulnerable) {
       entry.status = statusByPackage.get(pkg.name) ?? "unpatched";

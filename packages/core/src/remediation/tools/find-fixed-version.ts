@@ -4,11 +4,11 @@
  * Queries the npm registry to find the best safe upgrade version
  * for a vulnerable package.
  */
-import { tool } from "ai";
+import { defineTool } from "./tool-compat.js";
 import { z } from "zod";
 import { resolveSafeUpgradeVersion } from "../../intelligence/sources/registry.js";
 
-export const findFixedVersionTool = tool({
+export const findFixedVersionTool = defineTool({
   description:
     "Query the npm registry to find the safest published upgrade version for a package that is >= the first patched version. Prefer patch upgrades first, then minor, and only fall back to major when no same-major fix exists.",
   parameters: z.object({

@@ -73,7 +73,7 @@ Field intent:
   - what: optional allowlist boundary
   - why: limit automation scope during staged rollout
 - `constraints.directDependenciesOnly`:
-  - what: blocks outcomes for indirect dependencies
+  - what: blocks outcomes for transitive dependencies
   - why: keeps automation within directly managed dependency scope
 - `constraints.preferVersionBump`:
   - what: rejects patch-file outcomes

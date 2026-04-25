@@ -76,7 +76,13 @@ function makeOsvDetails(overrides: Partial<CveDetails> = {}): CveDetails {
     summary: "Test vulnerability",
     severity: "HIGH",
     affectedPackages: [
-      { name: "vuln-pkg", ecosystem: "npm", vulnerableRange: ">=1.0.0 <2.0.0", firstPatchedVersion: "2.0.0" },
+      {
+        name: "vuln-pkg",
+        ecosystem: "npm",
+        vulnerableRange: ">=1.0.0 <2.0.0",
+        firstPatchedVersion: "2.0.0",
+        source: "osv",
+      },
     ],
     references: [],
     ...overrides,

@@ -32,7 +32,12 @@ export async function createPipelineRuntime(
 
   const prompt = `Patch vulnerable dependencies affected by ${cveId} in the project at: ${cwd}. Package manager: ${packageManager}.`;
   const model = await createModel(options, { inputChars: prompt.length });
-  const modelName = model.modelId ?? "unknown-model";
+  const modelName =
+    typeof model === "string"
+      ? model
+      : "modelId" in model && typeof model.modelId === "string"
+        ? model.modelId
+        : "unknown-model";
   const systemPrompt = loadOrchestrationPrompt({
     cveId,
     cwd,

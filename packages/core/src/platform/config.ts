@@ -1,4 +1,4 @@
-import type { LanguageModelV1 } from "ai";
+import type { LanguageModel } from "ai";
 import type { PatchConfidenceThresholds, PatchRiskLevel, RemediateOptions } from "./types.js";
 import { loadPolicy } from "./policy.js";
 
@@ -13,7 +13,7 @@ interface RemoteAdapterModule {
 }
 
 interface RemoteModelFactory {
-  (options: { apiKey: string }): (modelName: string) => LanguageModelV1;
+  (options: { apiKey: string }): (modelName: string) => LanguageModel;
 }
 
 export function resolveProvider(options: RemediateOptions = {}): SupportedProvider {
@@ -97,7 +97,7 @@ async function loadRemoteFactory(): Promise<RemoteModelFactory> {
 export async function createModel(
   options: RemediateOptions = {},
   routing: ModelRoutingContext = {}
-): Promise<LanguageModelV1> {
+): Promise<LanguageModel> {
   const provider = resolveProvider(options);
 
   if (provider === "local") {

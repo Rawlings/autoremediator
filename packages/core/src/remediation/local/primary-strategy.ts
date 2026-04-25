@@ -23,7 +23,7 @@ export async function resolvePrimaryResult(params: {
   const pkg = vulnerable.installed;
   const firstPatchedVersion = vulnerable.affected.firstPatchedVersion;
 
-  if (pkg.type === "indirect") {
+  if (pkg.type === "transitive") {
     if (constraints.directDependenciesOnly) {
       return {
         steps: 0,
@@ -34,7 +34,7 @@ export async function resolvePrimaryResult(params: {
           applied: false,
           dryRun,
           unresolvedReason: "constraint-blocked",
-          message: `Constraint blocked remediation for indirect dependency "${pkg.name}".`,
+          message: `Constraint blocked remediation for transitive dependency "${pkg.name}".`,
         },
       };
     }

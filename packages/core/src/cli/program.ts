@@ -2,9 +2,10 @@ import { Command } from "commander";
 import { OPTION_DESCRIPTIONS } from "../api/index.js";
 import { existsSync } from "node:fs";
 import { PACKAGE_VERSION } from "../version";
-import { runInspectPatch, runListPatches, runScanInput, runSingleCve, runUpdateOutdated, runValidatePatch } from "./runners.js";
+import { runInspectPatch, runListPatches, runPortfolio, runScanInput, runSingleCve, runUpdateOutdated, runValidatePatch } from "./runners.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
+import { validateOutputFormat, validateSharedCommandOptions } from "./validators.js";
 
 function addSharedOptions(program: Command, includeInput = false): Command {
   const parseBooleanFlag = (value: string): boolean => value === "true";
@@ -70,8 +71,7 @@ function addSharedOptions(program: Command, includeInput = false): Command {
     .option("--evidence", OPTION_DESCRIPTIONS.evidence, true)
     .option("--no-evidence", "Disable evidence file output")
     .option("--ci", "Enable CI behavior (non-zero exit on failed remediations)", false)
-    .option("--output-format <format>", "Output format: json|sarif", "json")
-    .option("--json", "Print JSON output", false)
+    .option("--output-format <format>", "Output format: text|json|sarif", "text")
     .option("--kev-mandatory", OPTION_DESCRIPTIONS.kevMandatory, false)
     .option(
       "--epss-threshold <value>",
@@ -81,7 +81,14 @@ function addSharedOptions(program: Command, includeInput = false): Command {
     .option("--suppressions-file <path>", OPTION_DESCRIPTIONS.suppressionsFile)
     .option("--sla-check", OPTION_DESCRIPTIONS.slaCheck, false)
     .option("--skip-unreachable", OPTION_DESCRIPTIONS.skipUnreachable, false)
-    .option("--regression-check", OPTION_DESCRIPTIONS.regressionCheck, false);
+    .option("--regression-check", OPTION_DESCRIPTIONS.regressionCheck, false)
+    .option("--create-change-request", OPTION_DESCRIPTIONS.createChangeRequest, false)
+    .option("--change-request-provider <provider>", OPTION_DESCRIPTIONS.changeRequestProvider)
+    .option("--change-request-grouping <grouping>", OPTION_DESCRIPTIONS.changeRequestGrouping)
+    .option("--change-request-repository <repository>", OPTION_DESCRIPTIONS.changeRequestRepository)
+    .option("--change-request-base-branch <branch>", OPTION_DESCRIPTIONS.changeRequestBaseBranch)
+    .option("--change-request-branch-prefix <prefix>", OPTION_DESCRIPTIONS.changeRequestBranchPrefix)
+    .option("--change-request-title-prefix <prefix>", OPTION_DESCRIPTIONS.changeRequestTitlePrefix);
 
   if (includeInput) {
     program.option("--input <path>", `${OPTION_DESCRIPTIONS.inputPath} (scanner-first mode)`);
@@ -110,6 +117,8 @@ export function createProgram(): Command {
       ...opts,
       ...(command.optsWithGlobals() as Partial<CommandOptions>),
     } as CommandOptions;
+    validateSharedCommandOptions(merged);
+    validateOutputFormat(merged.outputFormat, ["text", "json", "sarif"], "cve");
     await runSingleCve(cveId, merged);
   });
 
@@ -126,6 +135,9 @@ export function createProgram(): Command {
       ...opts,
       ...(command.optsWithGlobals() as Partial<CommandOptions>),
     } as CommandOptions;
+
+    validateSharedCommandOptions(merged);
+    validateOutputFormat(merged.outputFormat, ["text", "json", "sarif"], "scan");
 
     if (!merged.audit && !merged.input) {
       throw new Error("scan mode requires --input unless --audit is enabled.");
@@ -144,7 +156,27 @@ export function createProgram(): Command {
       ...opts,
       ...(command.optsWithGlobals() as Partial<CommandOptions>),
     } as CommandOptions;
+    validateSharedCommandOptions(merged);
+    validateOutputFormat(merged.outputFormat, ["text", "json"], "update-outdated");
     await runUpdateOutdated(merged);
+  });
+
+  addSharedOptions(
+    program
+      .command("portfolio")
+      .description("Run CVE or scan remediation across multiple repository targets")
+      .requiredOption("--targets-file <path>", "Path to portfolio targets JSON file"),
+    false
+  ).action(async (opts: CommandOptions, command: Command) => {
+    const merged = {
+      ...opts,
+      ...(command.optsWithGlobals() as Partial<CommandOptions>),
+    } as CommandOptions;
+
+    validateSharedCommandOptions(merged);
+    validateOutputFormat(merged.outputFormat, ["text", "json"], "portfolio");
+
+    await runPortfolio(merged.targetsFile!, merged);
   });
 
   const patches = program.command("patches").description("Inspect and validate stored patch artifacts");
@@ -154,12 +186,13 @@ export function createProgram(): Command {
     .description("List patch artifacts in the configured patches directory")
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
     .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
-    .option("--json", "Print JSON output", false)
-    .action(async (opts: Pick<CommandOptions, "cwd" | "patchesDir" | "json">, command: Command) => {
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(async (opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">, command: Command) => {
       const merged = {
         ...(command.optsWithGlobals() as Partial<CommandOptions>),
         ...opts,
-      } as Pick<CommandOptions, "cwd" | "patchesDir" | "json">;
+      } as Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">;
+      validateOutputFormat(merged.outputFormat, ["text", "json"], "patches list");
       await runListPatches(merged);
     });
 
@@ -168,12 +201,14 @@ export function createProgram(): Command {
     .description("Inspect a patch artifact and its manifest metadata")
     .argument("<patchPath>", "Path to the .patch file to inspect")
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
-    .option("--json", "Print JSON output", false)
-    .action(async (patchPath: string, opts: Pick<CommandOptions, "cwd" | "json">, command: Command) => {
+    .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(async (patchPath: string, opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">, command: Command) => {
       const merged = {
         ...(command.optsWithGlobals() as Partial<CommandOptions>),
         ...opts,
-      } as Pick<CommandOptions, "cwd" | "json">;
+      } as Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">;
+      validateOutputFormat(merged.outputFormat, ["text", "json"], "patches inspect");
       await runInspectPatch(patchPath, merged);
     });
 
@@ -182,13 +217,15 @@ export function createProgram(): Command {
     .description("Validate a patch artifact against its manifest and the current dependency inventory")
     .argument("<patchPath>", "Path to the .patch file to validate")
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
     .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
-    .option("--json", "Print JSON output", false)
-    .action(async (patchPath: string, opts: Pick<CommandOptions, "cwd" | "packageManager" | "json">, command: Command) => {
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(async (patchPath: string, opts: Pick<CommandOptions, "cwd" | "patchesDir" | "packageManager" | "outputFormat">, command: Command) => {
       const merged = {
         ...(command.optsWithGlobals() as Partial<CommandOptions>),
         ...opts,
-      } as Pick<CommandOptions, "cwd" | "packageManager" | "json">;
+      } as Pick<CommandOptions, "cwd" | "patchesDir" | "packageManager" | "outputFormat">;
+      validateOutputFormat(merged.outputFormat, ["text", "json"], "patches validate");
       await runValidatePatch(patchPath, merged);
     });
 
@@ -199,6 +236,9 @@ export function createProgram(): Command {
       .option("--summary-file <path>", "Write machine-readable scan summary JSON to path"),
     true
   ).action(async (target: string | undefined, opts: CommandOptions) => {
+    validateSharedCommandOptions(opts);
+    validateOutputFormat(opts.outputFormat, ["text", "json", "sarif"], "default");
+
     if (opts.audit) {
       await runScanInput(opts.input ?? target ?? "", opts);
       return;

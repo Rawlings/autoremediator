@@ -4,7 +4,7 @@
  * Downloads a package tarball from npm registry and extracts source files for CVE analysis.
  * Uses Node.js fetch API to download and execa to extract tar archives.
  */
-import { tool } from "ai";
+import { defineTool } from "./tool-compat.js";
 import { z } from "zod";
 import { mkdir, readdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -20,7 +20,7 @@ interface FetchPackageSourceResult {
   error?: string;
 }
 
-export const fetchPackageSourceTool = tool({
+export const fetchPackageSourceTool = defineTool({
   description:
     "Download package tarball from npm and extract source files for CVE analysis. Supports custom file patterns (default: *.js, *.ts).",
   parameters: z.object({

@@ -4,7 +4,7 @@
  * Cross-references inventory packages against CVE-affected package ranges
  * to find which installed packages are actually vulnerable.
  */
-import { tool } from "ai";
+import { defineTool } from "./tool-compat.js";
 import { z } from "zod";
 import semver from "semver";
 import type { AffectedPackage, InventoryPackage, VulnerablePackage } from "../../platform/types.js";
@@ -20,10 +20,10 @@ const affectedPackageSchema = z.object({
 const inventoryPackageSchema = z.object({
   name: z.string(),
   version: z.string(),
-  type: z.enum(["direct", "indirect"]),
+  type: z.enum(["direct", "transitive"]),
 });
 
-export const checkVersionMatchTool = tool({
+export const checkVersionMatchTool = defineTool({
   description:
     "Check which of the project's installed packages fall within the CVE's vulnerable version ranges. Returns only the packages that are actually vulnerable.",
   parameters: z.object({

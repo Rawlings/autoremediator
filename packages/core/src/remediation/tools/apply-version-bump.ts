@@ -4,7 +4,7 @@
  * Updates the consumer's package.json to the safe version and runs npm install.
  * Respects --dry-run: in dry-run mode it reports what would happen but writes nothing.
  */
-import { tool } from "ai";
+import { defineTool } from "./tool-compat.js";
 import { z } from "zod";
 import { join } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -31,7 +31,7 @@ interface RawPackageJson {
 
 type DepField = "dependencies" | "devDependencies" | "peerDependencies";
 
-export const applyVersionBumpTool = tool({
+export const applyVersionBumpTool = defineTool({
   description:
     "Update package.json to use the safe version of a vulnerable package and run the project's package manager install. In dry-run mode, only reports what would change.",
   parameters: z.object({
@@ -141,8 +141,8 @@ export const applyVersionBumpTool = tool({
         fromVersion,
         applied: false,
         dryRun,
-        unresolvedReason: "indirect-dependency",
-        message: `"${packageName}" was not found in package.json dependencies (it may be a transitive dep). Cannot auto-bump.`,
+        unresolvedReason: "transitive-dependency",
+        message: `"${packageName}" was not found in package.json dependencies (it may be a transitive dependency). Cannot auto-bump.`,
       };
     }
 
