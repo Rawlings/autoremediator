@@ -134,7 +134,7 @@ Why: useful for drift detection when lockfiles or installed versions change over
 Core options:
 
 - `cwd`: repository root to operate on
-- `packageManager`: explicit package manager selection (`npm`, `pnpm`, `yarn`)
+- `packageManager`: explicit package manager selection (`npm`, `pnpm`, `yarn`, `bun`, `deno`)
 - `dryRun`: simulation mode without mutation
 - `preview`: non-mutating planning mode for orchestration/approval workflows
 - `simulationMode`: attaches deterministic simulation metadata for dry-run or preview execution; requires `dryRun: true` or `preview: true`

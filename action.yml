@@ -14,7 +14,7 @@ inputs:
   scan-file:
     description: >
       Path to scanner output file (npm audit --json, pnpm audit --json,
-      yarn audit --json, or SARIF). Mutually exclusive with cve-id.
+      yarn audit --json, bun audit --json, or SARIF). Mutually exclusive with cve-id.
       Mutually exclusive with audit. Required if cve-id and audit are not set.
     required: false
   audit:
@@ -44,7 +44,7 @@ inputs:
     default: .
   package-manager:
     description: >
-      Package manager to use for installs: npm, pnpm, or yarn.
+      Package manager to use for installs: npm, pnpm, yarn, bun, or deno.
       Auto-detected from lockfile if not set.
     required: false
   dry-run:

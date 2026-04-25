@@ -16,6 +16,7 @@ import {
   resolveListCommand,
   type PackageManager,
 } from "../../platform/package-manager/index.js";
+import { resolveDenoInventory } from "../../platform/package-manager/list-parser.js";
 import { loadPolicy } from "../../platform/policy.js";
 
 interface PackageJson {
@@ -29,7 +30,7 @@ export const checkInventoryTool = defineTool({
     "Read the project's package.json and installed dependencies to list packages and exact versions. Must be called before checking version matches.",
   parameters: z.object({
     cwd: z.string().describe("Absolute path to the consumer project's root directory"),
-    packageManager: z.enum(["npm", "pnpm", "yarn"]).optional().describe("Package manager used by the target project (auto-detected if omitted)"),
+    packageManager: z.enum(["npm", "pnpm", "yarn", "bun", "deno"]).optional().describe("Package manager used by the target project (auto-detected if omitted)"),
     policy: z.string().optional().describe("Optional path to .github/autoremediator.yml policy file"),
     workspace: z.string().optional().describe("Optional workspace/package selector for monorepos"),
   }),
@@ -53,16 +54,23 @@ export const checkInventoryTool = defineTool({
     });
     let installedVersions = new Map<string, string>();
 
-    try {
-      const [cmd, ...args] = listCommand;
-      const listResult = await execa(cmd, args, {
-        cwd,
-        stdio: "pipe",
-        reject: false,
-      });
-      installedVersions = parseListOutput(pm, listResult.stdout || "");
-    } catch {
-      // Fallback to package.json-only view when list command fails.
+    if (pm === "deno") {
+      // Deno inventory is built from deno.lock directly, not a shell command.
+      installedVersions = resolveDenoInventory(cwd);
+    } else {
+      try {
+        const [cmd, ...args] = listCommand;
+        if (cmd) {
+          const listResult = await execa(cmd, args, {
+            cwd,
+            stdio: "pipe",
+            reject: false,
+          });
+          installedVersions = parseListOutput(pm, listResult.stdout || "");
+        }
+      } catch {
+        // Fallback to package.json-only view when list command fails.
+      }
     }
 
     const packages: InventoryPackage[] = [];

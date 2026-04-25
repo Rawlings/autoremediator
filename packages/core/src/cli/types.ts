@@ -1,9 +1,11 @@
+import type { PackageManager } from "../platform/types.js";
+
 export type ScanFormat = "auto" | "npm-audit" | "yarn-audit" | "sarif";
 export type OutputFormat = "text" | "json" | "sarif";
 
 export interface CommandOptions {
   cwd: string;
-  packageManager?: "npm" | "pnpm" | "yarn";
+  packageManager?: PackageManager;
   patchesDir?: string;
   dryRun: boolean;
   preview: boolean;

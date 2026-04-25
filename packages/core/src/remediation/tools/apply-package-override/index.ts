@@ -1,7 +1,7 @@
 import { defineTool } from "../tool-compat.js";
 import { z } from "zod";
 import { join } from "node:path";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { execa } from "execa";
 import semver from "semver";
 import type { PatchResult } from "../../../platform/types.js";
@@ -18,18 +18,22 @@ import {
 import {
   collectDependencyTrace,
   describeOverrideField,
+  getDenoJsonImportValue,
   getOverrideValue,
+  restoreDenoJsonImportValue,
   restoreOverrideValue,
+  setDenoJsonImportValue,
   setOverrideValue,
+  type DenoJson,
   type RawPackageJson,
 } from "./helpers.js";
 
 export const applyPackageOverrideTool = defineTool({
   description:
-    "Apply a package-manager-native package.json override for a vulnerable transitive dependency and reinstall. Uses npm overrides, pnpm.overrides, or yarn resolutions.",
+    "Apply a package-manager-native package.json override for a vulnerable transitive dependency and reinstall. Uses npm overrides, pnpm.overrides, yarn resolutions, bun overrides, or deno.json imports.",
   parameters: z.object({
     cwd: z.string().describe("Absolute path to the consumer project root"),
-    packageManager: z.enum(["npm", "pnpm", "yarn"]).optional().describe("Package manager used by the target project (auto-detected if omitted)"),
+    packageManager: z.enum(["npm", "pnpm", "yarn", "bun", "deno"]).optional().describe("Package manager used by the target project (auto-detected if omitted)"),
     packageName: z.string().describe("The npm package to override"),
     selector: z
       .string()
@@ -62,6 +66,8 @@ export const applyPackageOverrideTool = defineTool({
   }): Promise<PatchResult> => {
     const pm = (packageManager ?? detectPackageManager(cwd)) as PackageManager;
     const pkgPath = join(cwd, "package.json");
+    const denoJsonPath = join(cwd, "deno.json");
+    const isDenoNative = pm === "deno" && !existsSync(pkgPath);
     const loadedPolicy = loadPolicy(cwd, policy);
     const commandConstraints = {
       ...loadedPolicy.constraints,
@@ -107,6 +113,118 @@ export const applyPackageOverrideTool = defineTool({
       };
     }
 
+    // ---- Deno native path (deno.json import map, no package.json) ----
+    if (isDenoNative) {
+      let denoJson: DenoJson;
+      try {
+        denoJson = JSON.parse(readFileSync(denoJsonPath, "utf8")) as DenoJson;
+      } catch {
+        return {
+          packageName,
+          strategy: "none",
+          fromVersion,
+          toVersion,
+          applied: false,
+          dryRun,
+          unresolvedReason: "package-json-not-found",
+          message: `Could not read deno.json at "${denoJsonPath}".`,
+        };
+      }
+
+      const existingEntry = getDenoJsonImportValue(denoJson, overrideSelector);
+      if (!existingEntry) {
+        return {
+          packageName,
+          strategy: "none",
+          fromVersion,
+          toVersion,
+          applied: false,
+          dryRun,
+          unresolvedReason: "transitive-override-unsupported-deno-native",
+          message: `Cannot apply transitive override for "${overrideSelector}" in a native Deno project (no package.json). Only direct dependencies declared in deno.json imports can be overridden.`,
+        };
+      }
+
+      const dependencyTrace = await collectDependencyTrace(cwd, pm, packageName, commandConstraints);
+      const dependencyTraceSuffix = dependencyTrace ? ` Dependency trace: ${dependencyTrace}` : "";
+
+      if (dryRun) {
+        return {
+          packageName,
+          strategy: "override",
+          fromVersion,
+          toVersion,
+          applied: false,
+          dryRun: true,
+          message: `[DRY RUN] Would update deno.json imports["${existingEntry.key}"] to "npm:${overrideSelector}@${toVersion}", then run ${installCommand.join(" ")}.${dependencyTraceSuffix}`,
+        };
+      }
+
+      return withRepoLock(cwd, async () => {
+        setDenoJsonImportValue(denoJson, overrideSelector, toVersion);
+        writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n", "utf8");
+
+        try {
+          const [installCmd, ...installArgs] = installCommand;
+          await execa(installCmd, installArgs, { cwd, stdio: "pipe" });
+        } catch (err) {
+          restoreDenoJsonImportValue(denoJson, overrideSelector, existingEntry);
+          writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n", "utf8");
+          const message = err instanceof Error ? err.message : String(err);
+          return {
+            packageName,
+            strategy: "override",
+            fromVersion,
+            toVersion,
+            applied: false,
+            dryRun: false,
+            unresolvedReason: "override-apply-failed",
+            message: `${installCommand.join(" ")} failed after updating deno.json imports for "${overrideSelector}" to ${toVersion}. Reverted. Error: ${message}${dependencyTraceSuffix}`,
+          };
+        }
+
+        if (runTests) {
+          try {
+            const [testCmd, ...testArgs] = testCommand;
+            await execa(testCmd, testArgs, { cwd, stdio: "pipe" });
+          } catch (err) {
+            restoreDenoJsonImportValue(denoJson, overrideSelector, existingEntry);
+            writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n", "utf8");
+
+            try {
+              const [rollbackCmd, ...rollbackArgs] = installCommand;
+              await execa(rollbackCmd, rollbackArgs, { cwd, stdio: "pipe" });
+            } catch {
+              // Ignore rollback failure.
+            }
+
+            const message = err instanceof Error ? err.message : String(err);
+            return {
+              packageName,
+              strategy: "override",
+              fromVersion,
+              toVersion,
+              applied: false,
+              dryRun: false,
+              unresolvedReason: "validation-failed",
+              message: `${testCommand.join(" ")} failed after updating deno.json imports for "${overrideSelector}" to ${toVersion}. Reverted. Error: ${message}${dependencyTraceSuffix}`,
+            };
+          }
+        }
+
+        return {
+          packageName,
+          strategy: "override",
+          fromVersion,
+          toVersion,
+          applied: true,
+          dryRun: false,
+          message: `Successfully updated deno.json imports["${existingEntry.key}"] for "${overrideSelector}" from ${fromVersion} to ${toVersion}, then ran ${installCommand.join(" ")}${runTests ? ` and passed ${testCommand.join(" ")}` : ""}.${dependencyTraceSuffix}`,
+        };
+      });
+    }
+
+    // ---- npm / pnpm / yarn / bun / deno-npm-compat path ----
     let pkgJson: RawPackageJson;
     try {
       pkgJson = JSON.parse(readFileSync(pkgPath, "utf8")) as RawPackageJson;
@@ -194,12 +312,14 @@ export const applyPackageOverrideTool = defineTool({
       }
 
       let dedupeNote = "";
-      try {
-        const [dedupeCmd, ...dedupeArgs] = dedupeCommand;
-        await execa(dedupeCmd, dedupeArgs, { cwd, stdio: "pipe" });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        dedupeNote = ` Dedupe warning: ${dedupeCommand.join(" ")} failed (${message}).`;
+      if (dedupeCommand.length > 0) {
+        try {
+          const [dedupeCmd, ...dedupeArgs] = dedupeCommand;
+          await execa(dedupeCmd, dedupeArgs, { cwd, stdio: "pipe" });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          dedupeNote = ` Dedupe warning: ${dedupeCommand.join(" ")} failed (${message}).`;
+        }
       }
 
       return {

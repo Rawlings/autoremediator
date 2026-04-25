@@ -2,6 +2,8 @@
 // Core domain types for autoremediator
 // ---------------------------------------------------------------------------
 
+export type PackageManager = "npm" | "pnpm" | "yarn" | "bun" | "deno";
+
 /**
  * CVSS v3 qualitative severity rating.
  * Anchored to the CVSS v3 standard (none/low/medium/high/critical).
@@ -204,13 +206,14 @@ export interface PatchArtifactValidationReport {
 export interface PatchArtifactQueryOptions {
   cwd?: string;
   patchesDir?: string;
-  packageManager?: "npm" | "pnpm" | "yarn";
+  packageManager?: PackageManager;
 }
 
 export type UnresolvedReason =
   | "consensus-failed"
   | "constraint-blocked"
   | "transitive-dependency"
+  | "transitive-override-unsupported-deno-native"
   | "install-failed"
   | "major-bump-required"
   | "no-safe-version"
@@ -526,7 +529,7 @@ export interface RemediateOptions extends CorrelationContext {
   /** Working directory of the consumer's project (defaults to process.cwd()) */
   cwd?: string;
   /** Package manager to use (defaults to auto-detect from lockfile) */
-  packageManager?: "npm" | "pnpm" | "yarn";
+  packageManager?: PackageManager;
   /** If true, plan and report changes but do not write anything */
   dryRun?: boolean;
   /** If true, run package-manager tests after patching */

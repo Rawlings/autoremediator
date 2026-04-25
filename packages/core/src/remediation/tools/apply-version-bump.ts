@@ -36,7 +36,7 @@ export const applyVersionBumpTool = defineTool({
     "Update package.json to use the safe version of a vulnerable package and run the project's package manager install. In dry-run mode, only reports what would change.",
   parameters: z.object({
     cwd: z.string().describe("Absolute path to the consumer project root"),
-    packageManager: z.enum(["npm", "pnpm", "yarn"]).optional().describe("Package manager used by the target project (auto-detected if omitted)"),
+    packageManager: z.enum(["npm", "pnpm", "yarn", "bun", "deno"]).optional().describe("Package manager used by the target project (auto-detected if omitted)"),
     packageName: z.string().describe("The npm package to upgrade"),
     fromVersion: z.string().describe("The currently installed vulnerable version"),
     toVersion: z.string().describe("The safe target version to upgrade to"),

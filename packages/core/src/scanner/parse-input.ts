@@ -75,7 +75,13 @@ export async function parseScanInputFromAudit(params: {
 }
 
 function defaultAuditFormat(pm: PackageManager): Exclude<ScanInputFormat, "auto" | "sarif"> {
-  return pm === "yarn" ? "yarn-audit" : "npm-audit";
+  if (pm === "yarn") return "yarn-audit";
+  if (pm === "deno") {
+    throw new Error(
+      'Deno does not support a native audit command. Use --input with a SARIF or npm-audit scan file instead.'
+    );
+  }
+  return "npm-audit";
 }
 
 function ensureAuditFormatCompatibility(
@@ -83,6 +89,12 @@ function ensureAuditFormatCompatibility(
   resolved: Exclude<ScanInputFormat, "auto">
 ): void {
   if (resolved === "sarif") return;
+
+  if (pm === "deno") {
+    throw new Error(
+      'Deno does not support a native audit command. Use --input with a SARIF or npm-audit scan file instead.'
+    );
+  }
 
   if (pm === "yarn" && resolved !== "yarn-audit") {
     throw new Error('Format "npm-audit" is not supported with package manager "yarn" in --audit mode. Use --format yarn-audit or --format auto.');

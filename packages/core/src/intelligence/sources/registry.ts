@@ -14,7 +14,8 @@ import { join } from "node:path";
 import { execa } from "execa";
 import semver from "semver";
 import { httpClient } from "../../platform/http-client.js";
-import { detectPackageManager } from "../../platform/package-manager/index.js";
+import { type PackageManager, detectPackageManager } from "../../platform/package-manager/index.js";
+
 
 const NPM_REGISTRY = "https://registry.npmjs.org";
 
@@ -253,7 +254,7 @@ export async function queryOutdatedPackages(
   cwd: string,
   options: { includeTransitive?: boolean; packageManager?: string } = {}
 ): Promise<Map<string, NpmRegistryPackageInfo>> {
-  const pm = (options.packageManager ?? detectPackageManager(cwd)) as "npm" | "pnpm" | "yarn";
+  const pm = (options.packageManager ?? detectPackageManager(cwd)) as PackageManager;
 
   // Determine the outdated command per PM
   let stdout: string;

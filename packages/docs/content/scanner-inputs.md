@@ -34,7 +34,7 @@ When `containmentMode` blocks an applied escalation outcome, the affected result
 
 | Format | Best for | Why |
 |---|---|---|
-| `npm-audit` | npm and pnpm JSON audit output | direct, common ecosystem path |
+| `npm-audit` | npm, pnpm, and bun JSON audit output | direct, common ecosystem path |
 | `yarn-audit` | Yarn-specific audit output | aligns parser expectations with yarn shape |
 | `sarif` | centralized security tooling and enterprise scanners | integrates with broad security pipelines |
 | `auto` | mixed or unknown scan source in generic jobs | convenience when one adapter can be reliably inferred |
@@ -85,6 +85,27 @@ autoremediator yarn-audit.json --format yarn-audit
 ```
 
 If your Yarn workflow emits alternate JSON shape, lock parser with `--format yarn-audit` and retain artifacts for troubleshooting.
+
+## bun audit
+
+Generate and remediate:
+
+```bash
+bun audit --json > bun-audit.json
+autoremediator bun-audit.json --format npm-audit
+```
+
+Why `npm-audit` parser: Bun audit JSON is compatible with the npm-audit adapter path. `--audit` mode with `--package-manager bun` is also supported.
+
+## Deno
+
+Deno does not provide a native audit command. Use a SARIF scan file or an npm-audit-format file from an external scanner:
+
+```bash
+autoremediator report.sarif --format sarif --package-manager deno
+```
+
+`--audit` is not supported with `--package-manager deno` and will exit with an error directing you to use `--input` instead.
 
 ## SARIF
 

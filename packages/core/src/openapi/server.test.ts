@@ -24,7 +24,7 @@ describe("openapi server", () => {
     expect(optionsProps.idempotencyKey).toBeDefined();
     expect(optionsProps.resume).toBeDefined();
     expect(optionsProps.constraints).toBeDefined();
-    expect(optionsProps.packageManager.enum).toEqual(["npm", "pnpm", "yarn"]);
+    expect(optionsProps.packageManager.enum).toEqual(["npm", "pnpm", "yarn", "bun", "deno"]);
     expect(optionsProps.consensusProvider).toBeDefined();
     expect(optionsProps.consensusModel).toBeDefined();
     expect(optionsProps.patchConfidenceThresholds).toBeDefined();

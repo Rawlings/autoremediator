@@ -5,6 +5,7 @@ import { runConsensusGate } from "./consensus-gate.js";
 import type {
   ConsensusVerdict,
   LlmUsageMetrics,
+  PackageManager,
   PatchConfidenceThresholds,
   PatchResult,
   UnresolvedReason,
@@ -34,7 +35,7 @@ export function shouldAttemptPatchFallback(result: PatchResult, preferVersionBum
 
 export async function tryLocalPatchFallback(params: {
   cwd: string;
-  packageManager: "npm" | "pnpm" | "yarn";
+  packageManager: PackageManager;
   packageName: string;
   vulnerableVersion: string;
   cveId: string;

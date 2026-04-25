@@ -180,4 +180,47 @@ describe("parseScanInputFromAudit", () => {
       })
     ).rejects.toThrow("Failed to parse output from yarn audit --json (exit code 1) as yarn-audit");
   });
+
+  it("parses bun audit json output in auto mode using npm-audit adapter", async () => {
+    mocked.resolveAuditCommand.mockReturnValue(["bun", "audit", "--json"]);
+    mocked.execa.mockResolvedValue({
+      stdout: JSON.stringify({
+        vulnerabilities: {
+          lodash: {
+            name: "lodash",
+            severity: "critical",
+            via: ["CVE-2021-23337"],
+          },
+        },
+      }),
+      stderr: "",
+    });
+
+    const findings = await parseScanInputFromAudit({
+      cwd: "/tmp/project",
+      packageManager: "bun",
+      format: "auto",
+    });
+
+    expect(mocked.execa).toHaveBeenCalledWith(
+      "bun",
+      ["audit", "--json"],
+      expect.objectContaining({ cwd: "/tmp/project", reject: false })
+    );
+    expect(findings[0]).toMatchObject({ cveId: "CVE-2021-23337", source: "npm-audit" });
+  });
+
+  it("throws a clear error for deno in --audit mode", async () => {
+    mocked.resolveAuditCommand.mockImplementation(() => {
+      throw new Error("Deno does not support a native audit command. Use --input with a SARIF or npm-audit scan file instead.");
+    });
+
+    await expect(
+      parseScanInputFromAudit({
+        cwd: "/tmp/project",
+        packageManager: "deno",
+        format: "auto",
+      })
+    ).rejects.toThrow(/Deno does not support a native audit command/);
+  });
 });

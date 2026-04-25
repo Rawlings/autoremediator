@@ -1,6 +1,6 @@
 export type JsonSchemaProperty = Record<string, unknown>;
 
-export const PACKAGE_MANAGER_VALUES = ["npm", "pnpm", "yarn"] as const;
+export const PACKAGE_MANAGER_VALUES = ["npm", "pnpm", "yarn", "bun", "deno"] as const;
 export const LLM_PROVIDER_VALUES = ["remote", "local"] as const;
 export const PROVENANCE_SOURCE_VALUES = ["cli", "sdk", "mcp", "openapi", "unknown"] as const;
 

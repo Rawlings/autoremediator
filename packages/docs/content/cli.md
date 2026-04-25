@@ -58,7 +58,7 @@ When to use which mode:
 | Option | What it controls | Why it matters in automation |
 |---|---|---|
 | `--cwd <path>` | target project directory | supports centralized runners operating across many repos |
-| `--package-manager <npm|pnpm|yarn>` | install/update tool selection | avoids ambiguous lockfile detection in custom pipelines |
+| `--package-manager <npm|pnpm|yarn|bun|deno>` | install/update tool selection | avoids ambiguous lockfile detection in custom pipelines |
 | `--dry-run` | simulation-only execution | validates policy and expected actions without file mutation |
 | `--preview` | non-mutating remediation preview mode | enables planning flows without write side effects |
 | `--simulation-mode` | deterministic simulation metadata | adds planned mutation and rebuttal summaries to dry-run or preview results |

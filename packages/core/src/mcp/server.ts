@@ -35,7 +35,7 @@ const PATCH_ARTIFACT_SCHEMA_PROPERTIES = {
   patchesDir: { type: "string", description: OPTION_DESCRIPTIONS.patchesDir },
   packageManager: {
     type: "string",
-    enum: ["npm", "pnpm", "yarn"],
+    enum: ["npm", "pnpm", "yarn", "bun", "deno"],
     description: OPTION_DESCRIPTIONS.packageManager,
   },
 } as const;
@@ -113,7 +113,7 @@ export const TOOLS = [
   {
     name: "remediateFromScan",
     description:
-      "Parse an npm/pnpm/yarn audit JSON or SARIF scan file, extract all CVE IDs, and remediate each one. Returns a ScanReport.",
+      "Parse an npm/pnpm/yarn/bun audit JSON or SARIF scan file, extract all CVE IDs, and remediate each one. Returns a ScanReport.",
     inputSchema: {
       type: "object",
       required: ["inputPath"],

@@ -3,6 +3,7 @@ import { loadPolicy } from "../../platform/policy.js";
 import type {
   EscalationGraph,
   ExploitSignalOverridePolicy,
+  PackageManager,
   PatchConfidenceThresholds,
   RemediateOptions,
   SlaPolicy,
@@ -12,7 +13,7 @@ import { detectPackageManager } from "../../platform/package-manager/index.js";
 
 export interface LocalRunOptions {
   cwd: string;
-  packageManager: "npm" | "pnpm" | "yarn";
+  packageManager: PackageManager;
   preview: boolean;
   dryRun: boolean;
   runTests: boolean;

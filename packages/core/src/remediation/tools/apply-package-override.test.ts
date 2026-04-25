@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocked = vi.hoisted(() => ({
+  existsSync: vi.fn(),
   readFileSync: vi.fn(),
   writeFileSync: vi.fn(),
   execa: vi.fn(),
@@ -21,6 +22,7 @@ vi.mock("ai", () => ({
 }));
 
 vi.mock("node:fs", () => ({
+  existsSync: mocked.existsSync,
   readFileSync: mocked.readFileSync,
   writeFileSync: mocked.writeFileSync,
 }));
@@ -54,6 +56,8 @@ describe("apply-package-override", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
+    // Default: package.json exists (npm-compat mode for all PMs including deno)
+    mocked.existsSync.mockReturnValue(true);
     mocked.readFileSync.mockReturnValue(JSON.stringify({ name: "demo-app" }));
     mocked.loadPolicy.mockReturnValue({
       allowMajorBumps: false,
@@ -167,5 +171,99 @@ describe("apply-package-override", () => {
       expect.stringContaining('"@scope/parent>minimist": "1.2.8"'),
       "utf8"
     );
+  });
+
+  it("writes npm-style overrides for bun projects", async () => {
+    mocked.resolveDedupeCommand.mockReturnValue([]);
+
+    const result = await (applyPackageOverrideTool as any).execute({
+      cwd: "/tmp/project",
+      packageManager: "bun",
+      packageName: "minimist",
+      fromVersion: "1.2.0",
+      toVersion: "1.2.8",
+      dryRun: false,
+      runTests: false,
+    });
+
+    expect(mocked.writeFileSync).toHaveBeenCalledWith(
+      "/tmp/project/package.json",
+      expect.stringContaining('"overrides": {\n    "minimist": "1.2.8"\n  }'),
+      "utf8"
+    );
+    expect(result.applied).toBe(true);
+  });
+
+  it("writes npm-style overrides for deno npm-compat projects (package.json present)", async () => {
+    mocked.resolveDedupeCommand.mockReturnValue([]);
+
+    const result = await (applyPackageOverrideTool as any).execute({
+      cwd: "/tmp/project",
+      packageManager: "deno",
+      packageName: "minimist",
+      fromVersion: "1.2.0",
+      toVersion: "1.2.8",
+      dryRun: false,
+      runTests: false,
+    });
+
+    expect(mocked.writeFileSync).toHaveBeenCalledWith(
+      "/tmp/project/package.json",
+      expect.stringContaining('"overrides": {\n    "minimist": "1.2.8"\n  }'),
+      "utf8"
+    );
+    expect(result.applied).toBe(true);
+  });
+
+  it("returns unresolved for transitive deno native override (no package.json)", async () => {
+    // Simulate no package.json (native deno project)
+    mocked.existsSync.mockImplementation((p: string) => !p.endsWith("package.json"));
+    // deno.json with no relevant imports entry
+    mocked.readFileSync.mockImplementation((p: string) => {
+      if ((p as string).endsWith("deno.json")) {
+        return JSON.stringify({ imports: { "std/": "https://deno.land/std@0.200.0/" } });
+      }
+      throw new Error("ENOENT");
+    });
+
+    const result = await (applyPackageOverrideTool as any).execute({
+      cwd: "/tmp/deno-project",
+      packageManager: "deno",
+      packageName: "minimist",
+      fromVersion: "1.2.0",
+      toVersion: "1.2.8",
+      dryRun: false,
+      runTests: false,
+    });
+
+    expect(result.applied).toBe(false);
+    expect(result.unresolvedReason).toBe("transitive-override-unsupported-deno-native");
+  });
+
+  it("updates deno.json imports for direct dep in native deno project", async () => {
+    mocked.existsSync.mockImplementation((p: string) => !p.endsWith("package.json"));
+    mocked.readFileSync.mockImplementation((p: string) => {
+      if ((p as string).endsWith("deno.json")) {
+        return JSON.stringify({ imports: { "npm:minimist": "npm:minimist@^1.2.0" } });
+      }
+      throw new Error("ENOENT");
+    });
+
+    const result = await (applyPackageOverrideTool as any).execute({
+      cwd: "/tmp/deno-project",
+      packageManager: "deno",
+      packageName: "minimist",
+      fromVersion: "1.2.0",
+      toVersion: "1.2.8",
+      dryRun: false,
+      runTests: false,
+    });
+
+    expect(mocked.writeFileSync).toHaveBeenCalledWith(
+      "/tmp/deno-project/deno.json",
+      expect.stringContaining('"npm:minimist": "npm:minimist@1.2.8"'),
+      "utf8"
+    );
+    expect(result.applied).toBe(true);
   });
 });

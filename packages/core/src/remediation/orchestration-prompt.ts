@@ -1,12 +1,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { PackageManager } from "../platform/types.js";
 
 interface PromptContext {
   cveId: string;
   cwd: string;
   llmProvider: "remote" | "local";
   modelPersonality?: "analytical" | "pragmatic" | "balanced";
-  packageManager: "npm" | "pnpm" | "yarn";
+  packageManager: PackageManager;
   dryRun: boolean;
   runTests: boolean;
   policy: string;

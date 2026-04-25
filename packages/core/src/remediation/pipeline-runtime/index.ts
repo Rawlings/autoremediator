@@ -1,6 +1,6 @@
 import { createModel, resolveProvider } from "../../platform/config.js";
 import { detectPackageManager } from "../../platform/package-manager/index.js";
-import type { RemediateOptions } from "../../platform/types.js";
+import type { PackageManager, RemediateOptions } from "../../platform/types.js";
 import { loadOrchestrationPrompt } from "../orchestration-prompt.js";
 import { createProgressEmitter } from "./progress.js";
 import { createRuntimeToolsForRun } from "./tool-wrappers.js";
@@ -13,7 +13,7 @@ export async function createPipelineRuntime(
 ): Promise<{
   provider: "remote" | "local";
   cwd: string;
-  packageManager: "npm" | "pnpm" | "yarn";
+  packageManager: PackageManager;
   dryRun: boolean;
   model: Awaited<ReturnType<typeof createModel>>;
   modelName: string;

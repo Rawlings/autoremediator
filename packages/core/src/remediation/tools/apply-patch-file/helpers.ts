@@ -34,7 +34,7 @@ export interface PackageJsonSnapshot {
 }
 
 export async function resolvePatchMode(packageManager: PackageManager, cwd: string): Promise<PatchMode> {
-  if (packageManager === "npm") return "patch-package";
+  if (packageManager === "npm" || packageManager === "bun" || packageManager === "deno") return "patch-package";
   if (packageManager === "pnpm") return "native-pnpm";
 
   const major = await getYarnMajorVersion(cwd);
@@ -42,7 +42,6 @@ export async function resolvePatchMode(packageManager: PackageManager, cwd: stri
 }
 
 export function patchModeRequiresPackageJsonSnapshot(packageManager: PackageManager): boolean {
-  if (packageManager === "npm") return true;
   if (packageManager === "pnpm") return false;
   return true;
 }

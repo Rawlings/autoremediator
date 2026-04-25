@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.14.0
+
+### Added
+
+- Added `bun` and `deno` as supported package managers across all surfaces (`packageManager` option, `--package-manager` CLI flag, MCP tool schemas, OpenAPI schemas, and GitHub Action input).
+- **Bun**: auto-detected from `bun.lockb` or `bun.lock`; full support for install, test, list (`bun pm ls --all`), audit (`bun audit --json`, npm-audit-compatible), why (`bun pm why`), and `package.json` overrides.
+- **Deno** (npm-compat): auto-detected from `deno.lock` when no higher-priority lockfile is present; install and test via `deno install`/`deno test`; dependency inventory read from `deno.lock` directly (v3 and v4 format); `package.json` overrides for direct and transitive deps.
+- **Deno** (native `deno.json`): direct-dependency overrides applied via `deno.json` imports field (`"npm:pkg@version"` specifiers); transitive overrides unsupported and return `unresolved: "transitive-override-unsupported-deno-native"` with a clear explanation.
+- Added `"transitive-override-unsupported-deno-native"` to `UnresolvedReason`.
+- `--audit` mode with `--package-manager deno` throws an actionable error directing users to `--input` with a scan file. Bun audit mode is fully supported using the existing `npm-audit` adapter.
+- Detection order: `pnpm-lock.yaml` → `yarn.lock` → `bun.lockb`/`bun.lock` → `deno.lock` → npm default.
+
 ## 0.13.0
 
 ### Added

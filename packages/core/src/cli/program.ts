@@ -138,7 +138,7 @@ export function createProgram(): Command {
   addSharedOptions(
     program
       .command("scan")
-      .description("Remediate vulnerabilities from scanner output (npm/pnpm/yarn audit JSON or SARIF)")
+      .description("Remediate vulnerabilities from scanner output (npm/pnpm/yarn/bun audit JSON or SARIF)")
       .option("--input <path>", OPTION_DESCRIPTIONS.inputPath)
       .option("--format <type>", OPTION_DESCRIPTIONS.format, "auto")
       .option("--summary-file <path>", "Write machine-readable scan summary JSON to path"),

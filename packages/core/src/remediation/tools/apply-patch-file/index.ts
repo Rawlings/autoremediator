@@ -90,8 +90,7 @@ export const applyPatchFileTool = defineTool({
       .default("./patches")
       .describe("Directory to store patch files"),
     cwd: z.string().describe("Project root directory (for package.json)"),
-    packageManager: z.enum(["npm", "pnpm", "yarn"]).optional().describe("Package manager used by the target project (auto-detected if omitted)"),
-    policy: z.string().optional().describe("Optional path to .autoremediator policy file"),
+    packageManager: z.enum(["npm", "pnpm", "yarn", "bun", "deno"]).optional().describe("Package manager used by the target project (auto-detected if omitted)"),    policy: z.string().optional().describe("Optional path to .autoremediator policy file"),
     installMode: z.enum(["standard", "prefer-offline", "deterministic"]).optional(),
     installPreferOffline: z.boolean().optional(),
     enforceFrozenLockfile: z.boolean().optional(),

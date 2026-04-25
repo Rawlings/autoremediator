@@ -1,12 +1,12 @@
 import { resolveSafeUpgradeVersion } from "../../intelligence/sources/registry.js";
 import { applyVersionBumpTool } from "../tools/apply-version-bump.js";
 import { applyPackageOverrideTool } from "../tools/apply-package-override/index.js";
-import type { PatchResult, VulnerablePackage } from "../../platform/types.js";
+import type { PackageManager, PatchResult, VulnerablePackage } from "../../platform/types.js";
 
 export async function resolvePrimaryResult(params: {
   vulnerable: VulnerablePackage;
   cwd: string;
-  packageManager: "npm" | "pnpm" | "yarn";
+  packageManager: PackageManager;
   dryRun: boolean;
   policy: string;
   runTests: boolean;

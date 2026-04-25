@@ -6,6 +6,13 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- `bun` and `deno` package manager support across all surfaces (`packageManager` option, `--package-manager` flag, MCP, OpenAPI, GitHub Action).
+- Bun: auto-detected from `bun.lockb`/`bun.lock`; full support for install, test, list, audit (npm-audit compatible), why (`bun pm why`), and `package.json` overrides.
+- Deno (npm-compat): auto-detected from `deno.lock`; inventory read from lock file directly (v3 and v4 format); `package.json` overrides for direct and transitive deps.
+- Deno (native `deno.json`): direct-dependency overrides via `deno.json` imports field; transitive overrides return `unresolved: "transitive-override-unsupported-deno-native"`.
+- `--audit` with `--package-manager deno` throws an actionable error directing users to `--input`. Bun audit fully supported via the npm-audit adapter.
+- New `UnresolvedReason`: `"transitive-override-unsupported-deno-native"`.
+- Detection order: `pnpm-lock.yaml` → `yarn.lock` → `bun.lockb`/`bun.lock` → `deno.lock` → npm.
 - `dispositionPolicy` controls for autonomous result classification, including confidence gates, transitive review holds, and KEV-driven escalation.
 - `containmentMode` for blocking applied `escalate` outcomes and recording them as `policy-blocked`.
 - `escalationGraph` routing plus aggregate `escalationCounts` reporting for unresolved outcomes.
