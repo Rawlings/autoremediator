@@ -28,10 +28,25 @@ For `public-operation`:
 
 - SDK, CLI, MCP, and OpenAPI parity updates.
 - Shared types/contract updates.
+- Action/workflow and GitHub App parity updates when those delivery surfaces are affected.
 - Tests across affected surfaces.
 - Docs updates (`api-sdk.md`, `cli.md`, `integrations.md`, `getting-started.md` as applicable).
 - Governance updates for API/tool contracts.
 - Changelog updates.
+
+## Touchpoint Matrix (Required)
+
+For any user-visible change, include an explicit touchpoint matrix in implementation notes (or task packet) with status for each applicable surface:
+
+- `runtime/contracts`: platform types, reports, policy/options schemas
+- `sdk`: exported functions/types and option behavior
+- `cli`: flags, validators, runners, JSON/text output semantics
+- `mcp`: tool list, input schemas, result shape parity
+- `openapi`: routes and request/response schemas
+- `github-delivery`: `action.yml`, reusable workflow inputs, forwarding/wrapper behavior
+- `github-app`: repo config typing/merge and runtime forwarding
+- `docs`: docs package pages + README/AGENTS/llms + changelog
+- `tests`: targeted coverage per touched surface
 
 For `bugfix-refactor`:
 
@@ -53,6 +68,7 @@ When not splitting a large file, include explicit rationale in PR notes.
 ## Guardrails
 
 - Do not ship public-surface changes on a single surface only.
+- Do not close feature work without explicit touchpoint matrix verification.
 - Do not skip tests for feature work.
 - Do not skip docs for user-visible behavior changes.
 - Keep schemaVersion unchanged unless formal migration process is approved.

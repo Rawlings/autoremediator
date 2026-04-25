@@ -117,6 +117,23 @@ describe("loadPolicy", () => {
     expect(result.patchConfidenceThresholds?.medium).toBe(0.6);
     expect(result.patchConfidenceThresholds?.high).toBe(0.9);
   });
+
+  it("parses escalationGraph mapping when provided", () => {
+    mkdirSync(join(tmpDir, ".github"), { recursive: true });
+    writeFileSync(
+      join(tmpDir, ".github", "autoremediator.yml"),
+      [
+        "escalationGraph:",
+        "  no-safe-version: open-issue",
+        "  source-fetch-failed: notify-channel",
+      ].join("\n"),
+      "utf8"
+    );
+
+    const result = loadPolicy(tmpDir);
+    expect(result.escalationGraph?.["no-safe-version"]).toBe("open-issue");
+    expect(result.escalationGraph?.["source-fetch-failed"]).toBe("notify-channel");
+  });
 });
 
 describe("loadSuppressionsFile", () => {

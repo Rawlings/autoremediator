@@ -46,6 +46,7 @@ export function addRemediateStartStep(params: {
       cveId: params.cveId,
       dryRun: Boolean(params.options.dryRun),
       preview: Boolean(params.options.preview),
+      simulationMode: Boolean(params.options.simulationMode),
       llmProvider: params.llmProvider,
     },
     {
@@ -82,6 +83,25 @@ export function addRemediateResultSteps(
         hasAlternatives: Boolean(result.alternativeSuggestions?.length),
         suppressedBy: result.suppressedBy?.justification,
         regressionDetected: result.regressionDetected,
+        simulationWouldMutate: result.simulation?.wouldMutate,
+        simulationRebuttalCount: result.simulation?.rebuttalFindings.length,
+      }
+    );
+  }
+
+  const containmentCount = report.results.filter(
+    (result) => result.unresolvedReason === "policy-blocked" && result.disposition === "escalate"
+  ).length;
+
+  if (containmentCount > 0) {
+    addEvidenceStep(
+      evidence,
+      "containment-summary",
+      { cveId },
+      {
+        containmentCount,
+        blockedUnresolvedReason: "policy-blocked",
+        blockedDisposition: "escalate",
       }
     );
   }
@@ -97,10 +117,41 @@ export function addRemediateResultSteps(
       exploitSignalTriggered: report.exploitSignalTriggered ?? false,
       slaBreachCount: report.slaBreaches?.length ?? 0,
       regressionDetectedCount: report.results.filter((r) => r.regressionDetected).length,
+      containmentCount,
       sbomEntryCount: report.sbom?.length ?? 0,
+      simulationSummary: report.simulationSummary,
     }
   );
   finalizeEvidence(evidence);
+}
+
+export function addRemediateDispositionStep(
+  evidence: EvidenceLog | undefined,
+  cveId: string,
+  report: RemediationReport
+): void {
+  if (!evidence) {
+    return;
+  }
+
+  const byCveId: Record<string, Record<string, { disposition: string; dispositionReason?: string }>> = {};
+
+  for (const result of report.results) {
+    if (!result.disposition) continue;
+    if (!byCveId[cveId]) {
+      byCveId[cveId] = {};
+    }
+    byCveId[cveId][result.packageName] = {
+      disposition: result.disposition,
+      dispositionReason: result.dispositionReason,
+    };
+  }
+
+  if (Object.keys(byCveId).length === 0) {
+    return;
+  }
+
+  addEvidenceStep(evidence, "disposition-summary", { cveId }, { byCveId });
 }
 
 export function addRemediateErrorStep(

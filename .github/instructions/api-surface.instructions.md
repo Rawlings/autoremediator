@@ -60,6 +60,14 @@ The MCP server (`packages/core/src/mcp/server.ts`) and OpenAPI server (`packages
 
 When adding a new public operation, keep naming and request/response shape aligned across SDK, CLI JSON, MCP, and OpenAPI in the same change set.
 
+Public-operation reviews must also verify adjacent delivery surfaces when applicable:
+
+- GitHub action/reusable workflow option forwarding for CLI/API-exposed options
+- GitHub App repository-config bridge and runtime forwarding
+- Docs, llms, and AGENTS references for the changed contract
+
+Do not assume an untouched surface is unaffected; explicitly verify and document why.
+
 ## CLI Compatibility
 
 The CLI (`autoremediator` bin) is a stable interface. Option names and exit codes must not change without a CHANGELOG note.

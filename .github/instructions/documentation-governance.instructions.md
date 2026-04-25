@@ -46,6 +46,12 @@ Governance docs:
 - `.github/instructions/*.md`
 - `.github/skills/**/SKILL.md`
 
+Delivery-touchpoint docs that must be checked when behavior/contracts change:
+
+- `action.yml`
+- `.github/workflows/reusable-remediate-from-audit.yml`
+- `packages/github-app/src/**/*.ts` (for config/forwarding parity)
+
 ## Change-to-Docs Mapping
 
 When public SDK API changes:
@@ -74,6 +80,18 @@ When MCP/OpenAPI surfaces change:
 - Update `packages/docs/content/api-sdk.md` when request/response semantics change.
 - Update `AGENTS.md` mode descriptions if exposed operations changed.
 
+When GitHub Action/reusable workflow inputs change:
+
+- Update `packages/docs/content/integrations.md` input reference.
+- Update `packages/docs/content/getting-started.md` recommended workflow snippets when behavior changed.
+- Update README references if setup expectations changed.
+
+When GitHub App runtime/config behavior changes:
+
+- Update `packages/docs/content/integrations.md` GitHub App sections.
+- Update `packages/docs/content/policy-and-safety.md` repo-policy guidance as applicable.
+- Update `AGENTS.md` mode behavior when trigger or delivery semantics changed.
+
 When scanner/intelligence behavior changes:
 
 - Update `packages/docs/content/scanner-inputs.md` and/or `packages/docs/content/policy-and-safety.md`.
@@ -99,3 +117,4 @@ When release version/changelog changes:
 - Confirm changed paths are reflected in corresponding docs mapping above.
 - Confirm no stale references remain in markdown files.
 - Confirm consolidation-first decision was applied before any new markdown file creation.
+- Confirm touchpoint parity checks were completed across SDK, CLI, MCP, OpenAPI, GitHub action/workflows, GitHub App, and docs/governance artifacts.

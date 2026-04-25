@@ -7,7 +7,11 @@ import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
 import { validateOutputFormat, validateSharedCommandOptions } from "./validators.js";
 
-function addSharedOptions(program: Command, includeInput = false): Command {
+function addSharedOptions(
+  program: Command,
+  includeInput = false,
+  includeSimulationMode = true
+): Command {
   const parseBooleanFlag = (value: string): boolean => value === "true";
 
   program
@@ -82,6 +86,11 @@ function addSharedOptions(program: Command, includeInput = false): Command {
     .option("--sla-check", OPTION_DESCRIPTIONS.slaCheck, false)
     .option("--skip-unreachable", OPTION_DESCRIPTIONS.skipUnreachable, false)
     .option("--regression-check", OPTION_DESCRIPTIONS.regressionCheck, false)
+    .option("--min-confidence-for-auto-apply <value>", OPTION_DESCRIPTIONS.dispositionPolicyMinConfidenceForAutoApply, (v: string) => parseFloat(v))
+    .option("--hold-for-transitive", OPTION_DESCRIPTIONS.dispositionPolicyHoldForTransitive, false)
+    .option("--escalate-on-kev", OPTION_DESCRIPTIONS.dispositionPolicyEscalateOnKev, false)
+    .option("--containment-mode", OPTION_DESCRIPTIONS.containmentMode, false)
+    .option("--campaign-mode", OPTION_DESCRIPTIONS.campaignMode, false)
     .option("--create-change-request", OPTION_DESCRIPTIONS.createChangeRequest, false)
     .option("--change-request-provider <provider>", OPTION_DESCRIPTIONS.changeRequestProvider)
     .option("--change-request-grouping <grouping>", OPTION_DESCRIPTIONS.changeRequestGrouping)
@@ -89,6 +98,10 @@ function addSharedOptions(program: Command, includeInput = false): Command {
     .option("--change-request-base-branch <branch>", OPTION_DESCRIPTIONS.changeRequestBaseBranch)
     .option("--change-request-branch-prefix <prefix>", OPTION_DESCRIPTIONS.changeRequestBranchPrefix)
     .option("--change-request-title-prefix <prefix>", OPTION_DESCRIPTIONS.changeRequestTitlePrefix);
+
+  if (includeSimulationMode) {
+    program.option("--simulation-mode", OPTION_DESCRIPTIONS.simulationMode, false);
+  }
 
   if (includeInput) {
     program.option("--input <path>", `${OPTION_DESCRIPTIONS.inputPath} (scanner-first mode)`);
@@ -150,12 +163,16 @@ export function createProgram(): Command {
       .command("update-outdated")
       .description("Bump all outdated npm packages to their latest versions")
       .option("--include-transitive", OPTION_DESCRIPTIONS.includeTransitive, false),
+    false,
     false
   ).action(async (opts: CommandOptions, command: Command) => {
     const merged = {
       ...opts,
       ...(command.optsWithGlobals() as Partial<CommandOptions>),
     } as CommandOptions;
+    if (merged.simulationMode) {
+      throw new Error("--simulation-mode is not supported by update-outdated.");
+    }
     validateSharedCommandOptions(merged);
     validateOutputFormat(merged.outputFormat, ["text", "json"], "update-outdated");
     await runUpdateOutdated(merged);

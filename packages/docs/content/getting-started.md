@@ -19,6 +19,16 @@ Related references:
 - [API and SDK](api-sdk.md)
 - [Integrations](integrations.md)
 
+## Autonomous Operator Controls
+
+Recent releases add higher-level execution controls on top of basic remediation:
+
+- `dispositionPolicy` to classify results as `auto-apply`, `simulate-only`, `hold-for-approval`, or `escalate`
+- `containmentMode` to prevent applied escalation outcomes from mutating the repository
+- `simulationMode` to show planned mutations and rebuttal findings during dry-run or preview
+- `campaignMode` to risk-rank portfolio targets and return `threatRank`
+- `escalationGraph` to map unresolved reasons to intended operator follow-up actions
+
 ## What You Need
 
 - Node.js 22+
@@ -91,6 +101,7 @@ Recent remediation reports can include:
 - alternative package suggestions when no safe upgrade exists
 - human-readable fix explanations per package result
 - optional pull request / merge request creation metadata
+- aggregate `dispositionCounts`, `escalationCounts`, and `simulationSummary` fields for orchestration and CI routing
 
 For GitHub Actions, the recommended approach is the reusable workflow with pull request automation enabled:
 

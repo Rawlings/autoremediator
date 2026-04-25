@@ -57,10 +57,25 @@ For `internal-tool`:
 For `public-operation`:
 
 - Keep SDK/CLI/MCP/OpenAPI names and semantics aligned.
+- Verify GitHub Action/reusable workflow and GitHub App touchpoints when option or contract behavior can surface there.
 - Update shared types/contracts.
 - Add/update tests across impacted surfaces.
 - Update docs (`api-sdk.md`, `cli.md`, `integrations.md`, `getting-started.md` as applicable).
 - Update changelog.
+
+## Cross-Surface Touchpoint Matrix
+
+For user-visible behavior changes, include a matrix with explicit `updated` or `verified-not-affected` status for:
+
+- runtime contracts/types/options
+- SDK exports/types
+- CLI flags/validators/output
+- MCP schemas/dispatch
+- OpenAPI schemas/routes
+- GitHub Action + reusable workflow forwarding
+- GitHub App config bridge + handler forwarding
+- docs/readmes/AGENTS/llms/changelog
+- tests per touched surface
 
 For `bugfix-refactor`:
 
@@ -82,6 +97,7 @@ Use this skill in the following order:
 ## Guardrails
 
 - Do not ship partial surface updates for public operations.
+- Do not close implementation without an explicit touchpoint matrix.
 - Do not skip tests for feature changes.
 - Do not skip documentation for user-visible behavior changes.
 - Keep unresolved outcomes explicit and machine-readable.

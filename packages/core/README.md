@@ -8,117 +8,105 @@
 [![GitHub Actions](https://img.shields.io/badge/github--actions-marketplace-blue)](https://github.com/marketplace/actions/autoremediator)
 
 > [!WARNING]
-> Automated dependency remediation is a controversial practice.
-> It can reduce exposure windows, but it can also introduce operational and supply-chain risk if used without policy controls.
-> Autoremediator is designed for risk-aware automation teams, and should be paired with explicit policy, CI safeguards, and repository protection rules.
+> Automated dependency remediation carries operational and supply-chain risk if deployed without policy controls.
+> Autoremediator is designed for risk-aware security and platform teams, and should be paired with explicit remediation policy, CI validation gates, and repository protection rules.
 
 Autoremediator is an agentic CVE remediation platform for Node.js.
 
-It turns dependency security from fragmented backlog triage into an autonomous remediation pipeline with threat-intelligence correlation, exploitability-aware prioritization, deterministic execution, and machine-readable evidence.
+It closes the gap between vulnerability detection and remediation by correlating threat intelligence, measuring exploitability, and executing policy-governed fixes — across single repositories, large service portfolios, and agent-driven workflows.
 
-It is built for AI-native software delivery, agentic security operations, and policy-governed software supply chain response.
-
-The outcome is faster containment of dependency exposure, stronger remediation posture, and cleaner telemetry across CI/CD, platform automation, and agent-driven workflows.
+The outcome is reduced mean time to remediation (MTTR), narrower exposure windows, and auditable remediation posture across your dependency estate.
 
 See the [documentation](https://rawlings.github.io/autoremediator/docs/getting-started) to get started.
 
-## Security remediation, closed loop
+## A remediation control plane, not a scanner
 
-Autoremediator operates as a remediation control plane, not a scanner wrapper.
+Most SCA tools stop at detection. Autoremediator starts there.
 
-It correlates ecosystem advisory data, exploitability telemetry, and operational policy to drive remediation decisions across repositories, portfolios, service surfaces, and agentic execution paths.
+It ingests vulnerability findings from scanners or accepts a CVE ID directly, then drives each finding through a multi-strategy remediation pipeline: safe version upgrade, transitive dependency override, and controlled patch generation with confidence scoring as a last resort. Every path is gated by policy, validated before it is applied, and backed by structured evidence for downstream traceability.
 
-When a clean upgrade path exists, it executes a safe dependency bump. When exposure is transitive, it applies package-manager-native overrides and resolutions. When no safe fixed version exists, it escalates into controlled patch generation with confidence thresholds, validation gates, and artifact tracking.
+The result is a closed-loop remediation workflow rather than an ever-growing triage backlog.
 
-Every remediation path is constrained by policy, dry-run controls, validation requirements, and auditable evidence artifacts so autonomous response stays governable, reviewable, and automation-safe.
+## Exploitability-informed prioritization
 
-## What sets it apart
+Severity scores alone are poor remediation signals. Autoremediator enriches each CVE with corroborating signals before any fix is attempted:
 
-- Exploit-aware prioritization beyond severity-centric triage
-- Deterministic remediation orchestration with explicit safety and failure semantics
-- Multi-strategy execution across direct bumps, transitive overrides, and controlled patch fallback
-- Portfolio-scale coverage across large Node.js repository estates
-- AI ecosystem interoperability through MCP, OpenAPI, SDK, CLI, and agent runtime surfaces
-- Structured evidence, rollups, outcome taxonomy, and agent-consumable telemetry for governance and security analytics
+- **CISA KEV** — confirms whether a vulnerability is actively exploited in the wild
+- **EPSS** — quantifies exploit probability as a continuous percentile score
+- **Advisory consensus** — cross-references OSV, GitHub Advisory Database, and NVD to validate affected ranges and fixed versions
 
-## From signal to remediation
+This enrichment drives prioritization and disposition decisions, so high-risk, actively exploited vulnerabilities are handled with higher urgency than theoretical severities would suggest.
 
-Canonical remediation flow:
+## Multi-strategy remediation
 
-1. lookup CVE intelligence
-2. inspect installed dependency inventory
-3. match vulnerable installed versions
-4. attempt safe direct dependency version bump
-5. if transitive, attempt package-manager-native override or resolution
-6. if still unresolved, attempt controlled patch fallback and emit patch artifacts
+Autoremediator selects the safest applicable fix strategy for each vulnerability:
 
-Outputs remain deterministic across interfaces, including `strategyCounts`, `dependencyScopeCounts`, and `unresolvedByReason`, so CI systems, workflow engines, autonomous agents, and orchestration runtimes can route outcomes without reparsing nested result trees.
+- **Direct version upgrade** — the preferred path when a safe fixed version exists in the direct dependency graph
+- **Transitive override** — applied when exposure is in a transitive dependency and a direct upgrade is not feasible
+- **Controlled patch generation** — a confidence-scored fallback when no safe fixed version exists; produces auditable patch artifacts tracked through their full lifecycle
 
-Patch artifacts are written to `patchesDir` with `.patch.json` manifests and can be listed, inspected, and validated in follow-on automation.
+Unresolved findings are never silently dropped. Each one is classified with an explicit reason and treated as an escalation input for downstream security workflows.
 
-## Intelligence that drives action
+## Policy-governed automation
 
-Primary sources:
+Autoremediator is designed to operate autonomously without sacrificing control. Remediation behavior is governed by a policy layer that determines disposition for every finding:
+
+- **Auto-apply** for high-confidence remediations within acceptable risk thresholds
+- **Simulation** for preview and dry-run validation before mutations are committed
+- **Hold for approval** when human review is warranted before applying a fix
+- **Escalation** for findings that exceed risk tolerance, with configurable follow-on actions such as issue creation, channel notification, or draft PR
+
+Portfolio-scale campaigns apply risk ranking to prioritize remediation order across large target sets.
+
+## Vulnerability intelligence sources
+
+Primary advisory sources:
 
 - [OSV](https://osv.dev): ecosystem-first vulnerability records and affected or fixed ranges
 - [GitHub Advisory Database](https://github.com/advisories): package advisories and ecosystem metadata
-- [NVD](https://nvd.nist.gov): severity context and CVE reference data
+- [NVD](https://nvd.nist.gov): CVE reference data and severity context
 
-Enrichment and prioritization sources:
+Exploitability and trust enrichment:
 
-- [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog): known-exploited vulnerability signal
-- [FIRST EPSS](https://www.first.org/epss/): exploit probability and percentile scoring
-- [CVE Services](https://www.cve.org/): additional CVE references and descriptions
-- [GitLab Advisory Database](https://advisories.gitlab.com): supplemental advisory matching
+- [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog): active exploitation signals
+- [FIRST EPSS](https://www.first.org/epss/): exploit probability scoring
+- [CVE Services](https://www.cve.org/): authoritative CVE references
+- [GitLab Advisory Database](https://advisories.gitlab.com): supplemental advisory coverage
 - [CERT/CC Vulnerability Notes](https://www.kb.cert.org/vuls/): analyst context for selected CVEs
-- [deps.dev](https://deps.dev): package metadata coverage checks
-- [OpenSSF Scorecard](https://securityscorecards.dev): package trust and repository posture signals
+- [deps.dev](https://deps.dev): package metadata and dependency graph coverage
+- [OpenSSF Scorecard](https://securityscorecards.dev): repository and package trust posture
 - Optional vendor and commercial feeds via environment-configured connectors
 
-Trust model principles:
+## Integration surfaces
 
-- Correlate across multiple advisory, exploitability, and trust sources
-- Preserve evidence so remediation decisions remain auditable
-- Enforce policy and validation gates before outcomes are marked resolved
-- Treat low-confidence or unresolved outcomes as explicit escalation inputs
+Autoremediator is designed to meet security operations where they already run:
 
-## Built for every surface
+- **CLI** — direct invocation in developer workflows and CI/CD pipeline jobs
+- **SDK** — programmatic integration for platforms, internal tooling, and security automation
+- **GitHub Actions** — reusable workflow and Marketplace action for scan-to-remediation CI pipelines
+- **MCP server** — native tool integration for AI agents, LLM orchestrators, and copilot surfaces
+- **OpenAPI server** — HTTP-accessible remediation endpoint for centralized or service-based deployments
+- **VS Code extension** — editor-side vulnerability scanning and fix actions
 
-- CLI: workflow jobs and CI runs
-- SDK: `remediate`, `planRemediation`, `remediateFromScan`, `updateOutdated`
-- MCP server: agent ecosystem integration, tool invocation, and LLM-orchestrated workflows
-- OpenAPI server: service-based integration and centralized remediation operations
-- VS Code extension: Node CVE Remediator for editor-side scanning and fix actions
+```yaml
+jobs:
+  gate:
+    uses: rawlings/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v1
+    with:
+      audit: true
+      dry-run: true
+      ci: true
+```
 
-Patch lifecycle operations are exposed consistently:
-
-- CLI: `autoremediator patches list`, `autoremediator patches inspect`, `autoremediator patches validate`
-- SDK: `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`
-- MCP and OpenAPI: equivalent patch lifecycle operations
-
-Non-security maintenance via `updateOutdated` (CLI: `autoremediator update-outdated`) bumps all outdated npm packages with policy controls, evidence, and optional PR creation — no CVE ID required.
-
-## Designed for agentic workflows
-
-Recommended orchestration flow:
-
-1. call `planRemediation` to generate a non-mutating plan
-2. apply `remediate` after policy and approval checks
-3. inspect and validate patch artifacts when fallback patching occurs
-
-Public naming canon across surfaces: `runTests`, `policy`, `evidence`, `patchCount`, `patchesDir`.
-
-Native change-request support includes GitHub and GitLab workflows, including grouped scan strategies, orchestration-friendly run metadata, and plan-first execution patterns for agentic systems.
-
-Packaging shortcut: `pnpm build:vsix` builds the publishable VSIX from the repository root.
+For configuration reference, workflow variants, and MCP host setup, see the [Integrations](https://rawlings.github.io/autoremediator/docs/integrations) and [Agent Ecosystems](https://rawlings.github.io/autoremediator/docs/agent-ecosystems) guides.
 
 ## Use cases
 
-- Autonomous security automation in GitHub workflows and CI/CD pipelines
-- Deterministic CI gating for unresolved dependency exposure
-- Scanner-to-remediation conversion for high-volume vulnerability backlogs
-- Embedded remediation for internal AI assistants, copilots, bots, and security platforms
-- Portfolio-wide standardization across large Node.js service estates
+- Autonomous vulnerability remediation in CI/CD pipelines with deterministic security gating
+- Continuous exposure reduction across large Node.js service portfolios
+- Scanner-to-remediation conversion for high-volume SCA findings
+- Embedded remediation for internal security platforms, AI assistants, and SecOps tooling
+- Policy-governed supply chain risk management at scale
 
 ## Documentation
 

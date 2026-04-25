@@ -111,6 +111,9 @@ export function createDefaultRemediationHandler(options: DefaultRemediationHandl
       patchConfidenceThresholds: repoConfig.patchConfidenceThresholds,
       dynamicModelRouting: repoConfig.dynamicModelRouting,
       dynamicRoutingThresholdChars: repoConfig.dynamicRoutingThresholdChars,
+      dispositionPolicy: repoConfig.dispositionPolicy,
+      containmentMode: repoConfig.containmentMode,
+      escalationGraph: repoConfig.escalationGraph,
     };
 
     if (minimumSeverity === "UNKNOWN") {

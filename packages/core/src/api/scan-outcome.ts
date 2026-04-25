@@ -2,6 +2,8 @@ import type { RemediationReport } from "../platform/types.js";
 import type { ScanReport } from "./contracts.js";
 import {
   buildDependencyScopeCounts,
+  buildDispositionCounts,
+  buildSimulationSummary,
   buildStrategyCounts,
   buildUnresolvedReasonCounts,
 } from "./reporting.js";
@@ -13,6 +15,8 @@ export interface ScanOutcome {
   strategyCounts: ReturnType<typeof buildStrategyCounts>;
   dependencyScopeCounts: ReturnType<typeof buildDependencyScopeCounts>;
   unresolvedByReason: ReturnType<typeof buildUnresolvedReasonCounts>;
+  dispositionCounts: ReturnType<typeof buildDispositionCounts>;
+  simulationSummary: ReturnType<typeof buildSimulationSummary>;
   remediationCount: number;
 }
 
@@ -44,6 +48,8 @@ export function buildScanOutcome(params: {
   const strategyCounts = buildStrategyCounts(params.reports);
   const dependencyScopeCounts = buildDependencyScopeCounts(params.reports);
   const unresolvedByReason = buildUnresolvedReasonCounts(params.reports);
+  const dispositionCounts = buildDispositionCounts(params.reports);
+  const simulationSummary = buildSimulationSummary(params.reports);
   const remediationCount = params.reports.reduce((sum, report) => sum + report.results.length, 0);
 
   return {
@@ -53,6 +59,8 @@ export function buildScanOutcome(params: {
     strategyCounts,
     dependencyScopeCounts,
     unresolvedByReason,
+    dispositionCounts,
+    simulationSummary,
     remediationCount,
   };
 }

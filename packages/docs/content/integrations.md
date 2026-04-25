@@ -12,6 +12,15 @@ Related references:
 - [API and SDK](api-sdk.md)
 - [Agent Ecosystems](agent-ecosystems.md)
 
+## Autonomous Operator Delivery
+
+The integration surfaces carry the same higher-level operator controls:
+
+- `simulationMode` for non-mutating planned mutation and rebuttal output
+- `containmentMode` for blocking applied escalation outcomes
+- `dispositionPolicy` for confidence-, transitive-, and exploit-aware result classification
+- `escalationGraph` for intended follow-up routing on unresolved outcomes
+
 ## Integration Decision Guide
 
 | Pattern | Use when | Key outcome |
@@ -101,6 +110,8 @@ For platform-owned fleets, use `remediatePortfolio` or `autoremediator portfolio
 
 Each target points at one repository root and chooses either a direct CVE flow or a scan-driven flow. The resulting portfolio report rolls up per-target status and any created change requests.
 
+When campaign-mode ranking is enabled through the SDK or CLI, targets can include `riskHint` metadata and each result returns a `threatRank` reflecting its priority order.
+
 Portfolio change-request aggregation uses the same native review creation path as single-repository scan runs, including grouped review strategies and provider CLI requirements.
 
 ## GitHub Actions Marketplace Action
@@ -159,6 +170,8 @@ All scan-mode flags are available as inputs:
 | `ci` | Exit non-zero on unresolved CVEs | `false` |
 | `summary-file` | Write machine-readable summary JSON | — |
 | `policy` | Path to `.github/autoremediator.yml` | — |
+| `containment-mode` | Block applied escalation outcomes from mutating files | `false` |
+| `simulation-mode` | Include planned mutation and rebuttal metadata in dry-run mode | `false` |
 | `llm-provider` | `remote`, `local` | `local` |
 | `node-version` | Node.js version (24+) | `24` |
 | `token` | GitHub token for PR creation | `github.token` |
@@ -231,6 +244,8 @@ The reusable workflow exposes the same remediation inputs as the action plus wor
 - `pull-request-body-header`
 - `upload-summary-artifact`
 - `summary-artifact-name`
+
+This includes the action-level autonomous controls such as `containment-mode` and `simulation-mode`.
 
 When `summary-file` is omitted, the reusable workflow writes the summary JSON into the runner temp directory so it can be uploaded or used for PR composition without being committed into the repository.
 
@@ -309,6 +324,8 @@ Per-repository remediation behavior (dry-run mode, severity filter, pull request
 The GitHub App fetches this file via the GitHub API on each webhook delivery and falls back to safe defaults when the file is absent.
 See [Policy and Safety](policy-and-safety.md) for the full YAML schema and field reference.
 
+The GitHub App also forwards autonomous operator controls from repository config, including `dispositionPolicy`, `containmentMode`, and `escalationGraph`.
+
 Webhook responses include an `x-request-id` header (propagated when provided by caller, otherwise generated).
 The `/health` endpoint includes in-memory runtime counters (`totalRequests`, `webhookRequests`, `handled`, `ignored`, `duplicate`, `rejected`) and grouped maps (`byEvent`, `byStatusCode`) for operational visibility.
 It also includes `latency.averageMs` and `latency.maxMs` derived from processed and rejected webhook requests.
@@ -333,6 +350,14 @@ AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION=true
 dryRun: false
 runTests: true
 minimumSeverity: HIGH
+dispositionPolicy:
+  minConfidenceForAutoApply: 0.85
+  holdForTransitive: true
+  escalateOnKev: true
+containmentMode: true
+escalationGraph:
+  no-safe-version: open-issue
+  patch-generation-failed: notify-channel
 pullRequest:
   enabled: true
   grouping: per-cve
@@ -395,7 +420,7 @@ jobs:
 This workflow-layer PR automation is distinct from autoremediator's native change-request capabilities.
 Use it when you want GitHub Actions-managed pull request creation without enabling provider-specific change-request logic in the runtime.
 
-The generated summary file includes aggregate fields such as `strategyCounts`, `dependencyScopeCounts`, and `unresolvedByReason`, which are useful for PR descriptions, dashboards, and CI policy checks.
+The generated summary file includes aggregate fields such as `strategyCounts`, `dependencyScopeCounts`, `dispositionCounts`, `unresolvedByReason`, `escalationCounts`, and `simulationSummary`, which are useful for PR descriptions, dashboards, and CI policy checks.
 
 ## GitHub Actions: Enforcement-Only Gate
 
@@ -452,7 +477,7 @@ Tools exposed:
 
 Why use MCP: standard tool contracts for AI host ecosystems, with typed request/response patterns.
 
-The scan-oriented MCP response includes the same aggregate summary fields used by the SDK and CLI, including `strategyCounts`, `dependencyScopeCounts`, and `unresolvedByReason`.
+The scan-oriented MCP response includes the same aggregate summary fields used by the SDK and CLI, including `strategyCounts`, `dependencyScopeCounts`, `unresolvedByReason`, and `simulationSummary` when `simulationMode` is enabled in a dry-run or preview context.
 
 For patch fallback workflows, MCP callers can treat patch artifacts as durable assets by listing, inspecting, and validating them in follow-up automation.
 
@@ -479,7 +504,7 @@ Routes:
 
 Why use OpenAPI: central remediation service for multiple clients and repositories.
 
-The OpenAPI responses expose the same aggregate reporting fields as the SDK and CLI, so service consumers can build routing and governance logic around `strategyCounts`, `dependencyScopeCounts`, and `unresolvedByReason` without custom post-processing.
+The OpenAPI responses expose the same aggregate reporting fields as the SDK and CLI, so service consumers can build routing and governance logic around `strategyCounts`, `dependencyScopeCounts`, `unresolvedByReason`, and optional `simulationSummary` fields without custom post-processing.
 
 Patch lifecycle OpenAPI operations provide artifact inventory and drift validation for external orchestrators that run follow-up governance checks.
 

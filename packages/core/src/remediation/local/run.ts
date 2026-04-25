@@ -20,6 +20,8 @@ import { shouldAttemptPatchFallback, tryLocalPatchFallback } from "./fallback.js
 import { resolveLocalRunOptions } from "./options.js";
 import { findVulnerablePackages } from "./vulnerability-match.js";
 import { buildLocalSummary } from "./summary.js";
+import { applyDispositionAndContainment } from "./disposition.js";
+import { computeEscalationAction } from "../../platform/escalation.js";
 
 export async function runLocalRemediationPipeline(
   cveId: string,
@@ -49,6 +51,7 @@ export async function runLocalRemediationPipeline(
     slaPolicy,
     skipUnreachable,
     regressionCheck,
+    escalationGraph,
   } = resolved;
 
   const collectedResults: PatchResult[] = [];
@@ -228,7 +231,21 @@ export async function runLocalRemediationPipeline(
         workspace: constraints.workspace,
       });
       agentSteps += fallback.steps;
-      collectedResults.push(fallback.result);
+      const fallbackResult = fallback.result;
+      const fallbackWithDisposition = applyDispositionAndContainment(fallbackResult, {
+        exploitSignalTriggered,
+        slaBreaches,
+        severity: cveDetails?.severity,
+        policy: options.dispositionPolicy,
+        containmentMode: options.containmentMode,
+      });
+      if (fallbackWithDisposition.unresolvedReason) {
+        fallbackWithDisposition.escalationAction = computeEscalationAction(
+          fallbackWithDisposition.unresolvedReason,
+          escalationGraph
+        );
+      }
+      collectedResults.push(fallbackWithDisposition);
       if (fallback.usage) {
         llmUsage.push(...fallback.usage);
       }
@@ -250,7 +267,22 @@ export async function runLocalRemediationPipeline(
       }
     }
 
-    collectedResults.push(primaryResult);
+    const primaryWithDisposition = applyDispositionAndContainment(primaryResult, {
+      exploitSignalTriggered,
+      slaBreaches,
+      severity: cveDetails?.severity,
+      policy: options.dispositionPolicy,
+      containmentMode: options.containmentMode,
+    });
+
+    if (primaryWithDisposition.unresolvedReason) {
+      primaryWithDisposition.escalationAction = computeEscalationAction(
+        primaryWithDisposition.unresolvedReason,
+        escalationGraph
+      );
+    }
+
+    collectedResults.push(primaryWithDisposition);
   }
 
   const vulnerableNames = new Set(vulnerablePackages.map((v) => v.installed.name));

@@ -8,6 +8,8 @@ import type {
 import type { ScanReport } from "../contracts.js";
 import { remediate } from "../remediate/index.js";
 import { remediateFromScan } from "../remediate-from-scan/index.js";
+import { assertValidSimulationMode } from "../reporting.js";
+import { rankPortfolioTargets } from "./risk-score.js";
 
 function toTargetStatusFromRemediation(report: RemediationReport): "ok" | "partial" | "failed" {
   const failed = report.results.some((result) => !result.applied && !result.dryRun);
@@ -43,6 +45,7 @@ export async function remediatePortfolio(
   targets: PortfolioTarget[],
   options: RemediateOptions = {}
 ): Promise<PortfolioReport> {
+  assertValidSimulationMode(options);
   const normalizedTargets = Array.isArray(targets) ? targets : [];
 
   if (normalizedTargets.length === 0) {
@@ -51,12 +54,18 @@ export async function remediatePortfolio(
 
   normalizedTargets.forEach((target, index) => validateTarget(target, index));
 
+  const executionTargets = options.campaignMode === true
+    ? rankPortfolioTargets(normalizedTargets)
+    : normalizedTargets.map((target) => ({ target, rank: undefined }));
+
   const results: PortfolioTargetResult[] = [];
   const changeRequests = [] as NonNullable<PortfolioReport["changeRequests"]>;
   let successCount = 0;
   let failedCount = 0;
 
-  for (const target of normalizedTargets) {
+  for (const executionTarget of executionTargets) {
+    const target = executionTarget.target;
+    const threatRank = options.campaignMode === true ? executionTarget.rank : undefined;
     const { cveId, inputPath, audit } = normalizeTargetInput(target);
 
     try {
@@ -71,6 +80,7 @@ export async function remediatePortfolio(
         results.push({
           target,
           status,
+          ...(threatRank !== undefined ? { threatRank } : {}),
           remediationReport,
           changeRequests: remediationReport.changeRequests,
         });
@@ -98,6 +108,7 @@ export async function remediatePortfolio(
       results.push({
         target,
         status: scanReport.status,
+        ...(threatRank !== undefined ? { threatRank } : {}),
         scanReport,
         changeRequests: scanReport.changeRequests,
       });
@@ -115,6 +126,7 @@ export async function remediatePortfolio(
       results.push({
         target,
         status: "failed",
+        ...(threatRank !== undefined ? { threatRank } : {}),
         error: error instanceof Error ? error.message : String(error),
       });
       failedCount += 1;

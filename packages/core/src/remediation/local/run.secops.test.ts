@@ -375,5 +375,141 @@ describe("regression check", () => {
 
     expect(result.results[0]?.regressionDetected).toBeUndefined();
   });
+
+  it("blocks applied escalate disposition outcomes when containmentMode is enabled", async () => {
+    mockPrimaryResult.mockResolvedValue({
+      result: { packageName: "vuln-pkg", fromVersion: "1.5.0", strategy: "version-bump", applied: true, dryRun: false, toVersion: "2.0.0" },
+      steps: 1,
+    });
+    mockExploitSignal.mockResolvedValue({ exploitSignalTriggered: true, reason: "KEV match" });
+
+    const result = await runLocalRemediationPipeline("CVE-2024-0001", {
+      cwd: process.cwd(),
+      containmentMode: true,
+      exploitSignalOverride: { kev: { mandatory: true } },
+    } as any);
+
+    expect(result.results[0]?.disposition).toBe("escalate");
+    expect(result.results[0]?.applied).toBe(false);
+    expect(result.results[0]?.unresolvedReason).toBe("policy-blocked");
+  });
+
+  it("assigns default escalationAction for unresolved results", async () => {
+    mockPrimaryResult.mockResolvedValue({
+      result: {
+        packageName: "vuln-pkg",
+        fromVersion: "1.5.0",
+        strategy: "none",
+        applied: false,
+        dryRun: false,
+        unresolvedReason: "no-safe-version",
+      },
+      steps: 1,
+    });
+
+    const result = await runLocalRemediationPipeline("CVE-2024-0001", {
+      cwd: process.cwd(),
+    } as any);
+
+    expect(result.results[0]?.escalationAction).toBe("open-issue");
+  });
+
+  it("applies escalationGraph overrides for unresolved results", async () => {
+    mockPrimaryResult.mockResolvedValue({
+      result: {
+        packageName: "vuln-pkg",
+        fromVersion: "1.5.0",
+        strategy: "none",
+        applied: false,
+        dryRun: false,
+        unresolvedReason: "patch-generation-failed",
+      },
+      steps: 1,
+    });
+
+    const result = await runLocalRemediationPipeline("CVE-2024-0001", {
+      cwd: process.cwd(),
+      escalationGraph: {
+        "patch-generation-failed": "hold-branch",
+      },
+    } as any);
+
+    expect(result.results[0]?.escalationAction).toBe("hold-branch");
+  });
+
+  it("uses policy escalationGraph when option is omitted", async () => {
+    mockPrimaryResult.mockResolvedValue({
+      result: {
+        packageName: "vuln-pkg",
+        fromVersion: "1.5.0",
+        strategy: "none",
+        applied: false,
+        dryRun: false,
+        unresolvedReason: "no-safe-version",
+      },
+      steps: 1,
+    });
+
+    const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const { tmpdir } = await import("node:os");
+
+    const dir = mkdtempSync(join(tmpdir(), "autoremediator-run-escalation-policy-"));
+    mkdirSync(join(dir, ".github"), { recursive: true });
+    writeFileSync(
+      join(dir, ".github", "autoremediator.yml"),
+      ["escalationGraph:", "  no-safe-version: notify-channel"].join("\n"),
+      "utf8"
+    );
+
+    try {
+      const result = await runLocalRemediationPipeline("CVE-2024-0001", {
+        cwd: dir,
+      } as any);
+
+      expect(result.results[0]?.escalationAction).toBe("notify-channel");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("prefers explicit options escalationGraph over policy escalationGraph", async () => {
+    mockPrimaryResult.mockResolvedValue({
+      result: {
+        packageName: "vuln-pkg",
+        fromVersion: "1.5.0",
+        strategy: "none",
+        applied: false,
+        dryRun: false,
+        unresolvedReason: "no-safe-version",
+      },
+      steps: 1,
+    });
+
+    const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const { tmpdir } = await import("node:os");
+
+    const dir = mkdtempSync(join(tmpdir(), "autoremediator-run-escalation-override-"));
+    mkdirSync(join(dir, ".github"), { recursive: true });
+    writeFileSync(
+      join(dir, ".github", "autoremediator.yml"),
+      ["escalationGraph:", "  no-safe-version: notify-channel"].join("\n"),
+      "utf8"
+    );
+
+    try {
+      const result = await runLocalRemediationPipeline("CVE-2024-0001", {
+        cwd: dir,
+        escalationGraph: {
+          "no-safe-version": "open-issue",
+        },
+      } as any);
+
+      expect(result.results[0]?.escalationAction).toBe("open-issue");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 

@@ -78,6 +78,16 @@ on:
         required: false
         type: boolean
         default: false
+      containment-mode:
+        description: Halt when any result disposition is not auto-apply.
+        required: false
+        type: boolean
+        default: false
+      simulation-mode:
+        description: Populate planned mutation metadata without applying changes. Requires dry-run.
+        required: false
+        type: boolean
+        default: false
       create-pull-request:
         description: Create or update a pull request when remediation changes files.
         required: false
@@ -140,7 +150,7 @@ jobs:
       pull-request-url: ${{ steps.create-pr.outputs.pull-request-url }}
     steps:
       - name: Check out caller repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Resolve reusable workflow source
         id: workflow-source
@@ -151,7 +161,7 @@ jobs:
           echo "ref=${WORKFLOW_REF#*@}" >> "$GITHUB_OUTPUT"
 
       - name: Check out autoremediator action source
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           repository: ${{ steps.workflow-source.outputs.repository }}
           ref: ${{ steps.workflow-source.outputs.ref }}
@@ -190,6 +200,8 @@ jobs:
           node-version: ${{ inputs.node-version }}
           update-outdated: ${{ inputs.update-outdated && 'true' || 'false' }}
           include-transitive: ${{ inputs.include-transitive && 'true' || 'false' }}
+          containment-mode: ${{ inputs.containment-mode && 'true' || 'false' }}
+          simulation-mode: ${{ inputs.simulation-mode && 'true' || 'false' }}
 
       - name: Remove checked out action source
         if: ${{ always() }}

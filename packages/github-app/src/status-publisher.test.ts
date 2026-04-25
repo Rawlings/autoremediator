@@ -4,13 +4,15 @@ import type { QueueJob } from "./types.js";
 
 const { checksCreateSpy, OctokitMock } = vi.hoisted(() => {
   const checksCreateSpy = vi.fn(async () => ({}));
-  const OctokitMock = vi.fn(() => ({
-    rest: {
-      checks: {
-        create: checksCreateSpy,
+  const OctokitMock = vi.fn(function OctokitMock() {
+    return {
+      rest: {
+        checks: {
+          create: checksCreateSpy,
+        },
       },
-    },
-  }));
+    };
+  });
   return { checksCreateSpy, OctokitMock };
 });
 

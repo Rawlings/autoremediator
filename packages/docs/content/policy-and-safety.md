@@ -12,6 +12,10 @@ Related references:
 - [Getting Started](getting-started.md)
 - [Integrations](integrations.md)
 
+## Autonomous Operator Policies
+
+The policy surface now includes controls for result disposition, containment, escalation routing, and non-mutating simulation output.
+
 ## Policy Configuration
 
 Create `.github/autoremediator.yml`:
@@ -39,6 +43,13 @@ constraints:
 # SecOps controls
 skipUnreachable: false
 
+dispositionPolicy:
+  minConfidenceForAutoApply: 0.85
+  holdForTransitive: true
+  escalateOnKev: true
+
+containmentMode: false
+
 exploitSignalOverride:
   kev:
     mandatory: true          # treat CISA KEV-listed CVEs as mandatory
@@ -58,6 +69,10 @@ sla:
   high: 72
   medium: 168
   low: 720
+
+escalationGraph:
+  no-safe-version: open-issue
+  source-fetch-failed: notify-channel
 ```
 
 Field intent:
@@ -93,6 +108,15 @@ Field intent:
 - `skipUnreachable`:
   - what: skips packages not imported from project source files
   - why: reduces noise from packages that cannot be reached by the running application
+- `dispositionPolicy`:
+  - what: classifies each result as `auto-apply`, `simulate-only`, `hold-for-approval`, or `escalate`
+  - why: lets teams control when successful technical remediations can still require operator review
+- `containmentMode`:
+  - what: prevents applied results with disposition `escalate` from mutating the repository
+  - why: lets teams run approval-first security automation without losing machine-readable remediation intent
+- `escalationGraph`:
+  - what: maps unresolved reasons to intended escalation actions (`open-issue`, `notify-channel`, `create-draft-pr`, `hold-branch`, `none`)
+  - why: gives teams deterministic follow-up routing for unresolved outcomes while keeping remediation execution side-effect free
 - `exploitSignalOverride.kev.mandatory`:
   - what: treats CVEs with active CISA KEV status as unconditionally mandatory
   - why: ensures actively-exploited CVEs bypass severity filtering
@@ -137,6 +161,46 @@ Enable with `--sla-check` (CLI) or `slaCheck: true` (SDK).
 When `skipUnreachable: true`, the local pipeline performs a static import scan across project source files (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`) before remediation. Packages not reachable from source are skipped, and the skip reason appears on the result.
 
 Enable with `--skip-unreachable` (CLI) or `skipUnreachable: true` (SDK).
+
+### Simulation Mode
+
+When `simulationMode: true`, autoremediator adds deterministic simulation metadata to dry-run and preview results without changing runtime remediation order or mutating repository state.
+
+Simulation mode is only valid in effective non-mutating contexts:
+
+- `dryRun: true`
+- `preview: true`
+- `planRemediation(...)`, which forces both
+
+If `simulationMode` is requested on a mutating run, the public API and CLI fail fast with a deterministic validation error.
+
+Simulation outputs add:
+
+- `results[].simulation.plannedMutations`: deterministic mutation targets that would be touched by the selected strategy
+- `results[].simulation.rebuttalFindings`: deterministic rebuttal codes derived from unresolved, validation, regression, risk, escalation, exploit-signal, SLA, and test-run signals
+- `simulationSummary`: aggregate counts on remediation, scan, CI, and evidence summaries when simulation mode is enabled
+
+Evidence remains additive only: existing evidence artifacts are reused, and simulation summary data is appended to finish/summary metadata rather than written as a separate artifact.
+
+### Containment Mode
+
+When `containmentMode: true`, results with disposition `escalate` are prevented from being applied.
+If a result would otherwise be applied, containment rewrites it to `applied: false` with `unresolvedReason: policy-blocked`.
+
+Enable with `--containment-mode` (CLI) or `containmentMode: true` (SDK).
+
+Containment outcomes are included in evidence summaries as `containmentCount`, counting results that are blocked with `unresolvedReason=policy-blocked` and `disposition=escalate`.
+
+### Disposition Policy
+
+`dispositionPolicy` controls how individual results are classified:
+
+- `minConfidenceForAutoApply`: below this threshold, technically successful results are downgraded to `hold-for-approval`
+- `holdForTransitive`: classifies transitive remediations as `hold-for-approval`
+- `escalateOnKev`: classifies KEV-triggered outcomes as `escalate`
+- `escalateOnSlaBreachSeverities`: classifies selected SLA-breached severities as `escalate`
+
+Reports aggregate these decisions in `dispositionCounts` so CI and orchestration layers can distinguish auto-apply-safe results from approval- or escalation-bound outcomes.
 
 ### Patch Integrity
 
@@ -257,6 +321,7 @@ Scan and CI runs expose aggregate summary fields in addition to per-CVE results:
 - `strategyCounts`: counts for `version-bump`, `override`, `patch-file`, and `none`
 - `dependencyScopeCounts`: counts for direct versus transitive remediation outcomes
 - `unresolvedByReason`: counts by machine-readable unresolved reason such as `no-safe-version`, `constraint-blocked`, and `patch-validation-failed`
+- `escalationCounts`: counts by intended escalation action for unresolved outcomes
 
 These fields make it easier to build CI gates, dashboards, and escalation rules without reparsing each nested remediation result.
 

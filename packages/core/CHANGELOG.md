@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.13.0
+
+### Added
+
+- Added `campaignMode` option to `remediatePortfolio` and the `portfolio` CLI command (`--campaign-mode`). When enabled, targets are scored using `riskHint` fields (`severity`, `exploitSignal`, `slaBreached`) and executed highest-risk first. Each `PortfolioTargetResult` includes a `threatRank` field reflecting its campaign rank.
+- Added `escalationGraph` policy and SDK option support to map `UnresolvedReason` values to intended escalation actions (`open-issue`, `notify-channel`, `create-draft-pr`, `hold-branch`, `none`).
+- Added `PatchResult.escalationAction` and aggregate `escalationCounts` fields on `RemediationReport`, `ScanReport`, `CiSummary`, and evidence summaries.
+- Added `simulationMode` across `remediate`, `planRemediation`, `remediateFromScan`, and `remediatePortfolio`, plus CLI `--simulation-mode`, MCP inputs, and OpenAPI request schemas. When enabled in dry-run or preview contexts, results include deterministic planned mutation metadata, rebuttal findings, and aggregate `simulationSummary` fields.
+
 ## 0.12.0
 
 ### Breaking Changes

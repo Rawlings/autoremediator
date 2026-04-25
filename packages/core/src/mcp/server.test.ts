@@ -46,6 +46,7 @@ describe("mcp tool contracts", () => {
     const planProps = plan!.inputSchema.properties as Record<string, unknown>;
 
     expect(remediateProps.preview).toBeDefined();
+    expect(remediateProps.simulationMode).toBeDefined();
     expect(remediateProps.requestId).toBeDefined();
     expect(remediateProps.sessionId).toBeDefined();
     expect(remediateProps.parentRunId).toBeDefined();
@@ -54,6 +55,7 @@ describe("mcp tool contracts", () => {
     expect(remediateProps.patchConfidenceThresholds).toBeDefined();
 
     expect(scanProps.preview).toBeDefined();
+    expect(scanProps.simulationMode).toBeDefined();
     expect(scanProps.requestId).toBeDefined();
     expect(scanProps.sessionId).toBeDefined();
     expect(scanProps.parentRunId).toBeDefined();
@@ -62,11 +64,34 @@ describe("mcp tool contracts", () => {
     expect(scanProps.patchConfidenceThresholds).toBeDefined();
 
     expect(planProps.requestId).toBeDefined();
+    expect(planProps.simulationMode).toBeDefined();
     expect(planProps.sessionId).toBeDefined();
     expect(planProps.parentRunId).toBeDefined();
     expect(planProps.consensusProvider).toBeDefined();
     expect(planProps.consensusModel).toBeDefined();
     expect(planProps.patchConfidenceThresholds).toBeDefined();
+  });
+
+  it("declares dispositionPolicy on remediate, planRemediation, remediateFromScan, and remediatePortfolio tools", () => {
+    const remediate = TOOLS.find((t) => t.name === "remediate");
+    const plan = TOOLS.find((t) => t.name === "planRemediation");
+    const scan = TOOLS.find((t) => t.name === "remediateFromScan");
+    const portfolio = TOOLS.find((t) => t.name === "remediatePortfolio");
+
+    for (const tool of [remediate, plan, scan, portfolio]) {
+      expect(tool).toBeDefined();
+      const props = tool!.inputSchema.properties as Record<string, unknown>;
+      expect(props.dispositionPolicy).toBeDefined();
+      expect((props.dispositionPolicy as Record<string, unknown>).type).toBe("object");
+    }
+  });
+
+  it("does not expose simulationMode on updateOutdated", () => {
+    const updateOutdated = TOOLS.find((t) => t.name === "updateOutdated");
+
+    expect(updateOutdated).toBeDefined();
+    const props = updateOutdated!.inputSchema.properties as Record<string, unknown>;
+    expect(props.simulationMode).toBeUndefined();
   });
 
   it("creates MCP server instance without auto-start side effects", () => {

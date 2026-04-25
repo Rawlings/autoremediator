@@ -9,11 +9,25 @@ import { resolveConstraints, resolveCorrelationContext, resolveProvenanceContext
 import { executeScanRemediations } from "../scan-execution.js";
 import { buildScanOutcome } from "../scan-outcome.js";
 import { aggregateScanLlmUsage } from "./report-metrics.js";
+import { assertValidSimulationMode, buildEscalationCounts } from "../reporting.js";
+
+function countContainedResults(reports: RemediationReport[]): number {
+  let containmentCount = 0;
+  for (const report of reports) {
+    for (const result of report.results) {
+      if (result.unresolvedReason === "policy-blocked" && result.disposition === "escalate") {
+        containmentCount += 1;
+      }
+    }
+  }
+  return containmentCount;
+}
 
 export async function remediateFromScan(
   inputPath: string,
   options: ScanOptions = {}
 ): Promise<ScanReport> {
+  assertValidSimulationMode(options);
   const cwd = options.cwd ?? process.cwd();
 
   const policy = loadPolicy(cwd, options.policy);
@@ -62,6 +76,10 @@ export async function remediateFromScan(
   });
   const reports: RemediationReport[] = execution.reports;
   const { errors, patchCount, patchValidationFailures } = execution;
+  const containmentCount = countContainedResults(reports);
+  const escalationCounts = buildEscalationCounts(
+    reports.flatMap((report) => report.results)
+  );
 
   const llmUsageTotals = aggregateScanLlmUsage(reports);
   const outcome = buildScanOutcome({ reports, errors });
@@ -72,6 +90,8 @@ export async function remediateFromScan(
     strategyCounts,
     dependencyScopeCounts,
     unresolvedByReason,
+    dispositionCounts,
+    simulationSummary,
     remediationCount,
   } = outcome;
 
@@ -86,6 +106,10 @@ export async function remediateFromScan(
     strategyCounts,
     dependencyScopeCounts,
     unresolvedByReason,
+    dispositionCounts,
+    escalationCounts,
+    containmentCount,
+    simulationSummary,
     patchesDir: patchCount > 0 ? patchesDir : undefined,
     llmUsageCount: llmUsageTotals.llmUsageCount > 0 ? llmUsageTotals.llmUsageCount : undefined,
     estimatedCostUsd: llmUsageTotals.estimatedCostUsd,
@@ -118,6 +142,8 @@ export async function remediateFromScan(
     strategyCounts,
     dependencyScopeCounts,
     unresolvedByReason,
+    dispositionCounts,
+    escalationCounts,
     patchesDir: patchCount > 0 ? patchesDir : undefined,
     correlation,
     provenance,
@@ -127,5 +153,6 @@ export async function remediateFromScan(
     estimatedCostUsd: llmUsageTotals.estimatedCostUsd,
     totalLlmLatencyMs: llmUsageTotals.totalLlmLatencyMs,
     changeRequests,
+    simulationSummary,
   };
 }

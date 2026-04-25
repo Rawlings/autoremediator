@@ -45,6 +45,16 @@ function resolveChangeRequestOptions(opts: CommandOptions): {
   };
 }
 
+function resolveDispositionPolicy(opts: CommandOptions): { minConfidenceForAutoApply?: number; holdForTransitive?: boolean; escalateOnKev?: boolean } | undefined {
+  const hasAny = opts.minConfidenceForAutoApply != null || opts.holdForTransitive === true || opts.escalateOnKev === true;
+  if (!hasAny) return undefined;
+  const policy: { minConfidenceForAutoApply?: number; holdForTransitive?: boolean; escalateOnKev?: boolean } = {};
+  if (typeof opts.minConfidenceForAutoApply === "number") policy.minConfidenceForAutoApply = opts.minConfidenceForAutoApply;
+  if (opts.holdForTransitive === true) policy.holdForTransitive = true;
+  if (opts.escalateOnKev === true) policy.escalateOnKev = true;
+  return policy;
+}
+
 function asSingleCveScanReport(report: Awaited<ReturnType<typeof remediate>>): ScanReport {
   return {
     schemaVersion: "1.0",
@@ -75,6 +85,7 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
     packageManager: opts.packageManager,
     dryRun: opts.dryRun,
     preview: opts.preview,
+    simulationMode: opts.simulationMode,
     runTests: opts.runTests,
     patchesDir: opts.patchesDir,
     policy: opts.policy,
@@ -121,7 +132,9 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
     slaCheck: opts.slaCheck,
     skipUnreachable: opts.skipUnreachable,
     regressionCheck: opts.regressionCheck,
+    containmentMode: opts.containmentMode,
     changeRequest,
+    dispositionPolicy: resolveDispositionPolicy(opts),
   });
 
   const reportAsScan = asSingleCveScanReport(report);
@@ -164,6 +177,7 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
     patchesDir: opts.patchesDir,
     dryRun: opts.dryRun,
     preview: opts.preview,
+    simulationMode: opts.simulationMode,
     runTests: opts.runTests,
     llmProvider: opts.llmProvider,
     model: opts.model,
@@ -208,7 +222,10 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
     slaCheck: opts.slaCheck,
     skipUnreachable: opts.skipUnreachable,
     regressionCheck: opts.regressionCheck,
+    containmentMode: opts.containmentMode,
+    campaignMode: opts.campaignMode,
     changeRequest,
+    dispositionPolicy: resolveDispositionPolicy(opts),
   });
 
   if (opts.summaryFile) {
@@ -432,6 +449,7 @@ export async function runPortfolio(targetsFilePath: string, opts: CommandOptions
     packageManager: opts.packageManager,
     dryRun: opts.dryRun,
     preview: opts.preview,
+    simulationMode: opts.simulationMode,
     runTests: opts.runTests,
     patchesDir: opts.patchesDir,
     policy: opts.policy,
@@ -478,7 +496,10 @@ export async function runPortfolio(targetsFilePath: string, opts: CommandOptions
     slaCheck: opts.slaCheck,
     skipUnreachable: opts.skipUnreachable,
     regressionCheck: opts.regressionCheck,
+    containmentMode: opts.containmentMode,
+    campaignMode: opts.campaignMode,
     changeRequest,
+    dispositionPolicy: resolveDispositionPolicy(opts),
   });
 
   if (opts.outputFormat === "json") {

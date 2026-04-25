@@ -94,6 +94,14 @@ Default feature workflow:
 
 This workflow is advisory-first by default, but feature bundles are expected to be complete.
 
+Current autonomous operator feature areas contributors must keep documented are:
+
+- disposition policy and result classification
+- containment mode and blocked escalation outcomes
+- escalation routing and aggregate reporting
+- portfolio campaigns and `threatRank`
+- simulation-mode planned mutations and rebuttal findings
+
 Public API naming governance:
 
 - use `.github/skills/public-api-governance/SKILL.md` when changing any public option/report/schema names

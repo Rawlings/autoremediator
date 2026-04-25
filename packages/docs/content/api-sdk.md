@@ -11,6 +11,16 @@ Related references:
 - [Integrations](integrations.md)
 - [Agent Ecosystems](agent-ecosystems.md)
 
+## Autonomous Operator Controls
+
+The SDK exposes autonomous operator controls on top of baseline remediation:
+
+- `dispositionPolicy` to classify results as `auto-apply`, `simulate-only`, `hold-for-approval`, or `escalate`
+- `containmentMode` to block applied escalation outcomes
+- `escalationGraph` to route unresolved reasons into intended follow-up actions
+- `campaignMode` to risk-rank portfolio targets and emit `threatRank`
+- `simulationMode` to add planned mutation metadata and rebuttal findings in non-mutating flows
+
 ## Public APIs
 
 - `remediate(cveId, options?)`
@@ -64,7 +74,7 @@ Why: best for routine maintenance automation alongside security remediation — 
 
 How: reads `package.json` at `cwd`, queries the npm registry for outdated packages, skips major bumps when `allowMajorBumps` is `false` (default), applies version bumps, and optionally runs tests and creates a pull request.
 
-Options (`UpdateOutdatedOptions` extends `RemediateOptions`):
+Options (`UpdateOutdatedOptions` uses the shared remediation option surface except `simulationMode`):
 
 - `includeTransitive`: include transitive dependencies (default: `false`, direct only)
 - All standard `RemediateOptions` — `dryRun`, `runTests`, `changeRequest`, `policy`, `evidence`, etc.
@@ -84,6 +94,8 @@ What: runs direct-CVE or scan-based remediation across multiple repository targe
 Why: best for platform teams that coordinate many services from one scheduler or control plane.
 
 How: accepts a `targets` array where each target provides a `cwd` and either `cveId` or `inputPath`/`audit` metadata, then aggregates per-target outcomes into one portfolio report.
+
+When `options.campaignMode` is `true`, targets with a `riskHint` field (`severity`, `exploitSignal`, `slaBreached`) are scored and executed highest-risk first. Each `PortfolioTargetResult` in the report gains a `threatRank` integer (1 = highest risk) reflecting its position in the ranked campaign order. Targets with no `riskHint` are ranked by their relative order with a score of 0.
 
 ### `toCiSummary(scanReport)`
 
@@ -125,9 +137,13 @@ Core options:
 - `packageManager`: explicit package manager selection (`npm`, `pnpm`, `yarn`)
 - `dryRun`: simulation mode without mutation
 - `preview`: non-mutating planning mode for orchestration/approval workflows
+- `simulationMode`: attaches deterministic simulation metadata for dry-run or preview execution; requires `dryRun: true` or `preview: true`
 - `runTests`: enables post-apply test validation
 - `llmProvider`: provider selection (`remote` or `local` deterministic primary path)
 - `policy`: path to `.github/autoremediator.yml`
+- `dispositionPolicy`: confidence, transitive-scope, KEV, and SLA rules for result classification
+- `containmentMode`: when true, prevents applied `escalate` outcomes from mutating the repository
+- `campaignMode`: when true, ranks portfolio targets by `riskHint` before execution
 - `evidence`: enable/disable evidence artifact writing for direct and scan workflows
 - `patchesDir`: patch output/apply location when fallback patching is used
 - `changeRequest`: optional native pull request / merge request creation controls (`provider`, `grouping`, branch naming, repository override)
@@ -161,6 +177,9 @@ Result details now include:
 - `dynamicRoutingThresholdChars`: threshold for dynamic routing behavior
 - `suppressedBy`: VEX suppression justification when a result was suppressed before remediation
 - `regressionDetected`: `true` when the patched version still satisfies the CVE's vulnerable range (set when `regressionCheck: true`)
+- `disposition`: machine-readable classification for each result (`auto-apply`, `simulate-only`, `hold-for-approval`, `escalate`)
+- `dispositionReason`: deterministic explanation for the chosen disposition
+- `consensusVerdict`: secondary-provider verification result for high-risk patch flows when consensus was executed
 - `exploitSignalTriggered`: `true` when a KEV or EPSS threshold signal fired for this CVE
 - `slaBreaches`: array of SLA breach records when `slaCheck: true` and windows are configured (`cveId`, `severity`, `publishedAt`, `hoursOverdue`)
 - `sbom`: array of `SbomEntry` records for all installed packages (`name`, `version`, `type`, `status`: `patched`|`unpatched`|`skipped`|`suppressed`)
@@ -170,13 +189,24 @@ Result details now include:
 - `slaCheck`: when `true`, compares CVE publication age against policy SLA windows and writes `slaBreaches` to the report
 - `skipUnreachable`: when `true`, skips packages not reachable from project source files (static import analysis)
 - `regressionCheck`: when `true`, verifies the patched version is outside the CVE's vulnerable range after apply
+- `escalationGraph`: optional mapping from `unresolvedReason` to intended escalation action (`open-issue`, `notify-channel`, `create-draft-pr`, `hold-branch`, `none`)
 
 Scan and CI summary aggregates:
 
 - `patchCount`: total patch-file remediation attempts in the scan run
 - `strategyCounts`: aggregate counts by remediation strategy (`version-bump`, `override`, `patch-file`, `none`)
 - `dependencyScopeCounts`: aggregate counts by dependency scope (`direct`, `transitive`)
+- `dispositionCounts`: aggregate counts by autonomous result classification
 - `unresolvedByReason`: aggregate counts by machine-readable unresolved reason
+- `escalationCounts`: aggregate counts by intended escalation action
+- `simulationSummary`: aggregate counts for simulated mutation targets and rebuttal findings when `simulationMode` is enabled
+
+Simulation result details:
+
+- `results[].simulation.mode`: `"dry-run"` or `"preview"`
+- `results[].simulation.wouldMutate`: whether the selected strategy would mutate repository state outside the current non-mutating context
+- `results[].simulation.plannedMutations`: deterministic mutation targets (`package-manifest`, `lockfile`, `patch-file`, `patch-manifest`, `install-state`, `test-command`)
+- `results[].simulation.rebuttalFindings`: deterministic rebuttal codes derived from unresolved, validation, risk, escalation, exploit, SLA, and test-run signals
 
 Patch lifecycle outputs:
 
@@ -234,6 +264,7 @@ const scanReport = await remediateFromScan("./audit.json", {
 
 const preview = await planRemediation("CVE-2021-23337", {
 	cwd: process.cwd(),
+	simulationMode: true,
 	requestId: "req-42",
 	sessionId: "nightly-security-job"
 });

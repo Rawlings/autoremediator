@@ -22,6 +22,9 @@ function mergeWithDefaults(raw: RawRepoConfig): AutoremediatorRepoConfig {
     patchConfidenceThresholds: raw.patchConfidenceThresholds,
     dynamicModelRouting: raw.dynamicModelRouting,
     dynamicRoutingThresholdChars: raw.dynamicRoutingThresholdChars,
+    dispositionPolicy: raw.dispositionPolicy,
+    containmentMode: raw.containmentMode,
+    escalationGraph: raw.escalationGraph,
     pullRequest: raw.pullRequest,
   };
 }

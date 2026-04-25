@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { buildResultSimulation } from "./reporting.js";
 
 const mocked = vi.hoisted(() => ({
   runRemediationPipeline: vi.fn(),
@@ -119,6 +120,7 @@ describe("api preview and correlation behavior", () => {
     });
 
     await planRemediation("CVE-2021-23337", {
+      simulationMode: true,
       requestId: "req-123",
       sessionId: "session-abc",
       parentRunId: "parent-1",
@@ -130,11 +132,34 @@ describe("api preview and correlation behavior", () => {
       expect.objectContaining({
         dryRun: true,
         preview: true,
+        simulationMode: true,
         requestId: "req-123",
         sessionId: "session-abc",
         parentRunId: "parent-1",
       })
     );
+  });
+
+  it("rejects simulationMode for mutating remediate runs", async () => {
+    await expect(
+      remediate("CVE-2021-23337", {
+        cwd: "/tmp/project",
+        simulationMode: true,
+      })
+    ).rejects.toThrow("simulationMode requires dryRun=true or preview=true.");
+
+    expect(mocked.runRemediationPipeline).not.toHaveBeenCalled();
+  });
+
+  it("rejects simulationMode for mutating scan runs", async () => {
+    await expect(
+      remediateFromScan("./audit.json", {
+        cwd: "/tmp/project",
+        simulationMode: true,
+      })
+    ).rejects.toThrow("simulationMode requires dryRun=true or preview=true.");
+
+    expect(mocked.runRemediationPipeline).not.toHaveBeenCalled();
   });
 
   it("remediateFromScan propagates correlation to evidence and report", async () => {
@@ -322,6 +347,105 @@ describe("api preview and correlation behavior", () => {
     expect(report.results[0]?.strategy).toBe("version-bump");
   });
 
+  it("builds deterministic planned mutations and rebuttal findings", () => {
+    const report = {
+      cveId: "CVE-2021-23337",
+      cveDetails: null,
+      vulnerablePackages: [
+        {
+          installed: { name: "minimist", version: "1.2.0", type: "transitive" as const },
+          affected: {
+            name: "minimist",
+            ecosystem: "npm" as const,
+            vulnerableRange: ">=1.0.0 <1.2.8",
+            source: "osv" as const,
+          },
+        },
+      ],
+      results: [
+        {
+          packageName: "minimist",
+          strategy: "patch-file" as const,
+          fromVersion: "1.2.0",
+          patchFilePath: "./patches/minimist.patch",
+          patchArtifact: {
+            schemaVersion: "1.0" as const,
+            packageName: "minimist",
+            vulnerableVersion: "1.2.0",
+            patchFilePath: "./patches/minimist.patch",
+            manifestFilePath: "./patches/minimist.patch.json",
+            patchFileName: "minimist.patch",
+            generatedAt: new Date().toISOString(),
+            applied: false,
+            dryRun: true,
+            validationPhases: [{ phase: "apply" as const, passed: false }],
+          },
+          applied: false,
+          dryRun: true,
+          message: "planned patch",
+          unresolvedReason: "patch-confidence-too-low" as const,
+          dispositionReason: "low-confidence",
+          riskLevel: "high" as const,
+          escalationAction: "open-issue" as const,
+          regressionDetected: true,
+          validation: { passed: false },
+          validationPhases: [{ phase: "test" as const, passed: false }],
+        },
+      ],
+      agentSteps: 1,
+      summary: "planned",
+      exploitSignalTriggered: true,
+      slaBreaches: [
+        {
+          cveId: "CVE-2021-23337",
+          severity: "HIGH" as const,
+          publishedAt: "2026-01-01T00:00:00.000Z",
+          deadlineAt: "2026-01-02T00:00:00.000Z",
+          hoursOverdue: 24,
+        },
+      ],
+    };
+
+    const simulation = buildResultSimulation(report, report.results[0], {
+      dryRun: true,
+      simulationMode: true,
+      runTests: false,
+    });
+
+    expect(simulation).toEqual({
+      mode: "dry-run",
+      wouldMutate: true,
+      plannedMutations: [
+        {
+          target: "patch-file",
+          reason: "Would write a generated patch artifact.",
+          path: "./patches/minimist.patch",
+        },
+        {
+          target: "patch-manifest",
+          reason: "Would write patch artifact manifest metadata.",
+          path: "./patches/minimist.patch.json",
+        },
+        {
+          target: "install-state",
+          reason: "Would refresh installed dependency state.",
+        },
+      ],
+      rebuttalFindings: expect.arrayContaining([
+        expect.objectContaining({ code: "unresolved-reason", severity: "warning", sourceSignals: ["unresolvedReason"] }),
+        expect.objectContaining({ code: "validation-risk", severity: "high" }),
+        expect.objectContaining({ code: "regression-risk", severity: "high", sourceSignals: ["regressionDetected"] }),
+        expect.objectContaining({ code: "low-confidence", severity: "warning" }),
+        expect.objectContaining({ code: "high-risk-patch", severity: "warning", sourceSignals: ["riskLevel"] }),
+        expect.objectContaining({ code: "transitive-target", severity: "info", sourceSignals: ["dependencyScope"] }),
+        expect.objectContaining({ code: "escalation-planned", severity: "warning", sourceSignals: ["escalationAction"] }),
+        expect.objectContaining({ code: "exploit-signal", severity: "high", sourceSignals: ["exploitSignalTriggered"] }),
+        expect.objectContaining({ code: "sla-breach", severity: "warning", sourceSignals: ["slaBreaches"] }),
+        expect.objectContaining({ code: "tests-not-run", severity: "warning", sourceSignals: ["runTests"] }),
+      ]),
+    });
+  });
+
   it("writes direct-remediation evidence by default and supports disabling it", async () => {
     mocked.runRemediationPipeline.mockResolvedValue({
       cveId: "CVE-2021-23337",
@@ -364,6 +488,46 @@ describe("api preview and correlation behavior", () => {
 
     expect(withoutEvidence.evidenceFile).toBeUndefined();
     expect(mocked.writeEvidenceLog).not.toHaveBeenCalled();
+  });
+
+  it("emits containment evidence step for blocked escalation results", async () => {
+    mocked.runRemediationPipeline.mockResolvedValue({
+      cveId: "CVE-2021-23337",
+      cveDetails: null,
+      vulnerablePackages: [],
+      results: [
+        {
+          packageName: "lodash",
+          strategy: "version-bump",
+          fromVersion: "4.17.0",
+          toVersion: "4.17.21",
+          applied: false,
+          dryRun: false,
+          unresolvedReason: "policy-blocked",
+          disposition: "escalate",
+          dispositionReason: "kev-exploit-signal",
+          message: "blocked by containment",
+        },
+      ],
+      agentSteps: 1,
+      summary: "done",
+    });
+
+    await remediate("CVE-2021-23337", {
+      cwd: "/tmp/project",
+      containmentMode: true,
+    });
+
+    expect(mocked.addEvidenceStep).toHaveBeenCalledWith(
+      expect.anything(),
+      "containment-summary",
+      { cveId: "CVE-2021-23337" },
+      expect.objectContaining({
+        containmentCount: 1,
+        blockedUnresolvedReason: "policy-blocked",
+        blockedDisposition: "escalate",
+      })
+    );
   });
 
   it("aggregates strategy counts and unresolved reasons into scan report and CI summary", async () => {
@@ -426,6 +590,7 @@ describe("api preview and correlation behavior", () => {
           applied: false,
           dryRun: false,
           unresolvedReason: "no-safe-version",
+          escalationAction: "open-issue",
           message: "unresolved",
         },
       ],
@@ -435,6 +600,8 @@ describe("api preview and correlation behavior", () => {
 
     const report = await remediateFromScan("./audit.json", {
       cwd: "/tmp/project",
+      dryRun: true,
+      simulationMode: true,
     });
     const summary = toCiSummary(report);
 
@@ -450,9 +617,46 @@ describe("api preview and correlation behavior", () => {
     expect(report.unresolvedByReason).toEqual({
       "no-safe-version": 1,
     });
+    expect(report.escalationCounts).toEqual({
+      "open-issue": 1,
+    });
+    expect(report.reports[0]?.results[0]?.simulation?.plannedMutations).toEqual([
+      {
+        target: "package-manifest",
+        reason: "Would update the package manifest dependency declaration.",
+      },
+      {
+        target: "lockfile",
+        reason: "Would update the dependency lockfile to reflect resolved versions.",
+      },
+      {
+        target: "install-state",
+        reason: "Would refresh installed dependency state.",
+      },
+    ]);
+    expect(report.simulationSummary).toEqual({
+      mode: "dry-run",
+      resultCount: 3,
+      wouldMutateCount: 2,
+      nonMutatingCount: 1,
+      rebuttalResultCount: 3,
+      plannedMutationCounts: {
+        "package-manifest": 2,
+        lockfile: 2,
+        "install-state": 2,
+      },
+      rebuttalCounts: {
+        "escalation-planned": 1,
+        "transitive-target": 2,
+        "tests-not-run": 2,
+        "unresolved-reason": 1,
+      },
+    });
     expect(summary.strategyCounts).toEqual(report.strategyCounts);
     expect(summary.dependencyScopeCounts).toEqual(report.dependencyScopeCounts);
     expect(summary.unresolvedByReason).toEqual(report.unresolvedByReason);
+    expect(summary.escalationCounts).toEqual(report.escalationCounts);
+    expect(summary.simulationSummary).toEqual(report.simulationSummary);
     expect(mocked.writeEvidenceLog).toHaveBeenCalledWith(
       "/tmp/project",
       expect.objectContaining({
@@ -469,6 +673,73 @@ describe("api preview and correlation behavior", () => {
           unresolvedByReason: {
             "no-safe-version": 1,
           },
+          escalationCounts: {
+            "open-issue": 1,
+          },
+          simulationSummary: expect.objectContaining({
+            mode: "dry-run",
+            resultCount: 3,
+          }),
+        }),
+      })
+    );
+  });
+
+  it("aggregates containmentCount into scan evidence summary for blocked escalations", async () => {
+    mocked.uniqueCveIds.mockReturnValue(["CVE-2021-23337", "CVE-2021-44906"]);
+    mocked.runRemediationPipeline
+      .mockResolvedValueOnce({
+        cveId: "CVE-2021-23337",
+        cveDetails: null,
+        vulnerablePackages: [],
+        results: [
+          {
+            packageName: "lodash",
+            strategy: "version-bump",
+            fromVersion: "4.17.0",
+            toVersion: "4.17.21",
+            applied: false,
+            dryRun: false,
+            unresolvedReason: "policy-blocked",
+            disposition: "escalate",
+            dispositionReason: "kev-exploit-signal",
+            message: "blocked by containment",
+          },
+        ],
+        agentSteps: 1,
+        summary: "blocked",
+      })
+      .mockResolvedValueOnce({
+        cveId: "CVE-2021-44906",
+        cveDetails: null,
+        vulnerablePackages: [],
+        results: [
+          {
+            packageName: "debug",
+            strategy: "none",
+            fromVersion: "2.6.8",
+            applied: false,
+            dryRun: false,
+            unresolvedReason: "no-safe-version",
+            disposition: "simulate-only",
+            dispositionReason: "no-safe-version",
+            message: "unresolved",
+          },
+        ],
+        agentSteps: 1,
+        summary: "unresolved",
+      });
+
+    await remediateFromScan("./audit.json", {
+      cwd: "/tmp/project",
+      containmentMode: true,
+    });
+
+    expect(mocked.writeEvidenceLog).toHaveBeenCalledWith(
+      "/tmp/project",
+      expect.objectContaining({
+        summary: expect.objectContaining({
+          containmentCount: 1,
         }),
       })
     );

@@ -19,6 +19,7 @@ const mocked = vi.hoisted(() => ({
     packageManager: "Package manager override (auto-detected by default)",
     dryRun: "If true, plan changes but write nothing",
     preview: "If true, enforce non-mutating preview mode",
+    simulationMode: "If true, attach deterministic simulation and rebuttal metadata for dry-run or preview execution",
     runTests: "Run package-manager test command after applying fix",
     llmProvider: "LLM provider override",
     patchesDir: "Directory to write .patch files (default: ./patches)",
@@ -87,6 +88,7 @@ describe("cli preview and correlation option forwarding", () => {
         "autoremediator",
         "CVE-2021-23337",
         "--preview",
+        "--simulation-mode",
         "--request-id",
         "req-1",
         "--session-id",
@@ -101,6 +103,7 @@ describe("cli preview and correlation option forwarding", () => {
       expect.objectContaining({
         patchesDir: undefined,
         preview: true,
+        simulationMode: true,
         requestId: "req-1",
         sessionId: "session-1",
         parentRunId: "parent-1",
@@ -117,6 +120,7 @@ describe("cli preview and correlation option forwarding", () => {
         "--input",
         "./audit.json",
         "--preview",
+        "--simulation-mode",
         "--request-id",
         "req-2",
         "--session-id",
@@ -131,6 +135,7 @@ describe("cli preview and correlation option forwarding", () => {
       expect.objectContaining({
         patchesDir: undefined,
         preview: true,
+        simulationMode: true,
         requestId: "req-2",
         sessionId: "session-2",
         parentRunId: "parent-2",
@@ -334,6 +339,56 @@ describe("cli preview and correlation option forwarding", () => {
     );
   });
 
+  it("rejects simulation-mode without an effective dry-run context", async () => {
+    const program = createProgram();
+
+    await expect(
+      program.parseAsync([
+        "node",
+        "autoremediator",
+        "CVE-2021-23337",
+        "--simulation-mode",
+      ])
+    ).rejects.toThrow("--simulation-mode requires --dry-run or --preview.");
+
+    expect(mocked.remediate).not.toHaveBeenCalled();
+  });
+
+  it("forwards simulation-mode in portfolio mode", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "autoremediator-portfolio-"));
+    const targetsFile = join(tmp, "targets.json");
+    writeFileSync(targetsFile, JSON.stringify([{ cwd: "/tmp/a", cveId: "CVE-2021-23337" }]), "utf8");
+
+    const program = createProgram();
+    await program.parseAsync([
+      "node",
+      "autoremediator",
+      "portfolio",
+      "--targets-file",
+      targetsFile,
+      "--dry-run",
+      "--simulation-mode",
+    ]);
+
+    expect(mocked.remediatePortfolio).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ dryRun: true, simulationMode: true })
+    );
+  });
+
+  it("does not expose simulation-mode on update-outdated", async () => {
+    const program = createProgram();
+
+    await expect(
+      program.parseAsync([
+        "node",
+        "autoremediator",
+        "update-outdated",
+        "--simulation-mode",
+      ])
+    ).rejects.toThrow("--simulation-mode is not supported by update-outdated.");
+  });
+
   it("supports explicit scan mode with --audit and no input file", async () => {
     const program = createProgram();
     await program.parseAsync([
@@ -446,6 +501,36 @@ describe("cli preview and correlation option forwarding", () => {
     );
   });
 
+  it("forwards --campaign-mode to remediatePortfolio", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "autoremediator-portfolio-campaign-"));
+    const targetsFile = join(tempDir, "targets.json");
+    writeFileSync(
+      targetsFile,
+      JSON.stringify([
+        { cwd: "/tmp/service-a", cveId: "CVE-2021-23337", riskHint: { severity: "CRITICAL" } },
+        { cwd: "/tmp/service-b", cveId: "CVE-2021-23338", riskHint: { severity: "LOW" } },
+      ]),
+      "utf8"
+    );
+
+    const program = createProgram();
+    await program.parseAsync([
+      "node",
+      "autoremediator",
+      "portfolio",
+      "--targets-file",
+      targetsFile,
+      "--campaign-mode",
+      "--output-format",
+      "json",
+    ]);
+
+    expect(mocked.remediatePortfolio).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ campaignMode: true })
+    );
+  });
+
   it("fails when resume is set without idempotency key", async () => {
     const program = createProgram();
     await expect(
@@ -469,5 +554,29 @@ describe("cli preview and correlation option forwarding", () => {
         "github",
       ])
     ).rejects.toThrow("change-request override flags require --create-change-request.");
+  });
+
+  it("forwards dispositionPolicy options in top-level CVE mode", async () => {
+    const program = createProgram();
+    await program.parseAsync([
+      "node",
+      "autoremediator",
+      "CVE-2021-23337",
+      "--min-confidence-for-auto-apply",
+      "0.8",
+      "--hold-for-transitive",
+      "--escalate-on-kev",
+    ]);
+
+    expect(mocked.remediate).toHaveBeenCalledWith(
+      "CVE-2021-23337",
+      expect.objectContaining({
+        dispositionPolicy: expect.objectContaining({
+          minConfidenceForAutoApply: 0.8,
+          holdForTransitive: true,
+          escalateOnKev: true,
+        }),
+      })
+    );
   });
 });

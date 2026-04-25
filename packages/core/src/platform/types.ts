@@ -225,11 +225,108 @@ export type UnresolvedReason =
   | "source-fetch-failed"
   | "validation-failed";
 
+export type EscalationAction =
+  | "open-issue"
+  | "notify-channel"
+  | "create-draft-pr"
+  | "hold-branch"
+  | "none";
+
+export type EscalationGraph = Partial<Record<UnresolvedReason, EscalationAction>>;
+
+/** Typed result from a second-provider consensus verification run. */
+export interface ConsensusVerdict {
+  agreed: boolean;
+  provider: string;
+  model: string;
+  reason?: string;
+  latencyMs?: number;
+  estimatedCostUsd?: number;
+}
+
+export type Disposition = "auto-apply" | "simulate-only" | "hold-for-approval" | "escalate";
+
+export interface DispositionPolicy {
+  minConfidenceForAutoApply?: number;
+  holdForTransitive?: boolean;
+  escalateOnSlaBreachSeverities?: CveSeverity[];
+  escalateOnKev?: boolean;
+}
+
+export interface DispositionSignals {
+  exploitSignalTriggered?: boolean;
+  slaBreaches?: SlaBreach[];
+  dependencyScope?: DependencyScope;
+  unresolvedReason?: UnresolvedReason;
+  confidence?: number;
+  riskLevel?: PatchRiskLevel;
+  regressionDetected?: boolean;
+  consensusFailed?: boolean;
+  applied: boolean;
+  severity?: CveSeverity;
+}
+
 export type PatchStrategyCounts = Partial<Record<PatchStrategy, number>>;
 
 export type DependencyScopeCounts = Partial<Record<DependencyScope, number>>;
 
 export type UnresolvedReasonCounts = Partial<Record<UnresolvedReason, number>>;
+
+export type DispositionCounts = Partial<Record<Disposition, number>>;
+
+export type EscalationCounts = Partial<Record<EscalationAction, number>>;
+
+export type SimulationMutationTarget =
+  | "package-manifest"
+  | "lockfile"
+  | "patch-file"
+  | "patch-manifest"
+  | "install-state"
+  | "test-command";
+
+export interface SimulationMutation {
+  target: SimulationMutationTarget;
+  reason: string;
+  path?: string;
+}
+
+export type SimulationRebuttalCode =
+  | "unresolved-reason"
+  | "policy-blocked"
+  | "consensus-failed"
+  | "validation-risk"
+  | "regression-risk"
+  | "low-confidence"
+  | "high-risk-patch"
+  | "transitive-target"
+  | "escalation-planned"
+  | "exploit-signal"
+  | "sla-breach"
+  | "tests-not-run";
+
+export interface SimulationRebuttalFinding {
+  code: SimulationRebuttalCode;
+  severity: "info" | "warning" | "high";
+  message: string;
+  sourceSignals: string[];
+}
+
+export interface ResultSimulation {
+  mode: "dry-run" | "preview";
+  wouldMutate: boolean;
+  plannedMutations: SimulationMutation[];
+  rebuttalFindings: SimulationRebuttalFinding[];
+}
+
+export interface SimulationSummary {
+  mode: "dry-run" | "preview";
+  resultCount: number;
+  wouldMutateCount: number;
+  nonMutatingCount: number;
+  rebuttalResultCount: number;
+  plannedMutationCounts?: Partial<Record<SimulationMutationTarget, number>>;
+  rebuttalCounts?: Partial<Record<SimulationRebuttalCode, number>>;
+}
 
 export interface ReachabilityEvidence {
   filePath: string;
@@ -301,11 +398,17 @@ export interface PortfolioTarget {
   inputPath?: string;
   format?: "auto" | "npm-audit" | "yarn-audit" | "sarif";
   audit?: boolean;
+  riskHint?: {
+    severity?: CveSeverity;
+    exploitSignal?: boolean;
+    slaBreached?: boolean;
+  };
 }
 
 export interface PortfolioTargetResult {
   target: PortfolioTarget;
   status: "ok" | "partial" | "failed";
+  threatRank?: number;
   remediationReport?: RemediationReport;
   scanReport?: ScanReportLike;
   error?: string;
@@ -359,6 +462,15 @@ export interface PatchResult {
     error?: string;
   };
   validationPhases?: PatchValidationPhase[];
+  /** Autonomous outcome classification for this patch result. */
+  disposition?: Disposition;
+  /** Human-readable reason for the assigned disposition. */
+  dispositionReason?: string;
+  /** Verdict from second-provider consensus gate, if one was executed. */
+  consensusVerdict?: ConsensusVerdict;
+  /** Intended escalation action for unresolved outcomes. */
+  escalationAction?: EscalationAction;
+  simulation?: ResultSimulation;
 }
 
 export interface CorrelationContext {
@@ -449,6 +561,8 @@ export interface RemediateOptions extends CorrelationContext {
   patchesDir?: string;
   /** If true, run a non-mutating remediation preview (forces dryRun behavior for mutation tools). */
   preview?: boolean;
+  /** If true, add deterministic simulation metadata for dry-run and preview execution contexts. */
+  simulationMode?: boolean;
   /** Optional deterministic idempotency key for request replay handling. */
   idempotencyKey?: string;
   /** If true, return cached report for matching idempotency key + CVE when available. */
@@ -470,6 +584,14 @@ export interface RemediateOptions extends CorrelationContext {
   skipUnreachable?: boolean;
   /** After applying a fix, re-check the inventory to verify the package version is no longer in the vulnerable range. */
   regressionCheck?: boolean;
+  /** Override the disposition policy for autonomous outcome classification. */
+  dispositionPolicy?: DispositionPolicy;
+  /** When true, block results with disposition "escalate" from being applied. */
+  containmentMode?: boolean;
+  /** When true, portfolio targets are pre-ranked by static risk signals before execution. */
+  campaignMode?: boolean;
+  /** Optional unresolved-reason-to-action escalation mapping. */
+  escalationGraph?: EscalationGraph;
 }
 
 export type SbomStatus = "patched" | "unpatched" | "skipped" | "suppressed";
@@ -503,6 +625,11 @@ export interface RemediationReport {
   slaBreaches?: SlaBreach[];
   /** Software Bill of Materials — installed packages with CVE and remediation status */
   sbom?: SbomEntry[];
+  /** Counts of autonomous disposition outcomes across all results in this report. */
+  dispositionCounts?: DispositionCounts;
+  /** Counts of intended escalation actions across all results in this report. */
+  escalationCounts?: EscalationCounts;
+  simulationSummary?: SimulationSummary;
 }
 
 // ---------------------------------------------------------------------------
@@ -520,7 +647,7 @@ export interface OutdatedPackage {
 }
 
 /** Options for the updateOutdated() operation */
-export interface UpdateOutdatedOptions extends RemediateOptions {
+export interface UpdateOutdatedOptions extends Omit<RemediateOptions, "simulationMode"> {
   /** Include transitive dependencies in the outdated check. Default: false. */
   includeTransitive?: boolean;
 }

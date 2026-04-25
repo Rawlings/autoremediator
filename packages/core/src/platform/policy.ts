@@ -3,6 +3,8 @@ import { join } from "node:path";
 import { parse as yamlParse } from "yaml";
 import type {
   CveSeverity,
+  DispositionPolicy,
+  EscalationGraph,
   ExploitSignalOverridePolicy,
   PatchConfidenceThresholds,
   RemediationConstraints,
@@ -28,6 +30,9 @@ export interface AutoremediatorPolicy {
   suppressions?: VexSuppression[];
   sla?: SlaPolicy;
   skipUnreachable?: boolean;
+  dispositionPolicy?: DispositionPolicy;
+  containmentMode?: boolean;
+  escalationGraph?: EscalationGraph;
 }
 
 export const DEFAULT_POLICY: AutoremediatorPolicy = {
@@ -54,6 +59,9 @@ export const DEFAULT_POLICY: AutoremediatorPolicy = {
   suppressions: [],
   sla: undefined,
   skipUnreachable: false,
+  dispositionPolicy: undefined,
+  containmentMode: false,
+  escalationGraph: undefined,
 };
 
 export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPolicy {
@@ -140,6 +148,9 @@ export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPo
           }
         : undefined,
       skipUnreachable: (parsed as AutoremediatorPolicy).skipUnreachable ?? DEFAULT_POLICY.skipUnreachable,
+      dispositionPolicy: (parsed as AutoremediatorPolicy).dispositionPolicy ?? DEFAULT_POLICY.dispositionPolicy,
+      containmentMode: (parsed as AutoremediatorPolicy).containmentMode ?? DEFAULT_POLICY.containmentMode,
+      escalationGraph: (parsed as AutoremediatorPolicy).escalationGraph ?? DEFAULT_POLICY.escalationGraph,
     };
   } catch {
     return DEFAULT_POLICY;

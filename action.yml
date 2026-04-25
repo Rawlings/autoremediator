@@ -113,6 +113,18 @@ inputs:
       Only applicable when update-outdated is true.
     required: false
     default: 'false'
+  containment-mode:
+    description: >
+      Halt the pipeline when any result disposition is not auto-apply.
+      Use with dry-run to enforce hold-for-approval gates.
+    required: false
+    default: 'false'
+  simulation-mode:
+    description: >
+      Populate planned mutation metadata and rebuttal findings without applying
+      any changes. Requires dry-run. Valid for cve-id and scan modes.
+    required: false
+    default: 'false'
 
 outputs:
   summary-file:
@@ -180,13 +192,17 @@ runs:
         INPUT_RUN_TESTS: ${{ inputs.run-tests }}
         INPUT_POLICY: ${{ inputs.policy }}
         INPUT_LLM_PROVIDER: ${{ inputs.llm-provider }}
+        INPUT_CONTAINMENT_MODE: ${{ inputs.containment-mode }}
+        INPUT_SIMULATION_MODE: ${{ inputs.simulation-mode }}
       run: |
         ARGS=("cve" "$INPUT_CVE_ID" "--cwd" "$INPUT_CWD")
-        [ -n "$INPUT_PKG_MANAGER" ]        && ARGS+=("--package-manager" "$INPUT_PKG_MANAGER")
-        [ "$INPUT_DRY_RUN"    = "true" ]   && ARGS+=("--dry-run")
-        [ "$INPUT_RUN_TESTS"  = "true" ]   && ARGS+=("--run-tests")
-        [ -n "$INPUT_POLICY" ]             && ARGS+=("--policy" "$INPUT_POLICY")
-        [ -n "$INPUT_LLM_PROVIDER" ]       && ARGS+=("--llm-provider" "$INPUT_LLM_PROVIDER")
+        [ -n "$INPUT_PKG_MANAGER" ]           && ARGS+=("--package-manager" "$INPUT_PKG_MANAGER")
+        [ "$INPUT_DRY_RUN"         = "true" ] && ARGS+=("--dry-run")
+        [ "$INPUT_RUN_TESTS"       = "true" ] && ARGS+=("--run-tests")
+        [ -n "$INPUT_POLICY" ]                && ARGS+=("--policy" "$INPUT_POLICY")
+        [ -n "$INPUT_LLM_PROVIDER" ]          && ARGS+=("--llm-provider" "$INPUT_LLM_PROVIDER")
+        [ "$INPUT_CONTAINMENT_MODE" = "true" ] && ARGS+=("--containment-mode")
+        [ "$INPUT_SIMULATION_MODE"  = "true" ] && ARGS+=("--simulation-mode")
         autoremediator "${ARGS[@]}"
 
     - name: Remediate from scan input or audit mode
@@ -210,17 +226,21 @@ runs:
         INPUT_PR_BRANCH: ${{ inputs.pull-request-branch }}
         INPUT_PR_TITLE: ${{ inputs.pull-request-title }}
         INPUT_PR_COMMIT_MSG: ${{ inputs.pull-request-commit-message }}
+        INPUT_CONTAINMENT_MODE: ${{ inputs.containment-mode }}
+        INPUT_SIMULATION_MODE: ${{ inputs.simulation-mode }}
       run: |
         ARGS=("scan" "--format" "$INPUT_FORMAT" "--cwd" "$INPUT_CWD")
-        [ -n "$INPUT_SCAN_FILE" ]           && ARGS+=("--input" "$INPUT_SCAN_FILE")
-        [ "$INPUT_AUDIT"      = "true" ]   && ARGS+=("--audit")
-        [ -n "$INPUT_PKG_MANAGER" ]        && ARGS+=("--package-manager" "$INPUT_PKG_MANAGER")
-        [ "$INPUT_DRY_RUN"    = "true" ]   && ARGS+=("--dry-run")
-        [ "$INPUT_RUN_TESTS"  = "true" ]   && ARGS+=("--run-tests")
-        [ "$INPUT_CI"         = "true" ]   && ARGS+=("--ci")
-        [ -n "$INPUT_SUMMARY_FILE" ]       && ARGS+=("--summary-file" "$INPUT_SUMMARY_FILE")
-        [ -n "$INPUT_POLICY" ]             && ARGS+=("--policy" "$INPUT_POLICY")
-        [ -n "$INPUT_LLM_PROVIDER" ]       && ARGS+=("--llm-provider" "$INPUT_LLM_PROVIDER")
+        [ -n "$INPUT_SCAN_FILE" ]              && ARGS+=("--input" "$INPUT_SCAN_FILE")
+        [ "$INPUT_AUDIT"           = "true" ]  && ARGS+=("--audit")
+        [ -n "$INPUT_PKG_MANAGER" ]            && ARGS+=("--package-manager" "$INPUT_PKG_MANAGER")
+        [ "$INPUT_DRY_RUN"         = "true" ]  && ARGS+=("--dry-run")
+        [ "$INPUT_RUN_TESTS"       = "true" ]  && ARGS+=("--run-tests")
+        [ "$INPUT_CI"              = "true" ]  && ARGS+=("--ci")
+        [ -n "$INPUT_SUMMARY_FILE" ]           && ARGS+=("--summary-file" "$INPUT_SUMMARY_FILE")
+        [ -n "$INPUT_POLICY" ]                 && ARGS+=("--policy" "$INPUT_POLICY")
+        [ -n "$INPUT_LLM_PROVIDER" ]           && ARGS+=("--llm-provider" "$INPUT_LLM_PROVIDER")
+        [ "$INPUT_CONTAINMENT_MODE" = "true" ] && ARGS+=("--containment-mode")
+        [ "$INPUT_SIMULATION_MODE"  = "true" ] && ARGS+=("--simulation-mode")
         if [ "$INPUT_CREATE_PR" = "true" ] && [ "$INPUT_DRY_RUN" != "true" ]; then
           ARGS+=("--create-change-request" "--change-request-provider" "github")
         fi

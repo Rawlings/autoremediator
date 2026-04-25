@@ -33,6 +33,7 @@ user-invocable: true
 
 - Updated `packages/core/src/mcp/server.ts` tool registrations.
 - Updated tool contracts when signatures change.
+- Verified parity with SDK exports, CLI option exposure, OpenAPI schemas, and docs references for the same operation.
 
 ## Tool Naming Convention
 
@@ -51,6 +52,7 @@ MCP tools use stable API-facing names that map to exported SDK entry points:
 - MCP tool descriptions must be precise enough for an LLM to select the correct tool without reading source code.
 - Never expose internal implementation details (model names, file paths) in MCP tool descriptions.
 - Ensure `preview`, `requestId`, `sessionId`, and `parentRunId` are exposed where applicable for orchestration contexts.
+- For changed MCP input fields, verify whether GitHub action/workflow and GitHub App surfaces are affected by the same contract and update or record as not affected.
 
 ## Verification Checklist
 

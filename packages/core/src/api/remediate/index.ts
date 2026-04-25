@@ -5,6 +5,7 @@ import { runRemediationPipeline } from "../../remediation/pipeline.js";
 import { createChangeRequestsForReports } from "../change-request/index.js";
 import { resolveConstraints, resolveCorrelationContext, resolveProvenanceContext } from "../context.js";
 import {
+  addRemediateDispositionStep,
   addRemediateErrorStep,
   addRemediateResultSteps,
   addRemediateResumeStep,
@@ -12,10 +13,12 @@ import {
   createRemediateEvidence,
   writeRemediateEvidence,
 } from "../remediate.evidence.js";
+import { applySimulationMetadata, assertValidSimulationMode } from "../reporting.js";
 import { assertValidCveId } from "./validators.js";
 
 export async function remediate(cveId: string, options: RemediateOptions = {}): Promise<RemediationReport> {
   assertValidCveId(cveId);
+  assertValidSimulationMode(options);
 
   const normalizedCveId = cveId.toUpperCase();
   const cwd = options.cwd ?? process.cwd();
@@ -70,7 +73,10 @@ export async function remediate(cveId: string, options: RemediateOptions = {}): 
     throw error;
   }
 
+  report = applySimulationMetadata(report, options);
+
   addRemediateResultSteps(evidence, normalizedCveId, report);
+  addRemediateDispositionStep(evidence, normalizedCveId, report);
 
   const evidenceFile = writeRemediateEvidence(cwd, evidence);
 

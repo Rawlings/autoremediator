@@ -10,6 +10,19 @@ Related references:
 - [Integrations](integrations.md)
 - [Policy and Safety](policy-and-safety.md)
 
+## Scan Output Summaries
+
+Scanner-driven runs can emit orchestration-friendly aggregates in addition to per-CVE reports:
+
+- `strategyCounts`
+- `dependencyScopeCounts`
+- `dispositionCounts`
+- `unresolvedByReason`
+- `escalationCounts`
+- `simulationSummary` when `simulationMode` is enabled in dry-run or preview contexts
+
+When `containmentMode` blocks an applied escalation outcome, the affected result is reported with `unresolvedReason: policy-blocked`.
+
 ## Supported Formats
 
 - `npm-audit`

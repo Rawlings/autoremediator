@@ -37,6 +37,7 @@ For naming canon, terminology normalization, and cross-surface parity rules, pai
 - Backward-compatible (or intentionally breaking) API changes with updated types.
 - Updated `packages/core/src/openapi/server.ts` route if schema changes.
 - Updated README / `llms.txt` when public interface changes.
+- Explicit touchpoint verification across SDK, CLI, MCP, OpenAPI, and adjacent delivery surfaces (GitHub Action/workflows and GitHub App when applicable).
 
 ## Public API Reference
 
@@ -63,6 +64,7 @@ ScanInputFormat
 - `schemaVersion` fields must remain `"1.0"` unless a formal versioning process is followed.
 - Breaking changes must be documented in CHANGELOG and reflected in `llms.txt`.
 - `ciExitCode` must remain a pure function (no side effects).
+- Any public-option or report-field change must be checked for parity in CLI/MCP/OpenAPI plus GitHub action/workflow and GitHub App bridges if they expose those options.
 
 ## Verification Checklist
 

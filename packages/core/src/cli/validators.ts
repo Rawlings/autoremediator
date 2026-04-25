@@ -32,6 +32,10 @@ export function validateSharedCommandOptions(opts: CommandOptions): void {
     throw new Error("--create-change-request cannot be used with --dry-run or --preview.");
   }
 
+  if (opts.simulationMode && !(opts.dryRun || opts.preview)) {
+    throw new Error("--simulation-mode requires --dry-run or --preview.");
+  }
+
   if (opts.createChangeRequest && opts.changeRequestGrouping && opts.changeRequestGrouping !== "all") {
     throw new Error("--change-request-grouping currently supports only 'all'.");
   }

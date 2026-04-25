@@ -1,4 +1,4 @@
-import type { CveSeverity } from "autoremediator";
+import type { CveSeverity, DispositionPolicy, EscalationGraph } from "autoremediator";
 
 export interface AutoremediatorRepoConfig {
   // Remediation behavior
@@ -26,6 +26,10 @@ export interface AutoremediatorRepoConfig {
   patchConfidenceThresholds?: Partial<Record<"low" | "medium" | "high", number>>;
   dynamicModelRouting?: boolean;
   dynamicRoutingThresholdChars?: number;
+  // Autonomous defense operator fields
+  dispositionPolicy?: DispositionPolicy;
+  containmentMode?: boolean;
+  escalationGraph?: EscalationGraph;
   // Pull request creation
   pullRequest?: {
     enabled?: boolean;

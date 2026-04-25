@@ -56,6 +56,22 @@ Every planner handoff packet must include:
 - Files expected to change.
 - Required skills/instructions for execution.
 - Acceptance checks for architecture, tests, docs, and governance.
+- Cross-surface touchpoint matrix covering: SDK, CLI, MCP, OpenAPI, policy/options schema, GitHub Action/workflows, GitHub App, docs, llms, and AGENTS references.
+
+### Cross-Surface Touchpoint Gate
+
+For any user-visible behavior or contract change, planner and developer phases must both verify touchpoints across all relevant delivery surfaces before completion:
+
+- Runtime + shared contracts (`packages/core/src/platform`, `packages/core/src/api/contracts.ts`, option schema)
+- SDK exports and public types
+- CLI options, validation, and JSON output parity
+- MCP tool schemas and dispatch wiring
+- OpenAPI request/response schema + route parity
+- GitHub action and reusable workflow inputs/forwarding (when applicable)
+- GitHub App policy/config bridge and handler forwarding (when applicable)
+- Docs/readmes/changelog/llms/governance references
+
+No phase may close with an implicit assumption that non-edited surfaces are unaffected; explicit verification is required.
 
 ### Custom Agent Files
 

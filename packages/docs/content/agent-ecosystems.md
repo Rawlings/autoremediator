@@ -11,6 +11,16 @@ Related references:
 - [CLI Reference](cli.md)
 - [Policy and Safety](policy-and-safety.md)
 
+## Autonomous Operator Outputs
+
+Agent-facing integrations can consume deterministic operator metadata, including:
+
+- per-result `disposition` and `dispositionReason`
+- optional `consensusVerdict` for high-risk patch verification
+- per-result `escalationAction`
+- dry-run or preview `simulation` details
+- scan/CI rollups such as `dispositionCounts`, `escalationCounts`, and `simulationSummary`
+
 ## Why This Surface Exists
 
 Agent workflows usually need:
@@ -47,6 +57,8 @@ Available MCP operations:
 - `remediate`
 - `planRemediation`
 - `remediateFromScan`
+- `remediatePortfolio`
+- `updateOutdated`
 - `listPatchArtifacts`
 - `inspectPatchArtifact`
 - `validatePatchArtifact`
@@ -66,6 +78,8 @@ Primary routes:
 - `POST /remediate`
 - `POST /plan-remediation`
 - `POST /remediate-from-scan`
+- `POST /remediate-portfolio`
+- `POST /update-outdated`
 - `POST /patches/list`
 - `POST /patches/inspect`
 - `POST /patches/validate`
@@ -103,6 +117,7 @@ import { planRemediation, remediate } from "autoremediator";
 const plan = await planRemediation("CVE-2021-23337", {
   cwd: process.cwd(),
   llmProvider: "local",
+  simulationMode: true,
   requestId: "req-001",
   sessionId: "nightly-security",
 });
@@ -111,6 +126,7 @@ if (plan.results.every((r) => r.unresolvedReason !== "policy-blocked")) {
   await remediate("CVE-2021-23337", {
     cwd: process.cwd(),
     llmProvider: "remote",
+    containmentMode: true,
     requestId: "req-001",
     sessionId: "nightly-security",
     parentRunId: plan.correlation?.requestId,

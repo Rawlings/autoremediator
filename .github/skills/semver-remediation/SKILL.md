@@ -33,12 +33,14 @@ user-invocable: true
 - Correct vulnerable package detection.
 - Lowest safe version selection.
 - Stable PatchResult strategy field.
+- Touchpoint impact classification for user-visible behavior changes (`not-affected` vs `requires updates`) across SDK/CLI/MCP/OpenAPI/docs.
 
 ## Guardrails
 
 - Never propose downgrades.
 - Respect major bump policy at apply time.
 - Return strategy="none" when safe upgrade is unavailable.
+- If semver behavior changes alter report fields/reasons/outcomes, verify and update all public delivery surfaces in the same change set.
 
 ## Verification Checklist
 

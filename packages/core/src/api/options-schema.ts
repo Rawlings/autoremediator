@@ -11,6 +11,7 @@ export const OPTION_DESCRIPTIONS = {
   packageManager: "Package manager override (auto-detected by default)",
   dryRun: "If true, plan changes but write nothing",
   preview: "If true, enforce non-mutating preview mode",
+  simulationMode: "If true, attach deterministic simulation and rebuttal metadata for dry-run or preview execution",
   runTests: "Run package-manager test command after applying fix",
   llmProvider: "LLM provider override (remote|local)",
   model: "LLM model override",
@@ -57,6 +58,14 @@ export const OPTION_DESCRIPTIONS = {
   slaCheck: "Compare CVE publication dates against configured SLA windows and include breach records in the report output",
   skipUnreachable: "Skip remediation for CVEs where the vulnerable package cannot be reached from any project entry point (requires static import analysis)",
   regressionCheck: "After applying a fix, verify the patched version falls outside the CVE's vulnerable range and flag any regression in the report",
+  dispositionPolicy: "Autonomous disposition policy controlling when fixes are auto-applied, held, or escalated",
+  dispositionPolicyMinConfidenceForAutoApply: "Minimum patch confidence (0–1) required for auto-apply disposition",
+  dispositionPolicyHoldForTransitive: "Hold transitive dependency fixes for human review instead of auto-applying",
+  dispositionPolicyEscalateOnSlaBreachSeverities: "CVE severities that trigger escalate disposition on SLA breach",
+  dispositionPolicyEscalateOnKev: "Escalate disposition for CVEs with active CISA KEV status",
+  containmentMode: "Block escalation-disposition results from being applied and record containment in evidence",
+  campaignMode: "Enable portfolio campaign mode to risk-rank targets before execution",
+  escalationGraph: "Optional mapping from unresolved reasons to intended escalation actions",
 } as const;
 
 export function createConstraintSchemaProperties(): Record<string, JsonSchemaProperty> {
@@ -77,10 +86,12 @@ export function createConstraintSchemaProperties(): Record<string, JsonSchemaPro
 export function createRemediateOptionSchemaProperties(options?: {
   includeDryRun?: boolean;
   includePreview?: boolean;
+  includeSimulationMode?: boolean;
   includeEvidence?: boolean;
 }): Record<string, JsonSchemaProperty> {
   const includeDryRun = options?.includeDryRun ?? true;
   const includePreview = options?.includePreview ?? true;
+  const includeSimulationMode = options?.includeSimulationMode ?? true;
   const includeEvidence = options?.includeEvidence ?? true;
 
   return {
@@ -88,6 +99,7 @@ export function createRemediateOptionSchemaProperties(options?: {
     packageManager: { type: "string", enum: [...PACKAGE_MANAGER_VALUES], description: OPTION_DESCRIPTIONS.packageManager },
     ...(includeDryRun ? { dryRun: { type: "boolean", description: OPTION_DESCRIPTIONS.dryRun } } : {}),
     ...(includePreview ? { preview: { type: "boolean", description: OPTION_DESCRIPTIONS.preview } } : {}),
+    ...(includeSimulationMode ? { simulationMode: { type: "boolean", description: OPTION_DESCRIPTIONS.simulationMode } } : {}),
     runTests: { type: "boolean", description: OPTION_DESCRIPTIONS.runTests },
     llmProvider: { type: "string", enum: [...LLM_PROVIDER_VALUES], description: OPTION_DESCRIPTIONS.llmProvider },
     model: { type: "string", description: OPTION_DESCRIPTIONS.model },
@@ -146,6 +158,93 @@ export function createRemediateOptionSchemaProperties(options?: {
     slaCheck: { type: "boolean", description: OPTION_DESCRIPTIONS.slaCheck },
     skipUnreachable: { type: "boolean", description: OPTION_DESCRIPTIONS.skipUnreachable },
     regressionCheck: { type: "boolean", description: OPTION_DESCRIPTIONS.regressionCheck },
+    dispositionPolicy: {
+      type: "object",
+      description: OPTION_DESCRIPTIONS.dispositionPolicy,
+      properties: {
+        minConfidenceForAutoApply: { type: "number", minimum: 0, maximum: 1, description: OPTION_DESCRIPTIONS.dispositionPolicyMinConfidenceForAutoApply },
+        holdForTransitive: { type: "boolean", description: OPTION_DESCRIPTIONS.dispositionPolicyHoldForTransitive },
+        escalateOnSlaBreachSeverities: {
+          type: "array",
+          items: { type: "string", enum: ["critical", "high", "medium", "low"] },
+          description: OPTION_DESCRIPTIONS.dispositionPolicyEscalateOnSlaBreachSeverities,
+        },
+        escalateOnKev: { type: "boolean", description: OPTION_DESCRIPTIONS.dispositionPolicyEscalateOnKev },
+      },
+    },
+    containmentMode: { type: "boolean", description: OPTION_DESCRIPTIONS.containmentMode },
+    campaignMode: { type: "boolean", description: OPTION_DESCRIPTIONS.campaignMode },
+    escalationGraph: {
+      type: "object",
+      description: OPTION_DESCRIPTIONS.escalationGraph,
+      properties: {
+        "consensus-failed": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+        "constraint-blocked": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+        "transitive-dependency": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+        "install-failed": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+        "major-bump-required": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+        "no-safe-version": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+        "override-apply-failed": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+        "package-json-not-found": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+        "patch-apply-failed": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+        "patch-confidence-too-low": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+        "patch-generation-failed": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+        "patch-validation-failed": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+        "policy-blocked": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+        "requires-llm-fallback": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+        "source-fetch-failed": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+        "validation-failed": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+      },
+      additionalProperties: false,
+    },
   };
 }
 
@@ -183,6 +282,10 @@ export function createScanReportSchemaProperties(): Record<string, JsonSchemaPro
       type: "object",
       additionalProperties: { type: "number" },
     },
+    escalationCounts: {
+      type: "object",
+      additionalProperties: { type: "number" },
+    },
     patchesDir: { type: "string" },
     correlation: { type: "object" },
     provenance: { type: "object" },
@@ -192,12 +295,13 @@ export function createScanReportSchemaProperties(): Record<string, JsonSchemaPro
     estimatedCostUsd: { type: "number" },
     totalLlmLatencyMs: { type: "number" },
     changeRequests: { type: "array", items: { type: "object" } },
+    simulationSummary: { type: "object" },
   };
 }
 
 export function createUpdateOutdatedOptionSchemaProperties(): Record<string, JsonSchemaProperty> {
   return {
-    ...createRemediateOptionSchemaProperties({ includeEvidence: true }),
+    ...createRemediateOptionSchemaProperties({ includeEvidence: true, includeSimulationMode: false }),
     includeTransitive: { type: "boolean", description: OPTION_DESCRIPTIONS.includeTransitive },
   };
 }

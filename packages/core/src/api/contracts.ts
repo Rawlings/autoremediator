@@ -2,11 +2,14 @@ import type {
   ChangeRequestResult,
   CorrelationContext,
   DependencyScopeCounts,
+  DispositionCounts,
+  EscalationCounts,
   PatchStrategyCounts,
   ProvenanceContext,
   RemediationConstraints,
   RemediateOptions,
   RemediationReport,
+  SimulationSummary,
   SlaBreach,
   UnresolvedReasonCounts,
 } from "../platform/types.js";
@@ -37,6 +40,7 @@ export interface ScanReport {
   strategyCounts?: PatchStrategyCounts;
   dependencyScopeCounts?: DependencyScopeCounts;
   unresolvedByReason?: UnresolvedReasonCounts;
+  escalationCounts?: EscalationCounts;
   patchesDir?: string;
   correlation?: CorrelationContext;
   provenance?: ProvenanceContext;
@@ -47,6 +51,8 @@ export interface ScanReport {
   totalLlmLatencyMs?: number;
   slaBreaches?: SlaBreach[];
   changeRequests?: ChangeRequestResult[];
+  dispositionCounts?: DispositionCounts;
+  simulationSummary?: SimulationSummary;
 }
 
 export interface CiSummary {
@@ -68,6 +74,7 @@ export interface CiSummary {
   strategyCounts?: PatchStrategyCounts;
   dependencyScopeCounts?: DependencyScopeCounts;
   unresolvedByReason?: UnresolvedReasonCounts;
+  escalationCounts?: EscalationCounts;
   patchesDir?: string;
   correlation?: CorrelationContext;
   provenance?: ProvenanceContext;
@@ -78,4 +85,6 @@ export interface CiSummary {
   totalLlmLatencyMs?: number;
   slaBreaches?: SlaBreach[];
   changeRequests?: ChangeRequestResult[];
+  dispositionCounts?: DispositionCounts;
+  simulationSummary?: SimulationSummary;
 }

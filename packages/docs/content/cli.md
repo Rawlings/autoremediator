@@ -13,6 +13,15 @@ Related references:
 - [Policy and Safety](policy-and-safety.md)
 - [Integrations](integrations.md)
 
+## Autonomous Operator Flags
+
+The CLI exposes autonomous operator controls in addition to base remediation behavior:
+
+- `--simulation-mode` for planned mutations and rebuttal findings in dry-run/preview flows
+- `--containment-mode` for blocking applied escalation outcomes
+- `--min-confidence-for-auto-apply`, `--hold-for-transitive`, and `--escalate-on-kev` for `dispositionPolicy`
+- `--campaign-mode` for portfolio target risk ranking
+
 ## Command Modes
 
 Single CVE mode (short form):
@@ -52,6 +61,7 @@ When to use which mode:
 | `--package-manager <npm|pnpm|yarn>` | install/update tool selection | avoids ambiguous lockfile detection in custom pipelines |
 | `--dry-run` | simulation-only execution | validates policy and expected actions without file mutation |
 | `--preview` | non-mutating remediation preview mode | enables planning flows without write side effects |
+| `--simulation-mode` | deterministic simulation metadata | adds planned mutation and rebuttal summaries to dry-run or preview results |
 | `--run-tests` | post-apply validation | reduces risk of introducing breaking dependency changes |
 | `--llm-provider <remote|local>` | patch-generation provider selection | controls determinism, cost, and fallback behavior |
 | `--model <name>` | explicit model override | pins runtime model behavior for deterministic environments |
@@ -74,6 +84,9 @@ When to use which mode:
 | `--source <src>` | source system metadata | tags run origin (`cli`, `sdk`, `mcp`, `openapi`, `unknown`) |
 | `--direct-dependencies-only` | direct-only remediation constraint | blocks indirect dependency result application |
 | `--prefer-version-bump` | bump-only remediation constraint | rejects patch-file outcomes when bump policy is required |
+| `--min-confidence-for-auto-apply <value>` | minimum confidence for automatic apply classification | moves lower-confidence successful results into hold-for-approval instead of auto-apply |
+| `--hold-for-transitive` | require approval for transitive dependency remediations | keeps override- or transitive-targeted outcomes out of auto-apply flows |
+| `--escalate-on-kev` | escalate when KEV exploit signal is active | prioritizes actively exploited CVEs for operator handling |
 | `--install-mode <deterministic|prefer-offline|standard>` | install command profile for apply and rollback steps | lets operators trade reproducibility vs install flexibility |
 | `--install-prefer-offline <true|false>` | force prefer-offline flag behavior | useful for cache-heavy CI or when diagnosing stale cache issues |
 | `--enforce-frozen-lockfile <true|false>` | force lockfile-strict install behavior | controls whether install steps must preserve lockfile determinism |
@@ -92,6 +105,7 @@ When to use which mode:
 | `--skip-unreachable` | skip remediation for packages not reachable from project source code | reduces noise by excluding packages that cannot be triggered by the running application |
 | `--regression-check` | verify patched version is outside the vulnerable range after apply | catches cases where a fix lands within a still-vulnerable range and flags the result |
 | `--output-format <text|json|sarif>` | machine-readable or standardized output selection | uses `json` for automation and `sarif` for security tooling integration |
+| `--containment-mode` | block applied remediation outcomes when disposition is `escalate` | prevents autonomous apply on escalation cases and records containment in evidence (`unresolvedReason=policy-blocked`) |
 
 ## Scan Mode Options
 
@@ -135,7 +149,13 @@ Available commands:
 - `autoremediator portfolio --targets-file ./targets.json`
 - `autoremediator update-outdated`
 
-Portfolio target files are JSON arrays. Each element provides a `cwd` and either `cveId` or `inputPath`/`audit`:
+Portfolio target files are JSON arrays. Each element provides a `cwd` and either `cveId` or `inputPath`/`audit`.
+
+Add `--campaign-mode` to enable risk-ranked execution. Targets with a `riskHint` field (providing `severity`, `exploitSignal`, and/or `slaBreached`) are scored and executed highest-risk first. Each result in the portfolio report includes a `threatRank` field reflecting its position in the ranked order:
+
+```bash
+autoremediator portfolio --targets-file ./targets.json --campaign-mode
+```
 
 ```json
 [
@@ -204,6 +224,12 @@ When `--dry-run` is enabled:
 - file mutations must not occur
 - unresolved reasons still surface for operator action
 
+When `--simulation-mode` is enabled alongside `--dry-run` or `--preview`:
+
+- each result includes `simulation.plannedMutations` and `simulation.rebuttalFindings`
+- remediation, scan, and CI summaries include `simulationSummary`
+- mutating runs are rejected; use `planRemediation` or add `--dry-run`/`--preview`
+
 Use `--dry-run` first when onboarding a new repository or policy file.
 
 ## Provider Selection Guidance
@@ -221,9 +247,10 @@ Single CVE dry-run preview:
 
 ```bash
 autoremediator CVE-2021-23337 --dry-run --output-format json
+autoremediator CVE-2021-23337 --dry-run --simulation-mode --output-format json
 
 # explicit preview + correlation context
-autoremediator cve CVE-2021-23337 --preview --request-id req-42 --session-id nightly-security --output-format json
+autoremediator cve CVE-2021-23337 --preview --simulation-mode --request-id req-42 --session-id nightly-security --output-format json
 
 # resumable + constrained run
 autoremediator CVE-2021-23337 --idempotency-key nightly-cve-2021-23337 --resume --direct-dependencies-only --prefer-version-bump --actor sec-bot --source cli --output-format json
@@ -258,12 +285,16 @@ Current CI exit semantics:
 
 Use summary data to distinguish fully remediated, partially remediated, and unresolved outcomes in downstream automation.
 
+Summary payloads include `escalationCounts` to expose intended escalation actions for unresolved outcomes without executing external notifications or ticketing actions.
+
 Summary fields to watch:
 
 - `patchCount`: count of patch-file remediations attempted in the scan run
 - `strategyCounts`: aggregate counts for `version-bump`, `override`, `patch-file`, and `none`
 - `dependencyScopeCounts`: aggregate counts for `direct` and `transitive` remediation outcomes
+- `dispositionCounts`: aggregate counts for `auto-apply`, `simulate-only`, `hold-for-approval`, and `escalate`
 - `unresolvedByReason`: aggregate counts for machine-readable unresolved causes such as `no-safe-version`, `constraint-blocked`, and `patch-validation-failed`
+- `simulationSummary`: aggregate planned-mutation and rebuttal counts for dry-run or preview simulation flows
 
 Patch artifact fields to watch:
 

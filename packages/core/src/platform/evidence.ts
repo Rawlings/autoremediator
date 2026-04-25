@@ -1,6 +1,13 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { DependencyScopeCounts, PatchStrategyCounts, UnresolvedReasonCounts } from "./types.js";
+import type {
+  DependencyScopeCounts,
+  DispositionCounts,
+  EscalationCounts,
+  PatchStrategyCounts,
+  SimulationSummary,
+  UnresolvedReasonCounts,
+} from "./types.js";
 
 export interface EvidenceStep {
   at: string;
@@ -31,6 +38,10 @@ export interface EvidenceSummary {
   totalLlmLatencyMs?: number;
   exploitSignalCount?: number;
   slaBreachCount?: number;
+  dispositionCounts?: DispositionCounts;
+  escalationCounts?: EscalationCounts;
+  containmentCount?: number;
+  simulationSummary?: SimulationSummary;
 }
 
 export interface EvidenceLog {

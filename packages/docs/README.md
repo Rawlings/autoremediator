@@ -63,6 +63,14 @@ The docs should keep these sources visible and explain that remediation outcomes
 
 Public API naming canon across docs and examples is: `runTests`, `policy`, `evidence`, `patchCount`, and `patchesDir`.
 
+Autonomous operator topics covered by the docs set include:
+
+- disposition and containment policy controls
+- escalation routing and aggregate reporting
+- simulation-mode planning outputs
+- portfolio campaign ranking and `threatRank`
+- GitHub Action, reusable workflow, MCP, OpenAPI, and GitHub App delivery surfaces
+
 Patch lifecycle operation names must remain consistent across docs and examples:
 
 - `listPatchArtifacts`

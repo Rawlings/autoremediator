@@ -16,6 +16,7 @@ export type {
   ProviderSafetyProfile,
   RemediateOptions,
   RemediationReport,
+  ResultSimulation,
   CveDetails,
   AffectedPackage,
   InventoryPackage,
@@ -35,6 +36,13 @@ export type {
   PatchConfidenceThresholds,
   UnresolvedReason,
   UnresolvedReasonCounts,
+  EscalationAction,
+  EscalationGraph,
+  EscalationCounts,
+  Disposition,
+  DispositionPolicy,
+  DispositionSignals,
+  DispositionCounts,
   PatchValidationPhase,
   PatchValidationPhaseName,
   PortfolioReport,
@@ -52,6 +60,11 @@ export type {
   ReachabilityEvidence,
   SbomEntry,
   SbomStatus,
+  SimulationMutation,
+  SimulationMutationTarget,
+  SimulationRebuttalCode,
+  SimulationRebuttalFinding,
+  SimulationSummary,
 } from "../platform/types.js";
 export type { ScanInputFormat } from "../scanner/index.js";
 export type { ScanOptions, ScanReport, CiSummary } from "./contracts.js";

@@ -1,7 +1,9 @@
 import { fetchPackageSourceTool } from "../tools/fetch-package-source.js";
 import { generatePatchTool } from "../tools/generate-patch/index.js";
 import { applyPatchFileTool } from "../tools/apply-patch-file/index.js";
+import { runConsensusGate } from "./consensus-gate.js";
 import type {
+  ConsensusVerdict,
   LlmUsageMetrics,
   PatchConfidenceThresholds,
   PatchResult,
@@ -59,6 +61,7 @@ export async function tryLocalPatchFallback(params: {
 }): Promise<{ result: PatchResult; steps: number; usage: LlmUsageMetrics[] }> {
   const usage: LlmUsageMetrics[] = [];
   let steps = 0;
+  let consensusVerdict: ConsensusVerdict | undefined;
 
   const sourceResult = (await (fetchPackageSourceTool as any).execute({
     packageName: params.packageName,
@@ -177,38 +180,28 @@ export async function tryLocalPatchFallback(params: {
     !params.dryRun
   ) {
     const consensusProvider = resolvePatchProvider(params.consensusProvider ?? primaryProvider);
-    const consensus = (await (generatePatchTool as any).execute({
+    consensusVerdict = await runConsensusGate({
       packageName: params.packageName,
       vulnerableVersion: params.vulnerableVersion,
       cveId: params.cveId,
       cveSummary: params.cveSummary,
       sourceFiles: sourceResult.sourceFiles,
-      vulnerabilityCategory: "unknown",
-      dryRun: false,
-      llmProvider: consensusProvider,
-      model: params.consensusModel,
       policy: params.policy,
       cwd: params.cwd,
+      llmProvider: primaryProvider,
+      model: params.model,
+      consensusProvider,
+      consensusModel: params.consensusModel,
       modelPersonality: params.modelPersonality,
       providerSafetyProfile: params.providerSafetyProfile,
       patchConfidenceThresholds: params.patchConfidenceThresholds,
       dynamicModelRouting: params.dynamicModelRouting,
       dynamicRoutingThresholdChars: params.dynamicRoutingThresholdChars,
-    })) as {
-      success?: boolean;
-      patches?: Array<{ filePath: string; unifiedDiff: string }>;
-      llmProvider?: "remote" | "local";
-      llmModel?: string;
-      latencyMs?: number;
-      estimatedCostUsd?: number;
-      confidence?: number;
-      error?: string;
-    };
+      primaryPatches: patchResult.patches ?? [],
+    });
     steps += 1;
 
-    const primaryDiff = patchResult.patches?.[0]?.unifiedDiff;
-    const secondaryDiff = consensus.patches?.[0]?.unifiedDiff;
-    if (!consensus.success || !primaryDiff || !secondaryDiff || primaryDiff !== secondaryDiff) {
+    if (!consensusVerdict.agreed) {
       return {
         steps,
         usage,
@@ -220,20 +213,18 @@ export async function tryLocalPatchFallback(params: {
           dryRun: params.dryRun,
           dependencyScope: params.dependencyScope,
           unresolvedReason: "consensus-failed",
-          message: consensus.error ?? "High-risk patch did not pass consensus verification.",
+          message: consensusVerdict.reason ?? "High-risk patch did not pass consensus verification.",
         },
       };
     }
 
-    if (consensus.llmProvider && consensus.llmModel) {
-      usage.push({
-        purpose: "patch-consensus",
-        provider: consensus.llmProvider,
-        model: consensus.llmModel,
-        latencyMs: consensus.latencyMs,
-        estimatedCostUsd: consensus.estimatedCostUsd,
-      });
-    }
+    usage.push({
+      purpose: "patch-consensus",
+      provider: consensusProvider,
+      model: consensusVerdict.model,
+      latencyMs: consensusVerdict.latencyMs,
+      estimatedCostUsd: consensusVerdict.estimatedCostUsd,
+    });
   }
 
   const applyResult = (await (applyPatchFileTool as any).execute({
@@ -291,6 +282,7 @@ export async function tryLocalPatchFallback(params: {
       dependencyScope: params.dependencyScope,
       confidence: patchResult.confidence,
       riskLevel: patchResult.riskLevel,
+      consensusVerdict,
       unresolvedReason:
         !Boolean(applyResult.applied) && !Boolean(applyResult.dryRun)
           ? applyResult.validation?.passed === false

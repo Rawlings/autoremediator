@@ -25,6 +25,7 @@ export const REMEDIATION_REPORT_SCHEMA = {
     provenance: { type: "object" },
     constraints: { type: "object" },
     resumedFromCache: { type: "boolean" },
+    simulationSummary: { type: "object" },
   },
 } as const;
 

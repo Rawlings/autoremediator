@@ -1,6 +1,7 @@
 import { resolveProvider } from "../../platform/config.js";
 import { loadPolicy } from "../../platform/policy.js";
 import type {
+  EscalationGraph,
   ExploitSignalOverridePolicy,
   PatchConfidenceThresholds,
   RemediateOptions,
@@ -33,6 +34,7 @@ export interface LocalRunOptions {
   slaPolicy?: SlaPolicy;
   skipUnreachable: boolean;
   regressionCheck: boolean;
+  escalationGraph?: EscalationGraph;
 }
 
 export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptions {
@@ -77,5 +79,6 @@ export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptio
     slaPolicy: loadedPolicy.sla,
     skipUnreachable: options.skipUnreachable ?? loadedPolicy.skipUnreachable ?? false,
     regressionCheck: options.regressionCheck ?? false,
+    escalationGraph: options.escalationGraph ?? loadedPolicy.escalationGraph,
   };
 }

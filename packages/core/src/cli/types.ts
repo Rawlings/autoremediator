@@ -7,6 +7,7 @@ export interface CommandOptions {
   patchesDir?: string;
   dryRun: boolean;
   preview: boolean;
+  simulationMode: boolean;
   runTests: boolean;
   outputFormat: OutputFormat;
   llmProvider?: "remote" | "local";
@@ -56,6 +57,11 @@ export interface CommandOptions {
   changeRequestBaseBranch?: string;
   changeRequestBranchPrefix?: string;
   changeRequestTitlePrefix?: string;
+  minConfidenceForAutoApply?: number;
+  holdForTransitive?: boolean;
+  escalateOnKev?: boolean;
+  containmentMode?: boolean;
+  campaignMode?: boolean;
 }
 
 export function isCveId(value: string): boolean {

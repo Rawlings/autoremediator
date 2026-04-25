@@ -14,7 +14,7 @@
     "url": "https://github.com/Rawlings/autoremediator/issues"
   },
   "engines": {
-    "vscode": "^1.90.0"
+    "vscode": "^1.115.0"
   },
   "categories": [
     "Linters",
@@ -55,9 +55,9 @@
   },
   "devDependencies": {
     "@types/node": "^24.12.2",
-    "@types/vscode": "^1.115.0",
-    "@vscode/vsce": "^3.8.0",
+    "@types/vscode": "^1.116.0",
+    "@vscode/vsce": "^3.9.1",
     "esbuild": "^0.28.0",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.3"
   }
 }

@@ -18,6 +18,7 @@ describe("openapi server", () => {
       planRoute.post.requestBody.content["application/json"].schema.properties.options.properties;
 
     expect(optionsProps.requestId).toBeDefined();
+    expect(optionsProps.simulationMode).toBeDefined();
     expect(optionsProps.sessionId).toBeDefined();
     expect(optionsProps.parentRunId).toBeDefined();
     expect(optionsProps.idempotencyKey).toBeDefined();
@@ -37,6 +38,15 @@ describe("openapi server", () => {
     expect(responseProps.strategyCounts).toBeDefined();
     expect(responseProps.dependencyScopeCounts).toBeDefined();
     expect(responseProps.unresolvedByReason).toBeDefined();
+    expect(responseProps.simulationSummary).toBeDefined();
+  });
+
+  it("does not expose simulationMode on update-outdated options", () => {
+    const updateOutdatedRoute = (OPENAPI_SPEC.paths as Record<string, any>)["/update-outdated"];
+    const optionsProps =
+      updateOutdatedRoute.post.requestBody.content["application/json"].schema.properties.options.properties;
+
+    expect(optionsProps.simulationMode).toBeUndefined();
   });
 
   it("creates server with injected dependencies", () => {

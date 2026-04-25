@@ -84,7 +84,28 @@ packages/docs/content/integrations.md
 packages/docs/content/policy-and-safety.md
 packages/docs/content/contributor-guide.md
 packages/docs/content/changelog.md
+packages/docs/content/getting-started.md
+packages/docs/content/scanner-inputs.md
+packages/docs/content/agent-ecosystems.md
+packages/docs/README.md
+packages/core/README.md
+action.yml
+.github/workflows/reusable-remediate-from-audit.yml
 ```
+
+## Cross-Surface Touchpoint Audit
+
+When governance changes involve public behavior/contracts, verify there is explicit coverage or rationale for all applicable touchpoints:
+
+- SDK (`packages/core/src/api/**`)
+- CLI (`packages/core/src/cli/**`)
+- MCP (`packages/core/src/mcp/**`)
+- OpenAPI (`packages/core/src/openapi/**`)
+- GitHub Action/workflows (`action.yml`, `.github/workflows/**`)
+- GitHub App bridge (`packages/github-app/src/**`)
+- Docs/readmes/AGENTS/llms/changelog
+
+If a surface is not updated, the review must still record `verified-not-affected`.
 
 ## Instruction Frontmatter Rules
 
@@ -175,3 +196,4 @@ validatePatchArtifact
 - [ ] All tools in `pipeline.ts` are listed in `tool-contracts.instructions.md`.
 - [ ] All nine canonical runtime tools appear in `tool-contracts.instructions.md`.
 - [ ] Patch lifecycle operation names are consistent across AGENTS, docs, and tool contracts.
+- [ ] Touchpoint coverage is explicit across SDK/CLI/MCP/OpenAPI/GitHub delivery/GitHub App/docs artifacts for user-visible contract changes.

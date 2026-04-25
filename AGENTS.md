@@ -77,6 +77,18 @@ Across SDK, CLI mapping, MCP, and OpenAPI, use canonical public terms:
 
 Do not introduce synonym fields for these concepts.
 
+## Autonomous Defense Controls
+
+These runtime controls are additive across the public surfaces described above:
+
+- `dispositionPolicy`: classifies each remediation result as `auto-apply`, `simulate-only`, `hold-for-approval`, or `escalate` using confidence, transitive scope, KEV, and SLA signals.
+- `containmentMode`: blocks applied results whose disposition resolves to `escalate`, rewriting them to unresolved `policy-blocked` outcomes.
+- `escalationGraph`: maps unresolved reasons to intended follow-up actions such as `open-issue`, `notify-channel`, `create-draft-pr`, or `hold-branch`.
+- `campaignMode`: risk-ranks portfolio targets using `riskHint` signals and returns `threatRank` on each portfolio result.
+- `simulationMode`: dry-run and preview only; adds planned mutation metadata, rebuttal findings, and aggregate `simulationSummary` output.
+
+Aggregate reporting fields produced by these controls include `dispositionCounts`, `escalationCounts`, and `simulationSummary`.
+
 Patch lifecycle operation naming canon:
 
 - `listPatchArtifacts`
