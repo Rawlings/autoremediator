@@ -34,4 +34,4 @@ jobs:
         working-directory: packages/vscode-extension
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: npx @vscode/vsce publish --no-dependencies --pat "$VSCE_PAT"
+        run: npx @vscode/vsce@3.3.2 publish --no-dependencies --pat "$VSCE_PAT"

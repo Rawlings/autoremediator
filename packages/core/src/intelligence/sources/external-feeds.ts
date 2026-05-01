@@ -12,6 +12,26 @@ import { httpClient } from "../../platform/http-client.js";
 async function probeFeed(url: string, cveId: string, token?: string): Promise<string | undefined> {
   try {
     const feedUrl = new URL(url);
+
+    // Block SSRF to private/loopback/link-local addresses
+    const hostname = feedUrl.hostname.toLowerCase();
+    if (
+      hostname === "localhost" ||
+      /^127\./.test(hostname) ||
+      /^10\./.test(hostname) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+      /^192\.168\./.test(hostname) ||
+      hostname === "0.0.0.0" ||
+      /^169\.254\./.test(hostname) ||
+      hostname === "[::1]" ||
+      hostname === "::1"
+    ) {
+      return undefined;
+    }
+    if (feedUrl.protocol !== "https:" && feedUrl.protocol !== "http:") {
+      return undefined;
+    }
+
     feedUrl.searchParams.set("cve", cveId);
 
     const headers: Record<string, string> = {};

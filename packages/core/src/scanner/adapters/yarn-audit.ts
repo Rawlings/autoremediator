@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import type { NormalizedFinding } from "./npm-audit.js";
 
-const CVE_REGEX = /CVE-\d{4}-\d+/gi;
+const CVE_REGEX = /CVE-\d{4}-\d{1,7}/gi;
 
 function normalizeSeverity(raw?: string): NormalizedFinding["severity"] {
   if (!raw) return "UNKNOWN";

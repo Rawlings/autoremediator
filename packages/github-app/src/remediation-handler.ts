@@ -1,6 +1,6 @@
 import { access, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
-import { join } from "node:path";
+import { join, resolve, relative, isAbsolute } from "node:path";
 import { tmpdir } from "node:os";
 import { remediateFromScan, type CveSeverity, type ScanReport } from "autoremediator";
 import type { Octokit } from "@octokit/rest";
@@ -77,7 +77,14 @@ export function createDefaultRemediationHandler(options: DefaultRemediationHandl
       repoConfig = { ...DEFAULT_REPO_CONFIG };
     }
 
-    const cwd = repoConfig.cwd ?? process.cwd();
+    const rawCwd = repoConfig.cwd ?? process.cwd();
+    // Resolve and constrain cwd — must not escape the current working directory
+    const resolvedCwd = isAbsolute(rawCwd) ? rawCwd : resolve(process.cwd(), rawCwd);
+    const rel = relative(process.cwd(), resolvedCwd);
+    if (rel.startsWith("..") || rel.includes("\0")) {
+      throw new Error(`Repository config cwd escapes the working directory: ${rawCwd}`);
+    }
+    const cwd = resolvedCwd;
     const dryRun = repoConfig.dryRun;
     const runTests = repoConfig.runTests;
     const minimumSeverity = repoConfig.minimumSeverity;

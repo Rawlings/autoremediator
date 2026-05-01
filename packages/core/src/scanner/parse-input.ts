@@ -1,4 +1,4 @@
-import { extname } from "node:path";
+import { extname, resolve } from "node:path";
 import { readFileSync } from "node:fs";
 import { execa } from "execa";
 import { parseNpmAuditJsonFile, type NormalizedFinding } from "./adapters/npm-audit.js";
@@ -10,16 +10,21 @@ import type { ScanInputFormat } from "./index.js";
 import { detectPackageManager, resolveAuditCommand, type PackageManager } from "../platform/package-manager/index.js";
 
 export function parseScanInput(filePath: string, format: ScanInputFormat): NormalizedFinding[] {
-  const resolved = format === "auto" ? inferFormat(filePath) : format;
+  // Reject null bytes to prevent path injection attacks
+  if (filePath.includes("\0")) {
+    throw new Error("Invalid scan input path: path contains null bytes");
+  }
+  const resolvedPath = resolve(filePath);
+  const resolved = format === "auto" ? inferFormat(resolvedPath) : format;
 
   if (resolved === "npm-audit") {
-    return parseNpmAuditJsonFile(filePath);
+    return parseNpmAuditJsonFile(resolvedPath);
   }
   if (resolved === "yarn-audit") {
-    return parseYarnAuditJsonFile(filePath);
+    return parseYarnAuditJsonFile(resolvedPath);
   }
   if (resolved === "sarif") {
-    return parseSarifFile(filePath);
+    return parseSarifFile(resolvedPath);
   }
 
   throw new Error(`Unsupported input format: ${resolved}`);

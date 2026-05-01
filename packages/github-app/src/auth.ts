@@ -17,7 +17,11 @@ interface CachedInstallationToken {
 }
 
 function normalizePrivateKey(privateKey: string): string {
-  return privateKey.includes("\\n") ? privateKey.replace(/\\n/g, "\n") : privateKey;
+  const normalized = privateKey.includes("\\n") ? privateKey.replace(/\\n/g, "\n") : privateKey;
+  if (!normalized.includes("-----BEGIN") || !normalized.includes("-----END")) {
+    throw new Error("GitHub App private key does not appear to be valid PEM format");
+  }
+  return normalized;
 }
 
 function parseExpiresAtEpochMs(expiresAt: string | undefined): number | undefined {

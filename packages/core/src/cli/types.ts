@@ -67,5 +67,5 @@ export interface CommandOptions {
 }
 
 export function isCveId(value: string): boolean {
-  return /^CVE-\d{4}-\d+$/i.test(value);
+  return /^CVE-\d{4}-\d{1,7}$/i.test(value);
 }

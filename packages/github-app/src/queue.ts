@@ -157,7 +157,31 @@ function loadQueueState(filePath: string): QueueJob[] {
       return [];
     }
 
-    return parsed.jobs;
+    const validStatuses = new Set(["queued", "running", "completed", "failed"]);
+    const validEventNames = new Set(["check_suite", "push", "workflow_dispatch"]);
+
+    return parsed.jobs.filter((job): job is QueueJob => {
+      return (
+        job !== null &&
+        typeof job === "object" &&
+        typeof job.id === "string" &&
+        job.id.length > 0 &&
+        typeof job.eventName === "string" &&
+        validEventNames.has(job.eventName) &&
+        typeof job.status === "string" &&
+        validStatuses.has(job.status) &&
+        typeof job.attempts === "number" &&
+        Number.isInteger(job.attempts) &&
+        job.attempts >= 0 &&
+        typeof job.maxAttempts === "number" &&
+        Number.isInteger(job.maxAttempts) &&
+        job.maxAttempts > 0 &&
+        typeof job.nextRunAt === "string" &&
+        typeof job.createdAt === "string" &&
+        typeof job.updatedAt === "string" &&
+        (job.payload === null || typeof job.payload === "object")
+      );
+    });
   } catch {
     return [];
   }

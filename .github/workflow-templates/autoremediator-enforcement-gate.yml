@@ -5,6 +5,8 @@ on:
   push:
     branches: [main]
 
+permissions: {}
+
 jobs:
   gate:
     uses: rawlings/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v1

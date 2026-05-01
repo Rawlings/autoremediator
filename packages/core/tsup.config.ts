@@ -21,7 +21,7 @@ export default defineConfig([
     },
     format: ["esm"],
     dts: false,
-    sourcemap: true,
+    sourcemap: false,
     esbuildOptions(options) {
       options.platform = "node";
     },

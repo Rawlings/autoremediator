@@ -65,7 +65,7 @@ function normalizeConclusion(outcome: "success" | "partial" | "failed"): CheckCo
 
 function normalizeSummary(outcome: "success" | "partial" | "failed", reason?: string): string {
   if (reason && reason.length > 0) {
-    return reason;
+    return reason.length > 1024 ? reason.slice(0, 1024) : reason;
   }
 
   if (outcome === "success") {

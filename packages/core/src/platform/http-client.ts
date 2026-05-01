@@ -80,7 +80,19 @@ export async function httpClient(request: HttpClientRequest): Promise<HttpClient
 
   try {
     const res = await requestWithTimeout(url, init, timeout);
+
+    // Cap response size before reading to prevent memory exhaustion from
+    // malicious or compromised intelligence sources.
+    const MAX_RESPONSE_BYTES = 10 * 1024 * 1024; // 10 MB
+    const contentLength = res.headers?.get?.("content-length") ?? null;
+    if (contentLength && parseInt(contentLength, 10) > MAX_RESPONSE_BYTES) {
+      throw new HttpError(`Response too large (content-length: ${contentLength})`, "HTTP_ERROR");
+    }
+
     const text = await res.text();
+    if (Buffer.byteLength(text) > MAX_RESPONSE_BYTES) {
+      throw new HttpError("Response body exceeds 10 MB limit", "HTTP_ERROR");
+    }
 
     // Parse JSON if response has content, otherwise return empty object
     let data: unknown;

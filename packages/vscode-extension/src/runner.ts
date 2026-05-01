@@ -1,11 +1,11 @@
-import { exec, execFile } from "node:child_process";
+import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { writeFile, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
+import { randomBytes } from "node:crypto";
 
-const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
 
 export interface VulnFinding {
@@ -31,20 +31,20 @@ function findBin(cwd: string): { bin: string; extraArgs: string[] } {
 
 export async function scanForVulns(cwd: string): Promise<VulnFinding[]> {
   const pm = detectPackageManager(cwd);
-  const auditFile = join(tmpdir(), `ar-audit-${Date.now()}.json`);
+  const auditFile = join(tmpdir(), `ar-audit-${randomBytes(16).toString("hex")}.json`);
 
   try {
-    const auditCmd =
+    const [auditBin, ...auditArgs]: [string, ...string[]] =
       pm === "pnpm"
-        ? "pnpm audit --json"
+        ? ["pnpm", "audit", "--json"]
         : pm === "yarn"
-          ? "yarn audit --json"
-          : "npm audit --json";
+          ? ["yarn", "audit", "--json"]
+          : ["npm", "audit", "--json"];
 
     let auditOutput: string;
     try {
       // npm/pnpm/yarn audit exit non-zero when vulnerabilities are found — capture stdout anyway.
-      const result = await execAsync(auditCmd, { cwd, maxBuffer: 10 * 1024 * 1024 });
+      const result = await execFileAsync(auditBin, auditArgs, { cwd, maxBuffer: 10 * 1024 * 1024 });
       auditOutput = result.stdout;
     } catch (err: unknown) {
       const execErr = err as { stdout?: string };
@@ -71,6 +71,9 @@ export async function scanForVulns(cwd: string): Promise<VulnFinding[]> {
 }
 
 export async function applyFix(cveId: string, cwd: string): Promise<string> {
+  if (!/^CVE-\d{4}-\d{1,7}$/i.test(cveId)) {
+    throw new Error(`Invalid CVE ID format: ${cveId}`);
+  }
   const { bin, extraArgs } = findBin(cwd);
   const { stdout } = await execFileAsync(
     bin,

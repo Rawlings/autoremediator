@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.14.1
+
+### Fixed
+
+- Fixed floating `@latest` npm install in `Dockerfile` — the CLI container now installs `autoremediator@0.14.1` explicitly; version must be kept in sync with the package on release.
+- Fixed missing non-root user in `Dockerfile` — added `addgroup`/`adduser` block and `USER appuser` directive before `ENTRYPOINT`, matching the hardening already present in `Dockerfile.github-app`.
+- Fixed `node:24-alpine` mutable base image tag in both Dockerfiles — both `FROM` lines are now pinned to the digest `sha256:8e2c930f...` (linux/amd64, recorded as of 2026-05-01).
+- Fixed `pnpm@latest` floating version in `Dockerfile.github-app` — `corepack prepare` now pins to `pnpm@10.33.0`, matching the workspace `packageManager` declaration.
+- Fixed CLI/MCP/OpenAPI binary entry points shipping source maps to npm — `sourcemap` is now `false` for the three binary entries in `tsup.config.ts`; the public library entry keeps source maps for consumer debugging.
+- Fixed floating action tags in documentation examples in `packages/docs/content/integrations.md` — `actions/checkout@v4`, `pnpm/action-setup@v4`, `actions/setup-node@v4`, and `github/codeql-action/upload-sarif@v3` are replaced with immutable SHA-pinned references consistent with the internal workflows.
+- Fixed floating npm package version in `action.yml` composite action — a version-resolve step now reads the bundled `packages/core/package.json` version at runtime and pins the `npm install -g autoremediator` call to that exact version instead of `@latest`.
+- Fixed floating action references in the `autoremediator-sarif-upload` workflow template — `actions/checkout`, `actions/setup-node`, and `github/codeql-action/upload-sarif` are now pinned to immutable commit SHAs; the `autoremediator@latest` npm install is pinned to a specific release version.
+- Fixed missing top-level `permissions: {}` in `autoremediator-enforcement-gate` workflow template — without an explicit ceiling, GitHub defaults to write-all token scopes for called workflows.
+- Fixed missing top-level `permissions: {}` in `autoremediator-nightly-remediation-pr` workflow template — per-job grants were present but no ceiling was set, leaving the default implicit write-all scope active for any future jobs added to the file.
+- Fixed unpinned `@vscode/vsce` version in `publish-vscode.yml` — `npx @vscode/vsce` is now invoked as `npx @vscode/vsce@3.3.2` to prevent silent pulls of newer major versions during publish runs.
+- Fixed GitHub Actions expression injection risk in `tag-action.yml` — `steps.vars.outputs.semver_tag` and `steps.vars.outputs.major_tag` were previously interpolated directly into the shell script via `${{ }}` syntax; they are now passed through a step-level `env:` block and referenced as safe shell variables.
+- Fixed unbounded response body reads in the HTTP client — responses with a `Content-Length` header exceeding 10 MB are rejected before reading; response bodies are also capped at 10 MB after read.
+- Fixed log-injection risk in GitHub App webhook handler — `x-github-delivery` header values containing unsafe characters or exceeding 256 characters are rejected before use.
+- Fixed missing path normalization in `parseScanInput` — `filePath` is now resolved via `path.resolve()` and validated against null bytes before being passed to format parsers.
+- Fixed missing security headers on GitHub App JSON responses — `writeJson` now sets `x-content-type-options: nosniff`, `x-frame-options: DENY`, and `cache-control: no-store` on every JSON response.
+- Fixed unbounded SARIF input processing — `parseSarifFromString` now caps runs at 100, total results at 10,000, `ruleId` at 1024 characters, and `message.text` at 4096 characters before regex extraction.
+- Fixed missing length validation on OAuth setup `code` parameter — values shorter than 5 or longer than 512 characters are rejected in the GitHub App setup completion handler.
+- Fixed unbounded check-run summary string — `normalizeSummary` now caps `reason` at 1024 characters before forwarding to the GitHub Checks API.
+- Fixed GitHub App server binding to all interfaces — listener now binds to `AUTOREMEDIATOR_GITHUB_APP_HOST ?? "127.0.0.1"` instead of `0.0.0.0`.
+- Fixed OpenAPI HTTP server binding to all interfaces — listener now binds to `127.0.0.1` explicitly.
+- Fixed dynamic module path injection in `loadRemoteFactory` — `AUTOREMEDIATOR_REMOTE_CLIENT_MODULE` values starting with `./`, `../`, `/`, or `file:` are rejected before `import()`.
+- Fixed path traversal vulnerability in patch artifact path resolution — `inspectPatchArtifact` and `validatePatchArtifact` now reject any `patchFilePath` that resolves outside the configured patches directory.
+- Fixed SSRF vulnerability in external feed probing — vendor and commercial intelligence feed URLs are now blocked when they resolve to loopback, private, or link-local addresses.
+- Fixed URL injection in npm tarball fetch — package names sourced from CVE intelligence are now validated against the npm package name specification before being interpolated into registry URLs.
+- Fixed command injection risk in VS Code extension audit runner — `exec` (shell spawn) replaced with `execFileAsync` array form; CVE IDs are validated against `^CVE-\d{4}-\d{1,7}$` before being passed to the CLI; temp audit files now use cryptographically random names instead of `Date.now()`.
+- Fixed predictable branch name generation in change-request creation — timestamp suffix replaced with a cryptographically random hex token.
+- Fixed path traversal in GitHub App repo config — `cwd` values from `.github/autoremediator.yml` are resolved and constrained to the working directory before use.
+- Fixed YAML repo config unsafe deserialization — all fields from untrusted `.github/autoremediator.yml` content are now validated and sanitised before merging with defaults; fields with wrong types are dropped in favour of defaults.
+- Fixed queue state unsafe deserialization — persisted job records are now field-validated on load; malformed or structurally invalid jobs are silently discarded.
+- Fixed patch manifest unsafe deserialization — `readManifest` now validates required fields and `schemaVersion` before accepting a manifest file.
+- Fixed ReDoS risk in `fetch-package-source` file pattern matching — user-supplied glob patterns are validated against a safe character allowlist before being converted to regular expressions.
+- Fixed OAuth setup cookie using `SameSite=Lax` — changed to `SameSite=Strict` to prevent cross-site top-level navigation attacks against the GitHub App setup flow.
+- Fixed GitHub App private key accepted without PEM format validation — `normalizePrivateKey` now asserts PEM `-----BEGIN`/`-----END` markers before returning.
+- Fixed unbounded CVE ID digit matching in scanner adapters — `CVE_REGEX` and `isCveId()` now enforce a maximum of 7 digits in the sequence number.
+- Enforced maximum length on `titlePrefix` (200 chars) and `bodyFooter` (2000 chars) in change-request options.
+- Validated `pushRemote` and `repository` parameters in change-request creation before passing to `git push` and `gh pr create`.
+
 ## 0.14.0
 
 ### Added

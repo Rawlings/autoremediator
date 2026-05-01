@@ -57,7 +57,7 @@ export async function startGitHubAppServer(): Promise<void> {
 
   await new Promise<void>((resolve, reject) => {
     server.once("error", reject);
-    server.listen(config.port, () => {
+    server.listen(config.port, process.env.AUTOREMEDIATOR_GITHUB_APP_HOST ?? "127.0.0.1", () => {
       resolve();
     });
   });

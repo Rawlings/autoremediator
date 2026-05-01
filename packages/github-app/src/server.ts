@@ -95,6 +95,9 @@ interface JsonResponse {
 function writeJson(response: ServerResponse, payload: JsonResponse): void {
   response.statusCode = payload.statusCode;
   response.setHeader("content-type", "application/json; charset=utf-8");
+  response.setHeader("x-content-type-options", "nosniff");
+  response.setHeader("x-frame-options", "DENY");
+  response.setHeader("cache-control", "no-store");
   response.end(JSON.stringify(payload.body));
 }
 
@@ -265,7 +268,7 @@ export async function handleRequest(
       const state = generateStateToken();
       response.statusCode = 200;
       response.setHeader("content-type", "text/html; charset=utf-8");
-      response.setHeader("Set-Cookie", `autoremediator_setup_state=${state}; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600`);
+      response.setHeader("Set-Cookie", `autoremediator_setup_state=${state}; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600`);
       response.end(renderSetupPage(baseUrl, options.githubUrl, state));
       return;
     }
@@ -278,9 +281,15 @@ export async function handleRequest(
         response.end(renderSetupErrorPage("Missing code parameter from GitHub."));
         return;
       }
+      if (code.length < 5 || code.length > 512) {
+        response.statusCode = 400;
+        response.setHeader("content-type", "text/html; charset=utf-8");
+        response.end(renderSetupErrorPage("Invalid code parameter length."));
+        return;
+      }
       const returnedState = parsedUrl.searchParams.get("state");
       const cookieState = parseStateCookie(request.headers.cookie);
-      const clearStateCookie = "autoremediator_setup_state=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0";
+      const clearStateCookie = "autoremediator_setup_state=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0";
       if (!returnedState || !cookieState || returnedState !== cookieState) {
         response.statusCode = 400;
         response.setHeader("content-type", "text/html; charset=utf-8");
@@ -341,7 +350,11 @@ export async function handleRequest(
   const eventName = Array.isArray(eventHeader) ? eventHeader[0] : eventHeader;
 
   const deliveryHeader = request.headers["x-github-delivery"];
-  const deliveryId = Array.isArray(deliveryHeader) ? deliveryHeader[0] : deliveryHeader;
+  let deliveryId = Array.isArray(deliveryHeader) ? deliveryHeader[0] : deliveryHeader;
+  // Sanitize deliveryId: reject values with unsafe characters (log injection prevention)
+  if (deliveryId && (deliveryId.length > 256 || !/^[\w.-]+$/.test(deliveryId))) {
+    deliveryId = undefined;
+  }
 
   const eventNameForTrace = eventName ?? "unknown";
 

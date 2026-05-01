@@ -83,6 +83,19 @@ async function loadRemoteFactory(): Promise<RemoteModelFactory> {
     );
   }
 
+  // Reject relative paths and non-identifier module specifiers to prevent
+  // loading arbitrary local files via path traversal.
+  if (
+    moduleName.startsWith("./") ||
+    moduleName.startsWith("../") ||
+    moduleName.startsWith("/") ||
+    moduleName.startsWith("file:")
+  ) {
+    throw new Error(
+      `AUTOREMEDIATOR_REMOTE_CLIENT_MODULE must be a package name, not a file path: ${moduleName}`
+    );
+  }
+
   const loaded = (await import(moduleName)) as RemoteAdapterModule;
   const factory = loaded[exportName];
   if (typeof factory !== "function") {

@@ -63,8 +63,8 @@ function isMainModule(): boolean {
 if (isMainModule()) {
   const port = parsePort();
   const server = createOpenApiServer();
-  server.listen(port, () => {
-    console.log(`autoremediator OpenAPI server listening on http://localhost:${port}`);
-    console.log(`  OpenAPI spec: http://localhost:${port}/openapi.json`);
+  server.listen(port, "127.0.0.1", () => {
+    console.log(`autoremediator OpenAPI server listening on http://127.0.0.1:${port}`);
+    console.log(`  OpenAPI spec: http://127.0.0.1:${port}/openapi.json`);
   });
 }

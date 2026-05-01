@@ -21,7 +21,7 @@ describe("createInstallationTokenProvider", () => {
     const { createInstallationTokenProvider } = await import("./auth.js");
     const provider = createInstallationTokenProvider({
       appId: "123",
-      privateKey: "-----BEGIN PRIVATE KEY-----\\nabc\\n-----END PRIVATE KEY-----",
+      privateKey: "-----BEGIN RSA PRIVATE KEY-----\nabc\n-----END RSA PRIVATE KEY-----",
     });
 
     const first = await provider.getInstallationToken(101);
@@ -47,7 +47,7 @@ describe("createInstallationTokenProvider", () => {
     const { createInstallationTokenProvider } = await import("./auth.js");
     const provider = createInstallationTokenProvider({
       appId: "123",
-      privateKey: "key",
+      privateKey: "-----BEGIN RSA PRIVATE KEY-----\nfake\n-----END RSA PRIVATE KEY-----",
     });
 
     const first = await provider.getInstallationToken(102);

@@ -1,9 +1,9 @@
-FROM node:24-alpine
+FROM node:24-alpine@sha256:8e2c930fda481a6ec141fe5a88e8c249c69f8102fe98af505f38c081649ea749 # 24-alpine as of 2026-05-01
 
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 
 # Copy workspace manifests for dependency installation
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./

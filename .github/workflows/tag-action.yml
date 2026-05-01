@@ -38,10 +38,10 @@ jobs:
           echo "major_tag=v${VERSION%%.*}" >> "$GITHUB_OUTPUT"
 
       - name: Create semver tag and refresh floating major tag
+        env:
+          SEMVER_TAG: ${{ steps.vars.outputs.semver_tag }}
+          MAJOR_TAG: ${{ steps.vars.outputs.major_tag }}
         run: |
-          SEMVER_TAG="${{ steps.vars.outputs.semver_tag }}"
-          MAJOR_TAG="${{ steps.vars.outputs.major_tag }}"
-
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 

@@ -176,9 +176,16 @@ runs:
       shell: bash
       run: corepack enable
 
+    - name: Resolve autoremediator version
+      id: autoremediator-version
+      shell: bash
+      run: |
+        VERSION=$(jq -r .version "${{ github.action_path }}/packages/core/package.json")
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
     - name: Install autoremediator
       shell: bash
-      run: npm install -g autoremediator@latest
+      run: npm install -g "autoremediator@${{ steps.autoremediator-version.outputs.version }}"
 
     - name: Remediate single CVE
       if: ${{ inputs.cve-id != '' }}

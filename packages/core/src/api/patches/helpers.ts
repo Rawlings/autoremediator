@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { isAbsolute, resolve } from "node:path";
+import { isAbsolute, resolve, sep } from "node:path";
 import type {
   PatchArtifact,
   PatchArtifactInspection,
@@ -14,7 +14,15 @@ export function resolvePatchesDir(cwd: string, patchesDir = DEFAULT_PATCHES_DIR)
 }
 
 export function resolveArtifactPath(cwd: string, patchFilePath: string): string {
-  return isAbsolute(patchFilePath) ? patchFilePath : resolve(cwd, patchFilePath);
+  const resolved = isAbsolute(patchFilePath) ? patchFilePath : resolve(cwd, patchFilePath);
+  if (!resolved.endsWith(".patch")) {
+    throw new Error(`patchFilePath must point to a .patch file: ${patchFilePath}`);
+  }
+  const patchesRoot = resolvePatchesDir(cwd);
+  if (!resolved.startsWith(patchesRoot + sep)) {
+    throw new Error(`patchFilePath must be inside the patches directory: ${patchFilePath}`);
+  }
+  return resolved;
 }
 
 export async function readManifest(manifestFilePath: string): Promise<PatchArtifact | undefined> {
@@ -24,7 +32,22 @@ export async function readManifest(manifestFilePath: string): Promise<PatchArtif
 
   try {
     const raw = await readFile(manifestFilePath, "utf8");
-    return JSON.parse(raw) as PatchArtifact;
+    const parsed = JSON.parse(raw);
+    if (
+      parsed === null ||
+      typeof parsed !== "object" ||
+      parsed.schemaVersion !== "1.0" ||
+      typeof parsed.packageName !== "string" ||
+      typeof parsed.vulnerableVersion !== "string" ||
+      typeof parsed.patchFilePath !== "string" ||
+      typeof parsed.patchFileName !== "string" ||
+      typeof parsed.applied !== "boolean" ||
+      typeof parsed.dryRun !== "boolean" ||
+      typeof parsed.generatedAt !== "string"
+    ) {
+      return undefined;
+    }
+    return parsed as PatchArtifact;
   } catch {
     return undefined;
   }

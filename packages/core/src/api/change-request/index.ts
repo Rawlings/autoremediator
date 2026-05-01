@@ -1,4 +1,5 @@
 import { execa } from "execa";
+import { randomBytes } from "node:crypto";
 import type {
   ChangeRequestOptions,
   ChangeRequestResult,
@@ -76,7 +77,7 @@ async function ensureRepoHasChanges(cwd: string): Promise<boolean> {
 
 function toBranchName(prefix: string, cveIds: string[]): string {
   const token = sanitizeBranchToken(cveIds.join("-") || "remediation");
-  return `${sanitizeBranchToken(prefix)}/${token}-${Date.now()}`;
+  return `${sanitizeBranchToken(prefix)}/${token}-${randomBytes(6).toString("hex")}`;
 }
 
 async function createGitHubRequest(params: {
@@ -148,9 +149,10 @@ export async function createChangeRequestsForReports(params: {
   const grouping = resolveGrouping(options);
   const plan = buildPlan(reports);
 
-  const titlePrefix = options.titlePrefix?.trim();
+  const titlePrefix = options.titlePrefix?.trim().slice(0, 200);
+  const bodyFooter = options.bodyFooter ? options.bodyFooter.slice(0, 2000) : undefined;
   const title = titlePrefix ? `${titlePrefix} ${plan.title}` : plan.title;
-  const body = options.bodyFooter ? `${plan.body}\n\n${options.bodyFooter}` : plan.body;
+  const body = bodyFooter ? `${plan.body}\n\n${bodyFooter}` : plan.body;
 
   try {
     const hasChanges = await ensureRepoHasChanges(cwd);
@@ -175,6 +177,12 @@ export async function createChangeRequestsForReports(params: {
     const branchPrefix = options.branchPrefix ?? "autoremediator";
     const branchName = toBranchName(branchPrefix, plan.cveIds);
     const pushRemote = options.pushRemote ?? "origin";
+    if (options.pushRemote && !/^[a-zA-Z0-9._-]+$/.test(options.pushRemote)) {
+      throw new Error(`Invalid pushRemote value: ${options.pushRemote}`);
+    }
+    if (options.repository && !/^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/.test(options.repository)) {
+      throw new Error(`Invalid repository format: ${options.repository}`);
+    }
 
     await execa("git", ["checkout", "-b", branchName], { cwd, stdio: "pipe" });
     await execa("git", ["add", "-A"], { cwd, stdio: "pipe" });

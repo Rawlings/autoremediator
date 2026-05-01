@@ -6,8 +6,9 @@
  */
 import { defineTool } from "./tool-compat.js";
 import { z } from "zod";
-import { mkdir, readdir, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { execa } from "execa";
 
 /**
@@ -45,12 +46,26 @@ export const fetchPackageSourceTool = defineTool({
     version,
     filePatterns,
   }): Promise<FetchPackageSourceResult> => {
-    const tempBaseDir = `/tmp/autoremediator-pkg-${Date.now()}`;
+    // Validate package name against npm spec before using in URL
+    if (!/^(@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/i.test(packageName)) {
+      return { success: false, error: `Invalid package name: ${packageName}` };
+    }
+
+    // Validate file patterns to prevent ReDoS
+    const safePatterns = (filePatterns ?? ["*.js", "*.ts"]).filter((p) =>
+      /^[a-zA-Z0-9._/*?-]+$/.test(p)
+    );
+    if (safePatterns.length === 0) {
+      return { success: false, error: "No valid file patterns provided." };
+    }
+
+    const tempBaseDir = await mkdtemp(join(tmpdir(), "autoremediator-pkg-"));
     const extractDir = join(tempBaseDir, "out");
 
     try {
       // Step 1: Construct npm registry URL and download tarball
-      const npmUrl = `https://registry.npmjs.org/${packageName}/-/${packageName.split("/").pop()}-${version}.tgz`;
+      const scopedName = packageName.split("/").pop()!;
+      const npmUrl = `https://registry.npmjs.org/${packageName}/-/${scopedName}-${version}.tgz`;
 
       // Create temp directory
       await mkdir(tempBaseDir, { recursive: true });
@@ -98,7 +113,7 @@ export const fetchPackageSourceTool = defineTool({
               }
             } else if (file.isFile()) {
               // Check if file matches any pattern
-              const matches = filePatterns!.some((pattern) => {
+              const matches = safePatterns.some((pattern) => {
                 const regex = new RegExp(
                   `^${pattern.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`
                 );
@@ -125,7 +140,7 @@ export const fetchPackageSourceTool = defineTool({
       if (Object.keys(sourceCode).length === 0) {
         return {
           success: false,
-          error: `No source files matching patterns [${filePatterns!.join(", ")}] found in ${packageName}@${version}. Download succeeded but extraction yielded no matching files.`,
+          error: `No source files matching patterns [${safePatterns.join(", ")}] found in ${packageName}@${version}. Download succeeded but extraction yielded no matching files.`,
         };
       }
 
