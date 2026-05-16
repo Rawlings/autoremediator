@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Navigate, useLocation, useParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -48,19 +48,21 @@ function AnchorLink({
   node: _node,
   ...rest
 }: React.ComponentPropsWithoutRef<"a"> & { node?: unknown }) {
+  const navigate = useNavigate();
   if (!href || href.startsWith("#") || href.startsWith("http") || href.startsWith("//") || href.startsWith("mailto:")) {
     const isExternal = href?.startsWith("http") || href?.startsWith("//");
     return <a href={href} target={isExternal ? "_blank" : undefined} rel={isExternal ? "noreferrer" : undefined} {...rest}>{children}</a>;
   }
   if (href.startsWith("/")) {
-    return <a href={href} {...rest}>{children}</a>;
+    return <a href={href} onClick={(e) => { e.preventDefault(); navigate(href); }} {...rest}>{children}</a>;
   }
   // Relative link — check if it resolves to a known doc slug
-  const stripped = href.replace(/^\.\//,"");
+  const stripped = href.replace(/^\.\//, "");
   const slugPart = stripped.split("#")[0];
   const hash = stripped.includes("#") ? "#" + stripped.split("#").slice(1).join("#") : "";
   if (docs.some(d => d.slug === slugPart)) {
-    return <a href={`/docs/${slugPart}${hash}`} {...rest}>{children}</a>;
+    const to = `/docs/${slugPart}${hash}`;
+    return <a href={to} onClick={(e) => { e.preventDefault(); navigate(to); }} {...rest}>{children}</a>;
   }
   // Non-doc relative link → GitHub
   const ghPath = stripped.replace(/^(\.\.\/)+/, "");
