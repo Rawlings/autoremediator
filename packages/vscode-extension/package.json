@@ -14,7 +14,7 @@
     "url": "https://github.com/Rawlings/autoremediator/issues"
   },
   "engines": {
-    "vscode": "^1.115.0"
+    "vscode": "^1.116.0"
   },
   "categories": [
     "Linters",
