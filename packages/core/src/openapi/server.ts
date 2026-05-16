@@ -12,9 +12,14 @@ import {
   inspectPatchArtifact,
   listPatchArtifacts,
   planRemediation,
+  pollJob,
   remediate,
   remediatePortfolio,
   remediateFromScan,
+  submitPortfolioJob,
+  submitRemediateJob,
+  submitScanJob,
+  toCycloneDxVex,
   updateOutdated,
   validatePatchArtifact,
 } from "../api/index.js";
@@ -33,6 +38,11 @@ export interface OpenApiServerDeps {
   listPatchArtifactsFn: typeof listPatchArtifacts;
   inspectPatchArtifactFn: typeof inspectPatchArtifact;
   validatePatchArtifactFn: typeof validatePatchArtifact;
+  toVexFn: typeof toCycloneDxVex;
+  submitRemediateJobFn: typeof submitRemediateJob;
+  submitScanJobFn: typeof submitScanJob;
+  submitPortfolioJobFn: typeof submitPortfolioJob;
+  pollJobFn: typeof pollJob;
 }
 
 const defaultDeps: OpenApiServerDeps = {
@@ -44,6 +54,11 @@ const defaultDeps: OpenApiServerDeps = {
   listPatchArtifactsFn: listPatchArtifacts,
   inspectPatchArtifactFn: inspectPatchArtifact,
   validatePatchArtifactFn: validatePatchArtifact,
+  toVexFn: toCycloneDxVex,
+  submitRemediateJobFn: submitRemediateJob,
+  submitScanJobFn: submitScanJob,
+  submitPortfolioJobFn: submitPortfolioJob,
+  pollJobFn: pollJob,
 };
 
 export function createOpenApiServer(deps: OpenApiServerDeps = defaultDeps): http.Server {

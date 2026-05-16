@@ -36,6 +36,8 @@ export interface LocalRunOptions {
   skipUnreachable: boolean;
   regressionCheck: boolean;
   escalationGraph?: EscalationGraph;
+  offlineIntelligence: boolean;
+  intelligenceSnapshotPath?: string;
 }
 
 export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptions {
@@ -81,5 +83,7 @@ export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptio
     skipUnreachable: options.skipUnreachable ?? loadedPolicy.skipUnreachable ?? false,
     regressionCheck: options.regressionCheck ?? false,
     escalationGraph: options.escalationGraph ?? loadedPolicy.escalationGraph,
+    offlineIntelligence: options.offlineIntelligence ?? false,
+    intelligenceSnapshotPath: options.intelligenceSnapshotPath,
   };
 }

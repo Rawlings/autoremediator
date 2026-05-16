@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { buildResultSimulation } from "./reporting.js";
+import { buildResultSimulation, buildSlaBreachSummary } from "./reporting.js";
 
 const mocked = vi.hoisted(() => ({
   runRemediationPipeline: vi.fn(),
@@ -800,5 +800,141 @@ describe("api preview and correlation behavior", () => {
       format: "auto",
       workspace: "web-app",
     });
+  });
+});
+
+describe("buildSlaBreachSummary", () => {
+  it("returns undefined for empty reports array", () => {
+    expect(buildSlaBreachSummary([])).toBeUndefined();
+  });
+
+  it("returns undefined when no reports have slaBreaches", () => {
+    const report = {
+      cveId: "CVE-2021-23337",
+      cveDetails: null,
+      vulnerablePackages: [],
+      results: [],
+      agentSteps: 0,
+      summary: "ok",
+    } as any;
+    expect(buildSlaBreachSummary([report])).toBeUndefined();
+  });
+
+  it("returns breach summary with open-issue when no escalationAction on results", () => {
+    const report = {
+      cveId: "CVE-2021-23337",
+      cveDetails: null,
+      vulnerablePackages: [],
+      results: [
+        {
+          packageName: "lodash",
+          strategy: "none",
+          fromVersion: "4.17.0",
+          applied: false,
+          dryRun: false,
+          message: "unresolved",
+        },
+      ],
+      slaBreaches: [
+        {
+          cveId: "CVE-2021-23337",
+          severity: "HIGH",
+          publishedAt: "2025-01-01T00:00:00.000Z",
+          deadlineAt: "2025-01-04T00:00:00.000Z",
+          hoursOverdue: 48,
+        },
+      ],
+      agentSteps: 1,
+      summary: "overdue",
+    } as any;
+
+    const summary = buildSlaBreachSummary([report]);
+    expect(summary).toBeDefined();
+    expect(summary!.breachCount).toBe(1);
+    expect(summary!.breaches[0]!.cveId).toBe("CVE-2021-23337");
+    expect(summary!.breaches[0]!.severity).toBe("HIGH");
+    expect(summary!.breaches[0]!.hoursOverdue).toBe(48);
+    expect(summary!.breaches[0]!.recommendedAction).toBe("open-issue");
+  });
+
+  it("uses escalationAction from result when present", () => {
+    const report = {
+      cveId: "CVE-2021-23337",
+      cveDetails: null,
+      vulnerablePackages: [],
+      results: [
+        {
+          packageName: "lodash",
+          strategy: "none",
+          fromVersion: "4.17.0",
+          applied: false,
+          dryRun: false,
+          message: "unresolved",
+          escalationAction: "create-draft-pr",
+        },
+      ],
+      slaBreaches: [
+        {
+          cveId: "CVE-2021-23337",
+          severity: "CRITICAL",
+          publishedAt: "2025-01-01T00:00:00.000Z",
+          deadlineAt: "2025-01-02T00:00:00.000Z",
+          hoursOverdue: 72,
+        },
+      ],
+      agentSteps: 1,
+      summary: "escalated",
+    } as any;
+
+    const summary = buildSlaBreachSummary([report]);
+    expect(summary).toBeDefined();
+    expect(summary!.breaches[0]!.recommendedAction).toBe("create-draft-pr");
+  });
+
+  it("toCiSummary includes slaBreachSummary when input ScanReport has slaBreaches", () => {
+    const scanReport = {
+      schemaVersion: "1.0" as const,
+      status: "partial" as const,
+      generatedAt: new Date().toISOString(),
+      cveIds: ["CVE-2021-23337"],
+      reports: [
+        {
+          cveId: "CVE-2021-23337",
+          cveDetails: null,
+          vulnerablePackages: [],
+          results: [
+            {
+              packageName: "lodash",
+              strategy: "none",
+              fromVersion: "4.17.0",
+              applied: false,
+              dryRun: false,
+              message: "unresolved",
+              escalationAction: "open-issue",
+            },
+          ],
+          slaBreaches: [
+            {
+              cveId: "CVE-2021-23337",
+              severity: "HIGH",
+              publishedAt: "2025-01-01T00:00:00.000Z",
+              deadlineAt: "2025-01-04T00:00:00.000Z",
+              hoursOverdue: 48,
+            },
+          ],
+          agentSteps: 1,
+          summary: "overdue",
+        },
+      ],
+      successCount: 0,
+      failedCount: 1,
+      errors: [],
+      patchCount: 0,
+    } as any;
+
+    const ciSummary = toCiSummary(scanReport);
+    expect(ciSummary.slaBreachSummary).toBeDefined();
+    expect(ciSummary.slaBreachSummary!.breachCount).toBe(1);
+    expect(ciSummary.slaBreachSummary!.breaches[0]!.recommendedAction).toBe("open-issue");
   });
 });

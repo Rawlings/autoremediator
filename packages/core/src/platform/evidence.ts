@@ -6,6 +6,7 @@ import type {
   EscalationCounts,
   PatchStrategyCounts,
   SimulationSummary,
+  SlaBreachSummary,
   UnresolvedReasonCounts,
 } from "./types.js";
 
@@ -42,6 +43,7 @@ export interface EvidenceSummary {
   escalationCounts?: EscalationCounts;
   containmentCount?: number;
   simulationSummary?: SimulationSummary;
+  slaBreachSummary?: SlaBreachSummary;
 }
 
 export interface EvidenceLog {
@@ -53,6 +55,7 @@ export interface EvidenceLog {
   source?: "cli" | "sdk" | "mcp" | "openapi" | "unknown";
   llmProvider?: "remote" | "local";
   idempotencyKey?: string;
+  offlineMode?: boolean;
   cveIds: string[];
   cwd: string;
   startedAt: string;
@@ -69,6 +72,7 @@ interface EvidenceContext {
   source?: "cli" | "sdk" | "mcp" | "openapi" | "unknown";
   llmProvider?: "remote" | "local";
   idempotencyKey?: string;
+  offlineMode?: boolean;
 }
 
 export function createEvidenceLog(cwd: string, cveIds: string[], context: EvidenceContext = {}): EvidenceLog {
@@ -81,6 +85,7 @@ export function createEvidenceLog(cwd: string, cveIds: string[], context: Eviden
     source: context.source,
     llmProvider: context.llmProvider,
     idempotencyKey: context.idempotencyKey,
+    offlineMode: context.offlineMode,
     cveIds,
     cwd,
     startedAt: new Date().toISOString(),

@@ -2,6 +2,7 @@ import type {
   DependencyScope,
   DependencyScopeCounts,
   DispositionCounts,
+  EscalationAction,
   EscalationCounts,
   RemediateOptions,
   PatchResult,
@@ -13,6 +14,8 @@ import type {
   SimulationRebuttalCode,
   SimulationRebuttalFinding,
   SimulationSummary,
+  SlaBreachEntry,
+  SlaBreachSummary,
   UnresolvedReasonCounts,
 } from "../platform/types.js";
 import type { CiSummary, ScanReport } from "./contracts.js";
@@ -405,6 +408,32 @@ export function buildEscalationCounts(results: PatchResult[]): EscalationCounts 
   return Object.keys(counts).length > 0 ? counts : undefined;
 }
 
+export function buildSlaBreachSummary(reports: RemediationReport[]): SlaBreachSummary | undefined {
+  const breaches: SlaBreachEntry[] = [];
+
+  for (const report of reports) {
+    if (!report.slaBreaches || report.slaBreaches.length === 0) continue;
+
+    // Derive recommended action: first non-"none" escalationAction from any result in this report, else "open-issue"
+    const recommendedAction: EscalationAction =
+      report.results
+        .map((r) => r.escalationAction)
+        .find((a) => a != null && a !== "none") ?? "open-issue";
+
+    for (const breach of report.slaBreaches) {
+      breaches.push({
+        cveId: breach.cveId,
+        severity: breach.severity,
+        hoursOverdue: breach.hoursOverdue,
+        deadlineAt: breach.deadlineAt,
+        recommendedAction,
+      });
+    }
+  }
+
+  return breaches.length > 0 ? { breachCount: breaches.length, breaches } : undefined;
+}
+
 export function toCiSummary(report: ScanReport): CiSummary {
   let remediationCount = 0;
   for (const cveReport of report.reports) {
@@ -437,6 +466,8 @@ export function toCiSummary(report: ScanReport): CiSummary {
     llmUsageCount: report.llmUsageCount,
     estimatedCostUsd: report.estimatedCostUsd,
     totalLlmLatencyMs: report.totalLlmLatencyMs,
+    slaBreaches: report.slaBreaches,
+    slaBreachSummary: buildSlaBreachSummary(report.reports),
     dispositionCounts: report.dispositionCounts,
     simulationSummary: report.simulationSummary,
   };

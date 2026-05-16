@@ -56,6 +56,8 @@ export type {
   VexSuppression,
   SlaPolicy,
   SlaBreach,
+  SlaBreachEntry,
+  SlaBreachSummary,
   ReachabilityAssessment,
   ReachabilityEvidence,
   SbomEntry,
@@ -81,10 +83,12 @@ export {
   createUpdateOutdatedOptionSchemaProperties,
 } from "./options-schema.js";
 
-export { toCiSummary, ciExitCode } from "./reporting.js";
+export { toCiSummary, ciExitCode, buildSlaBreachSummary, buildStrategyCounts, buildDependencyScopeCounts } from "./reporting.js";
 export { toSarifOutput, type SarifOutput } from "./sarif.js";
+export { toCycloneDxVex, type CycloneDxVexDocument, type CycloneDxVexVulnerability, type CycloneDxVexVulnerabilityAnalysis, type ToCycloneDxVexOptions } from "./vex/index.js";
 export { inspectPatchArtifact, listPatchArtifacts, validatePatchArtifact } from "./patches/index.js";
 export { remediatePortfolio } from "./portfolio/index.js";
 export { remediate, planRemediation } from "./remediate/index.js";
 export { remediateFromScan } from "./remediate-from-scan/index.js";
 export { updateOutdated } from "./update-outdated/index.js";
+export { submitRemediateJob, submitScanJob, submitPortfolioJob, pollJob, type JobHandle, type AsyncRemediationJob, type TypedAsyncRemediationJob } from "./jobs/index.js";

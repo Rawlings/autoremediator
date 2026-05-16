@@ -31,6 +31,11 @@ The SDK exposes autonomous operator controls on top of baseline remediation:
 - `listPatchArtifacts(options?)`
 - `inspectPatchArtifact(patchFilePath, options?)`
 - `validatePatchArtifact(patchFilePath, options?)`
+- `toCycloneDxVex(report, options?)`
+- `submitRemediateJob(cveId, options?)` — submit a remediation as a background job; returns `JobHandle` immediately
+- `submitScanJob(inputPath, options?)` — submit a scan-based remediation as a background job
+- `submitPortfolioJob(targets, options?)` — submit a portfolio remediation as a background job
+- `pollJob(jobId)` — poll an outstanding job by ID; returns current `TypedAsyncRemediationJob` status
 - `toCiSummary(scanReport)`
 - `ciExitCode(summary)`
 
@@ -129,6 +134,29 @@ What: validates a stored patch against its manifest and current dependency inven
 
 Why: useful for drift detection when lockfiles or installed versions change over time.
 
+### `toCycloneDxVex(report, options?)`
+
+What: converts a `ScanReport` or `RemediationReport` to a CycloneDX 1.5 VEX compliance document.
+
+Why: allows compliance consumers (FedRAMP, PCI-DSS, SOC 2 auditors) to bind remediation evidence to SBOM vulnerability records in a standard interchange format.
+
+How: maps each result by strategy — applied version-bump → `resolved` + `update` response, applied patch-file → `resolved` + `workaround_available`, unresolved → `in_triage` with `unresolvedReason`, VEX-suppressed → `not_affected` with the suppression justification.
+
+Also available via:
+- CLI: `--output-format cyclonedx-vex`
+- MCP: `toVex` tool
+- OpenAPI: `POST /vex`
+
+### `submitRemediateJob` / `submitScanJob` / `submitPortfolioJob` / `pollJob`
+
+What: async job model for long-running or portfolio-scale remediation.
+
+Why: allows callers to submit remediation work and poll for completion rather than blocking — suitable for control plane integrations, webhooks, and multi-repo automation.
+
+How: each submit function returns a `JobHandle` (`{ jobId, status, submittedAt }`) immediately. Call `pollJob(jobId)` to receive the current `AsyncRemediationJob` state (`pending | running | done | failed`) along with the full result or error when complete.
+
+Also available via MCP tools (`submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob`) and OpenAPI routes (`POST /jobs/remediate`, `POST /jobs/scan`, `POST /jobs/portfolio`, `GET /jobs/:jobId`).
+
 ## Options Reference
 
 Core options:
@@ -173,6 +201,8 @@ Result details now include:
 - `consensusProvider`: provider override (`remote`, `local`) for high-risk consensus verification
 - `consensusModel`: model override for high-risk consensus verification
 - `patchConfidenceThresholds`: per-risk acceptance thresholds (`low`, `medium`, `high` in range 0..1)
+- `offlineIntelligence`: when `true`, skip all external CVE intelligence network calls (OSV, GitHub Advisory, NVD, CISA-KEV, EPSS) — suitable for air-gap and sovereign deployment scenarios
+- `intelligenceSnapshotPath`: path to a local JSON file containing pre-fetched CVE intelligence; loaded when `offlineIntelligence: true` to supply CVE data without network access
 - `dynamicModelRouting`: enable dynamic model selection by input size
 - `dynamicRoutingThresholdChars`: threshold for dynamic routing behavior
 - `suppressedBy`: VEX suppression justification when a result was suppressed before remediation
@@ -200,6 +230,44 @@ Scan and CI summary aggregates:
 - `unresolvedByReason`: aggregate counts by machine-readable unresolved reason
 - `escalationCounts`: aggregate counts by intended escalation action
 - `simulationSummary`: aggregate counts for simulated mutation targets and rebuttal findings when `simulationMode` is enabled
+- `slaBreachSummary`: structured breach data (`SlaBreachSummary`) added to `ScanReport`, `CiSummary`, and `PortfolioReport` when `slaCheck: true` and at least one CVE exceeds its SLA window — contains `breachCount` and a `breaches` array of `SlaBreachEntry` records
+
+## Report Types
+
+### `SlaBreachSummary`
+
+Aggregate SLA breach data attached to `ScanReport`, `CiSummary`, and `PortfolioReport`:
+
+```ts
+interface SlaBreachSummary {
+  breachCount: number;        // total number of breached CVEs
+  breaches: SlaBreachEntry[]; // per-CVE breach details
+}
+```
+
+### `SlaBreachEntry`
+
+Per-CVE SLA breach record within `SlaBreachSummary`:
+
+```ts
+interface SlaBreachEntry {
+  cveId: string;                  // e.g. "CVE-2021-23337"
+  severity: CveSeverity;          // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | "UNKNOWN"
+  hoursOverdue: number;           // hours past the SLA deadline at run time
+  deadlineAt: string;             // ISO 8601 deadline timestamp
+  recommendedAction: EscalationAction; // "open-issue" | "notify-channel" | "create-draft-pr" | "hold-branch" | "none"
+}
+```
+
+### `PatchResult.vulnerableRange`
+
+`PatchResult` exposes a `vulnerableRange?: string` field populated when:
+
+- no upstream fix exists and the result uses `unresolvedReason: "no-safe-version"`
+- the fallback `patch-file` strategy was used (e.g. LLM-generated fix)
+- version resolution was performed and the affected range was available from CVE intelligence
+
+The value is a semver range string (e.g. `">=1.0.0 <1.2.6"`) sourced from `AffectedPackage.vulnerableRange`.
 
 Simulation result details:
 

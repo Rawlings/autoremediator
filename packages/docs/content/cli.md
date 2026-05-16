@@ -104,8 +104,10 @@ When to use which mode:
 | `--sla-check` | compare CVE publication dates against configured SLA windows | surfaces breach records when a CVE has exceeded the configured remediation deadline |
 | `--skip-unreachable` | skip remediation for packages not reachable from project source code | reduces noise by excluding packages that cannot be triggered by the running application |
 | `--regression-check` | verify patched version is outside the vulnerable range after apply | catches cases where a fix lands within a still-vulnerable range and flags the result |
-| `--output-format <text|json|sarif>` | machine-readable or standardized output selection | uses `json` for automation and `sarif` for security tooling integration |
+| `--output-format <text|json|sarif|cyclonedx-vex>` | machine-readable or standardized output selection | uses `json` for automation, `sarif` for security tooling integration, and `cyclonedx-vex` for CycloneDX 1.5 VEX compliance export |
 | `--containment-mode` | block applied remediation outcomes when disposition is `escalate` | prevents autonomous apply on escalation cases and records containment in evidence (`unresolvedReason=policy-blocked`) |
+| `--offline` | skip all external CVE intelligence network calls | enables air-gap and sovereign deployment scenarios where internet access is unavailable or restricted |
+| `--intelligence-snapshot <path>` | load pre-fetched CVE intelligence from a local JSON file | pair with `--offline` to supply CVE data in network-restricted environments |
 
 ## Scan Mode Options
 
@@ -295,6 +297,33 @@ Summary fields to watch:
 - `dispositionCounts`: aggregate counts for `auto-apply`, `simulate-only`, `hold-for-approval`, and `escalate`
 - `unresolvedByReason`: aggregate counts for machine-readable unresolved causes such as `no-safe-version`, `constraint-blocked`, and `patch-validation-failed`
 - `simulationSummary`: aggregate planned-mutation and rebuttal counts for dry-run or preview simulation flows
+- `slaBreachSummary`: structured breach list with `breachCount`, per-breach `cveId`, `severity`, `hoursOverdue`, `deadlineAt`, and `recommendedAction` — present when `--sla-check` is enabled and at least one CVE is overdue
+
+## CI Text Output
+
+In text output mode (`--output-format text`, the default), the scan runner emits additional lines when relevant:
+
+**Transitive remediations notice** — emitted when one or more transitive dependency remediations succeeded:
+
+```
+  Transitive remediations: 2 (fixed without requiring upstream patch)
+```
+
+**Patch-generated block** — emitted when at least one `patch-file` result exists. Shows count, average patch confidence, and the CVE-affected version range for each unique `vulnerableRange` across patch-file results:
+
+```
+Patch-generated (no upstream fix): 1
+  Avg patch confidence: 0.87
+  Vulnerable range: >=1.0.0 <1.2.6
+```
+
+**SLA breach block** — emitted when `slaBreachSummary` is populated (requires `--sla-check`):
+
+```
+SLA breaches: 2 CVE(s) overdue
+  CVE-2021-23337: HIGH, 48h overdue → open-issue
+  CVE-2022-31129: CRITICAL, 12h overdue → create-draft-pr
+```
 
 Patch artifact fields to watch:
 

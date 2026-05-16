@@ -116,8 +116,7 @@ Field intent:
   - why: lets teams run approval-first security automation without losing machine-readable remediation intent
 - `escalationGraph`:
   - what: maps unresolved reasons to intended escalation actions (`open-issue`, `notify-channel`, `create-draft-pr`, `hold-branch`, `none`)
-  - why: gives teams deterministic follow-up routing for unresolved outcomes while keeping remediation execution side-effect free
-- `exploitSignalOverride.kev.mandatory`:
+  - why: gives teams deterministic follow-up routing for unresolved outcomes while keeping remediation execution side-effect free- `exploitSignalOverride.kev.mandatory`:
   - what: treats CVEs with active CISA KEV status as unconditionally mandatory
   - why: ensures actively-exploited CVEs bypass severity filtering
 - `exploitSignalOverride.epss.mandatory` + `threshold`:
@@ -153,6 +152,8 @@ When a signal fires, `exploitSignalTriggered: true` appears in the report.
 ### SLA Breach Alerting
 
 When `slaCheck: true` and `sla` windows are configured, CVE publication age is compared against window thresholds. Breached CVEs appear in `slaBreaches` on the report with `cveId`, `severity`, `publishedAt`, and `hoursOverdue`.
+
+In addition, scan and portfolio reports include `slaBreachSummary` — a structured aggregate with `breachCount` and a `breaches` array of `SlaBreachEntry` records. Each entry includes the `cveId`, `severity`, `hoursOverdue`, `deadlineAt`, and a `recommendedAction` derived from the escalation graph for that CVE. This field is also propagated to `CiSummary` via `toCiSummary()` for pipeline-visible gating.
 
 Enable with `--sla-check` (CLI) or `slaCheck: true` (SDK).
 
@@ -215,6 +216,19 @@ Every generated patch artifact includes an `integrity` field with a SHA-256 cont
 When `regressionCheck: true`, the patched version is tested against the CVE's vulnerable semver range after apply. If it still satisfies the range, `regressionDetected: true` is set on the result.
 
 Enable with `--regression-check` (CLI) or `regressionCheck: true` (SDK).
+
+### Air-gap / Offline Mode
+
+When `offlineIntelligence: true`, autoremediator skips all external CVE intelligence network calls — OSV, GitHub Advisory, NVD, CISA KEV, EPSS, and other enrichment sources. Package inventory scanning and version-bump selection from a local npm mirror still work normally; only CVE enrichment is bypassed.
+
+For fully air-gapped environments, pair `offlineIntelligence` with `intelligenceSnapshotPath` pointing to a local JSON file of pre-fetched CVE data. The snapshot file must contain an array of `CveDetails`-shaped records keyed by CVE ID.
+
+Evidence artifacts record `offlineMode: true` in the provenance section when this mode is active, providing an auditable signal that run outputs were produced without live intelligence source access.
+
+Enable with:
+- CLI: `--offline` and optionally `--intelligence-snapshot <path>`
+- SDK: `offlineIntelligence: true` and optionally `intelligenceSnapshotPath: "/path/to/snapshot.json"`
+- GitHub Action: `offline: true` input and optionally `intelligence-snapshot: <path>`
 
 ## GitHub App: Per-Repository Settings
 
@@ -322,8 +336,16 @@ Scan and CI runs expose aggregate summary fields in addition to per-CVE results:
 - `dependencyScopeCounts`: counts for direct versus transitive remediation outcomes
 - `unresolvedByReason`: counts by machine-readable unresolved reason such as `no-safe-version`, `constraint-blocked`, and `patch-validation-failed`
 - `escalationCounts`: counts by intended escalation action for unresolved outcomes
+- `slaBreachSummary`: structured SLA breach aggregate on `ScanReport`, `CiSummary`, and `PortfolioReport` when `slaCheck: true`; contains `breachCount` and a `breaches` array of `SlaBreachEntry` records with per-CVE overdue details and `recommendedAction`
 
-These fields make it easier to build CI gates, dashboards, and escalation rules without reparsing each nested remediation result.
+### Transitive Dependency Remediation
+
+autoremediator can remediate transitive (indirect) dependencies without requiring an upstream publisher release. When `constraints.directDependenciesOnly` is not set:
+
+- package-manager-native override or resolution (`pnpm.overrides`, `resolutions`, `overrides`) is attempted for transitive packages with a known safe version
+- LLM-generated patch fallback is used for transitive packages when no safe version exists upstream
+
+Transitive remediation attempts appear in `dependencyScopeCounts.transitive` and emit a notice line in text mode output. Use `constraints.preferVersionBump: true` or `constraints.directDependenciesOnly: true` to restrict automation scope when transitive changes require manual governance approval.
 
 ## Validation Controls
 

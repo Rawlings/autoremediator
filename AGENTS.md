@@ -26,7 +26,7 @@
 ### Mode 3: CI
 
 - Trigger: `--ci`
-- Behavior: non-interactive output, deterministic summary and exit code
+- Behavior: non-interactive output, deterministic summary and exit code; `slaBreachSummary` appears in scan/portfolio output when `--sla-check` is enabled and at least one CVE exceeds its SLA window
 - Instruction set: Mode 2 + evidence/ci skill
 
 ### Mode 4: MCP Tool Server
@@ -34,12 +34,12 @@
 - Trigger: `autoremediator-mcp` (stdio)
 - Behavior: exposes `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, and `updateOutdated` as MCP tools
 - Source: `packages/core/src/mcp/server.ts`
-- Exposed MCP tools: `health`, `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`
+- Exposed MCP tools: `health`, `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `toVex`, `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob`
 
 ### Mode 5: OpenAPI HTTP Server
 
 - Trigger: `node dist/openapi/server.js [--port 3000]`
-- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/remediate-portfolio`, POST `/patches/list`, POST `/patches/inspect`, and POST `/patches/validate` over HTTP
+- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/remediate-portfolio`, POST `/patches/list`, POST `/patches/inspect`, POST `/patches/validate`, POST `/vex`, POST `/jobs/remediate`, POST `/jobs/scan`, POST `/jobs/portfolio`, `GET /jobs/:jobId` over HTTPS
 - Source: `packages/core/src/openapi/server.ts`
 
 ### Mode 6: Governed Multi-Agent Delivery
@@ -74,6 +74,8 @@ Across SDK, CLI mapping, MCP, and OpenAPI, use canonical public terms:
 - `evidence`
 - `patchCount`
 - `patchesDir`
+- `offlineIntelligence`
+- `intelligenceSnapshotPath`
 
 Do not introduce synonym fields for these concepts.
 

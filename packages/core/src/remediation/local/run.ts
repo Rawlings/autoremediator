@@ -2,6 +2,7 @@ import semver from "semver";
 import { lookupCveOsv } from "../../intelligence/sources/osv.js";
 import { lookupCveGitHub, mergeGhDataIntoCveDetails } from "../../intelligence/sources/github-advisory.js";
 import { enrichWithNvd } from "../../intelligence/sources/nvd.js";
+import { loadIntelligenceSnapshot, lookupSnapshotCve } from "../../intelligence/sources/snapshot.js";
 import type {
   CveDetails,
   InventoryPackage,
@@ -52,6 +53,8 @@ export async function runLocalRemediationPipeline(
     skipUnreachable,
     regressionCheck,
     escalationGraph,
+    offlineIntelligence,
+    intelligenceSnapshotPath,
   } = resolved;
 
   const collectedResults: PatchResult[] = [];
@@ -61,11 +64,26 @@ export async function runLocalRemediationPipeline(
   let agentSteps = 0;
 
   const normalizedId = cveId.toUpperCase();
-  const [osvDetails, ghPackages] = await Promise.all([
-    lookupCveOsv(normalizedId),
-    lookupCveGitHub(normalizedId).catch(() => []),
-  ]);
-  agentSteps += 2;
+  let osvDetails: Awaited<ReturnType<typeof lookupCveOsv>>;
+  let ghPackages: Awaited<ReturnType<typeof lookupCveGitHub>>;
+
+  if (offlineIntelligence) {
+    if (intelligenceSnapshotPath) {
+      const snapshot = loadIntelligenceSnapshot(intelligenceSnapshotPath);
+      const snapshotEntry = lookupSnapshotCve(snapshot, normalizedId);
+      osvDetails = snapshotEntry;
+      ghPackages = [];
+    } else {
+      osvDetails = null;
+      ghPackages = [];
+    }
+  } else {
+    [osvDetails, ghPackages] = await Promise.all([
+      lookupCveOsv(normalizedId),
+      lookupCveGitHub(normalizedId).catch(() => []),
+    ]);
+    agentSteps += 2;
+  }
 
   if (!osvDetails && ghPackages.length === 0) {
     return {
@@ -74,7 +92,9 @@ export async function runLocalRemediationPipeline(
       vulnerablePackages,
       results: collectedResults,
       agentSteps,
-      summary: `Local mode failed at lookup-cve: ${normalizedId} not found in OSV or GitHub advisory data.`,
+      summary: offlineIntelligence
+        ? `Offline mode: ${normalizedId} not found in intelligence snapshot.`
+        : `Local mode failed at lookup-cve: ${normalizedId} not found in OSV or GitHub advisory data.`,
       correlation: {
         requestId: options.requestId,
         sessionId: options.sessionId,
@@ -94,7 +114,9 @@ export async function runLocalRemediationPipeline(
   if (ghPackages.length > 0) {
     cveDetails = mergeGhDataIntoCveDetails(cveDetails, ghPackages);
   }
-  cveDetails = await enrichWithNvd(cveDetails);
+  if (!offlineIntelligence) {
+    cveDetails = await enrichWithNvd(cveDetails);
+  }
 
   const preflight = await runSecOpsPreflight(normalizedId, cveDetails, {
     suppressions,
@@ -229,6 +251,7 @@ export async function runLocalRemediationPipeline(
         installPreferOffline: constraints.installPreferOffline,
         enforceFrozenLockfile: constraints.enforceFrozenLockfile,
         workspace: constraints.workspace,
+        vulnerableRange: vulnerable.affected.vulnerableRange,
       });
       agentSteps += fallback.steps;
       const fallbackResult = fallback.result;

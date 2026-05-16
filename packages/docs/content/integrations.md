@@ -468,12 +468,17 @@ autoremediator-mcp
 
 Tools exposed:
 
+- `health` — server readiness, version, tool count, and capability list
 - `remediate`
 - `planRemediation`
 - `remediateFromScan`
+- `remediatePortfolio`
 - `listPatchArtifacts`
 - `inspectPatchArtifact`
 - `validatePatchArtifact`
+- `updateOutdated`
+
+The `health` tool returns `{ status, version, toolCount, capabilities }`, allowing MCP hosts to introspect available capabilities without additional configuration.
 
 Why use MCP: standard tool contracts for AI host ecosystems, with typed request/response patterns.
 

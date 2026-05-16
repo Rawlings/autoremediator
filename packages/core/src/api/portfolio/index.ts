@@ -8,7 +8,7 @@ import type {
 import type { ScanReport } from "../contracts.js";
 import { remediate } from "../remediate/index.js";
 import { remediateFromScan } from "../remediate-from-scan/index.js";
-import { assertValidSimulationMode } from "../reporting.js";
+import { assertValidSimulationMode, buildSlaBreachSummary } from "../reporting.js";
 import { rankPortfolioTargets } from "./risk-score.js";
 
 function toTargetStatusFromRemediation(report: RemediationReport): "ok" | "partial" | "failed" {
@@ -135,6 +135,12 @@ export async function remediatePortfolio(
 
   const overallStatus = failedCount === 0 ? "ok" : successCount > 0 ? "partial" : "failed";
 
+  const allRemediationReports: RemediationReport[] = results.flatMap((r) => {
+    if (r.remediationReport) return [r.remediationReport];
+    const scan = r.scanReport as ScanReport | undefined;
+    return scan?.reports ?? [];
+  });
+
   return {
     schemaVersion: "1.0",
     status: overallStatus,
@@ -143,5 +149,6 @@ export async function remediatePortfolio(
     successCount,
     failedCount,
     changeRequests: changeRequests.length > 0 ? changeRequests : undefined,
+    slaBreachSummary: buildSlaBreachSummary(allRemediationReports),
   };
 }

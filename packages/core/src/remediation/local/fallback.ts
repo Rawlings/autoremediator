@@ -59,6 +59,7 @@ export async function tryLocalPatchFallback(params: {
   installPreferOffline?: boolean;
   enforceFrozenLockfile?: boolean;
   workspace?: string;
+  vulnerableRange?: string;
 }): Promise<{ result: PatchResult; steps: number; usage: LlmUsageMetrics[] }> {
   const usage: LlmUsageMetrics[] = [];
   let steps = 0;
@@ -283,6 +284,7 @@ export async function tryLocalPatchFallback(params: {
       dependencyScope: params.dependencyScope,
       confidence: patchResult.confidence,
       riskLevel: patchResult.riskLevel,
+      vulnerableRange: params.vulnerableRange,
       consensusVerdict,
       unresolvedReason:
         !Boolean(applyResult.applied) && !Boolean(applyResult.dryRun)

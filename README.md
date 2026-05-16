@@ -19,7 +19,7 @@ The outcome is reduced mean time to remediation (MTTR), narrower exposure window
 
 See the [documentation](https://rawlings.github.io/autoremediator/docs/getting-started) to get started.
 
-## A remediation control plane, not a scanner
+## Built to fix, not just find
 
 Most SCA tools stop at detection. Autoremediator starts there.
 

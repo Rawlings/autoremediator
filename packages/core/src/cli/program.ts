@@ -91,6 +91,8 @@ function addSharedOptions(
     .option("--escalate-on-kev", OPTION_DESCRIPTIONS.dispositionPolicyEscalateOnKev, false)
     .option("--containment-mode", OPTION_DESCRIPTIONS.containmentMode, false)
     .option("--campaign-mode", OPTION_DESCRIPTIONS.campaignMode, false)
+    .option("--offline", OPTION_DESCRIPTIONS.offlineIntelligence, false)
+    .option("--intelligence-snapshot <path>", OPTION_DESCRIPTIONS.intelligenceSnapshotPath)
     .option("--create-change-request", OPTION_DESCRIPTIONS.createChangeRequest, false)
     .option("--change-request-provider <provider>", OPTION_DESCRIPTIONS.changeRequestProvider)
     .option("--change-request-grouping <grouping>", OPTION_DESCRIPTIONS.changeRequestGrouping)
@@ -131,7 +133,7 @@ export function createProgram(): Command {
       ...(command.optsWithGlobals() as Partial<CommandOptions>),
     } as CommandOptions;
     validateSharedCommandOptions(merged);
-    validateOutputFormat(merged.outputFormat, ["text", "json", "sarif"], "cve");
+    validateOutputFormat(merged.outputFormat, ["text", "json", "sarif", "cyclonedx-vex"], "cve");
     await runSingleCve(cveId, merged);
   });
 
@@ -150,7 +152,7 @@ export function createProgram(): Command {
     } as CommandOptions;
 
     validateSharedCommandOptions(merged);
-    validateOutputFormat(merged.outputFormat, ["text", "json", "sarif"], "scan");
+    validateOutputFormat(merged.outputFormat, ["text", "json", "sarif", "cyclonedx-vex"], "scan");
 
     if (!merged.audit && !merged.input) {
       throw new Error("scan mode requires --input unless --audit is enabled.");

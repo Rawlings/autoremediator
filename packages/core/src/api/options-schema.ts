@@ -66,6 +66,8 @@ export const OPTION_DESCRIPTIONS = {
   containmentMode: "Block escalation-disposition results from being applied and record containment in evidence",
   campaignMode: "Enable portfolio campaign mode to risk-rank targets before execution",
   escalationGraph: "Optional mapping from unresolved reasons to intended escalation actions",
+  offlineIntelligence: "Skip all network calls to intelligence sources. Only local inventory and npm-registry version resolution proceed.",
+  intelligenceSnapshotPath: "Path to a local JSON snapshot of pre-fetched CVE intelligence (keyed by CVE ID) used when offline mode is active.",
 } as const;
 
 export function createConstraintSchemaProperties(): Record<string, JsonSchemaProperty> {
@@ -245,6 +247,8 @@ export function createRemediateOptionSchemaProperties(options?: {
       },
       additionalProperties: false,
     },
+    offlineIntelligence: { type: "boolean", description: OPTION_DESCRIPTIONS.offlineIntelligence },
+    intelligenceSnapshotPath: { type: "string", description: OPTION_DESCRIPTIONS.intelligenceSnapshotPath },
   };
 }
 

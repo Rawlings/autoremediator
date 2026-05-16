@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.15.0
+
+### Added
+
+- MCP `health` tool now returns `version`, `toolCount`, and `capabilities` in addition to `status` — MCP hosts can introspect the server's registered tool list without a separate discovery step.
+- `PatchResult.vulnerableRange` is now populated for all patch-file strategy results and for `no-safe-version` unresolved outcomes — carries the CVE-affected semver range from `AffectedPackage.vulnerableRange`.
+- `SlaBreachEntry` interface added to public types: per-CVE breach record with `cveId`, `severity`, `hoursOverdue`, `deadlineAt`, and `recommendedAction`.
+- `SlaBreachSummary` interface added to public types: aggregates `breachCount` and a typed `breaches` array of `SlaBreachEntry` records.
+- `buildSlaBreachSummary(reports)` exported from the SDK: derives a `SlaBreachSummary` from an array of `RemediationReport` instances, using each report's `slaBreaches` list and resolving `recommendedAction` from the first non-`"none"` escalation action in that report's results (defaulting to `"open-issue"`).
+- `slaBreachSummary` field added to `ScanReport`, `CiSummary`, and `PortfolioReport` — populated automatically by `remediateFromScan`, `toCiSummary`, and `remediatePortfolio`.
+- `EvidenceSummary.slaBreachSummary` field added — written to evidence artifacts when a scan run produces SLA breaches.
+- CLI text output now emits three additional informational lines when relevant:
+  - **Transitive remediations notice**: `Transitive remediations: N (fixed without requiring upstream patch)` when `dependencyScopeCounts.transitive > 0`.
+  - **Patch-generated block**: count, average confidence, and `Vulnerable range` lines for each unique `vulnerableRange` across patch-file results.
+  - **SLA breach block**: breach count and per-CVE `cveId`, `severity`, `hoursOverdue`, and `recommendedAction` when `slaBreachSummary` is present.
+- These new text output blocks are present in both `runScanInput` (scan mode) and `runSingleCve` (single-CVE mode).
+- Async job model: `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob` — submit remediation work as background jobs and return a `JobHandle` immediately. `pollJob(jobId)` polls job status and retrieves the result or error when complete. Available via SDK, MCP (`submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob`), and OpenAPI (`POST /jobs/remediate`, `POST /jobs/scan`, `POST /jobs/portfolio`, `GET /jobs/:jobId`). Suitable for control plane integrations and multi-repo automation that cannot block on long-running runs.
+- CycloneDX VEX: `toCycloneDxVex(report, options?)` — converts a `ScanReport` or `RemediationReport` to a CycloneDX 1.5 VEX compliance document. Applied version-bump results map to `resolved` + `update` response; applied patch-file results map to `resolved` + `workaround_available`; unresolved outcomes map to `in_triage`; VEX-suppressed outcomes map to `not_affected`. Available via SDK, CLI (`--output-format cyclonedx-vex`), MCP (`toVex`), and OpenAPI (`POST /vex`).
+- Offline intelligence: `offlineIntelligence` and `intelligenceSnapshotPath` options — skip all external CVE source calls (OSV, GitHub Advisory, NVD, CISA-KEV, EPSS) for air-gap and sovereign deployment scenarios. Supply pre-fetched CVE data from a local JSON snapshot via `intelligenceSnapshotPath`. CLI: `--offline`, `--intelligence-snapshot <path>`. GitHub Action: `offline` and `intelligence-snapshot` inputs. Evidence records `offlineMode: true` in provenance when active.
+
 ## 0.14.1
 
 ### Fixed

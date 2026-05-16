@@ -59,6 +59,11 @@ describe("openapi server", () => {
       listPatchArtifactsFn: vi.fn(async () => []),
       inspectPatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
       validatePatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
+      toVexFn: vi.fn(() => ({ bomFormat: "CycloneDX" }) as any),
+      submitRemediateJobFn: vi.fn(() => ({ jobId: "j1", status: "pending" as const, submittedAt: new Date().toISOString() })),
+      submitScanJobFn: vi.fn(() => ({ jobId: "j2", status: "pending" as const, submittedAt: new Date().toISOString() })),
+      submitPortfolioJobFn: vi.fn(() => ({ jobId: "j3", status: "pending" as const, submittedAt: new Date().toISOString() })),
+      pollJobFn: vi.fn(() => ({ jobId: "j1", status: "done" as const, submittedAt: new Date().toISOString() })),
     });
 
     expect(server).toBeDefined();

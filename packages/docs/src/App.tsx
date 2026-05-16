@@ -5,8 +5,7 @@ import remarkGfm from "remark-gfm";
 import "./App.css";
 
 import { Menu } from "./Menu";
-import { Footer } from "./Footer";
-import { DocPage, setCanonical } from "./DocPage";
+import { DocPage, headingComponents, setCanonical } from "./DocPage";
 import monorepoReadme from "../../../README.md?raw";
 
 function setMetaTag(key: "name" | "property", value: string, content: string): void {
@@ -25,6 +24,10 @@ function setMetaTag(key: "name" | "property", value: string, content: string): v
 
 function App() {
   const location = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!location.pathname.startsWith("/docs/")) {
@@ -51,7 +54,7 @@ function App() {
             path="/"
             element={(
               <article className="markdown-rendered">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{monorepoReadme}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={headingComponents}>{monorepoReadme}</ReactMarkdown>
               </article>
             )}
           />
@@ -59,8 +62,6 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-
-      <Footer />
     </div>
   );
 }

@@ -1,8 +1,44 @@
 import { useEffect } from "react";
 import { Navigate, useLocation, useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
+import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import "./DocPage.css";
+
+function extractText(node: React.ReactNode): string {
+  if (typeof node === "string") return node;
+  if (Array.isArray(node)) return node.map(extractText).join("");
+  if (node && typeof node === "object" && "props" in node) {
+    return extractText((node as React.ReactElement<{ children?: React.ReactNode }>).props.children);
+  }
+  return "";
+}
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim();
+}
+
+function makeHeading(level: 1 | 2 | 3 | 4 | 5 | 6) {
+  const Tag = `h${level}` as const;
+  return ({ children }: { children?: React.ReactNode }) => {
+    const id = slugify(extractText(children));
+    return <Tag id={id}>{children}</Tag>;
+  };
+}
+
+export const headingComponents: Partial<Components> = {
+  h1: makeHeading(1),
+  h2: makeHeading(2),
+  h3: makeHeading(3),
+  h4: makeHeading(4),
+  h5: makeHeading(5),
+  h6: makeHeading(6),
+};
 
 import gettingStarted from "../content/getting-started.md?raw";
 import cli from "../content/cli.md?raw";
@@ -87,10 +123,8 @@ export function DocPage() {
   }
 
   return (
-    <main className="content">
-      <article className="markdown-rendered">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{doc.body}</ReactMarkdown>
-      </article>
-    </main>
+    <article className="markdown-rendered">
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={headingComponents}>{doc.body}</ReactMarkdown>
+    </article>
   );
 }

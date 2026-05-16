@@ -1,20 +1,12 @@
 .markdown-rendered {
-  width: 100%;
   min-width: 0;
-  max-width: 100%;
-  overflow-x: hidden;
-  box-sizing: border-box;
-  margin: var(--space-0) auto;
-  border-radius: var(--radius-xl);
-  padding: var(--space-10) var(--space-11);
-  background:
-    linear-gradient(160deg, color-mix(in srgb, var(--color-surface-panel) 90%, transparent), color-mix(in srgb, var(--color-surface-panel-soft) 86%, transparent));
-  backdrop-filter: blur(0.5rem) saturate(115%);
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 0;
+  background: transparent;
   font-size: var(--typography-body-size);
   letter-spacing: var(--typography-body-tracking);
   line-height: var(--typography-body-leading);
-  animation: fade-in-up 0.42s ease;
-  box-shadow: var(--shadow-soft), inset 0 0.0625rem 0 var(--color-surface-highlight);
 }
 
 .markdown-rendered > :first-child {
@@ -212,7 +204,7 @@
   min-width: 0;
   background: var(--color-surface-prose-code-block);
   color: var(--color-ink-inverse);
-  border-radius: 0.75rem;
+  border-radius: 0;
   padding: var(--space-8);
   margin: var(--space-8) 0 var(--space-10);
   font-size: 0.95rem;
@@ -247,7 +239,7 @@
   padding: var(--space-5) var(--space-8);
   color: var(--color-ink-quote);
   background: var(--color-surface-prose-quote);
-  border-radius: 0 0.625rem 0.625rem 0;
+  border-radius: 0;
   line-height: var(--typography-leading-compact);
 }
 
@@ -270,37 +262,8 @@
 
 @media (max-width: 61.25rem) {
   .markdown-rendered {
-    padding: var(--space-8);
-    border-radius: var(--radius-md);
+    padding: 0;
   }
 }
 
-@keyframes reveal-on-scroll {
-  from {
-    opacity: 0.68;
-    transform: translateY(1rem) scale(0.985);
-    filter: saturate(0.88) blur(0.025rem);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: saturate(1) blur(0);
-  }
-}
 
-@supports (animation-timeline: view(block)) {
-  .markdown-rendered > * {
-    animation-name: reveal-on-scroll;
-    animation-duration: 1ms;
-    animation-fill-mode: both;
-    animation-timing-function: linear;
-    animation-timeline: view(block);
-    animation-range: entry 0% cover 36%;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .markdown-rendered > * {
-    animation: none;
-  }
-}

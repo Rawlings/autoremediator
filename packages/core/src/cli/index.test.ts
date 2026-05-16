@@ -12,6 +12,9 @@ const mocked = vi.hoisted(() => ({
   ciExitCode: vi.fn(),
   toSarifOutput: vi.fn(),
   validatePatchArtifact: vi.fn(),
+  buildStrategyCounts: vi.fn(() => undefined),
+  buildDependencyScopeCounts: vi.fn(() => undefined),
+  buildSlaBreachSummary: vi.fn(() => undefined),
   optionDescriptions: {
     cveId: "CVE ID, e.g. CVE-2021-23337",
     inputPath: "Absolute path to the scanner output file",
@@ -53,6 +56,9 @@ vi.mock("../api/index.js", () => ({
   ciExitCode: mocked.ciExitCode,
   toSarifOutput: mocked.toSarifOutput,
   validatePatchArtifact: mocked.validatePatchArtifact,
+  buildStrategyCounts: mocked.buildStrategyCounts,
+  buildDependencyScopeCounts: mocked.buildDependencyScopeCounts,
+  buildSlaBreachSummary: mocked.buildSlaBreachSummary,
   OPTION_DESCRIPTIONS: mocked.optionDescriptions,
 }));
 
@@ -578,5 +584,135 @@ describe("cli preview and correlation option forwarding", () => {
         }),
       })
     );
+  });
+});
+
+describe("cli competitive differentiation text output", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.exitCode = undefined;
+    mocked.remediate.mockResolvedValue({ summary: "ok", results: [] });
+    mocked.remediateFromScan.mockResolvedValue({
+      cveIds: ["CVE-2021-23337"],
+      reports: [],
+      successCount: 1,
+      failedCount: 0,
+      errors: [],
+      patchCount: 0,
+    });
+    mocked.listPatchArtifacts.mockResolvedValue([]);
+    mocked.remediatePortfolio.mockResolvedValue({ targets: [], successCount: 0, failedCount: 0 });
+    mocked.inspectPatchArtifact.mockResolvedValue({ patchFilePath: "./patches/lodash.patch", exists: true, diffValid: true });
+    mocked.validatePatchArtifact.mockResolvedValue({ patchFilePath: "./patches/lodash.patch", exists: true, manifestFound: true, diffValid: true, driftDetected: false, validationPhases: [] });
+    mocked.toCiSummary.mockReturnValue({ failedCount: 0 });
+    mocked.ciExitCode.mockReturnValue(0);
+    mocked.toSarifOutput.mockReturnValue({ version: "2.1.0", runs: [] });
+  });
+
+  it("emits Patch-generated line when strategyCounts has patch-file results", async () => {
+    mocked.remediateFromScan.mockResolvedValue({
+      cveIds: ["CVE-2021-23337"],
+      reports: [
+        {
+          cveId: "CVE-2021-23337",
+          results: [
+            {
+              packageName: "sjcl",
+              strategy: "patch-file",
+              fromVersion: "1.0.8",
+              applied: true,
+              dryRun: false,
+              confidence: 0.88,
+              vulnerableRange: ">=1.0.0 <1.0.9",
+              message: "patched",
+            },
+          ],
+        },
+      ],
+      successCount: 1,
+      failedCount: 0,
+      errors: [],
+      patchCount: 1,
+      strategyCounts: { "patch-file": 1 },
+      dependencyScopeCounts: { direct: 1 },
+    });
+
+    const written: string[] = [];
+    const spy = vi.spyOn(process.stdout, "write").mockImplementation((s: unknown) => {
+      written.push(String(s));
+      return true;
+    });
+
+    const program = createProgram();
+    await program.parseAsync(["node", "autoremediator", "--input", "./audit.json"]);
+
+    spy.mockRestore();
+
+    expect(written.some((s) => s.includes("Patch-generated (no upstream fix): 1"))).toBe(true);
+    expect(written.some((s) => s.includes("Avg patch confidence: 0.88"))).toBe(true);
+    expect(written.some((s) => s.includes("Vulnerable range: >=1.0.0 <1.0.9"))).toBe(true);
+  });
+
+  it("emits SLA breaches line when slaBreachSummary is present", async () => {
+    mocked.remediateFromScan.mockResolvedValue({
+      cveIds: ["CVE-2021-23337"],
+      reports: [],
+      successCount: 0,
+      failedCount: 1,
+      errors: [],
+      patchCount: 0,
+      slaBreachSummary: {
+        breachCount: 1,
+        breaches: [
+          {
+            cveId: "CVE-2021-23337",
+            severity: "HIGH",
+            hoursOverdue: 48,
+            deadlineAt: "2025-01-04T00:00:00.000Z",
+            recommendedAction: "open-issue",
+          },
+        ],
+      },
+    });
+
+    const written: string[] = [];
+    const spy = vi.spyOn(process.stdout, "write").mockImplementation((s: unknown) => {
+      written.push(String(s));
+      return true;
+    });
+
+    const program = createProgram();
+    await program.parseAsync(["node", "autoremediator", "--input", "./audit.json"]);
+
+    spy.mockRestore();
+
+    expect(written.some((s) => s.includes("SLA breaches: 1 CVE(s) overdue"))).toBe(true);
+    expect(written.some((s) => s.includes("CVE-2021-23337: HIGH, 48h overdue"))).toBe(true);
+    expect(written.some((s) => s.includes("open-issue"))).toBe(true);
+  });
+
+  it("emits transitive remediations notice when dependencyScopeCounts.transitive > 0", async () => {
+    mocked.remediateFromScan.mockResolvedValue({
+      cveIds: ["CVE-2021-23337"],
+      reports: [],
+      successCount: 2,
+      failedCount: 0,
+      errors: [],
+      patchCount: 0,
+      dependencyScopeCounts: { direct: 1, transitive: 2 },
+    });
+
+    const written: string[] = [];
+    const spy = vi.spyOn(process.stdout, "write").mockImplementation((s: unknown) => {
+      written.push(String(s));
+      return true;
+    });
+
+    const program = createProgram();
+    await program.parseAsync(["node", "autoremediator", "--input", "./audit.json"]);
+
+    spy.mockRestore();
+
+    expect(written.some((s) => s.includes("Transitive remediations: 2 (fixed without requiring upstream patch)"))).toBe(true);
   });
 });

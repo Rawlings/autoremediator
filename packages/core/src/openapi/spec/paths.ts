@@ -388,5 +388,189 @@ export function createOpenApiPaths() {
         },
       },
     },
+    "/vex": {
+      post: {
+        operationId: "toVex",
+        summary: "Convert a ScanReport or RemediationReport to a CycloneDX 1.5 VEX document",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["report"],
+                properties: {
+                  report: {
+                    type: "object",
+                    description: "A ScanReport or RemediationReport object returned by remediate, planRemediation, or remediateFromScan.",
+                  },
+                  options: {
+                    type: "object",
+                    properties: {
+                      toolVersion: { type: "string", description: "Tool version to embed in VEX document metadata." },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "CycloneDX 1.5 VEX document",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    bomFormat: { type: "string" },
+                    specVersion: { type: "string" },
+                    version: { type: "number" },
+                    serialNumber: { type: "string" },
+                    metadata: { type: "object" },
+                    vulnerabilities: { type: "array", items: { type: "object" } },
+                  },
+                },
+              },
+            },
+          },
+          "400": {
+            description: "Invalid input",
+            content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } },
+          },
+        },
+      },
+    },
+    "/jobs/remediate": {
+      post: {
+        operationId: "submitRemediateJob",
+        summary: "Submit a single-CVE remediation as a background async job",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["cveId"],
+                properties: {
+                  cveId: { type: "string", description: OPTION_DESCRIPTIONS.cveId, pattern: "^CVE-\\d{4}-\\d+$" },
+                  options: { type: "object", description: "RemediateOptions", properties: createRemediateOptionSchemaProperties() },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "202": {
+            description: "JobHandle",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    jobId: { type: "string" },
+                    status: { type: "string", enum: ["pending", "running", "done", "failed"] },
+                    submittedAt: { type: "string", format: "date-time" },
+                  },
+                },
+              },
+            },
+          },
+          "400": { description: "Invalid input", content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } } },
+        },
+      },
+    },
+    "/jobs/scan": {
+      post: {
+        operationId: "submitScanJob",
+        summary: "Submit a scan-file remediation as a background async job",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["inputPath"],
+                properties: {
+                  inputPath: { type: "string", description: OPTION_DESCRIPTIONS.inputPath },
+                  options: { type: "object", properties: createScanOptionSchemaProperties() },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "202": {
+            description: "JobHandle",
+            content: { "application/json": { schema: { type: "object", properties: { jobId: { type: "string" }, status: { type: "string" }, submittedAt: { type: "string" } } } } },
+          },
+          "400": { description: "Invalid input", content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } } },
+        },
+      },
+    },
+    "/jobs/portfolio": {
+      post: {
+        operationId: "submitPortfolioJob",
+        summary: "Submit a portfolio remediation as a background async job",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["targets"],
+                properties: {
+                  targets: { type: "array", items: { type: "object", required: ["cwd"], properties: { cwd: { type: "string" }, label: { type: "string" }, cveId: { type: "string" }, inputPath: { type: "string" } } } },
+                  options: { type: "object", properties: createRemediateOptionSchemaProperties() },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "202": {
+            description: "JobHandle",
+            content: { "application/json": { schema: { type: "object", properties: { jobId: { type: "string" }, status: { type: "string" }, submittedAt: { type: "string" } } } } },
+          },
+          "400": { description: "Invalid input", content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } } },
+        },
+      },
+    },
+    "/jobs/{jobId}": {
+      get: {
+        operationId: "pollJob",
+        summary: "Poll the status of a submitted background job",
+        parameters: [
+          {
+            name: "jobId",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+            description: "Job ID returned by a submit job endpoint.",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "AsyncRemediationJob",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    jobId: { type: "string" },
+                    status: { type: "string", enum: ["pending", "running", "done", "failed"] },
+                    submittedAt: { type: "string", format: "date-time" },
+                    completedAt: { type: "string", format: "date-time" },
+                    result: { type: "object" },
+                    error: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          "404": { description: "Job not found", content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } } },
+        },
+      },
+    },
   } as const;
 }

@@ -22,9 +22,14 @@ import {
   listPatchArtifacts,
   OPTION_DESCRIPTIONS,
   planRemediation,
+  pollJob,
   remediate,
   remediatePortfolio,
   remediateFromScan,
+  submitPortfolioJob,
+  submitRemediateJob,
+  submitScanJob,
+  toCycloneDxVex,
   updateOutdated,
   validatePatchArtifact,
 } from "../api/index.js";
@@ -50,6 +55,11 @@ interface McpApiDeps {
   listPatchArtifactsFn: typeof listPatchArtifacts;
   inspectPatchArtifactFn: typeof inspectPatchArtifact;
   validatePatchArtifactFn: typeof validatePatchArtifact;
+  toVexFn: typeof toCycloneDxVex;
+  submitRemediateJobFn: typeof submitRemediateJob;
+  submitScanJobFn: typeof submitScanJob;
+  submitPortfolioJobFn: typeof submitPortfolioJob;
+  pollJobFn: typeof pollJob;
 }
 
 const defaultDeps: McpApiDeps = {
@@ -62,6 +72,11 @@ const defaultDeps: McpApiDeps = {
   listPatchArtifactsFn: listPatchArtifacts,
   inspectPatchArtifactFn: inspectPatchArtifact,
   validatePatchArtifactFn: validatePatchArtifact,
+  toVexFn: toCycloneDxVex,
+  submitRemediateJobFn: submitRemediateJob,
+  submitScanJobFn: submitScanJob,
+  submitPortfolioJobFn: submitPortfolioJob,
+  pollJobFn: pollJob,
 };
 
 function createBaseServer(): Server {
@@ -78,7 +93,7 @@ function createBaseServer(): Server {
 export const TOOLS = [
   {
     name: "health",
-    description: "Health check tool that returns server readiness status.",
+    description: "Health check tool that returns server readiness status, version, registered tool count, and the list of available capability names.",
     inputSchema: {
       type: "object",
       properties: {},
@@ -196,6 +211,83 @@ export const TOOLS = [
       properties: createUpdateOutdatedOptionSchemaProperties(),
     },
   },
+  {
+    name: "toVex",
+    description: "Convert a ScanReport or RemediationReport to a CycloneDX 1.5 VEX document. Returns a compliance-ready vulnerability exploitability exchange record binding remediation evidence to SBOM vulnerability entries.",
+    inputSchema: {
+      type: "object",
+      required: ["report"],
+      properties: {
+        report: {
+          type: "object",
+          description: "A ScanReport or RemediationReport object returned by remediate, planRemediation, or remediateFromScan.",
+        },
+        toolVersion: {
+          type: "string",
+          description: "Optional tool version to embed in the VEX document metadata.",
+        },
+      },
+    },
+  },
+  {
+    name: "submitRemediateJob",
+    description: "Submit a single-CVE remediation as a background async job. Returns a JobHandle immediately with a jobId. Use pollJob to check status and retrieve the result.",
+    inputSchema: {
+      type: "object",
+      required: ["cveId"],
+      properties: {
+        cveId: { type: "string", description: OPTION_DESCRIPTIONS.cveId },
+        ...createRemediateOptionSchemaProperties(),
+      },
+    },
+  },
+  {
+    name: "submitScanJob",
+    description: "Submit a scan-file remediation as a background async job. Returns a JobHandle immediately. Use pollJob to check status.",
+    inputSchema: {
+      type: "object",
+      required: ["inputPath"],
+      properties: {
+        inputPath: { type: "string", description: OPTION_DESCRIPTIONS.inputPath },
+        ...createScanOptionSchemaProperties(),
+      },
+    },
+  },
+  {
+    name: "submitPortfolioJob",
+    description: "Submit a portfolio remediation as a background async job. Returns a JobHandle immediately. Use pollJob to check status.",
+    inputSchema: {
+      type: "object",
+      required: ["targets"],
+      properties: {
+        targets: {
+          type: "array",
+          items: {
+            type: "object",
+            required: ["cwd"],
+            properties: {
+              cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
+              label: { type: "string" },
+              cveId: { type: "string", description: OPTION_DESCRIPTIONS.cveId },
+              inputPath: { type: "string", description: OPTION_DESCRIPTIONS.inputPath },
+            },
+          },
+        },
+        ...createRemediateOptionSchemaProperties(),
+      },
+    },
+  },
+  {
+    name: "pollJob",
+    description: "Poll the status of a submitted background job. Returns the full AsyncRemediationJob including result when status is 'done' or error when 'failed'.",
+    inputSchema: {
+      type: "object",
+      required: ["jobId"],
+      properties: {
+        jobId: { type: "string", description: "Job ID returned by submitRemediateJob, submitScanJob, or submitPortfolioJob." },
+      },
+    },
+  },
 ];
 
 export async function handleToolCall(
@@ -210,7 +302,13 @@ export async function handleToolCall(
 
   try {
     if (name === "health") {
-      const report = await deps.healthFn();
+      const healthStatus = await deps.healthFn();
+      const report = {
+        ...healthStatus,
+        version: PACKAGE_VERSION,
+        toolCount: TOOLS.length,
+        capabilities: TOOLS.map((t) => t.name),
+      };
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
@@ -267,6 +365,42 @@ export async function handleToolCall(
         options as Parameters<typeof validatePatchArtifact>[1]
       );
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
+    }
+
+    if (name === "submitRemediateJob") {
+      const { cveId, ...options } = args as { cveId: string; [key: string]: unknown };
+      const handle = deps.submitRemediateJobFn(cveId, withMcpSource(options) as Parameters<typeof submitRemediateJob>[1]);
+      return { content: [{ type: "text", text: JSON.stringify(handle, null, 2) }] };
+    }
+
+    if (name === "submitScanJob") {
+      const { inputPath, ...options } = args as { inputPath: string; [key: string]: unknown };
+      const handle = deps.submitScanJobFn(inputPath, withMcpSource(options) as Parameters<typeof submitScanJob>[1]);
+      return { content: [{ type: "text", text: JSON.stringify(handle, null, 2) }] };
+    }
+
+    if (name === "submitPortfolioJob") {
+      const { targets, ...options } = args as { targets: unknown[]; [key: string]: unknown };
+      const handle = deps.submitPortfolioJobFn(
+        targets as Parameters<typeof submitPortfolioJob>[0],
+        withMcpSource(options) as Parameters<typeof submitPortfolioJob>[1]
+      );
+      return { content: [{ type: "text", text: JSON.stringify(handle, null, 2) }] };
+    }
+
+    if (name === "pollJob") {
+      const { jobId } = args as { jobId: string };
+      const job = deps.pollJobFn(jobId);
+      return { content: [{ type: "text", text: JSON.stringify(job, null, 2) }] };
+    }
+
+    if (name === "toVex") {
+      const { report, toolVersion } = args as { report: unknown; toolVersion?: string };
+      if (!report || typeof report !== "object") {
+        return { content: [{ type: "text", text: JSON.stringify({ error: "report is required (object)" }) }], isError: true };
+      }
+      const vex = deps.toVexFn(report as Parameters<typeof toCycloneDxVex>[0], toolVersion ? { toolVersion } : undefined);
+      return { content: [{ type: "text", text: JSON.stringify(vex, null, 2) }] };
     }
 
     return {

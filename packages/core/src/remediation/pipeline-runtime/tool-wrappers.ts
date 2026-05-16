@@ -62,11 +62,29 @@ export function createRuntimeToolsForRun(options: RemediateOptions) {
       }),
   };
 
-  return buildRuntimeTools({
+  const tools = buildRuntimeTools({
     checkInventoryToolForRun,
     applyVersionBumpToolForRun,
     applyPackageOverrideToolForRun,
     applyPatchFileToolForRun,
     constraints,
   });
+
+  if (options.offlineIntelligence) {
+    const offlineMessage = options.intelligenceSnapshotPath
+      ? `Offline mode: intelligence lookup via snapshot only. No live network calls.`
+      : `Offline mode: intelligence lookup skipped (no snapshot provided).`;
+
+    (tools as Record<string, unknown>)["lookup-cve"] = {
+      ...((tools as Record<string, unknown>)["lookup-cve"] as Record<string, unknown>),
+      execute: async (_input: Record<string, unknown>) => ({
+        cveId: ((_input as { cveId?: string }).cveId ?? "unknown").toUpperCase(),
+        found: false,
+        offlineMode: true,
+        message: offlineMessage,
+      }),
+    };
+  }
+
+  return tools;
 }

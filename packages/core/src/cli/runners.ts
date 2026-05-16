@@ -5,8 +5,12 @@ import {
   remediatePortfolio,
   remediate,
   remediateFromScan,
+  buildSlaBreachSummary,
+  buildStrategyCounts,
+  buildDependencyScopeCounts,
   type ScanReport,
   toCiSummary,
+  toCycloneDxVex,
   toSarifOutput,
   updateOutdated,
   validatePatchArtifact,
@@ -14,6 +18,7 @@ import {
 import { readFileSync, writeFileSync } from "node:fs";
 import { formatCountMap, logJson } from "./output.js";
 import type { CommandOptions } from "./types.js";
+import { PACKAGE_VERSION } from "../version.js";
 
 function assertPatchOutputFormat(format: string): void {
   if (format !== "text" && format !== "json") {
@@ -71,6 +76,9 @@ function asSingleCveScanReport(report: Awaited<ReturnType<typeof remediate>>): S
     errors: [],
     evidenceFile: report.evidenceFile,
     patchCount: report.results.filter((result) => result.strategy === "patch-file").length,
+    strategyCounts: buildStrategyCounts([report]),
+    dependencyScopeCounts: buildDependencyScopeCounts([report]),
+    slaBreachSummary: buildSlaBreachSummary([report]),
     correlation: report.correlation,
     provenance: report.provenance,
     constraints: report.constraints,
@@ -135,12 +143,22 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
     containmentMode: opts.containmentMode,
     changeRequest,
     dispositionPolicy: resolveDispositionPolicy(opts),
+    offlineIntelligence: opts.offline,
+    intelligenceSnapshotPath: opts.intelligenceSnapshot,
   });
 
   const reportAsScan = asSingleCveScanReport(report);
 
   if (opts.outputFormat === "sarif") {
     logJson(toSarifOutput(reportAsScan));
+    if (opts.ci) {
+      process.exitCode = ciExitCode(toCiSummary(reportAsScan));
+    }
+    return;
+  }
+
+  if (opts.outputFormat === "cyclonedx-vex") {
+    logJson(toCycloneDxVex(reportAsScan, { toolVersion: PACKAGE_VERSION }));
     if (opts.ci) {
       process.exitCode = ciExitCode(toCiSummary(reportAsScan));
     }
@@ -157,6 +175,34 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
 
   process.stdout.write(`${report.summary}\n`);
   process.stdout.write(`Results: ${report.results.length}\n`);
+  if (reportAsScan.dependencyScopeCounts?.transitive != null && reportAsScan.dependencyScopeCounts.transitive > 0) {
+    process.stdout.write(`  Transitive remediations: ${reportAsScan.dependencyScopeCounts.transitive} (fixed without requiring upstream patch)\n`);
+  }
+  const singlePatchFileCount = reportAsScan.strategyCounts?.["patch-file"] ?? 0;
+  if (singlePatchFileCount > 0) {
+    const singlePatchResults = report.results.filter((r) => r.strategy === "patch-file");
+    const singleConfidenceValues = singlePatchResults
+      .map((r) => r.confidence)
+      .filter((c): c is number => c != null);
+    const singleAvgConfidence =
+      singleConfidenceValues.length > 0
+        ? singleConfidenceValues.reduce((sum, c) => sum + c, 0) / singleConfidenceValues.length
+        : undefined;
+    process.stdout.write(`Patch-generated (no upstream fix): ${singlePatchFileCount}\n`);
+    if (singleAvgConfidence != null) {
+      process.stdout.write(`  Avg patch confidence: ${singleAvgConfidence.toFixed(2)}\n`);
+    }
+    const singleUniqueRanges = [...new Set(singlePatchResults.map((r) => r.vulnerableRange).filter(Boolean))];
+    for (const range of singleUniqueRanges) {
+      process.stdout.write(`  Vulnerable range: ${range}\n`);
+    }
+  }
+  if (reportAsScan.slaBreachSummary != null && reportAsScan.slaBreachSummary.breachCount > 0) {
+    process.stdout.write(`SLA breaches: ${reportAsScan.slaBreachSummary.breachCount} CVE(s) overdue\n`);
+    for (const breach of reportAsScan.slaBreachSummary.breaches) {
+      process.stdout.write(`  ${breach.cveId}: ${breach.severity}, ${breach.hoursOverdue}h overdue → ${breach.recommendedAction}\n`);
+    }
+  }
   if (report.evidenceFile) {
     process.stdout.write(`Evidence: ${report.evidenceFile}\n`);
   }
@@ -226,6 +272,8 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
     campaignMode: opts.campaignMode,
     changeRequest,
     dispositionPolicy: resolveDispositionPolicy(opts),
+    offlineIntelligence: opts.offline,
+    intelligenceSnapshotPath: opts.intelligenceSnapshot,
   });
 
   if (opts.summaryFile) {
@@ -235,6 +283,14 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
 
   if (opts.outputFormat === "sarif") {
     logJson(toSarifOutput(report));
+    if (opts.ci) {
+      process.exitCode = ciExitCode(toCiSummary(report));
+    }
+    return;
+  }
+
+  if (opts.outputFormat === "cyclonedx-vex") {
+    logJson(toCycloneDxVex(report, { toolVersion: PACKAGE_VERSION }));
     if (opts.ci) {
       process.exitCode = ciExitCode(toCiSummary(report));
     }
@@ -260,6 +316,36 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
   const dependencyScopeCounts = formatCountMap(report.dependencyScopeCounts);
   if (dependencyScopeCounts) {
     process.stdout.write(`Dependency scope counts: ${dependencyScopeCounts}\n`);
+  }
+  if (report.dependencyScopeCounts?.transitive != null && report.dependencyScopeCounts.transitive > 0) {
+    process.stdout.write(`  Transitive remediations: ${report.dependencyScopeCounts.transitive} (fixed without requiring upstream patch)\n`);
+  }
+  const patchFileCount = report.strategyCounts?.["patch-file"] ?? 0;
+  if (patchFileCount > 0) {
+    const patchResults = report.reports
+      .flatMap((r) => r.results)
+      .filter((r) => r.strategy === "patch-file");
+    const confidenceValues = patchResults
+      .map((r) => r.confidence)
+      .filter((c): c is number => c != null);
+    const avgConfidence =
+      confidenceValues.length > 0
+        ? confidenceValues.reduce((sum, c) => sum + c, 0) / confidenceValues.length
+        : undefined;
+    process.stdout.write(`Patch-generated (no upstream fix): ${patchFileCount}\n`);
+    if (avgConfidence != null) {
+      process.stdout.write(`  Avg patch confidence: ${avgConfidence.toFixed(2)}\n`);
+    }
+    const uniqueRanges = [...new Set(patchResults.map((r) => r.vulnerableRange).filter(Boolean))];
+    for (const range of uniqueRanges) {
+      process.stdout.write(`  Vulnerable range: ${range}\n`);
+    }
+  }
+  if (report.slaBreachSummary != null && report.slaBreachSummary.breachCount > 0) {
+    process.stdout.write(`SLA breaches: ${report.slaBreachSummary.breachCount} CVE(s) overdue\n`);
+    for (const breach of report.slaBreachSummary.breaches) {
+      process.stdout.write(`  ${breach.cveId}: ${breach.severity}, ${breach.hoursOverdue}h overdue → ${breach.recommendedAction}\n`);
+    }
   }
   const unresolvedByReason = formatCountMap(report.unresolvedByReason);
   if (unresolvedByReason) {

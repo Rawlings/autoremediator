@@ -11,6 +11,7 @@ import type {
   RemediationReport,
   SimulationSummary,
   SlaBreach,
+  SlaBreachSummary,
   UnresolvedReasonCounts,
 } from "../platform/types.js";
 import type { ScanInputFormat } from "../scanner/index.js";
@@ -50,6 +51,7 @@ export interface ScanReport {
   estimatedCostUsd?: number;
   totalLlmLatencyMs?: number;
   slaBreaches?: SlaBreach[];
+  slaBreachSummary?: SlaBreachSummary;
   changeRequests?: ChangeRequestResult[];
   dispositionCounts?: DispositionCounts;
   simulationSummary?: SimulationSummary;
@@ -84,6 +86,7 @@ export interface CiSummary {
   estimatedCostUsd?: number;
   totalLlmLatencyMs?: number;
   slaBreaches?: SlaBreach[];
+  slaBreachSummary?: SlaBreachSummary;
   changeRequests?: ChangeRequestResult[];
   dispositionCounts?: DispositionCounts;
   simulationSummary?: SimulationSummary;

@@ -23,6 +23,11 @@ describe("mcp tool contracts", () => {
       listPatchArtifactsFn: vi.fn(async () => []),
       inspectPatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
       validatePatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
+      toVexFn: vi.fn(() => ({ bomFormat: "CycloneDX" }) as any),
+      submitRemediateJobFn: vi.fn(() => ({ jobId: "j1", status: "pending", submittedAt: new Date().toISOString() })),
+      submitScanJobFn: vi.fn(() => ({ jobId: "j2", status: "pending", submittedAt: new Date().toISOString() })),
+      submitPortfolioJobFn: vi.fn(() => ({ jobId: "j3", status: "pending", submittedAt: new Date().toISOString() })),
+      pollJobFn: vi.fn(() => ({ jobId: "j1", status: "done", submittedAt: new Date().toISOString(), result: {} })),
     };
 
     const result = await handleToolCall("health", {}, deps as any);
@@ -30,6 +35,40 @@ describe("mcp tool contracts", () => {
     expect(deps.healthFn).toHaveBeenCalledTimes(1);
     expect(result.isError).toBeUndefined();
     expect(result.content[0]?.text).toContain("ok");
+  });
+
+  it("health response includes version, toolCount, and capabilities", async () => {
+    const deps = {
+      remediateFn: vi.fn(async () => ({ summary: "remediate" } as any)),
+      planRemediationFn: vi.fn(async () => ({ summary: "planned" } as any)),
+      remediateFromScanFn: vi.fn(async () => ({ status: "ok" } as any)),
+      remediatePortfolioFn: vi.fn(async () => ({ status: "ok", targets: [] } as any)),
+      updateOutdatedFn: vi.fn(async () => ({ status: "ok" } as any)),
+      healthFn: vi.fn(async () => ({ status: "ok" as const })),
+      listPatchArtifactsFn: vi.fn(async () => []),
+      inspectPatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
+      validatePatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
+      toVexFn: vi.fn(() => ({ bomFormat: "CycloneDX" }) as any),
+      submitRemediateJobFn: vi.fn(() => ({ jobId: "j1", status: "pending", submittedAt: new Date().toISOString() })),
+      submitScanJobFn: vi.fn(() => ({ jobId: "j2", status: "pending", submittedAt: new Date().toISOString() })),
+      submitPortfolioJobFn: vi.fn(() => ({ jobId: "j3", status: "pending", submittedAt: new Date().toISOString() })),
+      pollJobFn: vi.fn(() => ({ jobId: "j1", status: "done", submittedAt: new Date().toISOString(), result: {} })),
+    };
+
+    const result = await handleToolCall("health", {}, deps as any);
+
+    expect(result.isError).toBeUndefined();
+    const body = JSON.parse(result.content[0]?.text ?? "");
+    expect(body.status).toBe("ok");
+    expect(typeof body.version).toBe("string");
+    expect(typeof body.toolCount).toBe("number");
+    expect(body.toolCount).toBe(TOOLS.length);
+    expect(Array.isArray(body.capabilities)).toBe(true);
+    expect(body.capabilities).toContain("health");
+    expect(body.capabilities).toContain("remediate");
+    expect(body.capabilities).toContain("remediateFromScan");
+    expect(body.capabilities).toContain("remediatePortfolio");
+    expect(body.capabilities).toContain("updateOutdated");
   });
 
   it("declares preview and correlation fields on remediate and scan tools", () => {
@@ -99,6 +138,61 @@ describe("mcp tool contracts", () => {
     expect(server).toBeDefined();
   });
 
+  it("dispatches remediateFromScan with slaBreachSummary without serialization error", async () => {
+    const slaBreachSummary = {
+      breachCount: 1,
+      breaches: [
+        {
+          cveId: "CVE-2021-23337",
+          severity: "HIGH",
+          hoursOverdue: 48,
+          deadlineAt: "2025-01-04T00:00:00.000Z",
+          recommendedAction: "open-issue",
+        },
+      ],
+    };
+
+    const deps = {
+      remediateFn: vi.fn(async () => ({ summary: "remediate" } as any)),
+      planRemediationFn: vi.fn(async () => ({ summary: "planned" } as any)),
+      remediateFromScanFn: vi.fn(async () => ({
+        schemaVersion: "1.0",
+        status: "partial",
+        generatedAt: new Date().toISOString(),
+        cveIds: ["CVE-2021-23337"],
+        reports: [],
+        successCount: 0,
+        failedCount: 1,
+        errors: [],
+        patchCount: 0,
+        slaBreachSummary,
+      } as any)),
+      remediatePortfolioFn: vi.fn(async () => ({ status: "ok", targets: [] } as any)),
+      updateOutdatedFn: vi.fn(async () => ({ status: "ok" } as any)),
+      healthFn: vi.fn(async () => ({ status: "ok" as const })),
+      listPatchArtifactsFn: vi.fn(async () => []),
+      inspectPatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
+      validatePatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
+      toVexFn: vi.fn(() => ({ bomFormat: "CycloneDX" }) as any),
+      submitRemediateJobFn: vi.fn(() => ({ jobId: "j1", status: "pending", submittedAt: new Date().toISOString() })),
+      submitScanJobFn: vi.fn(() => ({ jobId: "j2", status: "pending", submittedAt: new Date().toISOString() })),
+      submitPortfolioJobFn: vi.fn(() => ({ jobId: "j3", status: "pending", submittedAt: new Date().toISOString() })),
+      pollJobFn: vi.fn(() => ({ jobId: "j1", status: "done", submittedAt: new Date().toISOString(), result: {} })),
+    };
+
+    const result = await handleToolCall(
+      "remediateFromScan",
+      { inputPath: "./audit.json", cwd: "/tmp/project" },
+      deps as any
+    );
+
+    expect(result.isError).toBeUndefined();
+    const text = result.content[0]?.text ?? "";
+    expect(() => JSON.parse(text)).not.toThrow();
+    expect(JSON.parse(text)).toHaveProperty("slaBreachSummary");
+    expect(JSON.parse(text).slaBreachSummary.breachCount).toBe(1);
+  });
+
   it("dispatches planRemediation calls through handler", async () => {
     const deps = {
       remediateFn: vi.fn(async () => ({ summary: "remediate" } as any)),
@@ -110,6 +204,11 @@ describe("mcp tool contracts", () => {
       listPatchArtifactsFn: vi.fn(async () => []),
       inspectPatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
       validatePatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
+      toVexFn: vi.fn(() => ({ bomFormat: "CycloneDX" }) as any),
+      submitRemediateJobFn: vi.fn(() => ({ jobId: "j1", status: "pending" as const, submittedAt: new Date().toISOString() })),
+      submitScanJobFn: vi.fn(() => ({ jobId: "j2", status: "pending" as const, submittedAt: new Date().toISOString() })),
+      submitPortfolioJobFn: vi.fn(() => ({ jobId: "j3", status: "pending" as const, submittedAt: new Date().toISOString() })),
+      pollJobFn: vi.fn(() => ({ jobId: "j1", status: "done" as const, submittedAt: new Date().toISOString() })),
     };
 
     const result = await handleToolCall(
@@ -137,6 +236,11 @@ describe("mcp tool contracts", () => {
       listPatchArtifactsFn: vi.fn(async () => []),
       inspectPatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
       validatePatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
+      toVexFn: vi.fn(() => ({ bomFormat: "CycloneDX" }) as any),
+      submitRemediateJobFn: vi.fn(() => ({ jobId: "j1", status: "pending", submittedAt: new Date().toISOString() })),
+      submitScanJobFn: vi.fn(() => ({ jobId: "j2", status: "pending", submittedAt: new Date().toISOString() })),
+      submitPortfolioJobFn: vi.fn(() => ({ jobId: "j3", status: "pending", submittedAt: new Date().toISOString() })),
+      pollJobFn: vi.fn(() => ({ jobId: "j1", status: "done", submittedAt: new Date().toISOString(), result: {} })),
     };
 
     const result = await handleToolCall(
@@ -166,6 +270,11 @@ describe("mcp tool contracts", () => {
       listPatchArtifactsFn: vi.fn(async () => [{ patchFilePath: "./patches/foo.patch" }]),
       inspectPatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch", exists: true } as any)),
       validatePatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch", diffValid: true } as any)),
+      toVexFn: vi.fn(() => ({ bomFormat: "CycloneDX" }) as any),
+      submitRemediateJobFn: vi.fn(() => ({ jobId: "j1", status: "pending", submittedAt: new Date().toISOString() })),
+      submitScanJobFn: vi.fn(() => ({ jobId: "j2", status: "pending", submittedAt: new Date().toISOString() })),
+      submitPortfolioJobFn: vi.fn(() => ({ jobId: "j3", status: "pending", submittedAt: new Date().toISOString() })),
+      pollJobFn: vi.fn(() => ({ jobId: "j1", status: "done", submittedAt: new Date().toISOString(), result: {} })),
     };
 
     const list = await handleToolCall("listPatchArtifacts", { cwd: "/tmp/project" }, deps as any);
@@ -191,5 +300,63 @@ describe("mcp tool contracts", () => {
     const result = await handleToolCall("does-not-exist", {});
     expect(result.isError).toBe(true);
     expect(result.content[0]?.text).toContain("Unknown tool");
+  });
+});
+
+describe("async job MCP tools", () => {
+  function makeJobDeps(overrides = {}) {
+    return {
+      remediateFn: vi.fn(async () => ({ summary: "remediate" } as any)),
+      planRemediationFn: vi.fn(async () => ({ summary: "planned" } as any)),
+      remediateFromScanFn: vi.fn(async () => ({ status: "ok" } as any)),
+      remediatePortfolioFn: vi.fn(async () => ({ status: "ok", targets: [] } as any)),
+      updateOutdatedFn: vi.fn(async () => ({ status: "ok" } as any)),
+      healthFn: vi.fn(async () => ({ status: "ok" as const })),
+      listPatchArtifactsFn: vi.fn(async () => []),
+      inspectPatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./p.patch" } as any)),
+      validatePatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./p.patch" } as any)),
+      toVexFn: vi.fn(() => ({ bomFormat: "CycloneDX" }) as any),
+      submitRemediateJobFn: vi.fn(() => ({ jobId: "test-job-1", status: "pending", submittedAt: new Date().toISOString() })),
+      submitScanJobFn: vi.fn(() => ({ jobId: "test-job-2", status: "pending", submittedAt: new Date().toISOString() })),
+      submitPortfolioJobFn: vi.fn(() => ({ jobId: "test-job-3", status: "pending", submittedAt: new Date().toISOString() })),
+      pollJobFn: vi.fn(() => ({ jobId: "test-job-1", status: "done", submittedAt: new Date().toISOString(), result: {} })),
+      ...overrides,
+    };
+  }
+
+  it("submitRemediateJob tool dispatches and returns JobHandle", async () => {
+    const deps = makeJobDeps();
+    const result = await handleToolCall("submitRemediateJob", { cveId: "CVE-2021-1234" }, deps as any);
+    expect(result.isError).toBeUndefined();
+    const body = JSON.parse(result.content[0]?.text ?? "");
+    expect(body.jobId).toBe("test-job-1");
+    expect(body.status).toBe("pending");
+    expect(deps.submitRemediateJobFn).toHaveBeenCalledWith("CVE-2021-1234", expect.objectContaining({ source: "mcp" }));
+  });
+
+  it("submitScanJob tool dispatches and returns JobHandle", async () => {
+    const deps = makeJobDeps();
+    const result = await handleToolCall("submitScanJob", { inputPath: "/tmp/audit.json" }, deps as any);
+    expect(result.isError).toBeUndefined();
+    const body = JSON.parse(result.content[0]?.text ?? "");
+    expect(body.jobId).toBe("test-job-2");
+    expect(deps.submitScanJobFn).toHaveBeenCalledWith("/tmp/audit.json", expect.objectContaining({ source: "mcp" }));
+  });
+
+  it("submitPortfolioJob tool dispatches and returns JobHandle", async () => {
+    const deps = makeJobDeps();
+    const result = await handleToolCall("submitPortfolioJob", { targets: [{ cwd: "/tmp" }] }, deps as any);
+    expect(result.isError).toBeUndefined();
+    const body = JSON.parse(result.content[0]?.text ?? "");
+    expect(body.jobId).toBe("test-job-3");
+  });
+
+  it("pollJob tool dispatches and returns job state", async () => {
+    const deps = makeJobDeps();
+    const result = await handleToolCall("pollJob", { jobId: "test-job-1" }, deps as any);
+    expect(result.isError).toBeUndefined();
+    const body = JSON.parse(result.content[0]?.text ?? "");
+    expect(body.status).toBe("done");
+    expect(deps.pollJobFn).toHaveBeenCalledWith("test-job-1");
   });
 });

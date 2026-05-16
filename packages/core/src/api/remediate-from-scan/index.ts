@@ -9,7 +9,7 @@ import { resolveConstraints, resolveCorrelationContext, resolveProvenanceContext
 import { executeScanRemediations } from "../scan-execution.js";
 import { buildScanOutcome } from "../scan-outcome.js";
 import { aggregateScanLlmUsage } from "./report-metrics.js";
-import { assertValidSimulationMode, buildEscalationCounts } from "../reporting.js";
+import { assertValidSimulationMode, buildEscalationCounts, buildSlaBreachSummary } from "../reporting.js";
 
 function countContainedResults(reports: RemediationReport[]): number {
   let containmentCount = 0;
@@ -110,6 +110,7 @@ export async function remediateFromScan(
     escalationCounts,
     containmentCount,
     simulationSummary,
+    slaBreachSummary: buildSlaBreachSummary(reports),
     patchesDir: patchCount > 0 ? patchesDir : undefined,
     llmUsageCount: llmUsageTotals.llmUsageCount > 0 ? llmUsageTotals.llmUsageCount : undefined,
     estimatedCostUsd: llmUsageTotals.estimatedCostUsd,
@@ -154,5 +155,6 @@ export async function remediateFromScan(
     totalLlmLatencyMs: llmUsageTotals.totalLlmLatencyMs,
     changeRequests,
     simulationSummary,
+    slaBreachSummary: buildSlaBreachSummary(reports),
   };
 }

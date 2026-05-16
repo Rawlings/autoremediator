@@ -123,6 +123,19 @@ export interface SlaBreach {
   hoursOverdue: number;
 }
 
+export interface SlaBreachEntry {
+  cveId: string;
+  severity: CveSeverity;
+  hoursOverdue: number;
+  deadlineAt: string;
+  recommendedAction: EscalationAction;
+}
+
+export interface SlaBreachSummary {
+  breachCount: number;
+  breaches: SlaBreachEntry[];
+}
+
 export type PatchValidationPhaseName =
   | "diff-format"
   | "patch-write"
@@ -426,6 +439,7 @@ export interface PortfolioReport {
   successCount: number;
   failedCount: number;
   changeRequests?: ChangeRequestResult[];
+  slaBreachSummary?: SlaBreachSummary;
   correlation?: CorrelationContext;
   provenance?: ProvenanceContext;
   constraints?: RemediationConstraints;
@@ -452,6 +466,8 @@ export interface PatchResult {
   message: string;
   dependencyScope?: DependencyScope;
   confidence?: number;
+  /** CVE-affected semver range; populated when no upstream release exists and the fix was LLM-generated, or when version resolution was performed. */
+  vulnerableRange?: string;
   riskLevel?: PatchRiskLevel;
   unresolvedReason?: UnresolvedReason;
   reachability?: ReachabilityAssessment;
@@ -595,6 +611,10 @@ export interface RemediateOptions extends CorrelationContext {
   campaignMode?: boolean;
   /** Optional unresolved-reason-to-action escalation mapping. */
   escalationGraph?: EscalationGraph;
+  /** If true, skip all network calls to intelligence sources (OSV, GitHub Advisory, NVD, CISA-KEV, EPSS). Only local inventory and npm-registry version resolution proceed. */
+  offlineIntelligence?: boolean;
+  /** Path to a local JSON snapshot of pre-fetched CVE intelligence. Used when offlineIntelligence is true to supply CveDetails without network calls. */
+  intelligenceSnapshotPath?: string;
 }
 
 export type SbomStatus = "patched" | "unpatched" | "skipped" | "suppressed";

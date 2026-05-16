@@ -108,5 +108,49 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
     );
   });
 
+  routes.set("POST /vex", async (req, res) => {
+    const body = await readJsonBody<{ report?: unknown; options?: { toolVersion?: string } }>(req, res);
+    if (!body) return;
+    if (!body.report || typeof body.report !== "object") {
+      sendJson(res, 400, { error: "report is required (object)" });
+      return;
+    }
+    await runRequest(res, () =>
+      Promise.resolve(
+        deps.toVexFn(body.report as Parameters<OpenApiServerDeps["toVexFn"]>[0], body.options)
+      )
+    );
+  });
+
+  routes.set("POST /jobs/remediate", async (req, res) => {
+    const body = await readJsonBody<{ cveId?: unknown; options?: unknown }>(req, res);
+    const cveId = requireStringField(body as Record<string, unknown> | undefined, "cveId", res, "cveId is required (string)");
+    if (!cveId) return;
+    const handle = deps.submitRemediateJobFn(cveId, withOpenApiSource(body?.options) as Parameters<OpenApiServerDeps["submitRemediateJobFn"]>[1]);
+    sendJson(res, 202, handle);
+  });
+
+  routes.set("POST /jobs/scan", async (req, res) => {
+    const body = await readJsonBody<{ inputPath?: unknown; options?: unknown }>(req, res);
+    const inputPath = requireStringField(body as Record<string, unknown> | undefined, "inputPath", res, "inputPath is required (string)");
+    if (!inputPath) return;
+    const handle = deps.submitScanJobFn(inputPath, withOpenApiSource(body?.options) as Parameters<OpenApiServerDeps["submitScanJobFn"]>[1]);
+    sendJson(res, 202, handle);
+  });
+
+  routes.set("POST /jobs/portfolio", async (req, res) => {
+    const body = await readJsonBody<{ targets?: unknown; options?: unknown }>(req, res);
+    if (!body) return;
+    if (!Array.isArray(body.targets)) {
+      sendJson(res, 400, { error: "targets is required (array)" });
+      return;
+    }
+    const handle = deps.submitPortfolioJobFn(
+      body.targets as Parameters<OpenApiServerDeps["submitPortfolioJobFn"]>[0],
+      withOpenApiSource(body.options) as Parameters<OpenApiServerDeps["submitPortfolioJobFn"]>[1]
+    );
+    sendJson(res, 202, handle);
+  });
+
   return routes;
 }

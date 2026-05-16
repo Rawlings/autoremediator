@@ -64,6 +64,7 @@ export async function resolvePrimaryResult(params: {
           applied: false,
           dryRun,
           unresolvedReason: "no-safe-version",
+          vulnerableRange: vulnerable.affected.vulnerableRange,
           message: `No firstPatchedVersion available for ${pkg.name}; cannot resolve deterministic override in local mode.`,
         },
       };
@@ -86,6 +87,7 @@ export async function resolvePrimaryResult(params: {
           applied: false,
           dryRun,
           unresolvedReason: "no-safe-version",
+          vulnerableRange: vulnerable.affected.vulnerableRange,
           message: `No safe override version found for ${pkg.name}.`,
         },
       };
@@ -108,7 +110,7 @@ export async function resolvePrimaryResult(params: {
 
     return {
       steps: 2,
-      result: overrideResult,
+      result: { ...overrideResult, vulnerableRange: vulnerable.affected.vulnerableRange },
     };
   }
 
@@ -122,6 +124,7 @@ export async function resolvePrimaryResult(params: {
         applied: false,
         dryRun,
         unresolvedReason: "no-safe-version",
+        vulnerableRange: vulnerable.affected.vulnerableRange,
         message: `No firstPatchedVersion available for ${pkg.name}; cannot resolve deterministic upgrade in local mode.`,
       },
     };
@@ -144,6 +147,7 @@ export async function resolvePrimaryResult(params: {
         applied: false,
         dryRun,
         unresolvedReason: "no-safe-version",
+        vulnerableRange: vulnerable.affected.vulnerableRange,
         message: `No safe upgrade version found for ${pkg.name}.`,
       },
     };
@@ -166,6 +170,6 @@ export async function resolvePrimaryResult(params: {
 
   return {
     steps: 2,
-    result: applyResult,
+    result: { ...applyResult, vulnerableRange: vulnerable.affected.vulnerableRange },
   };
 }

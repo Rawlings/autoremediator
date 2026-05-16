@@ -25,6 +25,7 @@ export function createRemediateEvidence(params: {
     source: params.provenance.source,
     llmProvider: params.llmProvider,
     idempotencyKey: params.options.idempotencyKey,
+    offlineMode: params.options.offlineIntelligence === true ? true : undefined,
   });
 }
 

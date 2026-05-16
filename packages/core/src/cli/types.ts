@@ -1,7 +1,7 @@
 import type { PackageManager } from "../platform/types.js";
 
 export type ScanFormat = "auto" | "npm-audit" | "yarn-audit" | "sarif";
-export type OutputFormat = "text" | "json" | "sarif";
+export type OutputFormat = "text" | "json" | "sarif" | "cyclonedx-vex";
 
 export interface CommandOptions {
   cwd: string;
@@ -64,6 +64,8 @@ export interface CommandOptions {
   escalateOnKev?: boolean;
   containmentMode?: boolean;
   campaignMode?: boolean;
+  offline: boolean;
+  intelligenceSnapshot?: string;
 }
 
 export function isCveId(value: string): boolean {

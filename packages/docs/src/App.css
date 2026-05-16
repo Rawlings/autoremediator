@@ -2,7 +2,8 @@
 @import "./styles/reset.css";
 
 :root {
-  font-size: 16px;
+  font-size: 18px;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -13,139 +14,46 @@ body {
   min-height: 100vh;
   position: relative;
   isolation: isolate;
-  background:
-    radial-gradient(59.375rem 31.25rem at 88% -6%, var(--color-surface-accent-glow) 0%, var(--color-surface-accent-glow-clear) 74%),
-    radial-gradient(48.75rem 35rem at 9% 102%, var(--color-surface-warm-glow) 0%, var(--color-surface-warm-glow-clear) 68%),
-    linear-gradient(180deg, var(--color-surface-shell-top) 0%, var(--color-surface-shell-mid) 70%, var(--color-surface-shell-bottom) 100%),
-    var(--color-surface-bg);
-  background-attachment: fixed;
+  background: var(--color-surface-bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0 0 auto;
-  height: 0.2rem;
-  background:
-    linear-gradient(90deg, var(--color-surface-warm-glow-clear) 0%, var(--color-accent) 35%, var(--color-surface-accent-glow-clear) 100%);
-  box-shadow: 0 0 1rem var(--color-surface-accent-glow);
-  transform-origin: left center;
-  transform: scaleX(0);
-  pointer-events: none;
-  z-index: 20;
-  animation: scroll-progress linear;
-  animation-timeline: scroll();
-}
-
 
 .layout {
-  width: min(90rem, calc(100% - 2rem));
-  margin: var(--space-8) auto var(--space-16);
+  width: 100%;
+  margin: 0;
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(16rem, 280px) 1fr;
-  grid-template-rows: 1fr auto;
-  gap: var(--space-8);
-  background:
-    linear-gradient(165deg, color-mix(in srgb, var(--color-surface-panel) 82%, transparent), color-mix(in srgb, var(--color-surface-panel-soft) 74%, transparent));
-  border-radius: 1.5rem;
-  backdrop-filter: blur(0.625rem) saturate(115%);
-  box-shadow: var(--shadow-soft), var(--shadow-glow), inset 0 0.0625rem 0 var(--color-surface-highlight);
-  padding: var(--space-8);
+  grid-template-columns: 35rem 1fr;
+  gap: 0;
+  background: var(--color-surface-bg);
+  padding: 0;
   box-sizing: border-box;
-  animation: fade-in-up 0.42s ease-out both;
 }
 
 .main-content {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  gap: var(--space-6);
-  animation: fade-in-up 0.52s ease-out both;
-}
-
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(0.5rem);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fade-in-right {
-  from {
-    opacity: 0;
-    transform: translateX(-0.5rem);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes fade-in-left {
-  from {
-    opacity: 0;
-    transform: translateX(0.5rem);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes scroll-progress {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
-@keyframes reveal-on-scroll {
-  from {
-    opacity: 0.68;
-    transform: translateY(1rem) scale(0.985);
-    filter: saturate(0.88) blur(0.025rem);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: saturate(1) blur(0);
-  }
-}
-
-@supports (animation-timeline: view(block)) {
-  /* Scroll-triggered animations moved to component-specific CSS files */
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .layout,
-  .main-content,
-  body::after {
-    animation: none;
-  }
+  gap: var(--space-8);
+  padding: var(--space-16) var(--space-18);
+  background: transparent;
+  box-sizing: border-box;
 }
 
 @media (max-width: 61.25rem) {
   .layout {
-    width: min(100%, calc(100% - 0.8rem));
-    border-radius: var(--radius-lg);
-    padding: var(--space-5);
-    margin: var(--space-4) auto var(--space-8);
     grid-template-columns: 1fr;
+  }
+
+  .main-content {
+    padding: var(--space-12) var(--space-12);
   }
 }
 
 @media (max-width: 48rem) {
-  .layout {
-    grid-template-columns: 1fr;
-    gap: var(--space-6);
+  .main-content {
+    padding: var(--space-10) var(--space-8);
   }
 }

@@ -125,6 +125,16 @@ inputs:
       any changes. Requires dry-run. Valid for cve-id and scan modes.
     required: false
     default: 'false'
+  offline:
+    description: >
+      Skip all network calls to intelligence sources (OSV, GitHub Advisory, NVD, CISA-KEV, EPSS).
+      Version-bump remediation still works if the npm registry is accessible.
+    required: false
+    default: 'false'
+  intelligence-snapshot:
+    description: >
+      Path to a local JSON file containing pre-fetched CVE intelligence, keyed by CVE ID.
+      Used with offline: true to provide CVE data without network access.
 
 outputs:
   summary-file:
@@ -201,6 +211,8 @@ runs:
         INPUT_LLM_PROVIDER: ${{ inputs.llm-provider }}
         INPUT_CONTAINMENT_MODE: ${{ inputs.containment-mode }}
         INPUT_SIMULATION_MODE: ${{ inputs.simulation-mode }}
+        INPUT_OFFLINE: ${{ inputs.offline }}
+        INPUT_INTELLIGENCE_SNAPSHOT: ${{ inputs.intelligence-snapshot }}
       run: |
         ARGS=("cve" "$INPUT_CVE_ID" "--cwd" "$INPUT_CWD")
         [ -n "$INPUT_PKG_MANAGER" ]           && ARGS+=("--package-manager" "$INPUT_PKG_MANAGER")
@@ -210,6 +222,8 @@ runs:
         [ -n "$INPUT_LLM_PROVIDER" ]          && ARGS+=("--llm-provider" "$INPUT_LLM_PROVIDER")
         [ "$INPUT_CONTAINMENT_MODE" = "true" ] && ARGS+=("--containment-mode")
         [ "$INPUT_SIMULATION_MODE"  = "true" ] && ARGS+=("--simulation-mode")
+        [ "$INPUT_OFFLINE"          = "true" ] && ARGS+=("--offline")
+        [ -n "$INPUT_INTELLIGENCE_SNAPSHOT" ] && ARGS+=("--intelligence-snapshot" "$INPUT_INTELLIGENCE_SNAPSHOT")
         autoremediator "${ARGS[@]}"
 
     - name: Remediate from scan input or audit mode
@@ -235,6 +249,8 @@ runs:
         INPUT_PR_COMMIT_MSG: ${{ inputs.pull-request-commit-message }}
         INPUT_CONTAINMENT_MODE: ${{ inputs.containment-mode }}
         INPUT_SIMULATION_MODE: ${{ inputs.simulation-mode }}
+        INPUT_OFFLINE: ${{ inputs.offline }}
+        INPUT_INTELLIGENCE_SNAPSHOT: ${{ inputs.intelligence-snapshot }}
       run: |
         ARGS=("scan" "--format" "$INPUT_FORMAT" "--cwd" "$INPUT_CWD")
         [ -n "$INPUT_SCAN_FILE" ]              && ARGS+=("--input" "$INPUT_SCAN_FILE")
@@ -248,6 +264,8 @@ runs:
         [ -n "$INPUT_LLM_PROVIDER" ]           && ARGS+=("--llm-provider" "$INPUT_LLM_PROVIDER")
         [ "$INPUT_CONTAINMENT_MODE" = "true" ] && ARGS+=("--containment-mode")
         [ "$INPUT_SIMULATION_MODE"  = "true" ] && ARGS+=("--simulation-mode")
+        [ "$INPUT_OFFLINE"          = "true" ] && ARGS+=("--offline")
+        [ -n "$INPUT_INTELLIGENCE_SNAPSHOT" ]  && ARGS+=("--intelligence-snapshot" "$INPUT_INTELLIGENCE_SNAPSHOT")
         if [ "$INPUT_CREATE_PR" = "true" ] && [ "$INPUT_DRY_RUN" != "true" ]; then
           ARGS+=("--create-change-request" "--change-request-provider" "github")
         fi
