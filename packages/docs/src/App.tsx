@@ -5,7 +5,7 @@ import remarkGfm from "remark-gfm";
 import "./App.css";
 
 import { Menu } from "./Menu";
-import { DocPage, headingComponents, setCanonical } from "./DocPage";
+import { DocPage, markdownComponents, setCanonical } from "./DocPage";
 import monorepoReadme from "../../../README.md?raw";
 
 function setMetaTag(key: "name" | "property", value: string, content: string): void {
@@ -54,7 +54,7 @@ function App() {
             path="/"
             element={(
               <article className="markdown-rendered">
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={headingComponents}>{monorepoReadme}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{monorepoReadme}</ReactMarkdown>
               </article>
             )}
           />

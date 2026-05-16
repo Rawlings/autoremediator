@@ -13,7 +13,7 @@ export function TocPanel() {
         tocbot.init({
           tocSelector: ".toc-nav",
           contentSelector: ".markdown-rendered",
-          headingSelector: "h2, h3",
+          headingSelector: "h1, h2, h3",
           hasInnerContainers: false,
           scrollSmooth: false,
           disableTocScrollSync: false,

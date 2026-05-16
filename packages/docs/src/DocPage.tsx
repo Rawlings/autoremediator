@@ -40,6 +40,38 @@ export const headingComponents: Partial<Components> = {
   h6: makeHeading(6),
 };
 
+const GITHUB_BLOB = "https://github.com/Rawlings/autoremediator/blob/master/";
+
+function AnchorLink({
+  href,
+  children,
+  node: _node,
+  ...rest
+}: React.ComponentPropsWithoutRef<"a"> & { node?: unknown }) {
+  if (!href || href.startsWith("#") || href.startsWith("http") || href.startsWith("//") || href.startsWith("mailto:")) {
+    const isExternal = href?.startsWith("http") || href?.startsWith("//");
+    return <a href={href} target={isExternal ? "_blank" : undefined} rel={isExternal ? "noreferrer" : undefined} {...rest}>{children}</a>;
+  }
+  if (href.startsWith("/")) {
+    return <a href={href} {...rest}>{children}</a>;
+  }
+  // Relative link — check if it resolves to a known doc slug
+  const stripped = href.replace(/^\.\//,"");
+  const slugPart = stripped.split("#")[0];
+  const hash = stripped.includes("#") ? "#" + stripped.split("#").slice(1).join("#") : "";
+  if (docs.some(d => d.slug === slugPart)) {
+    return <a href={`/docs/${slugPart}${hash}`} {...rest}>{children}</a>;
+  }
+  // Non-doc relative link → GitHub
+  const ghPath = stripped.replace(/^(\.\.\/)+/, "");
+  return <a href={GITHUB_BLOB + ghPath} target="_blank" rel="noreferrer" {...rest}>{children}</a>;
+}
+
+export const markdownComponents: Partial<Components> = {
+  ...headingComponents,
+  a: AnchorLink,
+};
+
 import gettingStarted from "../content/getting-started.md?raw";
 import cli from "../content/cli.md?raw";
 import scannerInputs from "../content/scanner-inputs.md?raw";
@@ -57,15 +89,15 @@ export type Doc = {
 };
 
 export const docs: Doc[] = [
-  { slug: "getting-started", title: "Getting Started", body: gettingStarted },
-  { slug: "cli", title: "CLI Reference", body: cli },
-  { slug: "scanner-inputs", title: "Scanner Inputs", body: scannerInputs },
-  { slug: "policy-and-safety", title: "Policy and Safety", body: policyAndSafety },
-  { slug: "api-sdk", title: "API and SDK", body: apiSdk },
-  { slug: "integrations", title: "Integrations", body: integrations },
-  { slug: "agent-ecosystems", title: "Agent Ecosystems", body: agentEcosystems },
-  { slug: "contributor-guide", title: "Contributor Guide", body: contributorGuide },
-  { slug: "changelog", title: "Changelog", body: changelog },
+  { slug: "getting-started.md", title: "Getting Started", body: gettingStarted },
+  { slug: "cli.md", title: "CLI Reference", body: cli },
+  { slug: "scanner-inputs.md", title: "Scanner Inputs", body: scannerInputs },
+  { slug: "policy-and-safety.md", title: "Policy and Safety", body: policyAndSafety },
+  { slug: "api-sdk.md", title: "API and SDK", body: apiSdk },
+  { slug: "integrations.md", title: "Integrations", body: integrations },
+  { slug: "agent-ecosystems.md", title: "Agent Ecosystems", body: agentEcosystems },
+  { slug: "contributor-guide.md", title: "Contributor Guide", body: contributorGuide },
+  { slug: "changelog.md", title: "Changelog", body: changelog },
 ];
 
 function findDoc(slug: string | undefined): Doc | undefined {
@@ -124,7 +156,7 @@ export function DocPage() {
 
   return (
     <article className="markdown-rendered">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={headingComponents}>{doc.body}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{doc.body}</ReactMarkdown>
     </article>
   );
 }
