@@ -25,7 +25,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.languages.registerCodeActionsProvider(
       { pattern: "**/package.json", scheme: "file" },
       new RemediateActionProvider(),
-      { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
+      { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] },
     ),
 
     vscode.commands.registerCommand("autoremediator.scanWorkspace", () => {
@@ -34,22 +34,19 @@ export function activate(context: vscode.ExtensionContext): void {
       }
     }),
 
-    vscode.commands.registerCommand(
-      "autoremediator.fixCve",
-      (cveId: string, cwd: string) => {
-        void applyFix(cveId, cwd)
-          .then((output) => {
-            vscode.window.showInformationMessage(`Autoremediator: ${output}`);
-            // Refresh diagnostics after fix.
-            for (const doc of vscode.workspace.textDocuments) {
-              if (isPackageJson(doc)) void scheduleScan(doc);
-            }
-          })
-          .catch((err: Error) => {
-            vscode.window.showErrorMessage(`Autoremediator fix failed: ${err.message}`);
-          });
-      }
-    )
+    vscode.commands.registerCommand("autoremediator.fixCve", (cveId: string, cwd: string) => {
+      void applyFix(cveId, cwd)
+        .then((output) => {
+          vscode.window.showInformationMessage(`Autoremediator: ${output}`);
+          // Refresh diagnostics after fix.
+          for (const doc of vscode.workspace.textDocuments) {
+            if (isPackageJson(doc)) void scheduleScan(doc);
+          }
+        })
+        .catch((err: Error) => {
+          vscode.window.showErrorMessage(`Autoremediator fix failed: ${err.message}`);
+        });
+    }),
   );
 
   // Scan files already open when the extension activates.
@@ -63,9 +60,7 @@ export function deactivate(): void {
 }
 
 function isPackageJson(doc: vscode.TextDocument): boolean {
-  return (
-    doc.fileName.endsWith("package.json") && !doc.fileName.includes("node_modules")
-  );
+  return doc.fileName.endsWith("package.json") && !doc.fileName.includes("node_modules");
 }
 
 async function scheduleScan(doc: vscode.TextDocument): Promise<void> {
@@ -80,10 +75,7 @@ async function scheduleScan(doc: vscode.TextDocument): Promise<void> {
   }
 }
 
-function buildDiagnostics(
-  doc: vscode.TextDocument,
-  findings: VulnFinding[]
-): vscode.Diagnostic[] {
+function buildDiagnostics(doc: vscode.TextDocument, findings: VulnFinding[]): vscode.Diagnostic[] {
   const text = doc.getText();
   const diagnostics: vscode.Diagnostic[] = [];
 
@@ -105,7 +97,7 @@ function buildDiagnostics(
     const diag = new vscode.Diagnostic(
       range,
       `[${finding.cveId}] ${finding.summary}${fixText}`,
-      severity
+      severity,
     );
     diag.source = DIAGNOSTIC_SOURCE;
     diag.code = finding.cveId;
@@ -118,7 +110,7 @@ function buildDiagnostics(
 function findPackageRange(
   text: string,
   doc: vscode.TextDocument,
-  packageName: string
+  packageName: string,
 ): vscode.Range | undefined {
   const escaped = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const re = new RegExp(`"${escaped}"\\s*:`, "g");
@@ -132,10 +124,7 @@ function findPackageRange(
 }
 
 class RemediateActionProvider implements vscode.CodeActionProvider {
-  provideCodeActions(
-    document: vscode.TextDocument,
-    range: vscode.Range
-  ): vscode.CodeAction[] {
+  provideCodeActions(document: vscode.TextDocument, range: vscode.Range): vscode.CodeAction[] {
     const findings = findingsCache.get(document.uri.toString()) ?? [];
     const cwd = vscode.Uri.joinPath(vscode.Uri.file(document.fileName), "..").fsPath;
     const actions: vscode.CodeAction[] = [];
@@ -146,7 +135,7 @@ class RemediateActionProvider implements vscode.CodeActionProvider {
 
       const action = new vscode.CodeAction(
         `Fix ${finding.packageName} (${finding.cveId}) with Autoremediator`,
-        vscode.CodeActionKind.QuickFix
+        vscode.CodeActionKind.QuickFix,
       );
       action.command = {
         command: "autoremediator.fixCve",

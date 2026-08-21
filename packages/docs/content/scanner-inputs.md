@@ -32,12 +32,12 @@ When `containmentMode` blocks an applied escalation outcome, the affected result
 
 ## Format Selection (What and Why)
 
-| Format | Best for | Why |
-|---|---|---|
-| `npm-audit` | npm, pnpm, and bun JSON audit output | direct, common ecosystem path |
-| `yarn-audit` | Yarn-specific audit output | aligns parser expectations with yarn shape |
-| `sarif` | centralized security tooling and enterprise scanners | integrates with broad security pipelines |
-| `auto` | mixed or unknown scan source in generic jobs | convenience when one adapter can be reliably inferred |
+| Format       | Best for                                             | Why                                                   |
+| ------------ | ---------------------------------------------------- | ----------------------------------------------------- |
+| `npm-audit`  | npm, pnpm, and bun JSON audit output                 | direct, common ecosystem path                         |
+| `yarn-audit` | Yarn-specific audit output                           | aligns parser expectations with yarn shape            |
+| `sarif`      | centralized security tooling and enterprise scanners | integrates with broad security pipelines              |
+| `auto`       | mixed or unknown scan source in generic jobs         | convenience when one adapter can be reliably inferred |
 
 Use explicit formats in CI when possible. `auto` is convenient, but explicit parser selection is more deterministic.
 
@@ -143,14 +143,14 @@ autoremediator scan --input ./audit.json --format npm-audit --ci --summary-file 
 ## Troubleshooting
 
 - parser mismatch:
-	- specify format explicitly
-	- confirm file matches expected scanner output shape
+  - specify format explicitly
+  - confirm file matches expected scanner output shape
 - fewer CVEs than scanner UI:
-	- verify CVE identifiers are present in exported JSON/SARIF
-	- check deduplication behavior in summary output
+  - verify CVE identifiers are present in exported JSON/SARIF
+  - check deduplication behavior in summary output
 - inconsistent runs:
-	- pin scanner version and export flags
-	- keep policy file and package manager lockfile stable
+  - pin scanner version and export flags
+  - keep policy file and package manager lockfile stable
 
 ## Related Docs
 

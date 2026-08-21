@@ -3,10 +3,16 @@ import { buildSbom } from "./sbom.js";
 import type { InventoryPackage, PatchResult } from "../../platform/types.js";
 
 const pkg = (name: string, version: string, type: "direct" | "transitive"): InventoryPackage => ({
-  name, version, type,
+  name,
+  version,
+  type,
 });
 
-const result = (packageName: string, applied: boolean, strategy: PatchResult["strategy"] = "version-bump"): PatchResult => ({
+const result = (
+  packageName: string,
+  applied: boolean,
+  strategy: PatchResult["strategy"] = "version-bump",
+): PatchResult => ({
   packageName,
   strategy,
   fromVersion: "1.0.0",
@@ -52,7 +58,10 @@ describe("buildSbom", () => {
   it("marks suppressed packages (suppressedBy present)", () => {
     const packages = [pkg("lodash", "4.17.20", "direct")];
     const vulnerable = new Set(["lodash"]);
-    const r: PatchResult = { ...result("lodash", false, "none"), suppressedBy: { justification: "not_affected" } };
+    const r: PatchResult = {
+      ...result("lodash", false, "none"),
+      suppressedBy: { justification: "not_affected" },
+    };
 
     const sbom = buildSbom(packages, vulnerable, [r]);
     expect(sbom[0]?.status).toBe("suppressed");

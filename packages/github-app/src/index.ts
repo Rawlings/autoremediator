@@ -11,7 +11,13 @@ export { createInMemoryAppStateStore, createFileAppStateStore } from "./state.js
 export { createDefaultRemediationHandler } from "./remediation-handler.js";
 export { fetchRepoConfig } from "./repo-config.js";
 export { DEFAULT_REPO_CONFIG } from "./types.js";
-export type { GitHubAppConfig, AutoremediatorRepoConfig, DispatchResult, WebhookContext, EventProcessingTrace } from "./types.js";
+export type {
+  GitHubAppConfig,
+  AutoremediatorRepoConfig,
+  DispatchResult,
+  WebhookContext,
+  EventProcessingTrace,
+} from "./types.js";
 
 export async function startGitHubAppServer(): Promise<void> {
   const config = loadGitHubAppConfig();

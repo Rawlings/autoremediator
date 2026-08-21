@@ -32,7 +32,6 @@ export interface ToCycloneDxVexOptions {
 function mapReportToVulnerability(report: RemediationReport): CycloneDxVexVulnerability {
   const hasResolved = report.results.some((r) => r.applied && !r.unresolvedReason);
   const hasSuppressed = report.results.some((r) => r.suppressedBy != null);
-  const hasUnresolved = report.results.some((r) => r.unresolvedReason != null);
 
   if (hasSuppressed && !hasResolved) {
     const suppressed = report.results.find((r) => r.suppressedBy != null)!;
@@ -48,7 +47,7 @@ function mapReportToVulnerability(report: RemediationReport): CycloneDxVexVulner
   if (hasResolved) {
     const resolvedResults = report.results.filter((r) => r.applied && !r.unresolvedReason);
     const hasVersionBumpOrOverride = resolvedResults.some(
-      (r) => r.strategy === "version-bump" || r.strategy === "override"
+      (r) => r.strategy === "version-bump" || r.strategy === "override",
     );
     const hasPatchFile = resolvedResults.some((r) => r.strategy === "patch-file");
 
@@ -77,7 +76,7 @@ function mapReportToVulnerability(report: RemediationReport): CycloneDxVexVulner
 
 export function toCycloneDxVex(
   report: ScanReport | RemediationReport,
-  options: ToCycloneDxVexOptions = {}
+  options: ToCycloneDxVexOptions = {},
 ): CycloneDxVexDocument {
   const toolVersion = options.toolVersion ?? "unknown";
   const timestamp = new Date().toISOString();

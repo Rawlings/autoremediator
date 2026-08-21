@@ -69,7 +69,7 @@ export async function fetchGhAdvisories(cveId: string): Promise<GhAdvisory[]> {
     // Non-fatal: log and return empty so OSV can still succeed
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.warn(
-      `[autoremediator] GitHub Advisory API error for ${cveId}: ${errorMsg} — skipping.`
+      `[autoremediator] GitHub Advisory API error for ${cveId}: ${errorMsg} — skipping.`,
     );
     return [];
   }
@@ -105,14 +105,12 @@ export function parseGhAdvisories(advisories: GhAdvisory[]): AffectedPackage[] {
  */
 export function mergeGhDataIntoCveDetails(
   details: CveDetails,
-  ghPackages: AffectedPackage[]
+  ghPackages: AffectedPackage[],
 ): CveDetails {
   const enriched = { ...details };
 
   for (const ghPkg of ghPackages) {
-    const existing = enriched.affectedPackages.find(
-      (p) => p.name === ghPkg.name
-    );
+    const existing = enriched.affectedPackages.find((p) => p.name === ghPkg.name);
 
     if (existing) {
       // Backfill firstPatchedVersion if OSV didn't have it

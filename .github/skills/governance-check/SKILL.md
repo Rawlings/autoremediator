@@ -121,11 +121,13 @@ For every file under `.github/instructions/`, frontmatter must include:
 For every directory under `.github/skills/`, a `SKILL.md` must exist and must satisfy all of the following:
 
 **Frontmatter** (YAML block between `---` delimiters at the top of the file):
+
 - `name:` — matches the directory name
 - `description:` — single-line summary, starts with "Use when"
 - `metadata.scope:` — exactly `runtime` or `contributor`
 
 **Required sections** (each must appear as a level-2 heading `##`):
+
 - `## Scope` — one-paragraph explanation of what the skill does and does not cover
 - `## When to Use` — bullet list of trigger conditions
 - `## Inputs` — what information the agent needs before starting

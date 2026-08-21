@@ -23,7 +23,7 @@ inputs:
       Mutually exclusive with scan-file and cve-id. Uses npm directly and
       enables Corepack shims for pnpm and yarn audit mode.
     required: false
-    default: 'false'
+    default: "false"
   cve-id:
     description: >
       Single CVE ID to remediate directly (e.g. CVE-2021-23337).
@@ -50,18 +50,18 @@ inputs:
   dry-run:
     description: Plan changes only — do not mutate files or run installs.
     required: false
-    default: 'false'
+    default: "false"
   run-tests:
     description: >
       Run the package-manager test command to validate changes after applying.
     required: false
-    default: 'false'
+    default: "false"
   ci:
     description: >
       Enable CI mode — exit non-zero when any CVE is unresolved after
       remediation attempts. Ignored when cve-id is set.
     required: false
-    default: 'false'
+    default: "false"
   summary-file:
     description: >
       Write a machine-readable scan summary JSON to this path.
@@ -83,7 +83,7 @@ inputs:
   node-version:
     description: Node.js version to use. Must be 24 or higher.
     required: false
-    default: '24'
+    default: "24"
   token:
     description: GitHub token for PR creation. Defaults to github.token.
     required: false
@@ -91,7 +91,7 @@ inputs:
   create-pull-request:
     description: Open a pull request with remediated changes.
     required: false
-    default: 'false'
+    default: "false"
   pull-request-branch:
     description: Branch name prefix for the fix branch.
     required: false
@@ -106,31 +106,31 @@ inputs:
       Run update-outdated mode: bump all outdated npm packages to their latest
       versions without requiring a CVE ID. Cannot be combined with cve-id or scan-file.
     required: false
-    default: 'false'
+    default: "false"
   include-transitive:
     description: >
       Include indirect/transitive dependencies in the outdated check.
       Only applicable when update-outdated is true.
     required: false
-    default: 'false'
+    default: "false"
   containment-mode:
     description: >
       Halt the pipeline when any result disposition is not auto-apply.
       Use with dry-run to enforce hold-for-approval gates.
     required: false
-    default: 'false'
+    default: "false"
   simulation-mode:
     description: >
       Populate planned mutation metadata and rebuttal findings without applying
       any changes. Requires dry-run. Valid for cve-id and scan modes.
     required: false
-    default: 'false'
+    default: "false"
   offline:
     description: >
       Skip all network calls to intelligence sources (OSV, GitHub Advisory, NVD, CISA-KEV, EPSS).
       Version-bump remediation still works if the npm registry is accessible.
     required: false
-    default: 'false'
+    default: "false"
   intelligence-snapshot:
     description: >
       Path to a local JSON file containing pre-fetched CVE intelligence, keyed by CVE ID.

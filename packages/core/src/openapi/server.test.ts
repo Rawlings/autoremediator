@@ -44,26 +44,45 @@ describe("openapi server", () => {
   it("does not expose simulationMode on update-outdated options", () => {
     const updateOutdatedRoute = (OPENAPI_SPEC.paths as Record<string, any>)["/update-outdated"];
     const optionsProps =
-      updateOutdatedRoute.post.requestBody.content["application/json"].schema.properties.options.properties;
+      updateOutdatedRoute.post.requestBody.content["application/json"].schema.properties.options
+        .properties;
 
     expect(optionsProps.simulationMode).toBeUndefined();
   });
 
   it("creates server with injected dependencies", () => {
     const server = createOpenApiServer({
-      remediateFn: vi.fn(async () => ({ cveId: "CVE-2021-23337" } as any)),
-      planRemediationFn: vi.fn(async () => ({ cveId: "CVE-2021-23337" } as any)),
-      remediateFromScanFn: vi.fn(async () => ({ schemaVersion: "1.0" } as any)),
-      remediatePortfolioFn: vi.fn(async () => ({ schemaVersion: "1.0", status: "ok", targets: [] } as any)),
-      updateOutdatedFn: vi.fn(async () => ({ schemaVersion: "1.0", status: "ok" } as any)),
+      remediateFn: vi.fn(async () => ({ cveId: "CVE-2021-23337" }) as any),
+      planRemediationFn: vi.fn(async () => ({ cveId: "CVE-2021-23337" }) as any),
+      remediateFromScanFn: vi.fn(async () => ({ schemaVersion: "1.0" }) as any),
+      remediatePortfolioFn: vi.fn(
+        async () => ({ schemaVersion: "1.0", status: "ok", targets: [] }) as any,
+      ),
+      updateOutdatedFn: vi.fn(async () => ({ schemaVersion: "1.0", status: "ok" }) as any),
       listPatchArtifactsFn: vi.fn(async () => []),
-      inspectPatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
-      validatePatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" } as any)),
+      inspectPatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" }) as any),
+      validatePatchArtifactFn: vi.fn(async () => ({ patchFilePath: "./patches/foo.patch" }) as any),
       toVexFn: vi.fn(() => ({ bomFormat: "CycloneDX" }) as any),
-      submitRemediateJobFn: vi.fn(() => ({ jobId: "j1", status: "pending" as const, submittedAt: new Date().toISOString() })),
-      submitScanJobFn: vi.fn(() => ({ jobId: "j2", status: "pending" as const, submittedAt: new Date().toISOString() })),
-      submitPortfolioJobFn: vi.fn(() => ({ jobId: "j3", status: "pending" as const, submittedAt: new Date().toISOString() })),
-      pollJobFn: vi.fn(() => ({ jobId: "j1", status: "done" as const, submittedAt: new Date().toISOString() })),
+      submitRemediateJobFn: vi.fn(() => ({
+        jobId: "j1",
+        status: "pending" as const,
+        submittedAt: new Date().toISOString(),
+      })),
+      submitScanJobFn: vi.fn(() => ({
+        jobId: "j2",
+        status: "pending" as const,
+        submittedAt: new Date().toISOString(),
+      })),
+      submitPortfolioJobFn: vi.fn(() => ({
+        jobId: "j3",
+        status: "pending" as const,
+        submittedAt: new Date().toISOString(),
+      })),
+      pollJobFn: vi.fn(() => ({
+        jobId: "j1",
+        status: "done" as const,
+        submittedAt: new Date().toISOString(),
+      })),
     });
 
     expect(server).toBeDefined();
@@ -78,9 +97,8 @@ describe("openapi server", () => {
     expect(paths["/patches/validate"].post.operationId).toBe("validatePatchArtifact");
     expect(paths["/remediate-portfolio"].post.operationId).toBe("remediatePortfolio");
     const inspectOptions =
-      paths["/patches/inspect"].post.requestBody.content["application/json"].schema.properties.options
-        .properties;
+      paths["/patches/inspect"].post.requestBody.content["application/json"].schema.properties
+        .options.properties;
     expect(inspectOptions.patchesDir).toBeDefined();
   });
-
 });

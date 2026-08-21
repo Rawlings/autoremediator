@@ -25,14 +25,15 @@ export const checkSuppressionTool = defineTool({
       .array(suppressionSchema)
       .describe("The suppressions array from the loaded policy"),
   }),
-  execute: async ({ cveId, suppressions }): Promise<{
+  execute: async ({
+    cveId,
+    suppressions,
+  }): Promise<{
     suppressed: boolean;
     justification?: VexJustification;
     notes?: string;
   }> => {
-    const match = suppressions.find(
-      (s) => s.cveId === cveId && isActiveSuppression(s)
-    );
+    const match = suppressions.find((s) => s.cveId === cveId && isActiveSuppression(s));
 
     if (!match) {
       return { suppressed: false };

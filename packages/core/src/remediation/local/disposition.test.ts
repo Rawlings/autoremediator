@@ -38,7 +38,7 @@ describe("computeDisposition", () => {
   it("does not escalate on kev exploit when escalateOnKev is false", () => {
     const r = computeDisposition(
       { ...base, applied: true, exploitSignalTriggered: true },
-      { escalateOnKev: false }
+      { escalateOnKev: false },
     );
     expect(r.disposition).toBe("auto-apply");
   });
@@ -46,7 +46,15 @@ describe("computeDisposition", () => {
   it("escalates on sla breach for CRITICAL", () => {
     const r = computeDisposition({
       ...base,
-      slaBreaches: [{ cveId: "CVE-2024-1234", severity: "CRITICAL", publishedAt: "2024-01-01T00:00:00Z", deadlineAt: "2024-01-08T00:00:00Z", hoursOverdue: 24 }],
+      slaBreaches: [
+        {
+          cveId: "CVE-2024-1234",
+          severity: "CRITICAL",
+          publishedAt: "2024-01-01T00:00:00Z",
+          deadlineAt: "2024-01-08T00:00:00Z",
+          hoursOverdue: 24,
+        },
+      ],
     });
     expect(r).toEqual({ disposition: "escalate", dispositionReason: "sla-breach" });
   });
@@ -55,20 +63,34 @@ describe("computeDisposition", () => {
     const r = computeDisposition({
       ...base,
       applied: true,
-      slaBreaches: [{ cveId: "CVE-2024-1234", severity: "LOW", publishedAt: "2024-01-01T00:00:00Z", deadlineAt: "2024-01-08T00:00:00Z", hoursOverdue: 2 }],
+      slaBreaches: [
+        {
+          cveId: "CVE-2024-1234",
+          severity: "LOW",
+          publishedAt: "2024-01-01T00:00:00Z",
+          deadlineAt: "2024-01-08T00:00:00Z",
+          hoursOverdue: 2,
+        },
+      ],
     });
     expect(r.disposition).toBe("auto-apply");
   });
 
   it("holds for patch-confidence-too-low", () => {
     const r = computeDisposition({ ...base, unresolvedReason: "patch-confidence-too-low" });
-    expect(r).toEqual({ disposition: "hold-for-approval", dispositionReason: "patch-confidence-too-low" });
+    expect(r).toEqual({
+      disposition: "hold-for-approval",
+      dispositionReason: "patch-confidence-too-low",
+    });
   });
 
   it("holds for transitive when holdForTransitive is enabled", () => {
     const policy: DispositionPolicy = { holdForTransitive: true };
     const r = computeDisposition({ ...base, applied: true, dependencyScope: "transitive" }, policy);
-    expect(r).toEqual({ disposition: "hold-for-approval", dispositionReason: "transitive-dependency" });
+    expect(r).toEqual({
+      disposition: "hold-for-approval",
+      dispositionReason: "transitive-dependency",
+    });
   });
 
   it("does not hold for transitive by default", () => {
@@ -122,7 +144,7 @@ describe("applyDispositionAndContainment", () => {
       {
         containmentMode: true,
         exploitSignalTriggered: true,
-      }
+      },
     );
 
     expect(result.disposition).toBe("escalate");
@@ -143,7 +165,7 @@ describe("applyDispositionAndContainment", () => {
       {
         containmentMode: false,
         exploitSignalTriggered: true,
-      }
+      },
     );
 
     expect(result.disposition).toBe("escalate");

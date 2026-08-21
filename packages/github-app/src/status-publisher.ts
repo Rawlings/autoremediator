@@ -35,10 +35,15 @@ interface JobStatusPublisher {
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value !== null && typeof value === "object" ? (value as Record<string, unknown>) : undefined;
+  return value !== null && typeof value === "object"
+    ? (value as Record<string, unknown>)
+    : undefined;
 }
 
-function readStringField(record: Record<string, unknown> | undefined, field: string): string | undefined {
+function readStringField(
+  record: Record<string, unknown> | undefined,
+  field: string,
+): string | undefined {
   if (!record) {
     return undefined;
   }
@@ -79,7 +84,9 @@ function normalizeSummary(outcome: "success" | "partial" | "failed", reason?: st
   return "Remediation failed.";
 }
 
-function readStatusTargetFromCheckSuite(payload: Record<string, unknown>): RemediationJobStatusTarget | undefined {
+function readStatusTargetFromCheckSuite(
+  payload: Record<string, unknown>,
+): RemediationJobStatusTarget | undefined {
   const repository = asRecord(payload.repository);
   const owner = asRecord(repository?.owner);
   const ownerLogin = readStringField(owner, "login");
@@ -99,7 +106,9 @@ function readStatusTargetFromCheckSuite(payload: Record<string, unknown>): Remed
   };
 }
 
-function readStatusTargetFromWorkflowDispatch(payload: Record<string, unknown>): RemediationJobStatusTarget | undefined {
+function readStatusTargetFromWorkflowDispatch(
+  payload: Record<string, unknown>,
+): RemediationJobStatusTarget | undefined {
   const repository = asRecord(payload.repository);
   const owner = asRecord(repository?.owner);
   const ownerLogin = readStringField(owner, "login");
@@ -126,7 +135,9 @@ function readStatusTargetFromWorkflowDispatch(payload: Record<string, unknown>):
   };
 }
 
-export function readRemediationStatusTarget(payload: Record<string, unknown>): RemediationJobStatusTarget | undefined {
+export function readRemediationStatusTarget(
+  payload: Record<string, unknown>,
+): RemediationJobStatusTarget | undefined {
   return readStatusTargetFromCheckSuite(payload) ?? readStatusTargetFromWorkflowDispatch(payload);
 }
 
@@ -135,7 +146,7 @@ async function publishCheck(
   target: RemediationJobStatusTarget,
   checkName: string,
   status: CheckStatus,
-  options: { conclusion?: CheckConclusion; summary: string; githubApiUrl?: string }
+  options: { conclusion?: CheckConclusion; summary: string; githubApiUrl?: string },
 ): Promise<void> {
   const octokitOptions: ConstructorParameters<typeof Octokit>[0] = { auth: token };
   if (options.githubApiUrl) {
@@ -157,15 +168,18 @@ async function publishCheck(
   });
 }
 
-export function createJobStatusPublisher(options: CreateStatusPublisherOptions): JobStatusPublisher {
-  const checkName = options.checkName && options.checkName.length > 0
-    ? options.checkName
-    : "autoremediator/remediation";
+export function createJobStatusPublisher(
+  options: CreateStatusPublisherOptions,
+): JobStatusPublisher {
+  const checkName =
+    options.checkName && options.checkName.length > 0
+      ? options.checkName
+      : "autoremediator/remediation";
 
   const publishSafely = async (
     context: PublishStatusContext,
     phase: "queued" | "running" | "completed",
-    publish: () => Promise<void>
+    publish: () => Promise<void>,
   ): Promise<void> => {
     if (!options.enabled) {
       return;
@@ -173,7 +187,7 @@ export function createJobStatusPublisher(options: CreateStatusPublisherOptions):
 
     if (!context.installationToken) {
       options.onTrace?.(
-        `Status publish skipped (${phase}): missing installation token (${buildTracePrefix(context.job)})`
+        `Status publish skipped (${phase}): missing installation token (${buildTracePrefix(context.job)})`,
       );
       return;
     }
@@ -183,7 +197,7 @@ export function createJobStatusPublisher(options: CreateStatusPublisherOptions):
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       options.onTrace?.(
-        `Status publish failed (${phase}): ${message} (${buildTracePrefix(context.job)})`
+        `Status publish failed (${phase}): ${message} (${buildTracePrefix(context.job)})`,
       );
     }
   };
@@ -191,29 +205,47 @@ export function createJobStatusPublisher(options: CreateStatusPublisherOptions):
   return {
     async publishQueued(context: PublishStatusContext): Promise<void> {
       await publishSafely(context, "queued", async () => {
-        await publishCheck(context.installationToken as string, context.target, checkName, "queued", {
-          summary: "Remediation job queued.",
-          githubApiUrl: options.githubApiUrl,
-        });
+        await publishCheck(
+          context.installationToken as string,
+          context.target,
+          checkName,
+          "queued",
+          {
+            summary: "Remediation job queued.",
+            githubApiUrl: options.githubApiUrl,
+          },
+        );
       });
     },
 
     async publishRunning(context: PublishStatusContext): Promise<void> {
       await publishSafely(context, "running", async () => {
-        await publishCheck(context.installationToken as string, context.target, checkName, "in_progress", {
-          summary: "Remediation job is running.",
-          githubApiUrl: options.githubApiUrl,
-        });
+        await publishCheck(
+          context.installationToken as string,
+          context.target,
+          checkName,
+          "in_progress",
+          {
+            summary: "Remediation job is running.",
+            githubApiUrl: options.githubApiUrl,
+          },
+        );
       });
     },
 
     async publishCompleted(context: PublishCompletionContext): Promise<void> {
       await publishSafely(context, "completed", async () => {
-        await publishCheck(context.installationToken as string, context.target, checkName, "completed", {
-          conclusion: normalizeConclusion(context.outcome),
-          summary: normalizeSummary(context.outcome, context.reason),
-          githubApiUrl: options.githubApiUrl,
-        });
+        await publishCheck(
+          context.installationToken as string,
+          context.target,
+          checkName,
+          "completed",
+          {
+            conclusion: normalizeConclusion(context.outcome),
+            summary: normalizeSummary(context.outcome, context.reason),
+            githubApiUrl: options.githubApiUrl,
+          },
+        );
       });
     },
   };

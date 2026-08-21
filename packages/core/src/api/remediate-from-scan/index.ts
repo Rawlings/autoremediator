@@ -1,15 +1,28 @@
 import type { RemediationReport } from "../../platform/types.js";
 import { resolveProvider } from "../../platform/config.js";
-import { addEvidenceStep, createEvidenceLog, finalizeEvidence, writeEvidenceLog } from "../../platform/evidence.js";
+import {
+  addEvidenceStep,
+  createEvidenceLog,
+  finalizeEvidence,
+  writeEvidenceLog,
+} from "../../platform/evidence.js";
 import { loadPolicy } from "../../platform/policy.js";
 import { parseScanInput, parseScanInputFromAudit, uniqueCveIds } from "../../scanner/index.js";
 import type { ScanOptions, ScanReport } from "../contracts.js";
 import { createChangeRequestsForReports } from "../change-request/index.js";
-import { resolveConstraints, resolveCorrelationContext, resolveProvenanceContext } from "../context.js";
+import {
+  resolveConstraints,
+  resolveCorrelationContext,
+  resolveProvenanceContext,
+} from "../context.js";
 import { executeScanRemediations } from "../scan-execution.js";
 import { buildScanOutcome } from "../scan-outcome.js";
 import { aggregateScanLlmUsage } from "./report-metrics.js";
-import { assertValidSimulationMode, buildEscalationCounts, buildSlaBreachSummary } from "../reporting.js";
+import {
+  assertValidSimulationMode,
+  buildEscalationCounts,
+  buildSlaBreachSummary,
+} from "../reporting.js";
 
 function countContainedResults(reports: RemediationReport[]): number {
   let containmentCount = 0;
@@ -25,7 +38,7 @@ function countContainedResults(reports: RemediationReport[]): number {
 
 export async function remediateFromScan(
   inputPath: string,
-  options: ScanOptions = {}
+  options: ScanOptions = {},
 ): Promise<ScanReport> {
   assertValidSimulationMode(options);
   const cwd = options.cwd ?? process.cwd();
@@ -61,7 +74,7 @@ export async function remediateFromScan(
     evidence,
     "scan.parse",
     { inputPath, format, audit },
-    { findingCount: findings.length, cveCount: cveIds.length }
+    { findingCount: findings.length, cveCount: cveIds.length },
   );
 
   const execution = await executeScanRemediations({
@@ -77,9 +90,7 @@ export async function remediateFromScan(
   const reports: RemediationReport[] = execution.reports;
   const { errors, patchCount, patchValidationFailures } = execution;
   const containmentCount = countContainedResults(reports);
-  const escalationCounts = buildEscalationCounts(
-    reports.flatMap((report) => report.results)
-  );
+  const escalationCounts = buildEscalationCounts(reports.flatMap((report) => report.results));
 
   const llmUsageTotals = aggregateScanLlmUsage(reports);
   const outcome = buildScanOutcome({ reports, errors });
@@ -102,7 +113,8 @@ export async function remediateFromScan(
     successCount,
     failedCount,
     patchCount,
-    patchValidationFailures: patchValidationFailures.length > 0 ? patchValidationFailures : undefined,
+    patchValidationFailures:
+      patchValidationFailures.length > 0 ? patchValidationFailures : undefined,
     strategyCounts,
     dependencyScopeCounts,
     unresolvedByReason,
@@ -139,7 +151,8 @@ export async function remediateFromScan(
     errors,
     evidenceFile,
     patchCount,
-    patchValidationFailures: patchValidationFailures.length > 0 ? patchValidationFailures : undefined,
+    patchValidationFailures:
+      patchValidationFailures.length > 0 ? patchValidationFailures : undefined,
     strategyCounts,
     dependencyScopeCounts,
     unresolvedByReason,

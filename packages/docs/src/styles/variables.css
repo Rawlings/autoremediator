@@ -12,9 +12,9 @@
   --gray-300: #9da5b2;
   --gray-200: #bfc5ce;
   --gray-100: #dcdfe5;
-  --gray-75:  #e8eaee;
-  --gray-50:  #f0f2f5;
-  --gray-25:  #f5f6f9;
+  --gray-75: #e8eaee;
+  --gray-50: #f0f2f5;
+  --gray-25: #f5f6f9;
 
   /* ─── Ink tokens ─── */
   --color-ink-1: var(--gray-950);
@@ -81,7 +81,7 @@
   --typography-leading-heading: 1.18;
   --typography-leading-copy: 1.76;
   --typography-leading-compact: 1.5;
-  --typography-header-1-size: clamp(2.1rem, 3.5vw, 3.0rem);
+  --typography-header-1-size: clamp(2.1rem, 3.5vw, 3rem);
   --typography-header-1-weight: 620;
   --typography-header-1-leading: 1.04;
   --typography-header-1-tracking: -0.046em;

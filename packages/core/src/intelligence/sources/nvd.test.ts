@@ -12,26 +12,27 @@ describe("nvd source", () => {
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
       status: 200,
-      text: async () => JSON.stringify({
-        vulnerabilities: [
-          {
-            cve: {
-              id: "CVE-2021-23337",
-              metrics: {
-                cvssMetricV31: [
-                  {
-                    cvssData: {
-                      baseScore: 7.5,
-                      baseSeverity: "HIGH",
-                      vectorString: "CVSS:3.1/...",
+      text: async () =>
+        JSON.stringify({
+          vulnerabilities: [
+            {
+              cve: {
+                id: "CVE-2021-23337",
+                metrics: {
+                  cvssMetricV31: [
+                    {
+                      cvssData: {
+                        baseScore: 7.5,
+                        baseSeverity: "HIGH",
+                        vectorString: "CVSS:3.1/...",
+                      },
                     },
-                  },
-                ],
+                  ],
+                },
               },
             },
-          },
-        ],
-      }),
+          ],
+        }),
     })) as any;
 
     const cvss = await fetchNvdCvss("CVE-2021-23337");
@@ -42,26 +43,27 @@ describe("nvd source", () => {
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
       status: 200,
-      text: async () => JSON.stringify({
-        vulnerabilities: [
-          {
-            cve: {
-              id: "CVE-2021-23337",
-              metrics: {
-                cvssMetricV31: [
-                  {
-                    cvssData: {
-                      baseScore: 9.8,
-                      baseSeverity: "CRITICAL",
-                      vectorString: "CVSS:3.1/...",
+      text: async () =>
+        JSON.stringify({
+          vulnerabilities: [
+            {
+              cve: {
+                id: "CVE-2021-23337",
+                metrics: {
+                  cvssMetricV31: [
+                    {
+                      cvssData: {
+                        baseScore: 9.8,
+                        baseSeverity: "CRITICAL",
+                        vectorString: "CVSS:3.1/...",
+                      },
                     },
-                  },
-                ],
+                  ],
+                },
               },
             },
-          },
-        ],
-      }),
+          ],
+        }),
     })) as any;
 
     const details: CveDetails = {

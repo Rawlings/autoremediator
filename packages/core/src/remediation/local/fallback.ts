@@ -19,7 +19,10 @@ function resolvePatchProvider(provider: "remote" | "local"): "remote" | "local" 
   return provider;
 }
 
-export function shouldAttemptPatchFallback(result: PatchResult, preferVersionBump: boolean): boolean {
+export function shouldAttemptPatchFallback(
+  result: PatchResult,
+  preferVersionBump: boolean,
+): boolean {
   if (preferVersionBump) return false;
   if (result.applied || result.dryRun) return false;
 
@@ -87,7 +90,9 @@ export async function tryLocalPatchFallback(params: {
         dryRun: params.dryRun,
         dependencyScope: params.dependencyScope,
         unresolvedReason: "source-fetch-failed",
-        message: sourceResult?.error ?? `Failed to fetch source for ${params.packageName}@${params.vulnerableVersion}.`,
+        message:
+          sourceResult?.error ??
+          `Failed to fetch source for ${params.packageName}@${params.vulnerableVersion}.`,
       },
     };
   }
@@ -154,7 +159,7 @@ export async function tryLocalPatchFallback(params: {
       effectiveProvider,
       params.providerSafetyProfile ?? "relaxed",
       patchResult.riskLevel ?? "medium",
-      params.patchConfidenceThresholds
+      params.patchConfidenceThresholds,
     );
 
   if (typeof patchResult.confidence === "number" && patchResult.confidence < confidenceThreshold) {
@@ -176,11 +181,7 @@ export async function tryLocalPatchFallback(params: {
     };
   }
 
-  if (
-    params.requireConsensusForHighRisk &&
-    patchResult.riskLevel === "high" &&
-    !params.dryRun
-  ) {
+  if (params.requireConsensusForHighRisk && patchResult.riskLevel === "high" && !params.dryRun) {
     const consensusProvider = resolvePatchProvider(params.consensusProvider ?? primaryProvider);
     consensusVerdict = await runConsensusGate({
       packageName: params.packageName,
@@ -215,7 +216,8 @@ export async function tryLocalPatchFallback(params: {
           dryRun: params.dryRun,
           dependencyScope: params.dependencyScope,
           unresolvedReason: "consensus-failed",
-          message: consensusVerdict.reason ?? "High-risk patch did not pass consensus verification.",
+          message:
+            consensusVerdict.reason ?? "High-risk patch did not pass consensus verification.",
         },
       };
     }
@@ -287,7 +289,7 @@ export async function tryLocalPatchFallback(params: {
       vulnerableRange: params.vulnerableRange,
       consensusVerdict,
       unresolvedReason:
-        !Boolean(applyResult.applied) && !Boolean(applyResult.dryRun)
+        !applyResult.applied && !applyResult.dryRun
           ? applyResult.validation?.passed === false
             ? "patch-validation-failed"
             : "patch-apply-failed"

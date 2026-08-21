@@ -20,7 +20,7 @@ interface PromptContext {
 
 function buildProviderAddendum(
   provider: "remote" | "local",
-  personality: "analytical" | "pragmatic" | "balanced" = "balanced"
+  personality: "analytical" | "pragmatic" | "balanced" = "balanced",
 ): string {
   const personalityDirective =
     personality === "analytical"
@@ -38,7 +38,12 @@ function buildProviderAddendum(
 }
 
 export function loadOrchestrationPrompt(ctx: PromptContext): string {
-  const promptPath = join(process.cwd(), ".github", "instructions", "orchestration.instructions.md");
+  const promptPath = join(
+    process.cwd(),
+    ".github",
+    "instructions",
+    "orchestration.instructions.md",
+  );
 
   if (!existsSync(promptPath)) {
     return `You are autoremediator, an agentic security remediation system for Node.js package dependencies.
@@ -70,15 +75,18 @@ Always respect dryRun and policy constraints.`;
   const template = readFileSync(promptPath, "utf8");
   return (
     template
-    .replaceAll("{{cveId}}", ctx.cveId)
-    .replaceAll("{{cwd}}", ctx.cwd)
-    .replaceAll("{{packageManager}}", ctx.packageManager)
-    .replaceAll("{{dryRun}}", String(ctx.dryRun))
-    .replaceAll("{{runTests}}", String(ctx.runTests))
-    .replaceAll("{{policy}}", ctx.policy || "undefined")
-    .replaceAll("{{patchesDir}}", ctx.patchesDir)
-    .replaceAll("{{directDependenciesOnly}}", String(ctx.constraints.directDependenciesOnly ?? false))
-    .replaceAll("{{preferVersionBump}}", String(ctx.constraints.preferVersionBump ?? false)) +
+      .replaceAll("{{cveId}}", ctx.cveId)
+      .replaceAll("{{cwd}}", ctx.cwd)
+      .replaceAll("{{packageManager}}", ctx.packageManager)
+      .replaceAll("{{dryRun}}", String(ctx.dryRun))
+      .replaceAll("{{runTests}}", String(ctx.runTests))
+      .replaceAll("{{policy}}", ctx.policy || "undefined")
+      .replaceAll("{{patchesDir}}", ctx.patchesDir)
+      .replaceAll(
+        "{{directDependenciesOnly}}",
+        String(ctx.constraints.directDependenciesOnly ?? false),
+      )
+      .replaceAll("{{preferVersionBump}}", String(ctx.constraints.preferVersionBump ?? false)) +
     buildProviderAddendum(ctx.llmProvider, ctx.modelPersonality)
   );
 }

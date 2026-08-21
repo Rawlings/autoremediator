@@ -46,7 +46,9 @@ vi.mock("../intelligence/index.js", () => ({
 }));
 
 vi.mock("../remediation/pipeline.js", async () => {
-  const actual = await vi.importActual<typeof import("../remediation/pipeline.js")>("../remediation/pipeline.js");
+  const actual = await vi.importActual<typeof import("../remediation/pipeline.js")>(
+    "../remediation/pipeline.js",
+  );
   return {
     ...actual,
     runRemediationPipeline: mocked.runRemediationPipeline,
@@ -92,18 +94,18 @@ describe("api preview and correlation behavior", () => {
       planRemediation("CVE-2021-23337", {
         dryRun: false,
         requestId: "req-123",
-      })
+      }),
     ).rejects.toThrow(
-      "planRemediation always runs with dryRun=true and preview=true. Remove dryRun/preview from options."
+      "planRemediation always runs with dryRun=true and preview=true. Remove dryRun/preview from options.",
     );
 
     await expect(
       planRemediation("CVE-2021-23337", {
         preview: false,
         requestId: "req-123",
-      })
+      }),
     ).rejects.toThrow(
-      "planRemediation always runs with dryRun=true and preview=true. Remove dryRun/preview from options."
+      "planRemediation always runs with dryRun=true and preview=true. Remove dryRun/preview from options.",
     );
 
     expect(mocked.runRemediationPipeline).not.toHaveBeenCalled();
@@ -136,7 +138,7 @@ describe("api preview and correlation behavior", () => {
         requestId: "req-123",
         sessionId: "session-abc",
         parentRunId: "parent-1",
-      })
+      }),
     );
   });
 
@@ -145,7 +147,7 @@ describe("api preview and correlation behavior", () => {
       remediate("CVE-2021-23337", {
         cwd: "/tmp/project",
         simulationMode: true,
-      })
+      }),
     ).rejects.toThrow("simulationMode requires dryRun=true or preview=true.");
 
     expect(mocked.runRemediationPipeline).not.toHaveBeenCalled();
@@ -156,7 +158,7 @@ describe("api preview and correlation behavior", () => {
       remediateFromScan("./audit.json", {
         cwd: "/tmp/project",
         simulationMode: true,
-      })
+      }),
     ).rejects.toThrow("simulationMode requires dryRun=true or preview=true.");
 
     expect(mocked.runRemediationPipeline).not.toHaveBeenCalled();
@@ -186,7 +188,7 @@ describe("api preview and correlation behavior", () => {
         requestId: "req-42",
         sessionId: "session-nightly",
         parentRunId: "parent-root",
-      })
+      }),
     );
 
     expect(report.correlation).toEqual({
@@ -224,12 +226,12 @@ describe("api preview and correlation behavior", () => {
     expect(mocked.runRemediationPipeline).toHaveBeenNthCalledWith(
       1,
       "CVE-2021-23337",
-      expect.objectContaining({ requestId: evidenceCorrelation.requestId })
+      expect.objectContaining({ requestId: evidenceCorrelation.requestId }),
     );
     expect(mocked.runRemediationPipeline).toHaveBeenNthCalledWith(
       2,
       "CVE-2021-44906",
-      expect.objectContaining({ requestId: evidenceCorrelation.requestId })
+      expect.objectContaining({ requestId: evidenceCorrelation.requestId }),
     );
     expect(report.correlation?.requestId).toBe(evidenceCorrelation.requestId);
   });
@@ -298,7 +300,7 @@ describe("api preview and correlation behavior", () => {
       "/tmp/project",
       "key-store",
       "CVE-2021-23337",
-      expect.objectContaining({ resumedFromCache: false })
+      expect.objectContaining({ resumedFromCache: false }),
     );
   });
 
@@ -341,7 +343,7 @@ describe("api preview and correlation behavior", () => {
       "CVE-2021-23337",
       expect.objectContaining({
         constraints: expect.objectContaining({ directDependenciesOnly: true }),
-      })
+      }),
     );
     expect(report.results[0]?.applied).toBe(true);
     expect(report.results[0]?.strategy).toBe("version-bump");
@@ -432,16 +434,48 @@ describe("api preview and correlation behavior", () => {
         },
       ],
       rebuttalFindings: expect.arrayContaining([
-        expect.objectContaining({ code: "unresolved-reason", severity: "warning", sourceSignals: ["unresolvedReason"] }),
+        expect.objectContaining({
+          code: "unresolved-reason",
+          severity: "warning",
+          sourceSignals: ["unresolvedReason"],
+        }),
         expect.objectContaining({ code: "validation-risk", severity: "high" }),
-        expect.objectContaining({ code: "regression-risk", severity: "high", sourceSignals: ["regressionDetected"] }),
+        expect.objectContaining({
+          code: "regression-risk",
+          severity: "high",
+          sourceSignals: ["regressionDetected"],
+        }),
         expect.objectContaining({ code: "low-confidence", severity: "warning" }),
-        expect.objectContaining({ code: "high-risk-patch", severity: "warning", sourceSignals: ["riskLevel"] }),
-        expect.objectContaining({ code: "transitive-target", severity: "info", sourceSignals: ["dependencyScope"] }),
-        expect.objectContaining({ code: "escalation-planned", severity: "warning", sourceSignals: ["escalationAction"] }),
-        expect.objectContaining({ code: "exploit-signal", severity: "high", sourceSignals: ["exploitSignalTriggered"] }),
-        expect.objectContaining({ code: "sla-breach", severity: "warning", sourceSignals: ["slaBreaches"] }),
-        expect.objectContaining({ code: "tests-not-run", severity: "warning", sourceSignals: ["runTests"] }),
+        expect.objectContaining({
+          code: "high-risk-patch",
+          severity: "warning",
+          sourceSignals: ["riskLevel"],
+        }),
+        expect.objectContaining({
+          code: "transitive-target",
+          severity: "info",
+          sourceSignals: ["dependencyScope"],
+        }),
+        expect.objectContaining({
+          code: "escalation-planned",
+          severity: "warning",
+          sourceSignals: ["escalationAction"],
+        }),
+        expect.objectContaining({
+          code: "exploit-signal",
+          severity: "high",
+          sourceSignals: ["exploitSignalTriggered"],
+        }),
+        expect.objectContaining({
+          code: "sla-breach",
+          severity: "warning",
+          sourceSignals: ["slaBreaches"],
+        }),
+        expect.objectContaining({
+          code: "tests-not-run",
+          severity: "warning",
+          sourceSignals: ["runTests"],
+        }),
       ]),
     });
   });
@@ -526,7 +560,7 @@ describe("api preview and correlation behavior", () => {
         containmentCount: 1,
         blockedUnresolvedReason: "policy-blocked",
         blockedDisposition: "escalate",
-      })
+      }),
     );
   });
 
@@ -681,7 +715,7 @@ describe("api preview and correlation behavior", () => {
             resultCount: 3,
           }),
         }),
-      })
+      }),
     );
   });
 
@@ -741,7 +775,7 @@ describe("api preview and correlation behavior", () => {
         summary: expect.objectContaining({
           containmentCount: 1,
         }),
-      })
+      }),
     );
   });
 

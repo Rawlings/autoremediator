@@ -17,7 +17,7 @@ export const findFixedVersionTool = defineTool({
     firstPatchedVersion: z
       .string()
       .describe(
-        "The first version that is NOT vulnerable (from lookup-cve). Use this as the floor."
+        "The first version that is NOT vulnerable (from lookup-cve). Use this as the floor.",
       ),
     vulnerableRange: z
       .string()
@@ -41,7 +41,7 @@ export const findFixedVersionTool = defineTool({
       packageName,
       installedVersion,
       firstPatchedVersion,
-      vulnerableRange
+      vulnerableRange,
     );
     const { safeVersion, upgradeLevel, candidates, majorOnlyFixAvailable } = resolution;
 

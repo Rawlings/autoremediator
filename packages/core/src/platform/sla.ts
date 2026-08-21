@@ -14,7 +14,7 @@ interface CvePublicationEntry {
 
 export function computeSlaBreaches(
   cveDetailsList: CvePublicationEntry[],
-  slaPolicy: SlaPolicy
+  slaPolicy: SlaPolicy,
 ): SlaBreach[] {
   const breaches: SlaBreach[] = [];
   const now = new Date();

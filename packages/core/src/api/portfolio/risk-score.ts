@@ -17,7 +17,9 @@ export function scorePortfolioTarget(target: PortfolioTarget): number {
   return severityWeight + exploitSignalBonus + slaBreachBonus;
 }
 
-export function rankPortfolioTargets(targets: PortfolioTarget[]): Array<{ target: PortfolioTarget; rank: number }> {
+export function rankPortfolioTargets(
+  targets: PortfolioTarget[],
+): Array<{ target: PortfolioTarget; rank: number }> {
   const scoredTargets = targets.map((target, index) => ({
     target,
     index,

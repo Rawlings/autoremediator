@@ -43,9 +43,7 @@ export const generatePatchTool = defineTool({
     "Generate a unified diff patch for a CVE using LLM analysis of vulnerable source code.",
   parameters: z.object({
     packageName: z.string().min(1).describe("The npm package name"),
-    vulnerableVersion: z
-      .string()
-      .describe("The vulnerable version string"),
+    vulnerableVersion: z.string().describe("The vulnerable version string"),
     cveId: z
       .string()
       .regex(/^CVE-\d{4}-\d+$/i)
@@ -53,9 +51,7 @@ export const generatePatchTool = defineTool({
     cveSummary: z.string().min(10).describe("CVE description and impact"),
     sourceFiles: z
       .record(z.string(), z.string())
-      .describe(
-        "Map of file paths to source code contents from fetch-package-source"
-      ),
+      .describe("Map of file paths to source code contents from fetch-package-source"),
     vulnerabilityCategory: z
       .enum(["redos", "code-injection", "path-traversal", "unknown"])
       .optional()
@@ -70,18 +66,12 @@ export const generatePatchTool = defineTool({
       .enum(["remote", "local"])
       .optional()
       .describe("Optional provider override for patch generation"),
-    model: z
-      .string()
-      .optional()
-      .describe("Optional model override for patch generation"),
+    model: z.string().optional().describe("Optional model override for patch generation"),
     policy: z
       .string()
       .optional()
       .describe("Optional policy file path for model default resolution"),
-    cwd: z
-      .string()
-      .optional()
-      .describe("Optional working directory for policy/model resolution"),
+    cwd: z.string().optional().describe("Optional working directory for policy/model resolution"),
     providerSafetyProfile: z
       .enum(["strict", "relaxed"])
       .optional()
@@ -147,7 +137,8 @@ export const generatePatchTool = defineTool({
           llmModel: "unknown",
           confidence: 0,
           riskLevel: "high",
-          error: "No source files were provided. Call fetch-package-source first and pass sourceFiles.",
+          error:
+            "No source files were provided. Call fetch-package-source first and pass sourceFiles.",
         };
       }
 
@@ -200,7 +191,8 @@ export const generatePatchTool = defineTool({
           confidence: 0,
           riskLevel: "high",
           latencyMs,
-          error: "LLM response missing required fields (analysis, fixedCode, confidence, riskLevel)",
+          error:
+            "LLM response missing required fields (analysis, fixedCode, confidence, riskLevel)",
         };
       }
 
@@ -208,7 +200,7 @@ export const generatePatchTool = defineTool({
         provider,
         providerSafetyProfile ?? "relaxed",
         analysis.riskLevel,
-        patchConfidenceThresholds
+        patchConfidenceThresholds,
       );
       const estimatedCostUsd = estimateModelCostUsd({
         provider,
@@ -258,8 +250,7 @@ export const generatePatchTool = defineTool({
         riskLevel: analysis.riskLevel,
       };
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : String(err);
+      const message = err instanceof Error ? err.message : String(err);
       return {
         success: false,
         llmProvider: "local",

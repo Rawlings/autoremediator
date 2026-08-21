@@ -33,7 +33,10 @@ export const applyPackageOverrideTool = defineTool({
     "Apply a package-manager-native package.json override for a vulnerable transitive dependency and reinstall. Uses npm overrides, pnpm.overrides, yarn resolutions, bun overrides, or deno.json imports.",
   parameters: z.object({
     cwd: z.string().describe("Absolute path to the consumer project root"),
-    packageManager: z.enum(["npm", "pnpm", "yarn", "bun", "deno"]).optional().describe("Package manager used by the target project (auto-detected if omitted)"),
+    packageManager: z
+      .enum(["npm", "pnpm", "yarn", "bun", "deno"])
+      .optional()
+      .describe("Package manager used by the target project (auto-detected if omitted)"),
     packageName: z.string().describe("The npm package to override"),
     selector: z
       .string()
@@ -43,7 +46,10 @@ export const applyPackageOverrideTool = defineTool({
     toVersion: z.string().describe("The safe target version to override to"),
     dryRun: z.boolean().default(false).describe("If true, report changes but do not write"),
     policy: z.string().optional().describe("Optional path to .autoremediator policy file"),
-    runTests: z.boolean().default(false).describe("If true, run test validation after applying the override"),
+    runTests: z
+      .boolean()
+      .default(false)
+      .describe("If true, run test validation after applying the override"),
     installMode: z.enum(["standard", "prefer-offline", "deterministic"]).optional(),
     installPreferOffline: z.boolean().optional(),
     enforceFrozenLockfile: z.boolean().optional(),
@@ -73,7 +79,8 @@ export const applyPackageOverrideTool = defineTool({
       ...loadedPolicy.constraints,
       installMode: installMode ?? loadedPolicy.constraints?.installMode,
       installPreferOffline: installPreferOffline ?? loadedPolicy.constraints?.installPreferOffline,
-      enforceFrozenLockfile: enforceFrozenLockfile ?? loadedPolicy.constraints?.enforceFrozenLockfile,
+      enforceFrozenLockfile:
+        enforceFrozenLockfile ?? loadedPolicy.constraints?.enforceFrozenLockfile,
       workspace: workspace ?? loadedPolicy.constraints?.workspace,
     };
     const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
@@ -145,7 +152,12 @@ export const applyPackageOverrideTool = defineTool({
         };
       }
 
-      const dependencyTrace = await collectDependencyTrace(cwd, pm, packageName, commandConstraints);
+      const dependencyTrace = await collectDependencyTrace(
+        cwd,
+        pm,
+        packageName,
+        commandConstraints,
+      );
       const dependencyTraceSuffix = dependencyTrace ? ` Dependency trace: ${dependencyTrace}` : "";
 
       if (dryRun) {

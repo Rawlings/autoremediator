@@ -29,7 +29,9 @@ interface ServerOptions {
   webhookSecret: string;
   maxTrackedDeliveries?: number;
   stateStore?: AppStateStore;
-  onRemediationRequested?: (context: RemediationTriggerContext) => Promise<RemediationJobResult | void> | RemediationJobResult | void;
+  onRemediationRequested?: (
+    context: RemediationTriggerContext,
+  ) => Promise<RemediationJobResult | void> | RemediationJobResult | void;
   remediationTriggerTimeoutMs?: number;
   enableDefaultRemediationHandler?: boolean;
   onEventProcessed?: (trace: EventProcessingTrace) => Promise<void> | void;
@@ -177,7 +179,7 @@ async function emitRejected(
     error: string;
     eventName: string;
     deliveryId?: string;
-  }
+  },
 ): Promise<void> {
   if (options.runtimeCounters) {
     const latencyMs = Date.now() - requestStartedAt;
@@ -208,11 +210,12 @@ async function emitRejected(
 export async function handleRequest(
   request: IncomingMessage,
   response: ServerResponse,
-  options: ServerOptions
+  options: ServerOptions,
 ): Promise<void> {
   const requestStartedAt = Date.now();
   const requestIdHeader = request.headers["x-request-id"];
-  const requestId = (Array.isArray(requestIdHeader) ? requestIdHeader[0] : requestIdHeader) ?? randomUUID();
+  const requestId =
+    (Array.isArray(requestIdHeader) ? requestIdHeader[0] : requestIdHeader) ?? randomUUID();
 
   if (request.method === "GET" && request.url === "/health") {
     const counters = options.runtimeCounters;
@@ -268,7 +271,10 @@ export async function handleRequest(
       const state = generateStateToken();
       response.statusCode = 200;
       response.setHeader("content-type", "text/html; charset=utf-8");
-      response.setHeader("Set-Cookie", `autoremediator_setup_state=${state}; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600`);
+      response.setHeader(
+        "Set-Cookie",
+        `autoremediator_setup_state=${state}; HttpOnly; SameSite=Strict; Path=/; Max-Age=3600`,
+      );
       response.end(renderSetupPage(baseUrl, options.githubUrl, state));
       return;
     }
@@ -289,14 +295,17 @@ export async function handleRequest(
       }
       const returnedState = parsedUrl.searchParams.get("state");
       const cookieState = parseStateCookie(request.headers.cookie);
-      const clearStateCookie = "autoremediator_setup_state=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0";
+      const clearStateCookie =
+        "autoremediator_setup_state=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0";
       if (!returnedState || !cookieState || returnedState !== cookieState) {
         response.statusCode = 400;
         response.setHeader("content-type", "text/html; charset=utf-8");
         response.setHeader("Set-Cookie", clearStateCookie);
-        response.end(renderSetupErrorPage(
-          "Invalid or missing state parameter. Possible CSRF attempt. Please start the setup process again."
-        ));
+        response.end(
+          renderSetupErrorPage(
+            "Invalid or missing state parameter. Possible CSRF attempt. Please start the setup process again.",
+          ),
+        );
         return;
       }
       response.setHeader("Set-Cookie", clearStateCookie);
@@ -306,7 +315,8 @@ export async function handleRequest(
         response.setHeader("content-type", "text/html; charset=utf-8");
         response.end(renderSetupCompletePage(result));
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown error during code exchange";
+        const message =
+          error instanceof Error ? error.message : "Unknown error during code exchange";
         response.statusCode = 500;
         response.setHeader("content-type", "text/html; charset=utf-8");
         response.end(renderSetupErrorPage(message));
@@ -591,11 +601,12 @@ export function createGitHubAppServer(options: ServerOptions): Server {
 
   const remediationHandler = normalizedOptions.onRemediationRequested;
 
-  const queue = normalizedOptions.enableJobQueue === false
-    ? createInMemoryJobQueue()
-    : normalizedOptions.dataDir
-      ? createFileBackedJobQueue(join(normalizedOptions.dataDir, "job-queue.json"))
-      : createInMemoryJobQueue();
+  const queue =
+    normalizedOptions.enableJobQueue === false
+      ? createInMemoryJobQueue()
+      : normalizedOptions.dataDir
+        ? createFileBackedJobQueue(join(normalizedOptions.dataDir, "job-queue.json"))
+        : createInMemoryJobQueue();
 
   const statusPublisherTokenProvider =
     normalizedOptions.appId && normalizedOptions.privateKey
@@ -659,7 +670,7 @@ export function createGitHubAppServer(options: ServerOptions): Server {
 
     if (!statusTarget) {
       void normalizedOptions.onStatusTrace?.(
-        `Status publish skipped (queued): missing repository/head_sha for delivery=${context.deliveryId ?? "none"}`
+        `Status publish skipped (queued): missing repository/head_sha for delivery=${context.deliveryId ?? "none"}`,
       );
       return;
     }
@@ -667,7 +678,8 @@ export function createGitHubAppServer(options: ServerOptions): Server {
     void (async () => {
       const installationToken =
         context.installationId !== undefined
-          ? (await statusPublisherTokenProvider?.getInstallationToken(context.installationId))?.token
+          ? (await statusPublisherTokenProvider?.getInstallationToken(context.installationId))
+              ?.token
           : undefined;
 
       await statusPublisher.publishQueued({
@@ -720,7 +732,7 @@ export function createGitHubAppServer(options: ServerOptions): Server {
       const statusTarget = readRemediationStatusTarget(job.payload);
       if (!statusTarget) {
         void normalizedOptions.onStatusTrace?.(
-          `Status publish skipped (running): missing repository/head_sha for job=${job.id}`
+          `Status publish skipped (running): missing repository/head_sha for job=${job.id}`,
         );
       } else {
         await statusPublisher.publishRunning({
@@ -786,7 +798,8 @@ export function createGitHubAppServer(options: ServerOptions): Server {
           void (async () => {
             const installationToken =
               job.installationId !== undefined
-                ? (await statusPublisherTokenProvider?.getInstallationToken(job.installationId))?.token
+                ? (await statusPublisherTokenProvider?.getInstallationToken(job.installationId))
+                    ?.token
                 : undefined;
 
             await statusPublisher.publishCompleted({
@@ -799,7 +812,7 @@ export function createGitHubAppServer(options: ServerOptions): Server {
           })();
         } else {
           void normalizedOptions.onStatusTrace?.(
-            `Status publish skipped (completed): missing repository/head_sha for job=${job.id}`
+            `Status publish skipped (completed): missing repository/head_sha for job=${job.id}`,
           );
         }
       }

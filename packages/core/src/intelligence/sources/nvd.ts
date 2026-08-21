@@ -53,7 +53,7 @@ function buildNvdHeaders(): Record<string, string> {
  * Non-fatal — callers should handle undefined gracefully.
  */
 export async function fetchNvdCvss(
-  cveId: string
+  cveId: string,
 ): Promise<{ score: number; severity: CveDetails["severity"] } | undefined> {
   const url = `${NVD_BASE}?cveId=${encodeURIComponent(cveId)}`;
   const headers = buildNvdHeaders();
@@ -68,9 +68,7 @@ export async function fetchNvdCvss(
 
     const metrics = vuln.cve.metrics;
     const metric =
-      metrics?.cvssMetricV31?.[0] ??
-      metrics?.cvssMetricV30?.[0] ??
-      metrics?.cvssMetricV2?.[0];
+      metrics?.cvssMetricV31?.[0] ?? metrics?.cvssMetricV30?.[0] ?? metrics?.cvssMetricV2?.[0];
 
     if (!metric) return undefined;
 

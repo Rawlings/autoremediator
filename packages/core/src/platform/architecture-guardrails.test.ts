@@ -19,18 +19,31 @@ describe("architecture guardrails", () => {
 
     const allowlist: FileGuardrail[] = [
       // High-churn entrypoint allowed to remain moderately sized while delegating evidence and CR branches.
-      { path: resolve(srcRoot, "api/remediate/index.ts"), maxLines: 170, reason: "public entrypoint orchestration" },
+      {
+        path: resolve(srcRoot, "api/remediate/index.ts"),
+        maxLines: 170,
+        reason: "public entrypoint orchestration",
+      },
       // Scan flow still coordinates evidence + aggregated report composition across CVEs.
-      { path: resolve(srcRoot, "api/remediate-from-scan/index.ts"), maxLines: 240, reason: "scan orchestration assembly" },
+      {
+        path: resolve(srcRoot, "api/remediate-from-scan/index.ts"),
+        maxLines: 240,
+        reason: "scan orchestration assembly",
+      },
       // Local runtime remains coordinator for ordered remediation phases after helper extraction.
-      { path: resolve(srcRoot, "remediation/local/run.ts"), maxLines: 335, reason: "local pipeline coordinator" },
+      {
+        path: resolve(srcRoot, "remediation/local/run.ts"),
+        maxLines: 335,
+        reason: "local pipeline coordinator",
+      },
     ];
 
     for (const entry of allowlist) {
       const count = lineCount(entry.path);
-      expect(count, `${entry.path} exceeded ${entry.maxLines} lines (${entry.reason})`).toBeLessThanOrEqual(
-        entry.maxLines
-      );
+      expect(
+        count,
+        `${entry.path} exceeded ${entry.maxLines} lines (${entry.reason})`,
+      ).toBeLessThanOrEqual(entry.maxLines);
     }
   });
 });

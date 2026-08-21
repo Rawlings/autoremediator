@@ -15,7 +15,7 @@ const ESCALATE_SEVERITIES_DEFAULT = ["CRITICAL", "HIGH"] as const;
  */
 export function computeDisposition(
   signals: DispositionSignals,
-  policy?: DispositionPolicy
+  policy?: DispositionPolicy,
 ): { disposition: Disposition; dispositionReason: string } {
   const escalateOnKev = policy?.escalateOnKev ?? true;
   const escalateOnSlaBreachSeverities =
@@ -34,8 +34,15 @@ export function computeDisposition(
   }
 
   // 3. Hard-fail unresolved reasons
-  const hardFailReasons = ["validation-failed", "patch-validation-failed", "install-failed"] as const;
-  if (signals.unresolvedReason && (hardFailReasons as readonly string[]).includes(signals.unresolvedReason)) {
+  const hardFailReasons = [
+    "validation-failed",
+    "patch-validation-failed",
+    "install-failed",
+  ] as const;
+  if (
+    signals.unresolvedReason &&
+    (hardFailReasons as readonly string[]).includes(signals.unresolvedReason)
+  ) {
     return { disposition: "escalate", dispositionReason: signals.unresolvedReason };
   }
 
@@ -47,7 +54,7 @@ export function computeDisposition(
   // 5. SLA breach on escalatable severity
   if (signals.slaBreaches && signals.slaBreaches.length > 0) {
     const matched = signals.slaBreaches.some((b) =>
-      escalateOnSlaBreachSeverities.includes(b.severity)
+      escalateOnSlaBreachSeverities.includes(b.severity),
     );
     if (matched) {
       return { disposition: "escalate", dispositionReason: "sla-breach" };
@@ -70,7 +77,11 @@ export function computeDisposition(
   }
 
   // 9. Applied but low confidence
-  if (signals.applied && signals.confidence !== undefined && signals.confidence < minConfidenceForAutoApply) {
+  if (
+    signals.applied &&
+    signals.confidence !== undefined &&
+    signals.confidence < minConfidenceForAutoApply
+  ) {
     return { disposition: "hold-for-approval", dispositionReason: "low-confidence" };
   }
 
@@ -93,7 +104,7 @@ interface DispositionContext {
 
 export function applyDispositionAndContainment(
   result: PatchResult,
-  context: DispositionContext
+  context: DispositionContext,
 ): PatchResult {
   const disposition = computeDisposition(
     {
@@ -108,7 +119,7 @@ export function applyDispositionAndContainment(
       applied: result.applied,
       severity: context.severity,
     },
-    context.policy
+    context.policy,
   );
 
   const withDisposition: PatchResult = {
@@ -117,7 +128,11 @@ export function applyDispositionAndContainment(
     dispositionReason: disposition.dispositionReason,
   };
 
-  if (context.containmentMode && withDisposition.disposition === "escalate" && withDisposition.applied) {
+  if (
+    context.containmentMode &&
+    withDisposition.disposition === "escalate" &&
+    withDisposition.applied
+  ) {
     return {
       ...withDisposition,
       applied: false,

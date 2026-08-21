@@ -37,7 +37,7 @@ describe("loadPolicy", () => {
         "  directDependenciesOnly: true",
         "  installMode: prefer-offline",
       ].join("\n"),
-      "utf8"
+      "utf8",
     );
 
     const result = loadPolicy(tmpDir);
@@ -65,7 +65,7 @@ describe("loadPolicy", () => {
     writeFileSync(
       join(tmpDir, ".github", "autoremediator.yml"),
       "allowMajorBumps: :\n  broken: yaml: file",
-      "utf8"
+      "utf8",
     );
 
     const result = loadPolicy(tmpDir);
@@ -75,19 +75,11 @@ describe("loadPolicy", () => {
   it("uses explicitPath when provided, ignoring the default .github/autoremediator.yml", () => {
     // Write a file at the explicit path
     const explicitPath = join(tmpDir, "custom-policy.yml");
-    writeFileSync(
-      explicitPath,
-      "allowMajorBumps: true\ndenyPackages:\n  - react",
-      "utf8"
-    );
+    writeFileSync(explicitPath, "allowMajorBumps: true\ndenyPackages:\n  - react", "utf8");
 
     // Default location has different content — should not be read
     mkdirSync(join(tmpDir, ".github"), { recursive: true });
-    writeFileSync(
-      join(tmpDir, ".github", "autoremediator.yml"),
-      "allowMajorBumps: false",
-      "utf8"
-    );
+    writeFileSync(join(tmpDir, ".github", "autoremediator.yml"), "allowMajorBumps: false", "utf8");
 
     const result = loadPolicy(tmpDir, explicitPath);
     expect(result.allowMajorBumps).toBe(true);
@@ -103,13 +95,8 @@ describe("loadPolicy", () => {
     mkdirSync(join(tmpDir, ".github"), { recursive: true });
     writeFileSync(
       join(tmpDir, ".github", "autoremediator.yml"),
-      [
-        "patchConfidenceThresholds:",
-        "  low: 0.3",
-        "  medium: 0.6",
-        "  high: 0.9",
-      ].join("\n"),
-      "utf8"
+      ["patchConfidenceThresholds:", "  low: 0.3", "  medium: 0.6", "  high: 0.9"].join("\n"),
+      "utf8",
     );
 
     const result = loadPolicy(tmpDir);
@@ -127,7 +114,7 @@ describe("loadPolicy", () => {
         "  no-safe-version: open-issue",
         "  source-fetch-failed: notify-channel",
       ].join("\n"),
-      "utf8"
+      "utf8",
     );
 
     const result = loadPolicy(tmpDir);
@@ -159,7 +146,7 @@ describe("loadSuppressionsFile", () => {
         "  - cveId: CVE-2024-0002",
         "    justification: fixed",
       ].join("\n"),
-      "utf8"
+      "utf8",
     );
 
     const result = loadSuppressionsFile(filePath);

@@ -16,7 +16,7 @@ interface GitLabAdvisoryRecord {
 function advisoryMatchesCve(advisory: GitLabAdvisoryRecord, cveId: string): boolean {
   const normalized = cveId.toUpperCase();
   return (advisory.identifiers ?? []).some(
-    (id) => id.type?.toUpperCase() === "CVE" && id.value?.toUpperCase() === normalized
+    (id) => id.type?.toUpperCase() === "CVE" && id.value?.toUpperCase() === normalized,
   );
 }
 
@@ -51,7 +51,7 @@ export async function enrichWithGitLabAdvisory(details: CveDetails): Promise<Cve
   }
 
   details.intelligence = {
-    ...(details.intelligence ?? {}),
+    ...details.intelligence,
     gitlabAdvisoryMatched: true,
   };
 

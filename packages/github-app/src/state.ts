@@ -7,12 +7,6 @@ interface StateData {
   installations: Record<string, "active" | "inactive">;
 }
 
-const DEFAULT_STATE: StateData = {
-  schemaVersion: 1,
-  deliveries: [],
-  installations: {},
-};
-
 export interface AppStateStore {
   hasProcessedDelivery(deliveryId: string): boolean;
   markDeliveryProcessed(deliveryId: string): void;
@@ -158,6 +152,9 @@ export function createInMemoryAppStateStore(maxTrackedDeliveries?: number): AppS
   return new InMemoryAppStateStore(maxTrackedDeliveries ?? 1000);
 }
 
-export function createFileAppStateStore(dataDir: string, maxTrackedDeliveries?: number): AppStateStore {
+export function createFileAppStateStore(
+  dataDir: string,
+  maxTrackedDeliveries?: number,
+): AppStateStore {
   return new FileAppStateStore(dataDir, maxTrackedDeliveries ?? 1000);
 }

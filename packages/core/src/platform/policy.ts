@@ -93,43 +93,28 @@ export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPo
         enforceFrozenLockfile:
           parsed.constraints?.enforceFrozenLockfile ??
           DEFAULT_POLICY.constraints?.enforceFrozenLockfile,
-        workspace:
-          parsed.constraints?.workspace ??
-          DEFAULT_POLICY.constraints?.workspace,
+        workspace: parsed.constraints?.workspace ?? DEFAULT_POLICY.constraints?.workspace,
       },
       modelDefaults: {
         remote: parsed.modelDefaults?.remote ?? DEFAULT_POLICY.modelDefaults?.remote,
         local: parsed.modelDefaults?.local ?? DEFAULT_POLICY.modelDefaults?.local,
       },
-      providerSafetyProfile:
-        parsed.providerSafetyProfile ??
-        DEFAULT_POLICY.providerSafetyProfile,
+      providerSafetyProfile: parsed.providerSafetyProfile ?? DEFAULT_POLICY.providerSafetyProfile,
       requireConsensusForHighRisk:
-        parsed.requireConsensusForHighRisk ??
-        DEFAULT_POLICY.requireConsensusForHighRisk,
-      consensusProvider:
-        parsed.consensusProvider ??
-        DEFAULT_POLICY.consensusProvider,
-      consensusModel:
-        parsed.consensusModel ??
-        DEFAULT_POLICY.consensusModel,
+        parsed.requireConsensusForHighRisk ?? DEFAULT_POLICY.requireConsensusForHighRisk,
+      consensusProvider: parsed.consensusProvider ?? DEFAULT_POLICY.consensusProvider,
+      consensusModel: parsed.consensusModel ?? DEFAULT_POLICY.consensusModel,
       patchConfidenceThresholds: {
-        low:
-          parsed.patchConfidenceThresholds?.low ??
-          DEFAULT_POLICY.patchConfidenceThresholds?.low,
+        low: parsed.patchConfidenceThresholds?.low ?? DEFAULT_POLICY.patchConfidenceThresholds?.low,
         medium:
           parsed.patchConfidenceThresholds?.medium ??
           DEFAULT_POLICY.patchConfidenceThresholds?.medium,
         high:
-          parsed.patchConfidenceThresholds?.high ??
-          DEFAULT_POLICY.patchConfidenceThresholds?.high,
+          parsed.patchConfidenceThresholds?.high ?? DEFAULT_POLICY.patchConfidenceThresholds?.high,
       },
-      dynamicModelRouting:
-        parsed.dynamicModelRouting ??
-        DEFAULT_POLICY.dynamicModelRouting,
+      dynamicModelRouting: parsed.dynamicModelRouting ?? DEFAULT_POLICY.dynamicModelRouting,
       dynamicRoutingThresholdChars:
-        parsed.dynamicRoutingThresholdChars ??
-        DEFAULT_POLICY.dynamicRoutingThresholdChars,
+        parsed.dynamicRoutingThresholdChars ?? DEFAULT_POLICY.dynamicRoutingThresholdChars,
       exploitSignalOverride: parsed.exploitSignalOverride
         ? {
             kev: parsed.exploitSignalOverride.kev ?? undefined,
@@ -147,10 +132,14 @@ export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPo
             low: (parsed.sla as SlaPolicy).low,
           }
         : undefined,
-      skipUnreachable: (parsed as AutoremediatorPolicy).skipUnreachable ?? DEFAULT_POLICY.skipUnreachable,
-      dispositionPolicy: (parsed as AutoremediatorPolicy).dispositionPolicy ?? DEFAULT_POLICY.dispositionPolicy,
-      containmentMode: (parsed as AutoremediatorPolicy).containmentMode ?? DEFAULT_POLICY.containmentMode,
-      escalationGraph: (parsed as AutoremediatorPolicy).escalationGraph ?? DEFAULT_POLICY.escalationGraph,
+      skipUnreachable:
+        (parsed as AutoremediatorPolicy).skipUnreachable ?? DEFAULT_POLICY.skipUnreachable,
+      dispositionPolicy:
+        (parsed as AutoremediatorPolicy).dispositionPolicy ?? DEFAULT_POLICY.dispositionPolicy,
+      containmentMode:
+        (parsed as AutoremediatorPolicy).containmentMode ?? DEFAULT_POLICY.containmentMode,
+      escalationGraph:
+        (parsed as AutoremediatorPolicy).escalationGraph ?? DEFAULT_POLICY.escalationGraph,
     };
   } catch {
     return DEFAULT_POLICY;
@@ -172,11 +161,9 @@ export function isActiveSuppression(suppression: VexSuppression): boolean {
 
 export function findSuppression(
   policy: AutoremediatorPolicy,
-  cveId: string
+  cveId: string,
 ): VexSuppression | undefined {
-  return (policy.suppressions ?? []).find(
-    (s) => s.cveId === cveId && isActiveSuppression(s)
-  );
+  return (policy.suppressions ?? []).find((s) => s.cveId === cveId && isActiveSuppression(s));
 }
 
 export function loadSuppressionsFile(filePath: string): VexSuppression[] {
@@ -193,7 +180,7 @@ export function checkSlaBreach(
   cveId: string,
   severity: CveSeverity,
   publishedAt: string,
-  slaPolicy: SlaPolicy
+  slaPolicy: SlaPolicy,
 ): SlaBreach | null {
   const severityKey = severity.toLowerCase() as keyof SlaPolicy;
   const deadlineHours = slaPolicy[severityKey];

@@ -9,7 +9,7 @@ import { inspectPatchArtifact } from "./inspection.js";
 
 export async function validatePatchArtifact(
   patchFilePath: string,
-  options: PatchArtifactQueryOptions = {}
+  options: PatchArtifactQueryOptions = {},
 ): Promise<PatchArtifactValidationReport> {
   const inspection = await inspectPatchArtifact(patchFilePath, options);
   const validationPhases: PatchValidationPhase[] = [
@@ -95,12 +95,10 @@ export async function validatePatchArtifact(
   }
 
   const matchingPackages = (inventory.packages ?? []).filter(
-    (pkg) => pkg.name === manifest.packageName
+    (pkg) => pkg.name === manifest.packageName,
   );
   const installedVersion = matchingPackages[0]?.version;
-  const inventoryMatch = matchingPackages.some(
-    (pkg) => pkg.version === manifest.vulnerableVersion
-  );
+  const inventoryMatch = matchingPackages.some((pkg) => pkg.version === manifest.vulnerableVersion);
   const driftDetected = matchingPackages.length > 0 && !inventoryMatch;
 
   validationPhases.push({
@@ -112,7 +110,9 @@ export async function validatePatchArtifact(
         : inventoryMatch
           ? `Installed version matches manifest target ${manifest.vulnerableVersion}.`
           : `Installed version ${installedVersion} does not match manifest target ${manifest.vulnerableVersion}.`,
-    error: driftDetected ? "Patch manifest does not match the installed dependency version." : undefined,
+    error: driftDetected
+      ? "Patch manifest does not match the installed dependency version."
+      : undefined,
   });
 
   return {

@@ -75,7 +75,7 @@ describe("createChangeRequestsForReports", () => {
             summary: "done",
           },
         ],
-      })
+      }),
     ).rejects.toThrow("changeRequest.grouping currently supports only 'all'");
   });
 });

@@ -12,7 +12,7 @@ export function createProgressEmitter(options: RemediateOptions) {
   return (
     stage: ProgressStage,
     detail: string,
-    extra?: { provider?: "remote" | "local"; model?: string }
+    extra?: { provider?: "remote" | "local"; model?: string },
   ): void => {
     if (!options.onProgress) return;
     options.onProgress({

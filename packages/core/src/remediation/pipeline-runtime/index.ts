@@ -9,7 +9,7 @@ export { createProgressEmitter, createRuntimeToolsForRun };
 
 export async function createPipelineRuntime(
   cveId: string,
-  options: RemediateOptions
+  options: RemediateOptions,
 ): Promise<{
   provider: "remote" | "local";
   cwd: string;

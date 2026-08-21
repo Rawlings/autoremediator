@@ -35,8 +35,7 @@ export function buildPatchPrompt(params: BuildPatchPromptParams): string {
     .join("\n");
 
   const vulnerabilityContext =
-    VULNERABILITY_DESCRIPTIONS[vulnerabilityCategory] ||
-    VULNERABILITY_DESCRIPTIONS.unknown;
+    VULNERABILITY_DESCRIPTIONS[vulnerabilityCategory] || VULNERABILITY_DESCRIPTIONS.unknown;
 
   const personalityDirective =
     modelPersonality === "analytical"

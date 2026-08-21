@@ -17,12 +17,12 @@ async function probeFeed(url: string, cveId: string, token?: string): Promise<st
     const hostname = feedUrl.hostname.toLowerCase();
     if (
       hostname === "localhost" ||
-      /^127\./.test(hostname) ||
-      /^10\./.test(hostname) ||
+      hostname.startsWith("127.") ||
+      hostname.startsWith("10.") ||
       /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
-      /^192\.168\./.test(hostname) ||
+      hostname.startsWith("192.168.") ||
       hostname === "0.0.0.0" ||
-      /^169\.254\./.test(hostname) ||
+      hostname.startsWith("169.254.") ||
       hostname === "[::1]" ||
       hostname === "::1"
     ) {
@@ -46,20 +46,15 @@ async function probeFeed(url: string, cveId: string, token?: string): Promise<st
 }
 
 export async function enrichWithExternalFeeds(details: CveDetails): Promise<CveDetails> {
-  const {
-    vendorAdvisoryFeeds,
-    commercialFeeds,
-    commercialFeedToken,
-  } = getIntelligenceSourceConfig();
+  const { vendorAdvisoryFeeds, commercialFeeds, commercialFeedToken } =
+    getIntelligenceSourceConfig();
 
   const vendorHits = (
     await Promise.all(vendorAdvisoryFeeds.map((url) => probeFeed(url, details.id)))
   ).filter((v): v is string => Boolean(v));
 
   const commercialHits = (
-    await Promise.all(
-      commercialFeeds.map((url) => probeFeed(url, details.id, commercialFeedToken))
-    )
+    await Promise.all(commercialFeeds.map((url) => probeFeed(url, details.id, commercialFeedToken)))
   ).filter((v): v is string => Boolean(v));
 
   if (vendorHits.length === 0 && commercialHits.length === 0) {
@@ -67,7 +62,7 @@ export async function enrichWithExternalFeeds(details: CveDetails): Promise<CveD
   }
 
   details.intelligence = {
-    ...(details.intelligence ?? {}),
+    ...details.intelligence,
     vendorAdvisories: vendorHits.length > 0 ? vendorHits : details.intelligence?.vendorAdvisories,
     commercialFeeds:
       commercialHits.length > 0 ? commercialHits : details.intelligence?.commercialFeeds,

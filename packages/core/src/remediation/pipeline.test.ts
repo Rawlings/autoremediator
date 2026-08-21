@@ -95,7 +95,10 @@ describe("runRemediationPipeline tool gating", () => {
     mocked.enrichWithNvd.mockImplementation(async (details: unknown) => details);
     mocked.checkInventoryExecute.mockResolvedValue({ packages: [] });
     mocked.resolveSafeUpgradeVersion.mockResolvedValue({ safeVersion: undefined });
-    mocked.fetchPackageSourceExecute.mockResolvedValue({ success: false, error: "source unavailable" });
+    mocked.fetchPackageSourceExecute.mockResolvedValue({
+      success: false,
+      error: "source unavailable",
+    });
     mocked.generatePatchExecute.mockResolvedValue({ success: false, error: "patch failed" });
     mocked.applyPatchFileExecute.mockResolvedValue({
       applied: false,
@@ -158,11 +161,13 @@ describe("runRemediationPipeline tool gating", () => {
     mocked.generatePatchExecute.mockResolvedValue({
       success: true,
       confidence: 0.95,
-      patchContent: "--- a/index.js\n+++ b/index.js\n@@ -1,1 +1,1 @@\n-module.exports = {}\n+module.exports = { safe: true }\n",
+      patchContent:
+        "--- a/index.js\n+++ b/index.js\n@@ -1,1 +1,1 @@\n-module.exports = {}\n+module.exports = { safe: true }\n",
       patches: [
         {
           filePath: "index.js",
-          unifiedDiff: "--- a/index.js\n+++ b/index.js\n@@ -1,1 +1,1 @@\n-module.exports = {}\n+module.exports = { safe: true }\n",
+          unifiedDiff:
+            "--- a/index.js\n+++ b/index.js\n@@ -1,1 +1,1 @@\n-module.exports = {}\n+module.exports = { safe: true }\n",
         },
       ],
     });
@@ -297,7 +302,7 @@ describe("runRemediationPipeline tool gating", () => {
       expect.objectContaining({
         llmProvider: "remote",
         model: "claude-mythos-verifier",
-      })
+      }),
     );
   });
 
@@ -351,7 +356,7 @@ describe("runRemediationPipeline tool gating", () => {
     expect(mocked.generatePatchExecute.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({
         patchConfidenceThresholds: { high: 0.95 },
-      })
+      }),
     );
   });
 });
@@ -439,14 +444,14 @@ describe("accumulateStepResults", () => {
         packageName: "lodash",
         strategy: "version-bump",
         dependencyScope: "direct",
-      })
+      }),
     );
     expect(result.collectedResults[1]).toEqual(
       expect.objectContaining({
         packageName: "lodash",
         strategy: "package-override",
         dependencyScope: "direct",
-      })
+      }),
     );
     expect(result.collectedResults[2]).toEqual(
       expect.objectContaining({
@@ -456,7 +461,7 @@ describe("accumulateStepResults", () => {
         dependencyScope: "direct",
         confidence: 0.92,
         riskLevel: "medium",
-      })
+      }),
     );
   });
 
@@ -488,7 +493,7 @@ describe("accumulateStepResults", () => {
         dependencyScope: "transitive",
         message: "validation failed",
         validation: { passed: false, error: "tests failed" },
-      })
+      }),
     );
   });
 });

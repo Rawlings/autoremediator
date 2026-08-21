@@ -2,8 +2,5 @@
   "name": "Autoremediator SARIF upload",
   "description": "Dry-run remediation scan that uploads SARIF output to GitHub code scanning.",
   "iconName": "shield",
-  "categories": [
-    "security",
-    "code-scanning"
-  ]
+  "categories": ["security", "code-scanning"]
 }

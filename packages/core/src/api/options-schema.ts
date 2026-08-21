@@ -11,7 +11,8 @@ export const OPTION_DESCRIPTIONS = {
   packageManager: "Package manager override (auto-detected by default)",
   dryRun: "If true, plan changes but write nothing",
   preview: "If true, enforce non-mutating preview mode",
-  simulationMode: "If true, attach deterministic simulation and rebuttal metadata for dry-run or preview execution",
+  simulationMode:
+    "If true, attach deterministic simulation and rebuttal metadata for dry-run or preview execution",
   runTests: "Run package-manager test command after applying fix",
   llmProvider: "LLM provider override (remote|local)",
   model: "LLM model override",
@@ -21,8 +22,10 @@ export const OPTION_DESCRIPTIONS = {
   consensusProvider: "Provider override for high-risk consensus verification (remote|local)",
   consensusModel: "Model override for high-risk consensus verification",
   patchConfidenceThresholdLow: "Patch acceptance confidence threshold for low-risk patches (0..1)",
-  patchConfidenceThresholdMedium: "Patch acceptance confidence threshold for medium-risk patches (0..1)",
-  patchConfidenceThresholdHigh: "Patch acceptance confidence threshold for high-risk patches (0..1)",
+  patchConfidenceThresholdMedium:
+    "Patch acceptance confidence threshold for medium-risk patches (0..1)",
+  patchConfidenceThresholdHigh:
+    "Patch acceptance confidence threshold for high-risk patches (0..1)",
   dynamicModelRouting: "Enable dynamic model selection by input size",
   dynamicRoutingThresholdChars: "Input size threshold used by dynamic model routing",
   patchesDir: "Directory to write .patch files (default: ./patches)",
@@ -38,7 +41,8 @@ export const OPTION_DESCRIPTIONS = {
   audit: "Run package-manager-native audit command instead of reading a scan file",
   evidence: "Write evidence JSON to .autoremediator/evidence/ (default: true)",
   directDependenciesOnly: "Restrict remediation to direct dependencies only",
-  preferVersionBump: "Reject override and patch remediation when version-bump-only policy is required",
+  preferVersionBump:
+    "Reject override and patch remediation when version-bump-only policy is required",
   installMode: "Install behavior profile: deterministic|prefer-offline|standard",
   installPreferOffline: "Override prefer-offline flag behavior for install commands",
   enforceFrozenLockfile: "Override frozen lockfile behavior for install commands",
@@ -51,36 +55,59 @@ export const OPTION_DESCRIPTIONS = {
   changeRequestBranchPrefix: "Branch prefix for generated change request branches",
   changeRequestTitlePrefix: "Title prefix for generated change requests",
   includeTransitive: "Include transitive dependencies in the outdated check. Default: false.",
-  updateOutdated: "Run in update-outdated mode: bump all outdated npm packages without requiring a CVE.",
-  kevMandatory: "If true, CVEs with active CISA KEV status bypass severity filtering and are treated as mandatory",
-  epssThreshold: "EPSS probability threshold (0..1) above which a CVE is treated as mandatory regardless of severity",
-  suppressionsFile: "Path to a YAML file containing additional VEX suppression entries to merge with policy-inline suppressions",
-  slaCheck: "Compare CVE publication dates against configured SLA windows and include breach records in the report output",
-  skipUnreachable: "Skip remediation for CVEs where the vulnerable package cannot be reached from any project entry point (requires static import analysis)",
-  regressionCheck: "After applying a fix, verify the patched version falls outside the CVE's vulnerable range and flag any regression in the report",
-  dispositionPolicy: "Autonomous disposition policy controlling when fixes are auto-applied, held, or escalated",
-  dispositionPolicyMinConfidenceForAutoApply: "Minimum patch confidence (0–1) required for auto-apply disposition",
-  dispositionPolicyHoldForTransitive: "Hold transitive dependency fixes for human review instead of auto-applying",
-  dispositionPolicyEscalateOnSlaBreachSeverities: "CVE severities that trigger escalate disposition on SLA breach",
+  updateOutdated:
+    "Run in update-outdated mode: bump all outdated npm packages without requiring a CVE.",
+  kevMandatory:
+    "If true, CVEs with active CISA KEV status bypass severity filtering and are treated as mandatory",
+  epssThreshold:
+    "EPSS probability threshold (0..1) above which a CVE is treated as mandatory regardless of severity",
+  suppressionsFile:
+    "Path to a YAML file containing additional VEX suppression entries to merge with policy-inline suppressions",
+  slaCheck:
+    "Compare CVE publication dates against configured SLA windows and include breach records in the report output",
+  skipUnreachable:
+    "Skip remediation for CVEs where the vulnerable package cannot be reached from any project entry point (requires static import analysis)",
+  regressionCheck:
+    "After applying a fix, verify the patched version falls outside the CVE's vulnerable range and flag any regression in the report",
+  dispositionPolicy:
+    "Autonomous disposition policy controlling when fixes are auto-applied, held, or escalated",
+  dispositionPolicyMinConfidenceForAutoApply:
+    "Minimum patch confidence (0–1) required for auto-apply disposition",
+  dispositionPolicyHoldForTransitive:
+    "Hold transitive dependency fixes for human review instead of auto-applying",
+  dispositionPolicyEscalateOnSlaBreachSeverities:
+    "CVE severities that trigger escalate disposition on SLA breach",
   dispositionPolicyEscalateOnKev: "Escalate disposition for CVEs with active CISA KEV status",
-  containmentMode: "Block escalation-disposition results from being applied and record containment in evidence",
+  containmentMode:
+    "Block escalation-disposition results from being applied and record containment in evidence",
   campaignMode: "Enable portfolio campaign mode to risk-rank targets before execution",
   escalationGraph: "Optional mapping from unresolved reasons to intended escalation actions",
-  offlineIntelligence: "Skip all network calls to intelligence sources. Only local inventory and npm-registry version resolution proceed.",
-  intelligenceSnapshotPath: "Path to a local JSON snapshot of pre-fetched CVE intelligence (keyed by CVE ID) used when offline mode is active.",
+  offlineIntelligence:
+    "Skip all network calls to intelligence sources. Only local inventory and npm-registry version resolution proceed.",
+  intelligenceSnapshotPath:
+    "Path to a local JSON snapshot of pre-fetched CVE intelligence (keyed by CVE ID) used when offline mode is active.",
 } as const;
 
 export function createConstraintSchemaProperties(): Record<string, JsonSchemaProperty> {
   return {
-    directDependenciesOnly: { type: "boolean", description: OPTION_DESCRIPTIONS.directDependenciesOnly },
+    directDependenciesOnly: {
+      type: "boolean",
+      description: OPTION_DESCRIPTIONS.directDependenciesOnly,
+    },
     preferVersionBump: { type: "boolean", description: OPTION_DESCRIPTIONS.preferVersionBump },
     installMode: {
       type: "string",
       enum: ["deterministic", "prefer-offline", "standard"],
       description: OPTION_DESCRIPTIONS.installMode,
     },
-    installPreferOffline: { type: "boolean", description: OPTION_DESCRIPTIONS.installPreferOffline },
-    enforceFrozenLockfile: { type: "boolean", description: OPTION_DESCRIPTIONS.enforceFrozenLockfile },
+    installPreferOffline: {
+      type: "boolean",
+      description: OPTION_DESCRIPTIONS.installPreferOffline,
+    },
+    enforceFrozenLockfile: {
+      type: "boolean",
+      description: OPTION_DESCRIPTIONS.enforceFrozenLockfile,
+    },
     workspace: { type: "string", description: OPTION_DESCRIPTIONS.workspace },
   };
 }
@@ -98,38 +125,91 @@ export function createRemediateOptionSchemaProperties(options?: {
 
   return {
     cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
-    packageManager: { type: "string", enum: [...PACKAGE_MANAGER_VALUES], description: OPTION_DESCRIPTIONS.packageManager },
-    ...(includeDryRun ? { dryRun: { type: "boolean", description: OPTION_DESCRIPTIONS.dryRun } } : {}),
-    ...(includePreview ? { preview: { type: "boolean", description: OPTION_DESCRIPTIONS.preview } } : {}),
-    ...(includeSimulationMode ? { simulationMode: { type: "boolean", description: OPTION_DESCRIPTIONS.simulationMode } } : {}),
+    packageManager: {
+      type: "string",
+      enum: [...PACKAGE_MANAGER_VALUES],
+      description: OPTION_DESCRIPTIONS.packageManager,
+    },
+    ...(includeDryRun
+      ? { dryRun: { type: "boolean", description: OPTION_DESCRIPTIONS.dryRun } }
+      : {}),
+    ...(includePreview
+      ? { preview: { type: "boolean", description: OPTION_DESCRIPTIONS.preview } }
+      : {}),
+    ...(includeSimulationMode
+      ? { simulationMode: { type: "boolean", description: OPTION_DESCRIPTIONS.simulationMode } }
+      : {}),
     runTests: { type: "boolean", description: OPTION_DESCRIPTIONS.runTests },
-    llmProvider: { type: "string", enum: [...LLM_PROVIDER_VALUES], description: OPTION_DESCRIPTIONS.llmProvider },
+    llmProvider: {
+      type: "string",
+      enum: [...LLM_PROVIDER_VALUES],
+      description: OPTION_DESCRIPTIONS.llmProvider,
+    },
     model: { type: "string", description: OPTION_DESCRIPTIONS.model },
-    modelPersonality: { type: "string", enum: ["analytical", "pragmatic", "balanced"], description: OPTION_DESCRIPTIONS.modelPersonality },
-    providerSafetyProfile: { type: "string", enum: ["strict", "relaxed"], description: OPTION_DESCRIPTIONS.providerSafetyProfile },
-    requireConsensusForHighRisk: { type: "boolean", description: OPTION_DESCRIPTIONS.requireConsensusForHighRisk },
-    consensusProvider: { type: "string", enum: [...LLM_PROVIDER_VALUES], description: OPTION_DESCRIPTIONS.consensusProvider },
+    modelPersonality: {
+      type: "string",
+      enum: ["analytical", "pragmatic", "balanced"],
+      description: OPTION_DESCRIPTIONS.modelPersonality,
+    },
+    providerSafetyProfile: {
+      type: "string",
+      enum: ["strict", "relaxed"],
+      description: OPTION_DESCRIPTIONS.providerSafetyProfile,
+    },
+    requireConsensusForHighRisk: {
+      type: "boolean",
+      description: OPTION_DESCRIPTIONS.requireConsensusForHighRisk,
+    },
+    consensusProvider: {
+      type: "string",
+      enum: [...LLM_PROVIDER_VALUES],
+      description: OPTION_DESCRIPTIONS.consensusProvider,
+    },
     consensusModel: { type: "string", description: OPTION_DESCRIPTIONS.consensusModel },
     patchConfidenceThresholds: {
       type: "object",
       properties: {
-        low: { type: "number", minimum: 0, maximum: 1, description: OPTION_DESCRIPTIONS.patchConfidenceThresholdLow },
-        medium: { type: "number", minimum: 0, maximum: 1, description: OPTION_DESCRIPTIONS.patchConfidenceThresholdMedium },
-        high: { type: "number", minimum: 0, maximum: 1, description: OPTION_DESCRIPTIONS.patchConfidenceThresholdHigh },
+        low: {
+          type: "number",
+          minimum: 0,
+          maximum: 1,
+          description: OPTION_DESCRIPTIONS.patchConfidenceThresholdLow,
+        },
+        medium: {
+          type: "number",
+          minimum: 0,
+          maximum: 1,
+          description: OPTION_DESCRIPTIONS.patchConfidenceThresholdMedium,
+        },
+        high: {
+          type: "number",
+          minimum: 0,
+          maximum: 1,
+          description: OPTION_DESCRIPTIONS.patchConfidenceThresholdHigh,
+        },
       },
     },
     dynamicModelRouting: { type: "boolean", description: OPTION_DESCRIPTIONS.dynamicModelRouting },
-    dynamicRoutingThresholdChars: { type: "number", description: OPTION_DESCRIPTIONS.dynamicRoutingThresholdChars },
+    dynamicRoutingThresholdChars: {
+      type: "number",
+      description: OPTION_DESCRIPTIONS.dynamicRoutingThresholdChars,
+    },
     patchesDir: { type: "string", description: OPTION_DESCRIPTIONS.patchesDir },
     policy: { type: "string", description: OPTION_DESCRIPTIONS.policy },
-    ...(includeEvidence ? { evidence: { type: "boolean", description: OPTION_DESCRIPTIONS.evidence } } : {}),
+    ...(includeEvidence
+      ? { evidence: { type: "boolean", description: OPTION_DESCRIPTIONS.evidence } }
+      : {}),
     requestId: { type: "string", description: OPTION_DESCRIPTIONS.requestId },
     sessionId: { type: "string", description: OPTION_DESCRIPTIONS.sessionId },
     parentRunId: { type: "string", description: OPTION_DESCRIPTIONS.parentRunId },
     idempotencyKey: { type: "string", description: OPTION_DESCRIPTIONS.idempotencyKey },
     resume: { type: "boolean", description: OPTION_DESCRIPTIONS.resume },
     actor: { type: "string", description: OPTION_DESCRIPTIONS.actor },
-    source: { type: "string", enum: [...PROVENANCE_SOURCE_VALUES], description: OPTION_DESCRIPTIONS.source },
+    source: {
+      type: "string",
+      enum: [...PROVENANCE_SOURCE_VALUES],
+      description: OPTION_DESCRIPTIONS.source,
+    },
     constraints: {
       type: "object",
       properties: createConstraintSchemaProperties(),
@@ -150,12 +230,20 @@ export function createRemediateOptionSchemaProperties(options?: {
         },
         repository: { type: "string", description: OPTION_DESCRIPTIONS.changeRequestRepository },
         baseBranch: { type: "string", description: OPTION_DESCRIPTIONS.changeRequestBaseBranch },
-        branchPrefix: { type: "string", description: OPTION_DESCRIPTIONS.changeRequestBranchPrefix },
+        branchPrefix: {
+          type: "string",
+          description: OPTION_DESCRIPTIONS.changeRequestBranchPrefix,
+        },
         titlePrefix: { type: "string", description: OPTION_DESCRIPTIONS.changeRequestTitlePrefix },
       },
     },
     kevMandatory: { type: "boolean", description: OPTION_DESCRIPTIONS.kevMandatory },
-    epssThreshold: { type: "number", minimum: 0, maximum: 1, description: OPTION_DESCRIPTIONS.epssThreshold },
+    epssThreshold: {
+      type: "number",
+      minimum: 0,
+      maximum: 1,
+      description: OPTION_DESCRIPTIONS.epssThreshold,
+    },
     suppressionsFile: { type: "string", description: OPTION_DESCRIPTIONS.suppressionsFile },
     slaCheck: { type: "boolean", description: OPTION_DESCRIPTIONS.slaCheck },
     skipUnreachable: { type: "boolean", description: OPTION_DESCRIPTIONS.skipUnreachable },
@@ -164,14 +252,25 @@ export function createRemediateOptionSchemaProperties(options?: {
       type: "object",
       description: OPTION_DESCRIPTIONS.dispositionPolicy,
       properties: {
-        minConfidenceForAutoApply: { type: "number", minimum: 0, maximum: 1, description: OPTION_DESCRIPTIONS.dispositionPolicyMinConfidenceForAutoApply },
-        holdForTransitive: { type: "boolean", description: OPTION_DESCRIPTIONS.dispositionPolicyHoldForTransitive },
+        minConfidenceForAutoApply: {
+          type: "number",
+          minimum: 0,
+          maximum: 1,
+          description: OPTION_DESCRIPTIONS.dispositionPolicyMinConfidenceForAutoApply,
+        },
+        holdForTransitive: {
+          type: "boolean",
+          description: OPTION_DESCRIPTIONS.dispositionPolicyHoldForTransitive,
+        },
         escalateOnSlaBreachSeverities: {
           type: "array",
           items: { type: "string", enum: ["critical", "high", "medium", "low"] },
           description: OPTION_DESCRIPTIONS.dispositionPolicyEscalateOnSlaBreachSeverities,
         },
-        escalateOnKev: { type: "boolean", description: OPTION_DESCRIPTIONS.dispositionPolicyEscalateOnKev },
+        escalateOnKev: {
+          type: "boolean",
+          description: OPTION_DESCRIPTIONS.dispositionPolicyEscalateOnKev,
+        },
       },
     },
     containmentMode: { type: "boolean", description: OPTION_DESCRIPTIONS.containmentMode },
@@ -248,14 +347,21 @@ export function createRemediateOptionSchemaProperties(options?: {
       additionalProperties: false,
     },
     offlineIntelligence: { type: "boolean", description: OPTION_DESCRIPTIONS.offlineIntelligence },
-    intelligenceSnapshotPath: { type: "string", description: OPTION_DESCRIPTIONS.intelligenceSnapshotPath },
+    intelligenceSnapshotPath: {
+      type: "string",
+      description: OPTION_DESCRIPTIONS.intelligenceSnapshotPath,
+    },
   };
 }
 
 export function createScanOptionSchemaProperties(): Record<string, JsonSchemaProperty> {
   return {
     ...createRemediateOptionSchemaProperties({ includeEvidence: true }),
-    format: { type: "string", enum: ["npm-audit", "yarn-audit", "sarif", "auto"], description: OPTION_DESCRIPTIONS.format },
+    format: {
+      type: "string",
+      enum: ["npm-audit", "yarn-audit", "sarif", "auto"],
+      description: OPTION_DESCRIPTIONS.format,
+    },
     audit: { type: "boolean", description: OPTION_DESCRIPTIONS.audit },
     slaCheck: { type: "boolean", description: OPTION_DESCRIPTIONS.slaCheck },
   };
@@ -305,7 +411,10 @@ export function createScanReportSchemaProperties(): Record<string, JsonSchemaPro
 
 export function createUpdateOutdatedOptionSchemaProperties(): Record<string, JsonSchemaProperty> {
   return {
-    ...createRemediateOptionSchemaProperties({ includeEvidence: true, includeSimulationMode: false }),
+    ...createRemediateOptionSchemaProperties({
+      includeEvidence: true,
+      includeSimulationMode: false,
+    }),
     includeTransitive: { type: "boolean", description: OPTION_DESCRIPTIONS.includeTransitive },
   };
 }

@@ -11,7 +11,10 @@
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { execa } from "execa";
-import { detectPackageManager, getPackageManagerCommands } from "../../platform/package-manager/index.js";
+import {
+  detectPackageManager,
+  getPackageManagerCommands,
+} from "../../platform/package-manager/index.js";
 
 /**
  * Validation result type for patch diffs
@@ -37,7 +40,7 @@ export function writePatchFile(
   packageName: string,
   version: string,
   patchContent: string,
-  projectDir: string
+  projectDir: string,
 ): string {
   const patchesDir = join(projectDir, "patches");
 
@@ -128,7 +131,7 @@ export async function ensurePatchPackage(projectDir: string): Promise<void> {
     pkgJson = JSON.parse(content) as Record<string, unknown>;
   } catch (err) {
     throw new Error(
-      `Failed to read package.json: ${err instanceof Error ? err.message : String(err)}`
+      `Failed to read package.json: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 
@@ -150,7 +153,7 @@ export async function ensurePatchPackage(projectDir: string): Promise<void> {
     });
   } catch (err) {
     throw new Error(
-      `Failed to install patch-package: ${err instanceof Error ? err.message : String(err)}`
+      `Failed to install patch-package: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 
@@ -168,7 +171,9 @@ export async function ensurePatchPackage(projectDir: string): Promise<void> {
   try {
     writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
   } catch (err) {
-    throw new Error(`Failed to update package.json: ${err instanceof Error ? err.message : String(err)}`);
+    throw new Error(
+      `Failed to update package.json: ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 }
 
@@ -186,7 +191,7 @@ export async function ensurePatchPackage(projectDir: string): Promise<void> {
 export async function getVulnerableFileContent(
   packageName: string,
   version: string,
-  filePath: string
+  filePath: string,
 ): Promise<string> {
   // Use npm view to fetch tarball URL
   let tarballUrl: string;
@@ -199,7 +204,7 @@ export async function getVulnerableFileContent(
     throw new Error(
       `Failed to get tarball URL for ${packageName}@${version}: ${
         err instanceof Error ? err.message : String(err)
-      }`
+      }`,
     );
   }
 
@@ -213,10 +218,7 @@ export async function getVulnerableFileContent(
 
   try {
     // Alternative: use curl and tar
-    await execa("bash", [
-      "-c",
-      `curl -s "${tarballUrl}" | tar xz -C "${tempDir}"`,
-    ]);
+    await execa("bash", ["-c", `curl -s "${tarballUrl}" | tar xz -C "${tempDir}"`]);
 
     // Read the file from extracted package (npm extracts under "package/" directory)
     const extractedPath = join(tempDir, "package", filePath);
@@ -227,13 +229,13 @@ export async function getVulnerableFileContent(
     throw new Error(
       `Failed to fetch file ${filePath} from ${packageName}@${version}: ${
         err instanceof Error ? err.message : String(err)
-      }`
+      }`,
     );
   } finally {
     // Clean up temporary directory
     try {
       await execa("rm", ["-rf", tempDir]);
-    } catch (cleanupErr) {
+    } catch {
       // Ignore cleanup errors
     }
   }

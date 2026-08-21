@@ -9,10 +9,7 @@
  */
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
+import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { fileURLToPath } from "node:url";
 import {
   createRemediateOptionSchemaProperties,
@@ -82,7 +79,7 @@ const defaultDeps: McpApiDeps = {
 function createBaseServer(): Server {
   return new Server(
     { name: "autoremediator", version: PACKAGE_VERSION },
-    { capabilities: { tools: {} } }
+    { capabilities: { tools: {} } },
   );
 }
 
@@ -93,7 +90,8 @@ function createBaseServer(): Server {
 export const TOOLS = [
   {
     name: "health",
-    description: "Health check tool that returns server readiness status, version, registered tool count, and the list of available capability names.",
+    description:
+      "Health check tool that returns server readiness status, version, registered tool count, and the list of available capability names.",
     inputSchema: {
       type: "object",
       properties: {},
@@ -121,7 +119,11 @@ export const TOOLS = [
       required: ["cveId"],
       properties: {
         cveId: { type: "string", description: OPTION_DESCRIPTIONS.cveId },
-        ...createRemediateOptionSchemaProperties({ includeDryRun: false, includePreview: false, includeEvidence: true }),
+        ...createRemediateOptionSchemaProperties({
+          includeDryRun: false,
+          includePreview: false,
+          includeEvidence: true,
+        }),
       },
     },
   },
@@ -178,8 +180,7 @@ export const TOOLS = [
   },
   {
     name: "inspectPatchArtifact",
-    description:
-      "Inspect a stored .patch file and its optional manifest metadata.",
+    description: "Inspect a stored .patch file and its optional manifest metadata.",
     inputSchema: {
       type: "object",
       required: ["patchFilePath"],
@@ -213,14 +214,16 @@ export const TOOLS = [
   },
   {
     name: "toVex",
-    description: "Convert a ScanReport or RemediationReport to a CycloneDX 1.5 VEX document. Returns a compliance-ready vulnerability exploitability exchange record binding remediation evidence to SBOM vulnerability entries.",
+    description:
+      "Convert a ScanReport or RemediationReport to a CycloneDX 1.5 VEX document. Returns a compliance-ready vulnerability exploitability exchange record binding remediation evidence to SBOM vulnerability entries.",
     inputSchema: {
       type: "object",
       required: ["report"],
       properties: {
         report: {
           type: "object",
-          description: "A ScanReport or RemediationReport object returned by remediate, planRemediation, or remediateFromScan.",
+          description:
+            "A ScanReport or RemediationReport object returned by remediate, planRemediation, or remediateFromScan.",
         },
         toolVersion: {
           type: "string",
@@ -231,7 +234,8 @@ export const TOOLS = [
   },
   {
     name: "submitRemediateJob",
-    description: "Submit a single-CVE remediation as a background async job. Returns a JobHandle immediately with a jobId. Use pollJob to check status and retrieve the result.",
+    description:
+      "Submit a single-CVE remediation as a background async job. Returns a JobHandle immediately with a jobId. Use pollJob to check status and retrieve the result.",
     inputSchema: {
       type: "object",
       required: ["cveId"],
@@ -243,7 +247,8 @@ export const TOOLS = [
   },
   {
     name: "submitScanJob",
-    description: "Submit a scan-file remediation as a background async job. Returns a JobHandle immediately. Use pollJob to check status.",
+    description:
+      "Submit a scan-file remediation as a background async job. Returns a JobHandle immediately. Use pollJob to check status.",
     inputSchema: {
       type: "object",
       required: ["inputPath"],
@@ -255,7 +260,8 @@ export const TOOLS = [
   },
   {
     name: "submitPortfolioJob",
-    description: "Submit a portfolio remediation as a background async job. Returns a JobHandle immediately. Use pollJob to check status.",
+    description:
+      "Submit a portfolio remediation as a background async job. Returns a JobHandle immediately. Use pollJob to check status.",
     inputSchema: {
       type: "object",
       required: ["targets"],
@@ -279,12 +285,17 @@ export const TOOLS = [
   },
   {
     name: "pollJob",
-    description: "Poll the status of a submitted background job. Returns the full AsyncRemediationJob including result when status is 'done' or error when 'failed'.",
+    description:
+      "Poll the status of a submitted background job. Returns the full AsyncRemediationJob including result when status is 'done' or error when 'failed'.",
     inputSchema: {
       type: "object",
       required: ["jobId"],
       properties: {
-        jobId: { type: "string", description: "Job ID returned by submitRemediateJob, submitScanJob, or submitPortfolioJob." },
+        jobId: {
+          type: "string",
+          description:
+            "Job ID returned by submitRemediateJob, submitScanJob, or submitPortfolioJob.",
+        },
       },
     },
   },
@@ -293,7 +304,7 @@ export const TOOLS = [
 export async function handleToolCall(
   name: string,
   args: Record<string, unknown> = {},
-  deps: McpApiDeps = defaultDeps
+  deps: McpApiDeps = defaultDeps,
 ): Promise<{ content: Array<{ type: "text"; text: string }>; isError?: boolean }> {
   const withMcpSource = (options: Record<string, unknown>): Record<string, unknown> => ({
     ...options,
@@ -314,19 +325,28 @@ export async function handleToolCall(
 
     if (name === "remediate") {
       const { cveId, ...options } = args as { cveId: string; [key: string]: unknown };
-      const report = await deps.remediateFn(cveId, withMcpSource(options) as Parameters<typeof remediate>[1]);
+      const report = await deps.remediateFn(
+        cveId,
+        withMcpSource(options) as Parameters<typeof remediate>[1],
+      );
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
     if (name === "planRemediation") {
       const { cveId, ...options } = args as { cveId: string; [key: string]: unknown };
-      const report = await deps.planRemediationFn(cveId, withMcpSource(options) as Parameters<typeof planRemediation>[1]);
+      const report = await deps.planRemediationFn(
+        cveId,
+        withMcpSource(options) as Parameters<typeof planRemediation>[1],
+      );
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
     if (name === "remediateFromScan") {
       const { inputPath, ...options } = args as { inputPath: string; [key: string]: unknown };
-      const report = await deps.remediateFromScanFn(inputPath, withMcpSource(options) as Parameters<typeof remediateFromScan>[1]);
+      const report = await deps.remediateFromScanFn(
+        inputPath,
+        withMcpSource(options) as Parameters<typeof remediateFromScan>[1],
+      );
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
@@ -334,48 +354,64 @@ export async function handleToolCall(
       const { targets, ...options } = args as { targets: unknown[]; [key: string]: unknown };
       const report = await deps.remediatePortfolioFn(
         targets as Parameters<typeof remediatePortfolio>[0],
-        withMcpSource(options) as Parameters<typeof remediatePortfolio>[1]
+        withMcpSource(options) as Parameters<typeof remediatePortfolio>[1],
       );
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
     if (name === "updateOutdated") {
-      const report = await deps.updateOutdatedFn(withMcpSource(args) as Parameters<typeof updateOutdated>[0]);
+      const report = await deps.updateOutdatedFn(
+        withMcpSource(args) as Parameters<typeof updateOutdated>[0],
+      );
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
     if (name === "listPatchArtifacts") {
-      const report = await deps.listPatchArtifactsFn(args as Parameters<typeof listPatchArtifacts>[0]);
+      const report = await deps.listPatchArtifactsFn(
+        args as Parameters<typeof listPatchArtifacts>[0],
+      );
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
     if (name === "inspectPatchArtifact") {
-      const { patchFilePath, ...options } = args as { patchFilePath: string; [key: string]: unknown };
+      const { patchFilePath, ...options } = args as {
+        patchFilePath: string;
+        [key: string]: unknown;
+      };
       const report = await deps.inspectPatchArtifactFn(
         patchFilePath,
-        options as Parameters<typeof inspectPatchArtifact>[1]
+        options as Parameters<typeof inspectPatchArtifact>[1],
       );
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
     if (name === "validatePatchArtifact") {
-      const { patchFilePath, ...options } = args as { patchFilePath: string; [key: string]: unknown };
+      const { patchFilePath, ...options } = args as {
+        patchFilePath: string;
+        [key: string]: unknown;
+      };
       const report = await deps.validatePatchArtifactFn(
         patchFilePath,
-        options as Parameters<typeof validatePatchArtifact>[1]
+        options as Parameters<typeof validatePatchArtifact>[1],
       );
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
     if (name === "submitRemediateJob") {
       const { cveId, ...options } = args as { cveId: string; [key: string]: unknown };
-      const handle = deps.submitRemediateJobFn(cveId, withMcpSource(options) as Parameters<typeof submitRemediateJob>[1]);
+      const handle = deps.submitRemediateJobFn(
+        cveId,
+        withMcpSource(options) as Parameters<typeof submitRemediateJob>[1],
+      );
       return { content: [{ type: "text", text: JSON.stringify(handle, null, 2) }] };
     }
 
     if (name === "submitScanJob") {
       const { inputPath, ...options } = args as { inputPath: string; [key: string]: unknown };
-      const handle = deps.submitScanJobFn(inputPath, withMcpSource(options) as Parameters<typeof submitScanJob>[1]);
+      const handle = deps.submitScanJobFn(
+        inputPath,
+        withMcpSource(options) as Parameters<typeof submitScanJob>[1],
+      );
       return { content: [{ type: "text", text: JSON.stringify(handle, null, 2) }] };
     }
 
@@ -383,7 +419,7 @@ export async function handleToolCall(
       const { targets, ...options } = args as { targets: unknown[]; [key: string]: unknown };
       const handle = deps.submitPortfolioJobFn(
         targets as Parameters<typeof submitPortfolioJob>[0],
-        withMcpSource(options) as Parameters<typeof submitPortfolioJob>[1]
+        withMcpSource(options) as Parameters<typeof submitPortfolioJob>[1],
       );
       return { content: [{ type: "text", text: JSON.stringify(handle, null, 2) }] };
     }
@@ -397,9 +433,17 @@ export async function handleToolCall(
     if (name === "toVex") {
       const { report, toolVersion } = args as { report: unknown; toolVersion?: string };
       if (!report || typeof report !== "object") {
-        return { content: [{ type: "text", text: JSON.stringify({ error: "report is required (object)" }) }], isError: true };
+        return {
+          content: [
+            { type: "text", text: JSON.stringify({ error: "report is required (object)" }) },
+          ],
+          isError: true,
+        };
       }
-      const vex = deps.toVexFn(report as Parameters<typeof toCycloneDxVex>[0], toolVersion ? { toolVersion } : undefined);
+      const vex = deps.toVexFn(
+        report as Parameters<typeof toCycloneDxVex>[0],
+        toolVersion ? { toolVersion } : undefined,
+      );
       return { content: [{ type: "text", text: JSON.stringify(vex, null, 2) }] };
     }
 

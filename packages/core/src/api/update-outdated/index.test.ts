@@ -227,7 +227,7 @@ describe("updateOutdated", () => {
     // queryOutdatedPackages was called with includeTransitive: true
     expect(mocked.queryOutdatedPackages).toHaveBeenCalledWith(
       cwd,
-      expect.objectContaining({ includeTransitive: true })
+      expect.objectContaining({ includeTransitive: true }),
     );
     expect(report.outdatedPackages).toHaveLength(2);
     const transitivePkg = report.outdatedPackages.find((p) => p.name === "supports-color");
@@ -235,9 +235,7 @@ describe("updateOutdated", () => {
   });
 
   it("returns failed status when registry query throws", async () => {
-    mocked.queryOutdatedPackages.mockRejectedValue(
-      new Error("npm registry unavailable")
-    );
+    mocked.queryOutdatedPackages.mockRejectedValue(new Error("npm registry unavailable"));
 
     const report = await updateOutdated({ cwd });
 

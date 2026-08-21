@@ -6,7 +6,7 @@ The latest published version of `autoremediator` receives security fixes.
 Older versions are not actively patched.
 
 | Version | Supported |
-|---------|-----------|
+| ------- | --------- |
 | Latest  | ✅        |
 | Older   | ❌        |
 

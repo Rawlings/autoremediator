@@ -2,7 +2,15 @@ import { Command } from "commander";
 import { OPTION_DESCRIPTIONS } from "../api/index.js";
 import { existsSync } from "node:fs";
 import { PACKAGE_VERSION } from "../version";
-import { runInspectPatch, runListPatches, runPortfolio, runScanInput, runSingleCve, runUpdateOutdated, runValidatePatch } from "./runners.js";
+import {
+  runInspectPatch,
+  runListPatches,
+  runPortfolio,
+  runScanInput,
+  runSingleCve,
+  runUpdateOutdated,
+  runValidatePatch,
+} from "./runners.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
 import { validateOutputFormat, validateSharedCommandOptions } from "./validators.js";
@@ -10,7 +18,7 @@ import { validateOutputFormat, validateSharedCommandOptions } from "./validators
 function addSharedOptions(
   program: Command,
   includeInput = false,
-  includeSimulationMode = true
+  includeSimulationMode = true,
 ): Command {
   const parseBooleanFlag = (value: string): boolean => value === "true";
 
@@ -25,29 +33,33 @@ function addSharedOptions(
     .option("--model <name>", OPTION_DESCRIPTIONS.model)
     .option("--model-personality <profile>", OPTION_DESCRIPTIONS.modelPersonality)
     .option("--provider-safety-profile <profile>", OPTION_DESCRIPTIONS.providerSafetyProfile)
-    .option("--require-consensus-for-high-risk", OPTION_DESCRIPTIONS.requireConsensusForHighRisk, false)
+    .option(
+      "--require-consensus-for-high-risk",
+      OPTION_DESCRIPTIONS.requireConsensusForHighRisk,
+      false,
+    )
     .option("--consensus-provider <provider>", OPTION_DESCRIPTIONS.consensusProvider)
     .option("--consensus-model <name>", OPTION_DESCRIPTIONS.consensusModel)
     .option(
       "--patch-confidence-low <value>",
       OPTION_DESCRIPTIONS.patchConfidenceThresholdLow,
-      (value: string) => parseFloat(value)
+      (value: string) => parseFloat(value),
     )
     .option(
       "--patch-confidence-medium <value>",
       OPTION_DESCRIPTIONS.patchConfidenceThresholdMedium,
-      (value: string) => parseFloat(value)
+      (value: string) => parseFloat(value),
     )
     .option(
       "--patch-confidence-high <value>",
       OPTION_DESCRIPTIONS.patchConfidenceThresholdHigh,
-      (value: string) => parseFloat(value)
+      (value: string) => parseFloat(value),
     )
     .option("--dynamic-model-routing", OPTION_DESCRIPTIONS.dynamicModelRouting, false)
     .option(
       "--dynamic-routing-threshold-chars <count>",
       OPTION_DESCRIPTIONS.dynamicRoutingThresholdChars,
-      (value: string) => parseInt(value, 10)
+      (value: string) => parseInt(value, 10),
     )
     .option("--request-id <id>", OPTION_DESCRIPTIONS.requestId)
     .option("--session-id <id>", OPTION_DESCRIPTIONS.sessionId)
@@ -62,12 +74,12 @@ function addSharedOptions(
     .option(
       "--install-prefer-offline <value>",
       `${OPTION_DESCRIPTIONS.installPreferOffline} (true|false)`,
-      parseBooleanFlag
+      parseBooleanFlag,
     )
     .option(
       "--enforce-frozen-lockfile <value>",
       `${OPTION_DESCRIPTIONS.enforceFrozenLockfile} (true|false)`,
-      parseBooleanFlag
+      parseBooleanFlag,
     )
     .option("--workspace <name>", OPTION_DESCRIPTIONS.workspace)
     .option("--audit", OPTION_DESCRIPTIONS.audit, false)
@@ -77,16 +89,18 @@ function addSharedOptions(
     .option("--ci", "Enable CI behavior (non-zero exit on failed remediations)", false)
     .option("--output-format <format>", "Output format: text|json|sarif", "text")
     .option("--kev-mandatory", OPTION_DESCRIPTIONS.kevMandatory, false)
-    .option(
-      "--epss-threshold <value>",
-      OPTION_DESCRIPTIONS.epssThreshold,
-      (v: string) => parseFloat(v)
+    .option("--epss-threshold <value>", OPTION_DESCRIPTIONS.epssThreshold, (v: string) =>
+      parseFloat(v),
     )
     .option("--suppressions-file <path>", OPTION_DESCRIPTIONS.suppressionsFile)
     .option("--sla-check", OPTION_DESCRIPTIONS.slaCheck, false)
     .option("--skip-unreachable", OPTION_DESCRIPTIONS.skipUnreachable, false)
     .option("--regression-check", OPTION_DESCRIPTIONS.regressionCheck, false)
-    .option("--min-confidence-for-auto-apply <value>", OPTION_DESCRIPTIONS.dispositionPolicyMinConfidenceForAutoApply, (v: string) => parseFloat(v))
+    .option(
+      "--min-confidence-for-auto-apply <value>",
+      OPTION_DESCRIPTIONS.dispositionPolicyMinConfidenceForAutoApply,
+      (v: string) => parseFloat(v),
+    )
     .option("--hold-for-transitive", OPTION_DESCRIPTIONS.dispositionPolicyHoldForTransitive, false)
     .option("--escalate-on-kev", OPTION_DESCRIPTIONS.dispositionPolicyEscalateOnKev, false)
     .option("--containment-mode", OPTION_DESCRIPTIONS.containmentMode, false)
@@ -98,7 +112,10 @@ function addSharedOptions(
     .option("--change-request-grouping <grouping>", OPTION_DESCRIPTIONS.changeRequestGrouping)
     .option("--change-request-repository <repository>", OPTION_DESCRIPTIONS.changeRequestRepository)
     .option("--change-request-base-branch <branch>", OPTION_DESCRIPTIONS.changeRequestBaseBranch)
-    .option("--change-request-branch-prefix <prefix>", OPTION_DESCRIPTIONS.changeRequestBranchPrefix)
+    .option(
+      "--change-request-branch-prefix <prefix>",
+      OPTION_DESCRIPTIONS.changeRequestBranchPrefix,
+    )
     .option("--change-request-title-prefix <prefix>", OPTION_DESCRIPTIONS.changeRequestTitlePrefix);
 
   if (includeSimulationMode) {
@@ -126,7 +143,7 @@ export function createProgram(): Command {
       .command("cve")
       .description("Remediate a single CVE ID")
       .argument("<cveId>", OPTION_DESCRIPTIONS.cveId),
-    false
+    false,
   ).action(async (cveId: string, opts: CommandOptions, command: Command) => {
     const merged = {
       ...opts,
@@ -140,11 +157,13 @@ export function createProgram(): Command {
   addSharedOptions(
     program
       .command("scan")
-      .description("Remediate vulnerabilities from scanner output (npm/pnpm/yarn/bun audit JSON or SARIF)")
+      .description(
+        "Remediate vulnerabilities from scanner output (npm/pnpm/yarn/bun audit JSON or SARIF)",
+      )
       .option("--input <path>", OPTION_DESCRIPTIONS.inputPath)
       .option("--format <type>", OPTION_DESCRIPTIONS.format, "auto")
       .option("--summary-file <path>", "Write machine-readable scan summary JSON to path"),
-    false
+    false,
   ).action(async (opts: CommandOptions, command: Command) => {
     const merged = {
       ...opts,
@@ -166,7 +185,7 @@ export function createProgram(): Command {
       .description("Bump all outdated npm packages to their latest versions")
       .option("--include-transitive", OPTION_DESCRIPTIONS.includeTransitive, false),
     false,
-    false
+    false,
   ).action(async (opts: CommandOptions, command: Command) => {
     const merged = {
       ...opts,
@@ -185,7 +204,7 @@ export function createProgram(): Command {
       .command("portfolio")
       .description("Run CVE or scan remediation across multiple repository targets")
       .requiredOption("--targets-file <path>", "Path to portfolio targets JSON file"),
-    false
+    false,
   ).action(async (opts: CommandOptions, command: Command) => {
     const merged = {
       ...opts,
@@ -198,7 +217,9 @@ export function createProgram(): Command {
     await runPortfolio(merged.targetsFile!, merged);
   });
 
-  const patches = program.command("patches").description("Inspect and validate stored patch artifacts");
+  const patches = program
+    .command("patches")
+    .description("Inspect and validate stored patch artifacts");
 
   patches
     .command("list")
@@ -206,14 +227,19 @@ export function createProgram(): Command {
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
     .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
     .option("--output-format <format>", "Output format: text|json", "text")
-    .action(async (opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">, command: Command) => {
-      const merged = {
-        ...(command.optsWithGlobals() as Partial<CommandOptions>),
-        ...opts,
-      } as Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">;
-      validateOutputFormat(merged.outputFormat, ["text", "json"], "patches list");
-      await runListPatches(merged);
-    });
+    .action(
+      async (
+        opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">,
+        command: Command,
+      ) => {
+        const merged = {
+          ...(command.optsWithGlobals() as Partial<CommandOptions>),
+          ...opts,
+        } as Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">;
+        validateOutputFormat(merged.outputFormat, ["text", "json"], "patches list");
+        await runListPatches(merged);
+      },
+    );
 
   patches
     .command("inspect")
@@ -222,38 +248,52 @@ export function createProgram(): Command {
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
     .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
     .option("--output-format <format>", "Output format: text|json", "text")
-    .action(async (patchPath: string, opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">, command: Command) => {
-      const merged = {
-        ...(command.optsWithGlobals() as Partial<CommandOptions>),
-        ...opts,
-      } as Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">;
-      validateOutputFormat(merged.outputFormat, ["text", "json"], "patches inspect");
-      await runInspectPatch(patchPath, merged);
-    });
+    .action(
+      async (
+        patchPath: string,
+        opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">,
+        command: Command,
+      ) => {
+        const merged = {
+          ...(command.optsWithGlobals() as Partial<CommandOptions>),
+          ...opts,
+        } as Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">;
+        validateOutputFormat(merged.outputFormat, ["text", "json"], "patches inspect");
+        await runInspectPatch(patchPath, merged);
+      },
+    );
 
   patches
     .command("validate")
-    .description("Validate a patch artifact against its manifest and the current dependency inventory")
+    .description(
+      "Validate a patch artifact against its manifest and the current dependency inventory",
+    )
     .argument("<patchPath>", "Path to the .patch file to validate")
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
     .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
     .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
     .option("--output-format <format>", "Output format: text|json", "text")
-    .action(async (patchPath: string, opts: Pick<CommandOptions, "cwd" | "patchesDir" | "packageManager" | "outputFormat">, command: Command) => {
-      const merged = {
-        ...(command.optsWithGlobals() as Partial<CommandOptions>),
-        ...opts,
-      } as Pick<CommandOptions, "cwd" | "patchesDir" | "packageManager" | "outputFormat">;
-      validateOutputFormat(merged.outputFormat, ["text", "json"], "patches validate");
-      await runValidatePatch(patchPath, merged);
-    });
+    .action(
+      async (
+        patchPath: string,
+        opts: Pick<CommandOptions, "cwd" | "patchesDir" | "packageManager" | "outputFormat">,
+        command: Command,
+      ) => {
+        const merged = {
+          ...(command.optsWithGlobals() as Partial<CommandOptions>),
+          ...opts,
+        } as Pick<CommandOptions, "cwd" | "patchesDir" | "packageManager" | "outputFormat">;
+        validateOutputFormat(merged.outputFormat, ["text", "json"], "patches validate");
+        await runValidatePatch(patchPath, merged);
+      },
+    );
 
   addSharedOptions(
     program
       .argument("[target]", "Scanner output file path (or CVE ID fallback)")
       .option("--format <type>", OPTION_DESCRIPTIONS.format, "auto")
       .option("--summary-file <path>", "Write machine-readable scan summary JSON to path"),
-    true
+    true,
   ).action(async (target: string | undefined, opts: CommandOptions) => {
     validateSharedCommandOptions(opts);
     validateOutputFormat(opts.outputFormat, ["text", "json", "sarif"], "default");
@@ -283,9 +323,7 @@ export function createProgram(): Command {
       return;
     }
 
-    throw new Error(
-      `Target "${target}" is neither a valid CVE ID nor an existing scan file path.`
-    );
+    throw new Error(`Target "${target}" is neither a valid CVE ID nor an existing scan file path.`);
   });
 
   return program;

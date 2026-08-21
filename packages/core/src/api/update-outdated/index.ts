@@ -1,7 +1,12 @@
 import { join } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
 import { execa } from "execa";
-import { addEvidenceStep, createEvidenceLog, finalizeEvidence, writeEvidenceLog } from "../../platform/evidence.js";
+import {
+  addEvidenceStep,
+  createEvidenceLog,
+  finalizeEvidence,
+  writeEvidenceLog,
+} from "../../platform/evidence.js";
 import { loadPolicy } from "../../platform/policy.js";
 import { withRepoLock } from "../../platform/repo-lock.js";
 import {
@@ -11,8 +16,16 @@ import {
   resolveTestCommand,
   type PackageManager,
 } from "../../platform/package-manager/index.js";
-import type { OutdatedPackage, UpdateOutdatedOptions, UpdateOutdatedReport } from "../../platform/types.js";
-import { resolveConstraints, resolveCorrelationContext, resolveProvenanceContext } from "../context.js";
+import type {
+  OutdatedPackage,
+  UpdateOutdatedOptions,
+  UpdateOutdatedReport,
+} from "../../platform/types.js";
+import {
+  resolveConstraints,
+  resolveCorrelationContext,
+  resolveProvenanceContext,
+} from "../context.js";
 import { queryOutdatedPackages } from "../../intelligence/sources/registry.js";
 import { createChangeRequestsForReports } from "../change-request/index.js";
 
@@ -61,7 +74,7 @@ async function applyBump(params: {
   }
 
   const depField = (["dependencies", "devDependencies", "peerDependencies"] as DepField[]).find(
-    (f) => pkgJson[f]?.[params.packageName] !== undefined
+    (f) => pkgJson[f]?.[params.packageName] !== undefined,
   );
 
   if (!depField) {
@@ -125,7 +138,9 @@ async function applyBump(params: {
 // Public function
 // ---------------------------------------------------------------------------
 
-export async function updateOutdated(options: UpdateOutdatedOptions = {}): Promise<UpdateOutdatedReport> {
+export async function updateOutdated(
+  options: UpdateOutdatedOptions = {},
+): Promise<UpdateOutdatedReport> {
   const cwd = options.cwd ?? process.cwd();
 
   // Load policy exactly once
@@ -160,7 +175,7 @@ export async function updateOutdated(options: UpdateOutdatedOptions = {}): Promi
       evidence,
       "update-outdated.registry-query-failed",
       {},
-      { error: err instanceof Error ? err.message : String(err) }
+      { error: err instanceof Error ? err.message : String(err) },
     );
     finalizeEvidence(evidence);
     const evidenceFile = options.evidence === false ? undefined : writeEvidenceLog(cwd, evidence);
@@ -182,20 +197,22 @@ export async function updateOutdated(options: UpdateOutdatedOptions = {}): Promi
     };
   }
 
-  const outdatedPackages: OutdatedPackage[] = Array.from(outdatedMap.entries()).map(([name, info]) => ({
-    name,
-    currentVersion: info.currentVersion,
-    wantedVersion: info.wantedVersion,
-    latestVersion: info.latestVersion,
-    isMajorBump: info.isMajorBump,
-    dependencyScope: info.dependencyScope,
-  }));
+  const outdatedPackages: OutdatedPackage[] = Array.from(outdatedMap.entries()).map(
+    ([name, info]) => ({
+      name,
+      currentVersion: info.currentVersion,
+      wantedVersion: info.wantedVersion,
+      latestVersion: info.latestVersion,
+      isMajorBump: info.isMajorBump,
+      dependencyScope: info.dependencyScope,
+    }),
+  );
 
   addEvidenceStep(
     evidence,
     "update-outdated.registry-query",
     {},
-    { packageCount: outdatedPackages.length }
+    { packageCount: outdatedPackages.length },
   );
 
   // Resolve install/test commands once (before the loop)
@@ -217,7 +234,7 @@ export async function updateOutdated(options: UpdateOutdatedOptions = {}): Promi
         evidence,
         "update-outdated.skip",
         { packageName, reason: "major-bump-not-allowed" },
-        {}
+        {},
       );
       continue;
     }
@@ -229,16 +246,16 @@ export async function updateOutdated(options: UpdateOutdatedOptions = {}): Promi
         evidence,
         "update-outdated.dry-run",
         { packageName, fromVersion: info.currentVersion, toVersion: info.latestVersion },
-        {}
+        {},
       );
       continue;
     }
 
-    addEvidenceStep(
-      evidence,
-      "update-outdated.apply",
-      { packageName, fromVersion: info.currentVersion, toVersion: info.latestVersion }
-    );
+    addEvidenceStep(evidence, "update-outdated.apply", {
+      packageName,
+      fromVersion: info.currentVersion,
+      toVersion: info.latestVersion,
+    });
 
     const result = await applyBump({
       cwd,
@@ -257,7 +274,7 @@ export async function updateOutdated(options: UpdateOutdatedOptions = {}): Promi
         evidence,
         "update-outdated.apply.success",
         { packageName },
-        { toVersion: info.latestVersion }
+        { toVersion: info.latestVersion },
       );
     } else {
       failedCount++;
@@ -266,15 +283,17 @@ export async function updateOutdated(options: UpdateOutdatedOptions = {}): Promi
         evidence,
         "update-outdated.apply.failed",
         { packageName },
-        { error: result.message }
+        { error: result.message },
       );
     }
   }
 
   const status: UpdateOutdatedReport["status"] =
-    failedCount > 0 && successCount > 0 ? "partial" :
-    failedCount > 0 && successCount === 0 ? "failed" :
-    "ok";
+    failedCount > 0 && successCount > 0
+      ? "partial"
+      : failedCount > 0 && successCount === 0
+        ? "failed"
+        : "ok";
 
   evidence.summary = {
     status,

@@ -3,7 +3,11 @@ import { readIdempotentReport, storeIdempotentReport } from "../../platform/idem
 import type { RemediateOptions, RemediationReport } from "../../platform/types.js";
 import { runRemediationPipeline } from "../../remediation/pipeline.js";
 import { createChangeRequestsForReports } from "../change-request/index.js";
-import { resolveConstraints, resolveCorrelationContext, resolveProvenanceContext } from "../context.js";
+import {
+  resolveConstraints,
+  resolveCorrelationContext,
+  resolveProvenanceContext,
+} from "../context.js";
 import {
   addRemediateDispositionStep,
   addRemediateErrorStep,
@@ -16,7 +20,10 @@ import {
 import { applySimulationMetadata, assertValidSimulationMode } from "../reporting.js";
 import { assertValidCveId } from "./validators.js";
 
-export async function remediate(cveId: string, options: RemediateOptions = {}): Promise<RemediationReport> {
+export async function remediate(
+  cveId: string,
+  options: RemediateOptions = {},
+): Promise<RemediationReport> {
   assertValidCveId(cveId);
   assertValidSimulationMode(options);
 
@@ -106,11 +113,11 @@ export async function remediate(cveId: string, options: RemediateOptions = {}): 
 
 export async function planRemediation(
   cveId: string,
-  options: RemediateOptions = {}
+  options: RemediateOptions = {},
 ): Promise<RemediationReport> {
   if (Object.hasOwn(options, "dryRun") || Object.hasOwn(options, "preview")) {
     throw new Error(
-      "planRemediation always runs with dryRun=true and preview=true. Remove dryRun/preview from options."
+      "planRemediation always runs with dryRun=true and preview=true. Remove dryRun/preview from options.",
     );
   }
 

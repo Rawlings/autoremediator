@@ -74,7 +74,7 @@ export async function resolvePrimaryResult(params: {
       pkg.name,
       pkg.version,
       firstPatchedVersion,
-      vulnerable.affected.vulnerableRange
+      vulnerable.affected.vulnerableRange,
     );
 
     if (!safeUpgrade.safeVersion) {
@@ -134,7 +134,7 @@ export async function resolvePrimaryResult(params: {
     pkg.name,
     pkg.version,
     firstPatchedVersion,
-    vulnerable.affected.vulnerableRange
+    vulnerable.affected.vulnerableRange,
   );
 
   if (!safeUpgrade.safeVersion) {

@@ -10,7 +10,17 @@ export interface NormalizedFinding {
 
 interface NpmAuditVulnerability {
   name: string;
-  via: Array<string | { source?: number; name?: string; url?: string; severity?: string; cwe?: string[]; cvss?: { score?: number } }>;
+  via: Array<
+    | string
+    | {
+        source?: number;
+        name?: string;
+        url?: string;
+        severity?: string;
+        cwe?: string[];
+        cvss?: { score?: number };
+      }
+  >;
   severity?: string;
 }
 
@@ -35,7 +45,8 @@ export function parseNpmAuditJsonFromString(content: string): NormalizedFinding[
 
   for (const vuln of Object.values(report.vulnerabilities ?? {})) {
     for (const viaEntry of vuln.via ?? []) {
-      const text = typeof viaEntry === "string" ? viaEntry : `${viaEntry.url ?? ""} ${viaEntry.name ?? ""}`;
+      const text =
+        typeof viaEntry === "string" ? viaEntry : `${viaEntry.url ?? ""} ${viaEntry.name ?? ""}`;
       const matches = text.match(CVE_REGEX) ?? [];
       for (const match of matches) {
         const cveId = match.toUpperCase();

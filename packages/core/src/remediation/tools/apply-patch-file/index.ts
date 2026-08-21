@@ -20,11 +20,7 @@ import {
 import { withRepoLock } from "../../../platform/repo-lock.js";
 import { loadPolicy } from "../../../platform/policy.js";
 import { validatePatchDiff } from "../../strategies/patch-utils.js";
-import type {
-  PatchArtifact,
-  PatchMode,
-  PatchValidationPhase,
-} from "../../../platform/types.js";
+import type { PatchArtifact, PatchMode, PatchValidationPhase } from "../../../platform/types.js";
 import {
   applyNativePatch,
   buildPatchFileName,
@@ -62,48 +58,64 @@ interface ApplyPatchFileResult {
 export const applyPatchFileTool = defineTool({
   description:
     "Write generated patch file and apply it using package-manager-native patch flow when available, falling back to patch-package when needed.",
-  parameters: z.object({
-    packageName: z.string().min(1).describe("The npm package name"),
-    vulnerableVersion: z
-      .string()
-      .describe("The vulnerable version string"),
-    patchContent: z
-      .string()
-      .min(10)
-      .optional()
-      .describe("Unified diff patch content from generate-patch"),
-    cveId: z.string().optional().describe("Optional CVE ID associated with this patch artifact"),
-    confidence: z.number().min(0).max(1).optional().describe("Optional patch confidence score from generate-patch"),
-    riskLevel: z.enum(["low", "medium", "high"]).optional().describe("Optional risk level from generate-patch"),
-    patches: z
-      .array(
-        z.object({
-          filePath: z.string().min(1),
-          unifiedDiff: z.string().min(10),
-        })
-      )
-      .optional()
-      .describe("Patch list from generate-patch; first patch is applied"),
-    patchesDir: z
-      .string()
-      .optional()
-      .default("./patches")
-      .describe("Directory to store patch files"),
-    cwd: z.string().describe("Project root directory (for package.json)"),
-    packageManager: z.enum(["npm", "pnpm", "yarn", "bun", "deno"]).optional().describe("Package manager used by the target project (auto-detected if omitted)"),    policy: z.string().optional().describe("Optional path to .autoremediator policy file"),
-    installMode: z.enum(["standard", "prefer-offline", "deterministic"]).optional(),
-    installPreferOffline: z.boolean().optional(),
-    enforceFrozenLockfile: z.boolean().optional(),
-    workspace: z.string().optional(),
-    validateWithTests: z
-      .boolean()
-      .optional()
-      .default(true)
-      .describe("Run package manager test command to validate patch doesn't break anything"),
-    dryRun: z.boolean().optional().default(false).describe("If true, report but do not mutate files"),
-  }).refine((value) => Boolean(value.patchContent || (value.patches && value.patches.length > 0)), {
-    message: "Either patchContent or patches must be provided",
-  }),
+  parameters: z
+    .object({
+      packageName: z.string().min(1).describe("The npm package name"),
+      vulnerableVersion: z.string().describe("The vulnerable version string"),
+      patchContent: z
+        .string()
+        .min(10)
+        .optional()
+        .describe("Unified diff patch content from generate-patch"),
+      cveId: z.string().optional().describe("Optional CVE ID associated with this patch artifact"),
+      confidence: z
+        .number()
+        .min(0)
+        .max(1)
+        .optional()
+        .describe("Optional patch confidence score from generate-patch"),
+      riskLevel: z
+        .enum(["low", "medium", "high"])
+        .optional()
+        .describe("Optional risk level from generate-patch"),
+      patches: z
+        .array(
+          z.object({
+            filePath: z.string().min(1),
+            unifiedDiff: z.string().min(10),
+          }),
+        )
+        .optional()
+        .describe("Patch list from generate-patch; first patch is applied"),
+      patchesDir: z
+        .string()
+        .optional()
+        .default("./patches")
+        .describe("Directory to store patch files"),
+      cwd: z.string().describe("Project root directory (for package.json)"),
+      packageManager: z
+        .enum(["npm", "pnpm", "yarn", "bun", "deno"])
+        .optional()
+        .describe("Package manager used by the target project (auto-detected if omitted)"),
+      policy: z.string().optional().describe("Optional path to .autoremediator policy file"),
+      installMode: z.enum(["standard", "prefer-offline", "deterministic"]).optional(),
+      installPreferOffline: z.boolean().optional(),
+      enforceFrozenLockfile: z.boolean().optional(),
+      workspace: z.string().optional(),
+      validateWithTests: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("Run package manager test command to validate patch doesn't break anything"),
+      dryRun: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe("If true, report but do not mutate files"),
+    })
+    .refine((value) => Boolean(value.patchContent || (value.patches && value.patches.length > 0)), {
+      message: "Either patchContent or patches must be provided",
+    }),
   execute: async ({
     packageName,
     vulnerableVersion,
@@ -129,8 +141,10 @@ export const applyPatchFileTool = defineTool({
       const commandConstraints = {
         ...loadedPolicy.constraints,
         installMode: installMode ?? loadedPolicy.constraints?.installMode,
-        installPreferOffline: installPreferOffline ?? loadedPolicy.constraints?.installPreferOffline,
-        enforceFrozenLockfile: enforceFrozenLockfile ?? loadedPolicy.constraints?.enforceFrozenLockfile,
+        installPreferOffline:
+          installPreferOffline ?? loadedPolicy.constraints?.installPreferOffline,
+        enforceFrozenLockfile:
+          enforceFrozenLockfile ?? loadedPolicy.constraints?.enforceFrozenLockfile,
         workspace: workspace ?? loadedPolicy.constraints?.workspace,
       };
       const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
@@ -215,10 +229,9 @@ export const applyPatchFileTool = defineTool({
       }
 
       return withRepoLock(cwd, async () => {
-        const packageJsonSnapshot =
-          patchModeRequiresPackageJsonSnapshot(pm)
-            ? await capturePackageJsonSnapshot(cwd)
-            : undefined;
+        const packageJsonSnapshot = patchModeRequiresPackageJsonSnapshot(pm)
+          ? await capturePackageJsonSnapshot(cwd)
+          : undefined;
 
         const patchesDirPath = join(cwd, patchesDir);
         await mkdir(patchesDirPath, { recursive: true });
@@ -422,8 +435,7 @@ export const applyPatchFileTool = defineTool({
         };
       });
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : String(err);
+      const message = err instanceof Error ? err.message : String(err);
       return {
         success: false,
         packageName,

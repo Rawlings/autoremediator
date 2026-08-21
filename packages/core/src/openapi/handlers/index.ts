@@ -6,7 +6,7 @@ import { sendJson } from "../http-utils.js";
 export async function handleOpenApiRequest(
   req: http.IncomingMessage,
   res: http.ServerResponse,
-  deps: OpenApiServerDeps
+  deps: OpenApiServerDeps,
 ): Promise<boolean> {
   const url = new URL(req.url ?? "/", "http://localhost");
   const method = req.method?.toUpperCase() ?? "GET";

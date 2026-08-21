@@ -50,7 +50,9 @@ export async function executeScanRemediations(params: {
         constraints: params.constraints,
       });
 
-      report.results = report.results.filter((result) => isPackageAllowed(params.policy, result.packageName));
+      report.results = report.results.filter((result) =>
+        isPackageAllowed(params.policy, result.packageName),
+      );
 
       for (const result of report.results) {
         if (result.strategy === "patch-file") {
@@ -66,7 +68,12 @@ export async function executeScanRemediations(params: {
       }
 
       reports.push(report);
-      addEvidenceStep(params.evidence, "remediate.finish", { cveId }, { results: report.results.length });
+      addEvidenceStep(
+        params.evidence,
+        "remediate.finish",
+        { cveId },
+        { results: report.results.length },
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       errors.push({ cveId, message });

@@ -23,7 +23,6 @@ import {
   updateOutdated,
   validatePatchArtifact,
 } from "../api/index.js";
-import { OPENAPI_SPEC } from "./spec/index.js";
 import { handleOpenApiRequest } from "./handlers/index.js";
 import { parsePort, sendJson } from "./http-utils.js";
 

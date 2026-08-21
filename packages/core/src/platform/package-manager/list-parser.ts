@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { PackageManager } from "./index.js";
 
-export function parsePackageManagerListOutput(pm: PackageManager, stdout: string): Map<string, string> {
+export function parsePackageManagerListOutput(
+  pm: PackageManager,
+  stdout: string,
+): Map<string, string> {
   const versions = new Map<string, string>();
 
   if (pm === "bun") {
@@ -25,7 +28,7 @@ export function parsePackageManagerListOutput(pm: PackageManager, stdout: string
   const root = Array.isArray(parsed) ? parsed[0] : parsed;
   collectDependencyTree(
     (root as { dependencies?: Record<string, DependencyTree> } | undefined)?.dependencies,
-    versions
+    versions,
   );
 
   return versions;
@@ -44,7 +47,10 @@ function parseYarnListOutput(stdout: string, versions: Map<string, string>): Map
 
   for (const line of lines) {
     try {
-      const obj = JSON.parse(line) as { type?: string; data?: { trees?: Array<{ name?: string }> } };
+      const obj = JSON.parse(line) as {
+        type?: string;
+        data?: { trees?: Array<{ name?: string }> };
+      };
       if (obj.type !== "tree") continue;
 
       for (const tree of obj.data?.trees ?? []) {
@@ -68,7 +74,7 @@ function parseYarnListOutput(stdout: string, versions: Map<string, string>): Map
 
 function collectDependencyTree(
   tree: Record<string, DependencyTree> | undefined,
-  versions: Map<string, string>
+  versions: Map<string, string>,
 ): void {
   if (!tree) return;
 

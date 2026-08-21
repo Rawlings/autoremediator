@@ -1,8 +1,4 @@
-import type {
-  CveDetails,
-  PatchResult,
-  VulnerablePackage,
-} from "../../platform/types.js";
+import type { CveDetails, PatchResult, VulnerablePackage } from "../../platform/types.js";
 
 interface StepToolResult {
   toolName: string;
@@ -24,15 +20,10 @@ interface AccumulateStepResultsOutput {
 }
 
 export function accumulateStepResults(
-  params: AccumulateStepResultsParams
+  params: AccumulateStepResultsParams,
 ): AccumulateStepResultsOutput {
-  const {
-    toolResults,
-    cveDetails,
-    vulnerablePackages,
-    collectedResults,
-    getDependencyScope,
-  } = params;
+  const { toolResults, cveDetails, vulnerablePackages, collectedResults, getDependencyScope } =
+    params;
 
   let nextCveDetails = cveDetails;
   const nextVulnerablePackages = [...vulnerablePackages];
@@ -70,9 +61,7 @@ export function accumulateStepResults(
     }
 
     if (tr.toolName === "apply-patch-file" && toolResult) {
-      const validation = toolResult.validation as
-        | { passed?: boolean; error?: string }
-        | undefined;
+      const validation = toolResult.validation as { passed?: boolean; error?: string } | undefined;
       const message =
         typeof toolResult.message === "string"
           ? toolResult.message
@@ -82,9 +71,7 @@ export function accumulateStepResults(
 
       nextCollectedResults.push({
         packageName:
-          typeof toolResult.packageName === "string"
-            ? toolResult.packageName
-            : "unknown-package",
+          typeof toolResult.packageName === "string" ? toolResult.packageName : "unknown-package",
         strategy: "patch-file",
         fromVersion:
           typeof toolResult.vulnerableVersion === "string"
@@ -116,10 +103,11 @@ export function accumulateStepResults(
           typeof toolResult.patchArtifact === "object" &&
           toolResult.patchArtifact !== null &&
           typeof (toolResult.patchArtifact as Record<string, unknown>).riskLevel === "string"
-            ? ((toolResult.patchArtifact as Record<string, unknown>).riskLevel as PatchResult["riskLevel"])
+            ? ((toolResult.patchArtifact as Record<string, unknown>)
+                .riskLevel as PatchResult["riskLevel"])
             : undefined,
         unresolvedReason:
-          !Boolean(toolResult.applied) && !Boolean(toolResult.dryRun)
+          !toolResult.applied && !toolResult.dryRun
             ? validation && validation.passed === false
               ? "patch-validation-failed"
               : "patch-apply-failed"
@@ -132,10 +120,9 @@ export function accumulateStepResults(
                 error: typeof validation.error === "string" ? validation.error : undefined,
               }
             : undefined,
-        validationPhases:
-          Array.isArray(toolResult.validationPhases)
-            ? (toolResult.validationPhases as PatchResult["validationPhases"])
-            : undefined,
+        validationPhases: Array.isArray(toolResult.validationPhases)
+          ? (toolResult.validationPhases as PatchResult["validationPhases"])
+          : undefined,
       });
     }
   }

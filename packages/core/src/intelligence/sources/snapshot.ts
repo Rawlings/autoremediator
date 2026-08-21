@@ -14,6 +14,9 @@ export function loadIntelligenceSnapshot(filePath: string): IntelligenceSnapshot
   return parsed as IntelligenceSnapshot;
 }
 
-export function lookupSnapshotCve(snapshot: IntelligenceSnapshot, cveId: string): CveDetails | null {
+export function lookupSnapshotCve(
+  snapshot: IntelligenceSnapshot,
+  cveId: string,
+): CveDetails | null {
   return snapshot[cveId.toUpperCase()] ?? snapshot[cveId] ?? null;
 }

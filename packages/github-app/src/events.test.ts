@@ -8,7 +8,7 @@ describe("dispatchGitHubEvent", () => {
     const result = await dispatchGitHubEvent(
       { eventName: "installation", deliveryId: "delivery-1" },
       { action: "created", installation: { id: 42 } },
-      { stateStore }
+      { stateStore },
     );
 
     expect(result.status).toBe("handled");
@@ -17,7 +17,7 @@ describe("dispatchGitHubEvent", () => {
   it("ignores unsupported installation actions", async () => {
     const result = await dispatchGitHubEvent(
       { eventName: "installation", deliveryId: "delivery-2" },
-      { action: "renamed", installation: { id: 42 } }
+      { action: "renamed", installation: { id: 42 } },
     );
 
     expect(result.status).toBe("ignored");
@@ -29,13 +29,13 @@ describe("dispatchGitHubEvent", () => {
     await dispatchGitHubEvent(
       { eventName: "installation", deliveryId: "delivery-prime" },
       { action: "created", installation: { id: 42 } },
-      { stateStore }
+      { stateStore },
     );
 
     const result = await dispatchGitHubEvent(
       { eventName: "installation_repositories", deliveryId: "delivery-3" },
       { action: "added", installation: { id: 42 } },
-      { stateStore }
+      { stateStore },
     );
 
     expect(result.status).toBe("handled");
@@ -44,7 +44,7 @@ describe("dispatchGitHubEvent", () => {
   it("ignores unsupported installation_repositories actions", async () => {
     const result = await dispatchGitHubEvent(
       { eventName: "installation_repositories", deliveryId: "delivery-4" },
-      { action: "migrated", installation: { id: 42 } }
+      { action: "migrated", installation: { id: 42 } },
     );
 
     expect(result.status).toBe("ignored");
@@ -56,13 +56,13 @@ describe("dispatchGitHubEvent", () => {
     await dispatchGitHubEvent(
       { eventName: "installation", deliveryId: "delivery-install" },
       { action: "deleted", installation: { id: 99 } },
-      { stateStore }
+      { stateStore },
     );
 
     const result = await dispatchGitHubEvent(
       { eventName: "check_suite", deliveryId: "delivery-check" },
       { action: "requested", installation: { id: 99 } },
-      { stateStore }
+      { stateStore },
     );
 
     expect(result.status).toBe("ignored");
@@ -72,7 +72,7 @@ describe("dispatchGitHubEvent", () => {
   it("ignores check_suite.completed action", async () => {
     const result = await dispatchGitHubEvent(
       { eventName: "check_suite", deliveryId: "delivery-completed" },
-      { action: "completed" }
+      { action: "completed" },
     );
 
     expect(result.status).toBe("ignored");
@@ -84,7 +84,7 @@ describe("dispatchGitHubEvent", () => {
     await dispatchGitHubEvent(
       { eventName: "installation", deliveryId: "delivery-activate" },
       { action: "created", installation: { id: 7 } },
-      { stateStore }
+      { stateStore },
     );
 
     const calls: Array<{ eventName: string; installationId?: number; deliveryId?: string }> = [];
@@ -101,7 +101,7 @@ describe("dispatchGitHubEvent", () => {
             deliveryId: context.deliveryId,
           });
         },
-      }
+      },
     );
 
     expect(result.status).toBe("handled");
@@ -116,7 +116,7 @@ describe("dispatchGitHubEvent", () => {
     await dispatchGitHubEvent(
       { eventName: "installation", deliveryId: "delivery-push-install" },
       { action: "created", installation: { id: 20 } },
-      { stateStore }
+      { stateStore },
     );
 
     const calls: string[] = [];
@@ -133,7 +133,7 @@ describe("dispatchGitHubEvent", () => {
         onRemediationRequested: (context) => {
           calls.push(context.eventName);
         },
-      }
+      },
     );
 
     expect(result.status).toBe("handled");
@@ -147,7 +147,7 @@ describe("dispatchGitHubEvent", () => {
       {
         ref: "refs/heads/feature/my-branch",
         repository: { default_branch: "main" },
-      }
+      },
     );
 
     expect(result.status).toBe("ignored");
@@ -159,7 +159,7 @@ describe("dispatchGitHubEvent", () => {
     const result = await dispatchGitHubEvent(
       { eventName: "installation", deliveryId: "delivery-perms" },
       { action: "new_permissions_accepted", installation: { id: 55 } },
-      { stateStore }
+      { stateStore },
     );
 
     expect(result.status).toBe("handled");
@@ -171,7 +171,7 @@ describe("dispatchGitHubEvent", () => {
     await dispatchGitHubEvent(
       { eventName: "installation", deliveryId: "delivery-activate-2" },
       { action: "created", installation: { id: 8 } },
-      { stateStore }
+      { stateStore },
     );
 
     const result = await dispatchGitHubEvent(
@@ -182,7 +182,7 @@ describe("dispatchGitHubEvent", () => {
         onRemediationRequested: () => {
           throw new Error("boom");
         },
-      }
+      },
     );
 
     expect(result.status).toBe("handled");
@@ -194,7 +194,7 @@ describe("dispatchGitHubEvent", () => {
     await dispatchGitHubEvent(
       { eventName: "installation", deliveryId: "delivery-activate-3" },
       { action: "created", installation: { id: 9 } },
-      { stateStore }
+      { stateStore },
     );
 
     const result = await dispatchGitHubEvent(
@@ -208,7 +208,7 @@ describe("dispatchGitHubEvent", () => {
             setTimeout(resolve, 25);
           });
         },
-      }
+      },
     );
 
     expect(result.status).toBe("handled");
@@ -218,7 +218,7 @@ describe("dispatchGitHubEvent", () => {
   it("ignores unknown event types", async () => {
     const result = await dispatchGitHubEvent(
       { eventName: "issues", deliveryId: "delivery-5" },
-      { action: "opened" }
+      { action: "opened" },
     );
 
     expect(result.status).toBe("ignored");

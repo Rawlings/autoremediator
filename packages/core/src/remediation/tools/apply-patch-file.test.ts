@@ -60,7 +60,7 @@ describe("apply-patch-file lock integration", () => {
       JSON.stringify({
         devDependencies: { "patch-package": "^8.0.0" },
         scripts: {},
-      })
+      }),
     );
     mocked.rm.mockResolvedValue(undefined);
     mocked.detectPackageManager.mockReturnValue("npm");
@@ -74,7 +74,9 @@ describe("apply-patch-file lock integration", () => {
     mocked.resolveInstallCommand.mockReturnValue(["npm", "ci", "--prefer-offline"]);
     mocked.resolveTestCommand.mockReturnValue(["npm", "test"]);
     mocked.execa.mockResolvedValue({ stdout: "ok", stderr: "" });
-    mocked.withRepoLock.mockImplementation(async (_cwd: string, fn: () => Promise<unknown>) => fn());
+    mocked.withRepoLock.mockImplementation(async (_cwd: string, fn: () => Promise<unknown>) =>
+      fn(),
+    );
   });
 
   it("uses withRepoLock for non-dry-run patch application", async () => {
@@ -90,10 +92,7 @@ describe("apply-patch-file lock integration", () => {
     });
 
     expect(mocked.withRepoLock).toHaveBeenCalledTimes(1);
-    expect(mocked.withRepoLock).toHaveBeenCalledWith(
-      "/tmp/project",
-      expect.any(Function)
-    );
+    expect(mocked.withRepoLock).toHaveBeenCalledWith("/tmp/project", expect.any(Function));
     expect(result.applied).toBe(true);
   });
 
@@ -153,12 +152,16 @@ describe("apply-patch-file lock integration", () => {
     expect(result.success).toBe(false);
     expect(result.validation?.passed).toBe(false);
     expect(result.validation?.error).toContain("Failed tests");
-    expect(mocked.rm).toHaveBeenCalledWith("/tmp/project/patches/lodash+4.17.0.patch", { force: true });
-    expect(mocked.rm).toHaveBeenCalledWith("/tmp/project/patches/lodash+4.17.0.patch.json", { force: true });
+    expect(mocked.rm).toHaveBeenCalledWith("/tmp/project/patches/lodash+4.17.0.patch", {
+      force: true,
+    });
+    expect(mocked.rm).toHaveBeenCalledWith("/tmp/project/patches/lodash+4.17.0.patch.json", {
+      force: true,
+    });
     expect(mocked.writeFile).toHaveBeenCalledWith(
       "/tmp/project/package.json",
       expect.stringContaining('"postinstall": "patch-package"'),
-      "utf8"
+      "utf8",
     );
     expect(mocked.writeFile).toHaveBeenCalledWith(
       "/tmp/project/package.json",
@@ -166,12 +169,12 @@ describe("apply-patch-file lock integration", () => {
         devDependencies: { "patch-package": "^8.0.0" },
         scripts: {},
       }),
-      "utf8"
+      "utf8",
     );
     expect(mocked.writeFile).toHaveBeenCalledWith(
       "/tmp/project/patches/lodash+4.17.0.patch.json",
       expect.stringContaining('"packageName": "lodash"'),
-      "utf8"
+      "utf8",
     );
   });
 });

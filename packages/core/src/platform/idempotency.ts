@@ -51,7 +51,7 @@ function saveIndex(cwd: string, index: IdempotencyIndex): void {
 export function readIdempotentReport(
   cwd: string,
   idempotencyKey: string,
-  cveId: string
+  cveId: string,
 ): RemediationReport | undefined {
   const index = loadIndex(cwd);
   const key = entryKey(idempotencyKey, cveId);
@@ -62,7 +62,7 @@ export function storeIdempotentReport(
   cwd: string,
   idempotencyKey: string,
   cveId: string,
-  report: RemediationReport
+  report: RemediationReport,
 ): void {
   const index = loadIndex(cwd);
   const key = entryKey(idempotencyKey, cveId);

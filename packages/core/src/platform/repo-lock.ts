@@ -15,7 +15,10 @@ async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function acquireRepoLock(cwd: string, options: RepoLockOptions = {}): Promise<RepoLock> {
+export async function acquireRepoLock(
+  cwd: string,
+  options: RepoLockOptions = {},
+): Promise<RepoLock> {
   const timeoutMs = options.timeoutMs ?? 15000;
   const retryDelayMs = options.retryDelayMs ?? 125;
   const lockRoot = join(cwd, ".autoremediator", "locks");
@@ -42,7 +45,11 @@ export async function acquireRepoLock(cwd: string, options: RepoLockOptions = {}
   }
 }
 
-export async function withRepoLock<T>(cwd: string, fn: () => Promise<T>, options?: RepoLockOptions): Promise<T> {
+export async function withRepoLock<T>(
+  cwd: string,
+  fn: () => Promise<T>,
+  options?: RepoLockOptions,
+): Promise<T> {
   const lock = await acquireRepoLock(cwd, options);
   try {
     return await fn();

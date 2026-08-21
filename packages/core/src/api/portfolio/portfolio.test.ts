@@ -132,7 +132,7 @@ describe("remediatePortfolio campaignMode", () => {
 
     expect(mocked.remediate).toHaveBeenCalledWith(
       "CVE-2021-23337",
-      expect.objectContaining({ dryRun: true, simulationMode: true })
+      expect.objectContaining({ dryRun: true, simulationMode: true }),
     );
   });
 });

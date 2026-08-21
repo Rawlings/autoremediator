@@ -30,7 +30,7 @@ export async function enrichWithDepsDev(details: CveDetails): Promise<CveDetails
   if (matched === 0) return details;
 
   details.intelligence = {
-    ...(details.intelligence ?? {}),
+    ...details.intelligence,
     depsDevEnrichedPackages: matched,
   };
   return details;

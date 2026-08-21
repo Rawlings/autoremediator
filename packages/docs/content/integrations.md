@@ -23,18 +23,18 @@ The integration surfaces carry the same higher-level operator controls:
 
 ## Integration Decision Guide
 
-| Pattern | Use when | Key outcome |
-|---|---|---|
-| Risk-prioritized triage in CI | you need to reduce vulnerability fatigue from noisy scanner output | focus remediation on known-exploited and higher-probability CVEs first |
-| GitHub Actions Marketplace action | you want zero-boilerplate CI integration | one step, works with pnpm/npm/yarn |
-| VS Code extension | you want inline diagnostics while editing | squiggles + code action on package.json |
-| Scheduled PR automation | you want continuous improvement with review gates | automatic remediation PRs on a cadence |
-| Enforcement-only gate | you want fail-fast security gating in PR/merge pipelines | deterministic pass/fail based on unresolved outcomes |
-| SARIF upload | you want results in GitHub Security tab | Code Scanning alerts alongside other tools |
-| SDK integration | you need custom control flow in internal tooling | programmable orchestration and reporting |
-| MCP server | you integrate with AI-host tool ecosystems | standardized tool interface for remediation workflows |
-| OpenAPI server | you need service-based central remediation execution | networked API access for multi-system orchestration |
-| Portfolio orchestration | you coordinate many repositories from one control plane | one aggregated report plus optional per-target change requests |
+| Pattern                           | Use when                                                           | Key outcome                                                            |
+| --------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| Risk-prioritized triage in CI     | you need to reduce vulnerability fatigue from noisy scanner output | focus remediation on known-exploited and higher-probability CVEs first |
+| GitHub Actions Marketplace action | you want zero-boilerplate CI integration                           | one step, works with pnpm/npm/yarn                                     |
+| VS Code extension                 | you want inline diagnostics while editing                          | squiggles + code action on package.json                                |
+| Scheduled PR automation           | you want continuous improvement with review gates                  | automatic remediation PRs on a cadence                                 |
+| Enforcement-only gate             | you want fail-fast security gating in PR/merge pipelines           | deterministic pass/fail based on unresolved outcomes                   |
+| SARIF upload                      | you want results in GitHub Security tab                            | Code Scanning alerts alongside other tools                             |
+| SDK integration                   | you need custom control flow in internal tooling                   | programmable orchestration and reporting                               |
+| MCP server                        | you integrate with AI-host tool ecosystems                         | standardized tool interface for remediation workflows                  |
+| OpenAPI server                    | you need service-based central remediation execution               | networked API access for multi-system orchestration                    |
+| Portfolio orchestration           | you coordinate many repositories from one control plane            | one aggregated report plus optional per-target change requests         |
 
 ## GitHub Code Scanning: SARIF Upload
 
@@ -148,8 +148,8 @@ The action also supports audit-driven execution directly:
 - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 - uses: rawlings/autoremediator@v1
   with:
-    audit: 'true'
-    ci: 'true'
+    audit: "true"
+    ci: "true"
 ```
 
 Audit mode uses `npm audit --json` directly and enables Corepack shims for `pnpm` and `yarn`.
@@ -157,28 +157,28 @@ If your repository needs a specific `pnpm` or `yarn` version, set that up before
 
 All scan-mode flags are available as inputs:
 
-| Input | Description | Default |
-|---|---|---|
-| `scan-file` | Path to scanner output file | — |
-| `audit` | Run package-manager-native audit instead of reading `scan-file` | `false` |
-| `cve-id` | Single CVE ID to remediate (instead of scan-file) | — |
-| `format` | `auto`, `npm-audit`, `yarn-audit`, `sarif` | `auto` |
-| `cwd` | Target project directory | `.` |
-| `package-manager` | `npm`, `pnpm`, `yarn` (auto-detected from lockfile) | — |
-| `dry-run` | Plan only, no mutations | `false` |
-| `run-tests` | Validate changes with test command | `false` |
-| `ci` | Exit non-zero on unresolved CVEs | `false` |
-| `summary-file` | Write machine-readable summary JSON | — |
-| `policy` | Path to `.github/autoremediator.yml` | — |
-| `containment-mode` | Block applied escalation outcomes from mutating files | `false` |
-| `simulation-mode` | Include planned mutation and rebuttal metadata in dry-run mode | `false` |
-| `llm-provider` | `remote`, `local` | `local` |
-| `node-version` | Node.js version (24+) | `24` |
-| `token` | GitHub token for PR creation | `github.token` |
-| `create-pull-request` | Open a pull request with remediated changes | `false` |
-| `pull-request-branch` | Branch name prefix for the fix branch | — |
-| `pull-request-title` | Title for the pull request | — |
-| `pull-request-commit-message` | Commit message for remediation commits | — |
+| Input                         | Description                                                     | Default        |
+| ----------------------------- | --------------------------------------------------------------- | -------------- |
+| `scan-file`                   | Path to scanner output file                                     | —              |
+| `audit`                       | Run package-manager-native audit instead of reading `scan-file` | `false`        |
+| `cve-id`                      | Single CVE ID to remediate (instead of scan-file)               | —              |
+| `format`                      | `auto`, `npm-audit`, `yarn-audit`, `sarif`                      | `auto`         |
+| `cwd`                         | Target project directory                                        | `.`            |
+| `package-manager`             | `npm`, `pnpm`, `yarn` (auto-detected from lockfile)             | —              |
+| `dry-run`                     | Plan only, no mutations                                         | `false`        |
+| `run-tests`                   | Validate changes with test command                              | `false`        |
+| `ci`                          | Exit non-zero on unresolved CVEs                                | `false`        |
+| `summary-file`                | Write machine-readable summary JSON                             | —              |
+| `policy`                      | Path to `.github/autoremediator.yml`                            | —              |
+| `containment-mode`            | Block applied escalation outcomes from mutating files           | `false`        |
+| `simulation-mode`             | Include planned mutation and rebuttal metadata in dry-run mode  | `false`        |
+| `llm-provider`                | `remote`, `local`                                               | `local`        |
+| `node-version`                | Node.js version (24+)                                           | `24`           |
+| `token`                       | GitHub token for PR creation                                    | `github.token` |
+| `create-pull-request`         | Open a pull request with remediated changes                     | `false`        |
+| `pull-request-branch`         | Branch name prefix for the fix branch                           | —              |
+| `pull-request-title`          | Title for the pull request                                      | —              |
+| `pull-request-commit-message` | Commit message for remediation commits                          | —              |
 
 `scan-file`, `audit`, and `cve-id` are mutually exclusive.
 
@@ -203,7 +203,7 @@ jobs:
       - uses: rawlings/autoremediator@v1
         with:
           scan-file: audit.json
-          create-pull-request: 'true'
+          create-pull-request: "true"
 ```
 
 The `token` input defaults to `${{ github.token }}`. Explicitly passing a token is only needed when using a custom app token or a PAT scoped to a different repository.
@@ -287,33 +287,33 @@ Events: `check_suite`, `installation`, `installation_repositories`, `workflow_di
 
 Environment variables:
 
-| Variable | Description | Required |
-|---|---|---|
-| `AUTOREMEDIATOR_GITHUB_APP_ID` | GitHub App ID | yes |
-| `AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY` | GitHub App private key (PEM) | yes |
-| `AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET` | Webhook signature secret | yes |
-| `AUTOREMEDIATOR_GITHUB_APP_PORT` | HTTP listen port (default `3001`) | no |
-| `AUTOREMEDIATOR_GITHUB_APP_BASE_URL` | Public URL of this server, used by `/setup` to build the app manifest (e.g. `https://autoremediator.example.com`) | no |
-| `AUTOREMEDIATOR_GITHUB_APP_ENABLE_SETUP_ROUTES` | Enable `/setup`, `/setup/complete`, and `/install` registration routes (default `true`) | no |
-| `AUTOREMEDIATOR_GITHUB_APP_GITHUB_URL` | GitHub base URL for GitHub Enterprise Server (default `https://github.com`) | no |
-| `AUTOREMEDIATOR_GITHUB_APP_GITHUB_API_URL` | GitHub API base URL for GitHub Enterprise Server (default `https://api.github.com`) | no |
-| `AUTOREMEDIATOR_GITHUB_APP_DATA_DIR` | Optional persistent state directory for restart-safe dedupe and installation state | no |
-| `AUTOREMEDIATOR_GITHUB_APP_TRIGGER_TIMEOUT_MS` | Optional callback timeout in ms for remediation trigger handlers | no |
-| `AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION` | Enable built-in remediation adapter for `check_suite` and `workflow_dispatch` events | no |
-| `AUTOREMEDIATOR_GITHUB_APP_LOG_EVENT_TRACES` | Emit one JSON line per processed webhook event with status and reason | no |
-| `AUTOREMEDIATOR_GITHUB_APP_MAX_WEBHOOK_BODY_BYTES` | Maximum accepted webhook request body size in bytes (default `262144`) | no |
-| `AUTOREMEDIATOR_GITHUB_APP_REQUIRE_JSON_CONTENT_TYPE` | Require `application/json` content type for webhook requests (default `true`) | no |
-| `AUTOREMEDIATOR_GITHUB_APP_ALLOWED_EVENTS` | Comma-separated allowlist of accepted webhook event names | no |
-| `AUTOREMEDIATOR_GITHUB_APP_REQUIRE_DELIVERY_ID` | Require `x-github-delivery` header for webhook requests | no |
-| `AUTOREMEDIATOR_GITHUB_APP_ENABLE_JOB_QUEUE` | Enable queue-backed asynchronous remediation execution (default `true`) | no |
-| `AUTOREMEDIATOR_GITHUB_APP_QUEUE_POLL_INTERVAL_MS` | Job worker poll interval in milliseconds (default `2000`) | no |
-| `AUTOREMEDIATOR_GITHUB_APP_QUEUE_RETRY_DELAY_MS` | Delay before retrying failed jobs in milliseconds (default `15000`) | no |
-| `AUTOREMEDIATOR_GITHUB_APP_QUEUE_MAX_ATTEMPTS` | Maximum attempts per queued remediation job (default `3`) | no |
-| `AUTOREMEDIATOR_GITHUB_APP_WORKER_CONCURRENCY` | Maximum number of concurrent queue jobs (default `1`) | no |
-| `AUTOREMEDIATOR_GITHUB_APP_ENABLE_SCHEDULER` | Enable interval scheduler that enqueues `workflow_dispatch` jobs | no |
-| `AUTOREMEDIATOR_GITHUB_APP_SCHEDULE_INTERVAL_MS` | Scheduler interval in milliseconds (default `3600000`) | no |
-| `AUTOREMEDIATOR_GITHUB_APP_ENABLE_STATUS_PUBLISHING` | Publish GitHub check run results for queued and completed remediation jobs (requires app credentials; default `false`) | no |
-| `AUTOREMEDIATOR_GITHUB_APP_STATUS_CHECK_NAME` | Name displayed on the GitHub check run (default `autoremediator/remediation`) | no |
+| Variable                                               | Description                                                                                                            | Required |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- | -------- |
+| `AUTOREMEDIATOR_GITHUB_APP_ID`                         | GitHub App ID                                                                                                          | yes      |
+| `AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY`                | GitHub App private key (PEM)                                                                                           | yes      |
+| `AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET`             | Webhook signature secret                                                                                               | yes      |
+| `AUTOREMEDIATOR_GITHUB_APP_PORT`                       | HTTP listen port (default `3001`)                                                                                      | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_BASE_URL`                   | Public URL of this server, used by `/setup` to build the app manifest (e.g. `https://autoremediator.example.com`)      | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_ENABLE_SETUP_ROUTES`        | Enable `/setup`, `/setup/complete`, and `/install` registration routes (default `true`)                                | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_GITHUB_URL`                 | GitHub base URL for GitHub Enterprise Server (default `https://github.com`)                                            | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_GITHUB_API_URL`             | GitHub API base URL for GitHub Enterprise Server (default `https://api.github.com`)                                    | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_DATA_DIR`                   | Optional persistent state directory for restart-safe dedupe and installation state                                     | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_TRIGGER_TIMEOUT_MS`         | Optional callback timeout in ms for remediation trigger handlers                                                       | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION` | Enable built-in remediation adapter for `check_suite` and `workflow_dispatch` events                                   | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_LOG_EVENT_TRACES`           | Emit one JSON line per processed webhook event with status and reason                                                  | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_MAX_WEBHOOK_BODY_BYTES`     | Maximum accepted webhook request body size in bytes (default `262144`)                                                 | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_REQUIRE_JSON_CONTENT_TYPE`  | Require `application/json` content type for webhook requests (default `true`)                                          | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_ALLOWED_EVENTS`             | Comma-separated allowlist of accepted webhook event names                                                              | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_REQUIRE_DELIVERY_ID`        | Require `x-github-delivery` header for webhook requests                                                                | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_ENABLE_JOB_QUEUE`           | Enable queue-backed asynchronous remediation execution (default `true`)                                                | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_QUEUE_POLL_INTERVAL_MS`     | Job worker poll interval in milliseconds (default `2000`)                                                              | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_QUEUE_RETRY_DELAY_MS`       | Delay before retrying failed jobs in milliseconds (default `15000`)                                                    | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_QUEUE_MAX_ATTEMPTS`         | Maximum attempts per queued remediation job (default `3`)                                                              | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_WORKER_CONCURRENCY`         | Maximum number of concurrent queue jobs (default `1`)                                                                  | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_ENABLE_SCHEDULER`           | Enable interval scheduler that enqueues `workflow_dispatch` jobs                                                       | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_SCHEDULE_INTERVAL_MS`       | Scheduler interval in milliseconds (default `3600000`)                                                                 | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_ENABLE_STATUS_PUBLISHING`   | Publish GitHub check run results for queued and completed remediation jobs (requires app credentials; default `false`) | no       |
+| `AUTOREMEDIATOR_GITHUB_APP_STATUS_CHECK_NAME`          | Name displayed on the GitHub check run (default `autoremediator/remediation`)                                          | no       |
 
 When `AUTOREMEDIATOR_GITHUB_APP_DATA_DIR` is set, webhook state and job queue state are persisted across restarts.
 When `AUTOREMEDIATOR_GITHUB_APP_DATA_DIR` is not set, runtime state and queue are in-memory only.

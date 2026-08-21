@@ -49,24 +49,65 @@ function AnchorLink({
   ...rest
 }: React.ComponentPropsWithoutRef<"a"> & { node?: unknown }) {
   const navigate = useNavigate();
-  if (!href || href.startsWith("#") || href.startsWith("http") || href.startsWith("//") || href.startsWith("mailto:")) {
+  if (
+    !href ||
+    href.startsWith("#") ||
+    href.startsWith("http") ||
+    href.startsWith("//") ||
+    href.startsWith("mailto:")
+  ) {
     const isExternal = href?.startsWith("http") || href?.startsWith("//");
-    return <a href={href} target={isExternal ? "_blank" : undefined} rel={isExternal ? "noreferrer" : undefined} {...rest}>{children}</a>;
+    return (
+      <a
+        href={href}
+        target={isExternal ? "_blank" : undefined}
+        rel={isExternal ? "noreferrer" : undefined}
+        {...rest}
+      >
+        {children}
+      </a>
+    );
   }
   if (href.startsWith("/")) {
-    return <a href={href} onClick={(e) => { e.preventDefault(); navigate(href); }} {...rest}>{children}</a>;
+    return (
+      <a
+        href={href}
+        onClick={(e) => {
+          e.preventDefault();
+          navigate(href);
+        }}
+        {...rest}
+      >
+        {children}
+      </a>
+    );
   }
   // Relative link — check if it resolves to a known doc slug
   const stripped = href.replace(/^\.\//, "");
   const slugPart = stripped.split("#")[0];
   const hash = stripped.includes("#") ? "#" + stripped.split("#").slice(1).join("#") : "";
-  if (docs.some(d => d.slug === slugPart)) {
+  if (docs.some((d) => d.slug === slugPart)) {
     const to = `/docs/${slugPart}${hash}`;
-    return <a href={to} onClick={(e) => { e.preventDefault(); navigate(to); }} {...rest}>{children}</a>;
+    return (
+      <a
+        href={to}
+        onClick={(e) => {
+          e.preventDefault();
+          navigate(to);
+        }}
+        {...rest}
+      >
+        {children}
+      </a>
+    );
   }
   // Non-doc relative link → GitHub
   const ghPath = stripped.replace(/^(\.\.\/)+/, "");
-  return <a href={GITHUB_BLOB + ghPath} target="_blank" rel="noreferrer" {...rest}>{children}</a>;
+  return (
+    <a href={GITHUB_BLOB + ghPath} target="_blank" rel="noreferrer" {...rest}>
+      {children}
+    </a>
+  );
 }
 
 export const markdownComponents: Partial<Components> = {
@@ -158,7 +199,9 @@ export function DocPage() {
 
   return (
     <article className="markdown-rendered">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{doc.body}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+        {doc.body}
+      </ReactMarkdown>
     </article>
   );
 }

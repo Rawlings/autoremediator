@@ -143,6 +143,7 @@ Why: allows compliance consumers (FedRAMP, PCI-DSS, SOC 2 auditors) to bind reme
 How: maps each result by strategy — applied version-bump → `resolved` + `update` response, applied patch-file → `resolved` + `workaround_available`, unresolved → `in_triage` with `unresolvedReason`, VEX-suppressed → `not_affected` with the suppression justification.
 
 Also available via:
+
 - CLI: `--output-format cyclonedx-vex`
 - MCP: `toVex` tool
 - OpenAPI: `POST /vex`
@@ -240,7 +241,7 @@ Aggregate SLA breach data attached to `ScanReport`, `CiSummary`, and `PortfolioR
 
 ```ts
 interface SlaBreachSummary {
-  breachCount: number;        // total number of breached CVEs
+  breachCount: number; // total number of breached CVEs
   breaches: SlaBreachEntry[]; // per-CVE breach details
 }
 ```
@@ -251,10 +252,10 @@ Per-CVE SLA breach record within `SlaBreachSummary`:
 
 ```ts
 interface SlaBreachEntry {
-  cveId: string;                  // e.g. "CVE-2021-23337"
-  severity: CveSeverity;          // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | "UNKNOWN"
-  hoursOverdue: number;           // hours past the SLA deadline at run time
-  deadlineAt: string;             // ISO 8601 deadline timestamp
+  cveId: string; // e.g. "CVE-2021-23337"
+  severity: CveSeverity; // "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | "UNKNOWN"
+  hoursOverdue: number; // hours past the SLA deadline at run time
+  deadlineAt: string; // ISO 8601 deadline timestamp
   recommendedAction: EscalationAction; // "open-issue" | "notify-channel" | "create-draft-pr" | "hold-branch" | "none"
 }
 ```
@@ -309,45 +310,45 @@ Primary package intelligence determines affected npm packages and version window
 
 ```ts
 import {
-	ciExitCode,
-	inspectPatchArtifact,
-	listPatchArtifacts,
-	planRemediation,
-	remediate,
-	remediateFromScan,
-	toCiSummary,
-	validatePatchArtifact,
+  ciExitCode,
+  inspectPatchArtifact,
+  listPatchArtifacts,
+  planRemediation,
+  remediate,
+  remediateFromScan,
+  toCiSummary,
+  validatePatchArtifact,
 } from "autoremediator";
 
 const report = await remediate("CVE-2021-23337", {
-	cwd: process.cwd(),
-	llmProvider: "local",
-	dryRun: true
+  cwd: process.cwd(),
+  llmProvider: "local",
+  dryRun: true,
 });
 
 const scanReport = await remediateFromScan("./audit.json", {
-	format: "npm-audit",
-	policy: "./.github/autoremediator.yml"
+  format: "npm-audit",
+  policy: "./.github/autoremediator.yml",
 });
 
 const preview = await planRemediation("CVE-2021-23337", {
-	cwd: process.cwd(),
-	simulationMode: true,
-	requestId: "req-42",
-	sessionId: "nightly-security-job"
+  cwd: process.cwd(),
+  simulationMode: true,
+  requestId: "req-42",
+  sessionId: "nightly-security-job",
 });
 
 const resumable = await remediate("CVE-2021-23337", {
-	cwd: process.cwd(),
-	idempotencyKey: "nightly-cve-2021-23337",
-	resume: true,
-	source: "sdk",
-	constraints: {
-		directDependenciesOnly: true,
-		preferVersionBump: true,
-		installMode: "deterministic",
-		enforceFrozenLockfile: true
-	}
+  cwd: process.cwd(),
+  idempotencyKey: "nightly-cve-2021-23337",
+  resume: true,
+  source: "sdk",
+  constraints: {
+    directDependenciesOnly: true,
+    preferVersionBump: true,
+    installMode: "deterministic",
+    enforceFrozenLockfile: true,
+  },
 });
 
 const summary = toCiSummary(scanReport);
@@ -355,8 +356,12 @@ const exit = ciExitCode(summary);
 process.exitCode = exit;
 
 const patches = await listPatchArtifacts({ cwd: process.cwd() });
-const inspection = await inspectPatchArtifact("./patches/lodash+4.17.0.patch", { cwd: process.cwd() });
-const validation = await validatePatchArtifact("./patches/lodash+4.17.0.patch", { cwd: process.cwd() });
+const inspection = await inspectPatchArtifact("./patches/lodash+4.17.0.patch", {
+  cwd: process.cwd(),
+});
+const validation = await validatePatchArtifact("./patches/lodash+4.17.0.patch", {
+  cwd: process.cwd(),
+});
 ```
 
 ## Automation and Error Handling

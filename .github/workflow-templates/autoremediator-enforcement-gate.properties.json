@@ -2,8 +2,5 @@
   "name": "Autoremediator enforcement gate",
   "description": "Dry-run dependency remediation gate that fails when unresolved CVEs remain.",
   "iconName": "shield",
-  "categories": [
-    "security",
-    "automation"
-  ]
+  "categories": ["security", "automation"]
 }

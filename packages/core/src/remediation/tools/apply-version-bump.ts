@@ -36,15 +36,15 @@ export const applyVersionBumpTool = defineTool({
     "Update package.json to use the safe version of a vulnerable package and run the project's package manager install. In dry-run mode, only reports what would change.",
   parameters: z.object({
     cwd: z.string().describe("Absolute path to the consumer project root"),
-    packageManager: z.enum(["npm", "pnpm", "yarn", "bun", "deno"]).optional().describe("Package manager used by the target project (auto-detected if omitted)"),
+    packageManager: z
+      .enum(["npm", "pnpm", "yarn", "bun", "deno"])
+      .optional()
+      .describe("Package manager used by the target project (auto-detected if omitted)"),
     packageName: z.string().describe("The npm package to upgrade"),
     fromVersion: z.string().describe("The currently installed vulnerable version"),
     toVersion: z.string().describe("The safe target version to upgrade to"),
     dryRun: z.boolean().default(false).describe("If true, report changes but do not write"),
-    policy: z
-      .string()
-      .optional()
-      .describe("Optional path to .autoremediator policy file"),
+    policy: z.string().optional().describe("Optional path to .autoremediator policy file"),
     runTests: z
       .boolean()
       .default(false)
@@ -75,7 +75,8 @@ export const applyVersionBumpTool = defineTool({
       ...loadedPolicy.constraints,
       installMode: installMode ?? loadedPolicy.constraints?.installMode,
       installPreferOffline: installPreferOffline ?? loadedPolicy.constraints?.installPreferOffline,
-      enforceFrozenLockfile: enforceFrozenLockfile ?? loadedPolicy.constraints?.enforceFrozenLockfile,
+      enforceFrozenLockfile:
+        enforceFrozenLockfile ?? loadedPolicy.constraints?.enforceFrozenLockfile,
       workspace: workspace ?? loadedPolicy.constraints?.workspace,
     };
     const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
@@ -131,7 +132,7 @@ export const applyVersionBumpTool = defineTool({
 
     // Locate which dependency field this package lives in
     const depField = (["dependencies", "devDependencies", "peerDependencies"] as DepField[]).find(
-      (f) => pkgJson[f]?.[packageName] !== undefined
+      (f) => pkgJson[f]?.[packageName] !== undefined,
     );
 
     if (!depField) {

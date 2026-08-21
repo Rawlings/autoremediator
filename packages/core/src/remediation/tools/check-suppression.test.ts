@@ -9,13 +9,15 @@ type SuppressionEntry = {
 };
 
 async function callTool(cveId: string, suppressions: SuppressionEntry[]) {
-  return (checkSuppressionTool as unknown as {
-    execute: (args: { cveId: string; suppressions: SuppressionEntry[] }) => Promise<{
-      suppressed: boolean;
-      justification?: string;
-      notes?: string;
-    }>;
-  }).execute({ cveId, suppressions });
+  return (
+    checkSuppressionTool as unknown as {
+      execute: (args: { cveId: string; suppressions: SuppressionEntry[] }) => Promise<{
+        suppressed: boolean;
+        justification?: string;
+        notes?: string;
+      }>;
+    }
+  ).execute({ cveId, suppressions });
 }
 
 describe("check-suppression tool", () => {

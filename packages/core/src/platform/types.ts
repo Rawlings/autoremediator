@@ -95,11 +95,7 @@ export interface ExploitSignalOverridePolicy {
 
 export type PatchMode = "patch-package" | "native-pnpm" | "native-yarn";
 
-export type VexJustification =
-  | "not_affected"
-  | "fixed"
-  | "mitigated"
-  | "under_investigation";
+export type VexJustification = "not_affected" | "fixed" | "mitigated" | "under_investigation";
 
 export interface VexSuppression {
   cveId: string;
@@ -119,7 +115,7 @@ export interface SlaBreach {
   cveId: string;
   severity: CveSeverity;
   publishedAt: string; // ISO 8601
-  deadlineAt: string;  // ISO 8601
+  deadlineAt: string; // ISO 8601
   hoursOverdue: number;
 }
 

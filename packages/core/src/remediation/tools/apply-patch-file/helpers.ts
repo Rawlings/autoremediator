@@ -9,11 +9,7 @@ import {
   getYarnMajorVersion,
   type PackageManager,
 } from "../../../platform/package-manager/index.js";
-import type {
-  PatchArtifact,
-  PatchMode,
-  PatchValidationPhase,
-} from "../../../platform/types.js";
+import type { PatchArtifact, PatchMode, PatchValidationPhase } from "../../../platform/types.js";
 
 export interface ValidationResult {
   passed: boolean;
@@ -33,8 +29,12 @@ export interface PackageJsonSnapshot {
   content: string;
 }
 
-export async function resolvePatchMode(packageManager: PackageManager, cwd: string): Promise<PatchMode> {
-  if (packageManager === "npm" || packageManager === "bun" || packageManager === "deno") return "patch-package";
+export async function resolvePatchMode(
+  packageManager: PackageManager,
+  cwd: string,
+): Promise<PatchMode> {
+  if (packageManager === "npm" || packageManager === "bun" || packageManager === "deno")
+    return "patch-package";
   if (packageManager === "pnpm") return "native-pnpm";
 
   const major = await getYarnMajorVersion(cwd);
@@ -57,15 +57,13 @@ export function extractPatchedFiles(patchContent: string): string[] {
       patchContent
         .split(/\r?\n/)
         .filter((line) => line.startsWith("+++ b/"))
-        .map((line) => line.slice("+++ b/".length))
-    )
+        .map((line) => line.slice("+++ b/".length)),
+    ),
   );
 }
 
 export function countPatchHunks(patchContent: string): number {
-  return patchContent
-    .split(/\r?\n/)
-    .filter((line) => line.startsWith("@@ ")).length;
+  return patchContent.split(/\r?\n/).filter((line) => line.startsWith("@@ ")).length;
 }
 
 export function computePatchIntegrity(patchContent: string): string {
@@ -73,13 +71,16 @@ export function computePatchIntegrity(patchContent: string): string {
   return `sha256:${hex}`;
 }
 
-export async function writePatchManifest(manifestFilePath: string, artifact: PatchArtifact): Promise<void> {
+export async function writePatchManifest(
+  manifestFilePath: string,
+  artifact: PatchArtifact,
+): Promise<void> {
   await writeFile(manifestFilePath, JSON.stringify(artifact, null, 2) + "\n", "utf8");
 }
 
 export async function configurePatchPackagePostinstall(
   cwd: string,
-  packageManager: PackageManager
+  packageManager: PackageManager,
 ): Promise<{ success: true } | { success: false; error: string }> {
   const pkgJsonPath = join(cwd, "package.json");
   let pkgJson: RawPackageJson;
@@ -127,7 +128,9 @@ export async function configurePatchPackagePostinstall(
   return { success: true };
 }
 
-export async function capturePackageJsonSnapshot(cwd: string): Promise<PackageJsonSnapshot | undefined> {
+export async function capturePackageJsonSnapshot(
+  cwd: string,
+): Promise<PackageJsonSnapshot | undefined> {
   const path = join(cwd, "package.json");
 
   try {
@@ -163,7 +166,9 @@ export async function cleanupPatchArtifacts(params: {
   }
 
   if (patchMode === "patch-package" && packageJsonSnapshot) {
-    await writeFile(packageJsonSnapshot.path, packageJsonSnapshot.content, "utf8").catch(() => undefined);
+    await writeFile(packageJsonSnapshot.path, packageJsonSnapshot.content, "utf8").catch(
+      () => undefined,
+    );
   }
 
   if (!rerunInstall) return;
@@ -238,9 +243,7 @@ export async function applyNativePatch(params: {
 
     const commitCommand = patchMode === "native-pnpm" ? "pnpm" : "yarn";
     const commitArgs =
-      patchMode === "native-pnpm"
-        ? ["patch-commit", patchDir]
-        : ["patch-commit", "-s", patchDir];
+      patchMode === "native-pnpm" ? ["patch-commit", patchDir] : ["patch-commit", "-s", patchDir];
 
     await execa(commitCommand, commitArgs, {
       cwd,
@@ -287,7 +290,10 @@ function extractPatchDirectory(output: string): string {
   return "";
 }
 
-export async function validatePatchWithTests(cwd: string, testCommand: string[]): Promise<ValidationResult> {
+export async function validatePatchWithTests(
+  cwd: string,
+  testCommand: string[],
+): Promise<ValidationResult> {
   try {
     const [cmd, ...args] = testCommand;
     const result = await execa(cmd, args, {
@@ -321,11 +327,7 @@ export async function validatePatchWithTests(cwd: string, testCommand: string[])
 
 function extractFailedTests(output: string): string[] {
   const failedTests: string[] = [];
-  const patterns = [
-    /✖\s+(.+?)(?:\n|$)/g,
-    /●\s+(.+)(?:\n|$)/g,
-    /^FAIL\s+(.+?)(?:\n|$)/gm,
-  ];
+  const patterns = [/✖\s+(.+?)(?:\n|$)/g, /●\s+(.+)(?:\n|$)/g, /^FAIL\s+(.+?)(?:\n|$)/gm];
 
   for (const pattern of patterns) {
     let match;

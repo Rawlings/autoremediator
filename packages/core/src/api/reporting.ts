@@ -44,7 +44,9 @@ const SIMULATION_REBUTTAL_MESSAGES: Record<SimulationRebuttalCode, string> = {
   "tests-not-run": "Tests would not run for this mutating remediation path.",
 };
 
-function getSimulationMode(options: Pick<RemediateOptions, "dryRun" | "preview" | "simulationMode">): ResultSimulation["mode"] | undefined {
+function getSimulationMode(
+  options: Pick<RemediateOptions, "dryRun" | "preview" | "simulationMode">,
+): ResultSimulation["mode"] | undefined {
   if (!options.simulationMode) {
     return undefined;
   }
@@ -61,7 +63,7 @@ function getSimulationMode(options: Pick<RemediateOptions, "dryRun" | "preview" 
 }
 
 export function assertValidSimulationMode(
-  options: Pick<RemediateOptions, "dryRun" | "preview" | "simulationMode">
+  options: Pick<RemediateOptions, "dryRun" | "preview" | "simulationMode">,
 ): void {
   if (options.simulationMode !== true) {
     return;
@@ -86,7 +88,10 @@ function createDependencyScopeLookup(report: RemediationReport): Map<string, Dep
   return scopes;
 }
 
-function createSimulationMutation(target: SimulationMutationTarget, path?: string): SimulationMutation {
+function createSimulationMutation(
+  target: SimulationMutationTarget,
+  path?: string,
+): SimulationMutation {
   return {
     target,
     reason: SIMULATION_MUTATION_REASONS[target],
@@ -123,7 +128,7 @@ function addRebuttalFinding(
   findings: Map<SimulationRebuttalCode, SimulationRebuttalFinding>,
   code: SimulationRebuttalCode,
   severity: SimulationRebuttalFinding["severity"],
-  sourceSignals: string[]
+  sourceSignals: string[],
 ): void {
   const existing = findings.get(code);
   if (existing) {
@@ -169,15 +174,10 @@ function buildRebuttalFindings(params: {
     result.unresolvedReason === "consensus-failed" ||
     result.dispositionReason === "consensus-failed"
   ) {
-    addRebuttalFinding(
-      findings,
-      "consensus-failed",
-      "high",
-      [
-        ...(result.unresolvedReason === "consensus-failed" ? ["unresolvedReason"] : []),
-        ...(result.dispositionReason === "consensus-failed" ? ["dispositionReason"] : []),
-      ]
-    );
+    addRebuttalFinding(findings, "consensus-failed", "high", [
+      ...(result.unresolvedReason === "consensus-failed" ? ["unresolvedReason"] : []),
+      ...(result.dispositionReason === "consensus-failed" ? ["dispositionReason"] : []),
+    ]);
   }
 
   if (hasValidationRisk(result)) {
@@ -192,15 +192,10 @@ function buildRebuttalFindings(params: {
     result.unresolvedReason === "patch-confidence-too-low" ||
     result.dispositionReason === "low-confidence"
   ) {
-    addRebuttalFinding(
-      findings,
-      "low-confidence",
-      "warning",
-      [
-        ...(result.unresolvedReason === "patch-confidence-too-low" ? ["unresolvedReason"] : []),
-        ...(result.dispositionReason === "low-confidence" ? ["dispositionReason"] : []),
-      ]
-    );
+    addRebuttalFinding(findings, "low-confidence", "warning", [
+      ...(result.unresolvedReason === "patch-confidence-too-low" ? ["unresolvedReason"] : []),
+      ...(result.dispositionReason === "low-confidence" ? ["dispositionReason"] : []),
+    ]);
   }
 
   if (result.riskLevel === "high") {
@@ -233,7 +228,7 @@ function buildRebuttalFindings(params: {
 export function buildResultSimulation(
   report: RemediationReport,
   result: PatchResult,
-  options: Pick<RemediateOptions, "dryRun" | "preview" | "runTests" | "simulationMode">
+  options: Pick<RemediateOptions, "dryRun" | "preview" | "runTests" | "simulationMode">,
 ): ResultSimulation | undefined {
   const mode = getSimulationMode(options);
   if (!mode) {
@@ -259,7 +254,9 @@ export function buildResultSimulation(
   };
 }
 
-export function buildSimulationSummary(reports: RemediationReport[]): SimulationSummary | undefined {
+export function buildSimulationSummary(
+  reports: RemediationReport[],
+): SimulationSummary | undefined {
   let mode: SimulationSummary["mode"] | undefined;
   let resultCount = 0;
   let wouldMutateCount = 0;
@@ -310,7 +307,7 @@ export function buildSimulationSummary(reports: RemediationReport[]): Simulation
 
 export function applySimulationMetadata(
   report: RemediationReport,
-  options: Pick<RemediateOptions, "dryRun" | "preview" | "runTests" | "simulationMode">
+  options: Pick<RemediateOptions, "dryRun" | "preview" | "runTests" | "simulationMode">,
 ): RemediationReport {
   const mode = getSimulationMode(options);
   if (!mode) {
@@ -347,7 +344,9 @@ function toDependencyScope(installedType: "direct" | "transitive"): DependencySc
   return installedType === "direct" ? "direct" : "transitive";
 }
 
-export function buildDependencyScopeCounts(reports: RemediationReport[]): DependencyScopeCounts | undefined {
+export function buildDependencyScopeCounts(
+  reports: RemediationReport[],
+): DependencyScopeCounts | undefined {
   const counts: DependencyScopeCounts = {};
 
   for (const report of reports) {
@@ -371,7 +370,9 @@ export function buildDependencyScopeCounts(reports: RemediationReport[]): Depend
   return Object.keys(counts).length > 0 ? counts : undefined;
 }
 
-export function buildUnresolvedReasonCounts(reports: RemediationReport[]): UnresolvedReasonCounts | undefined {
+export function buildUnresolvedReasonCounts(
+  reports: RemediationReport[],
+): UnresolvedReasonCounts | undefined {
   const counts: UnresolvedReasonCounts = {};
 
   for (const report of reports) {
@@ -384,7 +385,9 @@ export function buildUnresolvedReasonCounts(reports: RemediationReport[]): Unres
   return Object.keys(counts).length > 0 ? counts : undefined;
 }
 
-export function buildDispositionCounts(reports: RemediationReport[]): DispositionCounts | undefined {
+export function buildDispositionCounts(
+  reports: RemediationReport[],
+): DispositionCounts | undefined {
   const counts: DispositionCounts = {};
 
   for (const report of reports) {
@@ -416,9 +419,8 @@ export function buildSlaBreachSummary(reports: RemediationReport[]): SlaBreachSu
 
     // Derive recommended action: first non-"none" escalationAction from any result in this report, else "open-issue"
     const recommendedAction: EscalationAction =
-      report.results
-        .map((r) => r.escalationAction)
-        .find((a) => a != null && a !== "none") ?? "open-issue";
+      report.results.map((r) => r.escalationAction).find((a) => a != null && a !== "none") ??
+      "open-issue";
 
     for (const breach of report.slaBreaches) {
       breaches.push({
@@ -457,7 +459,9 @@ export function toCiSummary(report: ScanReport): CiSummary {
     unresolvedByReason: report.unresolvedByReason,
     escalationCounts:
       report.escalationCounts ??
-      buildEscalationCounts(report.reports.flatMap((remediationReport) => remediationReport.results)),
+      buildEscalationCounts(
+        report.reports.flatMap((remediationReport) => remediationReport.results),
+      ),
     patchesDir: report.patchesDir,
     correlation: report.correlation,
     provenance: report.provenance,

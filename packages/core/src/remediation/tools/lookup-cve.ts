@@ -7,7 +7,10 @@
 import { defineTool } from "./tool-compat.js";
 import { z } from "zod";
 import { lookupCveOsv } from "../../intelligence/sources/osv.js";
-import { lookupCveGitHub, mergeGhDataIntoCveDetails } from "../../intelligence/sources/github-advisory.js";
+import {
+  lookupCveGitHub,
+  mergeGhDataIntoCveDetails,
+} from "../../intelligence/sources/github-advisory.js";
 import { enrichWithNvd } from "../../intelligence/sources/nvd.js";
 import { enrichWithCisaKev } from "../../intelligence/sources/cisa-kev.js";
 import { enrichWithEpss } from "../../intelligence/sources/epss.js";
@@ -23,9 +26,7 @@ export const lookupCveTool = defineTool({
   description:
     "Look up a CVE ID and return the list of affected npm packages, their vulnerable version ranges, and the first patched version. Always call this first.",
   parameters: z.object({
-    cveId: z
-      .string()
-      .regex(/^CVE-\d{4}-\d+$/i, "Must be a valid CVE ID like CVE-2021-23337"),
+    cveId: z.string().regex(/^CVE-\d{4}-\d+$/i, "Must be a valid CVE ID like CVE-2021-23337"),
   }),
   execute: async ({ cveId }): Promise<{ success: boolean; data?: CveDetails; error?: string }> => {
     const normalizedId = cveId.toUpperCase();
@@ -57,11 +58,12 @@ export const lookupCveTool = defineTool({
       details = mergeGhDataIntoCveDetails(details, ghPackages);
     }
 
-    const sourceHealth: Record<string, { attempted: boolean; changed: boolean; error?: string }> = {};
+    const sourceHealth: Record<string, { attempted: boolean; changed: boolean; error?: string }> =
+      {};
 
     const applyEnricher = async (
       sourceName: string,
-      enricher: (input: CveDetails) => Promise<CveDetails>
+      enricher: (input: CveDetails) => Promise<CveDetails>,
     ): Promise<void> => {
       const before = JSON.stringify(details);
       try {
@@ -91,7 +93,7 @@ export const lookupCveTool = defineTool({
     await applyEnricher("external-feeds", enrichWithExternalFeeds);
 
     details.intelligence = {
-      ...(details.intelligence ?? {}),
+      ...details.intelligence,
       sourceHealth,
     };
 

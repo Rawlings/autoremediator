@@ -11,7 +11,6 @@ import { httpClient } from "../../platform/http-client.js";
 const CISA_KEV_URL =
   "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json";
 
-
 interface CisaKevVulnerability {
   cveID: string;
   dateAdded?: string;
@@ -37,7 +36,7 @@ export async function fetchCisaKevFeed(): Promise<CisaKevFeed | undefined> {
 
 export function findKevEntry(
   feed: CisaKevFeed | undefined,
-  cveId: string
+  cveId: string,
 ): CisaKevVulnerability | undefined {
   if (!feed?.vulnerabilities?.length) return undefined;
   const normalized = cveId.toUpperCase();

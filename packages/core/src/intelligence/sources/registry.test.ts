@@ -13,22 +13,23 @@ describe("resolveSafeUpgradeVersion", () => {
       vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        text: async () => JSON.stringify({
-          versions: {
-            "1.2.3": { version: "1.2.3", dist: { tarball: "https://example.test/1.2.3.tgz" } },
-            "1.2.4": { version: "1.2.4", dist: { tarball: "https://example.test/1.2.4.tgz" } },
-            "1.3.0": { version: "1.3.0", dist: { tarball: "https://example.test/1.3.0.tgz" } },
-            "2.0.0": { version: "2.0.0", dist: { tarball: "https://example.test/2.0.0.tgz" } },
-          },
-        }),
-      })
+        text: async () =>
+          JSON.stringify({
+            versions: {
+              "1.2.3": { version: "1.2.3", dist: { tarball: "https://example.test/1.2.3.tgz" } },
+              "1.2.4": { version: "1.2.4", dist: { tarball: "https://example.test/1.2.4.tgz" } },
+              "1.3.0": { version: "1.3.0", dist: { tarball: "https://example.test/1.3.0.tgz" } },
+              "2.0.0": { version: "2.0.0", dist: { tarball: "https://example.test/2.0.0.tgz" } },
+            },
+          }),
+      }),
     );
 
     const resolution = await resolveSafeUpgradeVersion(
       "lodash",
       "1.2.3",
       "1.2.4",
-      ">=1.0.0 <1.2.4"
+      ">=1.0.0 <1.2.4",
     );
 
     expect(resolution.safeVersion).toBe("1.2.4");
@@ -47,21 +48,22 @@ describe("resolveSafeUpgradeVersion", () => {
       vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        text: async () => JSON.stringify({
-          versions: {
-            "1.2.3": { version: "1.2.3", dist: { tarball: "https://example.test/1.2.3.tgz" } },
-            "1.3.1": { version: "1.3.1", dist: { tarball: "https://example.test/1.3.1.tgz" } },
-            "2.0.0": { version: "2.0.0", dist: { tarball: "https://example.test/2.0.0.tgz" } },
-          },
-        }),
-      })
+        text: async () =>
+          JSON.stringify({
+            versions: {
+              "1.2.3": { version: "1.2.3", dist: { tarball: "https://example.test/1.2.3.tgz" } },
+              "1.3.1": { version: "1.3.1", dist: { tarball: "https://example.test/1.3.1.tgz" } },
+              "2.0.0": { version: "2.0.0", dist: { tarball: "https://example.test/2.0.0.tgz" } },
+            },
+          }),
+      }),
     );
 
     const resolution = await resolveSafeUpgradeVersion(
       "lodash",
       "1.2.3",
       "1.3.1",
-      ">=1.0.0 <1.3.1"
+      ">=1.0.0 <1.3.1",
     );
 
     expect(resolution.safeVersion).toBe("1.3.1");
@@ -79,20 +81,21 @@ describe("resolveSafeUpgradeVersion", () => {
       vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        text: async () => JSON.stringify({
-          versions: {
-            "1.2.3": { version: "1.2.3", dist: { tarball: "https://example.test/1.2.3.tgz" } },
-            "2.0.0": { version: "2.0.0", dist: { tarball: "https://example.test/2.0.0.tgz" } },
-          },
-        }),
-      })
+        text: async () =>
+          JSON.stringify({
+            versions: {
+              "1.2.3": { version: "1.2.3", dist: { tarball: "https://example.test/1.2.3.tgz" } },
+              "2.0.0": { version: "2.0.0", dist: { tarball: "https://example.test/2.0.0.tgz" } },
+            },
+          }),
+      }),
     );
 
     const resolution = await resolveSafeUpgradeVersion(
       "lodash",
       "1.2.3",
       "2.0.0",
-      ">=1.0.0 <2.0.0"
+      ">=1.0.0 <2.0.0",
     );
 
     expect(resolution.safeVersion).toBe("2.0.0");

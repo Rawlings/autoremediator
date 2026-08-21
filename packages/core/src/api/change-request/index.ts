@@ -24,9 +24,7 @@ function sanitizeBranchToken(value: string): string {
 function buildPlan(reports: RemediationReport[]): ChangeRequestPlan {
   const cveIds = Array.from(new Set(reports.map((report) => report.cveId)));
   const packageNames = Array.from(
-    new Set(
-      reports.flatMap((report) => report.results.map((result) => result.packageName))
-    )
+    new Set(reports.flatMap((report) => report.results.map((result) => result.packageName))),
   );
 
   const titleSuffix = cveIds.length === 1 ? cveIds[0]! : `${cveIds.length} CVEs`;
@@ -53,7 +51,7 @@ function resolveProvider(options: ChangeRequestOptions): "github" | "gitlab" {
 function resolveGrouping(options: ChangeRequestOptions): "all" {
   if (options.grouping && options.grouping !== "all") {
     throw new Error(
-      "changeRequest.grouping currently supports only 'all' for deterministic branch creation."
+      "changeRequest.grouping currently supports only 'all' for deterministic branch creation.",
     );
   }
   return "all";
@@ -89,7 +87,18 @@ async function createGitHubRequest(params: {
   body: string;
   draft?: boolean;
 }): Promise<string | undefined> {
-  const args = ["pr", "create", "--head", params.head, "--base", params.base, "--title", params.title, "--body", params.body];
+  const args = [
+    "pr",
+    "create",
+    "--head",
+    params.head,
+    "--base",
+    params.base,
+    "--title",
+    params.title,
+    "--body",
+    params.body,
+  ];
   if (params.repository) {
     args.push("--repo", params.repository);
   }

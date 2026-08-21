@@ -31,7 +31,7 @@ describe("scorePortfolioTarget", () => {
           exploitSignal: true,
           slaBreached: true,
         },
-      })
+      }),
     );
 
     expect(score).toBe(75);

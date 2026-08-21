@@ -11,12 +11,12 @@ The package exposes primary remediation and patch lifecycle programmatic entry p
 
 ```ts
 import {
-	remediate,
-	planRemediation,
-	remediateFromScan,
-	listPatchArtifacts,
-	inspectPatchArtifact,
-	validatePatchArtifact,
+  remediate,
+  planRemediation,
+  remediateFromScan,
+  listPatchArtifacts,
+  inspectPatchArtifact,
+  validatePatchArtifact,
 } from "autoremediator";
 ```
 
@@ -29,12 +29,12 @@ import {
 
 ## Type Naming
 
-| Old name (< 0.2)    | Current name          |
-|---------------------|-----------------------|
-| `HealOptions`       | `RemediateOptions`    |
-| `HealReport`        | `RemediationReport`   |
-| `heal()`            | `remediate()`         |
-| `healFromScanFile()`| `remediateFromScan()` |
+| Old name (< 0.2)     | Current name          |
+| -------------------- | --------------------- |
+| `HealOptions`        | `RemediateOptions`    |
+| `HealReport`         | `RemediationReport`   |
+| `heal()`             | `remediate()`         |
+| `healFromScanFile()` | `remediateFromScan()` |
 
 ## Schema Versioning
 

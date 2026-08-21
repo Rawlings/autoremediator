@@ -16,9 +16,9 @@ export interface LlmAnalysis {
   riskLevel: "low" | "medium" | "high";
 }
 
-export function parseLlmAnalysisResponse(text: string):
-  | { ok: true; analysis: LlmAnalysis }
-  | { ok: false; error: string } {
+export function parseLlmAnalysisResponse(
+  text: string,
+): { ok: true; analysis: LlmAnalysis } | { ok: false; error: string } {
   try {
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
@@ -34,15 +34,15 @@ export function parseLlmAnalysisResponse(text: string):
 export function isValidLlmAnalysis(analysis: LlmAnalysis): boolean {
   return Boolean(
     analysis.analysis &&
-      analysis.fixedCode &&
-      typeof analysis.confidence === "number" &&
-      ["low", "medium", "high"].includes(analysis.riskLevel)
+    analysis.fixedCode &&
+    typeof analysis.confidence === "number" &&
+    ["low", "medium", "high"].includes(analysis.riskLevel),
   );
 }
 
 export function buildGeneratedPatches(
   sourceFiles: Record<string, string>,
-  fixedCodeByFile: Record<string, string>
+  fixedCodeByFile: Record<string, string>,
 ): GeneratedPatch[] {
   const patches: GeneratedPatch[] = [];
 
@@ -68,7 +68,7 @@ export function buildGeneratedPatches(
 export function generateUnifiedDiff(
   original: string,
   fixed: string,
-  filePath: string
+  filePath: string,
 ): string | null {
   if (original === fixed) {
     return null;

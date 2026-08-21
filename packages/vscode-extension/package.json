@@ -1,38 +1,47 @@
 {
   "name": "autoremediator-rawlings",
   "displayName": "Node CVE Remediator",
-  "description": "VS Code extension for risk-aware Node.js CVE diagnostics and remediation using OSV, CISA KEV, and FIRST EPSS signals",
   "version": "0.1.0",
-  "publisher": "rawlings",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Rawlings/autoremediator.git"
-  },
-  "homepage": "https://github.com/Rawlings/autoremediator#readme",
-  "bugs": {
-    "url": "https://github.com/Rawlings/autoremediator/issues"
-  },
-  "engines": {
-    "vscode": "^1.116.0"
-  },
+  "description": "VS Code extension for risk-aware Node.js CVE diagnostics and remediation using OSV, CISA KEV, and FIRST EPSS signals",
   "categories": [
     "Linters",
     "Other"
   ],
   "keywords": [
-    "security",
     "cve",
     "dependency",
-    "vulnerability",
-    "remediation",
     "npm-audit",
-    "supply-chain"
+    "remediation",
+    "security",
+    "supply-chain",
+    "vulnerability"
   ],
-  "activationEvents": [
-    "workspaceContains:**/package.json"
-  ],
+  "homepage": "https://github.com/Rawlings/autoremediator#readme",
+  "bugs": {
+    "url": "https://github.com/Rawlings/autoremediator/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rawlings/autoremediator.git"
+  },
+  "publisher": "rawlings",
   "main": "./dist/extension.js",
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=dist/extension.js --sourcemap",
+    "watch": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=dist/extension.js --sourcemap --watch",
+    "typecheck": "tsc --noEmit",
+    "build:vsix": "pnpm build && pnpm package",
+    "package": "vsce package --no-dependencies",
+    "publish": "vsce publish --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/vscode": "^1.134.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  },
   "contributes": {
     "commands": [
       {
@@ -45,19 +54,10 @@
       }
     ]
   },
-  "scripts": {
-    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=dist/extension.js --sourcemap",
-    "watch": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=dist/extension.js --sourcemap --watch",
-    "typecheck": "tsc --noEmit",
-    "build:vsix": "pnpm build && pnpm package",
-    "package": "vsce package --no-dependencies",
-    "publish": "vsce publish --no-dependencies"
-  },
-  "devDependencies": {
-    "@types/node": "^24.12.2",
-    "@types/vscode": "^1.116.0",
-    "@vscode/vsce": "^3.9.1",
-    "esbuild": "^0.28.0",
-    "typescript": "^6.0.3"
+  "activationEvents": [
+    "workspaceContains:**/package.json"
+  ],
+  "engines": {
+    "vscode": "^1.116.0"
   }
 }

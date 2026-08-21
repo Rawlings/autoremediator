@@ -120,7 +120,7 @@ describe("VEX suppression", () => {
         "    justification: not_affected",
         "    notes: Test environment only",
       ].join("\n"),
-      "utf8"
+      "utf8",
     );
 
     try {
@@ -165,7 +165,7 @@ describe("exploit signal", () => {
         policy: expect.objectContaining({
           exploitSignalOverride: { kev: { mandatory: true } },
         }),
-      })
+      }),
     );
   });
 
@@ -184,7 +184,10 @@ describe("exploit signal", () => {
   it("leaves exploitSignalTriggered undefined when threshold is not met", async () => {
     mockOsv.mockResolvedValue(makeOsvDetails({ epss: { score: 0.1, percentile: 50 } }));
     mockInventory.mockResolvedValue({ packages: [] });
-    mockExploitSignal.mockResolvedValue({ exploitSignalTriggered: false, reason: "Below threshold" });
+    mockExploitSignal.mockResolvedValue({
+      exploitSignalTriggered: false,
+      reason: "Below threshold",
+    });
 
     const result = await runLocalRemediationPipeline("CVE-2024-0001", {
       cwd: process.cwd(),
@@ -228,7 +231,7 @@ describe("SLA breach", () => {
     writeFileSync(
       join(dir, ".github", "autoremediator.yml"),
       ["sla:", "  high: 72", "  critical: 24"].join("\n"),
-      "utf8"
+      "utf8",
     );
 
     const publishedAt = new Date(Date.now() - 200 * MS_PER_HOUR).toISOString();
@@ -273,7 +276,7 @@ describe("SLA breach", () => {
     writeFileSync(
       join(dir, ".github", "autoremediator.yml"),
       ["sla:", "  critical: 24"].join("\n"),
-      "utf8"
+      "utf8",
     );
 
     const publishedAt = new Date(Date.now() - 100 * MS_PER_HOUR).toISOString();
@@ -309,19 +312,34 @@ describe("SLA breach", () => {
 describe("regression check", () => {
   const vulnerablePackage = {
     installed: { name: "vuln-pkg", version: "1.5.0", type: "direct" as const },
-    affected: { name: "vuln-pkg", ecosystem: "npm" as const, vulnerableRange: ">=1.0.0 <2.0.0", firstPatchedVersion: "2.0.0", source: "osv" as const },
+    affected: {
+      name: "vuln-pkg",
+      ecosystem: "npm" as const,
+      vulnerableRange: ">=1.0.0 <2.0.0",
+      firstPatchedVersion: "2.0.0",
+      source: "osv" as const,
+    },
   };
 
   beforeEach(() => {
     mockOsv.mockResolvedValue(makeOsvDetails());
-    mockInventory.mockResolvedValue({ packages: [{ name: "vuln-pkg", version: "1.5.0", type: "direct" }] });
+    mockInventory.mockResolvedValue({
+      packages: [{ name: "vuln-pkg", version: "1.5.0", type: "direct" }],
+    });
     mockFindVulnerable.mockReturnValue([vulnerablePackage]);
     mockShouldFallback.mockReturnValue(false);
   });
 
   it("does not set regressionDetected when toVersion is outside the vulnerable range", async () => {
     mockPrimaryResult.mockResolvedValue({
-      result: { packageName: "vuln-pkg", fromVersion: "1.5.0", strategy: "version-bump", applied: true, dryRun: false, toVersion: "2.0.0" },
+      result: {
+        packageName: "vuln-pkg",
+        fromVersion: "1.5.0",
+        strategy: "version-bump",
+        applied: true,
+        dryRun: false,
+        toVersion: "2.0.0",
+      },
       steps: 1,
     });
 
@@ -335,7 +353,14 @@ describe("regression check", () => {
 
   it("sets regressionDetected=true when toVersion is still inside the vulnerable range", async () => {
     mockPrimaryResult.mockResolvedValue({
-      result: { packageName: "vuln-pkg", fromVersion: "1.5.0", strategy: "version-bump", applied: true, dryRun: false, toVersion: "1.8.0" },
+      result: {
+        packageName: "vuln-pkg",
+        fromVersion: "1.5.0",
+        strategy: "version-bump",
+        applied: true,
+        dryRun: false,
+        toVersion: "1.8.0",
+      },
       steps: 1,
     });
 
@@ -349,7 +374,14 @@ describe("regression check", () => {
 
   it("does not check regression when regressionCheck is false", async () => {
     mockPrimaryResult.mockResolvedValue({
-      result: { packageName: "vuln-pkg", fromVersion: "1.5.0", strategy: "version-bump", applied: true, dryRun: false, toVersion: "1.8.0" },
+      result: {
+        packageName: "vuln-pkg",
+        fromVersion: "1.5.0",
+        strategy: "version-bump",
+        applied: true,
+        dryRun: false,
+        toVersion: "1.8.0",
+      },
       steps: 1,
     });
 
@@ -364,7 +396,13 @@ describe("regression check", () => {
 
   it("does not set regressionDetected when result was not applied", async () => {
     mockPrimaryResult.mockResolvedValue({
-      result: { packageName: "vuln-pkg", fromVersion: "1.5.0", strategy: "none", applied: false, dryRun: false },
+      result: {
+        packageName: "vuln-pkg",
+        fromVersion: "1.5.0",
+        strategy: "none",
+        applied: false,
+        dryRun: false,
+      },
       steps: 1,
     });
 
@@ -378,7 +416,14 @@ describe("regression check", () => {
 
   it("blocks applied escalate disposition outcomes when containmentMode is enabled", async () => {
     mockPrimaryResult.mockResolvedValue({
-      result: { packageName: "vuln-pkg", fromVersion: "1.5.0", strategy: "version-bump", applied: true, dryRun: false, toVersion: "2.0.0" },
+      result: {
+        packageName: "vuln-pkg",
+        fromVersion: "1.5.0",
+        strategy: "version-bump",
+        applied: true,
+        dryRun: false,
+        toVersion: "2.0.0",
+      },
       steps: 1,
     });
     mockExploitSignal.mockResolvedValue({ exploitSignalTriggered: true, reason: "KEV match" });
@@ -459,7 +504,7 @@ describe("regression check", () => {
     writeFileSync(
       join(dir, ".github", "autoremediator.yml"),
       ["escalationGraph:", "  no-safe-version: notify-channel"].join("\n"),
-      "utf8"
+      "utf8",
     );
 
     try {
@@ -495,7 +540,7 @@ describe("regression check", () => {
     writeFileSync(
       join(dir, ".github", "autoremediator.yml"),
       ["escalationGraph:", "  no-safe-version: notify-channel"].join("\n"),
-      "utf8"
+      "utf8",
     );
 
     try {
@@ -512,4 +557,3 @@ describe("regression check", () => {
     }
   });
 });
-

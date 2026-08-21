@@ -26,15 +26,17 @@ function assertPatchOutputFormat(format: string): void {
   }
 }
 
-function resolveChangeRequestOptions(opts: CommandOptions): {
-  enabled?: boolean;
-  provider: "github" | "gitlab";
-  grouping?: "all" | "per-cve" | "per-package";
-  repository?: string;
-  baseBranch?: string;
-  branchPrefix?: string;
-  titlePrefix?: string;
-} | undefined {
+function resolveChangeRequestOptions(opts: CommandOptions):
+  | {
+      enabled?: boolean;
+      provider: "github" | "gitlab";
+      grouping?: "all" | "per-cve" | "per-package";
+      repository?: string;
+      baseBranch?: string;
+      branchPrefix?: string;
+      titlePrefix?: string;
+    }
+  | undefined {
   if (!opts.createChangeRequest) {
     return undefined;
   }
@@ -50,11 +52,23 @@ function resolveChangeRequestOptions(opts: CommandOptions): {
   };
 }
 
-function resolveDispositionPolicy(opts: CommandOptions): { minConfidenceForAutoApply?: number; holdForTransitive?: boolean; escalateOnKev?: boolean } | undefined {
-  const hasAny = opts.minConfidenceForAutoApply != null || opts.holdForTransitive === true || opts.escalateOnKev === true;
+function resolveDispositionPolicy(
+  opts: CommandOptions,
+):
+  | { minConfidenceForAutoApply?: number; holdForTransitive?: boolean; escalateOnKev?: boolean }
+  | undefined {
+  const hasAny =
+    opts.minConfidenceForAutoApply != null ||
+    opts.holdForTransitive === true ||
+    opts.escalateOnKev === true;
   if (!hasAny) return undefined;
-  const policy: { minConfidenceForAutoApply?: number; holdForTransitive?: boolean; escalateOnKev?: boolean } = {};
-  if (typeof opts.minConfidenceForAutoApply === "number") policy.minConfidenceForAutoApply = opts.minConfidenceForAutoApply;
+  const policy: {
+    minConfidenceForAutoApply?: number;
+    holdForTransitive?: boolean;
+    escalateOnKev?: boolean;
+  } = {};
+  if (typeof opts.minConfidenceForAutoApply === "number")
+    policy.minConfidenceForAutoApply = opts.minConfidenceForAutoApply;
   if (opts.holdForTransitive === true) policy.holdForTransitive = true;
   if (opts.escalateOnKev === true) policy.escalateOnKev = true;
   return policy;
@@ -107,7 +121,8 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
     consensusModel: opts.consensusModel,
     patchConfidenceThresholds: {
       low: typeof opts.patchConfidenceLow === "number" ? opts.patchConfidenceLow : undefined,
-      medium: typeof opts.patchConfidenceMedium === "number" ? opts.patchConfidenceMedium : undefined,
+      medium:
+        typeof opts.patchConfidenceMedium === "number" ? opts.patchConfidenceMedium : undefined,
       high: typeof opts.patchConfidenceHigh === "number" ? opts.patchConfidenceHigh : undefined,
     },
     dynamicModelRouting: opts.dynamicModelRouting,
@@ -130,12 +145,16 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
       enforceFrozenLockfile: opts.enforceFrozenLockfile,
       workspace: opts.workspace,
     },
-    exploitSignalOverride: (opts.kevMandatory || opts.epssThreshold != null)
-      ? {
-          kev: opts.kevMandatory ? { mandatory: true } : undefined,
-          epss: opts.epssThreshold != null ? { mandatory: true, threshold: opts.epssThreshold } : undefined,
-        }
-      : undefined,
+    exploitSignalOverride:
+      opts.kevMandatory || opts.epssThreshold != null
+        ? {
+            kev: opts.kevMandatory ? { mandatory: true } : undefined,
+            epss:
+              opts.epssThreshold != null
+                ? { mandatory: true, threshold: opts.epssThreshold }
+                : undefined,
+          }
+        : undefined,
     suppressionsFile: opts.suppressionsFile,
     slaCheck: opts.slaCheck,
     skipUnreachable: opts.skipUnreachable,
@@ -175,8 +194,13 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
 
   process.stdout.write(`${report.summary}\n`);
   process.stdout.write(`Results: ${report.results.length}\n`);
-  if (reportAsScan.dependencyScopeCounts?.transitive != null && reportAsScan.dependencyScopeCounts.transitive > 0) {
-    process.stdout.write(`  Transitive remediations: ${reportAsScan.dependencyScopeCounts.transitive} (fixed without requiring upstream patch)\n`);
+  if (
+    reportAsScan.dependencyScopeCounts?.transitive != null &&
+    reportAsScan.dependencyScopeCounts.transitive > 0
+  ) {
+    process.stdout.write(
+      `  Transitive remediations: ${reportAsScan.dependencyScopeCounts.transitive} (fixed without requiring upstream patch)\n`,
+    );
   }
   const singlePatchFileCount = reportAsScan.strategyCounts?.["patch-file"] ?? 0;
   if (singlePatchFileCount > 0) {
@@ -192,15 +216,21 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
     if (singleAvgConfidence != null) {
       process.stdout.write(`  Avg patch confidence: ${singleAvgConfidence.toFixed(2)}\n`);
     }
-    const singleUniqueRanges = [...new Set(singlePatchResults.map((r) => r.vulnerableRange).filter(Boolean))];
+    const singleUniqueRanges = [
+      ...new Set(singlePatchResults.map((r) => r.vulnerableRange).filter(Boolean)),
+    ];
     for (const range of singleUniqueRanges) {
       process.stdout.write(`  Vulnerable range: ${range}\n`);
     }
   }
   if (reportAsScan.slaBreachSummary != null && reportAsScan.slaBreachSummary.breachCount > 0) {
-    process.stdout.write(`SLA breaches: ${reportAsScan.slaBreachSummary.breachCount} CVE(s) overdue\n`);
+    process.stdout.write(
+      `SLA breaches: ${reportAsScan.slaBreachSummary.breachCount} CVE(s) overdue\n`,
+    );
     for (const breach of reportAsScan.slaBreachSummary.breaches) {
-      process.stdout.write(`  ${breach.cveId}: ${breach.severity}, ${breach.hoursOverdue}h overdue → ${breach.recommendedAction}\n`);
+      process.stdout.write(
+        `  ${breach.cveId}: ${breach.severity}, ${breach.hoursOverdue}h overdue → ${breach.recommendedAction}\n`,
+      );
     }
   }
   if (report.evidenceFile) {
@@ -234,7 +264,8 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
     consensusModel: opts.consensusModel,
     patchConfidenceThresholds: {
       low: typeof opts.patchConfidenceLow === "number" ? opts.patchConfidenceLow : undefined,
-      medium: typeof opts.patchConfidenceMedium === "number" ? opts.patchConfidenceMedium : undefined,
+      medium:
+        typeof opts.patchConfidenceMedium === "number" ? opts.patchConfidenceMedium : undefined,
       high: typeof opts.patchConfidenceHigh === "number" ? opts.patchConfidenceHigh : undefined,
     },
     dynamicModelRouting: opts.dynamicModelRouting,
@@ -258,12 +289,16 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
       enforceFrozenLockfile: opts.enforceFrozenLockfile,
       workspace: opts.workspace,
     },
-    exploitSignalOverride: (opts.kevMandatory || opts.epssThreshold != null)
-      ? {
-          kev: opts.kevMandatory ? { mandatory: true } : undefined,
-          epss: opts.epssThreshold != null ? { mandatory: true, threshold: opts.epssThreshold } : undefined,
-        }
-      : undefined,
+    exploitSignalOverride:
+      opts.kevMandatory || opts.epssThreshold != null
+        ? {
+            kev: opts.kevMandatory ? { mandatory: true } : undefined,
+            epss:
+              opts.epssThreshold != null
+                ? { mandatory: true, threshold: opts.epssThreshold }
+                : undefined,
+          }
+        : undefined,
     suppressionsFile: opts.suppressionsFile,
     slaCheck: opts.slaCheck,
     skipUnreachable: opts.skipUnreachable,
@@ -317,8 +352,13 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
   if (dependencyScopeCounts) {
     process.stdout.write(`Dependency scope counts: ${dependencyScopeCounts}\n`);
   }
-  if (report.dependencyScopeCounts?.transitive != null && report.dependencyScopeCounts.transitive > 0) {
-    process.stdout.write(`  Transitive remediations: ${report.dependencyScopeCounts.transitive} (fixed without requiring upstream patch)\n`);
+  if (
+    report.dependencyScopeCounts?.transitive != null &&
+    report.dependencyScopeCounts.transitive > 0
+  ) {
+    process.stdout.write(
+      `  Transitive remediations: ${report.dependencyScopeCounts.transitive} (fixed without requiring upstream patch)\n`,
+    );
   }
   const patchFileCount = report.strategyCounts?.["patch-file"] ?? 0;
   if (patchFileCount > 0) {
@@ -344,7 +384,9 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
   if (report.slaBreachSummary != null && report.slaBreachSummary.breachCount > 0) {
     process.stdout.write(`SLA breaches: ${report.slaBreachSummary.breachCount} CVE(s) overdue\n`);
     for (const breach of report.slaBreachSummary.breaches) {
-      process.stdout.write(`  ${breach.cveId}: ${breach.severity}, ${breach.hoursOverdue}h overdue → ${breach.recommendedAction}\n`);
+      process.stdout.write(
+        `  ${breach.cveId}: ${breach.severity}, ${breach.hoursOverdue}h overdue → ${breach.recommendedAction}\n`,
+      );
     }
   }
   const unresolvedByReason = formatCountMap(report.unresolvedByReason);
@@ -366,7 +408,9 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
   }
 }
 
-export async function runListPatches(opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">): Promise<void> {
+export async function runListPatches(
+  opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">,
+): Promise<void> {
   assertPatchOutputFormat(opts.outputFormat);
 
   const patches = await listPatchArtifacts({
@@ -397,7 +441,7 @@ export async function runListPatches(opts: Pick<CommandOptions, "cwd" | "patches
 
 export async function runInspectPatch(
   patchPath: string,
-  opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">
+  opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">,
 ): Promise<void> {
   assertPatchOutputFormat(opts.outputFormat);
 
@@ -430,7 +474,7 @@ export async function runInspectPatch(
 
 export async function runValidatePatch(
   patchPath: string,
-  opts: Pick<CommandOptions, "cwd" | "patchesDir" | "packageManager" | "outputFormat">
+  opts: Pick<CommandOptions, "cwd" | "patchesDir" | "packageManager" | "outputFormat">,
 ): Promise<void> {
   assertPatchOutputFormat(opts.outputFormat);
 
@@ -522,7 +566,7 @@ export async function runPortfolio(targetsFilePath: string, opts: CommandOptions
     parsedTargets = JSON.parse(readFileSync(targetsFilePath, "utf8"));
   } catch (error) {
     throw new Error(
-      `Could not read targets file at "${targetsFilePath}": ${error instanceof Error ? error.message : String(error)}`
+      `Could not read targets file at "${targetsFilePath}": ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 
@@ -549,7 +593,8 @@ export async function runPortfolio(targetsFilePath: string, opts: CommandOptions
     consensusModel: opts.consensusModel,
     patchConfidenceThresholds: {
       low: typeof opts.patchConfidenceLow === "number" ? opts.patchConfidenceLow : undefined,
-      medium: typeof opts.patchConfidenceMedium === "number" ? opts.patchConfidenceMedium : undefined,
+      medium:
+        typeof opts.patchConfidenceMedium === "number" ? opts.patchConfidenceMedium : undefined,
       high: typeof opts.patchConfidenceHigh === "number" ? opts.patchConfidenceHigh : undefined,
     },
     dynamicModelRouting: opts.dynamicModelRouting,
@@ -572,12 +617,16 @@ export async function runPortfolio(targetsFilePath: string, opts: CommandOptions
       enforceFrozenLockfile: opts.enforceFrozenLockfile,
       workspace: opts.workspace,
     },
-    exploitSignalOverride: (opts.kevMandatory || opts.epssThreshold != null)
-      ? {
-          kev: opts.kevMandatory ? { mandatory: true } : undefined,
-          epss: opts.epssThreshold != null ? { mandatory: true, threshold: opts.epssThreshold } : undefined,
-        }
-      : undefined,
+    exploitSignalOverride:
+      opts.kevMandatory || opts.epssThreshold != null
+        ? {
+            kev: opts.kevMandatory ? { mandatory: true } : undefined,
+            epss:
+              opts.epssThreshold != null
+                ? { mandatory: true, threshold: opts.epssThreshold }
+                : undefined,
+          }
+        : undefined,
     suppressionsFile: opts.suppressionsFile,
     slaCheck: opts.slaCheck,
     skipUnreachable: opts.skipUnreachable,

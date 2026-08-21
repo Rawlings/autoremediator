@@ -77,7 +77,9 @@ describe("apply-package-override", () => {
     mocked.resolveWhyCommand.mockReturnValue(["npm", "explain", "minimist"]);
     mocked.getYarnMajorVersion.mockResolvedValue(1);
     mocked.execa.mockResolvedValue({ stdout: "ok" });
-    mocked.withRepoLock.mockImplementation(async (_cwd: string, fn: () => Promise<unknown>) => fn());
+    mocked.withRepoLock.mockImplementation(async (_cwd: string, fn: () => Promise<unknown>) =>
+      fn(),
+    );
   });
 
   it("writes npm overrides for non-dry-run remediation", async () => {
@@ -95,7 +97,7 @@ describe("apply-package-override", () => {
     expect(mocked.writeFileSync).toHaveBeenCalledWith(
       "/tmp/project/package.json",
       expect.stringContaining('"overrides": {\n    "minimist": "1.2.8"\n  }'),
-      "utf8"
+      "utf8",
     );
     expect(result.strategy).toBe("override");
     expect(result.applied).toBe(true);
@@ -114,8 +116,10 @@ describe("apply-package-override", () => {
 
     expect(mocked.writeFileSync).toHaveBeenCalledWith(
       "/tmp/project/package.json",
-      expect.stringContaining('"pnpm": {\n    "overrides": {\n      "minimist": "1.2.8"\n    }\n  }'),
-      "utf8"
+      expect.stringContaining(
+        '"pnpm": {\n    "overrides": {\n      "minimist": "1.2.8"\n    }\n  }',
+      ),
+      "utf8",
     );
   });
 
@@ -133,7 +137,7 @@ describe("apply-package-override", () => {
     expect(mocked.writeFileSync).toHaveBeenCalledWith(
       "/tmp/project/package.json",
       expect.stringContaining('"resolutions": {\n    "minimist": "1.2.8"\n  }'),
-      "utf8"
+      "utf8",
     );
   });
 
@@ -169,7 +173,7 @@ describe("apply-package-override", () => {
     expect(mocked.writeFileSync).toHaveBeenCalledWith(
       "/tmp/project/package.json",
       expect.stringContaining('"@scope/parent>minimist": "1.2.8"'),
-      "utf8"
+      "utf8",
     );
   });
 
@@ -189,7 +193,7 @@ describe("apply-package-override", () => {
     expect(mocked.writeFileSync).toHaveBeenCalledWith(
       "/tmp/project/package.json",
       expect.stringContaining('"overrides": {\n    "minimist": "1.2.8"\n  }'),
-      "utf8"
+      "utf8",
     );
     expect(result.applied).toBe(true);
   });
@@ -210,7 +214,7 @@ describe("apply-package-override", () => {
     expect(mocked.writeFileSync).toHaveBeenCalledWith(
       "/tmp/project/package.json",
       expect.stringContaining('"overrides": {\n    "minimist": "1.2.8"\n  }'),
-      "utf8"
+      "utf8",
     );
     expect(result.applied).toBe(true);
   });
@@ -262,7 +266,7 @@ describe("apply-package-override", () => {
     expect(mocked.writeFileSync).toHaveBeenCalledWith(
       "/tmp/deno-project/deno.json",
       expect.stringContaining('"npm:minimist": "npm:minimist@1.2.8"'),
-      "utf8"
+      "utf8",
     );
     expect(result.applied).toBe(true);
   });

@@ -75,7 +75,11 @@ interface EvidenceContext {
   offlineMode?: boolean;
 }
 
-export function createEvidenceLog(cwd: string, cveIds: string[], context: EvidenceContext = {}): EvidenceLog {
+export function createEvidenceLog(
+  cwd: string,
+  cveIds: string[],
+  context: EvidenceContext = {},
+): EvidenceLog {
   return {
     runId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     requestId: context.requestId,
@@ -98,7 +102,7 @@ export function addEvidenceStep(
   action: string,
   input?: Record<string, unknown>,
   output?: Record<string, unknown>,
-  error?: string
+  error?: string,
 ): void {
   log.steps.push({
     at: new Date().toISOString(),

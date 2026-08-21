@@ -41,7 +41,7 @@ export async function enrichWithCertCc(details: CveDetails): Promise<CveDetails>
   }
 
   details.intelligence = {
-    ...(details.intelligence ?? {}),
+    ...details.intelligence,
     certCcMatched: true,
   };
 

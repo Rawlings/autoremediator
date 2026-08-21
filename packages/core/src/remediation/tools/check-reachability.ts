@@ -23,7 +23,7 @@ function buildPattern(packageName: string): RegExp {
   // Matches: import ... from 'pkg', require('pkg'), require('pkg/subpath'), import('pkg')
   return new RegExp(
     `(?:import\\s[\\s\\S]*?from\\s+|require\\s*\\(\\s*|import\\s*\\(\\s*)['"\`]${escaped}(?:[/'"\`/]|$)`,
-    "m"
+    "m",
   );
 }
 
@@ -53,7 +53,7 @@ function* walkSourceFiles(dir: string): Generator<string> {
 
 export function assessPackageReachability(
   cwd: string,
-  packageName: string
+  packageName: string,
 ): ReachabilityAssessment {
   const pattern = buildPattern(packageName);
   const evidence: ReachabilityEvidence[] = [];

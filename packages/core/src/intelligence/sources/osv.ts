@@ -10,7 +10,6 @@ import { httpClient } from "../../platform/http-client.js";
 
 const OSV_BASE = "https://api.osv.dev/v1";
 
-
 // ---------------------------------------------------------------------------
 // Raw OSV response types
 // ---------------------------------------------------------------------------
@@ -125,9 +124,7 @@ export function parseOsvVuln(vuln: OsvVulnerability): CveDetails {
 
     // Find the best SEMVER range
     const semverRange = affected.ranges?.find((r) => r.type === "SEMVER");
-    const vulnerableRange = semverRange
-      ? osvEventsToSemverRange(semverRange.events)
-      : ">=0.0.0";
+    const vulnerableRange = semverRange ? osvEventsToSemverRange(semverRange.events) : ">=0.0.0";
 
     // Derive firstPatchedVersion from the "fixed" event
     const fixedEvent = semverRange?.events.find((e) => e.fixed !== undefined);
@@ -153,14 +150,11 @@ export function parseOsvVuln(vuln: OsvVulnerability): CveDetails {
   };
 }
 
-function deriveSeverity(
-  severityEntries?: OsvVulnerability["severity"]
-): CveDetails["severity"] {
+function deriveSeverity(severityEntries?: OsvVulnerability["severity"]): CveDetails["severity"] {
   if (!severityEntries?.length) return "UNKNOWN";
 
   // Prefer CVSS_V3 type
-  const cvssEntry =
-    severityEntries.find((s) => s.type === "CVSS_V3") ?? severityEntries[0];
+  const cvssEntry = severityEntries.find((s) => s.type === "CVSS_V3") ?? severityEntries[0];
 
   // Extract base score from vector string, e.g. "CVSS:3.1/AV:N/AC:L/.../7.5/..."
   const scoreMatch = cvssEntry.score.match(/(\d+\.\d+)$/);

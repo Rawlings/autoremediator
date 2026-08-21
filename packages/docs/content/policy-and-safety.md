@@ -52,10 +52,10 @@ containmentMode: false
 
 exploitSignalOverride:
   kev:
-    mandatory: true          # treat CISA KEV-listed CVEs as mandatory
+    mandatory: true # treat CISA KEV-listed CVEs as mandatory
   epss:
     mandatory: true
-    threshold: 0.7           # promote CVEs with EPSS score >= 0.7
+    threshold: 0.7 # promote CVEs with EPSS score >= 0.7
 
 suppressions:
   - cveId: CVE-2021-99999
@@ -65,7 +65,7 @@ suppressions:
     justification: inline_mitigations_already_exist
 
 sla:
-  critical: 24    # hours
+  critical: 24 # hours
   high: 72
   medium: 168
   low: 720
@@ -137,6 +137,7 @@ Field intent:
 Suppress a CVE before inventory analysis using VEX justification entries. Suppressed CVEs do not reach the remediation pipeline and appear as zero-result runs with the justification in the summary.
 
 Options:
+
 - `suppressionsFile` (CLI/SDK): path to an external YAML file containing additional suppression entries (merged with policy-inline suppressions)
 - `suppressions` (policy): inline entries in `.github/autoremediator.yml`
 
@@ -226,6 +227,7 @@ For fully air-gapped environments, pair `offlineIntelligence` with `intelligence
 Evidence artifacts record `offlineMode: true` in the provenance section when this mode is active, providing an auditable signal that run outputs were produced without live intelligence source access.
 
 Enable with:
+
 - CLI: `--offline` and optionally `--intelligence-snapshot <path>`
 - SDK: `offlineIntelligence: true` and optionally `intelligenceSnapshotPath: "/path/to/snapshot.json"`
 - GitHub Action: `offline: true` input and optionally `intelligence-snapshot: <path>`
@@ -251,7 +253,7 @@ minimumSeverity: HIGH
 # Pull request creation (GitHub App only)
 pullRequest:
   enabled: false
-  grouping: per-cve          # all | per-cve | per-package
+  grouping: per-cve # all | per-cve | per-package
   # repository: owner/repo   # optional: target repository override
   # baseBranch: main
   branchPrefix: autoremediator/fix

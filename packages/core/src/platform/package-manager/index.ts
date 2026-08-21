@@ -58,7 +58,7 @@ function withWorkspace(command: string[], pm: PackageManager, workspace?: string
 export function resolveInstallCommand(
   pm: PackageManager,
   constraints?: RemediationConstraints,
-  yarnMajor?: number
+  yarnMajor?: number,
 ): string[] {
   const installMode = constraints?.installMode ?? "deterministic";
   const preferOfflineOverride = constraints?.installPreferOffline;
@@ -85,8 +85,7 @@ export function resolveInstallCommand(
   const includePreferOffline =
     pm !== "yarn" && (preferOfflineOverride ?? installMode !== "standard");
 
-  let includeFrozenLockfile =
-    pm !== "npm" && (frozenOverride ?? installMode === "deterministic");
+  let includeFrozenLockfile = pm !== "npm" && (frozenOverride ?? installMode === "deterministic");
 
   if (frozenOverride === false) {
     includeFrozenLockfile = false;
@@ -96,10 +95,7 @@ export function resolveInstallCommand(
     pm === "npm" &&
     (frozenOverride === true || (frozenOverride === undefined && installMode === "deterministic"));
 
-  const command: string[] = [
-    pm,
-    pm === "npm" ? (useNpmCi ? "ci" : "install") : "install",
-  ];
+  const command: string[] = [pm, pm === "npm" ? (useNpmCi ? "ci" : "install") : "install"];
 
   if (includeFrozenLockfile) {
     // Yarn Berry (v2+) uses --immutable instead of --frozen-lockfile
@@ -114,7 +110,10 @@ export function resolveInstallCommand(
   return withWorkspace(command, pm, constraints?.workspace);
 }
 
-export function resolveListCommand(pm: PackageManager, constraints?: RemediationConstraints): string[] {
+export function resolveListCommand(
+  pm: PackageManager,
+  constraints?: RemediationConstraints,
+): string[] {
   if (pm === "deno") {
     // Deno inventory is built by reading deno.lock directly, not via a shell command.
     // Callers that receive an empty array should use resolveDenoInventory() instead.
@@ -133,20 +132,30 @@ export function resolveListCommand(pm: PackageManager, constraints?: Remediation
   return withWorkspace(base, pm, constraints?.workspace);
 }
 
-export function resolveTestCommand(pm: PackageManager, constraints?: RemediationConstraints): string[] {
+export function resolveTestCommand(
+  pm: PackageManager,
+  constraints?: RemediationConstraints,
+): string[] {
   const base =
-    pm === "pnpm" ? ["pnpm", "test"] :
-    pm === "yarn" ? ["yarn", "test"] :
-    pm === "bun" ? ["bun", "test"] :
-    pm === "deno" ? ["deno", "test"] :
-    ["npm", "test"];
+    pm === "pnpm"
+      ? ["pnpm", "test"]
+      : pm === "yarn"
+        ? ["yarn", "test"]
+        : pm === "bun"
+          ? ["bun", "test"]
+          : pm === "deno"
+            ? ["deno", "test"]
+            : ["npm", "test"];
   return withWorkspace(base, pm, constraints?.workspace);
 }
 
-export function resolveAuditCommand(pm: PackageManager, constraints?: RemediationConstraints): string[] {
+export function resolveAuditCommand(
+  pm: PackageManager,
+  constraints?: RemediationConstraints,
+): string[] {
   if (pm === "deno") {
     throw new Error(
-      'Deno does not support a native audit command. Use --input with a SARIF or npm-audit scan file instead.'
+      "Deno does not support a native audit command. Use --input with a SARIF or npm-audit scan file instead.",
     );
   }
   const base = pm === "yarn" ? ["yarn", "audit", "--json"] : [pm, "audit", "--json"];
@@ -156,7 +165,7 @@ export function resolveAuditCommand(pm: PackageManager, constraints?: Remediatio
 export function resolveWhyCommand(
   pm: PackageManager,
   packageName: string,
-  constraints?: RemediationConstraints
+  constraints?: RemediationConstraints,
 ): string[] {
   if (pm === "deno") return [];
   if (pm === "bun") {
@@ -167,7 +176,10 @@ export function resolveWhyCommand(
   return withWorkspace(base, pm, constraints?.workspace);
 }
 
-export function resolveDedupeCommand(pm: PackageManager, constraints?: RemediationConstraints): string[] {
+export function resolveDedupeCommand(
+  pm: PackageManager,
+  constraints?: RemediationConstraints,
+): string[] {
   if (pm === "bun" || pm === "deno") return [];
   const base = [pm, "dedupe"];
   return withWorkspace(base, pm, constraints?.workspace);

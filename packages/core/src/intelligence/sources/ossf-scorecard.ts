@@ -24,7 +24,7 @@ async function checkProject(project: string): Promise<boolean> {
 
 export async function enrichWithOssfScorecard(details: CveDetails): Promise<CveDetails> {
   const projects = Array.from(
-    new Set(details.affectedPackages.map((p) => `github.com/${p.name}/${p.name}`))
+    new Set(details.affectedPackages.map((p) => `github.com/${p.name}/${p.name}`)),
   ).slice(0, 10);
 
   if (projects.length === 0) return details;
@@ -34,7 +34,7 @@ export async function enrichWithOssfScorecard(details: CveDetails): Promise<CveD
   if (matched === 0) return details;
 
   details.intelligence = {
-    ...(details.intelligence ?? {}),
+    ...details.intelligence,
     scorecardProjects: matched,
   };
 

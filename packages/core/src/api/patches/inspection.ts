@@ -16,7 +16,7 @@ import {
 } from "./helpers.js";
 
 export async function listPatchArtifacts(
-  options: PatchArtifactQueryOptions = {}
+  options: PatchArtifactQueryOptions = {},
 ): Promise<PatchArtifactSummary[]> {
   const cwd = options.cwd ?? process.cwd();
   const patchesDirPath = resolvePatchesDir(cwd, options.patchesDir);
@@ -35,7 +35,7 @@ export async function listPatchArtifacts(
     patchFiles.map(async (patchFilePath) => {
       const inspection = await inspectPatchArtifact(patchFilePath, options);
       return toSummary(inspection);
-    })
+    }),
   );
 
   return summaries;
@@ -43,7 +43,7 @@ export async function listPatchArtifacts(
 
 export async function inspectPatchArtifact(
   patchFilePath: string,
-  options: PatchArtifactQueryOptions = {}
+  options: PatchArtifactQueryOptions = {},
 ): Promise<PatchArtifactInspection> {
   const cwd = options.cwd ?? process.cwd();
   const resolvedPatchPath = resolveArtifactPath(cwd, patchFilePath);

@@ -43,9 +43,11 @@ function sanitizeRaw(raw: Record<string, unknown>): RawRepoConfig {
   }
   if (typeof raw.consensusModel === "string") out.consensusModel = raw.consensusModel.slice(0, 100);
   if (raw.patchConfidenceThresholds !== null && typeof raw.patchConfidenceThresholds === "object") {
-    out.patchConfidenceThresholds = raw.patchConfidenceThresholds as RawRepoConfig["patchConfidenceThresholds"];
+    out.patchConfidenceThresholds =
+      raw.patchConfidenceThresholds as RawRepoConfig["patchConfidenceThresholds"];
   }
-  if (typeof raw.dynamicModelRouting === "boolean") out.dynamicModelRouting = raw.dynamicModelRouting;
+  if (typeof raw.dynamicModelRouting === "boolean")
+    out.dynamicModelRouting = raw.dynamicModelRouting;
   if (typeof raw.dynamicRoutingThresholdChars === "number") {
     out.dynamicRoutingThresholdChars = raw.dynamicRoutingThresholdChars;
   }
@@ -65,7 +67,8 @@ function sanitizeRaw(raw: Record<string, unknown>): RawRepoConfig {
           ? pr.grouping
           : undefined,
       repository:
-        typeof pr.repository === "string" && /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/.test(pr.repository)
+        typeof pr.repository === "string" &&
+        /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/.test(pr.repository)
           ? pr.repository
           : undefined,
       baseBranch: typeof pr.baseBranch === "string" ? pr.baseBranch.slice(0, 100) : undefined,
@@ -120,7 +123,7 @@ function mergeWithDefaults(raw: RawRepoConfig): AutoremediatorRepoConfig {
 export async function fetchRepoConfig(
   octokit: Octokit,
   owner: string,
-  repo: string
+  repo: string,
 ): Promise<AutoremediatorRepoConfig> {
   try {
     const response = await octokit.rest.repos.getContent({

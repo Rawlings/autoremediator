@@ -49,14 +49,14 @@ jobs:
         uses: ./
         with:
           scan-file: .github/fixtures/npm-audit-empty.json
-          dry-run: 'true'
-          ci: 'true'
+          dry-run: "true"
+          ci: "true"
 
       - name: Run composite action in single-CVE mode
         uses: ./
         with:
           cve-id: CVE-2021-23337
-          dry-run: 'true'
+          dry-run: "true"
 
       - name: Verify input validation for mutually-exclusive modes
         id: invalid-inputs
@@ -64,7 +64,7 @@ jobs:
         uses: ./
         with:
           scan-file: .github/fixtures/npm-audit-empty.json
-          audit: 'true'
+          audit: "true"
 
       - name: Assert invalid input failure
         if: ${{ steps.invalid-inputs.outcome != 'failure' }}
@@ -93,7 +93,7 @@ jobs:
         continue-on-error: true
         uses: ./
         with:
-          audit: 'true'
+          audit: "true"
           format: sarif
 
       - name: Assert audit plus sarif failure

@@ -52,9 +52,7 @@ describe("apply-version-bump lock integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mocked.readFileSync.mockReturnValue(
-      JSON.stringify({ dependencies: { lodash: "^4.17.0" } })
-    );
+    mocked.readFileSync.mockReturnValue(JSON.stringify({ dependencies: { lodash: "^4.17.0" } }));
     mocked.loadPolicy.mockReturnValue({
       allowMajorBumps: false,
       denyPackages: [],
@@ -71,7 +69,9 @@ describe("apply-version-bump lock integration", () => {
     mocked.resolveInstallCommand.mockReturnValue(["npm", "ci", "--prefer-offline"]);
     mocked.resolveTestCommand.mockReturnValue(["npm", "test"]);
     mocked.execa.mockResolvedValue({ stdout: "ok" });
-    mocked.withRepoLock.mockImplementation(async (_cwd: string, fn: () => Promise<unknown>) => fn());
+    mocked.withRepoLock.mockImplementation(async (_cwd: string, fn: () => Promise<unknown>) =>
+      fn(),
+    );
   });
 
   it("uses withRepoLock for non-dry-run mutation path", async () => {
@@ -86,10 +86,7 @@ describe("apply-version-bump lock integration", () => {
     });
 
     expect(mocked.withRepoLock).toHaveBeenCalledTimes(1);
-    expect(mocked.withRepoLock).toHaveBeenCalledWith(
-      "/tmp/project",
-      expect.any(Function)
-    );
+    expect(mocked.withRepoLock).toHaveBeenCalledWith("/tmp/project", expect.any(Function));
     expect(result.applied).toBe(true);
   });
 

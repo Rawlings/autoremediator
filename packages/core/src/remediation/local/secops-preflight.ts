@@ -6,8 +6,18 @@
  *   2. Exploit signal — KEV / EPSS override gate
  *   3. SLA breach — detects response-window violations
  */
-import type { CveDetails, ExploitSignalOverridePolicy, SlaBreach, SlaPolicy, VexSuppression } from "../../platform/types.js";
-import { checkSlaBreach, isActiveSuppression, loadSuppressionsFile } from "../../platform/policy.js";
+import type {
+  CveDetails,
+  ExploitSignalOverridePolicy,
+  SlaBreach,
+  SlaPolicy,
+  VexSuppression,
+} from "../../platform/types.js";
+import {
+  checkSlaBreach,
+  isActiveSuppression,
+  loadSuppressionsFile,
+} from "../../platform/policy.js";
 import { checkExploitSignalTool } from "../tools/check-exploit-signal.js";
 
 export interface SecOpsPreflightOptions {
@@ -29,14 +39,14 @@ export type SecOpsPreflightResult =
 export async function runSecOpsPreflight(
   normalizedId: string,
   cveDetails: CveDetails,
-  opts: SecOpsPreflightOptions
+  opts: SecOpsPreflightOptions,
 ): Promise<SecOpsPreflightResult> {
   const allSuppressions = opts.suppressionsFile
     ? [...opts.suppressions, ...loadSuppressionsFile(opts.suppressionsFile)]
     : opts.suppressions;
 
   const activeSuppression = allSuppressions.find(
-    (s) => s.cveId === normalizedId && isActiveSuppression(s)
+    (s) => s.cveId === normalizedId && isActiveSuppression(s),
   );
   if (activeSuppression) {
     return {
@@ -58,7 +68,12 @@ export async function runSecOpsPreflight(
 
   let slaBreaches: SlaBreach[] | undefined;
   if (opts.slaCheck && opts.slaPolicy && cveDetails.publishedAt) {
-    const breach = checkSlaBreach(normalizedId, cveDetails.severity, cveDetails.publishedAt, opts.slaPolicy);
+    const breach = checkSlaBreach(
+      normalizedId,
+      cveDetails.severity,
+      cveDetails.publishedAt,
+      opts.slaPolicy,
+    );
     if (breach) {
       slaBreaches = [breach];
     }

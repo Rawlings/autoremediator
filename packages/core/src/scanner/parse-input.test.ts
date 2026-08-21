@@ -22,7 +22,7 @@ describe("parseScanInputFromAudit", () => {
     vi.clearAllMocks();
     mocked.detectPackageManager.mockReturnValue("npm");
     mocked.resolveAuditCommand.mockImplementation((pm: string) =>
-      pm === "yarn" ? ["yarn", "audit", "--json"] : [pm, "audit", "--json"]
+      pm === "yarn" ? ["yarn", "audit", "--json"] : [pm, "audit", "--json"],
     );
   });
 
@@ -49,7 +49,7 @@ describe("parseScanInputFromAudit", () => {
     expect(mocked.execa).toHaveBeenCalledWith(
       "npm",
       ["audit", "--json"],
-      expect.objectContaining({ cwd: "/tmp/project", reject: false })
+      expect.objectContaining({ cwd: "/tmp/project", reject: false }),
     );
     expect(findings).toHaveLength(1);
     expect(findings[0]).toMatchObject({ cveId: "CVE-2021-23337", source: "npm-audit" });
@@ -81,7 +81,7 @@ describe("parseScanInputFromAudit", () => {
     expect(mocked.execa).toHaveBeenCalledWith(
       "yarn",
       ["audit", "--json"],
-      expect.objectContaining({ cwd: "/tmp/project", reject: false })
+      expect.objectContaining({ cwd: "/tmp/project", reject: false }),
     );
     expect(findings).toHaveLength(1);
     expect(findings[0]).toMatchObject({ cveId: "CVE-2021-23337", source: "yarn-audit" });
@@ -93,7 +93,7 @@ describe("parseScanInputFromAudit", () => {
         cwd: "/tmp/project",
         packageManager: "npm",
         format: "sarif",
-      })
+      }),
     ).rejects.toThrow("SARIF format is not supported with --audit mode.");
   });
 
@@ -103,9 +103,9 @@ describe("parseScanInputFromAudit", () => {
         cwd: "/tmp/project",
         packageManager: "yarn",
         format: "npm-audit",
-      })
+      }),
     ).rejects.toThrow(
-      'Format "npm-audit" is not supported with package manager "yarn" in --audit mode. Use --format yarn-audit or --format auto.'
+      'Format "npm-audit" is not supported with package manager "yarn" in --audit mode. Use --format yarn-audit or --format auto.',
     );
   });
 
@@ -115,9 +115,9 @@ describe("parseScanInputFromAudit", () => {
         cwd: "/tmp/project",
         packageManager: "npm",
         format: "yarn-audit",
-      })
+      }),
     ).rejects.toThrow(
-      'Format "yarn-audit" is not supported with package manager "npm" in --audit mode. Use --format npm-audit or --format auto.'
+      'Format "yarn-audit" is not supported with package manager "npm" in --audit mode. Use --format npm-audit or --format auto.',
     );
   });
 
@@ -145,7 +145,7 @@ describe("parseScanInputFromAudit", () => {
     expect(mocked.execa).toHaveBeenCalledWith(
       "npm",
       ["audit", "--json", "--workspace", "web-app"],
-      expect.objectContaining({ cwd: "/tmp/project", reject: false })
+      expect.objectContaining({ cwd: "/tmp/project", reject: false }),
     );
   });
 
@@ -161,7 +161,7 @@ describe("parseScanInputFromAudit", () => {
         cwd: "/tmp/project",
         packageManager: "npm",
         format: "npm-audit",
-      })
+      }),
     ).rejects.toThrow("Failed to parse output from npm audit --json as npm-audit");
   });
 
@@ -177,7 +177,7 @@ describe("parseScanInputFromAudit", () => {
         cwd: "/tmp/project",
         packageManager: "yarn",
         format: "yarn-audit",
-      })
+      }),
     ).rejects.toThrow("Failed to parse output from yarn audit --json (exit code 1) as yarn-audit");
   });
 
@@ -205,14 +205,16 @@ describe("parseScanInputFromAudit", () => {
     expect(mocked.execa).toHaveBeenCalledWith(
       "bun",
       ["audit", "--json"],
-      expect.objectContaining({ cwd: "/tmp/project", reject: false })
+      expect.objectContaining({ cwd: "/tmp/project", reject: false }),
     );
     expect(findings[0]).toMatchObject({ cveId: "CVE-2021-23337", source: "npm-audit" });
   });
 
   it("throws a clear error for deno in --audit mode", async () => {
     mocked.resolveAuditCommand.mockImplementation(() => {
-      throw new Error("Deno does not support a native audit command. Use --input with a SARIF or npm-audit scan file instead.");
+      throw new Error(
+        "Deno does not support a native audit command. Use --input with a SARIF or npm-audit scan file instead.",
+      );
     });
 
     await expect(
@@ -220,7 +222,7 @@ describe("parseScanInputFromAudit", () => {
         cwd: "/tmp/project",
         packageManager: "deno",
         format: "auto",
-      })
+      }),
     ).rejects.toThrow(/Deno does not support a native audit command/);
   });
 });

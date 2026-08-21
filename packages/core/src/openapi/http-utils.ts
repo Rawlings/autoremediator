@@ -44,9 +44,7 @@ export function sendJson(res: http.ServerResponse, status: number, body: unknown
 
 export function withOpenApiSource(options: unknown): Record<string, unknown> {
   const normalized =
-    typeof options === "object" && options !== null
-      ? (options as Record<string, unknown>)
-      : {};
+    typeof options === "object" && options !== null ? (options as Record<string, unknown>) : {};
   return {
     ...normalized,
     source: typeof normalized.source === "string" ? normalized.source : "openapi",

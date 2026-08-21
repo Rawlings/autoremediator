@@ -1,7 +1,4 @@
-import type {
-  ConsensusVerdict,
-  PatchConfidenceThresholds,
-} from "../../platform/types.js";
+import type { ConsensusVerdict, PatchConfidenceThresholds } from "../../platform/types.js";
 import { generatePatchTool } from "../tools/generate-patch/index.js";
 
 export interface ConsensusGateParams {

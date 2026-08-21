@@ -59,12 +59,10 @@ export function derivePatchMetadata(patchContent: string): { files: string[]; hu
       patchContent
         .split(/\r?\n/)
         .filter((line) => line.startsWith("+++ b/"))
-        .map((line) => line.slice("+++ b/".length))
-    )
+        .map((line) => line.slice("+++ b/".length)),
+    ),
   );
-  const hunkCount = patchContent
-    .split(/\r?\n/)
-    .filter((line) => line.startsWith("@@ ")).length;
+  const hunkCount = patchContent.split(/\r?\n/).filter((line) => line.startsWith("@@ ")).length;
 
   return { files, hunkCount };
 }

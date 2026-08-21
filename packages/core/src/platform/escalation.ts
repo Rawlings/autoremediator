@@ -12,13 +12,13 @@ export const DEFAULT_ESCALATION_GRAPH: EscalationGraph = {
 
 export function computeEscalationAction(
   reason: UnresolvedReason | undefined,
-  graph?: EscalationGraph
+  graph?: EscalationGraph,
 ): EscalationAction {
   if (!reason) return "none";
 
   const mergedGraph: EscalationGraph = {
     ...DEFAULT_ESCALATION_GRAPH,
-    ...(graph ?? {}),
+    ...graph,
   };
 
   return mergedGraph[reason] ?? "none";

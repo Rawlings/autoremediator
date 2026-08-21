@@ -10,7 +10,9 @@ function buildRequestId(): string {
   return `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function resolveCorrelationContext(options: RemediateOptions): Required<Pick<CorrelationContext, "requestId">> & CorrelationContext {
+export function resolveCorrelationContext(
+  options: RemediateOptions,
+): Required<Pick<CorrelationContext, "requestId">> & CorrelationContext {
   return {
     requestId: options.requestId ?? buildRequestId(),
     sessionId: options.sessionId,
@@ -33,21 +35,13 @@ export function resolveConstraints(options: RemediateOptions, cwd: string): Reme
       policy.constraints?.directDependenciesOnly ??
       false,
     preferVersionBump:
-      options.constraints?.preferVersionBump ??
-      policy.constraints?.preferVersionBump ??
-      false,
+      options.constraints?.preferVersionBump ?? policy.constraints?.preferVersionBump ?? false,
     installMode:
-      options.constraints?.installMode ??
-      policy.constraints?.installMode ??
-      "deterministic",
+      options.constraints?.installMode ?? policy.constraints?.installMode ?? "deterministic",
     installPreferOffline:
-      options.constraints?.installPreferOffline ??
-      policy.constraints?.installPreferOffline,
+      options.constraints?.installPreferOffline ?? policy.constraints?.installPreferOffline,
     enforceFrozenLockfile:
-      options.constraints?.enforceFrozenLockfile ??
-      policy.constraints?.enforceFrozenLockfile,
-    workspace:
-      options.constraints?.workspace ??
-      policy.constraints?.workspace,
+      options.constraints?.enforceFrozenLockfile ?? policy.constraints?.enforceFrozenLockfile,
+    workspace: options.constraints?.workspace ?? policy.constraints?.workspace,
   };
 }

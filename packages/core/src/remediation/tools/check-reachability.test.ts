@@ -21,7 +21,10 @@ describe("assessPackageReachability", () => {
   });
 
   it("returns reachable when package is imported via ESM import", () => {
-    writeFileSync(join(dir, "src", "index.ts"), `import lodash from 'lodash';\nconsole.log(lodash);`);
+    writeFileSync(
+      join(dir, "src", "index.ts"),
+      `import lodash from 'lodash';\nconsole.log(lodash);`,
+    );
     const result = assessPackageReachability(dir, "lodash");
     expect(result.status).toBe("reachable");
     expect(result.evidence?.length).toBeGreaterThan(0);

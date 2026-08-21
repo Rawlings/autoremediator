@@ -16,7 +16,6 @@ import semver from "semver";
 import { httpClient } from "../../platform/http-client.js";
 import { type PackageManager, detectPackageManager } from "../../platform/package-manager/index.js";
 
-
 const NPM_REGISTRY = "https://registry.npmjs.org";
 
 export type SafeUpgradeLevel = "patch" | "minor" | "major";
@@ -55,9 +54,7 @@ export async function fetchPackageVersions(packageName: string): Promise<string[
 
     if (res.status === 404) return [];
     if (!res.ok) {
-      throw new Error(
-        `npm registry error ${res.status} for "${packageName}": ${res.text}`
-      );
+      throw new Error(`npm registry error ${res.status} for "${packageName}": ${res.text}`);
     }
 
     const data = res.data as NpmPackument;
@@ -85,13 +82,13 @@ export async function findSafeUpgradeVersion(
   packageName: string,
   installedVersion: string,
   firstPatchedVersion: string,
-  vulnerableRange?: string
+  vulnerableRange?: string,
 ): Promise<string | undefined> {
   const resolution = await resolveSafeUpgradeVersion(
     packageName,
     installedVersion,
     firstPatchedVersion,
-    vulnerableRange
+    vulnerableRange,
   );
 
   return resolution.safeVersion;
@@ -101,7 +98,7 @@ export async function resolveSafeUpgradeVersion(
   packageName: string,
   installedVersion: string,
   firstPatchedVersion: string,
-  vulnerableRange?: string
+  vulnerableRange?: string,
 ): Promise<SafeUpgradeResolution> {
   const versions = await fetchPackageVersions(packageName);
   if (!versions.length) {
@@ -179,7 +176,7 @@ export async function resolveSafeUpgradeVersion(
 
 function classifyUpgradeLevel(
   installedVersion: string,
-  candidateVersion: string
+  candidateVersion: string,
 ): SafeUpgradeLevel | undefined {
   const installed = semver.parse(installedVersion);
   const candidate = semver.parse(candidateVersion);
@@ -200,7 +197,7 @@ function classifyUpgradeLevel(
  */
 export async function getTarballUrl(
   packageName: string,
-  version: string
+  version: string,
 ): Promise<string | undefined> {
   const url = `${NPM_REGISTRY}/${encodeURIComponent(packageName)}/${encodeURIComponent(version)}`;
 
@@ -252,7 +249,7 @@ interface NpmOutdatedEntry {
  */
 export async function queryOutdatedPackages(
   cwd: string,
-  options: { includeTransitive?: boolean; packageManager?: string } = {}
+  options: { includeTransitive?: boolean; packageManager?: string } = {},
 ): Promise<Map<string, NpmRegistryPackageInfo>> {
   const pm = (options.packageManager ?? detectPackageManager(cwd)) as PackageManager;
 
@@ -262,8 +259,7 @@ export async function queryOutdatedPackages(
     // npm and pnpm both use --json for machine-readable output.
     // Yarn v1 uses --json as well (NDJSON), so we attempt all the same way.
     // These commands exit with code 1 when outdated packages exist — that is expected.
-    const args: string[] =
-      pm === "pnpm" ? ["outdated", "--json"] : ["outdated", "--json"];
+    const args: string[] = pm === "pnpm" ? ["outdated", "--json"] : ["outdated", "--json"];
     const yarnArgs = pm === "yarn" ? ["outdated", "--json"] : undefined;
     const finalArgs = yarnArgs ?? args;
 
@@ -279,7 +275,7 @@ export async function queryOutdatedPackages(
       const stderr = typeof result.stderr === "string" ? result.stderr : "";
       if (!result.stdout) {
         throw new Error(
-          `${pm} outdated --json failed (exit ${result.exitCode}): ${stderr.slice(0, 500)}`
+          `${pm} outdated --json failed (exit ${result.exitCode}): ${stderr.slice(0, 500)}`,
         );
       }
     }

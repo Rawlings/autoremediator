@@ -67,7 +67,7 @@ export function buildAppManifest(baseUrl: string): Record<string, unknown> {
 
 export async function exchangeManifestCode(
   code: string,
-  githubApiUrl: string = "https://api.github.com"
+  githubApiUrl: string = "https://api.github.com",
 ): Promise<ManifestConversionResult> {
   const url = `${githubApiUrl.replace(/\/$/, "")}/app-manifests/${encodeURIComponent(code)}/conversions`;
   const response = await fetch(url, {
@@ -121,7 +121,7 @@ function escapeHtml(str: string): string {
 export function renderSetupPage(
   baseUrl: string,
   githubUrl: string = "https://github.com",
-  state: string = ""
+  state: string = "",
 ): string {
   const normalized = baseUrl.replace(/\/$/, "");
   const manifest = buildAppManifest(normalized);

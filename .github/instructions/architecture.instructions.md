@@ -9,18 +9,18 @@ applyTo: packages/core/src/**/*.ts
 
 The source tree is organized into feature-first modules. Each module has a single responsibility:
 
-| Module              | Responsibility                                                   |
-|---------------------|------------------------------------------------------------------|
-| `packages/core/src/platform/`     | Cross-cutting infrastructure: types, config, policy, evidence    |
-| `packages/core/src/intelligence/` | CVE data acquisition and enrichment from external sources        |
-| `packages/core/src/scanner/`      | Scanner output parsing and CVE extraction                        |
-| `packages/core/src/remediation/`  | Remediation pipeline, AI tool implementations, patch utilities   |
-| `packages/core/src/detection/`    | [reserved — no implementation; routing anchor only]              |
-| `packages/core/src/exposure/`     | [reserved — no implementation; routing anchor only]              |
-| `packages/core/src/mcp/`          | MCP server — exposes tools to LLM hosts                          |
-| `packages/core/src/openapi/`      | OpenAPI / HTTP server surface                                    |
-| `packages/core/src/api/`          | Public SDK surface (index.ts + focused modules)                 |
-| `packages/core/src/cli/`          | CLI surface (index.ts + focused modules)                        |
+| Module                            | Responsibility                                                 |
+| --------------------------------- | -------------------------------------------------------------- |
+| `packages/core/src/platform/`     | Cross-cutting infrastructure: types, config, policy, evidence  |
+| `packages/core/src/intelligence/` | CVE data acquisition and enrichment from external sources      |
+| `packages/core/src/scanner/`      | Scanner output parsing and CVE extraction                      |
+| `packages/core/src/remediation/`  | Remediation pipeline, AI tool implementations, patch utilities |
+| `packages/core/src/detection/`    | [reserved — no implementation; routing anchor only]            |
+| `packages/core/src/exposure/`     | [reserved — no implementation; routing anchor only]            |
+| `packages/core/src/mcp/`          | MCP server — exposes tools to LLM hosts                        |
+| `packages/core/src/openapi/`      | OpenAPI / HTTP server surface                                  |
+| `packages/core/src/api/`          | Public SDK surface (index.ts + focused modules)                |
+| `packages/core/src/cli/`          | CLI surface (index.ts + focused modules)                       |
 
 Keep this module split stable. New capabilities should usually extend an existing module rather than creating cross-cutting shortcuts.
 

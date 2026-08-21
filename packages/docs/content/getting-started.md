@@ -35,7 +35,7 @@ Recent releases add higher-level execution controls on top of basic remediation:
 - one package manager in your target project (`pnpm`, `npm`, or `yarn`)
 - a repository with lockfile and dependency manifest
 - optional model credentials for patch generation fallback:
-	- `AUTOREMEDIATOR_REMOTE_API_KEY`
+  - `AUTOREMEDIATOR_REMOTE_API_KEY`
 
 If you use `--llm-provider local`, API keys are not required for the deterministic primary flow; patch fallback for no-safe-version cases may still require remote model credentials.
 
@@ -78,20 +78,20 @@ docker run --rm -v "$PWD:/workdir" ghcr.io/rawlings/autoremediator CVE-2021-2333
 
 ## Choose the Right Mode
 
-| Use case | Recommended mode | Why |
-|---|---|---|
-| Installable GitHub-native automation | GitHub App runtime (`packages/github-app`) | Webhook-driven remediation with native app authentication and optional automatic PR creation |
-| GitHub Actions CI (recommended) | reusable workflow with PR automation | Fast setup for automatic remediation with reviewable pull requests |
-| Scheduled PR automation | reusable workflow with `on.schedule` cron | Continuous improvement with reviewable remediation PRs on a cadence — see [Integrations](integrations.md#github-actions-scheduled-auto-remediation-prs) |
-| Update all outdated packages (no CVE required) | `update-outdated` mode | Bump all outdated npm packages with policy controls, evidence, and optional PR creation — see [CLI Reference](cli.md#update-outdated-mode) |
-| Urgent single CVE | direct CVE mode | Fast, focused remediation and clear operator feedback |
-| Non-mutating orchestration planning | `--preview` or `planRemediation()` | Evaluate intended remediation actions before mutation |
-| Nightly scanner automation | scan mode (`--input`) | Batch handling with deterministic CI summary |
-| Multi-repo remediation controller | `portfolio --targets-file` or `remediatePortfolio()` | Aggregate many repositories into one coordinated run |
-| CI gate without mutation | `--dry-run --ci` | Safety-first check for unresolved risk |
-| Air-gapped or deterministic environments | `--llm-provider local` | No remote model dependency and predictable behavior |
-| Remote model-backed patch generation | `--llm-provider remote` | Uses remote adapter configuration and runtime credentials |
-| Platform service integration | SDK, MCP, or OpenAPI | Standardized orchestration across many repos |
+| Use case                                       | Recommended mode                                     | Why                                                                                                                                                     |
+| ---------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Installable GitHub-native automation           | GitHub App runtime (`packages/github-app`)           | Webhook-driven remediation with native app authentication and optional automatic PR creation                                                            |
+| GitHub Actions CI (recommended)                | reusable workflow with PR automation                 | Fast setup for automatic remediation with reviewable pull requests                                                                                      |
+| Scheduled PR automation                        | reusable workflow with `on.schedule` cron            | Continuous improvement with reviewable remediation PRs on a cadence — see [Integrations](integrations.md#github-actions-scheduled-auto-remediation-prs) |
+| Update all outdated packages (no CVE required) | `update-outdated` mode                               | Bump all outdated npm packages with policy controls, evidence, and optional PR creation — see [CLI Reference](cli.md#update-outdated-mode)              |
+| Urgent single CVE                              | direct CVE mode                                      | Fast, focused remediation and clear operator feedback                                                                                                   |
+| Non-mutating orchestration planning            | `--preview` or `planRemediation()`                   | Evaluate intended remediation actions before mutation                                                                                                   |
+| Nightly scanner automation                     | scan mode (`--input`)                                | Batch handling with deterministic CI summary                                                                                                            |
+| Multi-repo remediation controller              | `portfolio --targets-file` or `remediatePortfolio()` | Aggregate many repositories into one coordinated run                                                                                                    |
+| CI gate without mutation                       | `--dry-run --ci`                                     | Safety-first check for unresolved risk                                                                                                                  |
+| Air-gapped or deterministic environments       | `--llm-provider local`                               | No remote model dependency and predictable behavior                                                                                                     |
+| Remote model-backed patch generation           | `--llm-provider remote`                              | Uses remote adapter configuration and runtime credentials                                                                                               |
+| Platform service integration                   | SDK, MCP, or OpenAPI                                 | Standardized orchestration across many repos                                                                                                            |
 
 ## What Newer Runs Include
 
@@ -207,14 +207,14 @@ Detailed controls are documented in [Policy and Safety](policy-and-safety.md).
 ## Troubleshooting First Steps
 
 - CVE did not apply:
-	- verify the vulnerable version is actually installed
-	- confirm policy did not deny the package
-	- inspect unresolved reason in output/evidence
+  - verify the vulnerable version is actually installed
+  - confirm policy did not deny the package
+  - inspect unresolved reason in output/evidence
 - Scan file not accepted:
-	- explicitly set `--format`
-	- validate scanner JSON shape against [Scanner Inputs](scanner-inputs.md)
+  - explicitly set `--format`
+  - validate scanner JSON shape against [Scanner Inputs](scanner-inputs.md)
 - No patch fallback generated:
-	- confirm non-local provider or configured local strategy supports patch generation for your environment
-	- check safety thresholds and validation outcome
+  - confirm non-local provider or configured local strategy supports patch generation for your environment
+  - check safety thresholds and validation outcome
 
 For CI and scheduling patterns, continue with [Integrations](integrations.md).

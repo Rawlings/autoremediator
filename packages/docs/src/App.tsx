@@ -32,7 +32,8 @@ function App() {
   useEffect(() => {
     if (!location.pathname.startsWith("/docs/")) {
       const title = "Autoremediator | Risk-Aware, Agentic CVE Remediation";
-      const description = "Guides and references for Node.js CVE remediation prioritized with OSV, CISA KEV, and FIRST EPSS intelligence, with policy and evidence controls for trusted automation.";
+      const description =
+        "Guides and references for Node.js CVE remediation prioritized with OSV, CISA KEV, and FIRST EPSS intelligence, with policy and evidence controls for trusted automation.";
 
       document.title = title;
       setMetaTag("name", "description", description);
@@ -52,11 +53,13 @@ function App() {
         <Routes>
           <Route
             path="/"
-            element={(
+            element={
               <article className="markdown-rendered">
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{monorepoReadme}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                  {monorepoReadme}
+                </ReactMarkdown>
               </article>
-            )}
+            }
           />
           <Route path="/docs/:slug" element={<DocPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

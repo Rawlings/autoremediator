@@ -5,7 +5,8 @@ describe("loadGitHubAppConfig", () => {
   it("loads config from environment values", () => {
     const config = loadGitHubAppConfig({
       AUTOREMEDIATOR_GITHUB_APP_ID: "12345",
-      AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\\nabc\\n-----END PRIVATE KEY-----",
+      AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY:
+        "-----BEGIN PRIVATE KEY-----\\nabc\\n-----END PRIVATE KEY-----",
       AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET: "secret",
       AUTOREMEDIATOR_GITHUB_APP_PORT: "4010",
       AUTOREMEDIATOR_GITHUB_APP_DATA_DIR: ".autoremediator/github-app",
@@ -79,7 +80,7 @@ describe("loadGitHubAppConfig", () => {
         AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY: "key",
         AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET: "secret",
         AUTOREMEDIATOR_GITHUB_APP_PORT: "abc",
-      })
+      }),
     ).toThrow("Invalid AUTOREMEDIATOR_GITHUB_APP_PORT");
   });
 
@@ -90,7 +91,7 @@ describe("loadGitHubAppConfig", () => {
         AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY: "key",
         AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET: "secret",
         AUTOREMEDIATOR_GITHUB_APP_TRIGGER_TIMEOUT_MS: "0",
-      })
+      }),
     ).toThrow("Invalid AUTOREMEDIATOR_GITHUB_APP_TRIGGER_TIMEOUT_MS");
   });
 
@@ -101,7 +102,7 @@ describe("loadGitHubAppConfig", () => {
         AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY: "key",
         AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET: "secret",
         AUTOREMEDIATOR_GITHUB_APP_MAX_WEBHOOK_BODY_BYTES: "0",
-      })
+      }),
     ).toThrow("Invalid AUTOREMEDIATOR_GITHUB_APP_MAX_WEBHOOK_BODY_BYTES");
   });
 
@@ -112,7 +113,7 @@ describe("loadGitHubAppConfig", () => {
         AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY: "key",
         AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET: "secret",
         AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION: "yes",
-      })
+      }),
     ).toThrow("Invalid AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION");
   });
 
@@ -123,7 +124,7 @@ describe("loadGitHubAppConfig", () => {
         AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY: "key",
         AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET: "secret",
         AUTOREMEDIATOR_GITHUB_APP_REQUIRE_JSON_CONTENT_TYPE: "sometimes",
-      })
+      }),
     ).toThrow("Invalid AUTOREMEDIATOR_GITHUB_APP_REQUIRE_JSON_CONTENT_TYPE");
   });
 
@@ -134,7 +135,7 @@ describe("loadGitHubAppConfig", () => {
         AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY: "key",
         AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET: "secret",
         AUTOREMEDIATOR_GITHUB_APP_ALLOWED_EVENTS: " , ",
-      })
+      }),
     ).toThrow("Invalid AUTOREMEDIATOR_GITHUB_APP_ALLOWED_EVENTS");
   });
 
@@ -145,7 +146,7 @@ describe("loadGitHubAppConfig", () => {
         AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY: "key",
         AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET: "secret",
         AUTOREMEDIATOR_GITHUB_APP_REQUIRE_DELIVERY_ID: "required",
-      })
+      }),
     ).toThrow("Invalid AUTOREMEDIATOR_GITHUB_APP_REQUIRE_DELIVERY_ID");
   });
 
@@ -156,7 +157,7 @@ describe("loadGitHubAppConfig", () => {
         AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY: "key",
         AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET: "secret",
         AUTOREMEDIATOR_GITHUB_APP_QUEUE_POLL_INTERVAL_MS: "0",
-      })
+      }),
     ).toThrow("Invalid AUTOREMEDIATOR_GITHUB_APP_QUEUE_POLL_INTERVAL_MS");
   });
 
@@ -167,7 +168,7 @@ describe("loadGitHubAppConfig", () => {
         AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY: "key",
         AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET: "secret",
         AUTOREMEDIATOR_GITHUB_APP_QUEUE_MAX_ATTEMPTS: "-1",
-      })
+      }),
     ).toThrow("Invalid AUTOREMEDIATOR_GITHUB_APP_QUEUE_MAX_ATTEMPTS");
   });
 
@@ -178,8 +179,7 @@ describe("loadGitHubAppConfig", () => {
         AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY: "key",
         AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET: "secret",
         AUTOREMEDIATOR_GITHUB_APP_SCHEDULE_INTERVAL_MS: "abc",
-      })
+      }),
     ).toThrow("Invalid AUTOREMEDIATOR_GITHUB_APP_SCHEDULE_INTERVAL_MS");
   });
 });
-

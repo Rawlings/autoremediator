@@ -7,7 +7,7 @@ function toMessage(error: unknown): string {
 
 export async function readJsonBody<T>(
   req: http.IncomingMessage,
-  res: http.ServerResponse
+  res: http.ServerResponse,
 ): Promise<T | undefined> {
   try {
     return (await readBody(req)) as T;
@@ -19,7 +19,7 @@ export async function readJsonBody<T>(
 
 export async function runRequest<T>(
   res: http.ServerResponse,
-  action: () => Promise<T>
+  action: () => Promise<T>,
 ): Promise<void> {
   try {
     const report = await action();
@@ -33,7 +33,7 @@ export function requireStringField(
   body: Record<string, unknown> | undefined,
   field: string,
   res: http.ServerResponse,
-  errorMessage: string
+  errorMessage: string,
 ): string | undefined {
   if (!body || typeof body[field] !== "string" || !(body[field] as string)) {
     sendJson(res, 400, { error: errorMessage });

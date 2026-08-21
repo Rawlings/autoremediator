@@ -35,10 +35,7 @@ describe("parseNpmAuditJsonFromString", () => {
         minimist: {
           name: "minimist",
           severity: "medium",
-          via: [
-            "CVE-2021-44906",
-            "https://nvd.nist.gov/vuln/detail/CVE-2021-44906",
-          ],
+          via: ["CVE-2021-44906", "https://nvd.nist.gov/vuln/detail/CVE-2021-44906"],
         },
       },
     };

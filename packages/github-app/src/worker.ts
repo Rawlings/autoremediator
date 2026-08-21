@@ -44,7 +44,7 @@ export function startJobWorker(options: StartJobWorkerOptions): JobWorkerHandle 
         } finally {
           inFlight -= 1;
         }
-      })
+      }),
     );
   };
 

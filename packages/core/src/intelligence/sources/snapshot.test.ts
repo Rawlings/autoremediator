@@ -27,9 +27,7 @@ describe("loadIntelligenceSnapshot", () => {
 
   it("returns object for valid JSON snapshot", async () => {
     const { readFileSync } = await import("node:fs");
-    vi.mocked(readFileSync).mockReturnValue(
-      JSON.stringify({ "CVE-2021-1234": mockCveDetails })
-    );
+    vi.mocked(readFileSync).mockReturnValue(JSON.stringify({ "CVE-2021-1234": mockCveDetails }));
     const snapshot = loadIntelligenceSnapshot("/tmp/snapshot.json");
     expect(snapshot).toEqual({ "CVE-2021-1234": mockCveDetails });
   });
@@ -38,7 +36,7 @@ describe("loadIntelligenceSnapshot", () => {
     const { readFileSync } = await import("node:fs");
     vi.mocked(readFileSync).mockReturnValue('"not an object"');
     expect(() => loadIntelligenceSnapshot("/tmp/snapshot.json")).toThrow(
-      "must be a JSON object keyed by CVE ID"
+      "must be a JSON object keyed by CVE ID",
     );
   });
 
@@ -46,7 +44,7 @@ describe("loadIntelligenceSnapshot", () => {
     const { readFileSync } = await import("node:fs");
     vi.mocked(readFileSync).mockReturnValue("[]");
     expect(() => loadIntelligenceSnapshot("/tmp/snapshot.json")).toThrow(
-      "must be a JSON object keyed by CVE ID"
+      "must be a JSON object keyed by CVE ID",
     );
   });
 
@@ -54,7 +52,7 @@ describe("loadIntelligenceSnapshot", () => {
     const { readFileSync } = await import("node:fs");
     vi.mocked(readFileSync).mockReturnValue("null");
     expect(() => loadIntelligenceSnapshot("/tmp/snapshot.json")).toThrow(
-      "must be a JSON object keyed by CVE ID"
+      "must be a JSON object keyed by CVE ID",
     );
   });
 });

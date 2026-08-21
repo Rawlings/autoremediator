@@ -22,7 +22,8 @@ const mocked = vi.hoisted(() => ({
     packageManager: "Package manager override (auto-detected by default)",
     dryRun: "If true, plan changes but write nothing",
     preview: "If true, enforce non-mutating preview mode",
-    simulationMode: "If true, attach deterministic simulation and rebuttal metadata for dry-run or preview execution",
+    simulationMode:
+      "If true, attach deterministic simulation and rebuttal metadata for dry-run or preview execution",
     runTests: "Run package-manager test command after applying fix",
     llmProvider: "LLM provider override",
     patchesDir: "Directory to write .patch files (default: ./patches)",
@@ -38,7 +39,8 @@ const mocked = vi.hoisted(() => ({
     audit: "Run package-manager-native audit command instead of reading a scan file",
     evidence: "Write evidence JSON to .autoremediator/evidence/ (default: true)",
     directDependenciesOnly: "Restrict remediation to direct dependencies only",
-    preferVersionBump: "Reject override and patch remediation when version-bump-only policy is required",
+    preferVersionBump:
+      "Reject override and patch remediation when version-bump-only policy is required",
     installMode: "Install behavior profile: deterministic|prefer-offline|standard",
     installPreferOffline: "Override prefer-offline flag behavior for install commands",
     enforceFrozenLockfile: "Override frozen lockfile behavior for install commands",
@@ -79,8 +81,19 @@ describe("cli preview and correlation option forwarding", () => {
     });
     mocked.listPatchArtifacts.mockResolvedValue([]);
     mocked.remediatePortfolio.mockResolvedValue({ targets: [], successCount: 0, failedCount: 0 });
-    mocked.inspectPatchArtifact.mockResolvedValue({ patchFilePath: "./patches/lodash.patch", exists: true, diffValid: true });
-    mocked.validatePatchArtifact.mockResolvedValue({ patchFilePath: "./patches/lodash.patch", exists: true, manifestFound: true, diffValid: true, driftDetected: false, validationPhases: [] });
+    mocked.inspectPatchArtifact.mockResolvedValue({
+      patchFilePath: "./patches/lodash.patch",
+      exists: true,
+      diffValid: true,
+    });
+    mocked.validatePatchArtifact.mockResolvedValue({
+      patchFilePath: "./patches/lodash.patch",
+      exists: true,
+      manifestFound: true,
+      diffValid: true,
+      driftDetected: false,
+      validationPhases: [],
+    });
     mocked.toCiSummary.mockReturnValue({ failedCount: 0 });
     mocked.ciExitCode.mockReturnValue(0);
     mocked.toSarifOutput.mockReturnValue({ version: "2.1.0", runs: [] });
@@ -88,21 +101,19 @@ describe("cli preview and correlation option forwarding", () => {
 
   it("forwards preview and correlation options in top-level CVE mode", async () => {
     const program = createProgram();
-    await program.parseAsync(
-      [
-        "node",
-        "autoremediator",
-        "CVE-2021-23337",
-        "--preview",
-        "--simulation-mode",
-        "--request-id",
-        "req-1",
-        "--session-id",
-        "session-1",
-        "--parent-run-id",
-        "parent-1",
-      ]
-    );
+    await program.parseAsync([
+      "node",
+      "autoremediator",
+      "CVE-2021-23337",
+      "--preview",
+      "--simulation-mode",
+      "--request-id",
+      "req-1",
+      "--session-id",
+      "session-1",
+      "--parent-run-id",
+      "parent-1",
+    ]);
 
     expect(mocked.remediate).toHaveBeenCalledWith(
       "CVE-2021-23337",
@@ -113,28 +124,26 @@ describe("cli preview and correlation option forwarding", () => {
         requestId: "req-1",
         sessionId: "session-1",
         parentRunId: "parent-1",
-      })
+      }),
     );
   });
 
   it("forwards preview and correlation options in top-level scan mode", async () => {
     const program = createProgram();
-    await program.parseAsync(
-      [
-        "node",
-        "autoremediator",
-        "--input",
-        "./audit.json",
-        "--preview",
-        "--simulation-mode",
-        "--request-id",
-        "req-2",
-        "--session-id",
-        "session-2",
-        "--parent-run-id",
-        "parent-2",
-      ]
-    );
+    await program.parseAsync([
+      "node",
+      "autoremediator",
+      "--input",
+      "./audit.json",
+      "--preview",
+      "--simulation-mode",
+      "--request-id",
+      "req-2",
+      "--session-id",
+      "session-2",
+      "--parent-run-id",
+      "parent-2",
+    ]);
 
     expect(mocked.remediateFromScan).toHaveBeenCalledWith(
       "./audit.json",
@@ -145,86 +154,65 @@ describe("cli preview and correlation option forwarding", () => {
         requestId: "req-2",
         sessionId: "session-2",
         parentRunId: "parent-2",
-      })
+      }),
     );
   });
 
   it("forwards patchesDir in top-level CVE mode", async () => {
     const program = createProgram();
-    await program.parseAsync(
-      [
-        "CVE-2021-23337",
-        "--patches-dir",
-        "./custom-patches",
-      ],
-      { from: "user" }
-    );
+    await program.parseAsync(["CVE-2021-23337", "--patches-dir", "./custom-patches"], {
+      from: "user",
+    });
 
     expect(mocked.remediate).toHaveBeenCalledWith(
       "CVE-2021-23337",
       expect.objectContaining({
         patchesDir: "./custom-patches",
-      })
+      }),
     );
   });
 
   it("forwards patchesDir in top-level scan mode", async () => {
     const program = createProgram();
-    await program.parseAsync(
-      [
-        "--input",
-        "./audit.json",
-        "--patches-dir",
-        "./custom-patches",
-      ],
-      { from: "user" }
-    );
+    await program.parseAsync(["--input", "./audit.json", "--patches-dir", "./custom-patches"], {
+      from: "user",
+    });
 
     expect(mocked.remediateFromScan).toHaveBeenCalledWith(
       "./audit.json",
       expect.objectContaining({
         patchesDir: "./custom-patches",
-      })
+      }),
     );
   });
 
   it("forwards evidence option in explicit cve command", async () => {
     const program = createProgram();
-    await program.parseAsync(
-      [
-        "node",
-        "autoremediator",
-        "cve",
-        "CVE-2021-23337",
-        "--no-evidence",
-      ]
-    );
+    await program.parseAsync(["node", "autoremediator", "cve", "CVE-2021-23337", "--no-evidence"]);
 
     expect(mocked.remediate).toHaveBeenCalledWith(
       "CVE-2021-23337",
       expect.objectContaining({
         evidence: false,
-      })
+      }),
     );
   });
 
   it("forwards change-request options in explicit cve command", async () => {
     const program = createProgram();
-    await program.parseAsync(
-      [
-        "node",
-        "autoremediator",
-        "cve",
-        "CVE-2021-23337",
-        "--create-change-request",
-        "--change-request-provider",
-        "github",
-        "--change-request-grouping",
-        "all",
-        "--change-request-repository",
-        "acme/repo",
-      ]
-    );
+    await program.parseAsync([
+      "node",
+      "autoremediator",
+      "cve",
+      "CVE-2021-23337",
+      "--create-change-request",
+      "--change-request-provider",
+      "github",
+      "--change-request-grouping",
+      "all",
+      "--change-request-repository",
+      "acme/repo",
+    ]);
 
     expect(mocked.remediate).toHaveBeenCalledWith(
       "CVE-2021-23337",
@@ -235,7 +223,7 @@ describe("cli preview and correlation option forwarding", () => {
           grouping: "all",
           repository: "acme/repo",
         }),
-      })
+      }),
     );
   });
 
@@ -262,17 +250,15 @@ describe("cli preview and correlation option forwarding", () => {
     mocked.ciExitCode.mockReturnValue(1);
 
     const program = createProgram();
-    await program.parseAsync(
-      [
-        "node",
-        "autoremediator",
-        "cve",
-        "CVE-2021-23337",
-        "--output-format",
-        "sarif",
-        "--ci",
-      ]
-    );
+    await program.parseAsync([
+      "node",
+      "autoremediator",
+      "cve",
+      "CVE-2021-23337",
+      "--output-format",
+      "sarif",
+      "--ci",
+    ]);
 
     expect(mocked.ciExitCode).toHaveBeenCalledTimes(1);
     expect(process.exitCode).toBe(1);
@@ -280,24 +266,22 @@ describe("cli preview and correlation option forwarding", () => {
 
   it("forwards consensus and patch-confidence options in top-level CVE mode", async () => {
     const program = createProgram();
-    await program.parseAsync(
-      [
-        "node",
-        "autoremediator",
-        "CVE-2021-23337",
-        "--require-consensus-for-high-risk",
-        "--consensus-provider",
-        "remote",
-        "--consensus-model",
-        "claude-mythos-verifier",
-        "--patch-confidence-low",
-        "0.61",
-        "--patch-confidence-medium",
-        "0.72",
-        "--patch-confidence-high",
-        "0.91",
-      ]
-    );
+    await program.parseAsync([
+      "node",
+      "autoremediator",
+      "CVE-2021-23337",
+      "--require-consensus-for-high-risk",
+      "--consensus-provider",
+      "remote",
+      "--consensus-model",
+      "claude-mythos-verifier",
+      "--patch-confidence-low",
+      "0.61",
+      "--patch-confidence-medium",
+      "0.72",
+      "--patch-confidence-high",
+      "0.91",
+    ]);
 
     expect(mocked.remediate).toHaveBeenCalledWith(
       "CVE-2021-23337",
@@ -310,27 +294,25 @@ describe("cli preview and correlation option forwarding", () => {
           medium: 0.72,
           high: 0.91,
         },
-      })
+      }),
     );
   });
 
   it("forwards install constraint options in top-level CVE mode", async () => {
     const program = createProgram();
-    await program.parseAsync(
-      [
-        "node",
-        "autoremediator",
-        "CVE-2021-23337",
-        "--install-mode",
-        "standard",
-        "--install-prefer-offline",
-        "false",
-        "--enforce-frozen-lockfile",
-        "true",
-        "--workspace",
-        "@apps/web",
-      ]
-    );
+    await program.parseAsync([
+      "node",
+      "autoremediator",
+      "CVE-2021-23337",
+      "--install-mode",
+      "standard",
+      "--install-prefer-offline",
+      "false",
+      "--enforce-frozen-lockfile",
+      "true",
+      "--workspace",
+      "@apps/web",
+    ]);
 
     expect(mocked.remediate).toHaveBeenCalledWith(
       "CVE-2021-23337",
@@ -341,7 +323,7 @@ describe("cli preview and correlation option forwarding", () => {
           enforceFrozenLockfile: true,
           workspace: "@apps/web",
         }),
-      })
+      }),
     );
   });
 
@@ -349,12 +331,7 @@ describe("cli preview and correlation option forwarding", () => {
     const program = createProgram();
 
     await expect(
-      program.parseAsync([
-        "node",
-        "autoremediator",
-        "CVE-2021-23337",
-        "--simulation-mode",
-      ])
+      program.parseAsync(["node", "autoremediator", "CVE-2021-23337", "--simulation-mode"]),
     ).rejects.toThrow("--simulation-mode requires --dry-run or --preview.");
 
     expect(mocked.remediate).not.toHaveBeenCalled();
@@ -363,7 +340,11 @@ describe("cli preview and correlation option forwarding", () => {
   it("forwards simulation-mode in portfolio mode", async () => {
     const tmp = mkdtempSync(join(tmpdir(), "autoremediator-portfolio-"));
     const targetsFile = join(tmp, "targets.json");
-    writeFileSync(targetsFile, JSON.stringify([{ cwd: "/tmp/a", cveId: "CVE-2021-23337" }]), "utf8");
+    writeFileSync(
+      targetsFile,
+      JSON.stringify([{ cwd: "/tmp/a", cveId: "CVE-2021-23337" }]),
+      "utf8",
+    );
 
     const program = createProgram();
     await program.parseAsync([
@@ -378,7 +359,7 @@ describe("cli preview and correlation option forwarding", () => {
 
     expect(mocked.remediatePortfolio).toHaveBeenCalledWith(
       expect.any(Array),
-      expect.objectContaining({ dryRun: true, simulationMode: true })
+      expect.objectContaining({ dryRun: true, simulationMode: true }),
     );
   });
 
@@ -386,12 +367,7 @@ describe("cli preview and correlation option forwarding", () => {
     const program = createProgram();
 
     await expect(
-      program.parseAsync([
-        "node",
-        "autoremediator",
-        "update-outdated",
-        "--simulation-mode",
-      ])
+      program.parseAsync(["node", "autoremediator", "update-outdated", "--simulation-mode"]),
     ).rejects.toThrow("--simulation-mode is not supported by update-outdated.");
   });
 
@@ -411,7 +387,7 @@ describe("cli preview and correlation option forwarding", () => {
       expect.objectContaining({
         audit: true,
         packageManager: "npm",
-      })
+      }),
     );
   });
 
@@ -429,7 +405,7 @@ describe("cli preview and correlation option forwarding", () => {
     expect(mocked.listPatchArtifacts).toHaveBeenCalledWith(
       expect.objectContaining({
         patchesDir: "./custom-patches",
-      })
+      }),
     );
   });
 
@@ -449,7 +425,7 @@ describe("cli preview and correlation option forwarding", () => {
 
     expect(mocked.inspectPatchArtifact).toHaveBeenCalledWith(
       "./patches/lodash+4.17.0.patch",
-      expect.objectContaining({ cwd: expect.any(String), patchesDir: "./custom-patches" })
+      expect.objectContaining({ cwd: expect.any(String), patchesDir: "./custom-patches" }),
     );
   });
 
@@ -471,7 +447,7 @@ describe("cli preview and correlation option forwarding", () => {
 
     expect(mocked.validatePatchArtifact).toHaveBeenCalledWith(
       "./patches/lodash+4.17.0.patch",
-      expect.objectContaining({ packageManager: "pnpm", patchesDir: "./custom-patches" })
+      expect.objectContaining({ packageManager: "pnpm", patchesDir: "./custom-patches" }),
     );
   });
 
@@ -484,7 +460,7 @@ describe("cli preview and correlation option forwarding", () => {
         { cwd: "/tmp/service-a", cveId: "CVE-2021-23337" },
         { cwd: "/tmp/service-b", inputPath: "./audit.json", format: "npm-audit" },
       ]),
-      "utf8"
+      "utf8",
     );
 
     const program = createProgram();
@@ -501,9 +477,13 @@ describe("cli preview and correlation option forwarding", () => {
     expect(mocked.remediatePortfolio).toHaveBeenCalledWith(
       expect.arrayContaining([
         expect.objectContaining({ cwd: "/tmp/service-a", cveId: "CVE-2021-23337" }),
-        expect.objectContaining({ cwd: "/tmp/service-b", inputPath: "./audit.json", format: "npm-audit" }),
+        expect.objectContaining({
+          cwd: "/tmp/service-b",
+          inputPath: "./audit.json",
+          format: "npm-audit",
+        }),
       ]),
-      expect.objectContaining({ source: "cli" })
+      expect.objectContaining({ source: "cli" }),
     );
   });
 
@@ -516,7 +496,7 @@ describe("cli preview and correlation option forwarding", () => {
         { cwd: "/tmp/service-a", cveId: "CVE-2021-23337", riskHint: { severity: "CRITICAL" } },
         { cwd: "/tmp/service-b", cveId: "CVE-2021-23338", riskHint: { severity: "LOW" } },
       ]),
-      "utf8"
+      "utf8",
     );
 
     const program = createProgram();
@@ -533,19 +513,14 @@ describe("cli preview and correlation option forwarding", () => {
 
     expect(mocked.remediatePortfolio).toHaveBeenCalledWith(
       expect.any(Array),
-      expect.objectContaining({ campaignMode: true })
+      expect.objectContaining({ campaignMode: true }),
     );
   });
 
   it("fails when resume is set without idempotency key", async () => {
     const program = createProgram();
     await expect(
-      program.parseAsync([
-        "node",
-        "autoremediator",
-        "CVE-2021-23337",
-        "--resume",
-      ])
+      program.parseAsync(["node", "autoremediator", "CVE-2021-23337", "--resume"]),
     ).rejects.toThrow("--resume requires --idempotency-key.");
   });
 
@@ -558,7 +533,7 @@ describe("cli preview and correlation option forwarding", () => {
         "CVE-2021-23337",
         "--change-request-provider",
         "github",
-      ])
+      ]),
     ).rejects.toThrow("change-request override flags require --create-change-request.");
   });
 
@@ -582,7 +557,7 @@ describe("cli preview and correlation option forwarding", () => {
           holdForTransitive: true,
           escalateOnKev: true,
         }),
-      })
+      }),
     );
   });
 });
@@ -602,8 +577,19 @@ describe("cli competitive differentiation text output", () => {
     });
     mocked.listPatchArtifacts.mockResolvedValue([]);
     mocked.remediatePortfolio.mockResolvedValue({ targets: [], successCount: 0, failedCount: 0 });
-    mocked.inspectPatchArtifact.mockResolvedValue({ patchFilePath: "./patches/lodash.patch", exists: true, diffValid: true });
-    mocked.validatePatchArtifact.mockResolvedValue({ patchFilePath: "./patches/lodash.patch", exists: true, manifestFound: true, diffValid: true, driftDetected: false, validationPhases: [] });
+    mocked.inspectPatchArtifact.mockResolvedValue({
+      patchFilePath: "./patches/lodash.patch",
+      exists: true,
+      diffValid: true,
+    });
+    mocked.validatePatchArtifact.mockResolvedValue({
+      patchFilePath: "./patches/lodash.patch",
+      exists: true,
+      manifestFound: true,
+      diffValid: true,
+      driftDetected: false,
+      validationPhases: [],
+    });
     mocked.toCiSummary.mockReturnValue({ failedCount: 0 });
     mocked.ciExitCode.mockReturnValue(0);
     mocked.toSarifOutput.mockReturnValue({ version: "2.1.0", runs: [] });
@@ -713,6 +699,10 @@ describe("cli competitive differentiation text output", () => {
 
     spy.mockRestore();
 
-    expect(written.some((s) => s.includes("Transitive remediations: 2 (fixed without requiring upstream patch)"))).toBe(true);
+    expect(
+      written.some((s) =>
+        s.includes("Transitive remediations: 2 (fixed without requiring upstream patch)"),
+      ),
+    ).toBe(true);
   });
 });

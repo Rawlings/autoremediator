@@ -1,9 +1,16 @@
-import type { DispatchResult, RemediationJobResult, RemediationTriggerContext, WebhookContext } from "./types.js";
+import type {
+  DispatchResult,
+  RemediationJobResult,
+  RemediationTriggerContext,
+  WebhookContext,
+} from "./types.js";
 import type { AppStateStore } from "./state.js";
 
 interface DispatchOptions {
   stateStore?: AppStateStore;
-  onRemediationRequested?: (context: RemediationTriggerContext) => Promise<RemediationJobResult | void> | RemediationJobResult | void;
+  onRemediationRequested?: (
+    context: RemediationTriggerContext,
+  ) => Promise<RemediationJobResult | void> | RemediationJobResult | void;
   remediationTriggerTimeoutMs?: number;
 }
 
@@ -34,7 +41,7 @@ async function runWithTimeout(task: Promise<unknown> | unknown, timeoutMs: numbe
 export async function dispatchGitHubEvent(
   context: WebhookContext,
   payload: Record<string, unknown>,
-  options: DispatchOptions = {}
+  options: DispatchOptions = {},
 ): Promise<DispatchResult> {
   if (context.eventName === "ping") {
     return { status: "handled" };
@@ -51,7 +58,9 @@ export async function dispatchGitHubEvent(
       return { status: "ignored", reason: "Missing installation id" };
     }
 
-    if (["created", "deleted", "suspend", "unsuspend", "new_permissions_accepted"].includes(action)) {
+    if (
+      ["created", "deleted", "suspend", "unsuspend", "new_permissions_accepted"].includes(action)
+    ) {
       if (action === "created" || action === "unsuspend" || action === "new_permissions_accepted") {
         options.stateStore?.markInstallationActive(installationId);
       }
@@ -94,11 +103,18 @@ export async function dispatchGitHubEvent(
   if (context.eventName === "check_suite") {
     const action = readAction(payload);
     if (action !== "requested" && action !== "rerequested") {
-      return { status: "ignored", reason: `check_suite action not triggerable: ${action ?? "unknown"}` };
+      return {
+        status: "ignored",
+        reason: `check_suite action not triggerable: ${action ?? "unknown"}`,
+      };
     }
 
     const installationId = readInstallationId(payload);
-    if (installationId && options.stateStore && !options.stateStore.isInstallationActive(installationId)) {
+    if (
+      installationId &&
+      options.stateStore &&
+      !options.stateStore.isInstallationActive(installationId)
+    ) {
       return { status: "ignored", reason: `Installation ${installationId} is not active` };
     }
 
@@ -125,7 +141,11 @@ export async function dispatchGitHubEvent(
 
   if (context.eventName === "push") {
     const installationId = readInstallationId(payload);
-    if (installationId && options.stateStore && !options.stateStore.isInstallationActive(installationId)) {
+    if (
+      installationId &&
+      options.stateStore &&
+      !options.stateStore.isInstallationActive(installationId)
+    ) {
       return { status: "ignored", reason: `Installation ${installationId} is not active` };
     }
 
@@ -167,7 +187,11 @@ export async function dispatchGitHubEvent(
 
   if (context.eventName === "workflow_dispatch") {
     const installationId = readInstallationId(payload);
-    if (installationId && options.stateStore && !options.stateStore.isInstallationActive(installationId)) {
+    if (
+      installationId &&
+      options.stateStore &&
+      !options.stateStore.isInstallationActive(installationId)
+    ) {
       return { status: "ignored", reason: `Installation ${installationId} is not active` };
     }
 

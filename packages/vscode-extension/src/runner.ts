@@ -59,7 +59,7 @@ export async function scanForVulns(cwd: string): Promise<VulnFinding[]> {
     const { stdout } = await execFileAsync(
       bin,
       [...extraArgs, "scan", "--input", auditFile, "--dry-run", "--json"],
-      { cwd, maxBuffer: 5 * 1024 * 1024 }
+      { cwd, maxBuffer: 5 * 1024 * 1024 },
     );
 
     return extractFindings(JSON.parse(stdout) as ScanReportJson);
@@ -75,11 +75,10 @@ export async function applyFix(cveId: string, cwd: string): Promise<string> {
     throw new Error(`Invalid CVE ID format: ${cveId}`);
   }
   const { bin, extraArgs } = findBin(cwd);
-  const { stdout } = await execFileAsync(
-    bin,
-    [...extraArgs, "cve", cveId, "--cwd", cwd],
-    { cwd, maxBuffer: 5 * 1024 * 1024 }
-  );
+  const { stdout } = await execFileAsync(bin, [...extraArgs, "cve", cveId, "--cwd", cwd], {
+    cwd,
+    maxBuffer: 5 * 1024 * 1024,
+  });
   return stdout.trim();
 }
 

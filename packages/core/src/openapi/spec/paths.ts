@@ -402,12 +402,16 @@ export function createOpenApiPaths() {
                 properties: {
                   report: {
                     type: "object",
-                    description: "A ScanReport or RemediationReport object returned by remediate, planRemediation, or remediateFromScan.",
+                    description:
+                      "A ScanReport or RemediationReport object returned by remediate, planRemediation, or remediateFromScan.",
                   },
                   options: {
                     type: "object",
                     properties: {
-                      toolVersion: { type: "string", description: "Tool version to embed in VEX document metadata." },
+                      toolVersion: {
+                        type: "string",
+                        description: "Tool version to embed in VEX document metadata.",
+                      },
                     },
                   },
                 },
@@ -453,8 +457,16 @@ export function createOpenApiPaths() {
                 type: "object",
                 required: ["cveId"],
                 properties: {
-                  cveId: { type: "string", description: OPTION_DESCRIPTIONS.cveId, pattern: "^CVE-\\d{4}-\\d+$" },
-                  options: { type: "object", description: "RemediateOptions", properties: createRemediateOptionSchemaProperties() },
+                  cveId: {
+                    type: "string",
+                    description: OPTION_DESCRIPTIONS.cveId,
+                    pattern: "^CVE-\\d{4}-\\d+$",
+                  },
+                  options: {
+                    type: "object",
+                    description: "RemediateOptions",
+                    properties: createRemediateOptionSchemaProperties(),
+                  },
                 },
               },
             },
@@ -476,7 +488,10 @@ export function createOpenApiPaths() {
               },
             },
           },
-          "400": { description: "Invalid input", content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } } },
+          "400": {
+            description: "Invalid input",
+            content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } },
+          },
         },
       },
     },
@@ -502,9 +517,23 @@ export function createOpenApiPaths() {
         responses: {
           "202": {
             description: "JobHandle",
-            content: { "application/json": { schema: { type: "object", properties: { jobId: { type: "string" }, status: { type: "string" }, submittedAt: { type: "string" } } } } },
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    jobId: { type: "string" },
+                    status: { type: "string" },
+                    submittedAt: { type: "string" },
+                  },
+                },
+              },
+            },
           },
-          "400": { description: "Invalid input", content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } } },
+          "400": {
+            description: "Invalid input",
+            content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } },
+          },
         },
       },
     },
@@ -520,7 +549,19 @@ export function createOpenApiPaths() {
                 type: "object",
                 required: ["targets"],
                 properties: {
-                  targets: { type: "array", items: { type: "object", required: ["cwd"], properties: { cwd: { type: "string" }, label: { type: "string" }, cveId: { type: "string" }, inputPath: { type: "string" } } } },
+                  targets: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      required: ["cwd"],
+                      properties: {
+                        cwd: { type: "string" },
+                        label: { type: "string" },
+                        cveId: { type: "string" },
+                        inputPath: { type: "string" },
+                      },
+                    },
+                  },
                   options: { type: "object", properties: createRemediateOptionSchemaProperties() },
                 },
               },
@@ -530,9 +571,23 @@ export function createOpenApiPaths() {
         responses: {
           "202": {
             description: "JobHandle",
-            content: { "application/json": { schema: { type: "object", properties: { jobId: { type: "string" }, status: { type: "string" }, submittedAt: { type: "string" } } } } },
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    jobId: { type: "string" },
+                    status: { type: "string" },
+                    submittedAt: { type: "string" },
+                  },
+                },
+              },
+            },
           },
-          "400": { description: "Invalid input", content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } } },
+          "400": {
+            description: "Invalid input",
+            content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } },
+          },
         },
       },
     },
@@ -568,7 +623,10 @@ export function createOpenApiPaths() {
               },
             },
           },
-          "404": { description: "Job not found", content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } } },
+          "404": {
+            description: "Job not found",
+            content: { "application/json": { schema: ERROR_RESPONSE_SCHEMA } },
+          },
         },
       },
     },

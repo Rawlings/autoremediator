@@ -12,20 +12,25 @@ export function Menu() {
     <>
       <button
         className={open ? "menu-toggle open" : "menu-toggle"}
-        onClick={() => setOpen(o => !o)}
+        onClick={() => setOpen((o) => !o)}
         aria-label="Toggle menu"
         aria-expanded={open}
       >
-        <span /><span /><span />
+        <span />
+        <span />
+        <span />
       </button>
 
       {open && <div className="menu-backdrop" onClick={close} />}
 
       <aside className={open ? "side-menu open" : "side-menu"}>
         <div className="side-menu-primary">
-
           <nav className="side-nav" aria-label="Reference sections" onClick={close}>
-            <NavLink to="/" end className={({ isActive }) => (isActive ? "menu-item active" : "menu-item")}>
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) => (isActive ? "menu-item active" : "menu-item")}
+            >
               Home
             </NavLink>
             {docs.map((doc) => (
@@ -40,15 +45,18 @@ export function Menu() {
           </nav>
 
           <div className="menu-footer">
-            <a href="https://www.npmjs.com/package/autoremediator" target="_blank" rel="noreferrer">npm</a>
-            <a href="https://github.com/Rawlings/autoremediator" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://www.npmjs.com/package/autoremediator" target="_blank" rel="noreferrer">
+              npm
+            </a>
+            <a href="https://github.com/Rawlings/autoremediator" target="_blank" rel="noreferrer">
+              GitHub
+            </a>
           </div>
 
           <div className="menu-logo">
             <img src="/favicon.svg" alt="" className="menu-logo-img" />
             <span className="menu-logo-wordmark">autoremediator</span>
           </div>
-
         </div>
 
         <div className="side-submenu">

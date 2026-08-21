@@ -10,7 +10,7 @@ interface CompatToolConfig<TSchema extends AnyZodSchema, TResult> {
 }
 
 export function defineTool<TSchema extends AnyZodSchema, TResult>(
-  config: CompatToolConfig<TSchema, TResult>
+  config: CompatToolConfig<TSchema, TResult>,
 ) {
   return tool(config as any);
 }

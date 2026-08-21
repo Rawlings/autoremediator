@@ -20,7 +20,7 @@ export function resolveProvider(options: RemediateOptions = {}): SupportedProvid
   const raw = options.llmProvider ?? process.env.AUTOREMEDIATOR_LLM_PROVIDER ?? "remote";
   if (raw !== "remote" && raw !== "local") {
     throw new Error(
-      `Unsupported LLM provider "${raw}". Set AUTOREMEDIATOR_LLM_PROVIDER to "remote" or "local".`
+      `Unsupported LLM provider "${raw}". Set AUTOREMEDIATOR_LLM_PROVIDER to "remote" or "local".`,
     );
   }
   return raw;
@@ -29,7 +29,7 @@ export function resolveProvider(options: RemediateOptions = {}): SupportedProvid
 export function resolveModelName(
   provider: SupportedProvider,
   options: RemediateOptions = {},
-  routing: ModelRoutingContext = {}
+  routing: ModelRoutingContext = {},
 ): string {
   if (options.model) return options.model;
   if (process.env.AUTOREMEDIATOR_MODEL) return process.env.AUTOREMEDIATOR_MODEL;
@@ -52,14 +52,9 @@ export function resolveModelName(
     local: "local",
   };
 
-  const routingEnabled =
-    options.dynamicModelRouting ??
-    policy.dynamicModelRouting ??
-    false;
+  const routingEnabled = options.dynamicModelRouting ?? policy.dynamicModelRouting ?? false;
   const threshold =
-    options.dynamicRoutingThresholdChars ??
-    policy.dynamicRoutingThresholdChars ??
-    18000;
+    options.dynamicRoutingThresholdChars ?? policy.dynamicRoutingThresholdChars ?? 18000;
 
   if (
     provider === "remote" &&
@@ -79,7 +74,7 @@ async function loadRemoteFactory(): Promise<RemoteModelFactory> {
 
   if (!moduleName) {
     throw new Error(
-      "AUTOREMEDIATOR_REMOTE_CLIENT_MODULE is required for remote provider model loading."
+      "AUTOREMEDIATOR_REMOTE_CLIENT_MODULE is required for remote provider model loading.",
     );
   }
 
@@ -92,7 +87,7 @@ async function loadRemoteFactory(): Promise<RemoteModelFactory> {
     moduleName.startsWith("file:")
   ) {
     throw new Error(
-      `AUTOREMEDIATOR_REMOTE_CLIENT_MODULE must be a package name, not a file path: ${moduleName}`
+      `AUTOREMEDIATOR_REMOTE_CLIENT_MODULE must be a package name, not a file path: ${moduleName}`,
     );
   }
 
@@ -100,7 +95,7 @@ async function loadRemoteFactory(): Promise<RemoteModelFactory> {
   const factory = loaded[exportName];
   if (typeof factory !== "function") {
     throw new Error(
-      `Remote client factory "${exportName}" was not found in module "${moduleName}".`
+      `Remote client factory "${exportName}" was not found in module "${moduleName}".`,
     );
   }
 
@@ -109,20 +104,20 @@ async function loadRemoteFactory(): Promise<RemoteModelFactory> {
 
 export async function createModel(
   options: RemediateOptions = {},
-  routing: ModelRoutingContext = {}
+  routing: ModelRoutingContext = {},
 ): Promise<LanguageModel> {
   const provider = resolveProvider(options);
 
   if (provider === "local") {
     throw new Error(
-      "Local provider does not create a language model. Use the deterministic pipeline path instead."
+      "Local provider does not create a language model. Use the deterministic pipeline path instead.",
     );
   }
 
   const apiKey = process.env.AUTOREMEDIATOR_REMOTE_API_KEY;
   if (!apiKey) {
     throw new Error(
-      "AUTOREMEDIATOR_REMOTE_API_KEY environment variable is required for remote provider."
+      "AUTOREMEDIATOR_REMOTE_API_KEY environment variable is required for remote provider.",
     );
   }
 
@@ -136,7 +131,7 @@ export function getPatchConfidenceThreshold(
   provider: SupportedProvider,
   safetyProfile: "strict" | "relaxed" = "relaxed",
   riskLevel: PatchRiskLevel = "medium",
-  overrides?: PatchConfidenceThresholds
+  overrides?: PatchConfidenceThresholds,
 ): number {
   const relaxed: Record<SupportedProvider, Record<PatchRiskLevel, number>> = {
     remote: { low: 0.65, medium: 0.7, high: 0.8 },
@@ -148,9 +143,7 @@ export function getPatchConfidenceThreshold(
   };
 
   const baseThreshold =
-    safetyProfile === "strict"
-      ? strict[provider][riskLevel]
-      : relaxed[provider][riskLevel];
+    safetyProfile === "strict" ? strict[provider][riskLevel] : relaxed[provider][riskLevel];
   const override = overrides?.[riskLevel];
 
   if (typeof override === "number" && Number.isFinite(override)) {
@@ -169,13 +162,10 @@ export function estimateModelCostUsd(params: {
   const outputTokens = params.completionChars / 4;
 
   const pricePerThousand =
-    params.provider === "remote"
-      ? { input: 0.006, output: 0.02 }
-      : { input: 0, output: 0 };
+    params.provider === "remote" ? { input: 0.006, output: 0.02 } : { input: 0, output: 0 };
 
   return (
-    (inputTokens / 1000) * pricePerThousand.input +
-    (outputTokens / 1000) * pricePerThousand.output
+    (inputTokens / 1000) * pricePerThousand.input + (outputTokens / 1000) * pricePerThousand.output
   );
 }
 
@@ -211,20 +201,12 @@ export function getIntelligenceSourceConfig(): IntelligenceSourceConfig {
       process.env.AUTOREMEDIATOR_GITLAB_ADVISORY_API ??
       "https://advisories.gitlab.com/api/v1/advisories",
     certCcSearchUrl:
-      process.env.AUTOREMEDIATOR_CERTCC_SEARCH_URL ??
-      "https://www.kb.cert.org/vuls/search",
-    epssApi:
-      process.env.AUTOREMEDIATOR_EPSS_API ??
-      "https://api.first.org/data/v1/epss",
+      process.env.AUTOREMEDIATOR_CERTCC_SEARCH_URL ?? "https://www.kb.cert.org/vuls/search",
+    epssApi: process.env.AUTOREMEDIATOR_EPSS_API ?? "https://api.first.org/data/v1/epss",
     cveServicesApi:
-      process.env.AUTOREMEDIATOR_CVE_SERVICES_API ??
-      "https://cveawg.mitre.org/api/cve",
-    depsDevApi:
-      process.env.AUTOREMEDIATOR_DEPSDEV_API ??
-      "https://api.deps.dev/v3",
-    scorecardApi:
-      process.env.AUTOREMEDIATOR_SCORECARD_API ??
-      "https://api.securityscorecards.dev",
+      process.env.AUTOREMEDIATOR_CVE_SERVICES_API ?? "https://cveawg.mitre.org/api/cve",
+    depsDevApi: process.env.AUTOREMEDIATOR_DEPSDEV_API ?? "https://api.deps.dev/v3",
+    scorecardApi: process.env.AUTOREMEDIATOR_SCORECARD_API ?? "https://api.securityscorecards.dev",
     vendorAdvisoryFeeds: (process.env.AUTOREMEDIATOR_VENDOR_ADVISORY_FEEDS ?? "")
       .split(",")
       .map((v) => v.trim())

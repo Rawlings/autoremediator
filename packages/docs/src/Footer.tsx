@@ -27,7 +27,12 @@ export function Footer() {
         <a href="https://github.com/Rawlings/autoremediator" target="_blank" rel="noreferrer">
           GitHub repository
         </a>
-        <a className="site-link" href="https://rawlings.github.io/autoremediator/" target="_blank" rel="noreferrer">
+        <a
+          className="site-link"
+          href="https://rawlings.github.io/autoremediator/"
+          target="_blank"
+          rel="noreferrer"
+        >
           Open site
         </a>
       </div>

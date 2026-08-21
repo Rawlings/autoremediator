@@ -25,7 +25,7 @@ import {
 
 export async function runRemediationPipeline(
   cveId: string,
-  options: RemediateOptions = {}
+  options: RemediateOptions = {},
 ): Promise<RemediationReport> {
   const provider = resolveProvider(options);
   if (provider === "local") {
@@ -78,10 +78,14 @@ export async function runRemediationPipeline(
       vulnerablePackages = aggregation.vulnerablePackages;
       collectedResults = aggregation.collectedResults;
 
-      emitProgress("agent-step", `Completed agent step ${agentSteps} with ${toolResults.length} tool result(s).`, {
-        provider,
-        model: modelName,
-      });
+      emitProgress(
+        "agent-step",
+        `Completed agent step ${agentSteps} with ${toolResults.length} tool result(s).`,
+        {
+          provider,
+          model: modelName,
+        },
+      );
     },
   });
 
@@ -101,10 +105,14 @@ export async function runRemediationPipeline(
     },
   ];
 
-  emitProgress("pipeline-finish", `Completed remediation with ${collectedResults.length} result(s).`, {
-    provider,
-    model: modelName,
-  });
+  emitProgress(
+    "pipeline-finish",
+    `Completed remediation with ${collectedResults.length} result(s).`,
+    {
+      provider,
+      model: modelName,
+    },
+  );
 
   return {
     cveId,

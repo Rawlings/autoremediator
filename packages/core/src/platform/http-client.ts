@@ -30,7 +30,7 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 async function requestWithTimeout(
   url: string | URL,
   init: RequestInit,
-  timeoutMs: number
+  timeoutMs: number,
 ): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -50,27 +50,18 @@ async function requestWithTimeout(
  * @throws HttpError on network failure or timeout (caught errors are logged and safe to continue)
  */
 export async function httpClient(request: HttpClientRequest): Promise<HttpClientResponse> {
-  const {
-    url,
-    method = "GET",
-    headers = {},
-    body,
-    timeout = DEFAULT_TIMEOUT_MS,
-  } = request;
+  const { url, method = "GET", headers = {}, body, timeout = DEFAULT_TIMEOUT_MS } = request;
 
   const init: RequestInit = {
     method,
     headers: {
-      "Accept": "application/json",
+      Accept: "application/json",
       ...headers,
     },
   };
 
   if (body !== undefined) {
-    init.body =
-      typeof body === "string"
-        ? body
-        : JSON.stringify(body);
+    init.body = typeof body === "string" ? body : JSON.stringify(body);
     const headersObj = (init.headers ?? {}) as Record<string, string>;
     if (!headersObj["Content-Type"]) {
       headersObj["Content-Type"] = "application/json";
@@ -123,15 +114,10 @@ export async function httpClient(request: HttpClientRequest): Promise<HttpClient
  * Execute an HTTP request and throw if response is not ok.
  * Returns parsed JSON data on success.
  */
-export async function httpClientJson<T = unknown>(
-  request: HttpClientRequest
-): Promise<T> {
+export async function httpClientJson<T = unknown>(request: HttpClientRequest): Promise<T> {
   const res = await httpClient(request);
   if (!res.ok) {
-    throw new HttpError(
-      `HTTP ${res.status}: ${res.text}`,
-      "HTTP_ERROR"
-    );
+    throw new HttpError(`HTTP ${res.status}: ${res.text}`, "HTTP_ERROR");
   }
   return res.data as T;
 }
@@ -142,7 +128,7 @@ export async function httpClientJson<T = unknown>(
 export class HttpError extends Error {
   constructor(
     message: string,
-    public readonly code: "TIMEOUT" | "NETWORK_ERROR" | "HTTP_ERROR"
+    public readonly code: "TIMEOUT" | "NETWORK_ERROR" | "HTTP_ERROR",
   ) {
     super(message);
     this.name = "HttpError";

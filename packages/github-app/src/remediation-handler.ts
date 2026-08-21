@@ -4,7 +4,11 @@ import { join, resolve, relative, isAbsolute } from "node:path";
 import { tmpdir } from "node:os";
 import { remediateFromScan, type CveSeverity, type ScanReport } from "autoremediator";
 import type { Octokit } from "@octokit/rest";
-import type { AutoremediatorRepoConfig, RemediationJobResult, RemediationTriggerContext } from "./types.js";
+import type {
+  AutoremediatorRepoConfig,
+  RemediationJobResult,
+  RemediationTriggerContext,
+} from "./types.js";
 import { fetchRepoConfig } from "./repo-config.js";
 
 type ScanRemediateOptions = NonNullable<Parameters<typeof remediateFromScan>[1]>;
@@ -33,9 +37,13 @@ export interface DefaultRemediationHandlerOptions {
   auditFindingProvider?: (cwd: string) => Promise<ParsedAuditFinding[]>;
 }
 
-export type RemediationHandler = (context: RemediationTriggerContext) => Promise<RemediationJobResult | void>;
+export type RemediationHandler = (
+  context: RemediationTriggerContext,
+) => Promise<RemediationJobResult | void>;
 
-function readRepoFromPayload(payload: Record<string, unknown>): { owner: string; repo: string } | undefined {
+function readRepoFromPayload(
+  payload: Record<string, unknown>,
+): { owner: string; repo: string } | undefined {
   const repository = payload.repository;
   if (!repository || typeof repository !== "object") return undefined;
   const r = repository as Record<string, unknown>;
@@ -45,13 +53,15 @@ function readRepoFromPayload(payload: Record<string, unknown>): { owner: string;
     typeof ownerObj === "string"
       ? ownerObj
       : ownerObj && typeof ownerObj === "object"
-        ? (ownerObj as Record<string, unknown>).login as string | undefined
+        ? ((ownerObj as Record<string, unknown>).login as string | undefined)
         : undefined;
   if (!owner || !name) return undefined;
   return { owner, repo: name };
 }
 
-export function createDefaultRemediationHandler(options: DefaultRemediationHandlerOptions): RemediationHandler {
+export function createDefaultRemediationHandler(
+  options: DefaultRemediationHandlerOptions,
+): RemediationHandler {
   return async (context: RemediationTriggerContext): Promise<RemediationJobResult | void> => {
     if (
       context.eventName !== "check_suite" &&
@@ -148,7 +158,11 @@ export function createDefaultRemediationHandler(options: DefaultRemediationHandl
     const filteredSarifPath = join(tempDir, "filtered-findings.sarif");
 
     try {
-      await writeFile(filteredSarifPath, JSON.stringify(createSarifFromCves(cveIds), null, 2), "utf8");
+      await writeFile(
+        filteredSarifPath,
+        JSON.stringify(createSarifFromCves(cveIds), null, 2),
+        "utf8",
+      );
 
       const report = await remediateFromScan(filteredSarifPath, {
         cwd,
@@ -189,7 +203,10 @@ function toRemediationJobResult(report: ScanReport): RemediationJobResult {
   };
 }
 
-function selectCvesByMinimumSeverity(findings: ParsedAuditFinding[], minimumSeverity: CveSeverity): string[] {
+function selectCvesByMinimumSeverity(
+  findings: ParsedAuditFinding[],
+  minimumSeverity: CveSeverity,
+): string[] {
   const minRank = SEVERITY_RANK[minimumSeverity];
   const cves = new Set<string>();
 
@@ -240,7 +257,8 @@ function parseNpmAuditFindings(content: string): ParsedAuditFinding[] {
   for (const vuln of Object.values(parsed.vulnerabilities ?? {})) {
     const severity = normalizeSeverity(vuln.severity);
     for (const viaEntry of vuln.via ?? []) {
-      const text = typeof viaEntry === "string" ? viaEntry : `${viaEntry.url ?? ""} ${viaEntry.name ?? ""}`;
+      const text =
+        typeof viaEntry === "string" ? viaEntry : `${viaEntry.url ?? ""} ${viaEntry.name ?? ""}`;
       for (const cveId of extractCveIds(text)) {
         const key = `${cveId}:${vuln.name ?? ""}`;
         if (seen.has(key)) {
@@ -326,7 +344,11 @@ async function detectPackageManager(cwd: string): Promise<"npm" | "pnpm" | "yarn
   return "npm";
 }
 
-async function runCommand(command: string, args: string[], cwd: string): Promise<{ output: string; exitCode: number }> {
+async function runCommand(
+  command: string,
+  args: string[],
+  cwd: string,
+): Promise<{ output: string; exitCode: number }> {
   return await new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd,

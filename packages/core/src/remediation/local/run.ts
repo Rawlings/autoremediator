@@ -1,8 +1,14 @@
 import semver from "semver";
 import { lookupCveOsv } from "../../intelligence/sources/osv.js";
-import { lookupCveGitHub, mergeGhDataIntoCveDetails } from "../../intelligence/sources/github-advisory.js";
+import {
+  lookupCveGitHub,
+  mergeGhDataIntoCveDetails,
+} from "../../intelligence/sources/github-advisory.js";
 import { enrichWithNvd } from "../../intelligence/sources/nvd.js";
-import { loadIntelligenceSnapshot, lookupSnapshotCve } from "../../intelligence/sources/snapshot.js";
+import {
+  loadIntelligenceSnapshot,
+  lookupSnapshotCve,
+} from "../../intelligence/sources/snapshot.js";
 import type {
   CveDetails,
   InventoryPackage,
@@ -26,7 +32,7 @@ import { computeEscalationAction } from "../../platform/escalation.js";
 
 export async function runLocalRemediationPipeline(
   cveId: string,
-  options: RemediateOptions = {}
+  options: RemediateOptions = {},
 ): Promise<RemediationReport> {
   const resolved = resolveLocalRunOptions(options);
   const {
@@ -57,6 +63,12 @@ export async function runLocalRemediationPipeline(
     intelligenceSnapshotPath,
   } = resolved;
 
+  const correlation = {
+    requestId: options.requestId,
+    sessionId: options.sessionId,
+    parentRunId: options.parentRunId,
+  };
+
   const collectedResults: PatchResult[] = [];
   const llmUsage: LlmUsageMetrics[] = [];
   let vulnerablePackages: VulnerablePackage[] = [];
@@ -64,18 +76,15 @@ export async function runLocalRemediationPipeline(
   let agentSteps = 0;
 
   const normalizedId = cveId.toUpperCase();
-  let osvDetails: Awaited<ReturnType<typeof lookupCveOsv>>;
-  let ghPackages: Awaited<ReturnType<typeof lookupCveGitHub>>;
+  let osvDetails: Awaited<ReturnType<typeof lookupCveOsv>> = null;
+  let ghPackages: Awaited<ReturnType<typeof lookupCveGitHub>> = [];
 
   if (offlineIntelligence) {
     if (intelligenceSnapshotPath) {
-      const snapshot = loadIntelligenceSnapshot(intelligenceSnapshotPath);
-      const snapshotEntry = lookupSnapshotCve(snapshot, normalizedId);
-      osvDetails = snapshotEntry;
-      ghPackages = [];
-    } else {
-      osvDetails = null;
-      ghPackages = [];
+      osvDetails = lookupSnapshotCve(
+        loadIntelligenceSnapshot(intelligenceSnapshotPath),
+        normalizedId,
+      );
     }
   } else {
     [osvDetails, ghPackages] = await Promise.all([
@@ -95,11 +104,7 @@ export async function runLocalRemediationPipeline(
       summary: offlineIntelligence
         ? `Offline mode: ${normalizedId} not found in intelligence snapshot.`
         : `Local mode failed at lookup-cve: ${normalizedId} not found in OSV or GitHub advisory data.`,
-      correlation: {
-        requestId: options.requestId,
-        sessionId: options.sessionId,
-        parentRunId: options.parentRunId,
-      },
+      correlation,
     };
   }
 
@@ -134,11 +139,7 @@ export async function runLocalRemediationPipeline(
       results: [],
       agentSteps,
       summary: preflight.summary,
-      correlation: {
-        requestId: options.requestId,
-        sessionId: options.sessionId,
-        parentRunId: options.parentRunId,
-      },
+      correlation,
     };
   }
 
@@ -154,11 +155,7 @@ export async function runLocalRemediationPipeline(
       summary: `Local mode lookup succeeded but no npm affected packages were found for ${normalizedId}.`,
       exploitSignalTriggered,
       slaBreaches,
-      correlation: {
-        requestId: options.requestId,
-        sessionId: options.sessionId,
-        parentRunId: options.parentRunId,
-      },
+      correlation,
     };
   }
 
@@ -180,11 +177,7 @@ export async function runLocalRemediationPipeline(
       summary: `Local mode failed at check-inventory: ${inventory.error}`,
       exploitSignalTriggered,
       slaBreaches,
-      correlation: {
-        requestId: options.requestId,
-        sessionId: options.sessionId,
-        parentRunId: options.parentRunId,
-      },
+      correlation,
     };
   }
 
@@ -196,6 +189,23 @@ export async function runLocalRemediationPipeline(
 
   vulnerablePackages = findVulnerablePackages(cveDetails, installedPackages);
   agentSteps += 1;
+
+  const finalizePatchResult = (result: PatchResult): PatchResult => {
+    const withDisposition = applyDispositionAndContainment(result, {
+      exploitSignalTriggered,
+      slaBreaches,
+      severity: cveDetails?.severity,
+      policy: options.dispositionPolicy,
+      containmentMode: options.containmentMode,
+    });
+    if (withDisposition.unresolvedReason) {
+      withDisposition.escalationAction = computeEscalationAction(
+        withDisposition.unresolvedReason,
+        escalationGraph,
+      );
+    }
+    return withDisposition;
+  };
 
   for (const vulnerable of vulnerablePackages) {
     if (skipUnreachable) {
@@ -254,21 +264,7 @@ export async function runLocalRemediationPipeline(
         vulnerableRange: vulnerable.affected.vulnerableRange,
       });
       agentSteps += fallback.steps;
-      const fallbackResult = fallback.result;
-      const fallbackWithDisposition = applyDispositionAndContainment(fallbackResult, {
-        exploitSignalTriggered,
-        slaBreaches,
-        severity: cveDetails?.severity,
-        policy: options.dispositionPolicy,
-        containmentMode: options.containmentMode,
-      });
-      if (fallbackWithDisposition.unresolvedReason) {
-        fallbackWithDisposition.escalationAction = computeEscalationAction(
-          fallbackWithDisposition.unresolvedReason,
-          escalationGraph
-        );
-      }
-      collectedResults.push(fallbackWithDisposition);
+      collectedResults.push(finalizePatchResult(fallback.result));
       if (fallback.usage) {
         llmUsage.push(...fallback.usage);
       }
@@ -282,7 +278,11 @@ export async function runLocalRemediationPipeline(
 
     if (regressionCheck && primaryResult.applied && !dryRun && primaryResult.toVersion) {
       try {
-        if (semver.satisfies(primaryResult.toVersion, vulnerable.affected.vulnerableRange, { includePrerelease: false })) {
+        if (
+          semver.satisfies(primaryResult.toVersion, vulnerable.affected.vulnerableRange, {
+            includePrerelease: false,
+          })
+        ) {
           primaryResult.regressionDetected = true;
         }
       } catch {
@@ -290,26 +290,15 @@ export async function runLocalRemediationPipeline(
       }
     }
 
-    const primaryWithDisposition = applyDispositionAndContainment(primaryResult, {
-      exploitSignalTriggered,
-      slaBreaches,
-      severity: cveDetails?.severity,
-      policy: options.dispositionPolicy,
-      containmentMode: options.containmentMode,
-    });
-
-    if (primaryWithDisposition.unresolvedReason) {
-      primaryWithDisposition.escalationAction = computeEscalationAction(
-        primaryWithDisposition.unresolvedReason,
-        escalationGraph
-      );
-    }
-
-    collectedResults.push(primaryWithDisposition);
+    collectedResults.push(finalizePatchResult(primaryResult));
   }
 
   const vulnerableNames = new Set(vulnerablePackages.map((v) => v.installed.name));
-  const sbom = buildSbom(installedPackages as InventoryPackage[], vulnerableNames, collectedResults);
+  const sbom = buildSbom(
+    installedPackages as InventoryPackage[],
+    vulnerableNames,
+    collectedResults,
+  );
 
   return {
     cveId,
@@ -322,10 +311,6 @@ export async function runLocalRemediationPipeline(
     exploitSignalTriggered,
     slaBreaches,
     sbom,
-    correlation: {
-      requestId: options.requestId,
-      sessionId: options.sessionId,
-      parentRunId: options.parentRunId,
-    },
+    correlation,
   };
 }

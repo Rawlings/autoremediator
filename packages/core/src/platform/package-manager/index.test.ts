@@ -8,7 +8,15 @@ vi.mock("node:fs", () => ({
   existsSync: mocked.existsSync,
 }));
 
-import { detectPackageManager, resolveAuditCommand, resolveDedupeCommand, resolveInstallCommand, resolveListCommand, resolveTestCommand, resolveWhyCommand } from "./index.js";
+import {
+  detectPackageManager,
+  resolveAuditCommand,
+  resolveDedupeCommand,
+  resolveInstallCommand,
+  resolveListCommand,
+  resolveTestCommand,
+  resolveWhyCommand,
+} from "./index.js";
 
 describe("detectPackageManager", () => {
   it("detects pnpm from pnpm-lock.yaml", () => {
@@ -43,21 +51,21 @@ describe("detectPackageManager", () => {
 
   it("pnpm-lock.yaml takes precedence over yarn.lock", () => {
     mocked.existsSync.mockImplementation(
-      (p: string) => p.endsWith("pnpm-lock.yaml") || p.endsWith("yarn.lock")
+      (p: string) => p.endsWith("pnpm-lock.yaml") || p.endsWith("yarn.lock"),
     );
     expect(detectPackageManager("/project")).toBe("pnpm");
   });
 
   it("yarn.lock takes precedence over bun.lockb", () => {
     mocked.existsSync.mockImplementation(
-      (p: string) => p.endsWith("yarn.lock") || p.endsWith("bun.lockb")
+      (p: string) => p.endsWith("yarn.lock") || p.endsWith("bun.lockb"),
     );
     expect(detectPackageManager("/project")).toBe("yarn");
   });
 
   it("bun.lockb takes precedence over deno.lock", () => {
     mocked.existsSync.mockImplementation(
-      (p: string) => p.endsWith("bun.lockb") || p.endsWith("deno.lock")
+      (p: string) => p.endsWith("bun.lockb") || p.endsWith("deno.lock"),
     );
     expect(detectPackageManager("/project")).toBe("bun");
   });
@@ -66,7 +74,9 @@ describe("detectPackageManager", () => {
 describe("resolveInstallCommand", () => {
   it("bun deterministic uses --frozen-lockfile", () => {
     expect(resolveInstallCommand("bun", { installMode: "deterministic" })).toEqual([
-      "bun", "install", "--frozen-lockfile",
+      "bun",
+      "install",
+      "--frozen-lockfile",
     ]);
   });
 
@@ -76,13 +86,17 @@ describe("resolveInstallCommand", () => {
 
   it("deno deterministic uses --frozen", () => {
     expect(resolveInstallCommand("deno", { installMode: "deterministic" })).toEqual([
-      "deno", "install", "--frozen",
+      "deno",
+      "install",
+      "--frozen",
     ]);
   });
 
   it("deno prefer-offline uses --cache-only", () => {
     expect(resolveInstallCommand("deno", { installMode: "prefer-offline" })).toEqual([
-      "deno", "install", "--cache-only",
+      "deno",
+      "install",
+      "--cache-only",
     ]);
   });
 });
@@ -114,7 +128,7 @@ describe("resolveAuditCommand", () => {
 
   it("deno throws a clear error", () => {
     expect(() => resolveAuditCommand("deno")).toThrow(
-      /Deno does not support a native audit command/
+      /Deno does not support a native audit command/,
     );
   });
 });

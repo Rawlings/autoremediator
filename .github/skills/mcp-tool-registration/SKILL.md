@@ -39,11 +39,11 @@ user-invocable: true
 
 MCP tools use stable API-facing names that map to exported SDK entry points:
 
-| SDK/API function       | MCP tool name       |
-|------------------------|---------------------|
-| `remediate`            | `remediate`         |
-| `planRemediation`      | `planRemediation`   |
-| `remediateFromScan`    | `remediateFromScan` |
+| SDK/API function    | MCP tool name       |
+| ------------------- | ------------------- |
+| `remediate`         | `remediate`         |
+| `planRemediation`   | `planRemediation`   |
+| `remediateFromScan` | `remediateFromScan` |
 
 ## Guardrails
 

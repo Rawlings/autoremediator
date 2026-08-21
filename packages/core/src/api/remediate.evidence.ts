@@ -53,14 +53,14 @@ export function addRemediateStartStep(params: {
     {
       directDependenciesOnly: Boolean(params.constraints.directDependenciesOnly),
       preferVersionBump: Boolean(params.constraints.preferVersionBump),
-    }
+    },
   );
 }
 
 export function addRemediateResultSteps(
   evidence: EvidenceLog | undefined,
   cveId: string,
-  report: RemediationReport
+  report: RemediationReport,
 ): void {
   if (!evidence) {
     return;
@@ -86,12 +86,12 @@ export function addRemediateResultSteps(
         regressionDetected: result.regressionDetected,
         simulationWouldMutate: result.simulation?.wouldMutate,
         simulationRebuttalCount: result.simulation?.rebuttalFindings.length,
-      }
+      },
     );
   }
 
   const containmentCount = report.results.filter(
-    (result) => result.unresolvedReason === "policy-blocked" && result.disposition === "escalate"
+    (result) => result.unresolvedReason === "policy-blocked" && result.disposition === "escalate",
   ).length;
 
   if (containmentCount > 0) {
@@ -103,7 +103,7 @@ export function addRemediateResultSteps(
         containmentCount,
         blockedUnresolvedReason: "policy-blocked",
         blockedDisposition: "escalate",
-      }
+      },
     );
   }
 
@@ -121,7 +121,7 @@ export function addRemediateResultSteps(
       containmentCount,
       sbomEntryCount: report.sbom?.length ?? 0,
       simulationSummary: report.simulationSummary,
-    }
+    },
   );
   finalizeEvidence(evidence);
 }
@@ -129,13 +129,16 @@ export function addRemediateResultSteps(
 export function addRemediateDispositionStep(
   evidence: EvidenceLog | undefined,
   cveId: string,
-  report: RemediationReport
+  report: RemediationReport,
 ): void {
   if (!evidence) {
     return;
   }
 
-  const byCveId: Record<string, Record<string, { disposition: string; dispositionReason?: string }>> = {};
+  const byCveId: Record<
+    string,
+    Record<string, { disposition: string; dispositionReason?: string }>
+  > = {};
 
   for (const result of report.results) {
     if (!result.disposition) continue;
@@ -158,7 +161,7 @@ export function addRemediateDispositionStep(
 export function addRemediateErrorStep(
   evidence: EvidenceLog | undefined,
   cveId: string,
-  error: unknown
+  error: unknown,
 ): void {
   if (!evidence) {
     return;
@@ -177,6 +180,9 @@ export function addRemediateResumeStep(evidence: EvidenceLog | undefined, cveId:
   finalizeEvidence(evidence);
 }
 
-export function writeRemediateEvidence(cwd: string, evidence: EvidenceLog | undefined): string | undefined {
+export function writeRemediateEvidence(
+  cwd: string,
+  evidence: EvidenceLog | undefined,
+): string | undefined {
   return evidence ? writeEvidenceLog(cwd, evidence) : undefined;
 }

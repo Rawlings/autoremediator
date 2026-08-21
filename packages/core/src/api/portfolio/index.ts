@@ -18,7 +18,11 @@ function toTargetStatusFromRemediation(report: RemediationReport): "ok" | "parti
   return succeeded ? "partial" : "failed";
 }
 
-function normalizeTargetInput(target: PortfolioTarget): { cveId?: string; inputPath?: string; audit: boolean } {
+function normalizeTargetInput(target: PortfolioTarget): {
+  cveId?: string;
+  inputPath?: string;
+  audit: boolean;
+} {
   return {
     cveId: target.cveId?.trim() || undefined,
     inputPath: target.inputPath?.trim() || undefined,
@@ -36,14 +40,14 @@ function validateTarget(target: PortfolioTarget, index: number): void {
 
   if (Boolean(cveId) === hasScanInput) {
     throw new Error(
-      `Invalid portfolio target at index ${index}: provide exactly one mode (cveId OR inputPath/audit).`
+      `Invalid portfolio target at index ${index}: provide exactly one mode (cveId OR inputPath/audit).`,
     );
   }
 }
 
 export async function remediatePortfolio(
   targets: PortfolioTarget[],
-  options: RemediateOptions = {}
+  options: RemediateOptions = {},
 ): Promise<PortfolioReport> {
   assertValidSimulationMode(options);
   const normalizedTargets = Array.isArray(targets) ? targets : [];
@@ -54,9 +58,10 @@ export async function remediatePortfolio(
 
   normalizedTargets.forEach((target, index) => validateTarget(target, index));
 
-  const executionTargets = options.campaignMode === true
-    ? rankPortfolioTargets(normalizedTargets)
-    : normalizedTargets.map((target) => ({ target, rank: undefined }));
+  const executionTargets =
+    options.campaignMode === true
+      ? rankPortfolioTargets(normalizedTargets)
+      : normalizedTargets.map((target) => ({ target, rank: undefined }));
 
   const results: PortfolioTargetResult[] = [];
   const changeRequests = [] as NonNullable<PortfolioReport["changeRequests"]>;

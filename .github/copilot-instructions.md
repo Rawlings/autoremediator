@@ -34,16 +34,16 @@ These roles may be fulfilled by separate agents or by one agent operating in exp
 ### Handoff Gates
 
 1. Planner -> Developer execution handoff:
-	- Planner must provide reuse/refactor/create analysis for each proposed artifact.
-	- Planner must include explicit rationale for any new file/directory/doc.
-	- Planner must document the architectural thinking that justifies file placement, dependency direction, and docs consolidation before implementation starts.
-	- Developer receives an approved task packet with boundaries, acceptance criteria, and forbidden shortcuts.
-	- Developer must not expand scope or create new artifacts outside the packet without re-routing to Planner.
+   - Planner must provide reuse/refactor/create analysis for each proposed artifact.
+   - Planner must include explicit rationale for any new file/directory/doc.
+   - Planner must document the architectural thinking that justifies file placement, dependency direction, and docs consolidation before implementation starts.
+   - Developer receives an approved task packet with boundaries, acceptance criteria, and forbidden shortcuts.
+   - Developer must not expand scope or create new artifacts outside the packet without re-routing to Planner.
 2. Developer -> Planner completion review:
-	- Planner verifies the implementation still matches the packet's architectural intent, DRY expectations, separation of concerns, and docs consolidation behavior.
-	- Planner can require rework when implementation introduces avoidable sprawl.
+   - Planner verifies the implementation still matches the packet's architectural intent, DRY expectations, separation of concerns, and docs consolidation behavior.
+   - Planner can require rework when implementation introduces avoidable sprawl.
 3. Planner closure:
-	- Planner confirms all approved tasks are complete and governance/docs updates are coherent.
+   - Planner confirms all approved tasks are complete and governance/docs updates are coherent.
 
 ### Task Packet Requirements
 
@@ -90,30 +90,30 @@ Skills are divided into two groups by purpose. Always select from the appropriat
 
 Use these when diagnosing or changing **how the tool executes** — pipeline logic, data acquisition, version matching, patching, validation, and input parsing. These skills have `scope: runtime`.
 
-| Skill | When to reach for it |
-|---|---|
-| `agent-orchestration` | Pipeline order, tool map, fallback branching |
-| `cve-intelligence-sources` | OSV / GitHub Advisory / NVD lookup and merge logic |
-| `semver-remediation` | Vulnerable range matching, safe-version selection, bump application |
-| `patch-generation-strategy` | LLM-generated diff fallback, confidence thresholds |
-| `safety-validation-gates` | Test gating, rollback, failure semantics |
+| Skill                        | When to reach for it                                                     |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| `agent-orchestration`        | Pipeline order, tool map, fallback branching                             |
+| `cve-intelligence-sources`   | OSV / GitHub Advisory / NVD lookup and merge logic                       |
+| `semver-remediation`         | Vulnerable range matching, safe-version selection, bump application      |
+| `patch-generation-strategy`  | LLM-generated diff fallback, confidence thresholds                       |
+| `safety-validation-gates`    | Test gating, rollback, failure semantics                                 |
 | `scanner-parser-integration` | npm-audit / yarn-audit / SARIF parsing, format detection, CVE extraction |
 
 ### Contributor Skills
 
 Use these when **building or extending the tool** — adding files, changing public APIs, registering new MCP tools, or modifying output contracts. These skills have `scope: contributor`.
 
-| Skill | When to reach for it |
-|---|---|
-| `architecture-conventions` | File placement, module layout, import graph rules |
-| `api-surface` | SDK functions, exported types, OpenAPI/HTTP routes |
-| `public-api-governance` | Canonical naming, schema consistency, and scalable public API evolution |
-| `mcp-tool-registration` | MCP tool schemas, names, result shapes |
-| `evidence-ci-reporting` | Evidence log fields, CI summary schema, exit codes |
-| `changeset-writing` | Semver bump choice and public-impact-first changelog/changeset writing |
-| `feature-implementation` | Mandatory feature category and complete update bundle execution |
-| `test-governance` | Test scope, placement, and verification standards for feature changes |
-| `governance-check` | Verify governance files are present, correctly structured, and in sync with source |
+| Skill                      | When to reach for it                                                               |
+| -------------------------- | ---------------------------------------------------------------------------------- |
+| `architecture-conventions` | File placement, module layout, import graph rules                                  |
+| `api-surface`              | SDK functions, exported types, OpenAPI/HTTP routes                                 |
+| `public-api-governance`    | Canonical naming, schema consistency, and scalable public API evolution            |
+| `mcp-tool-registration`    | MCP tool schemas, names, result shapes                                             |
+| `evidence-ci-reporting`    | Evidence log fields, CI summary schema, exit codes                                 |
+| `changeset-writing`        | Semver bump choice and public-impact-first changelog/changeset writing             |
+| `feature-implementation`   | Mandatory feature category and complete update bundle execution                    |
+| `test-governance`          | Test scope, placement, and verification standards for feature changes              |
+| `governance-check`         | Verify governance files are present, correctly structured, and in sync with source |
 
 ## Default Feature Workflow
 

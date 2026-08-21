@@ -34,7 +34,10 @@ export const checkVersionMatchTool = defineTool({
       .array(affectedPackageSchema)
       .describe("affectedPackages array from the lookup-cve tool result"),
   }),
-  execute: async ({ installedPackages, affectedPackages }): Promise<{
+  execute: async ({
+    installedPackages,
+    affectedPackages,
+  }): Promise<{
     vulnerablePackages: VulnerablePackage[];
     checkedCount: number;
   }> => {
@@ -43,7 +46,7 @@ export const checkVersionMatchTool = defineTool({
     for (const affected of affectedPackages as AffectedPackage[]) {
       // Find all installed packages with matching name
       const matches = (installedPackages as InventoryPackage[]).filter(
-        (p) => p.name === affected.name
+        (p) => p.name === affected.name,
       );
 
       for (const installed of matches) {

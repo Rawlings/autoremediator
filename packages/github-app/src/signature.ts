@@ -7,7 +7,11 @@ export function computeWebhookSignature(secret: string, payload: string): string
   return `${PREFIX}${digest}`;
 }
 
-export function verifyWebhookSignature(secret: string, payload: string, signatureHeader: string | undefined): boolean {
+export function verifyWebhookSignature(
+  secret: string,
+  payload: string,
+  signatureHeader: string | undefined,
+): boolean {
   if (!signatureHeader || !signatureHeader.startsWith(PREFIX)) {
     return false;
   }

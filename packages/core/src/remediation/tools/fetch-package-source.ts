@@ -37,15 +37,9 @@ export const fetchPackageSourceTool = defineTool({
       .array(z.string())
       .optional()
       .default(["*.js", "*.ts"])
-      .describe(
-        "File patterns to extract (glob patterns, default: *.js, *.ts)"
-      ),
+      .describe("File patterns to extract (glob patterns, default: *.js, *.ts)"),
   }),
-  execute: async ({
-    packageName,
-    version,
-    filePatterns,
-  }): Promise<FetchPackageSourceResult> => {
+  execute: async ({ packageName, version, filePatterns }): Promise<FetchPackageSourceResult> => {
     // Validate package name against npm spec before using in URL
     if (!/^(@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/i.test(packageName)) {
       return { success: false, error: `Invalid package name: ${packageName}` };
@@ -53,7 +47,7 @@ export const fetchPackageSourceTool = defineTool({
 
     // Validate file patterns to prevent ReDoS
     const safePatterns = (filePatterns ?? ["*.js", "*.ts"]).filter((p) =>
-      /^[a-zA-Z0-9._/*?-]+$/.test(p)
+      /^[a-zA-Z0-9._/*?-]+$/.test(p),
     );
     if (safePatterns.length === 0) {
       return { success: false, error: "No valid file patterns provided." };
@@ -98,25 +92,16 @@ export const fetchPackageSourceTool = defineTool({
             if (file.isDirectory()) {
               // Skip common non-source directories
               if (
-                ![
-                  "node_modules",
-                  ".git",
-                  "dist",
-                  "build",
-                  "coverage",
-                  ".next",
-                  "out",
-                ]
-                  .includes(file.name)
+                !["node_modules", ".git", "dist", "build", "coverage", ".next", "out"].includes(
+                  file.name,
+                )
               ) {
                 await walkDir(fullPath, relPath);
               }
             } else if (file.isFile()) {
               // Check if file matches any pattern
               const matches = safePatterns.some((pattern) => {
-                const regex = new RegExp(
-                  `^${pattern.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`
-                );
+                const regex = new RegExp(`^${pattern.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
                 return regex.test(file.name);
               });
 
@@ -150,8 +135,7 @@ export const fetchPackageSourceTool = defineTool({
         packageDir: packageRootDir,
       };
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : String(err);
+      const message = err instanceof Error ? err.message : String(err);
 
       // Check if it's a 404 from npm
       if (message.includes("404") || message.includes("not found")) {

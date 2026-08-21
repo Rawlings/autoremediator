@@ -13,8 +13,7 @@ describe("certcc source", () => {
   it("adds CERT/CC references when a result is found", async () => {
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
-      text: async () =>
-        '<html><a href="https://www.kb.cert.org/vuls/id/123456">link</a></html>',
+      text: async () => '<html><a href="https://www.kb.cert.org/vuls/id/123456">link</a></html>',
     })) as any;
 
     const details: CveDetails = {

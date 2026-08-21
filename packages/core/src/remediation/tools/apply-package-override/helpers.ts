@@ -1,8 +1,5 @@
 import { execa } from "execa";
-import {
-  resolveWhyCommand,
-  type PackageManager,
-} from "../../../platform/package-manager/index.js";
+import { resolveWhyCommand, type PackageManager } from "../../../platform/package-manager/index.js";
 
 export interface RawPackageJson {
   overrides?: Record<string, string>;
@@ -22,7 +19,7 @@ export async function collectDependencyTrace(
   cwd: string,
   pm: PackageManager,
   packageName: string,
-  constraints: WhyConstraints
+  constraints: WhyConstraints,
 ): Promise<string | undefined> {
   try {
     const whyCommand = resolveWhyCommand(pm, packageName, constraints);
@@ -58,7 +55,7 @@ export function describeOverrideField(packageManager: PackageManager): string {
 export function getOverrideValue(
   pkgJson: RawPackageJson,
   packageManager: PackageManager,
-  packageName: string
+  packageName: string,
 ): string | undefined {
   if (packageManager === "npm" || packageManager === "bun" || packageManager === "deno") {
     return pkgJson.overrides?.[packageName];
@@ -71,32 +68,32 @@ export function setOverrideValue(
   pkgJson: RawPackageJson,
   packageManager: PackageManager,
   packageName: string,
-  version: string
+  version: string,
 ): void {
   if (packageManager === "npm" || packageManager === "bun" || packageManager === "deno") {
-    pkgJson.overrides = { ...(pkgJson.overrides ?? {}), [packageName]: version };
+    pkgJson.overrides = { ...pkgJson.overrides, [packageName]: version };
     return;
   }
 
   if (packageManager === "pnpm") {
     pkgJson.pnpm = {
-      ...(pkgJson.pnpm ?? {}),
+      ...pkgJson.pnpm,
       overrides: {
-        ...(pkgJson.pnpm?.overrides ?? {}),
+        ...pkgJson.pnpm?.overrides,
         [packageName]: version,
       },
     };
     return;
   }
 
-  pkgJson.resolutions = { ...(pkgJson.resolutions ?? {}), [packageName]: version };
+  pkgJson.resolutions = { ...pkgJson.resolutions, [packageName]: version };
 }
 
 export function restoreOverrideValue(
   pkgJson: RawPackageJson,
   packageManager: PackageManager,
   packageName: string,
-  previousValue?: string
+  previousValue?: string,
 ): void {
   if (packageManager === "npm" || packageManager === "bun" || packageManager === "deno") {
     pkgJson.overrides = restoreRecord(pkgJson.overrides, packageName, previousValue);
@@ -105,7 +102,7 @@ export function restoreOverrideValue(
 
   if (packageManager === "pnpm") {
     pkgJson.pnpm = {
-      ...(pkgJson.pnpm ?? {}),
+      ...pkgJson.pnpm,
       overrides: restoreRecord(pkgJson.pnpm?.overrides, packageName, previousValue),
     };
     if (!pkgJson.pnpm.overrides) {
@@ -133,7 +130,7 @@ export interface DenoJson {
  */
 export function getDenoJsonImportValue(
   denoJson: DenoJson,
-  packageName: string
+  packageName: string,
 ): { key: string; value: string } | undefined {
   const imports = denoJson.imports ?? {};
   if (imports[packageName] !== undefined) {
@@ -153,11 +150,11 @@ export function getDenoJsonImportValue(
 export function setDenoJsonImportValue(
   denoJson: DenoJson,
   packageName: string,
-  version: string
+  version: string,
 ): void {
   const existing = getDenoJsonImportValue(denoJson, packageName);
   const key = existing?.key ?? `npm:${packageName}`;
-  denoJson.imports = { ...(denoJson.imports ?? {}), [key]: `npm:${packageName}@${version}` };
+  denoJson.imports = { ...denoJson.imports, [key]: `npm:${packageName}@${version}` };
 }
 
 /**
@@ -167,12 +164,12 @@ export function setDenoJsonImportValue(
 export function restoreDenoJsonImportValue(
   denoJson: DenoJson,
   packageName: string,
-  previousEntry?: { key: string; value: string }
+  previousEntry?: { key: string; value: string },
 ): void {
   const existing = getDenoJsonImportValue(denoJson, packageName);
   if (!existing) return;
 
-  const imports = { ...(denoJson.imports ?? {}) };
+  const imports = { ...denoJson.imports };
   if (previousEntry === undefined) {
     delete imports[existing.key];
   } else {
@@ -187,9 +184,9 @@ export function restoreDenoJsonImportValue(
 function restoreRecord(
   record: Record<string, string> | undefined,
   key: string,
-  previousValue?: string
+  previousValue?: string,
 ): Record<string, string> | undefined {
-  const nextRecord = { ...(record ?? {}) };
+  const nextRecord = { ...record };
 
   if (previousValue === undefined) {
     delete nextRecord[key];

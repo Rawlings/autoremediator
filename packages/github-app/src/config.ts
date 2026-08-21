@@ -33,7 +33,11 @@ function parseCsvEnv(name: string, value: string | undefined): string[] | undefi
   return [...new Set(parsed)];
 }
 
-function parsePositiveIntEnv(name: string, value: string | undefined, defaultValue: number): number {
+function parsePositiveIntEnv(
+  name: string,
+  value: string | undefined,
+  defaultValue: number,
+): number {
   if (value === undefined) {
     return defaultValue;
   }
@@ -59,22 +63,6 @@ function parseOptionalStringEnv(name: string, value: string | undefined): string
   return parsed;
 }
 
-function parseEnumEnv<T extends string>(
-  name: string,
-  value: string | undefined,
-  allowed: readonly T[]
-): T | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if ((allowed as readonly string[]).includes(value)) {
-    return value as T;
-  }
-
-  throw new Error(`Invalid ${name}: ${value}. Expected one of: ${allowed.join(", ")}`);
-}
-
 export function loadGitHubAppConfig(env: NodeJS.ProcessEnv = process.env): GitHubAppConfig {
   const appId = env.AUTOREMEDIATOR_GITHUB_APP_ID;
   const privateKey = env.AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY;
@@ -87,7 +75,9 @@ export function loadGitHubAppConfig(env: NodeJS.ProcessEnv = process.env): GitHu
     throw new Error("Missing required environment variable: AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY");
   }
   if (!webhookSecret) {
-    throw new Error("Missing required environment variable: AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET");
+    throw new Error(
+      "Missing required environment variable: AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET",
+    );
   }
 
   const rawPort = env.AUTOREMEDIATOR_GITHUB_APP_PORT ?? "3001";
@@ -111,7 +101,9 @@ export function loadGitHubAppConfig(env: NodeJS.ProcessEnv = process.env): GitHu
   if (rawMaxWebhookBodyBytes !== undefined) {
     const parsedMaxBody = Number.parseInt(rawMaxWebhookBodyBytes, 10);
     if (!Number.isFinite(parsedMaxBody) || parsedMaxBody <= 0) {
-      throw new Error(`Invalid AUTOREMEDIATOR_GITHUB_APP_MAX_WEBHOOK_BODY_BYTES: ${rawMaxWebhookBodyBytes}`);
+      throw new Error(
+        `Invalid AUTOREMEDIATOR_GITHUB_APP_MAX_WEBHOOK_BODY_BYTES: ${rawMaxWebhookBodyBytes}`,
+      );
     }
     maxWebhookBodyBytes = parsedMaxBody;
   }
@@ -119,109 +111,109 @@ export function loadGitHubAppConfig(env: NodeJS.ProcessEnv = process.env): GitHu
   const enableDefaultRemediationHandler = parseBooleanEnv(
     "AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION",
     env.AUTOREMEDIATOR_GITHUB_APP_ENABLE_DEFAULT_REMEDIATION,
-    false
+    false,
   );
 
   const logEventTraces = parseBooleanEnv(
     "AUTOREMEDIATOR_GITHUB_APP_LOG_EVENT_TRACES",
     env.AUTOREMEDIATOR_GITHUB_APP_LOG_EVENT_TRACES,
-    false
+    false,
   );
 
   const requireJsonContentType = parseBooleanEnv(
     "AUTOREMEDIATOR_GITHUB_APP_REQUIRE_JSON_CONTENT_TYPE",
     env.AUTOREMEDIATOR_GITHUB_APP_REQUIRE_JSON_CONTENT_TYPE,
-    true
+    true,
   );
 
   const requireDeliveryId = parseBooleanEnv(
     "AUTOREMEDIATOR_GITHUB_APP_REQUIRE_DELIVERY_ID",
     env.AUTOREMEDIATOR_GITHUB_APP_REQUIRE_DELIVERY_ID,
-    false
+    false,
   );
 
   const allowedEvents = parseCsvEnv(
     "AUTOREMEDIATOR_GITHUB_APP_ALLOWED_EVENTS",
-    env.AUTOREMEDIATOR_GITHUB_APP_ALLOWED_EVENTS
+    env.AUTOREMEDIATOR_GITHUB_APP_ALLOWED_EVENTS,
   );
 
   const enableJobQueue = parseBooleanEnv(
     "AUTOREMEDIATOR_GITHUB_APP_ENABLE_JOB_QUEUE",
     env.AUTOREMEDIATOR_GITHUB_APP_ENABLE_JOB_QUEUE,
-    true
+    true,
   );
 
   const queuePollIntervalMs = parsePositiveIntEnv(
     "AUTOREMEDIATOR_GITHUB_APP_QUEUE_POLL_INTERVAL_MS",
     env.AUTOREMEDIATOR_GITHUB_APP_QUEUE_POLL_INTERVAL_MS,
-    2000
+    2000,
   );
 
   const queueRetryDelayMs = parsePositiveIntEnv(
     "AUTOREMEDIATOR_GITHUB_APP_QUEUE_RETRY_DELAY_MS",
     env.AUTOREMEDIATOR_GITHUB_APP_QUEUE_RETRY_DELAY_MS,
-    15000
+    15000,
   );
 
   const queueMaxAttempts = parsePositiveIntEnv(
     "AUTOREMEDIATOR_GITHUB_APP_QUEUE_MAX_ATTEMPTS",
     env.AUTOREMEDIATOR_GITHUB_APP_QUEUE_MAX_ATTEMPTS,
-    3
+    3,
   );
 
   const jobWorkerConcurrency = parsePositiveIntEnv(
     "AUTOREMEDIATOR_GITHUB_APP_WORKER_CONCURRENCY",
     env.AUTOREMEDIATOR_GITHUB_APP_WORKER_CONCURRENCY,
-    1
+    1,
   );
 
   const enableScheduler = parseBooleanEnv(
     "AUTOREMEDIATOR_GITHUB_APP_ENABLE_SCHEDULER",
     env.AUTOREMEDIATOR_GITHUB_APP_ENABLE_SCHEDULER,
-    false
+    false,
   );
 
   const scheduleIntervalMs = parsePositiveIntEnv(
     "AUTOREMEDIATOR_GITHUB_APP_SCHEDULE_INTERVAL_MS",
     env.AUTOREMEDIATOR_GITHUB_APP_SCHEDULE_INTERVAL_MS,
-    3_600_000
+    3_600_000,
   );
 
   const enableStatusPublishing = parseBooleanEnv(
     "AUTOREMEDIATOR_GITHUB_APP_ENABLE_STATUS_PUBLISHING",
     env.AUTOREMEDIATOR_GITHUB_APP_ENABLE_STATUS_PUBLISHING,
-    false
+    false,
   );
 
   const statusCheckName = parseOptionalStringEnv(
     "AUTOREMEDIATOR_GITHUB_APP_STATUS_CHECK_NAME",
-    env.AUTOREMEDIATOR_GITHUB_APP_STATUS_CHECK_NAME
+    env.AUTOREMEDIATOR_GITHUB_APP_STATUS_CHECK_NAME,
   );
 
   const baseUrl = parseOptionalStringEnv(
     "AUTOREMEDIATOR_GITHUB_APP_BASE_URL",
-    env.AUTOREMEDIATOR_GITHUB_APP_BASE_URL
+    env.AUTOREMEDIATOR_GITHUB_APP_BASE_URL,
   );
 
   const enableSetupRoutes = parseBooleanEnv(
     "AUTOREMEDIATOR_GITHUB_APP_ENABLE_SETUP_ROUTES",
     env.AUTOREMEDIATOR_GITHUB_APP_ENABLE_SETUP_ROUTES,
-    true
+    true,
   );
 
   const setupSecret = parseOptionalStringEnv(
     "AUTOREMEDIATOR_GITHUB_APP_SETUP_SECRET",
-    env.AUTOREMEDIATOR_GITHUB_APP_SETUP_SECRET
+    env.AUTOREMEDIATOR_GITHUB_APP_SETUP_SECRET,
   );
 
   const githubUrl = parseOptionalStringEnv(
     "AUTOREMEDIATOR_GITHUB_APP_GITHUB_URL",
-    env.AUTOREMEDIATOR_GITHUB_APP_GITHUB_URL
+    env.AUTOREMEDIATOR_GITHUB_APP_GITHUB_URL,
   );
 
   const githubApiUrl = parseOptionalStringEnv(
     "AUTOREMEDIATOR_GITHUB_APP_GITHUB_API_URL",
-    env.AUTOREMEDIATOR_GITHUB_APP_GITHUB_API_URL
+    env.AUTOREMEDIATOR_GITHUB_APP_GITHUB_API_URL,
   );
 
   return {
@@ -257,7 +249,9 @@ export function loadGitHubAppConfig(env: NodeJS.ProcessEnv = process.env): GitHu
 export function requireWebhookSecret(env: NodeJS.ProcessEnv = process.env): string {
   const value = env.AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET;
   if (!value) {
-    throw new Error("Missing required environment variable: AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET");
+    throw new Error(
+      "Missing required environment variable: AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET",
+    );
   }
   return value;
 }

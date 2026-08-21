@@ -14,8 +14,4 @@ export { enrichWithCertCc, findCertCcReference } from "./sources/certcc.js";
 export { enrichWithDepsDev } from "./sources/deps-dev.js";
 export { enrichWithOssfScorecard } from "./sources/ossf-scorecard.js";
 export { enrichWithExternalFeeds } from "./sources/external-feeds.js";
-export {
-  findSafeUpgradeVersion,
-  fetchPackageVersions,
-  getTarballUrl,
-} from "./sources/registry.js";
+export { findSafeUpgradeVersion, fetchPackageVersions, getTarballUrl } from "./sources/registry.js";

@@ -6,7 +6,7 @@ on:
       - main
       - master
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 permissions:

@@ -97,7 +97,9 @@ export function createInMemoryJobQueue(initialJobs: QueueJob[] = []): JobQueue {
 
       const now = Date.now();
       const dueJobs = sortJobs(
-        Array.from(jobs.values()).filter((job) => job.status === "queued" && Date.parse(job.nextRunAt) <= now)
+        Array.from(jobs.values()).filter(
+          (job) => job.status === "queued" && Date.parse(job.nextRunAt) <= now,
+        ),
       ).slice(0, limit);
 
       const claimedAt = nowIso();

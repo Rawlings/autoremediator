@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { jobRegistry } from "../../platform/jobs.js";
 import type { AsyncRemediationJob, JobHandle } from "../../platform/jobs.js";
-import type { RemediateOptions, PortfolioTarget, RemediationReport, PortfolioReport } from "../../platform/types.js";
+import type {
+  RemediateOptions,
+  PortfolioTarget,
+  RemediationReport,
+  PortfolioReport,
+} from "../../platform/types.js";
 import type { ScanReport, ScanOptions } from "../contracts.js";
 import { remediate } from "../remediate/index.js";
 import { remediateFromScan } from "../remediate-from-scan/index.js";
@@ -51,7 +56,10 @@ export function submitScanJob(inputPath: string, options?: ScanOptions): JobHand
   return { jobId: job.jobId, status: job.status, submittedAt: job.submittedAt };
 }
 
-export function submitPortfolioJob(targets: PortfolioTarget[], options?: RemediateOptions): JobHandle {
+export function submitPortfolioJob(
+  targets: PortfolioTarget[],
+  options?: RemediateOptions,
+): JobHandle {
   const job = createJob();
   runJobAsync(job, () => remediatePortfolio(targets, options));
   return { jobId: job.jobId, status: job.status, submittedAt: job.submittedAt };

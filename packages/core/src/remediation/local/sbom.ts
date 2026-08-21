@@ -7,7 +7,7 @@ import type { InventoryPackage, PatchResult, SbomEntry, SbomStatus } from "../..
 export function buildSbom(
   packages: InventoryPackage[],
   vulnerableNames: Set<string>,
-  results: PatchResult[]
+  results: PatchResult[],
 ): SbomEntry[] {
   const statusByPackage = new Map<string, SbomStatus>();
   for (const result of results) {

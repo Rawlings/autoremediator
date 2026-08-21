@@ -78,7 +78,7 @@ describe("createJobStatusPublisher", () => {
         head_sha: "abc123",
         name: "my-app/check",
         status: "queued",
-      })
+      }),
     );
   });
 
@@ -91,7 +91,7 @@ describe("createJobStatusPublisher", () => {
 
     expect(checksCreateSpy).toHaveBeenCalledTimes(1);
     expect(checksCreateSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "in_progress" })
+      expect.objectContaining({ status: "in_progress" }),
     );
   });
 
@@ -104,7 +104,7 @@ describe("createJobStatusPublisher", () => {
 
     expect(checksCreateSpy).toHaveBeenCalledTimes(1);
     expect(checksCreateSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "completed", conclusion: "success" })
+      expect.objectContaining({ status: "completed", conclusion: "success" }),
     );
   });
 
@@ -116,7 +116,7 @@ describe("createJobStatusPublisher", () => {
     await publisher.publishCompleted({ job, installationToken: "tok", target, outcome: "partial" });
 
     expect(checksCreateSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ conclusion: "neutral" })
+      expect.objectContaining({ conclusion: "neutral" }),
     );
   });
 
@@ -128,7 +128,7 @@ describe("createJobStatusPublisher", () => {
     await publisher.publishCompleted({ job, installationToken: "tok", target, outcome: "failed" });
 
     expect(checksCreateSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ conclusion: "failure" })
+      expect.objectContaining({ conclusion: "failure" }),
     );
   });
 
@@ -140,7 +140,7 @@ describe("createJobStatusPublisher", () => {
     await publisher.publishQueued({ job, installationToken: "tok", target });
 
     expect(checksCreateSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ name: "autoremediator/remediation" })
+      expect.objectContaining({ name: "autoremediator/remediation" }),
     );
   });
 
@@ -153,7 +153,9 @@ describe("createJobStatusPublisher", () => {
     });
     const job = makeJob();
 
-    await expect(publisher.publishQueued({ job, installationToken: "tok", target })).resolves.toBeUndefined();
+    await expect(
+      publisher.publishQueued({ job, installationToken: "tok", target }),
+    ).resolves.toBeUndefined();
     expect(traces).toHaveLength(1);
     expect(traces[0]).toContain("GitHub API error");
   });

@@ -33,9 +33,9 @@ describe("repo-lock", () => {
     const cwd = await mkdtemp(join(tmpdir(), "autoremediator-lock-timeout-test-"));
 
     const held = await acquireRepoLock(cwd);
-    await expect(
-      acquireRepoLock(cwd, { timeoutMs: 50, retryDelayMs: 10 })
-    ).rejects.toThrow(/Timed out waiting for repository lock/);
+    await expect(acquireRepoLock(cwd, { timeoutMs: 50, retryDelayMs: 10 })).rejects.toThrow(
+      /Timed out waiting for repository lock/,
+    );
 
     await held.release();
   });

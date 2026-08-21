@@ -34,7 +34,7 @@ function parseExpiresAtEpochMs(expiresAt: string | undefined): number | undefine
 }
 
 export function createInstallationTokenProvider(
-  options: CreateInstallationTokenProviderOptions
+  options: CreateInstallationTokenProviderOptions,
 ): InstallationTokenProvider {
   const auth = createAppAuth({
     appId: options.appId,
@@ -48,10 +48,15 @@ export function createInstallationTokenProvider(
     async getInstallationToken(installationId: number): Promise<InstallationToken> {
       const now = Date.now();
       const cached = tokenCache.get(installationId);
-      if (cached && (cached.expiresAtEpochMs === undefined || cached.expiresAtEpochMs > now + cacheSkewMs)) {
+      if (
+        cached &&
+        (cached.expiresAtEpochMs === undefined || cached.expiresAtEpochMs > now + cacheSkewMs)
+      ) {
         return {
           token: cached.token,
-          expiresAt: cached.expiresAtEpochMs ? new Date(cached.expiresAtEpochMs).toISOString() : undefined,
+          expiresAt: cached.expiresAtEpochMs
+            ? new Date(cached.expiresAtEpochMs).toISOString()
+            : undefined,
         };
       }
 
