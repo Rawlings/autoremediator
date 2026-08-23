@@ -53,9 +53,13 @@
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "format": "oxfmt --write",
-    "format:check": "oxfmt --check"
+    "format:check": "oxfmt --check",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^3.0.1",
     "oxfmt": "^0.64.0",
     "oxlint": "^1.79.0"
   },
