@@ -8,6 +8,9 @@ const mocked = vi.hoisted(() => ({
   remediatePortfolio: vi.fn(),
   inspectPatchArtifact: vi.fn(),
   listPatchArtifacts: vi.fn(),
+  checkReachability: vi.fn(),
+  evaluatePackage: vi.fn(),
+  scanDelta: vi.fn(),
   toCiSummary: vi.fn(),
   ciExitCode: vi.fn(),
   toSarifOutput: vi.fn(),
@@ -54,6 +57,9 @@ vi.mock("../api/index.js", () => ({
   remediatePortfolio: mocked.remediatePortfolio,
   inspectPatchArtifact: mocked.inspectPatchArtifact,
   listPatchArtifacts: mocked.listPatchArtifacts,
+  checkReachability: mocked.checkReachability,
+  evaluatePackage: mocked.evaluatePackage,
+  scanDelta: mocked.scanDelta,
   toCiSummary: mocked.toCiSummary,
   ciExitCode: mocked.ciExitCode,
   toSarifOutput: mocked.toSarifOutput,
@@ -704,5 +710,73 @@ describe("cli competitive differentiation text output", () => {
         s.includes("Transitive remediations: 2 (fixed without requiring upstream patch)"),
       ),
     ).toBe(true);
+  });
+
+  it("handles reachability CLI command", async () => {
+    mocked.checkReachability.mockResolvedValue({
+      packageName: "lodash",
+      status: "reachable",
+      reason: "imported in src/index.ts",
+      evidence: [],
+    });
+
+    const program = createProgram();
+    await program.parseAsync([
+      "node",
+      "autoremediator",
+      "reachability",
+      "--package",
+      "lodash",
+      "--symbol",
+      "merge",
+    ]);
+
+    expect(mocked.checkReachability).toHaveBeenCalledWith(
+      expect.objectContaining({ packageName: "lodash", symbol: "merge" }),
+    );
+  });
+
+  it("handles evaluate CLI command", async () => {
+    mocked.evaluatePackage.mockResolvedValue({
+      schemaVersion: "1.0",
+      packageName: "express",
+      evaluatedVersion: "4.18.2",
+      isVulnerable: false,
+      verdict: "safe",
+      summary: "safe to install",
+      vulnerabilities: [],
+      generatedAt: "",
+    });
+
+    const program = createProgram();
+    await program.parseAsync(["node", "autoremediator", "evaluate", "express@4.18.2"]);
+
+    expect(mocked.evaluatePackage).toHaveBeenCalledWith(
+      "express",
+      expect.objectContaining({ version: "4.18.2" }),
+    );
+  });
+
+  it("handles diff CLI command", async () => {
+    mocked.scanDelta.mockResolvedValue({
+      schemaVersion: "1.0",
+      status: "ok",
+      baseRef: "origin/main",
+      targetRef: "working-tree",
+      changedManifests: [],
+      dependencyChanges: [],
+      introducedFindings: [],
+      resolvedFindings: [],
+      netRiskVerdict: "neutral",
+      summary: "neutral delta",
+      generatedAt: "",
+    });
+
+    const program = createProgram();
+    await program.parseAsync(["node", "autoremediator", "diff", "--base", "origin/main"]);
+
+    expect(mocked.scanDelta).toHaveBeenCalledWith(
+      expect.objectContaining({ baseRef: "origin/main" }),
+    );
   });
 });

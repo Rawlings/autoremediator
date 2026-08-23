@@ -85,6 +85,47 @@ export async function fetchOsvVuln(cveId: string): Promise<OsvVulnerability | nu
 }
 
 /**
+ * Query OSV for all vulnerabilities affecting a specific npm package and optional version.
+ */
+export async function queryOsvPackage(
+  packageName: string,
+  version?: string,
+): Promise<OsvVulnerability[]> {
+  const url = `${OSV_BASE}/query`;
+  const body: Record<string, unknown> = {
+    package: {
+      name: packageName,
+      ecosystem: "npm",
+    },
+  };
+  if (version) {
+    body.version = version;
+  }
+
+  try {
+    const res = await httpClient({
+      url,
+      method: "POST",
+      body,
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (res.status === 404) return [];
+    if (!res.ok) {
+      throw new Error(`OSV API error ${res.status} for query "${packageName}": ${res.text}`);
+    }
+
+    const data = res.data as { vulns?: OsvVulnerability[] };
+    return data.vulns ?? [];
+  } catch (err) {
+    if (err instanceof Error) {
+      throw new Error(`OSV API error for query "${packageName}": ${err.message}`);
+    }
+    throw err;
+  }
+}
+
+/**
  * Convert an OSV SEMVER range event array to a semver range string.
  * OSV uses ordered [introduced, fixed) events.
  * e.g. [{ introduced: "0" }, { fixed: "4.17.21" }] → ">=0.0.0 <4.17.21"

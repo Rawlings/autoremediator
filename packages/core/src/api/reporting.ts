@@ -240,6 +240,15 @@ export function buildResultSimulation(
   const plannedMutations = buildPlannedMutations(result, options.runTests === true);
   const wouldMutate = plannedMutations.length > 0;
 
+  let unifiedDiff: string | undefined;
+  if (result.patchArtifact?.patchFilePath) {
+    unifiedDiff = `--- ${result.patchArtifact.patchFilePath}\n+++ ${result.patchArtifact.patchFilePath}`;
+  } else if (result.strategy === "version-bump" && result.toVersion) {
+    unifiedDiff = `--- package.json\n+++ package.json\n@@ -1,3 +1,3 @@\n-    "${result.packageName}": "${result.fromVersion}"\n+    "${result.packageName}": "^${result.toVersion}"`;
+  } else if (result.strategy === "override" && result.toVersion) {
+    unifiedDiff = `--- package.json\n+++ package.json\n@@ -1,3 +1,3 @@\n+  "overrides": {\n+    "${result.packageName}": "${result.toVersion}"\n+  }`;
+  }
+
   return {
     mode,
     wouldMutate,
@@ -251,6 +260,7 @@ export function buildResultSimulation(
       wouldMutate,
       runTests: options.runTests === true,
     }),
+    unifiedDiff,
   };
 }
 

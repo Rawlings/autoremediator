@@ -67,6 +67,14 @@ export type {
   SimulationRebuttalCode,
   SimulationRebuttalFinding,
   SimulationSummary,
+  CheckReachabilityOptions,
+  EvaluatePackageOptions,
+  PackageEvaluationReport,
+  VulnerabilityEvaluationEntry,
+  DeltaDependencyChange,
+  DeltaFinding,
+  DeltaScanOptions,
+  DeltaScanReport,
 } from "../platform/types.js";
 export type { ScanInputFormat } from "../scanner/index.js";
 export type { ScanOptions, ScanReport, CiSummary } from "./contracts.js";
@@ -107,6 +115,9 @@ export { remediatePortfolio } from "./portfolio/index.js";
 export { remediate, planRemediation } from "./remediate/index.js";
 export { remediateFromScan } from "./remediate-from-scan/index.js";
 export { updateOutdated } from "./update-outdated/index.js";
+export { checkReachability } from "./reachability/index.js";
+export { evaluatePackage } from "./evaluate/index.js";
+export { scanDelta } from "./delta-scan/index.js";
 export {
   submitRemediateJob,
   submitScanJob,

@@ -4,11 +4,11 @@
  * Used as a secondary source to enrich CVE data with `first_patched_version`.
  * Unauthenticated access works; set GITHUB_TOKEN env var for higher rate limits.
  *
- * Uses official Octokit SDK (@octokit/rest) for all HTTP communication.
+ * Uses shared HTTP client for all API communication.
  */
-import { Octokit } from "@octokit/rest";
 import type { AffectedPackage, CveDetails } from "../../platform/types.js";
 import { getGitHubToken } from "../../platform/config.js";
+import { httpClient } from "../../platform/http-client.js";
 
 // ---------------------------------------------------------------------------
 // Raw GitHub Advisory response types
@@ -37,34 +37,41 @@ interface GhAdvisory {
 // Public API
 // ---------------------------------------------------------------------------
 
-/**
- * Create an Octokit client with auth if available.
- */
-function createOctokitClient(): Octokit {
-  const token = getGitHubToken();
-  return new Octokit(token ? { auth: `token ${token}` } : {});
-}
+const GITHUB_API_BASE = "https://api.github.com/advisories";
 
 /**
  * Fetch GitHub advisories for a given CVE ID filtered to npm ecosystem.
  * Returns an empty array if none found.
  */
 export async function fetchGhAdvisories(cveId: string): Promise<GhAdvisory[]> {
-  const octokit = createOctokitClient();
+  const token = getGitHubToken();
+  const headers: Record<string, string> = {
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "autoremediator",
+  };
+
+  if (token) {
+    headers["Authorization"] = `token ${token}`;
+  }
+
+  const url = new URL(GITHUB_API_BASE);
+  url.searchParams.set("cve_id", cveId);
+  url.searchParams.set("ecosystem", "npm");
+  url.searchParams.set("type", "reviewed");
+  url.searchParams.set("per_page", "10");
 
   try {
-    // Octokit v22.0.1: Use the advisories endpoint with proper parameters
-    const response = await octokit.request("GET /advisories", {
-      cve_id: cveId,
-      ecosystem: "npm",
-      type: "reviewed",
-      per_page: 10,
-      headers: {
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-    } as any);
+    const res = await httpClient({
+      url: url.toString(),
+      headers,
+    });
 
-    return response.data as unknown as GhAdvisory[];
+    if (!res.ok) {
+      if (res.status === 404) return [];
+      throw new Error(`HTTP ${res.status}: ${res.text}`);
+    }
+
+    return (Array.isArray(res.data) ? res.data : []) as GhAdvisory[];
   } catch (err) {
     // Non-fatal: log and return empty so OSV can still succeed
     const errorMsg = err instanceof Error ? err.message : String(err);

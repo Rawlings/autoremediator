@@ -13,15 +13,14 @@
     "react-dom": "^19.2.8",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.18.2",
-    "remark-gfm": "^4.0.1",
-    "tocbot": "^4.36.8"
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
-    "@types/node": "^26.2.0",
+    "@types/node": "catalog:",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
-    "typescript": "~7.0.2",
+    "typescript": "catalog:",
     "vite": "^8.2.2"
   },
   "engines": {

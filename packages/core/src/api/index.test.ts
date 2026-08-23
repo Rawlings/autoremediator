@@ -417,6 +417,7 @@ describe("api preview and correlation behavior", () => {
     expect(simulation).toEqual({
       mode: "dry-run",
       wouldMutate: true,
+      unifiedDiff: expect.any(String),
       plannedMutations: [
         {
           target: "patch-file",

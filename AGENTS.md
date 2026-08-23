@@ -34,7 +34,7 @@
 - Trigger: `autoremediator-mcp` (stdio)
 - Behavior: exposes `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, and `updateOutdated` as MCP tools
 - Source: `packages/core/src/mcp/server.ts`
-- Exposed MCP tools: `health`, `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `toVex`, `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob`
+- Exposed MCP tools: `health`, `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `checkReachability`, `evaluatePackage`, `scanDelta`, `toVex`, `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob`
 
 ### Mode 5: OpenAPI HTTP Server
 
@@ -111,3 +111,11 @@ When no safe version exists:
 3. apply-patch-file
 
 If patch confidence is low or validation fails, result must be marked as unresolved and evidence must include reason.
+
+## Changeset and Documentation Governance
+
+- **Never edit `CHANGELOG.md` directly:** All release notes, version changes, and package updates must be introduced exclusively via Changesets (`.changeset/<name>.md`).
+- **Always document changes:** When adding or changing APIs, CLI commands, MCP tools, configuration options, or runtime behavior, always update:
+  1. Documentation website (`packages/docs/content/`, including `api-sdk.md`, `cli.md`, `integrations.md`, `agent-ecosystems.md`, `policy-and-safety.md`)
+  2. Package READMEs and relevant agent/tool mode summaries
+  3. A changeset file in `.changeset/` documenting the package changes and semver bump type (`patch`, `minor`, or `major`)

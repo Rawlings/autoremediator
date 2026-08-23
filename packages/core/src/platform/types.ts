@@ -300,6 +300,7 @@ export interface SimulationMutation {
   target: SimulationMutationTarget;
   reason: string;
   path?: string;
+  unifiedDiff?: string;
 }
 
 export type SimulationRebuttalCode =
@@ -328,6 +329,7 @@ export interface ResultSimulation {
   wouldMutate: boolean;
   plannedMutations: SimulationMutation[];
   rebuttalFindings: SimulationRebuttalFinding[];
+  unifiedDiff?: string;
 }
 
 export interface SimulationSummary {
@@ -697,4 +699,97 @@ export interface UpdateOutdatedReport {
   correlation?: CorrelationContext;
   provenance?: ProvenanceContext;
   changeRequests?: ChangeRequestResult[];
+}
+
+// ---------------------------------------------------------------------------
+// Interactive Developer Experience & Auditing Types
+// ---------------------------------------------------------------------------
+
+/** Options for checkReachability() */
+export interface CheckReachabilityOptions {
+  cwd?: string;
+  packageName: string;
+  symbol?: string;
+}
+
+/** Options for evaluatePackage() */
+export interface EvaluatePackageOptions {
+  version?: string;
+  packageManager?: "npm" | "pnpm" | "yarn" | "bun" | "deno";
+  cwd?: string;
+  enrichIntelligence?: boolean;
+}
+
+/** A single vulnerability found on a package during evaluatePackage() */
+export interface VulnerabilityEvaluationEntry {
+  cveId: string;
+  severity: CveSeverity;
+  summary: string;
+  vulnerableRange?: string;
+  firstPatchedVersion?: string;
+  safeUpgradeVersion?: string;
+  epssScore?: number;
+  epssPercentile?: number;
+  inCisaKev?: boolean;
+  references?: string[];
+}
+
+/** Report returned by evaluatePackage() */
+export interface PackageEvaluationReport {
+  schemaVersion: "1.0";
+  packageName: string;
+  evaluatedVersion?: string;
+  isVulnerable: boolean;
+  verdict: "safe" | "caution" | "vulnerable" | "actively-exploited";
+  summary: string;
+  vulnerabilities: VulnerabilityEvaluationEntry[];
+  recommendedVersion?: string;
+  latestVersion?: string;
+  generatedAt: string;
+}
+
+/** A single dependency change detected between git base and working tree */
+export interface DeltaDependencyChange {
+  packageName: string;
+  changeType: "added" | "upgraded" | "downgraded" | "removed";
+  oldVersion?: string;
+  newVersion?: string;
+  dependencyType: "dependencies" | "devDependencies" | "peerDependencies" | "optionalDependencies";
+  manifestPath: string;
+}
+
+/** A vulnerability finding associated with a delta dependency change */
+export interface DeltaFinding {
+  packageName: string;
+  cveId: string;
+  severity: CveSeverity;
+  summary: string;
+  deltaType: "introduced" | "resolved" | "unaffected";
+  installedVersion?: string;
+  safeUpgradeVersion?: string;
+  inCisaKev?: boolean;
+  epssScore?: number;
+}
+
+/** Options for scanDelta() */
+export interface DeltaScanOptions {
+  cwd?: string;
+  baseRef?: string;
+  includeUnstaged?: boolean;
+  packageManager?: "npm" | "pnpm" | "yarn" | "bun" | "deno";
+}
+
+/** Report returned by scanDelta() */
+export interface DeltaScanReport {
+  schemaVersion: "1.0";
+  status: "ok" | "degraded" | "improved" | "neutral";
+  baseRef: string;
+  targetRef: string;
+  changedManifests: string[];
+  dependencyChanges: DeltaDependencyChange[];
+  introducedFindings: DeltaFinding[];
+  resolvedFindings: DeltaFinding[];
+  netRiskVerdict: "improved" | "neutral" | "degraded";
+  summary: string;
+  generatedAt: string;
 }

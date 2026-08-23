@@ -469,22 +469,31 @@ autoremediator-mcp
 Tools exposed:
 
 - `health` — server readiness, version, tool count, and capability list
-- `remediate`
-- `planRemediation`
-- `remediateFromScan`
-- `remediatePortfolio`
-- `listPatchArtifacts`
-- `inspectPatchArtifact`
-- `validatePatchArtifact`
-- `updateOutdated`
+- `remediate` — automated remediation for single CVE
+- `planRemediation` — dry-run remediation plan with diff previews
+- `remediateFromScan` — multi-CVE remediation from scanner outputs
+- `remediatePortfolio` — multi-target repository remediation
+- `updateOutdated` — non-security dependency version updates
+- `checkReachability` — AST call-graph reachability exploration via `oxc-parser`
+- `evaluatePackage` — pre-installation risk and exploit telemetry evaluation
+- `scanDelta` — git-aware delta vulnerability scanner for working tree & branch diffs
+- `listPatchArtifacts` / `inspectPatchArtifact` / `validatePatchArtifact` — patch file lifecycle management
+- `toVex` — export CycloneDX VEX records
+- `submitRemediateJob` / `submitScanJob` / `submitPortfolioJob` / `pollJob` — asynchronous background job execution
 
 The `health` tool returns `{ status, version, toolCount, capabilities }`, allowing MCP hosts to introspect available capabilities without additional configuration.
 
-Why use MCP: standard tool contracts for AI host ecosystems, with typed request/response patterns.
+Why use MCP: standard tool contracts for AI host ecosystems (VS Code GitHub Copilot, Roo Code, Cline, Claude Desktop), with typed request/response patterns and interactive unified diff previews.
 
-The scan-oriented MCP response includes the same aggregate summary fields used by the SDK and CLI, including `strategyCounts`, `dependencyScopeCounts`, `unresolvedByReason`, and `simulationSummary` when `simulationMode` is enabled in a dry-run or preview context.
+## VS Code Extension & IDE DevEx
 
-For patch fallback workflows, MCP callers can treat patch artifacts as durable assets by listing, inspecting, and validating them in follow-up automation.
+Autoremediator provides an interactive extension for VS Code (`autoremediator-rawlings`):
+
+- **Hover Intelligence:** Hovering over dependencies in `package.json` displays rich Markdown cards with CVSS severity, CISA KEV active exploitation badges, FIRST EPSS score percentiles, AST reachability status, safe upgrade recommendations, and 1-click QuickFix triggers.
+- **CodeLens Summaries:** Displays live summary lenses above `dependencies` sections in `package.json`.
+- **Git Delta Scanning (`autoremediator.scanDelta`):** Audits uncommitted working-tree changes against `HEAD` without running full-project backlog scans.
+- **AST Reachability Inspection (`autoremediator.checkReachability`):** Interactively queries whether a package or vulnerable export is called in local source files.
+- **Virtual Patch Diff Previews (`autoremediator-patch://`):** Allows 1-click side-by-side diff review of patch artifacts before applying changes to disk.
 
 For plan-first orchestration guidance, see [Agent Ecosystems](agent-ecosystems.md).
 

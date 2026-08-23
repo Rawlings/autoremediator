@@ -10,6 +10,9 @@ describe("mcp tool contracts", () => {
     expect(names).toContain("listPatchArtifacts");
     expect(names).toContain("inspectPatchArtifact");
     expect(names).toContain("validatePatchArtifact");
+    expect(names).toContain("checkReachability");
+    expect(names).toContain("evaluatePackage");
+    expect(names).toContain("scanDelta");
   });
 
   it("dispatches health calls through handler", async () => {
@@ -284,7 +287,7 @@ describe("mcp tool contracts", () => {
     const result = await handleToolCall(
       "planRemediation",
       { cveId: "CVE-2021-23337", requestId: "req-1" },
-      deps,
+      deps as any,
     );
 
     expect(deps.planRemediationFn).toHaveBeenCalledWith(
@@ -410,6 +413,89 @@ describe("mcp tool contracts", () => {
     expect(list.content[0]?.text).toContain("foo.patch");
     expect(inspect.content[0]?.text).toContain("exists");
     expect(validate.content[0]?.text).toContain("diffValid");
+  });
+
+  it("dispatches checkReachability, evaluatePackage, and scanDelta calls through handler", async () => {
+    const deps = {
+      remediateFn: vi.fn(async () => ({ summary: "remediate" }) as any),
+      planRemediationFn: vi.fn(async () => ({ summary: "planned" }) as any),
+      remediateFromScanFn: vi.fn(async () => ({ status: "ok" }) as any),
+      remediatePortfolioFn: vi.fn(async () => ({ status: "ok", targets: [] }) as any),
+      updateOutdatedFn: vi.fn(async () => ({ status: "ok" }) as any),
+      checkReachabilityFn: vi.fn(async () => ({
+        packageName: "lodash",
+        status: "reachable" as const,
+        reason: "used in app",
+      })),
+      evaluatePackageFn: vi.fn(async () => ({
+        schemaVersion: "1.0" as const,
+        packageName: "express",
+        isVulnerable: false,
+        verdict: "safe" as const,
+        summary: "safe",
+        vulnerabilities: [],
+        generatedAt: "",
+      })),
+      scanDeltaFn: vi.fn(async () => ({
+        schemaVersion: "1.0" as const,
+        status: "ok" as const,
+        baseRef: "HEAD",
+        targetRef: "working-tree",
+        changedManifests: [],
+        dependencyChanges: [],
+        introducedFindings: [],
+        resolvedFindings: [],
+        netRiskVerdict: "neutral" as const,
+        summary: "clean",
+        generatedAt: "",
+      })),
+      healthFn: vi.fn(async () => ({ status: "ok" as const })),
+      listPatchArtifactsFn: vi.fn(async () => []),
+      inspectPatchArtifactFn: vi.fn(async () => ({}) as any),
+      validatePatchArtifactFn: vi.fn(async () => ({}) as any),
+      toVexFn: vi.fn(() => ({}) as any),
+      submitRemediateJobFn: vi.fn(() => ({
+        jobId: "1",
+        status: "pending" as const,
+        submittedAt: "",
+      })),
+      submitScanJobFn: vi.fn(() => ({ jobId: "2", status: "pending" as const, submittedAt: "" })),
+      submitPortfolioJobFn: vi.fn(() => ({
+        jobId: "3",
+        status: "pending" as const,
+        submittedAt: "",
+      })),
+      pollJobFn: vi.fn(() => ({
+        jobId: "1",
+        status: "done" as const,
+        submittedAt: "",
+        result: {},
+      })),
+    };
+
+    const reachability = await handleToolCall(
+      "checkReachability",
+      { packageName: "lodash", symbol: "merge" },
+      deps as any,
+    );
+    const evaluate = await handleToolCall(
+      "evaluatePackage",
+      { packageName: "express", version: "4.18.2" },
+      deps as any,
+    );
+    const delta = await handleToolCall("scanDelta", { baseRef: "origin/main" }, deps as any);
+
+    expect(deps.checkReachabilityFn).toHaveBeenCalledWith({
+      packageName: "lodash",
+      symbol: "merge",
+      cwd: undefined,
+    });
+    expect(deps.evaluatePackageFn).toHaveBeenCalledWith("express", { version: "4.18.2" });
+    expect(deps.scanDeltaFn).toHaveBeenCalledWith({ baseRef: "origin/main" });
+
+    expect(reachability.content[0]?.text).toContain("reachable");
+    expect(evaluate.content[0]?.text).toContain("safe");
+    expect(delta.content[0]?.text).toContain("neutral");
   });
 
   it("returns structured error for unknown tool", async () => {

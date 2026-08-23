@@ -1,4 +1,4 @@
-export { lookupCveOsv, fetchOsvVuln, parseOsvVuln } from "./sources/osv.js";
+export { lookupCveOsv, fetchOsvVuln, parseOsvVuln, queryOsvPackage } from "./sources/osv.js";
 export {
   lookupCveGitHub,
   fetchGhAdvisories,

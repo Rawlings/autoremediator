@@ -1,2 +1,10 @@
 packages:
   - packages/*
+
+catalog:
+  typescript: ^7.0.2
+  "@types/node": ^26.2.0
+  "@types/semver": ^7.8.0
+  vitest: ^4.1.11
+  tsup: ^8.5.1
+  yaml: ^2.9.0

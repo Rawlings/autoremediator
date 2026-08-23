@@ -36,17 +36,29 @@
     "publish": "vsce publish --no-dependencies"
   },
   "devDependencies": {
-    "@types/node": "^26.2.0",
+    "@types/node": "catalog:",
     "@types/vscode": "^1.134.0",
     "@vscode/vsce": "^3.9.2",
     "esbuild": "^0.28.2",
-    "typescript": "^7.0.2"
+    "typescript": "catalog:"
   },
   "contributes": {
     "commands": [
       {
         "command": "autoremediator.scanWorkspace",
         "title": "Autoremediator: Scan workspace for CVEs"
+      },
+      {
+        "command": "autoremediator.scanDelta",
+        "title": "Autoremediator: Scan git delta against HEAD"
+      },
+      {
+        "command": "autoremediator.checkReachability",
+        "title": "Autoremediator: Check package AST reachability"
+      },
+      {
+        "command": "autoremediator.previewPatch",
+        "title": "Autoremediator: Preview patch artifact"
       },
       {
         "command": "autoremediator.fixCve",
@@ -58,6 +70,6 @@
     "workspaceContains:**/package.json"
   ],
   "engines": {
-    "vscode": "^1.116.0"
+    "vscode": "^1.134.0"
   }
 }

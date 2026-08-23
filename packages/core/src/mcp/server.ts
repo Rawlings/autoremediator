@@ -12,9 +12,11 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { fileURLToPath } from "node:url";
 import {
+  checkReachability,
   createRemediateOptionSchemaProperties,
   createScanOptionSchemaProperties,
   createUpdateOutdatedOptionSchemaProperties,
+  evaluatePackage,
   inspectPatchArtifact,
   listPatchArtifacts,
   OPTION_DESCRIPTIONS,
@@ -23,6 +25,7 @@ import {
   remediate,
   remediatePortfolio,
   remediateFromScan,
+  scanDelta,
   submitPortfolioJob,
   submitRemediateJob,
   submitScanJob,
@@ -48,6 +51,9 @@ interface McpApiDeps {
   remediateFromScanFn: typeof remediateFromScan;
   remediatePortfolioFn: typeof remediatePortfolio;
   updateOutdatedFn: typeof updateOutdated;
+  checkReachabilityFn: typeof checkReachability;
+  evaluatePackageFn: typeof evaluatePackage;
+  scanDeltaFn: typeof scanDelta;
   healthFn: () => Promise<{ status: "ok" }>;
   listPatchArtifactsFn: typeof listPatchArtifacts;
   inspectPatchArtifactFn: typeof inspectPatchArtifact;
@@ -65,6 +71,9 @@ const defaultDeps: McpApiDeps = {
   remediateFromScanFn: remediateFromScan,
   remediatePortfolioFn: remediatePortfolio,
   updateOutdatedFn: updateOutdated,
+  checkReachabilityFn: checkReachability,
+  evaluatePackageFn: evaluatePackage,
+  scanDeltaFn: scanDelta,
   healthFn: async () => ({ status: "ok" }),
   listPatchArtifactsFn: listPatchArtifacts,
   inspectPatchArtifactFn: inspectPatchArtifact,
@@ -299,6 +308,70 @@ export const TOOLS = [
       },
     },
   },
+  {
+    name: "checkReachability",
+    description:
+      "Scan project source files using oxc-parser AST call-graph tracing to check if a package or vulnerable symbol is reachable and invoked.",
+    inputSchema: {
+      type: "object",
+      required: ["packageName"],
+      properties: {
+        packageName: {
+          type: "string",
+          description: "Target package name to trace in project source files.",
+        },
+        cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
+        symbol: {
+          type: "string",
+          description:
+            "Optional specific vulnerable function or export symbol to verify in call graph.",
+        },
+      },
+    },
+  },
+  {
+    name: "evaluatePackage",
+    description:
+      "Pre-flight security evaluator for npm packages. Queries OSV, CISA KEV, and FIRST EPSS telemetry before installation.",
+    inputSchema: {
+      type: "object",
+      required: ["packageName"],
+      properties: {
+        packageName: { type: "string", description: "Package name to evaluate." },
+        version: { type: "string", description: "Optional specific package version." },
+        packageManager: {
+          type: "string",
+          enum: ["npm", "pnpm", "yarn", "bun", "deno"],
+          description: OPTION_DESCRIPTIONS.packageManager,
+        },
+        enrichIntelligence: {
+          type: "boolean",
+          description: "Enrich with live CISA KEV and EPSS intelligence feeds.",
+        },
+      },
+    },
+  },
+  {
+    name: "scanDelta",
+    description:
+      "Git-aware delta vulnerability scanner. Identifies new CVEs introduced by uncommitted edits (vs HEAD) or branch differences (vs base branch).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
+        baseRef: {
+          type: "string",
+          description:
+            "Git base reference to compare against (e.g. 'HEAD', 'origin/main'). Defaults to 'HEAD'.",
+        },
+        packageManager: {
+          type: "string",
+          enum: ["npm", "pnpm", "yarn", "bun", "deno"],
+          description: OPTION_DESCRIPTIONS.packageManager,
+        },
+      },
+    },
+  },
 ];
 
 export async function handleToolCall(
@@ -428,6 +501,50 @@ export async function handleToolCall(
       const { jobId } = args as { jobId: string };
       const job = deps.pollJobFn(jobId);
       return { content: [{ type: "text", text: JSON.stringify(job, null, 2) }] };
+    }
+
+    if (name === "checkReachability") {
+      const { packageName, cwd, symbol } = args as {
+        packageName: string;
+        cwd?: string;
+        symbol?: string;
+      };
+      if (!packageName || typeof packageName !== "string") {
+        return {
+          content: [
+            { type: "text", text: JSON.stringify({ error: "packageName is required (string)" }) },
+          ],
+          isError: true,
+        };
+      }
+      const assessment = await deps.checkReachabilityFn({ packageName, cwd, symbol });
+      return { content: [{ type: "text", text: JSON.stringify(assessment, null, 2) }] };
+    }
+
+    if (name === "evaluatePackage") {
+      const { packageName, ...options } = args as {
+        packageName: string;
+        [key: string]: unknown;
+      };
+      if (!packageName || typeof packageName !== "string") {
+        return {
+          content: [
+            { type: "text", text: JSON.stringify({ error: "packageName is required (string)" }) },
+          ],
+          isError: true,
+        };
+      }
+      const report = await deps.evaluatePackageFn(
+        packageName,
+        options as Parameters<typeof evaluatePackage>[1],
+      );
+      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
+    }
+
+    if (name === "scanDelta") {
+      const options = args as Parameters<typeof scanDelta>[0];
+      const report = await deps.scanDeltaFn(options);
+      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
     if (name === "toVex") {

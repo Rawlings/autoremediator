@@ -3,9 +3,12 @@ import { OPTION_DESCRIPTIONS } from "../api/index.js";
 import { existsSync } from "node:fs";
 import { PACKAGE_VERSION } from "../version";
 import {
+  runDiffAudit,
+  runEvaluate,
   runInspectPatch,
   runListPatches,
   runPortfolio,
+  runReachability,
   runScanInput,
   runSingleCve,
   runUpdateOutdated,
@@ -287,6 +290,73 @@ export function createProgram(): Command {
         await runValidatePatch(patchPath, merged);
       },
     );
+
+  program
+    .command("reachability")
+    .description("Perform AST call-graph reachability analysis for a package or vulnerable symbol")
+    .requiredOption("--package <name>", "Target package name to search")
+    .option("--symbol <name>", "Optional specific vulnerable function or export symbol to check")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(
+      async (opts: { cwd?: string; package: string; symbol?: string; outputFormat?: string }) => {
+        validateOutputFormat(
+          (opts.outputFormat ?? "text") as "text" | "json",
+          ["text", "json"],
+          "reachability",
+        );
+        await runReachability(opts);
+      },
+    );
+
+  program
+    .command("evaluate <package>")
+    .description(
+      "Pre-flight security evaluator for npm packages before installation (e.g. evaluate express@4.18.2)",
+    )
+    .option("--pkg-version <version>", "Package version to evaluate")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(
+      async (pkg: string, opts: { cwd?: string; pkgVersion?: string; outputFormat?: string }) => {
+        validateOutputFormat(
+          (opts.outputFormat ?? "text") as "text" | "json",
+          ["text", "json"],
+          "evaluate",
+        );
+        let targetName = pkg;
+        let targetVersion = opts.pkgVersion;
+
+        // Handle scoped and unscoped package@version syntax: e.g. "express@4.18.2" or "@types/node@20.0.0"
+        const lastAt = pkg.lastIndexOf("@");
+        if (lastAt > 0 && !targetVersion) {
+          targetName = pkg.slice(0, lastAt);
+          targetVersion = pkg.slice(lastAt + 1);
+        }
+
+        await runEvaluate(targetName, {
+          cwd: opts.cwd,
+          version: targetVersion,
+          outputFormat: opts.outputFormat,
+        });
+      },
+    );
+
+  program
+    .command("diff")
+    .description("Git-aware delta vulnerability scan against base git reference or working tree")
+    .option("--base <ref>", "Git base reference (default: HEAD)", "HEAD")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--ci", "Enable CI exit code behavior on degraded security posture", false)
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(async (opts: { cwd?: string; base?: string; outputFormat?: string; ci?: boolean }) => {
+      validateOutputFormat(
+        (opts.outputFormat ?? "text") as "text" | "json",
+        ["text", "json"],
+        "diff",
+      );
+      await runDiffAudit(opts);
+    });
 
   addSharedOptions(
     program

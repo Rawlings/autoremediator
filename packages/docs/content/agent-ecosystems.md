@@ -59,11 +59,16 @@ Available MCP operations:
 - `remediateFromScan`
 - `remediatePortfolio`
 - `updateOutdated`
+- `checkReachability` (AST call-graph reachability exploration via `oxc-parser`)
+- `evaluatePackage` (pre-installation risk and exploit telemetry evaluation)
+- `scanDelta` (git-aware working tree and branch delta vulnerability scanner)
 - `listPatchArtifacts`
 - `inspectPatchArtifact`
 - `validatePatchArtifact`
+- `toVex`
+- `submitRemediateJob` / `submitScanJob` / `submitPortfolioJob` / `pollJob`
 
-Use MCP when your host already has tool-calling orchestration and you want a typed, stable remediation tool surface.
+Use MCP when your host (such as VS Code GitHub Copilot, Roo Code, Cline, or Claude) already has tool-calling orchestration and you want a typed, stable remediation and auditing tool surface with diff-first interactive reviews.
 
 ## OpenAPI Setup
 

@@ -4,6 +4,27 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@types/node':
+      specifier: ^26.2.0
+      version: 26.2.0
+    '@types/semver':
+      specifier: ^7.8.0
+      version: 7.8.0
+    tsup:
+      specifier: ^8.5.1
+      version: 8.5.1
+    typescript:
+      specifier: ^7.0.2
+      version: 7.0.2
+    vitest:
+      specifier: ^4.1.11
+      version: 4.1.11
+    yaml:
+      specifier: ^2.9.0
+      version: 2.9.0
+
 importers:
 
   .:
@@ -23,15 +44,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.30.0
         version: 1.30.0(zod@4.4.3)
-      '@octokit/rest':
-        specifier: ^22.0.1
-        version: 22.0.1
       ai:
         specifier: ^7.0.74
         version: 7.0.74(zod@4.4.3)
-      chalk:
-        specifier: ^6.0.0
-        version: 6.0.0
       commander:
         specifier: ^15.0.0
         version: 15.0.0
@@ -45,7 +60,7 @@ importers:
         specifier: ^7.8.5
         version: 7.8.5
       yaml:
-        specifier: ^2.9.0
+        specifier: 'catalog:'
         version: 2.9.0
       zod:
         specifier: ^4.4.3
@@ -58,20 +73,20 @@ importers:
         specifier: ^4.0.45
         version: 4.0.45(zod@4.4.3)
       '@types/node':
-        specifier: ^26.2.0
+        specifier: 'catalog:'
         version: 26.2.0
       '@types/semver':
-        specifier: ^7.8.0
+        specifier: 'catalog:'
         version: 7.8.0
       tsup:
-        specifier: ^8.5.1
+        specifier: 'catalog:'
         version: 8.5.1(postcss@8.5.26)(typescript@7.0.2)(yaml@2.9.0)
       typescript:
-        specifier: ^7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vitest:
-        specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.27.7)(yaml@2.9.0))
+        specifier: 'catalog:'
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(yaml@2.9.0))
 
   packages/docs:
     dependencies:
@@ -90,12 +105,9 @@ importers:
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
-      tocbot:
-        specifier: ^4.36.8
-        version: 4.36.8
     devDependencies:
       '@types/node':
-        specifier: ^26.2.0
+        specifier: 'catalog:'
         version: 26.2.0
       '@types/react':
         specifier: ^19.2.18
@@ -107,7 +119,7 @@ importers:
         specifier: ^6.1.0
         version: 6.1.0(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(yaml@2.9.0))
       typescript:
-        specifier: ~7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vite:
         specifier: ^8.2.2
@@ -125,26 +137,26 @@ importers:
         specifier: workspace:*
         version: link:../core
       yaml:
-        specifier: ^2.9.0
+        specifier: 'catalog:'
         version: 2.9.0
     devDependencies:
       '@types/node':
-        specifier: ^26.2.0
+        specifier: 'catalog:'
         version: 26.2.0
       tsup:
-        specifier: ^8.5.1
+        specifier: 'catalog:'
         version: 8.5.1(postcss@8.5.26)(typescript@7.0.2)(yaml@2.9.0)
       typescript:
-        specifier: ^7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vitest:
-        specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(yaml@2.9.0))
+        specifier: 'catalog:'
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.27.7)(yaml@2.9.0))
 
   packages/vscode-extension:
     devDependencies:
       '@types/node':
-        specifier: ^26.2.0
+        specifier: 'catalog:'
         version: 26.2.0
       '@types/vscode':
         specifier: ^1.134.0
@@ -156,7 +168,7 @@ importers:
         specifier: ^0.28.2
         version: 0.28.2
       typescript:
-        specifier: ^7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
 
 packages:
@@ -1906,10 +1918,6 @@ packages:
     resolution: {integrity: sha512-7NzBL0rN6fMUW+f7A6Io4h40qQlG+xGmtMxfbnH/K7TAtt8JQWVQK+6g0UXKMeVJoyV5EkkNsErQ8pVD3bLHbA==}
     engines: {node: ^12.17.0 || ^14.13 || >=16.0.0}
 
-  chalk@6.0.0:
-    resolution: {integrity: sha512-2uNTXIuTTxk7ciZgAU1BQcgnchcG0xXnrs6jzkQfj9SsRa9M2s5zE8WT96hS6KmG4MzWHSrvH43DF1m4XRkrFg==}
-    engines: {node: '>=22'}
-
   character-entities-html4@2.1.0:
     resolution: {integrity: sha512-1v7fgQRj6hnSwFpq1Eu0ynr/CDEw0rXo2B61qXrLNdHZmPKgb7fqS1a2JwF0rISo9q77jDI8VMEHoApn8qDoZA==}
 
@@ -3452,9 +3460,6 @@ packages:
   toad-cache@3.7.4:
     resolution: {integrity: sha512-m1TdR/rvT7kgGJZhspNtXdsdYk0fddFpJJFlG5s+UkPFo6lkLoZ3YLOaovPYjq1R75NP5JfeTlSHaOsE09peCg==}
     engines: {node: '>=20'}
-
-  tocbot@4.36.8:
-    resolution: {integrity: sha512-TpN+Z2YP4DTboeZ3GkUjzkjmG5NhJhXTVuH9EWQ/F4HgONVje9GZ8eNZE4kk88umV5o7hm3faS+eF/7qYwsP2w==}
 
   toidentifier@1.0.1:
     resolution: {integrity: sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA==}
@@ -5146,8 +5151,6 @@ snapshots:
       supports-color: 7.2.0
 
   chalk@5.6.2: {}
-
-  chalk@6.0.0: {}
 
   character-entities-html4@2.1.0: {}
 
@@ -7080,8 +7083,6 @@ snapshots:
       is-number: 7.0.0
 
   toad-cache@3.7.4: {}
-
-  tocbot@4.36.8: {}
 
   toidentifier@1.0.1: {}
 

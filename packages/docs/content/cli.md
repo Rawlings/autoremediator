@@ -43,6 +43,9 @@ Equivalent explicit subcommands:
 autoremediator cve CVE-2021-23337
 autoremediator scan --input ./audit.json --format npm-audit
 autoremediator portfolio --targets-file ./targets.json
+autoremediator reachability --package lodash --symbol merge
+autoremediator evaluate express@4.18.2
+autoremediator diff --base origin/main
 autoremediator patches list
 autoremediator patches inspect ./patches/lodash+4.17.0.patch
 autoremediator patches validate ./patches/lodash+4.17.0.patch

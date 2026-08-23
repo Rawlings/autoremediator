@@ -28,6 +28,9 @@ The SDK exposes autonomous operator controls on top of baseline remediation:
 - `remediateFromScan(inputPath, options?)`
 - `remediatePortfolio(targets, options?)`
 - `updateOutdated(options?)`
+- `checkReachability(options)` — AST call-graph reachability analysis via `oxc-parser`
+- `evaluatePackage(packageName, options?)` — pre-installation package security vetting
+- `scanDelta(options?)` — git-aware delta vulnerability scanner for working tree & branch diffs
 - `listPatchArtifacts(options?)`
 - `inspectPatchArtifact(patchFilePath, options?)`
 - `validatePatchArtifact(patchFilePath, options?)`
@@ -39,7 +42,7 @@ The SDK exposes autonomous operator controls on top of baseline remediation:
 - `toCiSummary(scanReport)`
 - `ciExitCode(summary)`
 
-New integrations should use `remediate`, `planRemediation`, and `remediateFromScan`.
+New integrations should use `remediate`, `planRemediation`, `remediateFromScan`, `checkReachability`, `evaluatePackage`, and `scanDelta`.
 Patch-heavy integrations should also use the patch lifecycle functions when they need to reuse or verify generated patch artifacts.
 Multi-repository automation can use `remediatePortfolio` when one controller needs to fan remediation across many repository roots.
 
