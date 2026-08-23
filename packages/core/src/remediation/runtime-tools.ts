@@ -1,3 +1,4 @@
+import type { Tool } from "ai";
 import { lookupCveTool } from "./tools/lookup-cve.js";
 import { checkVersionMatchTool } from "./tools/check-version-match.js";
 import { findFixedVersionTool } from "./tools/find-fixed-version.js";
@@ -8,7 +9,9 @@ import { checkExploitSignalTool } from "./tools/check-exploit-signal.js";
 import { checkReachabilityTool } from "./tools/check-reachability.js";
 
 interface RuntimeToolLike {
-  execute: (input: Record<string, unknown>) => Promise<unknown> | unknown;
+  description?: string;
+  parameters?: unknown;
+  execute: (input: any) => Promise<unknown> | unknown;
   [key: string]: unknown;
 }
 
@@ -27,26 +30,26 @@ interface RuntimeToolContext {
   };
 }
 
-export function buildRuntimeTools(ctx: RuntimeToolContext): Record<string, unknown> {
-  const tools = {
-    "lookup-cve": lookupCveTool,
-    "check-inventory": ctx.checkInventoryToolForRun,
-    "check-version-match": checkVersionMatchTool,
-    "find-fixed-version": findFixedVersionTool,
-    "apply-version-bump": ctx.applyVersionBumpToolForRun,
-    "check-suppression": checkSuppressionTool,
-    "check-exploit-signal": checkExploitSignalTool,
-    "check-reachability": checkReachabilityTool,
-  } as Record<string, unknown>;
+export function buildRuntimeTools(ctx: RuntimeToolContext): Record<string, Tool> {
+  const tools: Record<string, Tool> = {
+    "lookup-cve": lookupCveTool as unknown as Tool,
+    "check-inventory": ctx.checkInventoryToolForRun as unknown as Tool,
+    "check-version-match": checkVersionMatchTool as unknown as Tool,
+    "find-fixed-version": findFixedVersionTool as unknown as Tool,
+    "apply-version-bump": ctx.applyVersionBumpToolForRun as unknown as Tool,
+    "check-suppression": checkSuppressionTool as unknown as Tool,
+    "check-exploit-signal": checkExploitSignalTool as unknown as Tool,
+    "check-reachability": checkReachabilityTool as unknown as Tool,
+  };
 
   if (!ctx.constraints.directDependenciesOnly && !ctx.constraints.preferVersionBump) {
-    tools["apply-package-override"] = ctx.applyPackageOverrideToolForRun;
+    tools["apply-package-override"] = ctx.applyPackageOverrideToolForRun as unknown as Tool;
   }
 
   if (!ctx.constraints.preferVersionBump) {
-    tools["fetch-package-source"] = fetchPackageSourceTool;
-    tools["generate-patch"] = generatePatchTool;
-    tools["apply-patch-file"] = ctx.applyPatchFileToolForRun;
+    tools["fetch-package-source"] = fetchPackageSourceTool as unknown as Tool;
+    tools["generate-patch"] = generatePatchTool as unknown as Tool;
+    tools["apply-patch-file"] = ctx.applyPatchFileToolForRun as unknown as Tool;
   }
 
   return tools;

@@ -2,6 +2,7 @@ import http from "node:http";
 import type { OpenApiServerDeps } from "../server.js";
 import { createOpenApiRouteHandlers } from "./routes.js";
 import { sendJson } from "../http-utils.js";
+import { checkRbacAuthorization } from "../rbac.js";
 
 export async function handleOpenApiRequest(
   req: http.IncomingMessage,
@@ -17,6 +18,9 @@ export async function handleOpenApiRequest(
 
   // Parametric route: GET /jobs/:jobId
   if (!handler && method === "GET" && url.pathname.startsWith("/jobs/")) {
+    if (!checkRbacAuthorization(req, res, "GET /jobs")) {
+      return true;
+    }
     const jobId = url.pathname.slice("/jobs/".length);
     if (jobId && !jobId.includes("/")) {
       try {
@@ -32,6 +36,10 @@ export async function handleOpenApiRequest(
 
   if (!handler) {
     return false;
+  }
+
+  if (!checkRbacAuthorization(req, res, key)) {
+    return true;
   }
 
   await handler(req, res);

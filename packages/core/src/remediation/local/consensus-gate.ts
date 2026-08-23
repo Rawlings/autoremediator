@@ -22,7 +22,7 @@ export interface ConsensusGateParams {
 }
 
 export async function runConsensusGate(params: ConsensusGateParams): Promise<ConsensusVerdict> {
-  const consensus = (await (generatePatchTool as any).execute({
+  const consensus = await generatePatchTool.execute({
     packageName: params.packageName,
     vulnerableVersion: params.vulnerableVersion,
     cveId: params.cveId,
@@ -39,15 +39,7 @@ export async function runConsensusGate(params: ConsensusGateParams): Promise<Con
     patchConfidenceThresholds: params.patchConfidenceThresholds,
     dynamicModelRouting: params.dynamicModelRouting,
     dynamicRoutingThresholdChars: params.dynamicRoutingThresholdChars,
-  })) as {
-    success?: boolean;
-    patches?: Array<{ filePath: string; unifiedDiff: string }>;
-    llmProvider?: "remote" | "local";
-    llmModel?: string;
-    latencyMs?: number;
-    estimatedCostUsd?: number;
-    error?: string;
-  };
+  });
 
   const provider = consensus.llmProvider ?? params.consensusProvider;
   const model = consensus.llmModel ?? params.consensusModel ?? params.model ?? "unknown";

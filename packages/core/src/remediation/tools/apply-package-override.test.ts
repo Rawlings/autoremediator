@@ -31,6 +31,10 @@ vi.mock("execa", () => ({
   execa: mocked.execa,
 }));
 
+vi.mock("../../platform/safe-exec.js", () => ({
+  safeExeca: mocked.execa,
+}));
+
 vi.mock("../../platform/policy.js", () => ({
   loadPolicy: mocked.loadPolicy,
   isPackageAllowed: mocked.isPackageAllowed,
@@ -76,7 +80,7 @@ describe("apply-package-override", () => {
     mocked.resolveTestCommand.mockReturnValue(["npm", "test"]);
     mocked.resolveWhyCommand.mockReturnValue(["npm", "explain", "minimist"]);
     mocked.getYarnMajorVersion.mockResolvedValue(1);
-    mocked.execa.mockResolvedValue({ stdout: "ok" });
+    mocked.execa.mockResolvedValue({ stdout: "ok", exitCode: 0 });
     mocked.withRepoLock.mockImplementation(async (_cwd: string, fn: () => Promise<unknown>) =>
       fn(),
     );

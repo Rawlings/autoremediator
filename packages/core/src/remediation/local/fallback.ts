@@ -68,14 +68,10 @@ export async function tryLocalPatchFallback(params: {
   let steps = 0;
   let consensusVerdict: ConsensusVerdict | undefined;
 
-  const sourceResult = (await (fetchPackageSourceTool as any).execute({
+  const sourceResult = await fetchPackageSourceTool.execute({
     packageName: params.packageName,
     version: params.vulnerableVersion,
-  })) as {
-    success?: boolean;
-    sourceFiles?: Record<string, string>;
-    error?: string;
-  };
+  });
   steps += 1;
 
   if (!sourceResult?.success || !sourceResult.sourceFiles) {
@@ -98,7 +94,7 @@ export async function tryLocalPatchFallback(params: {
   }
 
   const primaryProvider = resolvePatchProvider(params.llmProvider);
-  const patchResult = (await (generatePatchTool as any).execute({
+  const patchResult = await generatePatchTool.execute({
     packageName: params.packageName,
     vulnerableVersion: params.vulnerableVersion,
     cveId: params.cveId,
@@ -115,19 +111,7 @@ export async function tryLocalPatchFallback(params: {
     patchConfidenceThresholds: params.patchConfidenceThresholds,
     dynamicModelRouting: params.dynamicModelRouting,
     dynamicRoutingThresholdChars: params.dynamicRoutingThresholdChars,
-  })) as {
-    success?: boolean;
-    patches?: Array<{ filePath: string; unifiedDiff: string }>;
-    patchContent?: string;
-    llmProvider?: "remote" | "local";
-    llmModel?: string;
-    latencyMs?: number;
-    estimatedCostUsd?: number;
-    confidenceThreshold?: number;
-    confidence?: number;
-    riskLevel?: "low" | "medium" | "high";
-    error?: string;
-  };
+  });
   steps += 1;
 
   if (!patchResult?.success) {
@@ -231,7 +215,7 @@ export async function tryLocalPatchFallback(params: {
     });
   }
 
-  const applyResult = (await (applyPatchFileTool as any).execute({
+  const applyResult = await applyPatchFileTool.execute({
     packageName: params.packageName,
     vulnerableVersion: params.vulnerableVersion,
     cveId: params.cveId,
@@ -249,17 +233,7 @@ export async function tryLocalPatchFallback(params: {
     riskLevel: patchResult.riskLevel,
     validateWithTests: params.runTests,
     dryRun: params.dryRun,
-  })) as {
-    applied?: boolean;
-    dryRun?: boolean;
-    message?: string;
-    error?: string;
-    patchFilePath?: string;
-    patchPath?: string;
-    patchArtifact?: PatchResult["patchArtifact"];
-    validationPhases?: PatchResult["validationPhases"];
-    validation?: { passed?: boolean; error?: string };
-  };
+  });
   steps += 1;
 
   if (patchResult.llmProvider && patchResult.llmModel) {

@@ -93,7 +93,7 @@ export async function resolvePrimaryResult(params: {
       };
     }
 
-    const overrideResult = (await (applyPackageOverrideTool as any).execute({
+    const overrideResult = await applyPackageOverrideTool.execute({
       cwd,
       packageManager,
       packageName: pkg.name,
@@ -106,7 +106,7 @@ export async function resolvePrimaryResult(params: {
       installPreferOffline: constraints.installPreferOffline,
       enforceFrozenLockfile: constraints.enforceFrozenLockfile,
       workspace: constraints.workspace,
-    })) as PatchResult;
+    });
 
     return {
       steps: 2,
@@ -153,7 +153,7 @@ export async function resolvePrimaryResult(params: {
     };
   }
 
-  const applyResult = (await (applyVersionBumpTool as any).execute({
+  const applyResult = await applyVersionBumpTool.execute({
     cwd,
     packageManager,
     packageName: pkg.name,
@@ -166,7 +166,7 @@ export async function resolvePrimaryResult(params: {
     installPreferOffline: constraints.installPreferOffline,
     enforceFrozenLockfile: constraints.enforceFrozenLockfile,
     workspace: constraints.workspace,
-  })) as PatchResult;
+  });
 
   return {
     steps: 2,

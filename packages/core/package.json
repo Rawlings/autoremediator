@@ -63,11 +63,11 @@
   ],
   "type": "module",
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/api/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/api/index.d.ts"
     },
     "./cli": {
       "import": "./dist/cli.js"
@@ -84,7 +84,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && tsc --emitDeclarationOnly --declaration",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -97,6 +97,7 @@
     "chalk": "^6.0.0",
     "commander": "^15.0.0",
     "execa": "^10.0.1",
+    "oxc-parser": "^0.146.0",
     "semver": "^7.8.5",
     "yaml": "^2.9.0",
     "zod": "^4.4.3"
@@ -111,8 +112,8 @@
     "vitest": "^4.1.11"
   },
   "peerDependencies": {
-    "@ai-sdk/anthropic": "^1.0.0",
-    "@ai-sdk/openai": "^1.0.0"
+    "@ai-sdk/anthropic": "^4.0.0",
+    "@ai-sdk/openai": "^4.0.0"
   },
   "peerDependenciesMeta": {
     "@ai-sdk/openai": {

@@ -97,7 +97,7 @@ docker run --rm -v "$PWD:/workdir" ghcr.io/rawlings/autoremediator CVE-2021-2333
 
 Recent remediation reports can include:
 
-- heuristic package reachability assessment based on repository imports
+- AST-level package and call-graph reachability assessment (Oxc engine) with automated CycloneDX 1.5 VEX justifications
 - alternative package suggestions when no safe upgrade exists
 - human-readable fix explanations per package result
 - optional pull request / merge request creation metadata

@@ -101,4 +101,33 @@ describe("openapi server", () => {
         .options.properties;
     expect(inspectOptions.patchesDir).toBeDefined();
   });
+
+  describe("RBAC token authorization", () => {
+    it("validates roles and permissions correctly", async () => {
+      const { getRoleForToken } = await import("./rbac.js");
+      const envTokens = "admin:tokAdmin,operator:tokOp,reader:tokRead";
+
+      expect(getRoleForToken("tokAdmin", envTokens)).toBe("admin");
+      expect(getRoleForToken("tokOp", envTokens)).toBe("operator");
+      expect(getRoleForToken("tokRead", envTokens)).toBe("reader");
+      expect(getRoleForToken("invalidToken", envTokens)).toBeUndefined();
+    });
+
+    it("verifies and extracts roles from signed JWT tokens", async () => {
+      const { createSignedJwt, getRoleForToken } = await import("./rbac.js");
+      const secret = "super-secret-key-1234";
+
+      const adminJwt = createSignedJwt({ sub: "user-1", role: "admin" }, secret);
+      const opJwt = createSignedJwt({ sub: "user-2", roles: ["operator"] }, secret);
+      const expiredJwt = createSignedJwt(
+        { sub: "user-3", role: "admin", exp: Math.floor(Date.now() / 1000) - 10 },
+        secret,
+      );
+
+      expect(getRoleForToken(adminJwt, undefined, secret)).toBe("admin");
+      expect(getRoleForToken(opJwt, undefined, secret)).toBe("operator");
+      expect(getRoleForToken(expiredJwt, undefined, secret)).toBeUndefined();
+      expect(getRoleForToken(adminJwt, undefined, "wrong-secret")).toBeUndefined();
+    });
+  });
 });

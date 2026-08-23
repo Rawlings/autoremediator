@@ -8,7 +8,7 @@ import { defineTool } from "./tool-compat.js";
 import { z } from "zod";
 import { join } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
-import { execa } from "execa";
+import { safeExeca } from "../../platform/safe-exec.js";
 import semver from "semver";
 import type { PatchResult } from "../../platform/types.js";
 import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
@@ -176,7 +176,7 @@ export const applyVersionBumpTool = defineTool({
       // Run package-manager install
       try {
         const [installCmd, ...installArgs] = installCommand;
-        await execa(installCmd, installArgs, {
+        await safeExeca(installCmd, installArgs, {
           cwd,
           stdio: "pipe",
         });
@@ -201,7 +201,7 @@ export const applyVersionBumpTool = defineTool({
       if (runTests) {
         try {
           const [testCmd, ...testArgs] = testCommand;
-          await execa(testCmd, testArgs, {
+          await safeExeca(testCmd, testArgs, {
             cwd,
             stdio: "pipe",
           });
@@ -212,7 +212,7 @@ export const applyVersionBumpTool = defineTool({
 
           try {
             const [rollbackCmd, ...rollbackArgs] = installCommand;
-            await execa(rollbackCmd, rollbackArgs, {
+            await safeExeca(rollbackCmd, rollbackArgs, {
               cwd,
               stdio: "pipe",
             });
@@ -237,7 +237,7 @@ export const applyVersionBumpTool = defineTool({
       let dedupeNote = "";
       try {
         const [dedupeCmd, ...dedupeArgs] = dedupeCommand;
-        await execa(dedupeCmd, dedupeArgs, {
+        await safeExeca(dedupeCmd, dedupeArgs, {
           cwd,
           stdio: "pipe",
         });

@@ -159,7 +159,7 @@ export async function runLocalRemediationPipeline(
     };
   }
 
-  const inventory = await (checkInventoryTool as any).execute({
+  const inventory = await checkInventoryTool.execute({
     cwd,
     packageManager,
     policy: options.policy,

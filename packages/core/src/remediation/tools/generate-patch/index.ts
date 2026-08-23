@@ -18,6 +18,7 @@ import {
   buildGeneratedPatches,
   isValidLlmAnalysis,
   parseLlmAnalysisResponse,
+  validatePatchedCodeSyntax,
   type GeneratedPatch,
 } from "./helpers.js";
 
@@ -219,6 +220,23 @@ export const generatePatchTool = defineTool({
           confidence: analysis.confidence,
           riskLevel: analysis.riskLevel,
         };
+      }
+
+      for (const [filePath, fixedCode] of Object.entries(analysis.fixedCode)) {
+        const check = validatePatchedCodeSyntax(filePath, fixedCode);
+        if (!check.valid) {
+          return {
+            success: false,
+            llmProvider: provider,
+            llmModel: modelName,
+            latencyMs,
+            estimatedCostUsd,
+            confidenceThreshold,
+            confidence: analysis.confidence,
+            riskLevel: analysis.riskLevel,
+            error: check.error ?? `Invalid syntax in patched code for ${filePath}`,
+          };
+        }
       }
 
       const patches = buildGeneratedPatches(resolvedSourceFiles, analysis.fixedCode);

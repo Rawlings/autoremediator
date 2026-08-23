@@ -12,8 +12,8 @@ export function createRuntimeToolsForRun(options: RemediateOptions) {
 
   const checkInventoryToolForRun = {
     ...checkInventoryTool,
-    execute: async (input: Record<string, unknown>) =>
-      (checkInventoryTool as any).execute({
+    execute: async (input: Parameters<typeof checkInventoryTool.execute>[0]) =>
+      checkInventoryTool.execute({
         ...input,
         policy,
         workspace: constraints.workspace,
@@ -22,8 +22,8 @@ export function createRuntimeToolsForRun(options: RemediateOptions) {
 
   const applyVersionBumpToolForRun = {
     ...applyVersionBumpTool,
-    execute: async (input: Record<string, unknown>) =>
-      (applyVersionBumpTool as any).execute({
+    execute: async (input: Parameters<typeof applyVersionBumpTool.execute>[0]) =>
+      applyVersionBumpTool.execute({
         ...input,
         policy,
         installMode: constraints.installMode,
@@ -36,8 +36,8 @@ export function createRuntimeToolsForRun(options: RemediateOptions) {
 
   const applyPackageOverrideToolForRun = {
     ...applyPackageOverrideTool,
-    execute: async (input: Record<string, unknown>) =>
-      (applyPackageOverrideTool as any).execute({
+    execute: async (input: Parameters<typeof applyPackageOverrideTool.execute>[0]) =>
+      applyPackageOverrideTool.execute({
         ...input,
         policy,
         installMode: constraints.installMode,
@@ -50,8 +50,8 @@ export function createRuntimeToolsForRun(options: RemediateOptions) {
 
   const applyPatchFileToolForRun = {
     ...applyPatchFileTool,
-    execute: async (input: Record<string, unknown>) =>
-      (applyPatchFileTool as any).execute({
+    execute: async (input: Parameters<typeof applyPatchFileTool.execute>[0]) =>
+      applyPatchFileTool.execute({
         ...input,
         policy,
         installMode: constraints.installMode,

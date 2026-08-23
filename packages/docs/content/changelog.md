@@ -6,6 +6,13 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- **AST Call-Graph Reachability Engine (Pillar 3.1)**: Integrated the Rust-based `oxc-parser` to perform AST-level reachability analysis for static imports, dynamic `import()`, CommonJS `require()`, and re-exports. Added call-graph invocation tracing (`traceSymbolInvocations`) to prune uncalled symbols and dead code paths, automatically generating CycloneDX 1.5 VEX statements with `status: "not_affected"` and `justification: "code_not_in_execute_path"`. Added `tsconfig.json` and `jsconfig.json` path-alias resolution (`compilerOptions.paths` and `baseUrl`).
+- **Node.js Package Manager Driver Architecture**: Modular driver system in `platform/package-manager/driver.ts` supporting `npm`, `pnpm`, `yarn`, `bun`, and `deno` with dedicated lockfile handlers, deterministic install commands, and workspace filtering.
+- **Subprocess Execution Sandboxing**: Created `platform/safe-exec.ts` (`safeExeca`) to sanitize process environments against process-injection supply-chain attacks (`NODE_OPTIONS`, `LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `PERL5OPT`), enforce execution timeouts, and isolate process spawns.
+- **Multi-Language Manifest/Patch Syntax Pre-Validation**: Pre-validation gate in `remediation/tools/generate-patch/helpers.ts` verifying AST syntax for JavaScript/TypeScript (`oxc-parser`), JSON (`JSON.parse`), and YAML (`yaml.parse`) before writing diffs or applying patches to disk.
+- **Enterprise SIEM Structured Audit Logging & JWT RBAC**: Implemented RFC 3339 / Common Event Format (CEF) structured audit logging in `platform/audit-logger.ts`. Added HMAC-SHA256 JWT token signature verification and role-based access control (`reader`, `operator`, `admin`) with timing-safe comparisons in `openapi/rbac.ts`.
+- **Git-Aware Dynamic Atomic Rollback**: Created `platform/rollback.ts` with dynamic workspace manifest discovery, Git transaction preservation (`git status --porcelain=v1 -uall`), and active file-touch recording (`recordFileTouch`) to guarantee complete restoration of modified or created files upon remediation failure.
+
 - `bun` and `deno` package manager support across all surfaces (`packageManager` option, `--package-manager` flag, MCP, OpenAPI, GitHub Action).
 - Bun: auto-detected from `bun.lockb`/`bun.lock`; full support for install, test, list, audit (npm-audit compatible), why (`bun pm why`), and `package.json` overrides.
 - Deno (npm-compat): auto-detected from `deno.lock`; inventory read from lock file directly (v3 and v4 format); `package.json` overrides for direct and transitive deps.

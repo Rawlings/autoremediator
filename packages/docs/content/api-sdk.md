@@ -181,7 +181,7 @@ Core options:
 
 Result details now include:
 
-- `reachability`: heuristic source-reference analysis for each remediated package
+- `reachability`: AST-level import and call-graph reachability analysis (`status`, `reachabilityBasis`, `evidence`, `justification`)
 - `alternativeSuggestions`: npm-search-based replacement candidates when no safe version exists
 - `fixExplanation`: developer-readable summary of what changed, why, and what to review next
 - `changeRequests`: created or planned pull request / merge request metadata when requested

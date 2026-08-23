@@ -4,6 +4,7 @@ import type { ScanReport } from "../contracts.js";
 
 export interface CycloneDxVexVulnerabilityAnalysis {
   state: "resolved" | "not_affected" | "in_triage";
+  justification?: "code_not_in_execute_path" | "code_not_reachable" | string;
   detail?: string;
   response?: ("update" | "workaround_available")[];
 }
@@ -32,6 +33,18 @@ export interface ToCycloneDxVexOptions {
 function mapReportToVulnerability(report: RemediationReport): CycloneDxVexVulnerability {
   const hasResolved = report.results.some((r) => r.applied && !r.unresolvedReason);
   const hasSuppressed = report.results.some((r) => r.suppressedBy != null);
+  const notReachableResult = report.results.find((r) => r.reachability?.status === "not-reachable");
+
+  if (notReachableResult && !hasResolved) {
+    return {
+      id: report.cveId,
+      analysis: {
+        state: "not_affected",
+        justification: notReachableResult.reachability?.justification ?? "code_not_in_execute_path",
+        detail: notReachableResult.reachability?.reason ?? "Code is not in execution path",
+      },
+    };
+  }
 
   if (hasSuppressed && !hasResolved) {
     const suppressed = report.results.find((r) => r.suppressedBy != null)!;
@@ -39,6 +52,7 @@ function mapReportToVulnerability(report: RemediationReport): CycloneDxVexVulner
       id: report.cveId,
       analysis: {
         state: "not_affected",
+        justification: suppressed.suppressedBy!.justification,
         detail: suppressed.suppressedBy!.notes ?? suppressed.suppressedBy!.justification,
       },
     };

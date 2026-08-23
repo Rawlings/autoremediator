@@ -2,7 +2,7 @@ import { defineTool } from "../tool-compat.js";
 import { z } from "zod";
 import { join } from "node:path";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { execa } from "execa";
+import { safeExeca } from "../../../platform/safe-exec.js";
 import semver from "semver";
 import type { PatchResult } from "../../../platform/types.js";
 import { isPackageAllowed, loadPolicy } from "../../../platform/policy.js";
@@ -178,7 +178,7 @@ export const applyPackageOverrideTool = defineTool({
 
         try {
           const [installCmd, ...installArgs] = installCommand;
-          await execa(installCmd, installArgs, { cwd, stdio: "pipe" });
+          await safeExeca(installCmd, installArgs, { cwd, stdio: "pipe" });
         } catch (err) {
           restoreDenoJsonImportValue(denoJson, overrideSelector, existingEntry);
           writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n", "utf8");
@@ -198,14 +198,14 @@ export const applyPackageOverrideTool = defineTool({
         if (runTests) {
           try {
             const [testCmd, ...testArgs] = testCommand;
-            await execa(testCmd, testArgs, { cwd, stdio: "pipe" });
+            await safeExeca(testCmd, testArgs, { cwd, stdio: "pipe" });
           } catch (err) {
             restoreDenoJsonImportValue(denoJson, overrideSelector, existingEntry);
             writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n", "utf8");
 
             try {
               const [rollbackCmd, ...rollbackArgs] = installCommand;
-              await execa(rollbackCmd, rollbackArgs, { cwd, stdio: "pipe" });
+              await safeExeca(rollbackCmd, rollbackArgs, { cwd, stdio: "pipe" });
             } catch {
               // Ignore rollback failure.
             }
@@ -277,7 +277,7 @@ export const applyPackageOverrideTool = defineTool({
 
       try {
         const [installCmd, ...installArgs] = installCommand;
-        await execa(installCmd, installArgs, { cwd, stdio: "pipe" });
+        await safeExeca(installCmd, installArgs, { cwd, stdio: "pipe" });
       } catch (err) {
         restoreOverrideValue(pkgJson, pm, overrideSelector, previousValue);
         writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
@@ -297,14 +297,14 @@ export const applyPackageOverrideTool = defineTool({
       if (runTests) {
         try {
           const [testCmd, ...testArgs] = testCommand;
-          await execa(testCmd, testArgs, { cwd, stdio: "pipe" });
+          await safeExeca(testCmd, testArgs, { cwd, stdio: "pipe" });
         } catch (err) {
           restoreOverrideValue(pkgJson, pm, overrideSelector, previousValue);
           writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
           try {
             const [rollbackCmd, ...rollbackArgs] = installCommand;
-            await execa(rollbackCmd, rollbackArgs, { cwd, stdio: "pipe" });
+            await safeExeca(rollbackCmd, rollbackArgs, { cwd, stdio: "pipe" });
           } catch {
             // Ignore rollback install failure and return original test failure context.
           }
@@ -327,7 +327,7 @@ export const applyPackageOverrideTool = defineTool({
       if (dedupeCommand.length > 0) {
         try {
           const [dedupeCmd, ...dedupeArgs] = dedupeCommand;
-          await execa(dedupeCmd, dedupeArgs, { cwd, stdio: "pipe" });
+          await safeExeca(dedupeCmd, dedupeArgs, { cwd, stdio: "pipe" });
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           dedupeNote = ` Dedupe warning: ${dedupeCommand.join(" ")} failed (${message}).`;

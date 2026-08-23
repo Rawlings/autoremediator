@@ -501,25 +501,36 @@ Routes:
 - `POST /remediate`
 - `POST /plan-remediation`
 - `POST /remediate-from-scan`
+- `POST /remediate-portfolio`
 - `POST /patches/list`
 - `POST /patches/inspect`
 - `POST /patches/validate`
+- `POST /vex`
+- `POST /jobs/remediate`
+- `POST /jobs/scan`
+- `POST /jobs/portfolio`
+- `GET /jobs/:jobId`
 - `GET /openapi.json`
 - `GET /health`
 
-Why use OpenAPI: central remediation service for multiple clients and repositories.
+### OpenAPI RBAC & Enterprise JWT Authentication
 
-The OpenAPI responses expose the same aggregate reporting fields as the SDK and CLI, so service consumers can build routing and governance logic around `strategyCounts`, `dependencyScopeCounts`, `unresolvedByReason`, and optional `simulationSummary` fields without custom post-processing.
+The OpenAPI server supports cryptographic token verification and Role-Based Access Control (RBAC):
 
-Patch lifecycle OpenAPI operations provide artifact inventory and drift validation for external orchestrators that run follow-up governance checks.
+- **Role Hierarchy**: `reader` (1) < `operator` (2) < `admin` (3)
+  - `reader`: Read-only queries (`GET /health`, `GET /openapi.json`, `POST /vex`, `POST /patches/*`, `GET /jobs`)
+  - `operator`: Non-mutating planning and queued jobs (`POST /plan-remediation`, `POST /jobs/*`)
+  - `admin`: Mutating remediation operations (`POST /remediate`, `POST /remediate-from-scan`, `POST /remediate-portfolio`, `POST /update-outdated`)
+- **JWT Verification**: Validates HMAC-SHA256 tokens using `AUTOREMEDIATOR_JWT_SECRET`. Extracts user permissions from `role`, `roles`, or `scope` claims while enforcing token expiration (`exp`).
+- **Static Pre-Shared Keys**: Configurable via `AUTOREMEDIATOR_API_TOKENS="admin:secretAdmin,operator:secretOp,reader:secretReader"`.
 
-For orchestration sequencing patterns, see [Agent Ecosystems](agent-ecosystems.md).
+### Enterprise SIEM Structured Audit Logging (RFC 3339 & CEF)
 
-Security guidance:
+For centralized security monitoring, compliance (SOC 2, ISO 27001), and SIEM ingestion (Splunk, Datadog, Elastic, Sentinel):
 
-- place server behind authenticated network boundaries
-- restrict callers and apply least-privilege credentials
-- retain request/summary artifacts for audit trails
+- **Format Selection**: Configurable via `AUTOREMEDIATOR_AUDIT_LOG_FORMAT="json"` (default RFC 3339 structured JSON) or `"cef"` (ArcSight / Common Event Format).
+- **Log Destination**: Configurable via `AUTOREMEDIATOR_AUDIT_LOG_FILE="/var/log/autoremediator/audit.log"`.
+- **Recorded Events**: Every remediation action logs caller identity, timestamp, operation type, targeted package, CVE ID, strategy applied, reachability status, and cryptographic validation hash.
 
 ## CLI in CI
 

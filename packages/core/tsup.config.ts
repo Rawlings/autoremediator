@@ -5,7 +5,7 @@ export default defineConfig([
   {
     entry: { index: "src/api/index.ts" },
     format: ["esm"],
-    dts: true,
+    dts: false,
     sourcemap: true,
     clean: true,
     esbuildOptions(options) {

@@ -57,8 +57,12 @@ export async function runSecOpsPreflight(
 
   let exploitSignalTriggered: boolean | undefined;
   if (opts.exploitSignalOverride) {
-    const result = await (checkExploitSignalTool as any).execute({
-      cveDetails,
+    const result = await checkExploitSignalTool.execute({
+      cveDetails: {
+        id: cveDetails.id,
+        kev: cveDetails.kev,
+        epss: cveDetails.epss,
+      },
       policy: { exploitSignalOverride: opts.exploitSignalOverride },
     });
     if (result.exploitSignalTriggered) {

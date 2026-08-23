@@ -158,11 +158,45 @@ In addition, scan and portfolio reports include `slaBreachSummary` — a structu
 
 Enable with `--sla-check` (CLI) or `slaCheck: true` (SDK).
 
-### Static Reachability Filtering
+### AST Call-Graph Reachability Engine (Pillar 3.1)
 
-When `skipUnreachable: true`, the local pipeline performs a static import scan across project source files (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`) before remediation. Packages not reachable from source are skipped, and the skip reason appears on the result.
+When `skipUnreachable: true`, autoremediator executes a high-performance AST-level reachability analysis across project source files (`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`) using the Rust-based `oxc-parser`:
+
+- **Full Import Resolution**: Walks the abstract syntax tree for static ESM import declarations (`import ... from 'pkg'`), dynamic imports (`import('pkg')`), CommonJS calls (`require('pkg')`), and re-exports (`export ... from 'pkg'`).
+- **Path-Alias Resolution**: Automatically parses `tsconfig.json` and `jsconfig.json` (`compilerOptions.paths` and `compilerOptions.baseUrl`), mapping custom path aliases (`@/components/*`, `~/lib/*`) to actual filesystem sources.
+- **Function-Level Invocation Tracing**: Analyzes `CallExpression`, `NewExpression`, and `MemberExpression` nodes (e.g. `_.template()`, `template()`, `lodash.template()`).
+- **Dead-Code Pruning & VEX Justification**: If a vulnerable package is imported but the vulnerable symbol is never invoked in any execution path, reachability resolves to:
+  - `status: "not-reachable"`
+  - `reachabilityBasis: "call-graph-uninvoked"`
+  - `justification: "code_not_in_execute_path"`
+- **CycloneDX 1.5 VEX Integration**: Automatically emits `state: "not_affected"` VEX statements with standard justification codes and audit trace details.
 
 Enable with `--skip-unreachable` (CLI) or `skipUnreachable: true` (SDK).
+
+### Subprocess Execution Sandboxing & Supply Chain Hardening
+
+All child process executions (package manager installs, deduplications, and test runners) execute through an isolated subprocess runner (`safeExeca`):
+
+- **Environment Sanitization**: Strips dangerous process-injection environment variables that could be exploited during supply chain installations: `NODE_OPTIONS`, `LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `DYLD_LIBRARY_PATH`, `PERL5OPT`, and `RUBYOPT`.
+- **Execution Timeouts**: Enforces deterministic timeouts to prevent rogue lifecycle hooks or tests from hanging CI pipelines.
+- **Argument-Level Injection Defense**: Enforces strict argument separation to prevent subshell command chaining and flag injection.
+
+### Universal Git-Aware Dynamic Atomic Rollback
+
+All mutating operations run within an atomic rollback envelope (`withAtomicRollback`):
+
+- **Git-Aware Transaction Revert**: Compares working tree status via `git status --porcelain=v1 -uall`. In the event of a test failure or interrupted run, untracked artifacts (`??`) are cleaned and modified tracked files (`M`) are reverted to their exact pre-remediation commit state.
+- **Dynamic File-Touch Registry (`recordFileTouch`)**: For non-git environments or dynamically touched files (such as modified source files and patch files), every touched file is registered and snapshotted in-memory, guaranteeing byte-for-byte rollback if tests fail.
+
+### Multi-Language Manifest & Patch Syntax Pre-Validation
+
+Before applying any generated code patch or updating manifests, autoremediator performs an AST-level syntax verification gate:
+
+- **JavaScript / TypeScript**: Syntax verified using the `oxc-parser` AST parser.
+- **JSON (`package.json`, `tsconfig.json`)**: Validated via strict JSON parser.
+- **YAML (`pnpm-lock.yaml`, workflow definitions)**: Validated via YAML parser.
+
+Patches containing syntax errors or malformed structures are rejected prior to touching the disk.
 
 ### Simulation Mode
 

@@ -342,14 +342,24 @@ export interface SimulationSummary {
 
 export interface ReachabilityEvidence {
   filePath: string;
-  matchType: "import" | "require" | "dynamic-import" | "manifest";
+  matchType: "import" | "require" | "dynamic-import" | "re-export" | "manifest";
+  importedSymbols?: string[];
+  symbol?: string;
+  invoked?: boolean;
+  callCount?: number;
 }
 
 export interface ReachabilityAssessment {
   packageName: string;
   status: "reachable" | "not-reachable" | "unknown";
   reason: string;
-  reachabilityBasis?: "import-present" | "symbol-present" | "call-path-found" | "unknown";
+  reachabilityBasis?:
+    | "import-present"
+    | "symbol-present"
+    | "call-path-found"
+    | "call-graph-uninvoked"
+    | "unknown";
+  justification?: "code_not_in_execute_path" | "code_not_reachable" | string;
   evidence?: ReachabilityEvidence[];
 }
 

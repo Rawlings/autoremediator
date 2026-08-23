@@ -1,4 +1,4 @@
-import { execa } from "execa";
+import { safeExeca } from "../../../platform/safe-exec.js";
 import { resolveWhyCommand, type PackageManager } from "../../../platform/package-manager/index.js";
 
 export interface RawPackageJson {
@@ -25,7 +25,7 @@ export async function collectDependencyTrace(
     const whyCommand = resolveWhyCommand(pm, packageName, constraints);
     if (whyCommand.length === 0) return undefined;
     const [whyCmd, ...whyArgs] = whyCommand;
-    const result = await execa(whyCmd, whyArgs, {
+    const result = await safeExeca(whyCmd, whyArgs, {
       cwd,
       stdio: "pipe",
       reject: false,

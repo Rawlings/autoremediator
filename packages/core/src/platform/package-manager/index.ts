@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { execa } from "execa";
 import type { PackageManager, RemediationConstraints } from "../types.js";
 import { parsePackageManagerListOutput } from "./list-parser.js";
+export * from "./driver.js";
 
 export type { PackageManager };
 
