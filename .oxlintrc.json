@@ -1,0 +1,56 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "node", "import", "promise"],
+  "categories": {
+    "correctness": "error"
+  },
+  "options": {
+    "typeAware": true,
+    "typeCheck": true
+  },
+  "rules": {
+    "typescript/no-floating-promises": "error",
+    "typescript/await-thenable": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/no-unnecessary-type-assertion": "warn",
+    "typescript/prefer-nullish-coalescing": "warn",
+    "typescript/prefer-optional-chain": "warn",
+    "typescript/no-duplicate-enum-values": "error",
+    "typescript/no-extra-non-null-assertion": "error",
+    "typescript/no-misused-new": "error",
+    "typescript/no-non-null-asserted-optional-chain": "error",
+    "typescript/no-this-alias": "error",
+    "unicorn/prefer-node-protocol": "error",
+    "unicorn/no-unnecessary-await": "error",
+    "unicorn/prefer-array-find": "warn",
+    "unicorn/prefer-array-flat-map": "warn",
+    "unicorn/prefer-string-starts-ends-with": "warn",
+    "promise/no-return-wrap": "error",
+    "promise/param-names": "error",
+    "node/no-exports-assign": "error"
+  },
+  "overrides": [
+    {
+      "files": ["packages/docs/**/*.{ts,tsx}"],
+      "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y"],
+      "rules": {
+        "react/jsx-key": "error",
+        "react/no-unknown-property": "error",
+        "react/jsx-no-target-blank": "warn",
+        "react/set-state-in-effect": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.ts", "**/*.spec.ts", "**/tests/**"],
+      "rules": {
+        "typescript/no-explicit-any": "off",
+        "typescript/no-unnecessary-type-assertion": "off"
+      }
+    }
+  ],
+  "env": {
+    "builtin": true,
+    "node": true,
+    "browser": true
+  }
+}

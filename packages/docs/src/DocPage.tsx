@@ -56,7 +56,7 @@ function AnchorLink({
     href.startsWith("//") ||
     href.startsWith("mailto:")
   ) {
-    const isExternal = href?.startsWith("http") || href?.startsWith("//");
+    const isExternal = (href?.startsWith("http") ?? false) || (href?.startsWith("//") ?? false);
     return (
       <a
         href={href}
@@ -74,7 +74,7 @@ function AnchorLink({
         href={href}
         onClick={(e) => {
           e.preventDefault();
-          navigate(href);
+          void navigate(href);
         }}
         {...rest}
       >
@@ -93,7 +93,7 @@ function AnchorLink({
         href={to}
         onClick={(e) => {
           e.preventDefault();
-          navigate(to);
+          void navigate(to);
         }}
         {...rest}
       >
@@ -162,7 +162,7 @@ function setMetaTag(key: "name" | "property", value: string, content: string): v
 }
 
 export function setCanonical(href: string): void {
-  let canonical = document.head.querySelector("link[rel='canonical']") as HTMLLinkElement | null;
+  let canonical = document.head.querySelector<HTMLLinkElement>("link[rel='canonical']");
   if (!canonical) {
     canonical = document.createElement("link");
     canonical.setAttribute("rel", "canonical");

@@ -31,7 +31,7 @@ export function parseScanInput(filePath: string, format: ScanInputFormat): Norma
     return parseSarifFile(resolvedPath);
   }
 
-  throw new Error(`Unsupported input format: ${resolved}`);
+  throw new Error(`Unsupported input format: ${String(resolved)}`);
 }
 
 export async function parseScanInputFromAudit(params: {

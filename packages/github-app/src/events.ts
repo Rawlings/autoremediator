@@ -29,10 +29,10 @@ function readInstallationId(payload: Record<string, unknown>): number | undefine
   return typeof id === "number" && Number.isFinite(id) ? id : undefined;
 }
 
-async function runWithTimeout(task: Promise<unknown> | unknown, timeoutMs: number): Promise<void> {
+async function runWithTimeout(task: unknown, timeoutMs: number): Promise<void> {
   await Promise.race([
     Promise.resolve(task),
-    new Promise<void>((_, reject) => {
+    new Promise<void>((_resolve, reject) => {
       setTimeout(() => reject(new Error(`Timed out after ${timeoutMs}ms`)), timeoutMs);
     }),
   ]);

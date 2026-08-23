@@ -1,6 +1,6 @@
 {
   "name": "autoremediator",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "private": false,
   "description": "Agentic CVE remediation platform for Node.js. Correlates threat intelligence, applies policy-governed fixes, and delivers auditable remediation outcomes across CI/CD pipelines, agent workflows, and service portfolios.",
   "keywords": [

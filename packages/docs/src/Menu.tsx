@@ -21,14 +21,17 @@ export function Menu() {
         <span />
       </button>
 
-      {open && <div className="menu-backdrop" onClick={close} />}
+      {open && (
+        <button type="button" className="menu-backdrop" onClick={close} aria-label="Close menu" />
+      )}
 
       <aside className={open ? "side-menu open" : "side-menu"}>
         <div className="side-menu-primary">
-          <nav className="side-nav" aria-label="Reference sections" onClick={close}>
+          <nav className="side-nav" aria-label="Reference sections">
             <NavLink
               to="/"
               end
+              onClick={close}
               className={({ isActive }) => (isActive ? "menu-item active" : "menu-item")}
             >
               Home
@@ -37,6 +40,7 @@ export function Menu() {
               <NavLink
                 key={doc.slug}
                 to={`/docs/${doc.slug}`}
+                onClick={close}
                 className={({ isActive }) => (isActive ? "menu-item active" : "menu-item")}
               >
                 {doc.title}

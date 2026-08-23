@@ -361,7 +361,7 @@ export interface ReachabilityAssessment {
     | "call-path-found"
     | "call-graph-uninvoked"
     | "unknown";
-  justification?: "code_not_in_execute_path" | "code_not_reachable" | string;
+  justification?: "code_not_in_execute_path" | "code_not_reachable" | (string & {});
   evidence?: ReachabilityEvidence[];
 }
 

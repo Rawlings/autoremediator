@@ -61,11 +61,18 @@ const defaultDeps: OpenApiServerDeps = {
 };
 
 export function createOpenApiServer(deps: OpenApiServerDeps = defaultDeps): http.Server {
-  return http.createServer(async (req, res) => {
-    if (await handleOpenApiRequest(req, res, deps)) {
-      return;
-    }
-    return sendJson(res, 404, { error: "Not found" });
+  return http.createServer((req, res) => {
+    void (async () => {
+      try {
+        if (await handleOpenApiRequest(req, res, deps)) {
+          return;
+        }
+        sendJson(res, 404, { error: "Not found" });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Internal Server Error";
+        sendJson(res, 500, { error: message });
+      }
+    })();
   });
 }
 

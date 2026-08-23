@@ -56,7 +56,7 @@ export async function scanForVulns(cwd: string, force = false): Promise<VulnFind
 
   const cached = scanCache.get(cwd);
   const now = Date.now();
-  if (!force && cached && cached.packageJsonMtime === pkgMtime && now - cached.timestamp < 15000) {
+  if (!force && cached?.packageJsonMtime === pkgMtime && now - cached.timestamp < 15000) {
     return cached.findings;
   }
 

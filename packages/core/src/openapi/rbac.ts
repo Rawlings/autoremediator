@@ -30,8 +30,8 @@ const ROUTE_ROLE_REQUIREMENTS: Record<string, Role> = {
 
 export interface JwtPayload {
   sub?: string;
-  role?: Role | string;
-  roles?: Array<Role | string>;
+  role?: Role | (string & {});
+  roles?: Array<Role | (string & {})>;
   scope?: string;
   exp?: number;
   [key: string]: unknown;

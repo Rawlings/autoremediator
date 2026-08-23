@@ -11,7 +11,7 @@ import { checkReachabilityTool } from "./tools/check-reachability.js";
 interface RuntimeToolLike {
   description?: string;
   parameters?: unknown;
-  execute: (input: any) => Promise<unknown> | unknown;
+  execute: (input: any) => Promise<unknown>;
   [key: string]: unknown;
 }
 

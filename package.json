@@ -61,7 +61,8 @@
   "devDependencies": {
     "@changesets/cli": "^3.0.1",
     "oxfmt": "^0.64.0",
-    "oxlint": "^1.79.0"
+    "oxlint": "^1.79.0",
+    "oxlint-tsgolint": "^7.0.2001"
   },
   "engines": {
     "node": ">=24.0.0"

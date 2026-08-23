@@ -829,16 +829,18 @@ export function createGitHubAppServer(options: ServerOptions): Server {
       })
     : undefined;
 
-  const server = createServer(async (request, response) => {
-    try {
-      await handleRequest(request, response, normalizedOptions);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unexpected server error";
-      writeJson(response, {
-        statusCode: 500,
-        body: { error: message },
-      });
-    }
+  const server = createServer((request, response) => {
+    void (async () => {
+      try {
+        await handleRequest(request, response, normalizedOptions);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unexpected server error";
+        writeJson(response, {
+          statusCode: 500,
+          body: { error: message },
+        });
+      }
+    })();
   });
 
   server.on("close", () => {

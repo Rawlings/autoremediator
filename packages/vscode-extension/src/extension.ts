@@ -304,7 +304,7 @@ class PackageHoverProvider implements vscode.HoverProvider {
       );
 
       md.appendMarkdown(
-        `[⚡ Auto-Remediate](${fixUri}) &nbsp;|&nbsp; [🔬 Check Reachability](${reachUri})`,
+        `[⚡ Auto-Remediate](${fixUri.toString()}) &nbsp;|&nbsp; [🔬 Check Reachability](${reachUri.toString()})`,
       );
       return new vscode.Hover(md, range);
     }

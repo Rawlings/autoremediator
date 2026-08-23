@@ -307,10 +307,16 @@ export async function validatePatchWithTests(
       output: result.stdout,
     };
   } catch (err) {
-    const errorOutput =
+    const stdoutVal =
       typeof err === "object" && err !== null && "stdout" in err
-        ? String((err as Record<string, unknown>).stdout ?? "")
+        ? (err as { stdout?: unknown }).stdout
         : "";
+    const errorOutput =
+      typeof stdoutVal === "string"
+        ? stdoutVal
+        : Buffer.isBuffer(stdoutVal)
+          ? (stdoutVal as Buffer).toString("utf8")
+          : "";
     const failedTests = extractFailedTests(errorOutput);
 
     return {
