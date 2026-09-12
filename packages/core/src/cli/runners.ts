@@ -17,7 +17,10 @@ import {
   toSarifOutput,
   updateOutdated,
   validatePatchArtifact,
+  reconcilePatchArtifacts,
 } from "../api/index.js";
+import { runInteractiveTriage } from "./triage.js";
+export { runInteractiveTriage };
 import { readFileSync, writeFileSync } from "node:fs";
 import { formatCountMap, logJson } from "./output.js";
 import type { CommandOptions } from "./types.js";
@@ -112,7 +115,9 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
     preview: opts.preview,
     simulationMode: opts.simulationMode,
     runTests: opts.runTests,
+    typecheck: opts.typecheck,
     patchesDir: opts.patchesDir,
+
     policy: opts.policy,
     evidence: opts.evidence,
     llmProvider: opts.llmProvider,
@@ -245,6 +250,10 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
 }
 
 export async function runScanInput(inputPath: string, opts: CommandOptions): Promise<void> {
+  if (opts.interactive) {
+    await runInteractiveTriage(inputPath, opts);
+    return;
+  }
   const changeRequest = resolveChangeRequestOptions(opts);
 
   const report = await remediateFromScan(inputPath, {
@@ -258,7 +267,9 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
     preview: opts.preview,
     simulationMode: opts.simulationMode,
     runTests: opts.runTests,
+    typecheck: opts.typecheck,
     llmProvider: opts.llmProvider,
+
     model: opts.model,
     modelPersonality: opts.modelPersonality,
     providerSafetyProfile: opts.providerSafetyProfile,
@@ -763,3 +774,37 @@ export async function runDiffAudit(opts: {
     process.exitCode = report.netRiskVerdict === "degraded" ? 1 : 0;
   }
 }
+
+export async function runReconcilePatches(
+  opts: Pick<CommandOptions, "cwd" | "patchesDir" | "packageManager" | "runTests" | "outputFormat"> & {
+    autoApply?: boolean;
+  },
+): Promise<void> {
+  const report = await reconcilePatchArtifacts({
+    cwd: opts.cwd,
+    patchesDir: opts.patchesDir,
+    packageManager: opts.packageManager,
+    autoApply: opts.autoApply,
+    runTests: opts.runTests,
+  });
+
+  if (opts.outputFormat === "json") {
+    logJson(report);
+    return;
+  }
+
+  process.stdout.write(`=== Patch Artifact Reconciliation ===\n`);
+  process.stdout.write(`Reconciled (upgraded): ${report.reconciledCount}\n`);
+  process.stdout.write(`Retained: ${report.retainedCount}\n\n`);
+
+  for (const item of report.reconciled) {
+    process.stdout.write(`- [${item.status}] ${item.packageName} (${item.patchFilePath})\n`);
+    if (item.safeUpstreamVersion) {
+      process.stdout.write(`  Safe Upstream Version: ${item.safeUpstreamVersion}\n`);
+    }
+    if (item.reason) {
+      process.stdout.write(`  Reason: ${item.reason}\n`);
+    }
+  }
+}
+

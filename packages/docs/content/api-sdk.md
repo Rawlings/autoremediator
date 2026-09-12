@@ -34,6 +34,7 @@ The SDK exposes autonomous operator controls on top of baseline remediation:
 - `listPatchArtifacts(options?)`
 - `inspectPatchArtifact(patchFilePath, options?)`
 - `validatePatchArtifact(patchFilePath, options?)`
+- `reconcilePatchArtifacts(options?)` — inspect active patches against upstream registries and upgrade when safe versions are published
 - `toCycloneDxVex(report, options?)`
 - `submitRemediateJob(cveId, options?)` — submit a remediation as a background job; returns `JobHandle` immediately
 - `submitScanJob(inputPath, options?)` — submit a scan-based remediation as a background job
@@ -48,27 +49,32 @@ Multi-repository automation can use `remediatePortfolio` when one controller nee
 
 ## Function Reference
 
-### `remediate(cveId, options?)`
+### `remediate(cveOrGhsaId, options?)`
 
-What: runs single-CVE remediation pipeline for a target repository.
+What: runs single-vulnerability remediation pipeline for a target repository.
 
 Why: best for targeted, urgent vulnerability response in automation.
 
-How: performs CVE lookup, inventory/version matching, safe bump attempt, and fallback patch flow when configured and allowed.
+How: accepts standard CVE identifiers (`CVE-YYYY-NNNNN`) or GitHub Security Advisory identifiers (`GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}`). Performs advisory lookup across OSV and GitHub Advisory databases, checks installed package inventory (including monorepo workspace member packages), attempts safe version bump first, applies transitive dependency overrides if needed, and uses fallback patch generation when configured and allowed.
 
 ### `remediateFromScan(inputPath, options?)`
 
-What: parses scanner output and remediates each discovered CVE.
+What: parses scanner output and remediates each discovered vulnerability.
 
 Why: best for scheduled CI and batch remediation operations.
 
-How: normalizes scanner findings, deduplicates CVEs, and delegates each CVE to the remediation pipeline.
+How: normalizes scanner findings (supporting npm-audit, yarn-audit, and SARIF), extracts CVE and GHSA advisories, deduplicates findings, and delegates each vulnerability to the remediation pipeline.
 
-Change-request creation is available through `options.changeRequest` and currently supports deterministic batched grouping (`all`).
+Change-request creation is available through `options.changeRequest` and supports flexible pull request grouping via `options.changeRequest.grouping`:
 
-### `planRemediation(cveId, options?)`
+- `"all"` (default): batches all remediated vulnerabilities into a single pull request
+- `"per-cve"`: creates an isolated branch and pull request for each vulnerability
+- `"per-package"`: groups fixes by affected package into separate pull requests
+- `"by-severity"`: creates discrete pull requests partitioned by severity tier (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`)
 
-What: runs a non-mutating remediation preview for a single CVE.
+### `planRemediation(cveOrGhsaId, options?)`
+
+What: runs a non-mutating remediation preview for a single CVE or GHSA vulnerability.
 
 Why: best for agent orchestration systems that need to inspect intended actions before allowing write operations.
 
@@ -137,6 +143,24 @@ What: validates a stored patch against its manifest and current dependency inven
 
 Why: useful for drift detection when lockfiles or installed versions change over time.
 
+### `reconcilePatchArtifacts(options?)`
+
+What: audits active `.patch` artifacts in the configured patch directory against upstream package registries and OSV intelligence.
+
+Why: eliminates patch technical debt by automatically upgrading to official safe upstream versions as soon as maintainers publish fixes, retiring obsolete patches.
+
+How:
+
+- Inspects all `.patch` files and `.patch.json` manifests in `patchesDir` (default `./patches`).
+- Queries package intelligence to verify whether a safe upstream release (`safeUpgradeVersion`) is now available.
+- When `autoApply: false` (default), reports `status: "safe-version-available"` with the target version.
+- When `autoApply: true`, updates `package.json`, removes patch declarations (e.g. `pnpm.patchedDependencies`), deletes the `.patch` and `.patch.json` files, and re-executes package install and optional test validation.
+- Returns `PatchReconcileReport` with `reconciledCount`, `retainedCount`, and per-artifact `PatchReconcileResult` items.
+
+Also available via:
+
+- CLI: `autoremediator patches reconcile [--auto-apply] [--run-tests]`
+
 ### `toCycloneDxVex(report, options?)`
 
 What: converts a `ScanReport` or `RemediationReport` to a CycloneDX 1.5 VEX compliance document.
@@ -151,15 +175,68 @@ Also available via:
 - MCP: `toVex` tool
 - OpenAPI: `POST /vex`
 
-### `submitRemediateJob` / `submitScanJob` / `submitPortfolioJob` / `pollJob`
+### `checkReachability(options)`
 
-What: async job model for long-running or portfolio-scale remediation.
+What: performs AST call-graph reachability analysis across application source files using `oxc-parser`.
 
-Why: allows callers to submit remediation work and poll for completion rather than blocking — suitable for control plane integrations, webhooks, and multi-repo automation.
+Why: eliminates noise and false positives for packages or symbols that are installed but never invoked by the application, generating standard CycloneDX 1.5 VEX justifications.
 
-How: each submit function returns a `JobHandle` (`{ jobId, status, submittedAt }`) immediately. Call `pollJob(jobId)` to receive the current `AsyncRemediationJob` state (`pending | running | done | failed`) along with the full result or error when complete.
+How:
 
-Also available via MCP tools (`submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob`) and OpenAPI routes (`POST /jobs/remediate`, `POST /jobs/scan`, `POST /jobs/portfolio`, `GET /jobs/:jobId`).
+- Walks `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, and `.cjs` source files, mapping imports, `require()` calls, dynamic imports, and function calls.
+- Traces path aliases configured in `tsconfig.json` / `jsconfig.json`.
+- When direct imports are not detected, recursively inspects `node_modules` manifests to trace whether a transitive dependency resides on an active import path of an imported direct package (`findTransitiveDependencyPath`).
+- Options (`CheckReachabilityOptions`):
+  - `packageName`: package name to check
+  - `symbol`: optional specific export/function symbol to trace
+  - `cwd`: project directory
+- Returns `ReachabilityAssessment`:
+  - `status`: `"reachable"` | `"not-reachable"` | `"unknown"`
+  - `reachabilityBasis`: `"direct-import-found"` | `"transitive-path-found"` | `"call-graph-uninvoked"` | `"manifest-only"` | `"analysis-failed"`
+  - `evidence`: matched source files and line references
+  - `justification`: standard VEX justification string (e.g. `vulnerable_code_not_in_execute_path`)
+
+### `evaluatePackage(packageName, options?)`
+
+What: pre-installation security vetting of candidate packages and versions.
+
+Why: allows security automation, developer tools, and IDE extensions to vet packages against OSV, CISA KEV, and EPSS before installation.
+
+How: queries package registries and advisory databases to evaluate known CVEs, KEV exploitation signals, and safe upgrade versions.
+
+- Options (`EvaluatePackageOptions`):
+  - `packageName`: name of the package
+  - `version`: optional target version to inspect (defaults to latest)
+  - `packageManager`: package manager used for registry lookup
+  - `cwd`: working directory
+- Returns `PackageEvaluationReport`:
+  - `verdict`: `"safe"` | `"caution"` | `"vulnerable"` | `"actively-exploited"`
+  - `isVulnerable`: boolean
+  - `vulnerabilities`: array of `VulnerabilityEvaluationEntry` records with severity, EPSS scores, and KEV flags
+  - `recommendedVersion`: recommended safe version
+
+### `scanDelta(options?)`
+
+What: Git-aware delta vulnerability scanner for working tree & branch diffs.
+
+Why: lightweight, targeted security gating for pull requests — audits only dependencies added, upgraded, or downgraded in the diff rather than auditing the entire dependency tree.
+
+How:
+
+- Diffs lockfiles between `baseRef` (e.g. `origin/main`, `HEAD~1`) and the current tree supporting npm (`package-lock.json` v1/v2/v3), pnpm (`pnpm-lock.yaml` v5/v6/v9), and Yarn (`yarn.lock` v1).
+- Traces both direct and transitive dependency changes (`dependencyType: "direct" | "transitive"`).
+- Resolves vulnerability status for newly introduced vs resolved packages.
+- Options (`DeltaScanOptions`):
+  - `baseRef`: Git base reference to diff against (default: `"HEAD"`)
+  - `cwd`: project root
+  - `includeUnstaged`: include uncommitted working tree changes (default: `true`)
+  - `packageManager`: explicit package manager override
+- Returns `DeltaScanReport`:
+  - `netRiskVerdict`: `"improved"` | `"neutral"` | `"degraded"`
+  - `dependencyChanges`: array of `DeltaDependencyChange` items
+  - `introducedFindings`: newly introduced vulnerabilities
+  - `resolvedFindings`: vulnerabilities resolved by the diff
+  - `summary`: human-readable risk delta summary
 
 ## Options Reference
 
@@ -171,6 +248,7 @@ Core options:
 - `preview`: non-mutating planning mode for orchestration/approval workflows
 - `simulationMode`: attaches deterministic simulation metadata for dry-run or preview execution; requires `dryRun: true` or `preview: true`
 - `runTests`: enables post-apply test validation
+- `typecheck`: enables post-apply typecheck gate (`tsc --noEmit` or `deno check`); rolls back automatically if type errors are introduced
 - `llmProvider`: provider selection (`remote` or `local` deterministic primary path)
 - `policy`: path to `.github/autoremediator.yml`
 - `dispositionPolicy`: confidence, transitive-scope, KEV, and SLA rules for result classification
@@ -179,12 +257,13 @@ Core options:
 - `evidence`: enable/disable evidence artifact writing for direct and scan workflows
 - `patchesDir`: patch output/apply location when fallback patching is used
 - `changeRequest`: optional native pull request / merge request creation controls (`provider`, `grouping`, branch naming, repository override)
+  - `grouping`: change-request partitioning strategy (`"all"` for single batch PR, `"per-cve"` for isolated branch per CVE, `"per-package"` for grouped updates per package, or `"by-severity"` for branches grouped by `CRITICAL`/`HIGH`/`MEDIUM`/`LOW`)
 - `requestId`: request-level correlation identifier
 - `sessionId`: session-level correlation identifier
 
 Result details now include:
 
-- `reachability`: AST-level import and call-graph reachability analysis (`status`, `reachabilityBasis`, `evidence`, `justification`)
+- `reachability`: AST-level import and call-graph reachability analysis (`status`, `reachabilityBasis` including `"transitive-path-found"`, `evidence`, `justification`)
 - `alternativeSuggestions`: npm-search-based replacement candidates when no safe version exists
 - `fixExplanation`: developer-readable summary of what changed, why, and what to review next
 - `changeRequests`: created or planned pull request / merge request metadata when requested
@@ -195,10 +274,14 @@ Result details now include:
 - `source`: provenance source (`cli`, `sdk`, `mcp`, `openapi`, `unknown`)
 - `constraints.directDependenciesOnly`: block remediation outcomes for transitive dependencies
 - `constraints.preferVersionBump`: reject patch-file outcomes in favor of bump-only policy
+- `constraints.typecheck`: enforce typecheck gate validation post-install
 - `constraints.installMode`: install profile (`deterministic`, `prefer-offline`, `standard`) used for apply and rollback installs
 - `constraints.installPreferOffline`: explicit override for `--prefer-offline` install flag behavior
 - `constraints.enforceFrozenLockfile`: explicit override for frozen-lockfile behavior (`npm ci` / `--frozen-lockfile`)
 - `constraints.workspace`: workspace/package selector used to scope monorepo install/list/test operations when supported by the package manager
+- `supplyChain.minPublishAgeHours`: minimum package release age in hours required before considering candidate upgrades safe
+- `supplyChain.blockInstallScripts`: reject candidate packages declaring `preinstall`, `install`, or `postinstall` lifecycle scripts
+- `supplyChain.requireProvenance`: require verifiable cryptographic build provenance / Sigstore attestations
 - `modelPersonality`: prompt behavior profile (`analytical`, `pragmatic`, `balanced`)
 - `providerSafetyProfile`: confidence/safety posture profile (`strict`, `relaxed`)
 - `requireConsensusForHighRisk`: require consensus verification for high-risk generated patches
@@ -217,7 +300,11 @@ Result details now include:
 - `exploitSignalTriggered`: `true` when a KEV or EPSS threshold signal fired for this CVE
 - `slaBreaches`: array of SLA breach records when `slaCheck: true` and windows are configured (`cveId`, `severity`, `publishedAt`, `hoursOverdue`)
 - `sbom`: array of `SbomEntry` records for all installed packages (`name`, `version`, `type`, `status`: `patched`|`unpatched`|`skipped`|`suppressed`)
-- Patch artifacts include `integrity`: SHA-256 content hash (`sha256:<hex>`) for every generated patch
+- Patch artifacts include:
+  - `integrity`: SHA-256 content hash (`sha256:<hex>`) for every generated patch
+  - `reproductionTest`: synthesized Node.js test script asserting that the targeted vulnerability is neutralized
+  - `reproductionTestPath`: relative path to the generated reproduction test file (`patches/<pkg>+<ver>.test.cjs`)
+  - `validationPhases`: phased validation execution records including `reproduction-test`
 - `suppressionsFile`: path to a YAML file with VEX suppression entries merged with policy-inline suppressions
 - `exploitSignalOverride`: configures exploit-signal prioritization — `kev.mandatory` and/or `epss.mandatory`+`epss.threshold`
 - `slaCheck`: when `true`, compares CVE publication age against policy SLA windows and writes `slaBreaches` to the report

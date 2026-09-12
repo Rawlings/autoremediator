@@ -19,8 +19,12 @@ import {
   resolveDedupeCommand,
   resolveInstallCommand,
   resolveTestCommand,
+  resolveTypecheckCommand,
   type PackageManager,
 } from "../../platform/package-manager/index.js";
+
+import { findDeclaringWorkspacePackage } from "../../platform/workspace.js";
+
 
 interface RawPackageJson {
   dependencies?: Record<string, string>;
@@ -49,6 +53,10 @@ export const applyVersionBumpTool = defineTool({
       .boolean()
       .default(false)
       .describe("If true, run test validation after applying the fix"),
+    typecheck: z
+      .boolean()
+      .default(false)
+      .describe("If true, run typecheck validation after applying the fix"),
     installMode: z.enum(["standard", "prefer-offline", "deterministic"]).optional(),
     installPreferOffline: z.boolean().optional(),
     enforceFrozenLockfile: z.boolean().optional(),
@@ -63,13 +71,15 @@ export const applyVersionBumpTool = defineTool({
     dryRun,
     policy,
     runTests,
+    typecheck,
     installMode,
     installPreferOffline,
     enforceFrozenLockfile,
     workspace,
   }): Promise<PatchResult> => {
+
     const pm = (packageManager ?? detectPackageManager(cwd)) as PackageManager;
-    const pkgPath = join(cwd, "package.json");
+    let pkgPath = join(cwd, "package.json");
     const loadedPolicy = loadPolicy(cwd, policy);
     const commandConstraints = {
       ...loadedPolicy.constraints,
@@ -80,9 +90,6 @@ export const applyVersionBumpTool = defineTool({
       workspace: workspace ?? loadedPolicy.constraints?.workspace,
     };
     const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
-    const installCommand = resolveInstallCommand(pm, commandConstraints, yarnMajor);
-    const testCommand = resolveTestCommand(pm, commandConstraints);
-    const dedupeCommand = resolveDedupeCommand(pm, commandConstraints);
 
     if (!isPackageAllowed(loadedPolicy, packageName)) {
       return {
@@ -115,6 +122,7 @@ export const applyVersionBumpTool = defineTool({
       };
     }
 
+    pkgPath = join(cwd, "package.json");
     let pkgJson: RawPackageJson;
     try {
       pkgJson = JSON.parse(readFileSync(pkgPath, "utf8")) as RawPackageJson;
@@ -131,9 +139,22 @@ export const applyVersionBumpTool = defineTool({
     }
 
     // Locate which dependency field this package lives in
-    const depField = (["dependencies", "devDependencies", "peerDependencies"] as DepField[]).find(
+    let depField = (["dependencies", "devDependencies", "peerDependencies"] as DepField[]).find(
       (f) => pkgJson[f]?.[packageName] !== undefined,
     );
+
+    if (!depField) {
+      // Check monorepo child workspaces
+      const declaringWorkspace = findDeclaringWorkspacePackage(cwd, packageName, workspace);
+      if (declaringWorkspace) {
+        pkgPath = declaringWorkspace.manifestPath;
+        pkgJson = declaringWorkspace.manifest as RawPackageJson;
+        depField = (["dependencies", "devDependencies", "peerDependencies"] as DepField[]).find(
+          (f) => pkgJson[f]?.[packageName] !== undefined,
+        );
+        commandConstraints.workspace = workspace ?? declaringWorkspace.name;
+      }
+    }
 
     if (!depField) {
       return {
@@ -147,6 +168,7 @@ export const applyVersionBumpTool = defineTool({
       };
     }
 
+
     const currentRange = pkgJson[depField]![packageName]!;
 
     // Preserve the range prefix (^, ~, empty) from the existing entry
@@ -154,9 +176,16 @@ export const applyVersionBumpTool = defineTool({
     const prefix = prefixMatch?.[1] ?? "";
     const newRange = `${prefix}${toVersion}`;
 
+    const effectiveInstallCommand = resolveInstallCommand(pm, commandConstraints, yarnMajor);
+    const effectiveTestCommand = resolveTestCommand(pm, commandConstraints);
+    const effectiveTypecheckCommand = resolveTypecheckCommand(pm, commandConstraints, cwd);
+    const effectiveDedupeCommand = resolveDedupeCommand(pm, commandConstraints);
+    const shouldTypecheck = typecheck || Boolean(commandConstraints.typecheck);
+
+
     if (dryRun) {
-      const installCmd = installCommand.join(" ");
-      const testCmd = testCommand.join(" ");
+      const installCmd = effectiveInstallCommand.join(" ");
+      const testCmd = effectiveTestCommand.join(" ");
       return {
         packageName,
         strategy: "version-bump",
@@ -164,7 +193,7 @@ export const applyVersionBumpTool = defineTool({
         toVersion,
         applied: false,
         dryRun: true,
-        message: `[DRY RUN] Would update ${depField}.${packageName}: "${currentRange}" -> "${newRange}", then run ${installCmd}${runTests ? ` and ${testCmd}` : ""}${dedupeCommand.length > 0 ? ` and ${dedupeCommand.join(" ")} (best-effort)` : ""}.`,
+        message: `[DRY RUN] Would update ${depField}.${packageName}: "${currentRange}" -> "${newRange}", then run ${installCmd}${runTests ? ` and ${testCmd}` : ""}${effectiveDedupeCommand.length > 0 ? ` and ${effectiveDedupeCommand.join(" ")} (best-effort)` : ""}.`,
       };
     }
 
@@ -175,11 +204,12 @@ export const applyVersionBumpTool = defineTool({
 
       // Run package-manager install
       try {
-        const [installCmd, ...installArgs] = installCommand;
+        const [installCmd, ...installArgs] = effectiveInstallCommand;
         await safeExeca(installCmd, installArgs, {
           cwd,
           stdio: "pipe",
         });
+
       } catch (err) {
         // Revert the package.json change on install failure
         pkgJson[depField]![packageName] = currentRange;
@@ -194,13 +224,13 @@ export const applyVersionBumpTool = defineTool({
           applied: false,
           dryRun: false,
           unresolvedReason: "install-failed",
-          message: `${installCommand.join(" ")} failed after updating "${packageName}" to ${toVersion}. Reverted. Error: ${message}`,
+          message: `${effectiveInstallCommand.join(" ")} failed after updating "${packageName}" to ${toVersion}. Reverted. Error: ${message}`,
         };
       }
 
       if (runTests) {
         try {
-          const [testCmd, ...testArgs] = testCommand;
+          const [testCmd, ...testArgs] = effectiveTestCommand;
           await safeExeca(testCmd, testArgs, {
             cwd,
             stdio: "pipe",
@@ -211,7 +241,7 @@ export const applyVersionBumpTool = defineTool({
           writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
           try {
-            const [rollbackCmd, ...rollbackArgs] = installCommand;
+            const [rollbackCmd, ...rollbackArgs] = effectiveInstallCommand;
             await safeExeca(rollbackCmd, rollbackArgs, {
               cwd,
               stdio: "pipe",
@@ -229,21 +259,58 @@ export const applyVersionBumpTool = defineTool({
             applied: false,
             dryRun: false,
             unresolvedReason: "validation-failed",
-            message: `${testCommand.join(" ")} failed after upgrading "${packageName}" to ${toVersion}. Rolled back to ${currentRange}. Error: ${message}`,
+            message: `${effectiveTestCommand.join(" ")} failed after upgrading "${packageName}" to ${toVersion}. Rolled back to ${currentRange}. Error: ${message}`,
+          };
+        }
+      }
+
+      if (shouldTypecheck && effectiveTypecheckCommand.length > 0) {
+        try {
+          const [tcCmd, ...tcArgs] = effectiveTypecheckCommand;
+
+          await safeExeca(tcCmd, tcArgs, {
+            cwd,
+            stdio: "pipe",
+          });
+        } catch (err) {
+          pkgJson[depField]![packageName] = currentRange;
+          writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+
+          try {
+            const [rollbackCmd, ...rollbackArgs] = effectiveInstallCommand;
+            await safeExeca(rollbackCmd, rollbackArgs, {
+              cwd,
+              stdio: "pipe",
+            });
+          } catch {}
+
+          const message = err instanceof Error ? err.message : String(err);
+          return {
+            packageName,
+            strategy: "version-bump",
+            fromVersion,
+            toVersion,
+            applied: false,
+            dryRun: false,
+            unresolvedReason: "validation-failed",
+            message: `TypeCheck validation failed (${effectiveTypecheckCommand.join(" ")}) after upgrading "${packageName}" to ${toVersion}. Rolled back to ${currentRange}. Error: ${message}`,
           };
         }
       }
 
       let dedupeNote = "";
-      try {
-        const [dedupeCmd, ...dedupeArgs] = dedupeCommand;
-        await safeExeca(dedupeCmd, dedupeArgs, {
-          cwd,
-          stdio: "pipe",
-        });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        dedupeNote = ` Dedupe warning: ${dedupeCommand.join(" ")} failed (${message}).`;
+
+      if (effectiveDedupeCommand.length > 0) {
+        try {
+          const [dedupeCmd, ...dedupeArgs] = effectiveDedupeCommand;
+          await safeExeca(dedupeCmd, dedupeArgs, {
+            cwd,
+            stdio: "pipe",
+          });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          dedupeNote = ` Dedupe warning: ${effectiveDedupeCommand.join(" ")} failed (${message}).`;
+        }
       }
 
       return {
@@ -253,7 +320,7 @@ export const applyVersionBumpTool = defineTool({
         toVersion,
         applied: true,
         dryRun: false,
-        message: `Successfully upgraded "${packageName}" from ${fromVersion} to ${toVersion}, ran ${installCommand.join(" ")}${runTests ? `, and passed ${testCommand.join(" ")}` : ""}.${dedupeNote}`,
+        message: `Successfully upgraded "${packageName}" from ${fromVersion} to ${toVersion} in ${depField}, then ran ${effectiveInstallCommand.join(" ")}${runTests ? ` and passed ${effectiveTestCommand.join(" ")}` : ""}.${dedupeNote}`,
       };
     });
   },

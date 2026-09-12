@@ -84,7 +84,10 @@ docker run --rm -v "$PWD:/workdir" ghcr.io/rawlings/autoremediator CVE-2021-2333
 | GitHub Actions CI (recommended)                | reusable workflow with PR automation                 | Fast setup for automatic remediation with reviewable pull requests                                                                                      |
 | Scheduled PR automation                        | reusable workflow with `on.schedule` cron            | Continuous improvement with reviewable remediation PRs on a cadence — see [Integrations](integrations.md#github-actions-scheduled-auto-remediation-prs) |
 | Update all outdated packages (no CVE required) | `update-outdated` mode                               | Bump all outdated npm packages with policy controls, evidence, and optional PR creation — see [CLI Reference](cli.md#update-outdated-mode)              |
-| Urgent single CVE                              | direct CVE mode                                      | Fast, focused remediation and clear operator feedback                                                                                                   |
+| Urgent single CVE or GHSA advisory             | direct CVE / GHSA mode                               | Fast, focused remediation for standard CVEs or GitHub Security Advisories with clear operator feedback                                                  |
+| Interactive developer triage                   | `autoremediator triage` or `-i`                      | Step-by-step terminal UI to inspect, apply, skip, or suppress findings interactively                                                                    |
+| PR lockfile delta vulnerability check          | `autoremediator diff --base origin/main`             | Lightweight check auditing only dependency additions/updates in pull requests                                                                           |
+| Monorepo workspace-scoped remediation          | `--workspace <pkg>`                                  | Target remediation to specific workspace member packages in pnpm, npm, or Yarn monorepos                                                                |
 | Non-mutating orchestration planning            | `--preview` or `planRemediation()`                   | Evaluate intended remediation actions before mutation                                                                                                   |
 | Nightly scanner automation                     | scan mode (`--input`)                                | Batch handling with deterministic CI summary                                                                                                            |
 | Multi-repo remediation controller              | `portfolio --targets-file` or `remediatePortfolio()` | Aggregate many repositories into one coordinated run                                                                                                    |
@@ -97,11 +100,16 @@ docker run --rm -v "$PWD:/workdir" ghcr.io/rawlings/autoremediator CVE-2021-2333
 
 Recent remediation reports can include:
 
-- AST-level package and call-graph reachability assessment (Oxc engine) with automated CycloneDX 1.5 VEX justifications
-- alternative package suggestions when no safe upgrade exists
-- human-readable fix explanations per package result
-- optional pull request / merge request creation metadata
-- aggregate `dispositionCounts`, `escalationCounts`, and `simulationSummary` fields for orchestration and CI routing
+- Direct remediation for GitHub Security Advisories (`GHSA-...`) alongside standard CVE IDs
+- AST-level package and call-graph reachability assessment (Oxc engine) with automated CycloneDX 1.5 VEX justifications and transitive dependency call-path discovery
+- Pre-upgrade supply chain trust checks (package age, install scripts, and provenance verification)
+- Post-apply typecheck gate (`--typecheck`) preventing TypeScript regressions
+- Standalone patch reproduction test synthesis (`.test.cjs`) executed post-apply
+- Upstream patch reconciliation (`autoremediator patches reconcile`) to retire obsolete patches
+- Granular PR grouping options (`per-cve`, `per-package`, `by-severity`, or `all`)
+- Alternative package suggestions when no safe upgrade exists
+- Human-readable fix explanations per package result
+- Aggregate `dispositionCounts`, `escalationCounts`, and `simulationSummary` fields for orchestration and CI routing
 
 For GitHub Actions, the recommended approach is the reusable workflow with pull request automation enabled:
 
@@ -127,21 +135,42 @@ The default GitHub App remediation handler applies scan filtering with `AUTOREME
 
 ## First Commands (What and Why)
 
-Direct CVE remediation:
+Direct CVE or GHSA remediation:
 
 ```bash
 autoremediator CVE-2021-23337
+autoremediator GHSA-36p3-wjmg-h94x
 ```
 
 What it does:
 
-- looks up CVE intelligence
-- checks installed package inventory
+- looks up CVE or GHSA intelligence
+- checks installed package inventory (including monorepo member packages)
 - matches vulnerable installed versions
 - attempts safe version bump first
 - uses patch fallback only when no safe bump is available
 
 Why to use it: ideal for urgent vulnerability response.
+
+Interactive developer triage:
+
+```bash
+autoremediator triage
+```
+
+What it does: steps through vulnerability findings one by one in the terminal, showing severity, EPSS scores, and safe upgrade versions with interactive prompts to apply, skip, or suppress.
+
+Why to use it: ideal for local development triage.
+
+PR lockfile delta scan:
+
+```bash
+autoremediator diff --base origin/main
+```
+
+What it does: computes lockfile diffs against the base branch and audits only dependencies introduced or updated in the PR.
+
+Why to use it: ideal for lightweight PR CI verification.
 
 Scanner-driven remediation:
 

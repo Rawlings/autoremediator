@@ -15,6 +15,7 @@ const mocked = vi.hoisted(() => ({
   ciExitCode: vi.fn(),
   toSarifOutput: vi.fn(),
   validatePatchArtifact: vi.fn(),
+  reconcilePatchArtifacts: vi.fn().mockResolvedValue({ reconciled: [], reconciledCount: 0, retainedCount: 0 }),
   buildStrategyCounts: vi.fn(() => undefined),
   buildDependencyScopeCounts: vi.fn(() => undefined),
   buildSlaBreachSummary: vi.fn(() => undefined),
@@ -64,6 +65,7 @@ vi.mock("../api/index.js", () => ({
   ciExitCode: mocked.ciExitCode,
   toSarifOutput: mocked.toSarifOutput,
   validatePatchArtifact: mocked.validatePatchArtifact,
+  reconcilePatchArtifacts: mocked.reconcilePatchArtifacts,
   buildStrategyCounts: mocked.buildStrategyCounts,
   buildDependencyScopeCounts: mocked.buildDependencyScopeCounts,
   buildSlaBreachSummary: mocked.buildSlaBreachSummary,
@@ -454,6 +456,28 @@ describe("cli preview and correlation option forwarding", () => {
     expect(mocked.validatePatchArtifact).toHaveBeenCalledWith(
       "./patches/lodash+4.17.0.patch",
       expect.objectContaining({ packageManager: "pnpm", patchesDir: "./custom-patches" }),
+    );
+  });
+
+  it("reconciles patch artifacts through the patches reconcile command", async () => {
+    const program = createProgram();
+    await program.parseAsync([
+      "node",
+      "autoremediator",
+      "patches",
+      "reconcile",
+      "--patches-dir",
+      "./custom-patches",
+      "--auto-apply",
+      "--output-format",
+      "json",
+    ]);
+
+    expect(mocked.reconcilePatchArtifacts).toHaveBeenCalledWith(
+      expect.objectContaining({
+        patchesDir: "./custom-patches",
+        autoApply: true,
+      }),
     );
   });
 

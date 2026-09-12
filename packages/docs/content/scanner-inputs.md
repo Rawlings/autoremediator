@@ -43,15 +43,14 @@ Use explicit formats in CI when possible. `auto` is convenient, but explicit par
 
 ## Input Behavior and Constraints
 
-Scanner ingestion focuses on extracting remediable CVE identifiers and related package context.
+Scanner ingestion focuses on extracting remediable CVE and GHSA identifiers alongside affected package coordinates.
 
-Operational constraints:
+Operational characteristics:
 
-- malformed or incomplete scanner payloads can reduce remediable findings
-- missing CVE identifiers may produce skipped or unresolved items
-- duplicated findings are deduplicated before remediation execution
-
-For deterministic gate behavior, store scanner artifacts and rerun with explicit `--format`.
+- **GHSA Identifier Preservation**: `npm-audit` and `yarn-audit` scanner adapters extract and preserve GitHub Security Advisory IDs (`GHSA-...`) when vulnerability advisories do not have assigned CVE numbers, unlocking direct remediation for advisories lacking assigned CVEs.
+- **Deduplication**: Duplicated advisory findings across packages are automatically deduplicated before remediation planning begins.
+- **Identifier Validation**: Scanner payloads missing valid CVE or GHSA identifiers are reported as skipped or unresolved items.
+- **Malformed Payloads**: Incomplete scanner payloads can reduce remediable findings; for deterministic CI gates, store scanner artifacts and specify `--format` explicitly.
 
 ## npm audit
 
@@ -116,6 +115,38 @@ autoremediator report.sarif --format sarif
 ```
 
 Why use SARIF: unify scanner ingestion across heterogeneous security platforms.
+
+## Git Delta and Lockfile Diff Scanning (`autoremediator diff`)
+
+Unlike static scan files that snapshot the complete dependency tree, git delta scanning computes the vulnerability risk differential introduced by a specific pull request, commit, or branch:
+
+```bash
+# Compare working tree lockfiles against target branch
+autoremediator diff --base origin/main
+
+# Output JSON report and fail CI if new vulnerabilities are introduced
+autoremediator diff --base origin/main --ci --output-format json
+```
+
+Key capabilities:
+
+- **Multi-Package-Manager Lockfile Diffing**: Directly compares lockfile manifests across npm (`package-lock.json`), pnpm (`pnpm-lock.yaml`), and Yarn (`yarn.lock`).
+- **Transitive Scope Tracking**: Identifies whether a version bump or addition occurred in direct dependencies or deep in the transitive tree.
+- **Risk Delta Classification**: Determines whether net risk is `improved`, `neutral`, or `degraded`, allowing PR validation gates to catch newly introduced vulnerabilities before merging without blocking on pre-existing findings.
+
+## Interactive Scanner Triage (`autoremediator triage`)
+
+Instead of batch-remediating all findings unattended in CI, developers can triage scanner outputs interactively from the terminal:
+
+```bash
+# Interactively triage findings from an audit JSON export
+autoremediator triage ./audit.json
+
+# Interactively triage direct audit findings with post-apply test validation
+autoremediator --audit -i --run-tests
+```
+
+During triage, each vulnerability finding is presented with severity, EPSS score, CISA KEV status, and safe version guidance, providing keyboard shortcuts to `[a]pply` the fix, `[s]kip`, `[x] suppress` (VEX), or `[q]uit`.
 
 ## Deduplication and Batch Semantics
 

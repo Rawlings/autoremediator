@@ -48,8 +48,14 @@ export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptio
   const runTests = options.runTests ?? false;
   const policy = options.policy ?? "";
   const patchesDir = options.patchesDir || "./patches";
-  const constraints = options.constraints ?? {};
+  const constraints = {
+
+    ...options.constraints,
+    typecheck: options.typecheck ?? options.constraints?.typecheck,
+    supplyChainPolicy: options.supplyChainPolicy ?? options.constraints?.supplyChainPolicy,
+  };
   const loadedPolicy = loadPolicy(cwd, options.policy);
+
   const llmProvider = resolveProvider(options);
 
   return {

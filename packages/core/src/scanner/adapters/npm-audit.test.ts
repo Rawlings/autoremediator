@@ -65,4 +65,32 @@ describe("parseNpmAuditJsonFromString", () => {
       severity: "MEDIUM",
     });
   });
+
+  it("extracts GHSA ID when no CVE is present", () => {
+    const input = {
+      vulnerabilities: {
+        tar: {
+          name: "tar",
+          severity: "high",
+          via: [
+            {
+              name: "tar",
+              url: "https://github.com/advisories/GHSA-8h25-w444-5ce3",
+            },
+          ],
+        },
+      },
+    };
+
+    const findings = parseNpmAuditJsonFromString(JSON.stringify(input));
+
+    expect(findings).toHaveLength(1);
+    expect(findings[0]).toMatchObject({
+      cveId: "GHSA-8H25-W444-5CE3",
+      source: "npm-audit",
+      packageName: "tar",
+      severity: "HIGH",
+    });
+  });
+
 });

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import type { NormalizedFinding } from "./npm-audit.js";
 
 const CVE_REGEX = /CVE-\d{4}-\d{1,7}/gi;
+const GHSA_REGEX = /GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}/gi;
 
 function normalizeSeverity(raw?: string): NormalizedFinding["severity"] {
   if (!raw) return "UNKNOWN";
@@ -47,13 +48,15 @@ export function parseYarnAuditJsonFromString(content: string): NormalizedFinding
     const severity = normalizeSeverity(advisory?.severity);
 
     const text = `${advisory?.url ?? ""} ${(advisory?.cves ?? []).join(" ")}`;
-    const matches = text.match(CVE_REGEX) ?? [];
+    const cveMatches = text.match(CVE_REGEX) ?? [];
+    const matches = cveMatches.length > 0 ? cveMatches : (text.match(GHSA_REGEX) ?? []);
 
     for (const match of matches) {
       const cveId = match.toUpperCase();
       const key = `${cveId}:${packageName ?? ""}`;
       if (seen.has(key)) continue;
       seen.add(key);
+
 
       findings.push({
         cveId,

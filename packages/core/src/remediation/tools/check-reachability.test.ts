@@ -142,4 +142,25 @@ describe("assessPackageReachability", () => {
     const result = assessPackageReachability(dir, "lodash");
     expect(result.status).toBe("reachable");
   });
+
+  it("detects reachability of transitive dependencies via imported direct dependencies", () => {
+    // direct-pkg is imported in src/app.ts, and depends on transitive-pkg
+    mkdirSync(join(dir, "node_modules", "direct-pkg"), { recursive: true });
+    writeFileSync(
+      join(dir, "node_modules", "direct-pkg", "package.json"),
+      JSON.stringify({
+        name: "direct-pkg",
+        dependencies: {
+          "transitive-pkg": "^1.0.0",
+        },
+      }),
+    );
+    writeFileSync(join(dir, "src", "app.ts"), `import { something } from 'direct-pkg';\n`);
+
+    const result = assessPackageReachability(dir, "transitive-pkg");
+    expect(result.status).toBe("reachable");
+    expect(result.reachabilityBasis).toBe("transitive-path-found");
+    expect(result.reason).toContain("direct-pkg");
+  });
 });
+

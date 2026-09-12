@@ -12,6 +12,7 @@ const mocked = vi.hoisted(() => ({
   resolveDedupeCommand: vi.fn(),
   resolveInstallCommand: vi.fn(),
   resolveTestCommand: vi.fn(),
+  resolveTypecheckCommand: vi.fn((): string[] | null => []),
   withRepoLock: vi.fn(),
 }));
 
@@ -40,7 +41,9 @@ vi.mock("../../platform/package-manager/index.js", () => ({
   resolveDedupeCommand: mocked.resolveDedupeCommand,
   resolveInstallCommand: mocked.resolveInstallCommand,
   resolveTestCommand: mocked.resolveTestCommand,
+  resolveTypecheckCommand: mocked.resolveTypecheckCommand,
 }));
+
 
 vi.mock("../../platform/repo-lock.js", () => ({
   withRepoLock: mocked.withRepoLock,
@@ -105,4 +108,29 @@ describe("apply-version-bump lock integration", () => {
     expect(result.dryRun).toBe(true);
     expect(result.applied).toBe(false);
   });
+
+  it("reverts and reports validation-failed when typecheck command fails", async () => {
+
+    mocked.resolveTypecheckCommand.mockReturnValueOnce(["npx", "tsc", "--noEmit"]);
+    mocked.execa
+      .mockResolvedValueOnce({ stdout: "installed" }) // install succeeds
+      .mockRejectedValueOnce(new Error("TS2322: Type 'string' is not assignable to type 'number'")); // typecheck fails
+
+    const result = await (applyVersionBumpTool as any).execute({
+      cwd: "/tmp/project",
+      packageManager: "npm",
+      packageName: "lodash",
+      fromVersion: "4.17.0",
+      toVersion: "4.17.21",
+      dryRun: false,
+      runTests: false,
+      typecheck: true,
+    });
+
+    expect(result.applied).toBe(false);
+    expect(result.unresolvedReason).toBe("validation-failed");
+    expect(result.message).toContain("TypeCheck validation failed");
+    expect(mocked.writeFileSync).toHaveBeenCalledTimes(2); // write bump, then revert
+  });
 });
+

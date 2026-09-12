@@ -155,18 +155,108 @@ function computeDependencyDiff(
   return changes;
 }
 
+import { computeLockfileDiff } from "./lockfile-diff.js";
+
+const LOCKFILE_PATTERNS = [
+  "package-lock.json",
+  "**/package-lock.json",
+  "pnpm-lock.yaml",
+  "**/pnpm-lock.yaml",
+  "yarn.lock",
+  "**/yarn.lock",
+];
+
+async function getChangedLockfilePaths(cwd: string, baseRef: string): Promise<string[]> {
+  const lockfiles = new Set<string>();
+  try {
+    const { stdout: diffFiles } = await execa(
+      "git",
+      ["diff", "--name-only", baseRef, "--", ...LOCKFILE_PATTERNS],
+      { cwd, reject: false },
+    );
+    for (const f of diffFiles.split("\n")) {
+      const trimmed = f.trim();
+      if (
+        trimmed &&
+        !trimmed.includes("node_modules") &&
+        (trimmed.endsWith("package-lock.json") ||
+          trimmed.endsWith("pnpm-lock.yaml") ||
+          trimmed.endsWith("yarn.lock"))
+      ) {
+        lockfiles.add(trimmed);
+      }
+    }
+    const { stdout: untrackedFiles } = await execa(
+      "git",
+      ["ls-files", "--others", "--exclude-standard", "--", ...LOCKFILE_PATTERNS],
+      { cwd, reject: false },
+    );
+    for (const f of untrackedFiles.split("\n")) {
+      const trimmed = f.trim();
+      if (
+        trimmed &&
+        !trimmed.includes("node_modules") &&
+        (trimmed.endsWith("package-lock.json") ||
+          trimmed.endsWith("pnpm-lock.yaml") ||
+          trimmed.endsWith("yarn.lock"))
+      ) {
+        lockfiles.add(trimmed);
+      }
+    }
+  } catch {
+    // Ignore git errors
+  }
+  return Array.from(lockfiles);
+}
+
+async function getFileContentAtRef(
+  cwd: string,
+  baseRef: string,
+  relPath: string,
+): Promise<string | null> {
+  try {
+    const { stdout } = await execa("git", ["show", `${baseRef}:${relPath}`], {
+      cwd,
+      reject: false,
+    });
+    return stdout || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function scanDelta(options: DeltaScanOptions = {}): Promise<DeltaScanReport> {
   const cwd = options.cwd ?? process.cwd();
   const baseRef = options.baseRef ?? "HEAD";
 
   const changedManifests = await getChangedManifestPaths(cwd, baseRef);
+  const changedLockfiles = await getChangedLockfilePaths(cwd, baseRef);
   const dependencyChanges: DeltaDependencyChange[] = [];
+  const directPkgs = new Set<string>();
 
   for (const manifestRel of changedManifests) {
     const oldPkg = await getOldManifestContent(cwd, baseRef, manifestRel);
     const newPkg = getNewManifestContent(cwd, manifestRel);
     const diffs = computeDependencyDiff(manifestRel, oldPkg, newPkg);
+    for (const d of diffs) {
+      directPkgs.add(d.packageName);
+    }
     dependencyChanges.push(...diffs);
+  }
+
+  for (const lockfileRel of changedLockfiles) {
+    const oldContent = await getFileContentAtRef(cwd, baseRef, lockfileRel);
+    const fullPath = join(cwd, lockfileRel);
+    const newContent = existsSync(fullPath) ? readFileSync(fullPath, "utf8") : null;
+    const lockDiffs = computeLockfileDiff(lockfileRel, oldContent, newContent);
+    for (const change of lockDiffs) {
+      if (!directPkgs.has(change.packageName)) {
+        dependencyChanges.push(change);
+      }
+    }
+    if (!changedManifests.includes(lockfileRel)) {
+      changedManifests.push(lockfileRel);
+    }
   }
 
   const introducedFindings: DeltaFinding[] = [];

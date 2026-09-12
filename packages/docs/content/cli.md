@@ -24,10 +24,11 @@ The CLI exposes autonomous operator controls in addition to base remediation beh
 
 ## Command Modes
 
-Single CVE mode (short form):
+Single CVE or GHSA mode (short form):
 
 ```bash
 autoremediator CVE-2021-23337
+autoremediator GHSA-36p3-wjmg-h94x
 ```
 
 Scan input mode (short form):
@@ -41,20 +42,25 @@ Equivalent explicit subcommands:
 
 ```bash
 autoremediator cve CVE-2021-23337
+autoremediator cve GHSA-36p3-wjmg-h94x
 autoremediator scan --input ./audit.json --format npm-audit
+autoremediator diff --base origin/main
 autoremediator portfolio --targets-file ./targets.json
 autoremediator reachability --package lodash --symbol merge
 autoremediator evaluate express@4.18.2
-autoremediator diff --base origin/main
 autoremediator patches list
 autoremediator patches inspect ./patches/lodash+4.17.0.patch
 autoremediator patches validate ./patches/lodash+4.17.0.patch
+autoremediator patches reconcile [--auto-apply]
+autoremediator triage [./audit.json]
 ```
 
 When to use which mode:
 
-- use direct CVE mode for urgent, targeted security response
+- use direct CVE / GHSA mode for urgent, targeted security response
 - use scan mode for CI or scheduled automation where multiple findings are expected
+- use interactive triage (`autoremediator triage` or `-i, --interactive`) for developer-assisted step-by-step remediation
+- use git delta diff mode (`autoremediator diff`) to audit lockfile changes introduced in pull requests or branches
 
 ## Core Options
 
@@ -66,6 +72,8 @@ When to use which mode:
 | `--preview`                                 | non-mutating remediation preview mode                                       | enables planning flows without write side effects                                                                     |
 | `--simulation-mode`                         | deterministic simulation metadata                                           | adds planned mutation and rebuttal summaries to dry-run or preview results                                            |
 | `--run-tests`                               | post-apply validation                                                       | reduces risk of introducing breaking dependency changes                                                               |
+| `--typecheck`                               | post-apply typecheck gate (e.g. `tsc --noEmit` or `deno check`)             | prevents type regressions and compilation breaks from landing in remediation branches                                 |
+| `-i, --interactive`                         | interactive triage workflow                                                 | steps through findings one-by-one allowing developers to apply, skip, or suppress                                     |
 | `--llm-provider <remote                     | local>`                                                                     | patch-generation provider selection                                                                                   | controls determinism, cost, and fallback behavior                 |
 | `--model <name>`                            | explicit model override                                                     | pins runtime model behavior for deterministic environments                                                            |
 | `--model-personality <analytical            | pragmatic                                                                   | balanced>`                                                                                                            | prompt behavior profile                                           | tunes reasoning style without changing tool contracts       |
@@ -96,7 +104,7 @@ When to use which mode:
 | `--workspace <name>`                        | workspace/package selector for scoped monorepo remediation                  | limits install/list/test operations to a target workspace when supported                                              |
 | `--create-change-request`                   | open a native pull request / merge request after remediation                | turns successful mutation runs into reviewable branches automatically                                                 |
 | `--change-request-provider <github          | gitlab>`                                                                    | VCS provider for PR/MR creation                                                                                       | selects the remote API used for branch promotion                  |
-| `--change-request-grouping <all>`           | grouping strategy for change requests                                       | currently supports deterministic batched change requests only                                                         |
+| `--change-request-grouping <all             | per-cve                                                                     | per-package                                                                                                           | by-severity>`                                                     | grouping strategy for change requests                       | creates separate reviewable branches/PRs per CVE, per package, by severity, or batched                                            |
 | `--change-request-repository <slug>`        | override repo slug used for remote API calls                                | useful when git remote parsing is not enough                                                                          |
 | `--change-request-base-branch <branch>`     | base branch for PR/MR targeting                                             | supports release branches and protected default branches                                                              |
 | `--change-request-branch-prefix <prefix>`   | prefix for generated remediation branches                                   | aligns branch naming with org conventions                                                                             |
@@ -182,6 +190,127 @@ What each command is for:
 - `list`: enumerate `.patch` artifacts and manifest metadata
 - `inspect`: read patch metadata, file scope, and diff-format validity
 - `validate`: verify manifest presence, diff validity, and dependency-version drift against current inventory
+- `reconcile`: inspect active patches against upstream registries and automatically upgrade packages and retire `.patch` files when official fixes are published
+
+Reconcile examples:
+
+```bash
+# Check if any active patches now have official upstream fixes available
+autoremediator patches reconcile
+
+# Automatically upgrade packages, clean patch configurations, and verify tests
+autoremediator patches reconcile --auto-apply --run-tests
+```
+
+### Automated Reproduction Test Synthesis
+
+When synthesizing patches for vulnerabilities without safe upstream versions, Autoremediator instructs the synthesis engine to generate a standalone reproduction/regression test script (`reproductionTest`) alongside the patch diff:
+
+- Saved to disk as `patches/<package>+<version>.test.cjs`.
+- Executed in an isolated subprocess during the post-apply validation sequence.
+- Validates that the targeted exploit payload or vulnerability condition is neutralized before the patch is accepted.
+- Associated metadata (`reproductionTest` and `reproductionTestPath`) is persisted in the `.patch.json` manifest sidecar for continuous regression auditing.
+
+## Interactive Developer Triage
+
+For assisted remediation in local development workflows, run `autoremediator triage` or use `-i` / `--interactive`:
+
+```bash
+# Interactively triage findings from package manager audit
+autoremediator triage
+
+# Interactively triage findings from a scanner JSON file
+autoremediator triage ./audit.json
+
+# Launch interactive mode with automatic test validation on apply
+autoremediator --input ./audit.json -i --run-tests
+```
+
+During triage, each unique finding is displayed in the terminal with:
+
+- Target vulnerability identifier (CVE or GHSA)
+- Affected package name and severity
+- Safe upstream upgrade version (when available)
+- EPSS score and CISA KEV exploitation signals
+
+Interactive keyboard actions:
+
+- `[a]pply`: runs the full remediation pipeline for the finding immediately (attempting version-bump, override, or patch)
+- `[s]kip`: skips the finding and proceeds to the next vulnerability
+- `[x] suppress`: marks the CVE as suppressed / VEX excluded
+- `[q]uit`: exits the triage session and displays an aggregate summary
+
+## Direct GHSA Identifier Remediation
+
+In addition to standard CVE identifiers (`CVE-YYYY-NNNNN`), Autoremediator natively supports GitHub Security Advisory identifiers (`GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}`):
+
+```bash
+autoremediator GHSA-36p3-wjmg-h94x
+autoremediator cve GHSA-36p3-wjmg-h94x --dry-run
+```
+
+Direct GHSA mode queries the GitHub Advisory API directly, resolves affected package ranges and safe versions, and executes the remediation pipeline identically to CVE workflows.
+
+## Post-Apply TypeCheck Gate (`--typecheck`)
+
+When remediating dependencies in TypeScript or strongly-typed Node.js projects, version upgrades can introduce type errors even if unit tests pass.
+
+Passing `--typecheck` ensures that a type verification command is executed after every dependency mutation:
+
+```bash
+autoremediator CVE-2021-23337 --typecheck
+autoremediator --input ./audit.json --typecheck --run-tests
+```
+
+How it works:
+
+1. Detects `scripts.typecheck` in the target `package.json` (e.g. `npm run typecheck` or `pnpm typecheck`).
+2. If no script is declared, falls back to `tsc --noEmit` (or `deno check` in Deno environments).
+3. If typechecking fails, the change is immediately rolled back, and the finding is recorded as `unresolvedReason: "validation-failed"`.
+
+## Git-Aware Delta Vulnerability Scanning (`autoremediator diff`)
+
+Instead of analyzing the entire project dependency tree, delta scanning audits only dependencies that were added, upgraded, downgraded, or removed across Git revisions or within uncommitted working tree changes.
+
+```bash
+# Compare current working tree against HEAD
+autoremediator diff
+
+# Compare against a base branch (e.g. in PR CI workflows)
+autoremediator diff --base origin/main
+
+# Output JSON report and enforce CI exit codes
+autoremediator diff --base origin/main --ci --output-format json
+```
+
+How it works:
+
+- Computes lockfile diffs between the target base ref and current working tree across npm (`package-lock.json` v1, v2, v3), pnpm (`pnpm-lock.yaml` v5, v6, v9), and Yarn (`yarn.lock` v1).
+- Traces both direct and transitive dependency changes (`dependencyType: "direct" | "transitive"`).
+- Cross-references newly added or modified package versions against OSV and GitHub Advisory databases.
+- Computes a net risk verdict:
+  - `improved`: net reduction in vulnerability exposure
+  - `neutral`: dependency changes introduced no new vulnerabilities
+  - `degraded`: new vulnerabilities were introduced by lockfile changes
+- When `--ci` is enabled, exits with code `1` if `netRiskVerdict === "degraded"` and `0` otherwise.
+
+## Monorepo Workspace Scoping (`--workspace`)
+
+Autoremediator natively understands monorepo topologies across pnpm (`pnpm-workspace.yaml`), npm/yarn (`workspaces` in root `package.json`), and Lerna (`lerna.json`).
+
+```bash
+# Scope remediation to a specific workspace package
+autoremediator CVE-2021-23337 --workspace @apps/web
+
+# Run audit remediation within a workspace package
+autoremediator --audit --workspace @services/api --ci
+```
+
+Key behaviors:
+
+- **Topology Resolution**: Recursively resolves all declared member packages in the monorepo root.
+- **Member Declaration Matching**: In scan or multi-vulnerability modes, inventory analysis inspects member `package.json` manifests to locate the exact workspace package declaring the dependency, preventing dependencies declared in member packages from being misclassified as unresolvable transitive dependencies.
+- **Targeted Package Manager Execution**: Bumps and installs are automatically targeted to the declaring package member using package manager native filters (e.g., `pnpm --filter <pkg>`, `npm --workspace <pkg>`, `yarn workspace <pkg>`), preserving workspace isolation.
 
 ## What `--ci` Changes
 
@@ -204,7 +333,12 @@ When change-request flags are provided on mutating runs, autoremediator can:
 - push them to GitHub or GitLab remotes
 - open pull requests / merge requests when the corresponding API token is available
 
-Change request execution currently supports batched grouping (`all`) for deterministic branch creation.
+Grouping strategies configured via `--change-request-grouping`:
+
+- `all` (default): all remediated vulnerabilities are batched into a single branch and PR/MR
+- `per-cve`: creates an isolated branch and PR/MR for each remediated vulnerability
+- `per-package`: groups remediated vulnerabilities by affected package into separate PRs/MRs
+- `by-severity`: groups remediated vulnerabilities by severity tier (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`)
 
 Native pull request and merge request creation shells out through `gh` for GitHub and `glab` for GitLab, so the matching CLI must be available in the execution environment when `--create-change-request` is enabled.
 
@@ -331,7 +465,7 @@ SLA breaches: 2 CVE(s) overdue
 Patch artifact fields to watch:
 
 - `patchArtifact`: structured metadata for generated patch artifacts and manifest sidecars
-- `validationPhases`: phased patch validation details (`diff-format`, `patch-write`, `manifest-write`, `apply`, `install`, `test`, `drift`)
+- `validationPhases`: phased patch validation details (`diff-format`, `patch-write`, `manifest-write`, `apply`, `install`, `test`, `reproduction-test`, `drift`)
 
 ## Troubleshooting
 

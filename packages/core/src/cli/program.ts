@@ -13,6 +13,8 @@ import {
   runSingleCve,
   runUpdateOutdated,
   runValidatePatch,
+  runReconcilePatches,
+  runInteractiveTriage,
 } from "./runners.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
@@ -32,6 +34,13 @@ function addSharedOptions(
     .option("--dry-run", OPTION_DESCRIPTIONS.dryRun, false)
     .option("--preview", OPTION_DESCRIPTIONS.preview, false)
     .option("--run-tests", OPTION_DESCRIPTIONS.runTests, false)
+    .option(
+      "--typecheck",
+      "Enable typecheck validation (e.g. tsc --noEmit or npm run typecheck) after patching",
+      false,
+    )
+    .option("-i, --interactive", "Launch interactive developer CLI triage workflow", false)
+
     .option("--llm-provider <provider>", OPTION_DESCRIPTIONS.llmProvider)
     .option("--model <name>", OPTION_DESCRIPTIONS.model)
     .option("--model-personality <profile>", OPTION_DESCRIPTIONS.modelPersonality)
@@ -291,6 +300,42 @@ export function createProgram(): Command {
       },
     );
 
+  patches
+    .command("reconcile")
+    .description(
+      "Reconcile active patch artifacts against upstream registries to retire obsolete patches",
+    )
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
+    .option(
+      "--auto-apply",
+      "Automatically upgrade packages and remove retired patch artifacts",
+      false,
+    )
+    .option("--run-tests", OPTION_DESCRIPTIONS.runTests, false)
+    .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(
+      async (
+        opts: Pick<
+          CommandOptions,
+          "cwd" | "patchesDir" | "packageManager" | "runTests" | "outputFormat"
+        > & { autoApply?: boolean },
+        command: Command,
+      ) => {
+        const merged = {
+          ...(command.optsWithGlobals() as Partial<CommandOptions>),
+          ...opts,
+        };
+        validateOutputFormat(
+          (merged.outputFormat ?? "text") as "text" | "json",
+          ["text", "json"],
+          "patches reconcile",
+        );
+        await runReconcilePatches(merged);
+      },
+    );
+
   program
     .command("reachability")
     .description("Perform AST call-graph reachability analysis for a package or vulnerable symbol")
@@ -358,6 +403,19 @@ export function createProgram(): Command {
       await runDiffAudit(opts);
     });
 
+  program
+    .command("triage [input]")
+    .description("Interactively triage discovered vulnerabilities step-by-step")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
+    .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
+    .option("--format <format>", OPTION_DESCRIPTIONS.format, "auto")
+    .option("--run-tests", OPTION_DESCRIPTIONS.runTests, false)
+    .option("--policy <path>", OPTION_DESCRIPTIONS.policy)
+    .action(async (inputArg: string | undefined, opts: CommandOptions) => {
+      await runInteractiveTriage(inputArg ? inputArg : opts, opts);
+    });
+
   addSharedOptions(
     program
       .argument("[target]", "Scanner output file path (or CVE ID fallback)")
@@ -367,6 +425,11 @@ export function createProgram(): Command {
   ).action(async (target: string | undefined, opts: CommandOptions) => {
     validateSharedCommandOptions(opts);
     validateOutputFormat(opts.outputFormat, ["text", "json", "sarif"], "default");
+
+    if (opts.interactive) {
+      await runInteractiveTriage(opts.input ?? target ?? opts, opts);
+      return;
+    }
 
     if (opts.audit) {
       await runScanInput(opts.input ?? target ?? "", opts);

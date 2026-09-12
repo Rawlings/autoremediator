@@ -35,10 +35,17 @@ allowPackages: []
 constraints:
   directDependenciesOnly: false
   preferVersionBump: false
+  typecheck: true
   installMode: deterministic
   installPreferOffline: true
   enforceFrozenLockfile: true
   workspace: "@apps/web"
+
+# Pre-upgrade supply chain trust gate
+supplyChain:
+  minPublishAgeHours: 24
+  blockInstallScripts: true
+  requireProvenance: false
 
 # SecOps controls
 skipUnreachable: false
@@ -93,6 +100,9 @@ Field intent:
 - `constraints.preferVersionBump`:
   - what: rejects patch-file outcomes
   - why: enforces bump-first remediation policy for change governance
+- `constraints.typecheck`:
+  - what: executes package-manager typecheck verification (`tsc --noEmit`, etc.) after applying upgrades or patches
+  - why: prevents type regressions in TypeScript projects when dependency types change
 - `constraints.installMode`:
   - what: selects install profile (`deterministic`, `prefer-offline`, or `standard`) for apply and rollback operations
   - why: allows balancing reproducibility and operational flexibility per environment
@@ -105,6 +115,15 @@ Field intent:
 - `constraints.workspace`:
   - what: scopes install/list/test operations to a specific workspace/package selector
   - why: reduces remediation blast radius in monorepos and improves run performance
+- `supplyChain.minPublishAgeHours`:
+  - what: minimum required release age in hours before considering an upgrade version trustworthy
+  - why: mitigates zero-day supply chain package takeovers and malicious freshly-published versions
+- `supplyChain.blockInstallScripts`:
+  - what: inspects candidate package metadata and rejects packages specifying `preinstall`, `install`, or `postinstall` lifecycle scripts
+  - why: defends against malicious execution during installation
+- `supplyChain.requireProvenance`:
+  - what: validates that candidate packages have verifiable cryptographic provenance / build attestations
+  - why: ensures candidate packages were built via trusted CI workflows
 - `skipUnreachable`:
   - what: skips packages not imported from project source files
   - why: reduces noise from packages that cannot be reached by the running application
@@ -165,6 +184,7 @@ When `skipUnreachable: true`, autoremediator executes a high-performance AST-lev
 - **Full Import Resolution**: Walks the abstract syntax tree for static ESM import declarations (`import ... from 'pkg'`), dynamic imports (`import('pkg')`), CommonJS calls (`require('pkg')`), and re-exports (`export ... from 'pkg'`).
 - **Path-Alias Resolution**: Automatically parses `tsconfig.json` and `jsconfig.json` (`compilerOptions.paths` and `compilerOptions.baseUrl`), mapping custom path aliases (`@/components/*`, `~/lib/*`) to actual filesystem sources.
 - **Function-Level Invocation Tracing**: Analyzes `CallExpression`, `NewExpression`, and `MemberExpression` nodes (e.g. `_.template()`, `template()`, `lodash.template()`).
+- **Transitive Dependency Path Tracing**: When direct imports are not detected, recursively traces imported parent packages down the dependency graph to discover whether the vulnerable child package is reachable via imported intermediate dependencies.
 - **Dead-Code Pruning & VEX Justification**: If a vulnerable package is imported but the vulnerable symbol is never invoked in any execution path, reachability resolves to:
   - `status: "not-reachable"`
   - `reachabilityBasis: "call-graph-uninvoked"`
@@ -172,6 +192,24 @@ When `skipUnreachable: true`, autoremediator executes a high-performance AST-lev
 - **CycloneDX 1.5 VEX Integration**: Automatically emits `state: "not_affected"` VEX statements with standard justification codes and audit trace details.
 
 Enable with `--skip-unreachable` (CLI) or `skipUnreachable: true` (SDK).
+
+### Supply Chain Trust Gate
+
+Before applying an upgrade to a target version, autoremediator verifies package integrity and publisher hygiene using configurable supply chain policies:
+
+- **Minimum Publish Age (`minPublishAgeHours`)**: Rejects packages published less than $N$ hours ago to defend against zero-day supply chain compromise and malicious newly released packages.
+- **Install Script Blocking (`blockInstallScripts`)**: Inspects npm registry package manifests and blocks versions containing `preinstall`, `install`, or `postinstall` lifecycle hooks.
+- **Cryptographic Provenance Verification (`requireProvenance`)**: Enforces presence of verifiable build provenance / Sigstore attestations for target packages.
+
+When a candidate target version violates the supply chain trust policy, the version is rejected and autoremediator falls back to subsequent strategies or patch generation.
+
+### Post-Apply Typecheck Gate
+
+When enabled, autoremediator runs the project's native typecheck validation command (`tsc --noEmit`, or workspace-specific typecheck scripts) following dependency updates or patch applications:
+
+- If type checking fails with errors caused by breaking API type signatures, the remediation transaction is automatically rolled back.
+- Result is recorded as unresolved with `unresolvedReason: "typecheck-failed"`.
+- Configurable via `--typecheck` CLI flag, `typecheck: true` SDK option, or `constraints.typecheck: true` in `.github/autoremediator.yml`.
 
 ### Subprocess Execution Sandboxing & Supply Chain Hardening
 
@@ -197,6 +235,23 @@ Before applying any generated code patch or updating manifests, autoremediator p
 - **YAML (`pnpm-lock.yaml`, workflow definitions)**: Validated via YAML parser.
 
 Patches containing syntax errors or malformed structures are rejected prior to touching the disk.
+
+### Automated Patch Reproduction Test Synthesis
+
+To prevent patches that merely compile but fail to remediate the vulnerability from being accepted, the patch synthesis engine produces a standalone reproduction/regression test script (`reproductionTest`) alongside the patch:
+
+- The test is saved to disk at `patches/<package>+<version>.test.cjs`.
+- During post-apply validation, the test is executed in an isolated Node.js child process (`reproduction-test` phase).
+- If the test fails (indicating the exploit payload still succeeds or the fix did not work), the patch is immediately rolled back and recorded as `unresolvedReason: "patch-validation-failed"`.
+- The test code and its path are recorded in the patch manifest (`.patch.json`) for continuous regression verification.
+
+### Monorepo Workspace Isolation & Safe Scoping
+
+When operating within monorepos (pnpm workspaces, npm/yarn workspaces, or Lerna), autoremediator prevents cross-package pollution:
+
+- **Targeted Declaring Package Detection**: Identifies which member package declares the vulnerable dependency, scoping updates exclusively to that package's manifest.
+- **Package Manager Workspace Isolation**: Uses native package manager filters (`pnpm --filter`, `npm --workspace`, `yarn workspace`) to execute installs, preventing unintended lockfile rewrites across unaffected workspace packages.
+- **Configurable Workspace Scoping**: Use `constraints.workspace` in policy or `--workspace` in CLI to limit remediation scope to a specific package during staged rollouts.
 
 ### Simulation Mode
 

@@ -177,4 +177,42 @@ describe("apply-patch-file lock integration", () => {
       "utf8",
     );
   });
+
+  it("writes and runs synthesized reproduction test", async () => {
+    mocked.detectPackageManager.mockReturnValue("npm");
+    mocked.getPackageManagerCommands.mockReturnValue({
+      install: ["npm", "install"],
+      test: ["npm", "test"],
+    });
+    mocked.resolveInstallCommand.mockReturnValue(["npm", "install"]);
+    mocked.resolveTestCommand.mockReturnValue(["npm", "test"]);
+    mocked.execa.mockResolvedValue({ exitCode: 0, stdout: "ok", stderr: "" });
+
+    const result = await (applyPatchFileTool as any).execute({
+      packageName: "lodash",
+      vulnerableVersion: "4.17.0",
+      patchContent: "diff --git a/a.js b/a.js\n--- a/a.js\n+++ b/a.js\n@@ -1 +1 @@\n-old\n+new\n",
+      patchesDir: "./patches",
+      cwd: "/tmp/project",
+      packageManager: "npm",
+      reproductionTest: 'console.log("repro passed");',
+      validateWithTests: false,
+      dryRun: false,
+    });
+
+    expect(result.success).toBe(true);
+    expect(mocked.writeFile).toHaveBeenCalledWith(
+      "/tmp/project/patches/lodash+4.17.0.test.cjs",
+      'console.log("repro passed");',
+      "utf8",
+    );
+    expect(result.patchArtifact.validationPhases).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          phase: "reproduction-test",
+          passed: true,
+        }),
+      ]),
+    );
+  });
 });

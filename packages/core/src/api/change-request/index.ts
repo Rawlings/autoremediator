@@ -1,6 +1,7 @@
 import { execa } from "execa";
 import { randomBytes } from "node:crypto";
 import type {
+  ChangeRequestGrouping,
   ChangeRequestOptions,
   ChangeRequestResult,
   RemediationReport,
@@ -48,14 +49,69 @@ function resolveProvider(options: ChangeRequestOptions): "github" | "gitlab" {
   return options.provider ?? "github";
 }
 
-function resolveGrouping(options: ChangeRequestOptions): "all" {
-  if (options.grouping && options.grouping !== "all") {
+function resolveGrouping(options: ChangeRequestOptions): ChangeRequestGrouping {
+  const allowed: ChangeRequestGrouping[] = ["all", "per-cve", "per-package", "by-severity"];
+  if (options.grouping && !allowed.includes(options.grouping)) {
     throw new Error(
-      "changeRequest.grouping currently supports only 'all' for deterministic branch creation.",
+      `Unsupported changeRequest.grouping: "${options.grouping}". Supported values: ${allowed.join(", ")}`,
     );
   }
-  return "all";
+  return options.grouping ?? "all";
 }
+
+export function groupReports(
+  reports: RemediationReport[],
+  grouping: ChangeRequestGrouping,
+): RemediationReport[][] {
+  if (reports.length === 0) return [];
+  if (grouping === "all") {
+    return [reports];
+  }
+
+  if (grouping === "per-cve") {
+    const map = new Map<string, RemediationReport[]>();
+    for (const report of reports) {
+      const key = report.cveId.toUpperCase();
+      const list = map.get(key) ?? [];
+      list.push(report);
+      map.set(key, list);
+    }
+    return Array.from(map.values());
+  }
+
+  if (grouping === "per-package") {
+    const map = new Map<string, RemediationReport[]>();
+    for (const report of reports) {
+      const pkgs = new Set(report.results.map((r) => r.packageName));
+      if (pkgs.size === 0) {
+        const list = map.get("misc") ?? [];
+        list.push(report);
+        map.set("misc", list);
+      } else {
+        for (const pkg of pkgs) {
+          const list = map.get(pkg) ?? [];
+          list.push(report);
+          map.set(pkg, list);
+        }
+      }
+    }
+    return Array.from(map.values());
+  }
+
+  if (grouping === "by-severity") {
+    const map = new Map<string, RemediationReport[]>();
+    for (const report of reports) {
+      const sev = report.cveDetails?.severity ?? "UNKNOWN";
+      const list = map.get(sev) ?? [];
+      list.push(report);
+      map.set(sev, list);
+    }
+    return Array.from(map.values());
+  }
+
+  return [reports];
+}
+
 
 async function detectCurrentBranch(cwd: string): Promise<string> {
   const result = await execa("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
@@ -156,71 +212,78 @@ export async function createChangeRequestsForReports(params: {
   const { cwd, options, reports } = params;
   const provider = resolveProvider(options);
   const grouping = resolveGrouping(options);
-  const plan = buildPlan(reports);
+  const groups = groupReports(reports, grouping);
 
-  const titlePrefix = options.titlePrefix?.trim().slice(0, 200);
-  const bodyFooter = options.bodyFooter ? options.bodyFooter.slice(0, 2000) : undefined;
-  const title = titlePrefix ? `${titlePrefix} ${plan.title}` : plan.title;
-  const body = bodyFooter ? `${plan.body}\n\n${bodyFooter}` : plan.body;
+  if (groups.length === 0) {
+    return [];
+  }
 
-  try {
-    const hasChanges = await ensureRepoHasChanges(cwd);
+  const results: ChangeRequestResult[] = [];
+  const hasChanges = await ensureRepoHasChanges(cwd).catch(() => false);
+
+  const baseBranch = options.baseBranch ?? (await detectCurrentBranch(cwd).catch(() => "main"));
+  const branchPrefix = options.branchPrefix ?? "autoremediator";
+  const pushRemote = options.pushRemote ?? "origin";
+  if (options.pushRemote && !/^[a-zA-Z0-9._-]+$/.test(options.pushRemote)) {
+    throw new Error(`Invalid pushRemote value: ${options.pushRemote}`);
+  }
+  if (options.repository && !/^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/.test(options.repository)) {
+    throw new Error(`Invalid repository format: ${options.repository}`);
+  }
+
+  for (const group of groups) {
+    const plan = buildPlan(group);
+    const titlePrefix = options.titlePrefix?.trim().slice(0, 200);
+    const bodyFooter = options.bodyFooter ? options.bodyFooter.slice(0, 2000) : undefined;
+    const title = titlePrefix ? `${titlePrefix} ${plan.title}` : plan.title;
+    const body = bodyFooter ? `${plan.body}\n\n${bodyFooter}` : plan.body;
+
     if (!hasChanges) {
-      return [
-        {
-          provider,
-          grouping,
-          repository: options.repository,
-          branchName: "",
-          title,
-          body,
-          created: false,
-          cveIds: plan.cveIds,
-          packageNames: plan.packageNames,
-          error: "No repository changes to include in change request.",
-        },
-      ];
+      results.push({
+        provider,
+        grouping,
+        repository: options.repository,
+        branchName: "",
+        title,
+        body,
+        created: false,
+        cveIds: plan.cveIds,
+        packageNames: plan.packageNames,
+        error: "No repository changes to include in change request.",
+      });
+      continue;
     }
 
-    const baseBranch = options.baseBranch ?? (await detectCurrentBranch(cwd));
-    const branchPrefix = options.branchPrefix ?? "autoremediator";
     const branchName = toBranchName(branchPrefix, plan.cveIds);
-    const pushRemote = options.pushRemote ?? "origin";
-    if (options.pushRemote && !/^[a-zA-Z0-9._-]+$/.test(options.pushRemote)) {
-      throw new Error(`Invalid pushRemote value: ${options.pushRemote}`);
-    }
-    if (options.repository && !/^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/.test(options.repository)) {
-      throw new Error(`Invalid repository format: ${options.repository}`);
-    }
 
-    await execa("git", ["checkout", "-b", branchName], { cwd, stdio: "pipe" });
-    await execa("git", ["add", "-A"], { cwd, stdio: "pipe" });
-    await execa("git", ["commit", "-m", title], { cwd, stdio: "pipe" });
-    await execa("git", ["push", "-u", pushRemote, branchName], { cwd, stdio: "pipe" });
+    try {
+      await execa("git", ["checkout", "-b", branchName], { cwd, stdio: "pipe" });
+      await execa("git", ["add", "-A"], { cwd, stdio: "pipe" });
+      await execa("git", ["commit", "-m", title], { cwd, stdio: "pipe" });
+      await execa("git", ["push", "-u", pushRemote, branchName], { cwd, stdio: "pipe" });
 
-    const url =
-      provider === "github"
-        ? await createGitHubRequest({
-            cwd,
-            repository: options.repository,
-            head: branchName,
-            base: baseBranch,
-            title,
-            body,
-            draft: options.draft,
-          })
-        : await createGitLabRequest({
-            cwd,
-            repository: options.repository,
-            source: branchName,
-            target: baseBranch,
-            title,
-            body,
-            draft: options.draft,
-          });
+      const url =
+        provider === "github"
+          ? await createGitHubRequest({
+              cwd,
+              repository: options.repository,
+              head: branchName,
+              base: baseBranch,
+              title,
+              body,
+              draft: options.draft,
+            })
+          : await createGitLabRequest({
+              cwd,
+              repository: options.repository,
+              source: branchName,
+              target: baseBranch,
+              title,
+              body,
+              draft: options.draft,
+            });
 
-    return [
-      {
+      results.push({
         provider,
         grouping,
         repository: options.repository,
@@ -232,11 +295,14 @@ export async function createChangeRequestsForReports(params: {
         url,
         cveIds: plan.cveIds,
         packageNames: plan.packageNames,
-      },
-    ];
-  } catch (error) {
-    return [
-      {
+      });
+
+      // Switch back to base branch if more groups remain
+      if (groups.length > 1) {
+        await execa("git", ["checkout", baseBranch], { cwd, stdio: "pipe" }).catch(() => {});
+      }
+    } catch (error) {
+      results.push({
         provider,
         grouping,
         repository: options.repository,
@@ -248,7 +314,10 @@ export async function createChangeRequestsForReports(params: {
         cveIds: plan.cveIds,
         packageNames: plan.packageNames,
         error: error instanceof Error ? error.message : String(error),
-      },
-    ];
+      });
+    }
   }
+
+  return results;
 }
+

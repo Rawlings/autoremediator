@@ -29,6 +29,7 @@ interface NpmAuditReport {
 }
 
 const CVE_REGEX = /CVE-\d{4}-\d{1,7}/gi;
+const GHSA_REGEX = /GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}/gi;
 
 function normalizeSeverity(raw?: string): NormalizedFinding["severity"] {
   if (!raw) return "UNKNOWN";
@@ -47,7 +48,8 @@ export function parseNpmAuditJsonFromString(content: string): NormalizedFinding[
     for (const viaEntry of vuln.via ?? []) {
       const text =
         typeof viaEntry === "string" ? viaEntry : `${viaEntry.url ?? ""} ${viaEntry.name ?? ""}`;
-      const matches = text.match(CVE_REGEX) ?? [];
+      const cveMatches = text.match(CVE_REGEX) ?? [];
+      const matches = cveMatches.length > 0 ? cveMatches : (text.match(GHSA_REGEX) ?? []);
       for (const match of matches) {
         const cveId = match.toUpperCase();
         const key = `${cveId}:${vuln.name}`;

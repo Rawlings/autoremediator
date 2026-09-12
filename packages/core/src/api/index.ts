@@ -31,6 +31,9 @@ export type {
   PatchArtifactQueryOptions,
   PatchArtifactSummary,
   PatchArtifactValidationReport,
+  PatchReconcileOptions,
+  PatchReconcileResult,
+  PatchReconcileReport,
   PatchMode,
   PatchRiskLevel,
   PatchConfidenceThresholds,
@@ -110,6 +113,7 @@ export {
   inspectPatchArtifact,
   listPatchArtifacts,
   validatePatchArtifact,
+  reconcilePatchArtifacts,
 } from "./patches/index.js";
 export { remediatePortfolio } from "./portfolio/index.js";
 export { remediate, planRemediation } from "./remediate/index.js";

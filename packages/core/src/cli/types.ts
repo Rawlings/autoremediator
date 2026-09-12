@@ -11,7 +11,10 @@ export interface CommandOptions {
   preview: boolean;
   simulationMode: boolean;
   runTests: boolean;
+  typecheck?: boolean;
+  interactive?: boolean;
   outputFormat: OutputFormat;
+
   llmProvider?: "remote" | "local";
   model?: string;
   modelPersonality?: "analytical" | "pragmatic" | "balanced";
@@ -69,5 +72,6 @@ export interface CommandOptions {
 }
 
 export function isCveId(value: string): boolean {
-  return /^CVE-\d{4}-\d{1,7}$/i.test(value);
+  return /^CVE-\d{4}-\d{1,7}$/i.test(value) || /^GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/i.test(value);
 }
+

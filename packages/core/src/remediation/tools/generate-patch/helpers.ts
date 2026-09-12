@@ -17,6 +17,7 @@ export interface LlmAnalysis {
   fixedCode: Record<string, string>;
   confidence: number;
   riskLevel: "low" | "medium" | "high";
+  reproductionTest?: string;
 }
 
 export function parseLlmAnalysisResponse(

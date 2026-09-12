@@ -29,6 +29,7 @@ interface GeneratePatchResult {
   success: boolean;
   patches?: GeneratedPatch[];
   patchContent?: string;
+  reproductionTest?: string;
   llmProvider: "remote" | "local";
   llmModel: string;
   latencyMs?: number;
@@ -259,6 +260,7 @@ export const generatePatchTool = defineTool({
         success: true,
         patches,
         patchContent: patches[0]?.unifiedDiff,
+        reproductionTest: analysis.reproductionTest,
         llmProvider: provider,
         llmModel: modelName,
         latencyMs,

@@ -2,19 +2,19 @@
 
 ## Modes
 
-### Mode 1: Direct CVE
+### Mode 1: Direct CVE & GHSA
 
-- Trigger: `autoremediator CVE-YYYY-NNNNN`, `remediate(cveId, options)`, or `planRemediation(cveId, options)`
-- Behavior: single-CVE remediation pipeline
+- Trigger: `autoremediator CVE-YYYY-NNNNN` or `autoremediator GHSA-xxxx-xxxx-xxxx`, `remediate(cveId, options)`, or `planRemediation(cveId, options)`
+- Behavior: single-vulnerability remediation pipeline supporting standard CVE and GHSA identifiers
 - Instruction set:
   - .github/instructions/orchestration.instructions.md
   - .github/instructions/agent-safety.instructions.md
   - .github/instructions/tool-contracts.instructions.md
 
-### Mode 2: Scan Input
+### Mode 2: Scan & Delta Input
 
-- Trigger: `autoremediator <scan-file>` or `remediateFromScan(inputPath, options)`
-- Behavior: parse scanner findings, deduplicate CVEs, run Mode 1 for each CVE
+- Trigger: `autoremediator <scan-file>`, `autoremediator diff`, `autoremediator triage`, or `remediateFromScan(inputPath, options)`
+- Behavior: parse scanner findings or lockfile diffs, deduplicate CVE/GHSA advisories, triage interactively or batch-remediate
 - Instruction set: Mode 1 + scanner parser skill
 
 ### Mode 2b: Portfolio Input
@@ -96,6 +96,7 @@ Patch lifecycle operation naming canon:
 - `listPatchArtifacts`
 - `inspectPatchArtifact`
 - `validatePatchArtifact`
+- `reconcilePatchArtifacts`
 
 ## Fallback Policy
 

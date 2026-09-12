@@ -43,7 +43,8 @@ Autoremediator selects the safest applicable fix strategy for each vulnerability
 
 - **Direct version upgrade** — the preferred path when a safe fixed version exists in the direct dependency graph
 - **Transitive override** — applied when exposure is in a transitive dependency and a direct upgrade is not feasible
-- **Controlled patch generation** — a confidence-scored fallback when no safe fixed version exists; produces auditable patch artifacts tracked through their full lifecycle
+- **Controlled patch generation** — a confidence-scored fallback when no safe fixed version exists; produces auditable patch artifacts tracked through their full lifecycle with synthesized reproduction tests
+- **Upstream patch reconciliation** — detects when upstream package releases supersede local patch files and safely retires them (`patches reconcile`)
 
 Unresolved findings are never silently dropped. Each one is classified with an explicit reason and treated as an escalation input for downstream security workflows.
 

@@ -139,6 +139,7 @@ export type PatchValidationPhaseName =
   | "apply"
   | "install"
   | "test"
+  | "reproduction-test"
   | "drift";
 
 export interface PatchValidationPhase {
@@ -167,6 +168,8 @@ export interface PatchArtifact {
   dryRun: boolean;
   /** SHA-256 integrity hash of the patch file content (format: sha256:<hex>) */
   integrity?: string;
+  reproductionTest?: string;
+  reproductionTestPath?: string;
   validationPhases?: PatchValidationPhase[];
 }
 
@@ -216,6 +219,27 @@ export interface PatchArtifactQueryOptions {
   cwd?: string;
   patchesDir?: string;
   packageManager?: PackageManager;
+}
+
+export interface PatchReconcileOptions extends PatchArtifactQueryOptions {
+  autoApply?: boolean;
+  runTests?: boolean;
+}
+
+export interface PatchReconcileResult {
+  patchFilePath: string;
+  packageName: string;
+  cveId?: string;
+  installedVersion?: string;
+  safeUpstreamVersion?: string;
+  status: "upgraded" | "safe-version-available" | "patch-retained" | "error";
+  reason?: string;
+}
+
+export interface PatchReconcileReport {
+  reconciled: PatchReconcileResult[];
+  reconciledCount: number;
+  retainedCount: number;
 }
 
 export type UnresolvedReason =
@@ -360,7 +384,9 @@ export interface ReachabilityAssessment {
     | "symbol-present"
     | "call-path-found"
     | "call-graph-uninvoked"
+    | "transitive-path-found"
     | "unknown";
+
   justification?: "code_not_in_execute_path" | "code_not_reachable" | (string & {});
   evidence?: ReachabilityEvidence[];
 }
@@ -384,7 +410,7 @@ export interface FixExplanation {
 
 export type ChangeRequestProvider = "github" | "gitlab";
 
-export type ChangeRequestGrouping = "all" | "per-cve" | "per-package";
+export type ChangeRequestGrouping = "all" | "per-cve" | "per-package" | "by-severity";
 
 export interface ChangeRequestOptions {
   enabled?: boolean;
@@ -506,6 +532,15 @@ export interface CorrelationContext {
   parentRunId?: string;
 }
 
+export interface SupplyChainPolicy {
+  /** Minimum age of package version release in hours (e.g. 48 or 72) */
+  minPublishAgeHours?: number;
+  /** Block versions that define preinstall or postinstall scripts */
+  blockInstallScripts?: boolean;
+  /** Require cryptographic provenance attestation (Sigstore / GitHub Actions build attestations) */
+  requireProvenance?: boolean;
+}
+
 export interface RemediationConstraints {
   directDependenciesOnly?: boolean;
   preferVersionBump?: boolean;
@@ -513,7 +548,10 @@ export interface RemediationConstraints {
   installPreferOffline?: boolean;
   enforceFrozenLockfile?: boolean;
   workspace?: string;
+  typecheck?: boolean;
+  supplyChainPolicy?: SupplyChainPolicy;
 }
+
 
 export type ModelPersonality = "analytical" | "pragmatic" | "balanced";
 
@@ -558,6 +596,11 @@ export interface RemediateOptions extends CorrelationContext {
   dryRun?: boolean;
   /** If true, run package-manager tests after patching */
   runTests?: boolean;
+  /** If true, run typecheck verification (e.g. tsc --noEmit or npm run typecheck) after patching */
+  typecheck?: boolean;
+  /** Optional supply chain trust policy for release age, scripts, and provenance */
+  supplyChainPolicy?: SupplyChainPolicy;
+
   /** Override the LLM provider (vendor-neutral surface): remote or local. */
   llmProvider?: "remote" | "local";
   /** Override the model name */
@@ -754,7 +797,12 @@ export interface DeltaDependencyChange {
   changeType: "added" | "upgraded" | "downgraded" | "removed";
   oldVersion?: string;
   newVersion?: string;
-  dependencyType: "dependencies" | "devDependencies" | "peerDependencies" | "optionalDependencies";
+  dependencyType:
+    | "dependencies"
+    | "devDependencies"
+    | "peerDependencies"
+    | "optionalDependencies"
+    | "transitive";
   manifestPath: string;
 }
 

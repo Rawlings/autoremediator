@@ -1,7 +1,8 @@
 import { resolveSafeUpgradeVersion } from "../../intelligence/sources/registry.js";
 import { applyVersionBumpTool } from "../tools/apply-version-bump.js";
 import { applyPackageOverrideTool } from "../tools/apply-package-override/index.js";
-import type { PackageManager, PatchResult, VulnerablePackage } from "../../platform/types.js";
+import { verifyPackageTrust } from "../../platform/supply-chain.js";
+import type { PackageManager, PatchResult, SupplyChainPolicy, VulnerablePackage } from "../../platform/types.js";
 
 export async function resolvePrimaryResult(params: {
   vulnerable: VulnerablePackage;
@@ -17,8 +18,11 @@ export async function resolvePrimaryResult(params: {
     installPreferOffline?: boolean;
     enforceFrozenLockfile?: boolean;
     workspace?: string;
+    typecheck?: boolean;
+    supplyChainPolicy?: SupplyChainPolicy;
   };
 }): Promise<{ result: PatchResult; steps: number }> {
+
   const { vulnerable, cwd, packageManager, dryRun, policy, runTests, constraints } = params;
   const pkg = vulnerable.installed;
   const firstPatchedVersion = vulnerable.affected.firstPatchedVersion;
@@ -93,6 +97,23 @@ export async function resolvePrimaryResult(params: {
       };
     }
 
+    const trust = await verifyPackageTrust(pkg.name, safeUpgrade.safeVersion, constraints.supplyChainPolicy);
+    if (!trust.trusted) {
+      return {
+        steps: 1,
+        result: {
+          packageName: pkg.name,
+          strategy: "none",
+          fromVersion: pkg.version,
+          applied: false,
+          dryRun,
+          unresolvedReason: "policy-blocked",
+          vulnerableRange: vulnerable.affected.vulnerableRange,
+          message: `Supply chain trust gate blocked "${pkg.name}@${safeUpgrade.safeVersion}": ${trust.reason}`,
+        },
+      };
+    }
+
     const overrideResult = await applyPackageOverrideTool.execute({
       cwd,
       packageManager,
@@ -107,6 +128,7 @@ export async function resolvePrimaryResult(params: {
       enforceFrozenLockfile: constraints.enforceFrozenLockfile,
       workspace: constraints.workspace,
     });
+
 
     return {
       steps: 2,
@@ -153,6 +175,23 @@ export async function resolvePrimaryResult(params: {
     };
   }
 
+  const trust = await verifyPackageTrust(pkg.name, safeUpgrade.safeVersion, constraints.supplyChainPolicy);
+  if (!trust.trusted) {
+    return {
+      steps: 1,
+      result: {
+        packageName: pkg.name,
+        strategy: "none",
+        fromVersion: pkg.version,
+        applied: false,
+        dryRun,
+        unresolvedReason: "policy-blocked",
+        vulnerableRange: vulnerable.affected.vulnerableRange,
+        message: `Supply chain trust gate blocked "${pkg.name}@${safeUpgrade.safeVersion}": ${trust.reason}`,
+      },
+    };
+  }
+
   const applyResult = await applyVersionBumpTool.execute({
     cwd,
     packageManager,
@@ -162,11 +201,13 @@ export async function resolvePrimaryResult(params: {
     dryRun,
     policy,
     runTests,
+    typecheck: constraints.typecheck,
     installMode: constraints.installMode,
     installPreferOffline: constraints.installPreferOffline,
     enforceFrozenLockfile: constraints.enforceFrozenLockfile,
     workspace: constraints.workspace,
   });
+
 
   return {
     steps: 2,

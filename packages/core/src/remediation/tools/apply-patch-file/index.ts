@@ -107,6 +107,10 @@ export const applyPatchFileTool = defineTool({
         .optional()
         .default(true)
         .describe("Run package manager test command to validate patch doesn't break anything"),
+      reproductionTest: z
+        .string()
+        .optional()
+        .describe("Optional synthesized reproduction test script verifying fix"),
       dryRun: z
         .boolean()
         .optional()
@@ -133,6 +137,7 @@ export const applyPatchFileTool = defineTool({
     workspace,
     riskLevel,
     validateWithTests,
+    reproductionTest,
     dryRun,
   }): Promise<ApplyPatchFileResult> => {
     try {
@@ -409,10 +414,34 @@ export const applyPatchFileTool = defineTool({
           });
         }
 
+        let reproductionTestPath: string | undefined;
+        if (reproductionTest) {
+          const safeName = packageName.replace(/^@/, "").replace(/\//g, "+");
+          reproductionTestPath = join(patchesDirPath, `${safeName}+${vulnerableVersion}.test.cjs`);
+          await writeFile(reproductionTestPath, reproductionTest, "utf8");
+          try {
+            const reproRun = await execa("node", [reproductionTestPath], { cwd, stdio: "pipe" });
+            validationPhases.push({
+              phase: "reproduction-test",
+              passed: reproRun.exitCode === 0,
+              message: "Reproduction test verified fix successfully.",
+            });
+          } catch (err) {
+            const reproErr = err instanceof Error ? err.message : String(err);
+            validationPhases.push({
+              phase: "reproduction-test",
+              passed: false,
+              error: `Reproduction test failed: ${reproErr}`,
+            });
+          }
+        }
+
         const finalArtifact: PatchArtifact = {
           ...artifact,
           applied: true,
           dryRun: false,
+          reproductionTest,
+          reproductionTestPath,
           validationPhases,
         };
         await writePatchManifest(manifestFilePath, finalArtifact);

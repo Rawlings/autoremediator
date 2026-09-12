@@ -54,11 +54,31 @@ export async function fetchGhAdvisories(cveId: string): Promise<GhAdvisory[]> {
     headers["Authorization"] = `token ${token}`;
   }
 
+  const normalized = cveId.trim();
+  if (normalized.toUpperCase().startsWith("GHSA-")) {
+    const url = `${GITHUB_API_BASE}/${encodeURIComponent(normalized)}`;
+    try {
+      const res = await httpClient({ url, headers });
+      if (!res.ok) {
+        if (res.status === 404) return [];
+        throw new Error(`HTTP ${res.status}: ${res.text}`);
+      }
+      return res.data ? [res.data as GhAdvisory] : [];
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.warn(
+        `[autoremediator] GitHub Advisory API error for ${cveId}: ${errorMsg} — skipping.`,
+      );
+      return [];
+    }
+  }
+
   const url = new URL(GITHUB_API_BASE);
   url.searchParams.set("cve_id", cveId);
   url.searchParams.set("ecosystem", "npm");
   url.searchParams.set("type", "reviewed");
   url.searchParams.set("per_page", "10");
+
 
   try {
     const res = await httpClient({

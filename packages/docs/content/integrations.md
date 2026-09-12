@@ -99,6 +99,7 @@ Grouped change requests use:
 - `all`: one batched review for the whole run
 - `per-cve`: one review branch per CVE
 - `per-package`: package-group planning with isolated worktrees
+- `by-severity`: groups fixes into review branches partitioned by severity tier (CRITICAL, HIGH, MEDIUM, LOW)
 
 GitHub uses `GITHUB_TOKEN` by default. GitLab uses `GITLAB_TOKEN` by default. You can override the token env var through the public `changeRequest.tokenEnvVar` option.
 
@@ -445,6 +446,51 @@ jobs:
 ```
 
 The summary JSON is designed for automation consumption: `strategyCounts` shows which remediation path was used, `dependencyScopeCounts` distinguishes direct dependency work from transitive remediation, and `unresolvedByReason` lets CI react to specific failure classes without parsing human-readable messages.
+
+### Post-Remediation Typecheck Gate in CI
+
+To ensure dependency version bumps or patch applications do not introduce TypeScript type breakages in CI, pass `--typecheck`:
+
+```yaml
+- uses: rawlings/autoremediator@v1
+  with:
+    audit: true
+    run-tests: true
+    ci: true
+    # Run tsc --noEmit after remediation
+    additional-args: "--typecheck"
+```
+
+If type checking fails, autoremediator automatically triggers atomic rollback and marks the remediation outcome as unresolved with reason `typecheck-failed`.
+
+### PR Lockfile Delta Scanning Gate
+
+Instead of auditing the entire historical dependency graph on every PR, use lockfile delta scanning to inspect only the dependencies introduced or modified in the pull request:
+
+```yaml
+name: lockfile-delta-check
+on:
+  pull_request:
+    paths:
+      - "**/package-lock.json"
+      - "**/pnpm-lock.yaml"
+      - "**/yarn.lock"
+
+jobs:
+  delta-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run Lockfile Delta Scan
+        run: |
+          pnpm exec autoremediator diff \
+            --base origin/${{ github.base_ref }} \
+            --ci
+```
+
+Delta scanning parses npm, pnpm, and yarn lockfile changes between the base branch and pull request, querying OSV and GitHub Advisory for newly introduced or modified packages. In `--ci` mode, it exits with code `1` if any newly introduced vulnerabilities degrade security posture.
 
 ## Multi-Stage Automation Pattern
 

@@ -69,6 +69,7 @@ Analyze the source code to:
 2. Explain the root cause of the security issue
 3. Propose a secure fix that addresses the vulnerability
 4. Provide the complete fixed version of affected files
+5. Optionally provide a standalone Node.js reproduction/regression test script
 
 ## Response Format
 Respond ONLY with valid JSON (no markdown, no extra text):
@@ -79,7 +80,8 @@ Respond ONLY with valid JSON (no markdown, no extra text):
     "path/to/other.ts": "Complete fixed source code for this file"
   },
   "confidence": 0.95,
-  "riskLevel": "medium"
+  "riskLevel": "medium",
+  "reproductionTest": "// Node.js script asserting the patch resolves the exploit/regression"
 }
 
 Important:

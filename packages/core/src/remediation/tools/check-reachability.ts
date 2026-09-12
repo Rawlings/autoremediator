@@ -153,6 +153,39 @@ export interface ExtractedReference {
   isReExported: boolean;
 }
 
+export function toRootPackageName(importSource: string): string {
+  if (importSource.startsWith("@")) {
+    const parts = importSource.split("/");
+    return parts.slice(0, 2).join("/");
+  }
+  return importSource.split("/")[0] ?? importSource;
+}
+
+export function findTransitiveDependencyPath(
+  cwd: string,
+  targetPackage: string,
+  importedDirectPackages: Set<string>,
+): { directDependency: string; version?: string } | null {
+  for (const directPkg of importedDirectPackages) {
+    const manifestPath = join(cwd, "node_modules", directPkg, "package.json");
+    if (!existsSync(manifestPath)) continue;
+    try {
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+        dependencies?: Record<string, string>;
+      };
+      if (manifest.dependencies && manifest.dependencies[targetPackage]) {
+        return {
+          directDependency: directPkg,
+          version: manifest.dependencies[targetPackage],
+        };
+      }
+    } catch {
+      // Ignore read errors
+    }
+  }
+  return null;
+}
+
 /**
  * Extracts package references and imported symbols using the Oxc AST parser.
  */
@@ -161,6 +194,7 @@ export function extractPackageReferences(
   content: string,
   packageName: string,
   tsconfig?: TsconfigPathsConfig,
+  outImportedDirectPackages?: Set<string>,
 ): ExtractedReference[] {
   const results: ExtractedReference[] = [];
 
@@ -177,7 +211,11 @@ export function extractPackageReferences(
     // 1. Static Import Declarations: import ... from 'pkg'
     if (node.type === "ImportDeclaration") {
       const source = node.source as { value?: string } | undefined;
+      if (source?.value && !source.value.startsWith(".") && !isAbsolute(source.value)) {
+        outImportedDirectPackages?.add(toRootPackageName(source.value));
+      }
       if (source?.value && matchesPackage(source.value, packageName, tsconfig)) {
+
         const symbols: string[] = [];
         const importedIdentifiers = new Map<string, string>();
         const specifiers = (node.specifiers ?? []) as AstNode[];
@@ -215,6 +253,9 @@ export function extractPackageReferences(
     // 2. Dynamic Import Expressions: import('pkg')
     if (node.type === "ImportExpression") {
       const source = node.source as { value?: string } | undefined;
+      if (source?.value && !source.value.startsWith(".") && !isAbsolute(source.value)) {
+        outImportedDirectPackages?.add(toRootPackageName(source.value));
+      }
       if (source?.value && matchesPackage(source.value, packageName, tsconfig)) {
         results.push({
           matchType: "dynamic-import",
@@ -233,6 +274,9 @@ export function extractPackageReferences(
       node.arguments.length > 0
     ) {
       const firstArg = node.arguments[0] as { value?: string } | undefined;
+      if (firstArg?.value && typeof firstArg.value === "string" && !firstArg.value.startsWith(".") && !isAbsolute(firstArg.value)) {
+        outImportedDirectPackages?.add(toRootPackageName(firstArg.value));
+      }
       if (
         firstArg?.value &&
         typeof firstArg.value === "string" &&
@@ -250,7 +294,11 @@ export function extractPackageReferences(
     // 4. Re-export Declarations: export ... from 'pkg'
     if (node.type === "ExportNamedDeclaration" || node.type === "ExportAllDeclaration") {
       const source = node.source as { value?: string } | undefined;
+      if (source?.value && !source.value.startsWith(".") && !isAbsolute(source.value)) {
+        outImportedDirectPackages?.add(toRootPackageName(source.value));
+      }
       if (source?.value && matchesPackage(source.value, packageName, tsconfig)) {
+
         const symbols: string[] = [];
         if (node.type === "ExportAllDeclaration") {
           symbols.push("*");
@@ -359,6 +407,8 @@ export function assessPackageReachability(
   let totalInvocations = 0;
   let hasPackageImport = false;
 
+  const importedDirectPackages = new Set<string>();
+
   for (const filePath of walkSourceFiles(cwd)) {
     scanned++;
     let content: string;
@@ -368,7 +418,7 @@ export function assessPackageReachability(
       continue;
     }
 
-    const refs = extractPackageReferences(filePath, content, packageName, tsconfig);
+    const refs = extractPackageReferences(filePath, content, packageName, tsconfig, importedDirectPackages);
     if (refs.length > 0) {
       hasPackageImport = true;
     }
@@ -422,6 +472,17 @@ export function assessPackageReachability(
   }
 
   if (!hasPackageImport) {
+    const transitivePath = findTransitiveDependencyPath(cwd, packageName, importedDirectPackages);
+    if (transitivePath) {
+      return {
+        packageName,
+        status: "reachable",
+        reason: `Package '${packageName}' is a transitive dependency of imported package '${transitivePath.directDependency}'`,
+        reachabilityBasis: "transitive-path-found",
+        evidence: [],
+      };
+    }
+
     return {
       packageName,
       status: "not-reachable",

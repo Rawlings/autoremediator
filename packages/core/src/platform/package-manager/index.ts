@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { execa } from "execa";
 import type { PackageManager, RemediationConstraints } from "../types.js";
@@ -149,6 +149,45 @@ export function resolveTestCommand(
             : ["npm", "test"];
   return withWorkspace(base, pm, constraints?.workspace);
 }
+
+export function resolveTypecheckCommand(
+  pm: PackageManager,
+  constraints?: RemediationConstraints,
+  cwd: string = process.cwd(),
+): string[] {
+  const pkgJsonPath = join(cwd, "package.json");
+  let hasTypecheckScript = false;
+  const hasTsConfig = existsSync(join(cwd, "tsconfig.json"));
+
+  if (existsSync(pkgJsonPath)) {
+    try {
+      const pkg = JSON.parse(readFileSync(pkgJsonPath, "utf8")) as {
+        scripts?: Record<string, string>;
+      };
+      if (pkg.scripts?.typecheck) {
+        hasTypecheckScript = true;
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
+  if (hasTypecheckScript) {
+    const base = [pm, "run", "typecheck"];
+    return withWorkspace(base, pm, constraints?.workspace);
+  }
+
+  if (hasTsConfig) {
+    if (pm === "deno") {
+      return withWorkspace(["deno", "check"], pm, constraints?.workspace);
+    }
+    const base = ["npx", "tsc", "--noEmit"];
+    return withWorkspace(base, pm, constraints?.workspace);
+  }
+
+  return [];
+}
+
 
 export function resolveAuditCommand(
   pm: PackageManager,

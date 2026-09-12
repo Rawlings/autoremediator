@@ -18,6 +18,7 @@ import {
 } from "../../platform/package-manager/index.js";
 import { resolveDenoInventory } from "../../platform/package-manager/list-parser.js";
 import { loadPolicy } from "../../platform/policy.js";
+import { findDeclaringWorkspacePackage } from "../../platform/workspace.js";
 
 interface PackageJson {
   dependencies?: Record<string, string>;
@@ -87,10 +88,12 @@ export const checkInventoryTool = defineTool({
     const packages: InventoryPackage[] = [];
 
     for (const [name, version] of installedVersions.entries()) {
+      const declaringWorkspace = findDeclaringWorkspacePackage(cwd, name, workspace);
       const isDirect =
         Boolean(pkgJson.dependencies?.[name]) ||
         Boolean(pkgJson.devDependencies?.[name]) ||
-        Boolean(pkgJson.peerDependencies?.[name]);
+        Boolean(pkgJson.peerDependencies?.[name]) ||
+        Boolean(declaringWorkspace);
 
       packages.push({
         name,
@@ -98,6 +101,7 @@ export const checkInventoryTool = defineTool({
         type: isDirect ? "direct" : "transitive",
       });
     }
+
 
     if (packages.length === 0) {
       // Fallback: only direct deps from package.json (best-effort versions)

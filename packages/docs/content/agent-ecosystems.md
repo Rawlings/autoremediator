@@ -43,6 +43,14 @@ Recommended sequence for agent orchestration:
    - `listPatchArtifacts`
    - `inspectPatchArtifact`
    - `validatePatchArtifact`
+   - `reconcilePatchArtifacts`: detect when upstream dependency upgrades supersede local patch artifacts and safely retire them.
+
+## Patch Lifecycle & Test Synthesis
+
+When agents encounter vulnerabilities without safe upstream versions, autoremediator synthesizes both a surgical patch and a self-contained reproduction test:
+
+- **Reproduction Test Synthesis**: Generates a framework-agnostic or runner-specific test assertion targeting the vulnerable function signature. The reproduction test is executed during verification to validate that the vulnerability is neutralized.
+- **Upstream Patch Reconciliation**: As projects continue to evolve, upstream maintainers eventually publish safe versions. Agents can invoke `reconcilePatchArtifacts(...)` (or `autoremediator patches reconcile`) to audit existing patches against current installed versions and safely retire obsolete patches.
 
 ## MCP Setup
 
