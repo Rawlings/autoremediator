@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.18.0
+
+### Minor Changes
+
+- 6fe871e: Add `--change-request-grouping` option with support for `per-cve`, `per-package`, and `by-severity` strategies to partition remediation reports into discrete pull requests.
+- 6fe871e: Add native support for remediating GitHub Security Advisory (`GHSA-...`) identifiers across the CLI, SDK, and scanner adapters.
+- 6fe871e: Add `autoremediator triage` interactive terminal command and `--interactive` scan flag for guided triage of vulnerability findings.
+- 6fe871e: Add lockfile diffing support for npm, pnpm, and Yarn to delta scans, detecting transitive dependency changes across Git revisions.
+- 6fe871e: Add automated reproduction and regression test synthesis for LLM-generated patches, executing tests post-apply to verify fixes.
+- 6fe871e: Add `autoremediator patches reconcile` command to detect when safe upstream package versions become available and automatically retire obsolete patch artifacts.
+- 6fe871e: Introduce pre-upgrade supply chain trust policies to safeguard against package poisoning by validating minimum package age, lifecycle scripts, and build provenance.
+- 6fe871e: Extend AST reachability analysis to trace transitive dependency paths of imported packages, eliminating false-negative reachability findings.
+- 6fe871e: Add `--typecheck` CLI flag and SDK constraint to validate TypeScript types after applying updates, rolling back if type errors are detected.
+- 6fe871e: Add monorepo workspace awareness to locate and update dependencies directly in member packages across pnpm, npm, Yarn, and Lerna workspaces.
+
 ## 0.17.0
 
 ### Minor Changes
