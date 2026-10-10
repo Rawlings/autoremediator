@@ -43,5 +43,18 @@ export function resolveConstraints(options: RemediateOptions, cwd: string): Reme
     enforceFrozenLockfile:
       options.constraints?.enforceFrozenLockfile ?? policy.constraints?.enforceFrozenLockfile,
     workspace: options.constraints?.workspace ?? policy.constraints?.workspace,
+    typecheck: options.typecheck ?? options.constraints?.typecheck ?? policy.constraints?.typecheck,
+    requireProofOfFix:
+      options.requireProofOfFix ??
+      options.constraints?.requireProofOfFix ??
+      policy.constraints?.requireProofOfFix,
+    enableBreakingChangeRefactor:
+      options.breakingChangeRefactor ??
+      options.constraints?.enableBreakingChangeRefactor ??
+      policy.constraints?.enableBreakingChangeRefactor,
+    supplyChainPolicy:
+      options.supplyChainPolicy ??
+      options.constraints?.supplyChainPolicy ??
+      policy.constraints?.supplyChainPolicy,
   };
 }

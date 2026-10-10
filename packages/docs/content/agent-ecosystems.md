@@ -45,11 +45,12 @@ Recommended sequence for agent orchestration:
    - `validatePatchArtifact`
    - `reconcilePatchArtifacts`: detect when upstream dependency upgrades supersede local patch artifacts and safely retire them.
 
-## Patch Lifecycle & Test Synthesis
+## Patch Lifecycle, Proof-of-Fix & Refactoring
 
-When agents encounter vulnerabilities without safe upstream versions, autoremediator synthesizes both a surgical patch and a self-contained reproduction test:
+When agents encounter vulnerabilities, autoremediator provides high-assurance validation and repair capabilities:
 
-- **Reproduction Test Synthesis**: Generates a framework-agnostic or runner-specific test assertion targeting the vulnerable function signature. The reproduction test is executed during verification to validate that the vulnerability is neutralized.
+- **Dual-Stage Proof-of-Fix Verification**: Generates a self-contained reproduction test and executes it across two stages — a *negative phase* asserting failure on unpatched baseline, and a *positive phase* asserting success post-mutation. This guarantees that fixes are empirically proven and not phantom successes.
+- **Agentic Breaking-Change Codemods**: When upgrades introduce breaking API changes, AST analysis via `oxc-parser` detects affected consumer call-sites and applies automated refactorings (such as import renames and function migrations) before validating the test suite.
 - **Upstream Patch Reconciliation**: As projects continue to evolve, upstream maintainers eventually publish safe versions. Agents can invoke `reconcilePatchArtifacts(...)` (or `autoremediator patches reconcile`) to audit existing patches against current installed versions and safely retire obsolete patches.
 
 ## MCP Setup
@@ -62,6 +63,7 @@ autoremediator-mcp
 
 Available MCP operations:
 
+- `health`
 - `remediate`
 - `planRemediation`
 - `remediateFromScan`
@@ -96,6 +98,11 @@ Primary routes:
 - `POST /patches/list`
 - `POST /patches/inspect`
 - `POST /patches/validate`
+- `POST /vex`
+- `POST /jobs/remediate`
+- `POST /jobs/scan`
+- `POST /jobs/portfolio`
+- `GET /jobs/:jobId`
 - `GET /openapi.json`
 - `GET /health`
 

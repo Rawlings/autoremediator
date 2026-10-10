@@ -15,7 +15,9 @@ const mocked = vi.hoisted(() => ({
   ciExitCode: vi.fn(),
   toSarifOutput: vi.fn(),
   validatePatchArtifact: vi.fn(),
-  reconcilePatchArtifacts: vi.fn().mockResolvedValue({ reconciled: [], reconciledCount: 0, retainedCount: 0 }),
+  reconcilePatchArtifacts: vi
+    .fn()
+    .mockResolvedValue({ reconciled: [], reconciledCount: 0, retainedCount: 0 }),
   buildStrategyCounts: vi.fn(() => undefined),
   buildDependencyScopeCounts: vi.fn(() => undefined),
   buildSlaBreachSummary: vi.fn(() => undefined),

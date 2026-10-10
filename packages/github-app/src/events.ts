@@ -216,6 +216,69 @@ export async function dispatchGitHubEvent(
     return { status: "handled" };
   }
 
+  if (context.eventName === "check_run") {
+    const action = readAction(payload);
+    if (action !== "completed") {
+      return {
+        status: "ignored",
+        reason: `check_run action not completed: ${action ?? "unknown"}`,
+      };
+    }
+
+    const checkRun = payload.check_run as Record<string, unknown> | undefined;
+    const conclusion = checkRun?.conclusion as string | undefined;
+    if (conclusion !== "failure") {
+      return {
+        status: "ignored",
+        reason: `check_run conclusion not failure: ${conclusion ?? "unknown"}`,
+      };
+    }
+
+    const pullRequests = (checkRun?.pull_requests as Array<Record<string, unknown>> | undefined) ?? [];
+    const isAutoremediatorPr = pullRequests.some((pr) => {
+      const head = pr.head as Record<string, unknown> | undefined;
+      const ref = typeof head?.ref === "string" ? head.ref : "";
+      return ref.startsWith("autoremediator/") || ref.includes("autoremediator");
+    });
+
+    if (!isAutoremediatorPr && pullRequests.length > 0) {
+      return {
+        status: "ignored",
+        reason: "check_run failure not on an autoremediator pull request branch",
+      };
+    }
+
+    const installationId = readInstallationId(payload);
+    if (
+      installationId &&
+      options.stateStore &&
+      !options.stateStore.isInstallationActive(installationId)
+    ) {
+      return { status: "ignored", reason: `Installation ${installationId} is not active` };
+    }
+
+    try {
+      const triggerTask = options.onRemediationRequested?.({
+        eventName: "check_run",
+        installationId,
+        deliveryId: context.deliveryId,
+        payload,
+      });
+
+      if (options.remediationTriggerTimeoutMs !== undefined && triggerTask !== undefined) {
+        await runWithTimeout(triggerTask, options.remediationTriggerTimeoutMs);
+      } else {
+        await triggerTask;
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown remediation trigger error";
+      return { status: "handled", reason: `Remediation trigger failed: ${message}` };
+    }
+
+    return { status: "handled" };
+  }
+
   void payload;
   return { status: "ignored", reason: `Unhandled event type: ${context.eventName}` };
+
 }

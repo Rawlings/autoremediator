@@ -172,7 +172,11 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
     dispositionPolicy: resolveDispositionPolicy(opts),
     offlineIntelligence: opts.offline,
     intelligenceSnapshotPath: opts.intelligenceSnapshot,
+    proofOfFix: opts.proofOfFix,
+    requireProofOfFix: opts.requireProofOfFix,
+    breakingChangeRefactor: opts.breakingChangeRefactor,
   });
+
 
   const reportAsScan = asSingleCveScanReport(report);
 
@@ -323,7 +327,11 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
     dispositionPolicy: resolveDispositionPolicy(opts),
     offlineIntelligence: opts.offline,
     intelligenceSnapshotPath: opts.intelligenceSnapshot,
+    proofOfFix: opts.proofOfFix,
+    requireProofOfFix: opts.requireProofOfFix,
+    breakingChangeRefactor: opts.breakingChangeRefactor,
   });
+
 
   if (opts.summaryFile) {
     const summary = toCiSummary(report);
@@ -776,7 +784,10 @@ export async function runDiffAudit(opts: {
 }
 
 export async function runReconcilePatches(
-  opts: Pick<CommandOptions, "cwd" | "patchesDir" | "packageManager" | "runTests" | "outputFormat"> & {
+  opts: Pick<
+    CommandOptions,
+    "cwd" | "patchesDir" | "packageManager" | "runTests" | "outputFormat"
+  > & {
     autoApply?: boolean;
   },
 ): Promise<void> {
@@ -807,4 +818,3 @@ export async function runReconcilePatches(
     }
   }
 }
-

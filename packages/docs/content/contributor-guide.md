@@ -106,8 +106,8 @@ Public API naming governance:
 
 - use `.github/skills/public-api-governance/SKILL.md` when changing any public option/report/schema names
 - keep SDK, CLI mapping, MCP schema, OpenAPI schema, and docs in sync in one change set
-- canonical public terms are `runTests`, `policy`, `evidence`, `patchCount`, and `patchesDir`
-- patch lifecycle operation names are `listPatchArtifacts`, `inspectPatchArtifact`, and `validatePatchArtifact`
+- canonical public terms are `runTests`, `policy`, `evidence`, `patchCount`, `patchesDir`, `offlineIntelligence`, `intelligenceSnapshotPath`, `proofOfFix`, `requireProofOfFix`, and `breakingChangeRefactor`
+- patch lifecycle operation names are `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, and `reconcilePatchArtifacts`
 
 ## Documentation Quality Standard
 
@@ -131,7 +131,7 @@ pnpm typecheck
 pnpm test
 ```
 
-Use pnpm-first commands in docs unless compatibility context requires alternatives.
+Release notes and package version changes must be introduced via Changesets (`pnpm changeset`). Never edit `CHANGELOG.md` directly.
 
 ## Documentation Change Checklist
 
@@ -141,3 +141,4 @@ Use pnpm-first commands in docs unless compatibility context requires alternativ
 - mark compatibility aliases as legacy when referenced
 - verify examples use secure defaults (`--dry-run`, policy guidance, validation where relevant)
 - ensure docs/governance update bundle matches feature category requirements
+- add a changeset (`pnpm changeset`) for package and public API changes

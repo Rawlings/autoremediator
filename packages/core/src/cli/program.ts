@@ -128,7 +128,15 @@ function addSharedOptions(
       "--change-request-branch-prefix <prefix>",
       OPTION_DESCRIPTIONS.changeRequestBranchPrefix,
     )
-    .option("--change-request-title-prefix <prefix>", OPTION_DESCRIPTIONS.changeRequestTitlePrefix);
+    .option("--change-request-title-prefix <prefix>", OPTION_DESCRIPTIONS.changeRequestTitlePrefix)
+    .option("--proof-of-fix", OPTION_DESCRIPTIONS.proofOfFix, false)
+    .option("--require-proof-of-fix", OPTION_DESCRIPTIONS.requireProofOfFix, false)
+    .option(
+      "--breaking-change-refactor",
+      OPTION_DESCRIPTIONS.breakingChangeRefactor,
+      false,
+    );
+
 
   if (includeSimulationMode) {
     program.option("--simulation-mode", OPTION_DESCRIPTIONS.simulationMode, false);

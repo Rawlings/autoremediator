@@ -188,7 +188,6 @@ export function resolveTypecheckCommand(
   return [];
 }
 
-
 export function resolveAuditCommand(
   pm: PackageManager,
   constraints?: RemediationConstraints,

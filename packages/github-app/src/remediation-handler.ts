@@ -10,6 +10,9 @@ import type {
   RemediationTriggerContext,
 } from "./types.js";
 import { fetchRepoConfig } from "./repo-config.js";
+import { parseCheckRunLogs } from "./diagnostics/log-parser.js";
+import { healPullRequest } from "./healing/pr-healer.js";
+
 
 type ScanRemediateOptions = NonNullable<Parameters<typeof remediateFromScan>[1]>;
 type ScanChangeRequestOptions = NonNullable<ScanRemediateOptions["changeRequest"]>;
@@ -66,7 +69,8 @@ export function createDefaultRemediationHandler(
     if (
       context.eventName !== "check_suite" &&
       context.eventName !== "workflow_dispatch" &&
-      context.eventName !== "push"
+      context.eventName !== "push" &&
+      context.eventName !== "check_run"
     ) {
       return;
     }
@@ -86,6 +90,72 @@ export function createDefaultRemediationHandler(
       const { DEFAULT_REPO_CONFIG } = await import("./types.js");
       repoConfig = { ...DEFAULT_REPO_CONFIG };
     }
+
+    // Special handler branch for check_run (PR auto-healing)
+    if (context.eventName === "check_run") {
+      const checkRun = context.payload.check_run as Record<string, unknown> | undefined;
+      const pullRequests = (checkRun?.pull_requests as Array<Record<string, unknown>> | undefined) ?? [];
+      const pr = pullRequests.find((p) => {
+        const head = p.head as Record<string, unknown> | undefined;
+        const ref = typeof head?.ref === "string" ? head.ref : "";
+        return ref.startsWith("autoremediator/") || ref.includes("autoremediator");
+      });
+
+      if (!pr || typeof pr.number !== "number" || !repoRef) {
+        return;
+      }
+
+      if (!repoConfig.enablePrAutoHealing) {
+        return { status: "success", reason: "PR auto-healing disabled in repo config" };
+      }
+
+      let rawLogs = [
+        (checkRun?.output as Record<string, unknown> | undefined)?.title,
+        (checkRun?.output as Record<string, unknown> | undefined)?.summary,
+        (checkRun?.output as Record<string, unknown> | undefined)?.text,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      if (typeof checkRun?.id === "number") {
+        try {
+          const annRes = await octokit.checks.listAnnotations({
+            owner: repoRef.owner,
+            repo: repoRef.repo,
+            check_run_id: checkRun.id,
+          });
+          if (Array.isArray(annRes?.data)) {
+            const annLines = annRes.data.map(
+              (ann) => `${ann.path}:${ann.start_line || 1}:1 - error ${ann.title || "check"}: ${ann.message || ""}`,
+            );
+            rawLogs += "\n" + annLines.join("\n");
+          }
+        } catch {
+          // Ignore annotation fetch failure
+        }
+      }
+
+      const diagnostic = parseCheckRunLogs(rawLogs);
+      const head = pr.head as Record<string, unknown> | undefined;
+      const branchName = typeof head?.ref === "string" ? head.ref : "unknown";
+
+      const healResult = await healPullRequest({
+        octokit,
+        owner: repoRef.owner,
+        repo: repoRef.repo,
+        pullNumber: pr.number,
+        branchName,
+        checkRunName: typeof checkRun?.name === "string" ? checkRun.name : "CI Check",
+        diagnostic,
+        repoConfig,
+      });
+
+      return {
+        status: healResult.healed ? "success" : "failed",
+        reason: healResult.reason,
+      };
+    }
+
 
     const rawCwd = repoConfig.cwd ?? process.cwd();
     // Resolve and constrain cwd — must not escape the current working directory

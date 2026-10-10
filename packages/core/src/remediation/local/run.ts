@@ -61,6 +61,8 @@ export async function runLocalRemediationPipeline(
     escalationGraph,
     offlineIntelligence,
     intelligenceSnapshotPath,
+    proofOfFix,
+    requireProofOfFix,
   } = resolved;
 
   const correlation = {
@@ -262,6 +264,8 @@ export async function runLocalRemediationPipeline(
         enforceFrozenLockfile: constraints.enforceFrozenLockfile,
         workspace: constraints.workspace,
         vulnerableRange: vulnerable.affected.vulnerableRange,
+        proofOfFix,
+        requireProofOfFix,
       });
       agentSteps += fallback.steps;
       collectedResults.push(finalizePatchResult(fallback.result));

@@ -86,6 +86,11 @@ export const OPTION_DESCRIPTIONS = {
     "Skip all network calls to intelligence sources. Only local inventory and npm-registry version resolution proceed.",
   intelligenceSnapshotPath:
     "Path to a local JSON snapshot of pre-fetched CVE intelligence (keyed by CVE ID) used when offline mode is active.",
+  proofOfFix:
+    "If true, enforce dual-stage exploit reproduction proof-of-fix verification (assert failure pre-patch, assert pass post-patch)",
+  requireProofOfFix: "If true, reject patches and roll back if proof-of-fix verification fails",
+  breakingChangeRefactor:
+    "If true, attempt agentic call-site refactoring when major version upgrades introduce breaking API changes",
 } as const;
 
 export function createConstraintSchemaProperties(): Record<string, JsonSchemaProperty> {
@@ -109,8 +114,14 @@ export function createConstraintSchemaProperties(): Record<string, JsonSchemaPro
       description: OPTION_DESCRIPTIONS.enforceFrozenLockfile,
     },
     workspace: { type: "string", description: OPTION_DESCRIPTIONS.workspace },
+    requireProofOfFix: { type: "boolean", description: OPTION_DESCRIPTIONS.requireProofOfFix },
+    enableBreakingChangeRefactor: {
+      type: "boolean",
+      description: OPTION_DESCRIPTIONS.breakingChangeRefactor,
+    },
   };
 }
+
 
 export function createRemediateOptionSchemaProperties(options?: {
   includeDryRun?: boolean;
@@ -343,6 +354,14 @@ export function createRemediateOptionSchemaProperties(options?: {
           type: "string",
           enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
         },
+        "proof-of-fix-failed": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
+        "breaking-change-unresolved": {
+          type: "string",
+          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
+        },
       },
       additionalProperties: false,
     },
@@ -351,8 +370,15 @@ export function createRemediateOptionSchemaProperties(options?: {
       type: "string",
       description: OPTION_DESCRIPTIONS.intelligenceSnapshotPath,
     },
+    proofOfFix: { type: "boolean", description: OPTION_DESCRIPTIONS.proofOfFix },
+    requireProofOfFix: { type: "boolean", description: OPTION_DESCRIPTIONS.requireProofOfFix },
+    breakingChangeRefactor: {
+      type: "boolean",
+      description: OPTION_DESCRIPTIONS.breakingChangeRefactor,
+    },
   };
 }
+
 
 export function createScanOptionSchemaProperties(): Record<string, JsonSchemaProperty> {
   return {

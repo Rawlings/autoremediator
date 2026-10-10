@@ -24,6 +24,8 @@ import {
 } from "../../platform/package-manager/index.js";
 
 import { findDeclaringWorkspacePackage } from "../../platform/workspace.js";
+import { findPackageCallSites } from "../refactor/call-site-finder.js";
+import { refactorConsumerCallSites, revertRefactorSnapshots } from "../refactor/refactor-agent.js";
 
 
 interface RawPackageJson {
@@ -61,6 +63,10 @@ export const applyVersionBumpTool = defineTool({
     installPreferOffline: z.boolean().optional(),
     enforceFrozenLockfile: z.boolean().optional(),
     workspace: z.string().optional(),
+    breakingChangeRefactor: z
+      .boolean()
+      .optional()
+      .describe("If true, attempt agentic call-site refactoring when validation fails after major upgrade"),
   }),
   execute: async ({
     cwd,
@@ -76,9 +82,10 @@ export const applyVersionBumpTool = defineTool({
     installPreferOffline,
     enforceFrozenLockfile,
     workspace,
+    breakingChangeRefactor,
   }): Promise<PatchResult> => {
-
     const pm = (packageManager ?? detectPackageManager(cwd)) as PackageManager;
+
     let pkgPath = join(cwd, "package.json");
     const loadedPolicy = loadPolicy(cwd, policy);
     const commandConstraints = {
@@ -168,7 +175,6 @@ export const applyVersionBumpTool = defineTool({
       };
     }
 
-
     const currentRange = pkgJson[depField]![packageName]!;
 
     // Preserve the range prefix (^, ~, empty) from the existing entry
@@ -181,7 +187,6 @@ export const applyVersionBumpTool = defineTool({
     const effectiveTypecheckCommand = resolveTypecheckCommand(pm, commandConstraints, cwd);
     const effectiveDedupeCommand = resolveDedupeCommand(pm, commandConstraints);
     const shouldTypecheck = typecheck || Boolean(commandConstraints.typecheck);
-
 
     if (dryRun) {
       const installCmd = effectiveInstallCommand.join(" ");
@@ -209,7 +214,6 @@ export const applyVersionBumpTool = defineTool({
           cwd,
           stdio: "pipe",
         });
-
       } catch (err) {
         // Revert the package.json change on install failure
         pkgJson[depField]![packageName] = currentRange;
@@ -228,75 +232,121 @@ export const applyVersionBumpTool = defineTool({
         };
       }
 
-      if (runTests) {
-        try {
-          const [testCmd, ...testArgs] = effectiveTestCommand;
-          await safeExeca(testCmd, testArgs, {
-            cwd,
-            stdio: "pipe",
-          });
-        } catch (err) {
-          // Roll back both manifest and lock state by restoring dep range and reinstalling.
-          pkgJson[depField]![packageName] = currentRange;
-          writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+      const shouldAttemptRefactor = Boolean(
+        breakingChangeRefactor ?? loadedPolicy.constraints?.enableBreakingChangeRefactor,
+      );
 
+      async function runValidationSteps(): Promise<{
+        passed: boolean;
+        error?: string;
+        isTypecheck?: boolean;
+      }> {
+        if (runTests) {
           try {
-            const [rollbackCmd, ...rollbackArgs] = effectiveInstallCommand;
-            await safeExeca(rollbackCmd, rollbackArgs, {
-              cwd,
-              stdio: "pipe",
-            });
-          } catch {
-            // Ignore rollback install failure and return original test failure context.
+            const [testCmd, ...testArgs] = effectiveTestCommand;
+            await safeExeca(testCmd, testArgs, { cwd, stdio: "pipe" });
+          } catch (err) {
+            const execErr = err as { stdout?: string; stderr?: string; message?: string };
+            const fullOutput = [execErr.stdout, execErr.stderr, execErr.message]
+              .filter(Boolean)
+              .join("\n");
+            return {
+              passed: false,
+              error: fullOutput || (err instanceof Error ? err.message : String(err)),
+            };
           }
+        }
+        if (shouldTypecheck && effectiveTypecheckCommand.length > 0) {
+          try {
+            const [tcCmd, ...tcArgs] = effectiveTypecheckCommand;
+            await safeExeca(tcCmd, tcArgs, { cwd, stdio: "pipe" });
+          } catch (err) {
+            const execErr = err as { stdout?: string; stderr?: string; message?: string };
+            const fullOutput = [execErr.stdout, execErr.stderr, execErr.message]
+              .filter(Boolean)
+              .join("\n");
+            return {
+              passed: false,
+              isTypecheck: true,
+              error: fullOutput || (err instanceof Error ? err.message : String(err)),
+            };
+          }
+        }
+        return { passed: true };
+      }
 
-          const message = err instanceof Error ? err.message : String(err);
-          return {
+      let validationResult = await runValidationSteps();
+      let refactoredFilesList: string[] | undefined;
+
+      if (!validationResult.passed && shouldAttemptRefactor) {
+        const callSites = findPackageCallSites(cwd, packageName);
+        if (callSites.length > 0) {
+          const refactorAttempt = await refactorConsumerCallSites({
+            cwd,
             packageName,
-            strategy: "version-bump",
             fromVersion,
             toVersion,
-            applied: false,
-            dryRun: false,
-            unresolvedReason: "validation-failed",
-            message: `${effectiveTestCommand.join(" ")} failed after upgrading "${packageName}" to ${toVersion}. Rolled back to ${currentRange}. Error: ${message}`,
-          };
+            diagnosticError: validationResult.error || "",
+            callSites,
+          });
+
+          if (refactorAttempt.applied) {
+            const postRefactorValidation = await runValidationSteps();
+            if (postRefactorValidation.passed) {
+              validationResult = { passed: true };
+              refactoredFilesList = refactorAttempt.refactoredFiles;
+            } else {
+              revertRefactorSnapshots(refactorAttempt.snapshots);
+            }
+          }
         }
       }
 
-      if (shouldTypecheck && effectiveTypecheckCommand.length > 0) {
-        try {
-          const [tcCmd, ...tcArgs] = effectiveTypecheckCommand;
+      if (!validationResult.passed) {
+        pkgJson[depField]![packageName] = currentRange;
+        writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
-          await safeExeca(tcCmd, tcArgs, {
+        try {
+          const [rollbackCmd, ...rollbackArgs] = effectiveInstallCommand;
+          await safeExeca(rollbackCmd, rollbackArgs, {
             cwd,
             stdio: "pipe",
           });
-        } catch (err) {
-          pkgJson[depField]![packageName] = currentRange;
-          writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+        } catch {}
 
-          try {
-            const [rollbackCmd, ...rollbackArgs] = effectiveInstallCommand;
-            await safeExeca(rollbackCmd, rollbackArgs, {
-              cwd,
-              stdio: "pipe",
-            });
-          } catch {}
+        const failureMessage = validationResult.error || "Unknown validation error";
+        const prefix = validationResult.isTypecheck
+          ? `TypeCheck validation failed (${effectiveTypecheckCommand.join(" ")})`
+          : `${effectiveTestCommand.join(" ")} failed`;
 
-          const message = err instanceof Error ? err.message : String(err);
-          return {
-            packageName,
-            strategy: "version-bump",
-            fromVersion,
-            toVersion,
-            applied: false,
-            dryRun: false,
-            unresolvedReason: "validation-failed",
-            message: `TypeCheck validation failed (${effectiveTypecheckCommand.join(" ")}) after upgrading "${packageName}" to ${toVersion}. Rolled back to ${currentRange}. Error: ${message}`,
-          };
-        }
+        return {
+          packageName,
+          strategy: "version-bump",
+          fromVersion,
+          toVersion,
+          applied: false,
+          dryRun: false,
+          unresolvedReason: shouldAttemptRefactor
+            ? "breaking-change-unresolved"
+            : "validation-failed",
+          message: `${prefix} after upgrading "${packageName}" to ${toVersion}. Rolled back to ${currentRange}. Error: ${failureMessage}`,
+        };
       }
+
+
+      if (refactoredFilesList && refactoredFilesList.length > 0) {
+        return {
+          packageName,
+          strategy: "breaking-change-refactor",
+          fromVersion,
+          toVersion,
+          applied: true,
+          dryRun: false,
+          refactoredFiles: refactoredFilesList,
+          message: `Upgraded "${packageName}" from ${fromVersion} to ${toVersion} and refactored ${refactoredFilesList.length} call-site file(s) across breaking API changes.`,
+        };
+      }
+
 
       let dedupeNote = "";
 

@@ -44,6 +44,8 @@ export interface EvidenceSummary {
   containmentCount?: number;
   simulationSummary?: SimulationSummary;
   slaBreachSummary?: SlaBreachSummary;
+  proofOfFixCount?: number;
+  refactoredCount?: number;
 }
 
 export interface EvidenceLog {

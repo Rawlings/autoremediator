@@ -7,16 +7,16 @@ Older versions are not actively patched.
 
 | Version | Supported |
 | ------- | --------- |
-| Latest  | ✅        |
-| Older   | ❌        |
+| Latest  | Yes       |
+| Older   | No        |
 
 ## Reporting a Vulnerability
 
-Please **do not** file public GitHub issues for security vulnerabilities.
+Do not file public GitHub issues for security vulnerabilities.
 
 Report vulnerabilities privately using [GitHub's security advisory feature](https://github.com/Rawlings/autoremediator/security/advisories/new).
 
-We will acknowledge the report within 5 business days and aim to publish a fix within 30 days of confirmation.
+Reports are acknowledged within 5 business days, with confirmed issues targeted for resolution within 30 days.
 
 ## Expected Outbound Network Connections
 
@@ -34,5 +34,4 @@ We will acknowledge the report within 5 business days and aim to publish a fix w
 - `api.securityscorecards.dev` — OpenSSF Scorecard repository posture
 - `registry.npmjs.org` — npm package registry
 
-These calls use read-only public APIs, carry no credentials, and are expected behavior.
-They can be monitored or blocked via network policy in controlled environments.
+These requests query read-only public endpoints and transmit no credentials or repository code. They can be monitored or redirected in air-gapped environments using local intelligence snapshots.

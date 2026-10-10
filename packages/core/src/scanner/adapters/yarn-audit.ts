@@ -57,7 +57,6 @@ export function parseYarnAuditJsonFromString(content: string): NormalizedFinding
       if (seen.has(key)) continue;
       seen.add(key);
 
-
       findings.push({
         cveId,
         source: "yarn-audit",

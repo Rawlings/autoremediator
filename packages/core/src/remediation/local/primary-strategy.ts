@@ -2,7 +2,13 @@ import { resolveSafeUpgradeVersion } from "../../intelligence/sources/registry.j
 import { applyVersionBumpTool } from "../tools/apply-version-bump.js";
 import { applyPackageOverrideTool } from "../tools/apply-package-override/index.js";
 import { verifyPackageTrust } from "../../platform/supply-chain.js";
-import type { PackageManager, PatchResult, SupplyChainPolicy, VulnerablePackage } from "../../platform/types.js";
+import type {
+  PackageManager,
+  PatchResult,
+  RemediationConstraints,
+  SupplyChainPolicy,
+  VulnerablePackage,
+} from "../../platform/types.js";
 
 export async function resolvePrimaryResult(params: {
   vulnerable: VulnerablePackage;
@@ -11,18 +17,8 @@ export async function resolvePrimaryResult(params: {
   dryRun: boolean;
   policy: string;
   runTests: boolean;
-  constraints: {
-    directDependenciesOnly?: boolean;
-    preferVersionBump?: boolean;
-    installMode?: "standard" | "prefer-offline" | "deterministic";
-    installPreferOffline?: boolean;
-    enforceFrozenLockfile?: boolean;
-    workspace?: string;
-    typecheck?: boolean;
-    supplyChainPolicy?: SupplyChainPolicy;
-  };
+  constraints: RemediationConstraints;
 }): Promise<{ result: PatchResult; steps: number }> {
-
   const { vulnerable, cwd, packageManager, dryRun, policy, runTests, constraints } = params;
   const pkg = vulnerable.installed;
   const firstPatchedVersion = vulnerable.affected.firstPatchedVersion;
@@ -97,7 +93,11 @@ export async function resolvePrimaryResult(params: {
       };
     }
 
-    const trust = await verifyPackageTrust(pkg.name, safeUpgrade.safeVersion, constraints.supplyChainPolicy);
+    const trust = await verifyPackageTrust(
+      pkg.name,
+      safeUpgrade.safeVersion,
+      constraints.supplyChainPolicy,
+    );
     if (!trust.trusted) {
       return {
         steps: 1,
@@ -128,7 +128,6 @@ export async function resolvePrimaryResult(params: {
       enforceFrozenLockfile: constraints.enforceFrozenLockfile,
       workspace: constraints.workspace,
     });
-
 
     return {
       steps: 2,
@@ -175,7 +174,11 @@ export async function resolvePrimaryResult(params: {
     };
   }
 
-  const trust = await verifyPackageTrust(pkg.name, safeUpgrade.safeVersion, constraints.supplyChainPolicy);
+  const trust = await verifyPackageTrust(
+    pkg.name,
+    safeUpgrade.safeVersion,
+    constraints.supplyChainPolicy,
+  );
   if (!trust.trusted) {
     return {
       steps: 1,
@@ -206,8 +209,8 @@ export async function resolvePrimaryResult(params: {
     installPreferOffline: constraints.installPreferOffline,
     enforceFrozenLockfile: constraints.enforceFrozenLockfile,
     workspace: constraints.workspace,
+    breakingChangeRefactor: constraints.enableBreakingChangeRefactor,
   });
-
 
   return {
     steps: 2,

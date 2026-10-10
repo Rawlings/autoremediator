@@ -102,7 +102,6 @@ export const checkInventoryTool = defineTool({
       });
     }
 
-
     if (packages.length === 0) {
       // Fallback: only direct deps from package.json (best-effort versions)
       const allDeps = {

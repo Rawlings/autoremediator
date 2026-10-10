@@ -43,6 +43,9 @@ export interface AutoremediatorRepoConfig {
     pushRemote?: string;
     tokenEnvVar?: string;
   };
+  // PR Auto-healing with CI feedback loop
+  enablePrAutoHealing?: boolean;
+  maxHealingAttempts?: number;
 }
 
 export const DEFAULT_REPO_CONFIG: AutoremediatorRepoConfig = {
@@ -52,7 +55,10 @@ export const DEFAULT_REPO_CONFIG: AutoremediatorRepoConfig = {
   allowMajorBumps: false,
   denyPackages: [],
   allowPackages: [],
+  enablePrAutoHealing: false,
+  maxHealingAttempts: 3,
 };
+
 
 export interface GitHubAppConfig {
   appId: string;
@@ -94,7 +100,7 @@ export interface WebhookContext {
 }
 
 export interface RemediationTriggerContext {
-  eventName: "check_suite" | "push" | "workflow_dispatch";
+  eventName: "check_suite" | "push" | "workflow_dispatch" | "check_run";
   installationId?: number;
   deliveryId?: string;
   payload: Record<string, unknown>;
@@ -112,7 +118,8 @@ export type JobStatus = "queued" | "running" | "completed" | "failed";
 
 export interface QueueJob {
   id: string;
-  eventName: "check_suite" | "push" | "workflow_dispatch";
+  eventName: "check_suite" | "push" | "workflow_dispatch" | "check_run";
+
   installationId?: number;
   deliveryId?: string;
   payload: Record<string, unknown>;

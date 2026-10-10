@@ -14,7 +14,7 @@ Related references:
 
 ## Autonomous Operator Policies
 
-The policy surface now includes controls for result disposition, containment, escalation routing, and non-mutating simulation output.
+The policy configuration governs result disposition, containment, escalation routing, and non-mutating simulation.
 
 ## Policy Configuration
 
@@ -135,7 +135,8 @@ Field intent:
   - why: lets teams run approval-first security automation without losing machine-readable remediation intent
 - `escalationGraph`:
   - what: maps unresolved reasons to intended escalation actions (`open-issue`, `notify-channel`, `create-draft-pr`, `hold-branch`, `none`)
-  - why: gives teams deterministic follow-up routing for unresolved outcomes while keeping remediation execution side-effect free- `exploitSignalOverride.kev.mandatory`:
+  - why: gives teams deterministic follow-up routing for unresolved outcomes while keeping remediation execution side-effect free
+- `exploitSignalOverride.kev.mandatory`:
   - what: treats CVEs with active CISA KEV status as unconditionally mandatory
   - why: ensures actively-exploited CVEs bypass severity filtering
 - `exploitSignalOverride.epss.mandatory` + `threshold`:
@@ -236,14 +237,25 @@ Before applying any generated code patch or updating manifests, autoremediator p
 
 Patches containing syntax errors or malformed structures are rejected prior to touching the disk.
 
-### Automated Patch Reproduction Test Synthesis
+### Automated Patch Reproduction Test Synthesis & Dual-Stage Proof-of-Fix Gate
 
-To prevent patches that merely compile but fail to remediate the vulnerability from being accepted, the patch synthesis engine produces a standalone reproduction/regression test script (`reproductionTest`) alongside the patch:
+To prevent patches that merely compile but fail to remediate the vulnerability from being accepted, the patch synthesis engine produces a standalone reproduction/regression test script alongside the patch:
 
-- The test is saved to disk at `patches/<package>+<version>.test.cjs`.
-- During post-apply validation, the test is executed in an isolated Node.js child process (`reproduction-test` phase).
-- If the test fails (indicating the exploit payload still succeeds or the fix did not work), the patch is immediately rolled back and recorded as `unresolvedReason: "patch-validation-failed"`.
-- The test code and its path are recorded in the patch manifest (`.patch.json`) for continuous regression verification.
+- The test is saved to disk at `patches/<package>+<version>.test.cjs` or supplied via `--proof-of-fix <path>`.
+- **Dual-Stage Verification Gate**:
+  - **Negative Phase (Pre-Mutation Baseline)**: The reproduction script is executed against unpatched dependencies. It *must* trigger a failure (exit code != 0 or assertion error), proving that the test genuinely reproduces the vulnerability and is not a tautological "always passing" test.
+  - **Positive Phase (Post-Mutation Fix)**: After the patch or version update is applied, the reproduction script is executed again. It *must* exit cleanly (exit code 0), verifying that the vulnerability is neutralized.
+- If `--require-proof-of-fix` is enabled and the negative test fails to reproduce the bug on unpatched baseline, patch application is rejected with `unresolvedReason: "proof-of-fix-failed"`.
+- If the positive test fails on patched code, the atomic rollback engine restores repository state.
+- The test code and its path are recorded in the patch manifest (`.patch.json`) and `PatchResult.proofOfFix` for continuous regression verification.
+
+### Agentic Breaking-Change Codemod & Consumer Call-Site Refactoring
+
+When upgrading a vulnerable package across major versions (or when minor releases introduce breaking API changes), test or typecheck gates often fail on consumer call-sites. When `--breaking-change-refactor` is enabled (or `constraints.enableBreakingChangeRefactor: true`):
+
+- **AST Call-Site Discovery**: Using `oxc-parser`, autoremediator crawls local TypeScript/JavaScript consumer code to locate call-sites referencing imported symbols from the upgraded package.
+- **Automated Codemods**: When typecheck diagnostics indicate missing exports or breaking signature changes, the refactor engine evaluates deterministic codemod transformations (e.g., default vs named import rewrites, namespace method migrations such as `rimraf.sync` → `rimraf`, `uuid.v4` → `uuidv4`).
+- **Post-Codemod Re-Validation**: If the refactor succeeds and the test/typecheck suite passes, the strategy resolves as `"breaking-change-refactor"` and lists `refactoredFiles`. If the refactor cannot satisfy typecheck and test constraints, the atomic snapshot rollback restores both the source files and the dependency manifests.
 
 ### Monorepo Workspace Isolation & Safe Scoping
 

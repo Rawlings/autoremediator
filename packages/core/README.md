@@ -29,33 +29,34 @@ The result is a closed-loop remediation workflow rather than an ever-growing tri
 
 ## Exploitability-informed prioritization
 
-Severity scores alone are poor remediation signals. Autoremediator enriches each CVE with corroborating signals before any fix is attempted:
+Severity scores alone are poor remediation signals. Autoremediator enriches each CVE with corroborating signals before attempting a fix:
 
 - **CISA KEV** — confirms whether a vulnerability is actively exploited in the wild
 - **EPSS** — quantifies exploit probability as a continuous percentile score
 - **Advisory consensus** — cross-references OSV, GitHub Advisory Database, and NVD to validate affected ranges and fixed versions
+- **AST reachability** — analyzes import and call graphs to verify whether vulnerable functions are actually invoked in source code
 
-This enrichment drives prioritization and disposition decisions, so high-risk, actively exploited vulnerabilities are handled with higher urgency than theoretical severities would suggest.
+This enrichment drives prioritization and disposition decisions, so high-risk, actively exploited vulnerabilities are handled with higher urgency than theoretical severities suggest.
 
 ## Multi-strategy remediation
 
 Autoremediator selects the safest applicable fix strategy for each vulnerability:
 
-- **Direct version upgrade** — the preferred path when a safe fixed version exists in the direct dependency graph
-- **Transitive override** — applied when exposure is in a transitive dependency and a direct upgrade is not feasible
-- **Controlled patch generation** — a confidence-scored fallback when no safe fixed version exists; produces auditable patch artifacts tracked through their full lifecycle with synthesized reproduction tests
-- **Upstream patch reconciliation** — detects when upstream package releases supersede local patch files and safely retires them (`patches reconcile`)
+- **Direct version upgrade** — the preferred path for direct dependencies; automatically refactors consumer call sites if the upgrade introduces breaking changes
+- **Transitive override** — applied via package manager overrides or resolutions when exposure is in a transitive dependency
+- **Controlled patch generation** — confidence-scored fallback when no safe fixed version exists, validated against dual-stage exploit reproduction gates
+- **Upstream patch reconciliation** — detects when upstream package releases supersede local patch files and safely retires them
 
-Unresolved findings are never silently dropped. Each one is classified with an explicit reason and treated as an escalation input for downstream security workflows.
+Unresolved findings are never silently dropped. Each is classified with an explicit reason and treated as an escalation input for downstream security workflows.
 
 ## Policy-governed automation
 
-Autoremediator is designed to operate autonomously without sacrificing control. Remediation behavior is governed by a policy layer that determines disposition for every finding:
+Remediation behavior is governed by a policy layer (`.github/autoremediator.yml`) that determines disposition for each finding:
 
-- **Auto-apply** for high-confidence remediations within acceptable risk thresholds
-- **Simulation** for preview and dry-run validation before mutations are committed
-- **Hold for approval** when human review is warranted before applying a fix
-- **Escalation** for findings that exceed risk tolerance, with configurable follow-on actions such as issue creation, channel notification, or draft PR
+- **Auto-apply** — applies high-confidence remediations within acceptable risk thresholds
+- **Simulate** — previews planned mutations and validation results without modifying files
+- **Hold for approval** — pauses execution for manual review when confidence or policy warrants
+- **Escalate** — flags findings that exceed risk tolerance to block unsafe mutations and trigger follow-on workflows
 
 Portfolio-scale campaigns apply risk ranking to prioritize remediation order across large target sets.
 
@@ -82,22 +83,13 @@ Exploitability and trust enrichment:
 
 Autoremediator is designed to meet security operations where they already run:
 
-- **CLI** — direct invocation in developer workflows and CI/CD pipeline jobs
-- **SDK** — programmatic integration for platforms, internal tooling, and security automation
-- **GitHub Actions** — reusable workflow and Marketplace action for scan-to-remediation CI pipelines
-- **MCP server** — native tool integration for AI agents, LLM orchestrators, and copilot surfaces
-- **OpenAPI server** — HTTP-accessible remediation endpoint for centralized or service-based deployments
-- **VS Code extension** — editor-side vulnerability scanning and fix actions
-
-```yaml
-jobs:
-  gate:
-    uses: rawlings/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v1
-    with:
-      audit: true
-      dry-run: true
-      ci: true
-```
+- **CLI** — direct invocation in local developer workflows and CI/CD pipelines
+- **SDK** — programmatic integration for security automation and internal platforms
+- **GitHub Actions** — reusable workflows and Marketplace actions for scan-to-remediation pipelines
+- **GitHub App** — webhook-driven remediation with PR lifecycle management and automated healing
+- **MCP server** — native tool integration for AI agents and LLM orchestrators
+- **OpenAPI server** — HTTP endpoints for centralized or service-based remediation deployments
+- **VS Code extension** — editor diagnostics, reachability checks, and one-click fixes
 
 For configuration reference, workflow variants, and MCP host setup, see the [Integrations](https://rawlings.github.io/autoremediator/docs/integrations) and [Agent Ecosystems](https://rawlings.github.io/autoremediator/docs/agent-ecosystems) guides.
 

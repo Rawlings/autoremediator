@@ -38,6 +38,9 @@ export interface LocalRunOptions {
   escalationGraph?: EscalationGraph;
   offlineIntelligence: boolean;
   intelligenceSnapshotPath?: string;
+  proofOfFix?: boolean | string;
+  requireProofOfFix?: boolean;
+  breakingChangeRefactor?: boolean;
 }
 
 export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptions {
@@ -48,13 +51,20 @@ export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptio
   const runTests = options.runTests ?? false;
   const policy = options.policy ?? "";
   const patchesDir = options.patchesDir || "./patches";
-  const constraints = {
-
-    ...options.constraints,
-    typecheck: options.typecheck ?? options.constraints?.typecheck,
-    supplyChainPolicy: options.supplyChainPolicy ?? options.constraints?.supplyChainPolicy,
-  };
   const loadedPolicy = loadPolicy(cwd, options.policy);
+  const constraints = {
+    ...options.constraints,
+    typecheck: options.typecheck ?? options.constraints?.typecheck ?? loadedPolicy.constraints?.typecheck,
+    supplyChainPolicy: options.supplyChainPolicy ?? options.constraints?.supplyChainPolicy ?? loadedPolicy.constraints?.supplyChainPolicy,
+    enableBreakingChangeRefactor:
+      options.breakingChangeRefactor ??
+      options.constraints?.enableBreakingChangeRefactor ??
+      loadedPolicy.constraints?.enableBreakingChangeRefactor,
+    requireProofOfFix:
+      options.requireProofOfFix ??
+      options.constraints?.requireProofOfFix ??
+      loadedPolicy.constraints?.requireProofOfFix,
+  };
 
   const llmProvider = resolveProvider(options);
 
@@ -91,5 +101,8 @@ export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptio
     escalationGraph: options.escalationGraph ?? loadedPolicy.escalationGraph,
     offlineIntelligence: options.offlineIntelligence ?? false,
     intelligenceSnapshotPath: options.intelligenceSnapshotPath,
+    proofOfFix: options.proofOfFix,
+    requireProofOfFix: options.requireProofOfFix ?? constraints.requireProofOfFix,
+    breakingChangeRefactor: options.breakingChangeRefactor ?? constraints.enableBreakingChangeRefactor,
   };
 }

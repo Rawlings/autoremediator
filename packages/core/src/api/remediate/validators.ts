@@ -12,4 +12,3 @@ export function assertValidCveId(cveId: string): void {
     );
   }
 }
-

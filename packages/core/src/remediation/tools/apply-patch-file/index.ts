@@ -8,7 +8,8 @@
 import { defineTool } from "../tool-compat.js";
 import { z } from "zod";
 import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { existsSync } from "node:fs";
+import { isAbsolute, join } from "node:path";
 import { execa } from "execa";
 import {
   detectPackageManager,
@@ -20,7 +21,14 @@ import {
 import { withRepoLock } from "../../../platform/repo-lock.js";
 import { loadPolicy } from "../../../platform/policy.js";
 import { validatePatchDiff } from "../../strategies/patch-utils.js";
-import type { PatchArtifact, PatchMode, PatchValidationPhase } from "../../../platform/types.js";
+import type {
+  PatchArtifact,
+  PatchMode,
+  PatchValidationPhase,
+  ProofOfFixPhaseResult,
+  ProofOfFixVerification,
+} from "../../../platform/types.js";
+import { assembleProofOfFixVerification, runProofOfFixPhase } from "../../proof-of-fix/runner.js";
 import {
   applyNativePatch,
   buildPatchFileName,
@@ -52,6 +60,7 @@ interface ApplyPatchFileResult {
   patchArtifact?: PatchArtifact;
   validation?: ValidationResult;
   validationPhases?: PatchValidationPhase[];
+  proofOfFix?: ProofOfFixVerification;
   error?: string;
 }
 
@@ -111,6 +120,16 @@ export const applyPatchFileTool = defineTool({
         .string()
         .optional()
         .describe("Optional synthesized reproduction test script verifying fix"),
+      proofOfFix: z
+        .union([z.boolean(), z.string()])
+        .optional()
+        .describe(
+          "If true or script path/content, enforce dual-stage exploit reproduction (assert failure pre-patch, assert pass post-patch)",
+        ),
+      requireProofOfFix: z
+        .boolean()
+        .optional()
+        .describe("If true, fail and roll back patch if proof-of-fix verification fails"),
       dryRun: z
         .boolean()
         .optional()
@@ -138,6 +157,8 @@ export const applyPatchFileTool = defineTool({
     riskLevel,
     validateWithTests,
     reproductionTest,
+    proofOfFix,
+    requireProofOfFix,
     dryRun,
   }): Promise<ApplyPatchFileResult> => {
     try {
@@ -264,6 +285,109 @@ export const applyPatchFileTool = defineTool({
         });
         artifact.validationPhases = validationPhases;
         await writePatchManifest(manifestFilePath, artifact);
+
+        let reproductionTestPath: string | undefined;
+        let negativePhaseResult: ProofOfFixPhaseResult | undefined;
+
+        if (typeof proofOfFix === "string" && proofOfFix.trim().length > 0) {
+          const resolvedPath = isAbsolute(proofOfFix) ? proofOfFix : join(cwd, proofOfFix);
+          if (existsSync(resolvedPath)) {
+            reproductionTestPath = resolvedPath;
+          } else {
+            const safeName = packageName.replace(/^@/, "").replace(/\//g, "+");
+            reproductionTestPath = join(patchesDirPath, `${safeName}+${vulnerableVersion}.test.cjs`);
+            await writeFile(reproductionTestPath, proofOfFix, "utf8");
+          }
+        } else if (reproductionTest) {
+          const safeName = packageName.replace(/^@/, "").replace(/\//g, "+");
+          reproductionTestPath = join(patchesDirPath, `${safeName}+${vulnerableVersion}.test.cjs`);
+          await writeFile(reproductionTestPath, reproductionTest, "utf8");
+        }
+
+        const isProofOfFixActive = Boolean(proofOfFix || requireProofOfFix);
+
+        if (isProofOfFixActive) {
+          if (!reproductionTestPath) {
+            if (requireProofOfFix) {
+              await cleanupPatchArtifacts({
+                cwd,
+                patchFilePath,
+                manifestFilePath,
+                patchMode,
+                packageJsonSnapshot,
+                installCommand,
+                rerunInstall: false,
+              });
+              return {
+                success: false,
+                packageName,
+                vulnerableVersion,
+                applied: false,
+                dryRun: false,
+                message: "Proof-of-fix verification required, but no reproduction test or script was supplied.",
+                patchFilePath,
+                manifestFilePath,
+                patchPath: patchFilePath,
+                patchMode,
+                postinstallConfigured: false,
+                patchArtifact: {
+                  ...artifact,
+                  applied: false,
+                  validationPhases,
+                },
+                validationPhases,
+                error: "Proof-of-fix verification required, but no reproduction test or script was supplied.",
+              };
+            }
+          } else {
+            negativePhaseResult = await runProofOfFixPhase({
+              stage: "negative",
+              testFilePath: reproductionTestPath,
+              cwd,
+            });
+
+            validationPhases.push({
+              phase: "proof-of-fix-negative",
+              passed: negativePhaseResult.passed,
+              message: negativePhaseResult.passed
+                ? "Reproduction test reproduced vulnerability on unpatched code."
+                : undefined,
+              error: negativePhaseResult.passed ? undefined : negativePhaseResult.error,
+            });
+
+            if (!negativePhaseResult.passed && requireProofOfFix) {
+              await cleanupPatchArtifacts({
+                cwd,
+                patchFilePath,
+                manifestFilePath,
+                patchMode,
+                packageJsonSnapshot,
+                installCommand,
+                rerunInstall: false,
+              });
+              return {
+                success: false,
+                packageName,
+                vulnerableVersion,
+                applied: false,
+                dryRun: false,
+                message: `Proof-of-fix negative phase failed: ${negativePhaseResult.error}`,
+                patchFilePath,
+                manifestFilePath,
+                patchPath: patchFilePath,
+                patchMode,
+                postinstallConfigured: false,
+                patchArtifact: {
+                  ...artifact,
+                  applied: false,
+                  validationPhases,
+                },
+                validationPhases,
+                error: `Proof-of-fix negative phase failed: ${negativePhaseResult.error}`,
+              };
+            }
+          }
+        }
 
         const applyResult =
           patchMode === "patch-package"
@@ -414,26 +538,88 @@ export const applyPatchFileTool = defineTool({
           });
         }
 
-        let reproductionTestPath: string | undefined;
-        if (reproductionTest) {
-          const safeName = packageName.replace(/^@/, "").replace(/\//g, "+");
-          reproductionTestPath = join(patchesDirPath, `${safeName}+${vulnerableVersion}.test.cjs`);
-          await writeFile(reproductionTestPath, reproductionTest, "utf8");
-          try {
-            const reproRun = await execa("node", [reproductionTestPath], { cwd, stdio: "pipe" });
-            validationPhases.push({
-              phase: "reproduction-test",
-              passed: reproRun.exitCode === 0,
-              message: "Reproduction test verified fix successfully.",
+        let positivePhaseResult: ProofOfFixPhaseResult | undefined;
+        if (reproductionTestPath) {
+          if (isProofOfFixActive) {
+            positivePhaseResult = await runProofOfFixPhase({
+              stage: "positive",
+              testFilePath: reproductionTestPath,
+              cwd,
             });
-          } catch (err) {
-            const reproErr = err instanceof Error ? err.message : String(err);
+
             validationPhases.push({
-              phase: "reproduction-test",
-              passed: false,
-              error: `Reproduction test failed: ${reproErr}`,
+              phase: "proof-of-fix-positive",
+              passed: positivePhaseResult.passed,
+              message: positivePhaseResult.passed
+                ? "Reproduction test passed on patched code (vulnerability mitigated)."
+                : undefined,
+              error: positivePhaseResult.passed ? undefined : positivePhaseResult.error,
             });
+
+            if (!positivePhaseResult.passed && (requireProofOfFix || validateWithTests)) {
+              await cleanupPatchArtifacts({
+                cwd,
+                patchFilePath,
+                manifestFilePath,
+                patchMode,
+                packageJsonSnapshot,
+                installCommand,
+                rerunInstall: patchMode === "patch-package",
+              });
+              return {
+                success: false,
+                packageName,
+                vulnerableVersion,
+                applied: false,
+                dryRun: false,
+                message: `Proof-of-fix positive phase failed: ${positivePhaseResult.error}`,
+                patchFilePath,
+                manifestFilePath,
+                patchPath: patchFilePath,
+                patchMode,
+                postinstallConfigured: false,
+                patchArtifact: {
+                  ...artifact,
+                  applied: false,
+                  validationPhases,
+                },
+                validationPhases,
+                error: `Proof-of-fix positive phase failed: ${positivePhaseResult.error}`,
+              };
+            }
+          } else {
+            try {
+              const reproRun = await execa("node", [reproductionTestPath], { cwd, stdio: "pipe" });
+              validationPhases.push({
+                phase: "reproduction-test",
+                passed: reproRun.exitCode === 0,
+                message: "Reproduction test verified fix successfully.",
+              });
+            } catch (err) {
+              const reproErr = err instanceof Error ? err.message : String(err);
+              validationPhases.push({
+                phase: "reproduction-test",
+                passed: false,
+                error: `Reproduction test failed: ${reproErr}`,
+              });
+            }
           }
+        }
+
+        let proofOfFixVerification: ProofOfFixVerification | undefined;
+        if (negativePhaseResult && positivePhaseResult) {
+          proofOfFixVerification = assembleProofOfFixVerification({
+            reproductionTestPath,
+            negativePhase: negativePhaseResult,
+            positivePhase: positivePhaseResult,
+            regressionPhase: validationResult
+              ? {
+                  executed: true,
+                  passed: validationResult.passed,
+                  error: validationResult.error,
+                }
+              : undefined,
+          });
         }
 
         const finalArtifact: PatchArtifact = {
@@ -443,6 +629,7 @@ export const applyPatchFileTool = defineTool({
           reproductionTest,
           reproductionTestPath,
           validationPhases,
+          proofOfFix: proofOfFixVerification,
         };
         await writePatchManifest(manifestFilePath, finalArtifact);
 
@@ -461,6 +648,7 @@ export const applyPatchFileTool = defineTool({
           patchArtifact: finalArtifact,
           validation: validationResult,
           validationPhases,
+          proofOfFix: proofOfFixVerification,
         };
       });
     } catch (err) {

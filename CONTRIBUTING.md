@@ -8,7 +8,7 @@ This project values clear documentation, deterministic behavior, and safe defaul
 
 Prerequisites:
 
-- Node.js 18+
+- Node.js 22+
 - pnpm (recommended)
 - Git
 
@@ -28,7 +28,7 @@ pnpm typecheck
 pnpm test
 ```
 
-npm/yarn alternatives are supported, but pnpm is the preferred contributor workflow.
+npm and yarn alternatives are supported, but pnpm is the preferred contributor workflow.
 
 ## Contribution Principles
 
@@ -43,6 +43,8 @@ When behavior, interfaces, or execution rules change, update the related governa
 
 Keep naming, schemas, and terminology consistent across all supported interfaces.
 
+Never edit `CHANGELOG.md` files directly. Release notes and version bumps must be created using Changesets (`pnpm changeset`).
+
 If a change affects users or operators, ensure both usage docs and contributor guidance are updated together.
 
 ## Default Workflow
@@ -52,15 +54,16 @@ Contributions should follow this default path:
 1. Define scope and acceptance criteria before implementation.
 2. Implement with a consolidation-first mindset.
 3. Add or update tests that verify behavior and safety.
-4. Update supporting docs and governance notes to match.
+4. Add a changeset (`pnpm changeset`) for package changes.
+5. Update supporting docs and governance notes to match.
 
 This process is advisory-first by default (warn-first), but still required for completeness.
 
 ## Pull Request Checklist
 
-- Build passes
-- Typecheck passes
-- Tests pass (unless the change is docs-only)
+- Build passes (`pnpm build`)
+- Typecheck passes (`pnpm typecheck`)
+- Tests pass (`pnpm test`, unless the change is docs-only)
+- Changeset added via `pnpm changeset` (do not edit `CHANGELOG.md` directly)
 - Docs updated for any user-facing or contributor-facing behavior change
 - Governance instructions and skills updated when execution behavior changes
-- Required update bundle completed for the scope of the change

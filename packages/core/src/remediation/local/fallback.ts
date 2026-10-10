@@ -63,6 +63,8 @@ export async function tryLocalPatchFallback(params: {
   enforceFrozenLockfile?: boolean;
   workspace?: string;
   vulnerableRange?: string;
+  proofOfFix?: boolean | string;
+  requireProofOfFix?: boolean;
 }): Promise<{ result: PatchResult; steps: number; usage: LlmUsageMetrics[] }> {
   const usage: LlmUsageMetrics[] = [];
   let steps = 0;
@@ -232,6 +234,9 @@ export async function tryLocalPatchFallback(params: {
     workspace: params.workspace,
     riskLevel: patchResult.riskLevel,
     validateWithTests: params.runTests,
+    reproductionTest: patchResult.reproductionTest,
+    proofOfFix: params.proofOfFix,
+    requireProofOfFix: params.requireProofOfFix,
     dryRun: params.dryRun,
   });
   steps += 1;

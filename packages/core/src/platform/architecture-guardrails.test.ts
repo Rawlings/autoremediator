@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -15,7 +15,9 @@ function lineCount(path: string): number {
 
 describe("architecture guardrails", () => {
   it("keeps mixed-concern files under approved size thresholds", () => {
-    const srcRoot = resolve(process.cwd(), "src");
+    const srcRoot = existsSync(resolve(process.cwd(), "packages/core/src"))
+      ? resolve(process.cwd(), "packages/core/src")
+      : resolve(process.cwd(), "src");
 
     const allowlist: FileGuardrail[] = [
       // High-churn entrypoint allowed to remain moderately sized while delegating evidence and CR branches.

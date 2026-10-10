@@ -44,12 +44,25 @@ vi.mock("../../platform/package-manager/index.js", () => ({
   resolveTypecheckCommand: mocked.resolveTypecheckCommand,
 }));
 
-
 vi.mock("../../platform/repo-lock.js", () => ({
   withRepoLock: mocked.withRepoLock,
 }));
 
+vi.mock("../refactor/call-site-finder.js", () => ({
+  findPackageCallSites: vi.fn(() => [{ filePath: "/tmp/project/src/app.ts", imports: [] }]),
+}));
+
+vi.mock("../refactor/refactor-agent.js", () => ({
+  refactorConsumerCallSites: vi.fn(async () => ({
+    applied: true,
+    refactoredFiles: ["/tmp/project/src/app.ts"],
+    snapshots: { "/tmp/project/src/app.ts": "original" },
+  })),
+  revertRefactorSnapshots: vi.fn(),
+}));
+
 import { applyVersionBumpTool } from "./apply-version-bump.js";
+
 
 describe("apply-version-bump lock integration", () => {
   beforeEach(() => {
@@ -110,7 +123,6 @@ describe("apply-version-bump lock integration", () => {
   });
 
   it("reverts and reports validation-failed when typecheck command fails", async () => {
-
     mocked.resolveTypecheckCommand.mockReturnValueOnce(["npx", "tsc", "--noEmit"]);
     mocked.execa
       .mockResolvedValueOnce({ stdout: "installed" }) // install succeeds
@@ -131,6 +143,31 @@ describe("apply-version-bump lock integration", () => {
     expect(result.unresolvedReason).toBe("validation-failed");
     expect(result.message).toContain("TypeCheck validation failed");
     expect(mocked.writeFileSync).toHaveBeenCalledTimes(2); // write bump, then revert
+  });
+
+  it("refactors consumer call-sites and succeeds with breaking-change-refactor strategy when refactoring resolves error", async () => {
+    mocked.resolveTypecheckCommand.mockReturnValue(["npx", "tsc", "--noEmit"]);
+    mocked.execa
+      .mockResolvedValueOnce({ stdout: "installed" }) // install succeeds
+      .mockRejectedValueOnce(new Error("TS2305: Module 'lodash' has no exported member 'default'")) // initial typecheck fails
+      .mockResolvedValueOnce({ stdout: "typecheck passed" }); // typecheck re-run after refactor succeeds
+
+    const result = await (applyVersionBumpTool as any).execute({
+      cwd: "/tmp/project",
+      packageManager: "npm",
+      packageName: "lodash",
+      fromVersion: "4.17.0",
+      toVersion: "4.17.21",
+      dryRun: false,
+      runTests: false,
+      typecheck: true,
+      breakingChangeRefactor: true,
+    });
+
+    expect(result.applied).toBe(true);
+    expect(result.strategy).toBe("breaking-change-refactor");
+    expect(result.refactoredFiles).toEqual(["/tmp/project/src/app.ts"]);
+    expect(result.message).toContain("refactored 1 call-site file(s)");
   });
 });
 

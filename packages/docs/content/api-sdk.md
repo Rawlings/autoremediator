@@ -305,6 +305,9 @@ Result details now include:
   - `reproductionTest`: synthesized Node.js test script asserting that the targeted vulnerability is neutralized
   - `reproductionTestPath`: relative path to the generated reproduction test file (`patches/<pkg>+<ver>.test.cjs`)
   - `validationPhases`: phased validation execution records including `reproduction-test`
+- `proofOfFix`: path to a synthesized reproduction test script or inline script content for dual-stage verification (negative test pre-mutation must fail, positive test post-mutation must pass)
+- `requireProofOfFix`: when `true`, aborts patch application if the reproduction test does not trigger failure on the unpatched baseline
+- `breakingChangeRefactor`: when `true`, triggers AST-guided consumer call-site codemods and repair passes when dependency version bumps introduce breaking API shifts
 - `suppressionsFile`: path to a YAML file with VEX suppression entries merged with policy-inline suppressions
 - `exploitSignalOverride`: configures exploit-signal prioritization — `kev.mandatory` and/or `epss.mandatory`+`epss.threshold`
 - `slaCheck`: when `true`, compares CVE publication age against policy SLA windows and writes `slaBreaches` to the report
@@ -359,6 +362,17 @@ interface SlaBreachEntry {
 - version resolution was performed and the affected range was available from CVE intelligence
 
 The value is a semver range string (e.g. `">=1.0.0 <1.2.6"`) sourced from `AffectedPackage.vulnerableRange`.
+
+### `PatchResult.proofOfFix`
+
+`PatchResult` exposes `proofOfFix?: ProofOfFixVerification` detailing exploit reproduction and neutralization:
+- `status`: `"passed"` | `"failed"` | `"skipped"`
+- `negativePhase`: execution result on unpatched baseline (expected failure)
+- `positivePhase`: execution result on patched code (expected pass)
+
+### `PatchResult.refactoredFiles`
+
+`PatchResult` exposes `refactoredFiles?: string[]` listing source files modified during AST codemod consumer call-site refactoring when strategy is `"breaking-change-refactor"`.
 
 Simulation result details:
 

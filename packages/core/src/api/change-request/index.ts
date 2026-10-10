@@ -112,7 +112,6 @@ export function groupReports(
   return [reports];
 }
 
-
 async function detectCurrentBranch(cwd: string): Promise<string> {
   const result = await execa("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
     cwd,
@@ -320,4 +319,3 @@ export async function createChangeRequestsForReports(params: {
 
   return results;
 }
-

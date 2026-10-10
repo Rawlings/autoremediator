@@ -185,6 +185,7 @@ autoremediator scan --input ./audit.json --format npm-audit --ci --summary-file 
 
 ## Related Docs
 
+- [Getting Started](getting-started.md)
 - [CLI Reference](cli.md)
 - [Integrations](integrations.md)
 - [Policy and Safety](policy-and-safety.md)

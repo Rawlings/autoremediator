@@ -215,7 +215,6 @@ export function extractPackageReferences(
         outImportedDirectPackages?.add(toRootPackageName(source.value));
       }
       if (source?.value && matchesPackage(source.value, packageName, tsconfig)) {
-
         const symbols: string[] = [];
         const importedIdentifiers = new Map<string, string>();
         const specifiers = (node.specifiers ?? []) as AstNode[];
@@ -274,7 +273,12 @@ export function extractPackageReferences(
       node.arguments.length > 0
     ) {
       const firstArg = node.arguments[0] as { value?: string } | undefined;
-      if (firstArg?.value && typeof firstArg.value === "string" && !firstArg.value.startsWith(".") && !isAbsolute(firstArg.value)) {
+      if (
+        firstArg?.value &&
+        typeof firstArg.value === "string" &&
+        !firstArg.value.startsWith(".") &&
+        !isAbsolute(firstArg.value)
+      ) {
         outImportedDirectPackages?.add(toRootPackageName(firstArg.value));
       }
       if (
@@ -298,7 +302,6 @@ export function extractPackageReferences(
         outImportedDirectPackages?.add(toRootPackageName(source.value));
       }
       if (source?.value && matchesPackage(source.value, packageName, tsconfig)) {
-
         const symbols: string[] = [];
         if (node.type === "ExportAllDeclaration") {
           symbols.push("*");
@@ -418,7 +421,13 @@ export function assessPackageReachability(
       continue;
     }
 
-    const refs = extractPackageReferences(filePath, content, packageName, tsconfig, importedDirectPackages);
+    const refs = extractPackageReferences(
+      filePath,
+      content,
+      packageName,
+      tsconfig,
+      importedDirectPackages,
+    );
     if (refs.length > 0) {
       hasPackageImport = true;
     }

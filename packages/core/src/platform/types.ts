@@ -80,7 +80,12 @@ export interface VulnerablePackage {
 }
 
 /** The outcome of a single patch operation */
-export type PatchStrategy = "version-bump" | "override" | "patch-file" | "none";
+export type PatchStrategy =
+  | "version-bump"
+  | "override"
+  | "patch-file"
+  | "breaking-change-refactor"
+  | "none";
 
 export type DependencyScope = "direct" | "transitive";
 
@@ -140,6 +145,8 @@ export type PatchValidationPhaseName =
   | "install"
   | "test"
   | "reproduction-test"
+  | "proof-of-fix-negative"
+  | "proof-of-fix-positive"
   | "drift";
 
 export interface PatchValidationPhase {
@@ -147,6 +154,27 @@ export interface PatchValidationPhase {
   passed: boolean;
   message?: string;
   error?: string;
+}
+
+export type ProofOfFixStatus = "verified" | "unverified" | "failed" | "skipped";
+
+export interface ProofOfFixPhaseResult {
+  executed: boolean;
+  passed: boolean;
+  exitCode?: number;
+  output?: string;
+  durationMs?: number;
+  error?: string;
+}
+
+export interface ProofOfFixVerification {
+  status: ProofOfFixStatus;
+  reproductionTestPath?: string;
+  negativePhase: ProofOfFixPhaseResult;
+  positivePhase: ProofOfFixPhaseResult;
+  regressionPhase: ProofOfFixPhaseResult;
+  durationMs?: number;
+  failureReason?: string;
 }
 
 export interface PatchArtifact {
@@ -171,6 +199,7 @@ export interface PatchArtifact {
   reproductionTest?: string;
   reproductionTestPath?: string;
   validationPhases?: PatchValidationPhase[];
+  proofOfFix?: ProofOfFixVerification;
 }
 
 export interface PatchArtifactSummary {
@@ -256,6 +285,8 @@ export type UnresolvedReason =
   | "patch-confidence-too-low"
   | "patch-generation-failed"
   | "patch-validation-failed"
+  | "proof-of-fix-failed"
+  | "breaking-change-unresolved"
   | "policy-blocked"
   | "requires-llm-fallback"
   | "source-fetch-failed"
@@ -524,6 +555,8 @@ export interface PatchResult {
   /** Intended escalation action for unresolved outcomes. */
   escalationAction?: EscalationAction;
   simulation?: ResultSimulation;
+  proofOfFix?: ProofOfFixVerification;
+  refactoredFiles?: string[];
 }
 
 export interface CorrelationContext {
@@ -550,8 +583,9 @@ export interface RemediationConstraints {
   workspace?: string;
   typecheck?: boolean;
   supplyChainPolicy?: SupplyChainPolicy;
+  requireProofOfFix?: boolean;
+  enableBreakingChangeRefactor?: boolean;
 }
-
 
 export type ModelPersonality = "analytical" | "pragmatic" | "balanced";
 
@@ -666,6 +700,12 @@ export interface RemediateOptions extends CorrelationContext {
   offlineIntelligence?: boolean;
   /** Path to a local JSON snapshot of pre-fetched CVE intelligence. Used when offlineIntelligence is true to supply CveDetails without network calls. */
   intelligenceSnapshotPath?: string;
+  /** If true, execute dual-stage exploit reproduction proof-of-fix verification (assert failure pre-patch, assert pass post-patch). */
+  proofOfFix?: boolean;
+  /** If true, reject patches and roll back if proof-of-fix verification fails. */
+  requireProofOfFix?: boolean;
+  /** If true, attempt agentic call-site refactoring when major version upgrades introduce breaking API changes. */
+  breakingChangeRefactor?: boolean;
 }
 
 export type SbomStatus = "patched" | "unpatched" | "skipped" | "suppressed";

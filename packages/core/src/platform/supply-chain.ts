@@ -43,7 +43,10 @@ export async function verifyPackageTrust(
   targetVersion: string,
   policy?: SupplyChainPolicy,
 ): Promise<PackageTrustVerdict> {
-  if (!policy || (!policy.minPublishAgeHours && !policy.blockInstallScripts && !policy.requireProvenance)) {
+  if (
+    !policy ||
+    (!policy.minPublishAgeHours && !policy.blockInstallScripts && !policy.requireProvenance)
+  ) {
     return { trusted: true };
   }
 
@@ -93,7 +96,9 @@ export async function verifyPackageTrust(
 
   // 2. Check install lifecycle scripts
   const scripts = versionData?.scripts ?? {};
-  const installScriptKeys = ["preinstall", "install", "postinstall"].filter((k) => Boolean(scripts[k]));
+  const installScriptKeys = ["preinstall", "install", "postinstall"].filter((k) =>
+    Boolean(scripts[k]),
+  );
   const hasInstallScripts = installScriptKeys.length > 0;
 
   if (policy.blockInstallScripts && hasInstallScripts) {
@@ -106,7 +111,9 @@ export async function verifyPackageTrust(
   }
 
   // 3. Check provenance attestation
-  const hasProvenance = Boolean(versionData?.dist?.attestations?.provenance || versionData?.dist?.attestations?.url);
+  const hasProvenance = Boolean(
+    versionData?.dist?.attestations?.provenance || versionData?.dist?.attestations?.url,
+  );
   if (policy.requireProvenance && !hasProvenance) {
     return {
       trusted: false,

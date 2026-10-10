@@ -79,7 +79,6 @@ export async function fetchGhAdvisories(cveId: string): Promise<GhAdvisory[]> {
   url.searchParams.set("type", "reviewed");
   url.searchParams.set("per_page", "10");
 
-
   try {
     const res = await httpClient({
       url: url.toString(),

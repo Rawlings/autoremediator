@@ -18,16 +18,17 @@ Related references:
 - [Policy and Safety](policy-and-safety.md)
 - [API and SDK](api-sdk.md)
 - [Integrations](integrations.md)
+- [Agent Ecosystems](agent-ecosystems.md)
 
 ## Autonomous Operator Controls
 
-Recent releases add higher-level execution controls on top of basic remediation:
+Autoremediator provides runtime controls to govern automated remediation:
 
 - `dispositionPolicy` to classify results as `auto-apply`, `simulate-only`, `hold-for-approval`, or `escalate`
-- `containmentMode` to prevent applied escalation outcomes from mutating the repository
-- `simulationMode` to show planned mutations and rebuttal findings during dry-run or preview
-- `campaignMode` to risk-rank portfolio targets and return `threatRank`
-- `escalationGraph` to map unresolved reasons to intended operator follow-up actions
+- `containmentMode` to prevent unapproved mutations when results resolve to `escalate`
+- `simulationMode` to preview planned mutations and rebuttal findings without modifying files
+- `campaignMode` to risk-rank portfolio targets by exposure
+- `escalationGraph` to map unresolved reasons to follow-up actions
 
 ## What You Need
 
@@ -96,32 +97,32 @@ docker run --rm -v "$PWD:/workdir" ghcr.io/rawlings/autoremediator CVE-2021-2333
 | Remote model-backed patch generation           | `--llm-provider remote`                              | Uses remote adapter configuration and runtime credentials                                                                                               |
 | Platform service integration                   | SDK, MCP, or OpenAPI                                 | Standardized orchestration across many repos                                                                                                            |
 
-## What Newer Runs Include
+## Capabilities and Output Fields
 
-Recent remediation reports can include:
+Remediation reports include:
 
 - Direct remediation for GitHub Security Advisories (`GHSA-...`) alongside standard CVE IDs
-- AST-level package and call-graph reachability assessment (Oxc engine) with automated CycloneDX 1.5 VEX justifications and transitive dependency call-path discovery
+- AST-level package and call-graph reachability assessment with automated CycloneDX 1.5 VEX justifications
 - Pre-upgrade supply chain trust checks (package age, install scripts, and provenance verification)
 - Post-apply typecheck gate (`--typecheck`) preventing TypeScript regressions
-- Standalone patch reproduction test synthesis (`.test.cjs`) executed post-apply
+- Dual-stage proof-of-fix verification (`proofOfFix`)
 - Upstream patch reconciliation (`autoremediator patches reconcile`) to retire obsolete patches
 - Granular PR grouping options (`per-cve`, `per-package`, `by-severity`, or `all`)
 - Alternative package suggestions when no safe upgrade exists
 - Human-readable fix explanations per package result
-- Aggregate `dispositionCounts`, `escalationCounts`, and `simulationSummary` fields for orchestration and CI routing
+- Aggregate `dispositionCounts`, `escalationCounts`, `simulationSummary`, and `proofOfFixCount` fields
 
 For GitHub Actions, the recommended approach is the reusable workflow with pull request automation enabled:
 
 ```yaml
 jobs:
-	remediate:
+  remediate:
     uses: rawlings/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v1
     with:
       audit: true
-			dry-run: false
+      dry-run: false
       ci: true
-			create-pull-request: true
+      create-pull-request: true
 ```
 
 Use audit-only gating when you want detection and enforcement without applying changes.

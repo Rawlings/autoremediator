@@ -30,6 +30,11 @@ export function createRuntimeToolsForRun(options: RemediateOptions) {
         installPreferOffline: constraints.installPreferOffline,
         enforceFrozenLockfile: constraints.enforceFrozenLockfile,
         workspace: constraints.workspace,
+        typecheck: input.typecheck ?? options.typecheck ?? constraints.typecheck,
+        breakingChangeRefactor:
+          input.breakingChangeRefactor ??
+          options.breakingChangeRefactor ??
+          constraints.enableBreakingChangeRefactor,
         dryRun: preview ? true : input.dryRun,
       }),
   };
@@ -58,6 +63,11 @@ export function createRuntimeToolsForRun(options: RemediateOptions) {
         installPreferOffline: constraints.installPreferOffline,
         enforceFrozenLockfile: constraints.enforceFrozenLockfile,
         workspace: constraints.workspace,
+        proofOfFix: input.proofOfFix ?? options.proofOfFix,
+        requireProofOfFix:
+          input.requireProofOfFix ??
+          options.requireProofOfFix ??
+          constraints.requireProofOfFix,
         dryRun: preview ? true : input.dryRun,
       }),
   };

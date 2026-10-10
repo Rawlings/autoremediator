@@ -51,7 +51,9 @@ describe("supply-chain verification gate", () => {
       },
     });
 
-    const verdict = await verifyPackageTrust("malicious-pkg", "2.0.0", { blockInstallScripts: true });
+    const verdict = await verifyPackageTrust("malicious-pkg", "2.0.0", {
+      blockInstallScripts: true,
+    });
     expect(verdict.trusted).toBe(false);
     expect(verdict.reason).toContain("defines risky lifecycle scripts (postinstall)");
   });
@@ -74,7 +76,9 @@ describe("supply-chain verification gate", () => {
       },
     });
 
-    const verdict = await verifyPackageTrust("unattested-pkg", "2.0.0", { requireProvenance: true });
+    const verdict = await verifyPackageTrust("unattested-pkg", "2.0.0", {
+      requireProvenance: true,
+    });
     expect(verdict.trusted).toBe(false);
     expect(verdict.reason).toContain("cryptographic build provenance");
   });

@@ -215,4 +215,74 @@ describe("apply-patch-file lock integration", () => {
       ]),
     );
   });
+
+  it("enforces dual-stage proofOfFix verification (negative pre-patch, positive post-patch)", async () => {
+    mocked.detectPackageManager.mockReturnValue("npm");
+    mocked.resolveInstallCommand.mockReturnValue(["npm", "install"]);
+    mocked.resolveTestCommand.mockReturnValue(["npm", "test"]);
+
+    // 1st execa call: pre-patch negative phase (must fail to reproduce exploit)
+    // 2nd execa call: patch apply / install / test
+    // 3rd execa call: post-patch positive phase (must succeed)
+    mocked.execa
+      .mockRejectedValueOnce({
+        exitCode: 1,
+        message: "AssertionError: bug reproduced",
+        stderr: "fail",
+      })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: "ok", stderr: "" })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: "mitigated", stderr: "" });
+
+    const result = await (applyPatchFileTool as any).execute({
+      packageName: "lodash",
+      vulnerableVersion: "4.17.0",
+      patchContent: "diff --git a/a.js b/a.js\n--- a/a.js\n+++ b/a.js\n@@ -1 +1 @@\n-old\n+new\n",
+      patchesDir: "./patches",
+      cwd: "/tmp/project",
+      packageManager: "npm",
+      reproductionTest: 'assert(false, "bug reproduced");',
+      proofOfFix: true,
+      validateWithTests: false,
+      dryRun: false,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.proofOfFix).toBeDefined();
+    expect(result.proofOfFix?.status).toBe("verified");
+    expect(result.proofOfFix?.negativePhase.passed).toBe(true);
+    expect(result.proofOfFix?.positivePhase.passed).toBe(true);
+    expect(result.patchArtifact.validationPhases).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ phase: "proof-of-fix-negative", passed: true }),
+        expect.objectContaining({ phase: "proof-of-fix-positive", passed: true }),
+      ]),
+    );
+  });
+
+  it("aborts when requireProofOfFix is true and negative phase fails to reproduce bug", async () => {
+    mocked.detectPackageManager.mockReturnValue("npm");
+    mocked.resolveInstallCommand.mockReturnValue(["npm", "install"]);
+    mocked.resolveTestCommand.mockReturnValue(["npm", "test"]);
+
+    // Pre-patch negative phase unexpectedly succeeds (exitCode 0) -> false negative
+    mocked.execa.mockResolvedValueOnce({ exitCode: 0, stdout: "passed", stderr: "" });
+
+    const result = await (applyPatchFileTool as any).execute({
+      packageName: "lodash",
+      vulnerableVersion: "4.17.0",
+      patchContent: "diff --git a/a.js b/a.js\n--- a/a.js\n+++ b/a.js\n@@ -1 +1 @@\n-old\n+new\n",
+      patchesDir: "./patches",
+      cwd: "/tmp/project",
+      packageManager: "npm",
+      reproductionTest: 'console.log("no bug");',
+      proofOfFix: true,
+      requireProofOfFix: true,
+      validateWithTests: false,
+      dryRun: false,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.applied).toBe(false);
+    expect(result.message).toContain("Proof-of-fix negative phase failed");
+  });
 });

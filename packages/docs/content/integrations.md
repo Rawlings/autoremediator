@@ -27,6 +27,7 @@ The integration surfaces carry the same higher-level operator controls:
 | --------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
 | Risk-prioritized triage in CI     | you need to reduce vulnerability fatigue from noisy scanner output | focus remediation on known-exploited and higher-probability CVEs first |
 | GitHub Actions Marketplace action | you want zero-boilerplate CI integration                           | one step, works with pnpm/npm/yarn                                     |
+| GitHub App                        | you want webhook-driven remediation with PR management and healing | automated PR creation with self-healing for CI check failures          |
 | VS Code extension                 | you want inline diagnostics while editing                          | squiggles + code action on package.json                                |
 | Scheduled PR automation           | you want continuous improvement with review gates                  | automatic remediation PRs on a cadence                                 |
 | Enforcement-only gate             | you want fail-fast security gating in PR/merge pipelines           | deterministic pass/fail based on unresolved outcomes                   |
@@ -390,6 +391,21 @@ Rollout checklist:
 3. Keep `AUTOREMEDIATOR_GITHUB_APP_ENABLE_SCHEDULER=false` until webhook-triggered flow is stable.
 4. Monitor `/health` for webhook counters, latency, and queue depth/failed-job growth.
 5. Increase `AUTOREMEDIATOR_GITHUB_APP_WORKER_CONCURRENCY` only after repository test/install capacity is validated.
+
+### Autonomous PR Auto-Healing Agent (CI Feedback Loop)
+
+When autoremediator opens a pull request, subsequent CI checks (linting, typechecking, integration test suites) may fail due to peripheral environment constraints or subtle API divergences. The GitHub App provides an autonomous auto-healing loop:
+
+```yaml
+# .github/autoremediator.yml
+enablePrAutoHealing: true
+maxHealingAttempts: 3
+```
+
+- **CI Failure Ingestion**: Subscribes to `check_run.completed` webhooks. When a check run fails on an `autoremediator/*` branch, the App downloads and analyzes check run logs and failure output.
+- **Log Diagnostic Extraction**: Extracts structured compiler errors (TypeScript `TSxxxx`), linter failures (ESLint, Biome), and test assertion failures into actionable diagnostics.
+- **Iterative Healing Commits**: The auto-healer agent creates targeted repair commits on the branch, triggering fresh CI validation.
+- **Circuit Breaker & Human Escalation**: If CI checks remain red after reaching `maxHealingAttempts` (default 3), the agent stops mutations, posts a comprehensive diagnostic summary comment to the pull request, and adds the label `autoremediator/needs-human-review`.
 
 ## GitHub Actions: Scheduled Auto-Remediation PRs
 

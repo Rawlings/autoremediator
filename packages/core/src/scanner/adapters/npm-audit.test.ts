@@ -92,5 +92,4 @@ describe("parseNpmAuditJsonFromString", () => {
       severity: "HIGH",
     });
   });
-
 });

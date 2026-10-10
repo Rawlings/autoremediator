@@ -61,7 +61,17 @@ describe("createChangeRequestsForReports", () => {
           cveId: "CVE-2021-23337",
           cveDetails: null,
           vulnerablePackages: [],
-          results: [{ packageName: "lodash", strategy: "version-bump", fromVersion: "4.17.20", toVersion: "4.17.21", applied: true, dryRun: false, message: "ok" }],
+          results: [
+            {
+              packageName: "lodash",
+              strategy: "version-bump",
+              fromVersion: "4.17.20",
+              toVersion: "4.17.21",
+              applied: true,
+              dryRun: false,
+              message: "ok",
+            },
+          ],
           agentSteps: 0,
           summary: "done",
         },
@@ -69,7 +79,17 @@ describe("createChangeRequestsForReports", () => {
           cveId: "CVE-2022-25883",
           cveDetails: null,
           vulnerablePackages: [],
-          results: [{ packageName: "semver", strategy: "version-bump", fromVersion: "7.3.5", toVersion: "7.3.7", applied: true, dryRun: false, message: "ok" }],
+          results: [
+            {
+              packageName: "semver",
+              strategy: "version-bump",
+              fromVersion: "7.3.5",
+              toVersion: "7.3.7",
+              applied: true,
+              dryRun: false,
+              message: "ok",
+            },
+          ],
           agentSteps: 0,
           summary: "done",
         },
@@ -96,7 +116,17 @@ describe("createChangeRequestsForReports", () => {
           cveId: "CVE-2021-23337",
           cveDetails: null,
           vulnerablePackages: [],
-          results: [{ packageName: "lodash", strategy: "version-bump", fromVersion: "4.17.20", toVersion: "4.17.21", applied: true, dryRun: false, message: "ok" }],
+          results: [
+            {
+              packageName: "lodash",
+              strategy: "version-bump",
+              fromVersion: "4.17.20",
+              toVersion: "4.17.21",
+              applied: true,
+              dryRun: false,
+              message: "ok",
+            },
+          ],
           agentSteps: 0,
           summary: "done",
         },
@@ -121,4 +151,3 @@ describe("createChangeRequestsForReports", () => {
     ).rejects.toThrow("Unsupported changeRequest.grouping");
   });
 });
-

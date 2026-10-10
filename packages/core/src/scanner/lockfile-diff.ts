@@ -130,8 +130,12 @@ export function computeLockfileDiff(
   newContent: string | null,
 ): DeltaDependencyChange[] {
   const changes: DeltaDependencyChange[] = [];
-  const oldDeps = oldContent ? parseLockfileDependencies(filename, oldContent) : new Map<string, Set<string>>();
-  const newDeps = newContent ? parseLockfileDependencies(filename, newContent) : new Map<string, Set<string>>();
+  const oldDeps = oldContent
+    ? parseLockfileDependencies(filename, oldContent)
+    : new Map<string, Set<string>>();
+  const newDeps = newContent
+    ? parseLockfileDependencies(filename, newContent)
+    : new Map<string, Set<string>>();
 
   const allPkgs = new Set([...oldDeps.keys(), ...newDeps.keys()]);
 

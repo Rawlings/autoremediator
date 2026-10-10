@@ -18,7 +18,7 @@ pnpm build
 
 ## GitHub Pages Deployment
 
-The site is deployed by the repository workflow in `.github/workflows/docs-pages.yml`.
+The site is deployed by the repository workflow in `.github/workflows/docs-deploy.yml`.
 
 - Pull requests run a build-only validation for docs changes.
 - Pushes to `main` build and deploy to GitHub Pages.
@@ -36,6 +36,7 @@ The docs app renders the published documentation experience for:
 - policy controls and safety behavior
 - API and SDK integration patterns
 - platform and workflow integrations
+- agent ecosystems and MCP hosts
 - contributor-facing architecture and maintenance guidance
 
 ## Trust and Advisory Sources
@@ -61,7 +62,7 @@ Supplemental enrichment and prioritization sources used by the runtime:
 
 The docs should keep these sources visible and explain that remediation outcomes are policy-gated and evidence-backed.
 
-Public API naming canon across docs and examples is: `runTests`, `policy`, `evidence`, `patchCount`, and `patchesDir`.
+Public API naming canon across docs and examples: `runTests`, `policy`, `evidence`, `patchCount`, `patchesDir`, `offlineIntelligence`, `intelligenceSnapshotPath`, `proofOfFix`, `requireProofOfFix`, and `breakingChangeRefactor`.
 
 Autonomous operator topics covered by the docs set include:
 
@@ -76,6 +77,7 @@ Patch lifecycle operation names must remain consistent across docs and examples:
 - `listPatchArtifacts`
 - `inspectPatchArtifact`
 - `validatePatchArtifact`
+- `reconcilePatchArtifacts`
 
 ## Published Documentation Index
 
@@ -86,6 +88,7 @@ Patch lifecycle operation names must remain consistent across docs and examples:
 - [Policy and Safety](https://rawlings.github.io/autoremediator/docs/policy-and-safety)
 - [API and SDK](https://rawlings.github.io/autoremediator/docs/api-sdk)
 - [Integrations](https://rawlings.github.io/autoremediator/docs/integrations)
+- [Agent Ecosystems](https://rawlings.github.io/autoremediator/docs/agent-ecosystems)
 - [Contributor Guide](https://rawlings.github.io/autoremediator/docs/contributor-guide)
 
 ## Documentation Quality Requirements

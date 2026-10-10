@@ -69,9 +69,14 @@ export interface CommandOptions {
   campaignMode?: boolean;
   offline: boolean;
   intelligenceSnapshot?: string;
+  proofOfFix?: boolean;
+  requireProofOfFix?: boolean;
+  breakingChangeRefactor?: boolean;
 }
+
 
 export function isCveId(value: string): boolean {
-  return /^CVE-\d{4}-\d{1,7}$/i.test(value) || /^GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/i.test(value);
+  return (
+    /^CVE-\d{4}-\d{1,7}$/i.test(value) || /^GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/i.test(value)
+  );
 }
-

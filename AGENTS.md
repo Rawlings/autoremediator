@@ -39,7 +39,7 @@
 ### Mode 5: OpenAPI HTTP Server
 
 - Trigger: `node dist/openapi/server.js [--port 3000]`
-- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/remediate-portfolio`, POST `/patches/list`, POST `/patches/inspect`, POST `/patches/validate`, POST `/vex`, POST `/jobs/remediate`, POST `/jobs/scan`, POST `/jobs/portfolio`, `GET /jobs/:jobId` over HTTPS
+- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/remediate-portfolio`, POST `/update-outdated`, POST `/patches/list`, POST `/patches/inspect`, POST `/patches/validate`, POST `/vex`, POST `/jobs/remediate`, POST `/jobs/scan`, POST `/jobs/portfolio`, `GET /jobs/:jobId` over HTTPS
 - Source: `packages/core/src/openapi/server.ts`
 
 ### Mode 6: Governed Multi-Agent Delivery
@@ -76,6 +76,9 @@ Across SDK, CLI mapping, MCP, and OpenAPI, use canonical public terms:
 - `patchesDir`
 - `offlineIntelligence`
 - `intelligenceSnapshotPath`
+- `proofOfFix`
+- `requireProofOfFix`
+- `breakingChangeRefactor`
 
 Do not introduce synonym fields for these concepts.
 
@@ -88,8 +91,10 @@ These runtime controls are additive across the public surfaces described above:
 - `escalationGraph`: maps unresolved reasons to intended follow-up actions such as `open-issue`, `notify-channel`, `create-draft-pr`, or `hold-branch`.
 - `campaignMode`: risk-ranks portfolio targets using `riskHint` signals and returns `threatRank` on each portfolio result.
 - `simulationMode`: dry-run and preview only; adds planned mutation metadata, rebuttal findings, and aggregate `simulationSummary` output.
+- `proofOfFix`: enforces dual-stage verification (negative test pre-mutation must fail, positive test post-mutation must pass).
+- `breakingChangeRefactor`: AST-guided consumer call-site codemod repair when version upgrades introduce breaking API changes.
 
-Aggregate reporting fields produced by these controls include `dispositionCounts`, `escalationCounts`, and `simulationSummary`.
+Aggregate reporting fields produced by these controls include `dispositionCounts`, `escalationCounts`, `simulationSummary`, and `proofOfFixCount`.
 
 Patch lifecycle operation naming canon:
 
