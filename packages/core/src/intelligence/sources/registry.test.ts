@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-
-import { resolveSafeUpgradeVersion } from "./registry.js";
+import { classifyUpgradeLevel, resolveSafeUpgradeVersion } from "./registry.js";
 
 describe("resolveSafeUpgradeVersion", () => {
   afterEach(() => {
@@ -104,5 +103,38 @@ describe("resolveSafeUpgradeVersion", () => {
       major: "2.0.0",
     });
     expect(resolution.majorOnlyFixAvailable).toBe(true);
+  });
+});
+
+describe("classifyUpgradeLevel", () => {
+  it("classifies patch upgrades and identical versions", () => {
+    expect(classifyUpgradeLevel("1.2.3", "1.2.4")).toBe("patch");
+    expect(classifyUpgradeLevel("1.2.3", "1.2.3")).toBe("patch");
+  });
+
+  it("classifies minor upgrades within the same major", () => {
+    expect(classifyUpgradeLevel("1.2.3", "1.3.0")).toBe("minor");
+    expect(classifyUpgradeLevel("1.2.3", "1.3.1")).toBe("minor");
+  });
+
+  it("classifies major upgrades", () => {
+    expect(classifyUpgradeLevel("1.2.3", "2.0.0")).toBe("major");
+    expect(classifyUpgradeLevel("1.9.9", "2.0.0")).toBe("major");
+  });
+
+  it("never classifies major version downgrades as minor upgrades", () => {
+    // Critical test: 5.0.0 -> 4.17.21 must return undefined, NOT minor
+    expect(classifyUpgradeLevel("5.0.0", "4.17.21")).toBeUndefined();
+    expect(classifyUpgradeLevel("2.0.0", "1.9.9")).toBeUndefined();
+  });
+
+  it("returns undefined for minor or patch downgrades", () => {
+    expect(classifyUpgradeLevel("1.5.0", "1.4.9")).toBeUndefined();
+    expect(classifyUpgradeLevel("1.2.3", "1.2.2")).toBeUndefined();
+  });
+
+  it("returns undefined for invalid semver input", () => {
+    expect(classifyUpgradeLevel("invalid", "1.0.0")).toBeUndefined();
+    expect(classifyUpgradeLevel("1.0.0", "invalid")).toBeUndefined();
   });
 });

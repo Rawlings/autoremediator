@@ -218,4 +218,73 @@ describe("createDefaultRemediationHandler", () => {
     expect(remediateFromScanMock).not.toHaveBeenCalled();
     expect(result).toBeUndefined();
   });
+
+  it("uses pluggable checkoutProvider and cleans up workspace in finally", async () => {
+    const originalCwd = process.cwd();
+    const cleanupSpy = vi.fn(async () => {});
+    const checkoutProviderSpy = vi.fn(async () => ({
+      cwd: "/tmp/isolated-test-checkout",
+      cleanup: cleanupSpy,
+    }));
+
+    const handler = createDefaultRemediationHandler({
+      octokitFactory: makeOctokitFactory(),
+      repoConfigProvider: makeRepoConfigProvider({ minimumSeverity: "UNKNOWN" }),
+      checkoutProvider: checkoutProviderSpy,
+    });
+
+    await handler({
+      eventName: "check_suite",
+      installationToken: "ghs_test123",
+      payload: {
+        repository: { name: "my-repo", owner: { login: "my-org" } },
+        check_suite: { head_sha: "abcd1234ef5678" },
+      },
+    });
+
+    expect(checkoutProviderSpy).toHaveBeenCalledWith({
+      owner: "my-org",
+      repo: "my-repo",
+      ref: "abcd1234ef5678",
+      token: "ghs_test123",
+    });
+
+    expect(remediateFromScanMock).toHaveBeenCalledWith(
+      "",
+      expect.objectContaining({
+        cwd: "/tmp/isolated-test-checkout",
+      }),
+    );
+
+    expect(cleanupSpy).toHaveBeenCalledTimes(1);
+    expect(process.cwd()).toBe(originalCwd);
+  });
+
+  it("allows repoConfig.cwd outside process.cwd without throwing escapes working directory", async () => {
+    const originalCwd = process.cwd();
+    const isolatedDir = "/tmp/autoremediator-external-repo";
+
+    const handler = createDefaultRemediationHandler({
+      octokitFactory: makeOctokitFactory(),
+      repoConfigProvider: makeRepoConfigProvider({
+        minimumSeverity: "UNKNOWN",
+        cwd: isolatedDir,
+      }),
+    });
+
+    await expect(
+      handler({
+        eventName: "workflow_dispatch",
+        payload: { repository: { name: "app", owner: { login: "test" } } },
+      }),
+    ).resolves.not.toThrow();
+
+    expect(remediateFromScanMock).toHaveBeenCalledWith(
+      "",
+      expect.objectContaining({
+        cwd: isolatedDir,
+      }),
+    );
+    expect(process.cwd()).toBe(originalCwd);
+  });
 });

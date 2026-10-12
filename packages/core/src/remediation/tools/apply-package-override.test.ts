@@ -274,4 +274,107 @@ describe("apply-package-override", () => {
     );
     expect(result.applied).toBe(true);
   });
+
+  it("enforces dual-stage proofOfFix verification on package override", async () => {
+    mocked.resolveWhyCommand.mockReturnValue([]);
+    // 1st: negative phase fails assertion (proves exploit)
+    // 2nd: package manager install succeeds
+    // 3rd: positive phase passes cleanly (mitigated)
+    mocked.execa
+      .mockRejectedValueOnce({
+        exitCode: 1,
+        message: "AssertionError: bug reproduced",
+        stderr: "fail",
+      })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: "ok" })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: "mitigated" });
+
+    const result = await (applyPackageOverrideTool as any).execute({
+      cwd: "/tmp/project",
+      packageManager: "npm",
+      packageName: "minimist",
+      fromVersion: "1.2.0",
+      toVersion: "1.2.8",
+      proofOfFix: "/tmp/project/repro.cjs",
+      dryRun: false,
+      runTests: false,
+    });
+
+    expect(result.applied).toBe(true);
+    expect(result.proofOfFix).toBeDefined();
+    expect(result.proofOfFix?.status).toBe("verified");
+    expect(result.proofOfFix?.negativePhase.passed).toBe(true);
+    expect(result.proofOfFix?.positivePhase.passed).toBe(true);
+  });
+
+  it("strictly aborts package override when negative phase fails to reproduce bug", async () => {
+    mocked.resolveWhyCommand.mockReturnValue([]);
+    // Negative phase unexpectedly succeeds (exit code 0)
+    mocked.execa.mockResolvedValueOnce({ exitCode: 0, stdout: "passed" });
+
+    const result = await (applyPackageOverrideTool as any).execute({
+      cwd: "/tmp/project",
+      packageManager: "npm",
+      packageName: "minimist",
+      fromVersion: "1.2.0",
+      toVersion: "1.2.8",
+      proofOfFix: "/tmp/project/repro.cjs",
+      dryRun: false,
+      runTests: false,
+    });
+
+    expect(result.applied).toBe(false);
+    expect(result.unresolvedReason).toBe("proof-of-fix-failed");
+  });
+
+  it("strictly aborts and rolls back package override when positive phase fails", async () => {
+    mocked.resolveWhyCommand.mockReturnValue([]);
+    mocked.execa
+      .mockRejectedValueOnce({
+        exitCode: 1,
+        message: "AssertionError: bug reproduced",
+        stderr: "fail",
+      })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: "ok" })
+      .mockRejectedValueOnce({
+        exitCode: 1,
+        message: "AssertionError: exploit still works post-override",
+        stderr: "fail",
+      });
+
+    const result = await (applyPackageOverrideTool as any).execute({
+      cwd: "/tmp/project",
+      packageManager: "npm",
+      packageName: "minimist",
+      fromVersion: "1.2.0",
+      toVersion: "1.2.8",
+      proofOfFix: "/tmp/project/repro.cjs",
+      dryRun: false,
+      runTests: false,
+    });
+
+    expect(result.applied).toBe(false);
+    expect(result.unresolvedReason).toBe("proof-of-fix-failed");
+    // Verify writeFileSync reverted
+    expect(mocked.writeFileSync).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns policy-blocked when reproduction script is missing under requireProofOfFix", async () => {
+    const result = await (applyPackageOverrideTool as any).execute({
+      cwd: "/tmp/project",
+      packageManager: "npm",
+      packageName: "minimist",
+      fromVersion: "1.2.0",
+      toVersion: "1.2.8",
+      requireProofOfFix: true,
+      dryRun: false,
+      runTests: false,
+    });
+
+    expect(result.applied).toBe(false);
+    expect(result.unresolvedReason).toBe("policy-blocked");
+    expect(result.message).toContain(
+      "Proof-of-fix verification required, but no reproduction test or script was supplied",
+    );
+  });
 });

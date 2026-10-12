@@ -122,7 +122,6 @@ export function createConstraintSchemaProperties(): Record<string, JsonSchemaPro
   };
 }
 
-
 export function createRemediateOptionSchemaProperties(options?: {
   includeDryRun?: boolean;
   includePreview?: boolean;
@@ -378,7 +377,6 @@ export function createRemediateOptionSchemaProperties(options?: {
     },
   };
 }
-
 
 export function createScanOptionSchemaProperties(): Record<string, JsonSchemaProperty> {
   return {

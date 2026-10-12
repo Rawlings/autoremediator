@@ -174,18 +174,20 @@ export async function resolveSafeUpgradeVersion(
   };
 }
 
-function classifyUpgradeLevel(
+export function classifyUpgradeLevel(
   installedVersion: string,
   candidateVersion: string,
 ): SafeUpgradeLevel | undefined {
-  const installed = semver.parse(installedVersion);
-  const candidate = semver.parse(candidateVersion);
+  const installed = semver.parse(installedVersion) ?? semver.coerce(installedVersion);
+  const candidate = semver.parse(candidateVersion) ?? semver.coerce(candidateVersion);
 
   if (!installed || !candidate) return undefined;
+  if (!semver.gte(candidate.version, installed.version)) return undefined;
+
   if (candidate.major > installed.major) return "major";
-  if (candidate.minor > installed.minor) return "minor";
-  if (candidate.patch > installed.patch || candidate.version === installed.version) {
-    return "patch";
+  if (candidate.major === installed.major && candidate.minor > installed.minor) return "minor";
+  if (candidate.major === installed.major && candidate.minor === installed.minor) {
+    if (candidate.patch >= installed.patch) return "patch";
   }
 
   return undefined;

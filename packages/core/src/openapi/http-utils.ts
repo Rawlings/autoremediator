@@ -34,6 +34,7 @@ export function readBody(req: http.IncomingMessage): Promise<unknown> {
 }
 
 export function sendJson(res: http.ServerResponse, status: number, body: unknown): void {
+  if (res.headersSent) return;
   const payload = JSON.stringify(body);
   res.writeHead(status, {
     "Content-Type": "application/json",

@@ -1,3 +1,4 @@
+import { execFileSync, execSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
 import { safeExeca } from "./safe-exec.js";
@@ -22,6 +23,14 @@ const IGNORED_DIRS = new Set(["node_modules", ".git", "dist", "build", "coverage
 
 // Global registry of active rollback snapshots for dynamic file touch tracking
 const activeSnapshots: Set<ProjectSnapshot> = new Set();
+
+export function registerActiveSnapshot(snapshot: ProjectSnapshot): void {
+  activeSnapshots.add(snapshot);
+}
+
+export function unregisterActiveSnapshot(snapshot: ProjectSnapshot): void {
+  activeSnapshots.delete(snapshot);
+}
 
 /**
  * Registers an arbitrary file that is about to be modified/created in any active rollback transactions.
@@ -99,16 +108,35 @@ async function isGitRepository(cwd: string): Promise<boolean> {
   }
 }
 
+export function parsePorcelainLines(stdout: string): string[] {
+  return stdout
+    .split(/\r?\n/)
+    .map((l) => l.replace(/\r$/, ""))
+    .filter((l) => l.length >= 3 && l.slice(0, 2).trim().length > 0);
+}
+
+export function parseGitPorcelainLine(
+  line: string,
+): { statusCode: string; filePath: string } | null {
+  if (!line || line.length < 3) return null;
+  const statusCode = line.slice(0, 2).trim();
+  let filePath = line.slice(3).trim();
+  if (filePath.includes(" -> ")) {
+    filePath = filePath.split(" -> ").pop()!.trim();
+  }
+  if (filePath.startsWith('"') && filePath.endsWith('"')) {
+    filePath = filePath.slice(1, -1).replace(/\\"/g, '"');
+  }
+  return { statusCode, filePath };
+}
+
 async function getGitStatusPorcelain(cwd: string): Promise<string[]> {
   try {
     const res = await safeExeca("git", ["status", "--porcelain=v1", "-uall"], {
       cwd,
       stdio: "pipe",
     });
-    return String(res.stdout)
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean);
+    return parsePorcelainLines(String(res.stdout));
   } catch {
     return [];
   }
@@ -180,7 +208,20 @@ export async function restoreProjectSnapshot(snapshot: ProjectSnapshot): Promise
     }
   }
 
-  // 2. If inside Git repo, clean any newly introduced untracked artifacts not in before-status
+  // 2. Discover any newly created files matching manifest/patch patterns that were not in snapshot
+  const currentFiles = discoverProjectFiles(snapshot.cwd);
+  for (const fullPath of currentFiles) {
+    const relPath = relative(snapshot.cwd, fullPath);
+    if (!snapshot.fileSnapshots.has(relPath)) {
+      try {
+        rmSync(fullPath, { force: true, recursive: true });
+      } catch {
+        // Ignore removal error
+      }
+    }
+  }
+
+  // 3. If inside Git repo, clean any newly introduced untracked artifacts not in before-status
   if (snapshot.isGit) {
     try {
       const currentStatus = await getGitStatusPorcelain(snapshot.cwd);
@@ -188,8 +229,9 @@ export async function restoreProjectSnapshot(snapshot: ProjectSnapshot): Promise
 
       for (const line of currentStatus) {
         if (beforeSet.has(line)) continue;
-        const statusCode = line.slice(0, 2).trim();
-        const filePath = line.slice(3).trim();
+        const parsed = parseGitPorcelainLine(line);
+        if (!parsed) continue;
+        const { statusCode, filePath } = parsed;
         const fullPath = join(snapshot.cwd, filePath);
 
         if (statusCode === "??" && existsSync(fullPath)) {
@@ -199,8 +241,15 @@ export async function restoreProjectSnapshot(snapshot: ProjectSnapshot): Promise
           } catch {
             // Ignore
           }
-        } else if (statusCode === "M" || statusCode === "MM") {
-          // Revert tracked modified file
+        } else if (
+          statusCode === "M" ||
+          statusCode === "MM" ||
+          statusCode === "D" ||
+          statusCode.includes("M") ||
+          statusCode.includes("D") ||
+          statusCode.includes("T")
+        ) {
+          // Revert tracked modified or deleted file
           try {
             await safeExeca("git", ["checkout", "--", filePath], {
               cwd: snapshot.cwd,
@@ -213,6 +262,91 @@ export async function restoreProjectSnapshot(snapshot: ProjectSnapshot): Promise
       }
     } catch {
       // Non-fatal Git clean error
+    }
+  }
+}
+
+/**
+ * Synchronously restores project state from snapshot.
+ */
+export function restoreProjectSnapshotSync(snapshot: ProjectSnapshot): void {
+  // 1. In-memory exact file restoration for all tracked and dynamically touched files
+  for (const [relPath, previousContent] of snapshot.fileSnapshots.entries()) {
+    const fullPath = join(snapshot.cwd, relPath);
+    if (previousContent === null) {
+      if (existsSync(fullPath)) {
+        try {
+          rmSync(fullPath, { force: true, recursive: true });
+        } catch {
+          // Ignore removal error
+        }
+      }
+    } else {
+      try {
+        writeFileSync(fullPath, previousContent, "utf8");
+      } catch {
+        // Ignore write error
+      }
+    }
+  }
+
+  // 2. Discover any newly created files matching manifest/patch patterns that were not in snapshot
+  const currentFiles = discoverProjectFiles(snapshot.cwd);
+  for (const fullPath of currentFiles) {
+    const relPath = relative(snapshot.cwd, fullPath);
+    if (!snapshot.fileSnapshots.has(relPath)) {
+      try {
+        rmSync(fullPath, { force: true, recursive: true });
+      } catch {
+        // Ignore removal error
+      }
+    }
+  }
+
+  // 3. If inside a Git repository, clean untracked artifacts and revert tracked modified files
+  if (snapshot.isGit) {
+    try {
+      const stdout = execSync("git status --porcelain=v1 -uall", {
+        cwd: snapshot.cwd,
+        stdio: ["pipe", "pipe", "ignore"],
+        encoding: "utf8",
+      });
+      const currentStatus = parsePorcelainLines(stdout);
+      const beforeSet = new Set(snapshot.gitStatusBefore ?? []);
+
+      for (const line of currentStatus) {
+        if (beforeSet.has(line)) continue;
+        const parsed = parseGitPorcelainLine(line);
+        if (!parsed) continue;
+        const { statusCode, filePath } = parsed;
+        const fullPath = join(snapshot.cwd, filePath);
+
+        if (statusCode === "??" && existsSync(fullPath)) {
+          try {
+            rmSync(fullPath, { force: true, recursive: true });
+          } catch {
+            // Ignore
+          }
+        } else if (
+          statusCode === "M" ||
+          statusCode === "MM" ||
+          statusCode === "D" ||
+          statusCode.includes("M") ||
+          statusCode.includes("D") ||
+          statusCode.includes("T")
+        ) {
+          try {
+            execFileSync("git", ["checkout", "--", filePath], {
+              cwd: snapshot.cwd,
+              stdio: "ignore",
+            });
+          } catch {
+            // Ignore
+          }
+        }
+      }
+    } catch {
+      // Non-fatal Git error
     }
   }
 }

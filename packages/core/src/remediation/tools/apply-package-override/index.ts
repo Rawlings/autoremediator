@@ -2,9 +2,19 @@ import { defineTool } from "../tool-compat.js";
 import { z } from "zod";
 import { join } from "node:path";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { safeExeca } from "../../../platform/safe-exec.js";
 import semver from "semver";
-import type { PatchResult } from "../../../platform/types.js";
+import type {
+  PatchResult,
+  ProofOfFixPhaseResult,
+  ProofOfFixVerification,
+} from "../../../platform/types.js";
+import {
+  assembleProofOfFixVerification,
+  prepareReproductionTestFile,
+  runProofOfFixPhase,
+} from "../../proof-of-fix/runner.js";
 import { isPackageAllowed, loadPolicy } from "../../../platform/policy.js";
 import { withRepoLock } from "../../../platform/repo-lock.js";
 import {
@@ -54,6 +64,23 @@ export const applyPackageOverrideTool = defineTool({
     installPreferOffline: z.boolean().optional(),
     enforceFrozenLockfile: z.boolean().optional(),
     workspace: z.string().optional(),
+    reproductionTest: z
+      .string()
+      .optional()
+      .describe("Optional reproduction test script verifying fix"),
+    proofOfFix: z
+      .union([z.boolean(), z.string()])
+      .optional()
+      .describe("If true or script path/content, enforce dual-stage exploit reproduction"),
+    requireProofOfFix: z
+      .boolean()
+      .optional()
+      .describe("If true, fail and rollback override if proof-of-fix verification fails"),
+    patchesDir: z
+      .string()
+      .optional()
+      .default("./patches")
+      .describe("Directory containing patch/reproduction artifacts"),
   }),
   execute: async ({
     cwd,
@@ -69,6 +96,10 @@ export const applyPackageOverrideTool = defineTool({
     installPreferOffline,
     enforceFrozenLockfile,
     workspace,
+    reproductionTest,
+    proofOfFix,
+    requireProofOfFix,
+    patchesDir,
   }): Promise<PatchResult> => {
     const pm = (packageManager ?? detectPackageManager(cwd)) as PackageManager;
     const pkgPath = join(cwd, "package.json");
@@ -173,6 +204,58 @@ export const applyPackageOverrideTool = defineTool({
       }
 
       return withRepoLock(cwd, async () => {
+        const prepared = await prepareReproductionTestFile({
+          cwd,
+          packageName,
+          vulnerableVersion: fromVersion,
+          patchesDir,
+          proofOfFix,
+          reproductionTest,
+        });
+        const reproTestPath = prepared.testFilePath;
+        const isProofActive = Boolean(reproTestPath || proofOfFix || requireProofOfFix);
+
+        let negativePhaseResult: ProofOfFixPhaseResult | undefined;
+        if (isProofActive) {
+          if (!reproTestPath) {
+            if (requireProofOfFix) {
+              return {
+                packageName,
+                strategy: "none",
+                fromVersion,
+                toVersion,
+                applied: false,
+                dryRun,
+                unresolvedReason: "policy-blocked",
+                message:
+                  "Proof-of-fix verification required, but no reproduction test or script was supplied.",
+              };
+            }
+          } else {
+            negativePhaseResult = await runProofOfFixPhase({
+              stage: "negative",
+              testFilePath: reproTestPath,
+              cwd,
+            });
+
+            if (!negativePhaseResult.passed) {
+              if (prepared.isCreated && reproTestPath) {
+                await rm(reproTestPath, { force: true }).catch(() => {});
+              }
+              return {
+                packageName,
+                strategy: "override",
+                fromVersion,
+                toVersion,
+                applied: false,
+                dryRun: false,
+                unresolvedReason: requireProofOfFix ? "policy-blocked" : "proof-of-fix-failed",
+                message: `Proof-of-fix negative phase failed: ${negativePhaseResult.error}`,
+              };
+            }
+          }
+        }
+
         setDenoJsonImportValue(denoJson, overrideSelector, toVersion);
         writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n", "utf8");
 
@@ -224,6 +307,50 @@ export const applyPackageOverrideTool = defineTool({
           }
         }
 
+        let proofOfFixVerification: ProofOfFixVerification | undefined;
+        if (reproTestPath && negativePhaseResult?.passed) {
+          const positivePhaseResult = await runProofOfFixPhase({
+            stage: "positive",
+            testFilePath: reproTestPath,
+            cwd,
+          });
+
+          if (!positivePhaseResult.passed) {
+            restoreDenoJsonImportValue(denoJson, overrideSelector, existingEntry);
+            writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n", "utf8");
+
+            try {
+              const [rollbackCmd, ...rollbackArgs] = installCommand;
+              await safeExeca(rollbackCmd, rollbackArgs, { cwd, stdio: "pipe" });
+            } catch {}
+
+            if (prepared.isCreated && reproTestPath) {
+              await rm(reproTestPath, { force: true }).catch(() => {});
+            }
+
+            return {
+              packageName,
+              strategy: "override",
+              fromVersion,
+              toVersion,
+              applied: false,
+              dryRun: false,
+              unresolvedReason: requireProofOfFix ? "policy-blocked" : "proof-of-fix-failed",
+              message: `Proof-of-fix positive phase failed: ${positivePhaseResult.error}`,
+            };
+          }
+
+          proofOfFixVerification = assembleProofOfFixVerification({
+            reproductionTestPath: reproTestPath,
+            negativePhase: negativePhaseResult,
+            positivePhase: positivePhaseResult,
+            regressionPhase: {
+              executed: runTests,
+              passed: true,
+            },
+          });
+        }
+
         return {
           packageName,
           strategy: "override",
@@ -231,6 +358,7 @@ export const applyPackageOverrideTool = defineTool({
           toVersion,
           applied: true,
           dryRun: false,
+          proofOfFix: proofOfFixVerification,
           message: `Successfully updated deno.json imports["${existingEntry.key}"] for "${overrideSelector}" from ${fromVersion} to ${toVersion}, then ran ${installCommand.join(" ")}${runTests ? ` and passed ${testCommand.join(" ")}` : ""}.${dependencyTraceSuffix}`,
         };
       });
@@ -272,6 +400,58 @@ export const applyPackageOverrideTool = defineTool({
     }
 
     return withRepoLock(cwd, async () => {
+      const prepared = await prepareReproductionTestFile({
+        cwd,
+        packageName,
+        vulnerableVersion: fromVersion,
+        patchesDir,
+        proofOfFix,
+        reproductionTest,
+      });
+      const reproTestPath = prepared.testFilePath;
+      const isProofActive = Boolean(reproTestPath || proofOfFix || requireProofOfFix);
+
+      let negativePhaseResult: ProofOfFixPhaseResult | undefined;
+      if (isProofActive) {
+        if (!reproTestPath) {
+          if (requireProofOfFix) {
+            return {
+              packageName,
+              strategy: "none",
+              fromVersion,
+              toVersion,
+              applied: false,
+              dryRun,
+              unresolvedReason: "policy-blocked",
+              message:
+                "Proof-of-fix verification required, but no reproduction test or script was supplied.",
+            };
+          }
+        } else {
+          negativePhaseResult = await runProofOfFixPhase({
+            stage: "negative",
+            testFilePath: reproTestPath,
+            cwd,
+          });
+
+          if (!negativePhaseResult.passed) {
+            if (prepared.isCreated && reproTestPath) {
+              await rm(reproTestPath, { force: true }).catch(() => {});
+            }
+            return {
+              packageName,
+              strategy: "override",
+              fromVersion,
+              toVersion,
+              applied: false,
+              dryRun: false,
+              unresolvedReason: requireProofOfFix ? "policy-blocked" : "proof-of-fix-failed",
+              message: `Proof-of-fix negative phase failed: ${negativePhaseResult.error}`,
+            };
+          }
+        }
+      }
+
       setOverrideValue(pkgJson, pm, overrideSelector, toVersion);
       writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
@@ -323,6 +503,50 @@ export const applyPackageOverrideTool = defineTool({
         }
       }
 
+      let proofOfFixVerification: ProofOfFixVerification | undefined;
+      if (reproTestPath && negativePhaseResult?.passed) {
+        const positivePhaseResult = await runProofOfFixPhase({
+          stage: "positive",
+          testFilePath: reproTestPath,
+          cwd,
+        });
+
+        if (!positivePhaseResult.passed) {
+          restoreOverrideValue(pkgJson, pm, overrideSelector, previousValue);
+          writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+
+          try {
+            const [rollbackCmd, ...rollbackArgs] = installCommand;
+            await safeExeca(rollbackCmd, rollbackArgs, { cwd, stdio: "pipe" });
+          } catch {}
+
+          if (prepared.isCreated && reproTestPath) {
+            await rm(reproTestPath, { force: true }).catch(() => {});
+          }
+
+          return {
+            packageName,
+            strategy: "override",
+            fromVersion,
+            toVersion,
+            applied: false,
+            dryRun: false,
+            unresolvedReason: requireProofOfFix ? "policy-blocked" : "proof-of-fix-failed",
+            message: `Proof-of-fix positive phase failed: ${positivePhaseResult.error}`,
+          };
+        }
+
+        proofOfFixVerification = assembleProofOfFixVerification({
+          reproductionTestPath: reproTestPath,
+          negativePhase: negativePhaseResult,
+          positivePhase: positivePhaseResult,
+          regressionPhase: {
+            executed: runTests,
+            passed: true,
+          },
+        });
+      }
+
       let dedupeNote = "";
       if (dedupeCommand.length > 0) {
         try {
@@ -341,6 +565,7 @@ export const applyPackageOverrideTool = defineTool({
         toVersion,
         applied: true,
         dryRun: false,
+        proofOfFix: proofOfFixVerification,
         message: `Successfully applied ${overrideLabel} for "${overrideSelector}" from ${fromVersion} to ${toVersion}, then ran ${installCommand.join(" ")}${runTests ? ` and passed ${testCommand.join(" ")}` : ""}.${dedupeNote}${dependencyTraceSuffix}`,
       };
     });

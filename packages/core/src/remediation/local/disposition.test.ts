@@ -172,4 +172,49 @@ describe("applyDispositionAndContainment", () => {
     expect(result.applied).toBe(true);
     expect(result.unresolvedReason).toBeUndefined();
   });
+
+  it("restores files on disk when containmentMode blocks applied escalate outcome", async () => {
+    const { mkdtempSync, readFileSync, rmSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { createProjectSnapshot } = await import("../../platform/rollback.js");
+
+    const tempDir = mkdtempSync(join(tmpdir(), "containment-rollback-test-"));
+    try {
+      const pkgPath = join(tempDir, "package.json");
+      writeFileSync(pkgPath, JSON.stringify({ name: "my-pkg", version: "1.0.0" }, null, 2));
+
+      const snapshot = await createProjectSnapshot(tempDir);
+
+      // Simulate a disk mutation (e.g. bump to 2.0.0)
+      writeFileSync(pkgPath, JSON.stringify({ name: "my-pkg", version: "2.0.0" }, null, 2));
+
+      const result = applyDispositionAndContainment(
+        {
+          packageName: "my-pkg",
+          fromVersion: "1.0.0",
+          toVersion: "2.0.0",
+          strategy: "version-bump",
+          applied: true,
+          dryRun: false,
+          message: "bumped to 2.0.0",
+        },
+        {
+          containmentMode: true,
+          exploitSignalTriggered: true,
+          snapshot,
+        },
+      );
+
+      expect(result.disposition).toBe("escalate");
+      expect(result.applied).toBe(false);
+      expect(result.unresolvedReason).toBe("policy-blocked");
+
+      // Verify filesystem was restored
+      const restored = JSON.parse(readFileSync(pkgPath, "utf8"));
+      expect(restored.version).toBe("1.0.0");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
 });

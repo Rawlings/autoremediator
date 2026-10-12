@@ -54,8 +54,12 @@ export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptio
   const loadedPolicy = loadPolicy(cwd, options.policy);
   const constraints = {
     ...options.constraints,
-    typecheck: options.typecheck ?? options.constraints?.typecheck ?? loadedPolicy.constraints?.typecheck,
-    supplyChainPolicy: options.supplyChainPolicy ?? options.constraints?.supplyChainPolicy ?? loadedPolicy.constraints?.supplyChainPolicy,
+    typecheck:
+      options.typecheck ?? options.constraints?.typecheck ?? loadedPolicy.constraints?.typecheck,
+    supplyChainPolicy:
+      options.supplyChainPolicy ??
+      options.constraints?.supplyChainPolicy ??
+      loadedPolicy.constraints?.supplyChainPolicy,
     enableBreakingChangeRefactor:
       options.breakingChangeRefactor ??
       options.constraints?.enableBreakingChangeRefactor ??
@@ -103,6 +107,7 @@ export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptio
     intelligenceSnapshotPath: options.intelligenceSnapshotPath,
     proofOfFix: options.proofOfFix,
     requireProofOfFix: options.requireProofOfFix ?? constraints.requireProofOfFix,
-    breakingChangeRefactor: options.breakingChangeRefactor ?? constraints.enableBreakingChangeRefactor,
+    breakingChangeRefactor:
+      options.breakingChangeRefactor ?? constraints.enableBreakingChangeRefactor,
   };
 }

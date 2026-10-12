@@ -91,6 +91,7 @@ function makeOsvDetails(overrides: Partial<CveDetails> = {}): CveDetails {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockPrimaryResult.mockReset();
   mockGhLookup.mockResolvedValue([]);
   mockMergeGh.mockImplementation((base: CveDetails) => base);
   mockEnrichNvd.mockImplementation(async (d: CveDetails) => d);
@@ -435,6 +436,135 @@ describe("regression check", () => {
     } as any);
 
     expect(result.results[0]?.disposition).toBe("escalate");
+    expect(result.results[0]?.applied).toBe(false);
+    expect(result.results[0]?.unresolvedReason).toBe("policy-blocked");
+  });
+
+  it("blocks applied escalate disposition outcomes and restores modified files on disk when containmentMode is enabled", async () => {
+    const { mkdtempSync, readFileSync, rmSync, writeFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const { tmpdir } = await import("node:os");
+
+    const dir = mkdtempSync(join(tmpdir(), "containment-run-rollback-"));
+    const pkgJsonPath = join(dir, "package.json");
+    writeFileSync(
+      pkgJsonPath,
+      JSON.stringify({ name: "app", dependencies: { "vuln-pkg": "1.5.0" } }, null, 2),
+    );
+
+    mockOsv.mockResolvedValue(makeOsvDetails());
+    mockInventory.mockResolvedValue({
+      packages: [{ name: "vuln-pkg", version: "1.5.0", type: "direct" }],
+    });
+    mockFindVulnerable.mockReturnValue([
+      {
+        installed: { name: "vuln-pkg", version: "1.5.0", type: "direct" },
+        affected: {
+          name: "vuln-pkg",
+          vulnerableRange: ">=1.0.0 <2.0.0",
+          firstPatchedVersion: "2.0.0",
+        },
+      },
+    ]);
+
+    mockPrimaryResult.mockImplementation(async () => {
+      // Mutate package.json on disk
+      writeFileSync(
+        pkgJsonPath,
+        JSON.stringify({ name: "app", dependencies: { "vuln-pkg": "2.0.0" } }, null, 2),
+      );
+      return {
+        result: {
+          packageName: "vuln-pkg",
+          fromVersion: "1.5.0",
+          strategy: "version-bump",
+          applied: true,
+          dryRun: false,
+          toVersion: "2.0.0",
+        },
+        steps: 1,
+      };
+    });
+    mockExploitSignal.mockResolvedValue({ exploitSignalTriggered: true, reason: "KEV match" });
+
+    try {
+      const result = await runLocalRemediationPipeline("CVE-2024-0001", {
+        cwd: dir,
+        containmentMode: true,
+        exploitSignalOverride: { kev: { mandatory: true } },
+      } as any);
+
+      expect(result.results[0]?.disposition).toBe("escalate");
+      expect(result.results[0]?.applied).toBe(false);
+      expect(result.results[0]?.unresolvedReason).toBe("policy-blocked");
+
+      // Verify on-disk file was restored
+      const restored = JSON.parse(readFileSync(pkgJsonPath, "utf8"));
+      expect(restored.dependencies["vuln-pkg"]).toBe("1.5.0");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("blocks package listed in denyPackages before invoking primary strategy", async () => {
+    mockOsv.mockResolvedValue(makeOsvDetails());
+    mockInventory.mockResolvedValue({
+      packages: [{ name: "vuln-pkg", version: "1.5.0", type: "direct" }],
+    });
+    mockFindVulnerable.mockReturnValue([
+      {
+        installed: { name: "vuln-pkg", version: "1.5.0", type: "direct" },
+        affected: {
+          name: "vuln-pkg",
+          vulnerableRange: ">=1.0.0 <2.0.0",
+          firstPatchedVersion: "2.0.0",
+        },
+      },
+    ]);
+
+    const result = await runLocalRemediationPipeline("CVE-2024-0001", {
+      cwd: process.cwd(),
+      policy: JSON.stringify({
+        denyPackages: ["vuln-pkg"],
+        allowPackages: [],
+        allowMajorBumps: true,
+      }),
+    } as any);
+
+    expect(mockPrimaryResult).not.toHaveBeenCalled();
+    expect(result.results[0]?.packageName).toBe("vuln-pkg");
+    expect(result.results[0]?.applied).toBe(false);
+    expect(result.results[0]?.unresolvedReason).toBe("policy-blocked");
+    expect(result.results[0]?.message).toContain("denyPackages");
+  });
+
+  it("blocks package matching wildcard in denyPackages before invoking primary strategy", async () => {
+    mockOsv.mockResolvedValue(makeOsvDetails());
+    mockInventory.mockResolvedValue({
+      packages: [{ name: "vuln-pkg", version: "1.5.0", type: "direct" }],
+    });
+    mockFindVulnerable.mockReturnValue([
+      {
+        installed: { name: "vuln-pkg", version: "1.5.0", type: "direct" },
+        affected: {
+          name: "vuln-pkg",
+          vulnerableRange: ">=1.0.0 <2.0.0",
+          firstPatchedVersion: "2.0.0",
+        },
+      },
+    ]);
+
+    const result = await runLocalRemediationPipeline("CVE-2024-0001", {
+      cwd: process.cwd(),
+      policy: JSON.stringify({
+        denyPackages: ["vuln-*"],
+        allowPackages: [],
+        allowMajorBumps: true,
+      }),
+    } as any);
+
+    expect(mockPrimaryResult).not.toHaveBeenCalled();
+    expect(result.results[0]?.packageName).toBe("vuln-pkg");
     expect(result.results[0]?.applied).toBe(false);
     expect(result.results[0]?.unresolvedReason).toBe("policy-blocked");
   });

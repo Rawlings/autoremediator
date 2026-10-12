@@ -4,9 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "clean": "rm -rf dist",
     "dev": "vite",
+    "typecheck": "tsc -b",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "oxlint"
   },
   "dependencies": {
     "react": "^19.3.0",

@@ -2,7 +2,7 @@
  * Tool: fetch-package-source
  *
  * Downloads a package tarball from npm registry and extracts source files for CVE analysis.
- * Uses Node.js fetch API to download and execa to extract tar archives.
+ * Uses curl with -f -s -S -L to download and execa to extract tar archives.
  */
 import { defineTool } from "./tool-compat.js";
 import { z } from "zod";
@@ -64,9 +64,9 @@ export const fetchPackageSourceTool = defineTool({
       // Create temp directory
       await mkdir(tempBaseDir, { recursive: true });
 
-      // Download tarball using curl (reliable method)
+      // Download tarball using curl with fail-on-error flag (-f -s -S -L)
       const tarballPath = join(tempBaseDir, "package.tgz");
-      await execa("curl", ["-L", "-o", tarballPath, npmUrl]);
+      await execa("curl", ["-f", "-s", "-S", "-L", "-o", tarballPath, npmUrl]);
 
       // Step 2: Extract tar.gz
       await mkdir(extractDir, { recursive: true });
@@ -90,18 +90,15 @@ export const fetchPackageSourceTool = defineTool({
             const relPath = join(relativeBase, file.name);
 
             if (file.isDirectory()) {
-              // Skip common non-source directories
-              if (
-                !["node_modules", ".git", "dist", "build", "coverage", ".next", "out"].includes(
-                  file.name,
-                )
-              ) {
+              // Skip non-source directories (retain dist, build, and out for published packages)
+              if (!["node_modules", ".git", "coverage", ".next"].includes(file.name)) {
                 await walkDir(fullPath, relPath);
               }
             } else if (file.isFile()) {
-              // Check if file matches any pattern
+              // Check if file matches any pattern (escape dots before expanding wildcards)
               const matches = safePatterns.some((pattern) => {
-                const regex = new RegExp(`^${pattern.replace(/\*/g, ".*").replace(/\./g, "\\.")}$`);
+                const escaped = pattern.replace(/\./g, "\\.").replace(/\*/g, ".*");
+                const regex = new RegExp(`^${escaped}$`);
                 return regex.test(file.name);
               });
 
@@ -136,9 +133,18 @@ export const fetchPackageSourceTool = defineTool({
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      const exitCode =
+        typeof (err as { exitCode?: number }).exitCode === "number"
+          ? (err as { exitCode?: number }).exitCode
+          : undefined;
 
-      // Check if it's a 404 from npm
-      if (message.includes("404") || message.includes("not found")) {
+      // Check if it's a 404 from npm registry (curl exit code 22 with -f or error 404)
+      if (
+        exitCode === 22 ||
+        message.includes("404") ||
+        message.includes("not found") ||
+        message.includes("returned error: 404")
+      ) {
         return {
           success: false,
           error: `Package ${packageName}@${version} not found on npm registry. It may not exist or the version may be incorrect.`,

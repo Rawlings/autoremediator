@@ -1,4 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { TOOLS, createMcpServer, handleToolCall } from "./server.js";
 
 describe("mcp tool contracts", () => {
@@ -595,5 +601,178 @@ describe("async job MCP tools", () => {
     const body = JSON.parse(result.content[0]?.text ?? "");
     expect(body.status).toBe("done");
     expect(deps.pollJobFn).toHaveBeenCalledWith("test-job-1");
+  });
+});
+
+describe("MCP Client integration via InMemoryTransport", () => {
+  it("completes handshake, lists tools, and executes health tool", async () => {
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const server = createMcpServer();
+    await server.connect(serverTransport);
+
+    const client = new Client({ name: "test-client", version: "1.0.0" }, { capabilities: {} });
+    await client.connect(clientTransport);
+
+    const toolList = await client.listTools();
+    expect(toolList.tools.length).toBe(TOOLS.length);
+
+    const healthResult = await client.callTool({ name: "health", arguments: {} });
+    expect(healthResult.isError).toBeFalsy();
+    const content = healthResult.content as Array<{ type: string; text: string }>;
+    const body = JSON.parse(content[0]?.text ?? "");
+    expect(body.status).toBe("ok");
+    expect(body.toolCount).toBe(TOOLS.length);
+
+    await client.close();
+    await server.close();
+  });
+
+  it("handles unknown tool call through client transport", async () => {
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const server = createMcpServer();
+    await server.connect(serverTransport);
+
+    const client = new Client({ name: "test-client", version: "1.0.0" }, { capabilities: {} });
+    await client.connect(clientTransport);
+
+    const result = await client.callTool({ name: "unknown_tool", arguments: {} });
+    expect(result.isError).toBe(true);
+    const content = result.content as Array<{ type: string; text: string }>;
+    expect(content[0]?.text).toContain("Unknown tool");
+
+    await client.close();
+    await server.close();
+  });
+});
+
+describe("MCP stdio server process integration", () => {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const serverPath = resolve(__dirname, "../../dist/mcp/server.js");
+  let proc: ChildProcessWithoutNullStreams;
+  let stdoutBuffer = "";
+  const pendingRequests = new Map<number, (res: any) => void>();
+
+  beforeAll(async () => {
+    if (!existsSync(serverPath)) {
+      throw new Error(
+        `MCP server build artifact not found at ${serverPath}. Run pnpm build first.`,
+      );
+    }
+
+    proc = spawn(process.execPath, [serverPath], {
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    proc.stdout.on("data", (chunk: Buffer) => {
+      stdoutBuffer += chunk.toString("utf8");
+      const lines = stdoutBuffer.split("\n");
+      stdoutBuffer = lines.pop() ?? "";
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const msg = JSON.parse(line);
+          if (msg.id !== undefined && pendingRequests.has(msg.id)) {
+            pendingRequests.get(msg.id)!(msg);
+            pendingRequests.delete(msg.id);
+          }
+        } catch {
+          // ignore non-json lines
+        }
+      }
+    });
+  });
+
+  afterAll(() => {
+    if (proc && !proc.killed) {
+      proc.kill("SIGTERM");
+    }
+  });
+
+  function sendRpc(req: { id?: number; method: string; params?: any }): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        if (req.id !== undefined) pendingRequests.delete(req.id);
+        reject(new Error(`RPC timeout for method: ${req.method}`));
+      }, 5000);
+
+      if (req.id !== undefined) {
+        pendingRequests.set(req.id, (res) => {
+          clearTimeout(timeout);
+          resolve(res);
+        });
+      }
+
+      proc.stdin.write(JSON.stringify({ jsonrpc: "2.0", ...req }) + "\n");
+
+      if (req.id === undefined) {
+        clearTimeout(timeout);
+        resolve(null);
+      }
+    });
+  }
+
+  it("completes MCP initialize handshake over stdio", async () => {
+    const initRes = await sendRpc({
+      id: 1,
+      method: "initialize",
+      params: {
+        protocolVersion: "2024-11-05",
+        capabilities: {},
+        clientInfo: { name: "vitest-stdio-client", version: "1.0.0" },
+      },
+    });
+
+    expect(initRes.jsonrpc).toBe("2.0");
+    expect(initRes.id).toBe(1);
+    expect(initRes.result.serverInfo.name).toBe("autoremediator");
+    expect(initRes.result.capabilities.tools).toBeDefined();
+
+    // Send initialized notification
+    await sendRpc({ method: "notifications/initialized" });
+  });
+
+  it("lists all registered tools via tools/list over stdio", async () => {
+    const listRes = await sendRpc({
+      id: 2,
+      method: "tools/list",
+      params: {},
+    });
+
+    expect(listRes.result.tools).toBeInstanceOf(Array);
+    expect(listRes.result.tools.length).toBe(TOOLS.length);
+    const names = listRes.result.tools.map((t: any) => t.name);
+    expect(names).toContain("health");
+    expect(names).toContain("remediate");
+    expect(names).toContain("planRemediation");
+    expect(names).toContain("remediateFromScan");
+    expect(names).toContain("remediatePortfolio");
+  });
+
+  it("executes health tool via tools/call and returns structured report over stdio", async () => {
+    const callRes = await sendRpc({
+      id: 3,
+      method: "tools/call",
+      params: { name: "health", arguments: {} },
+    });
+
+    expect(callRes.result.isError).toBeFalsy();
+    const content = callRes.result.content[0]?.text;
+    expect(content).toBeDefined();
+    const report = JSON.parse(content);
+    expect(report.status).toBe("ok");
+    expect(report.toolCount).toBe(TOOLS.length);
+    expect(report.capabilities).toContain("health");
+  });
+
+  it("returns structured error when calling unknown tool over stdio", async () => {
+    const errRes = await sendRpc({
+      id: 4,
+      method: "tools/call",
+      params: { name: "unknown_tool_xyz", arguments: {} },
+    });
+
+    expect(errRes.result.isError).toBe(true);
+    expect(errRes.result.content[0]?.text).toContain("Unknown tool: unknown_tool_xyz");
   });
 });

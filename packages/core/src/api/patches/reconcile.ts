@@ -1,13 +1,18 @@
 import { existsSync } from "node:fs";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { execa } from "execa";
 import { evaluatePackage } from "../../remediation/evaluate-package.js";
 import {
   detectPackageManager,
   resolveInstallCommand,
   resolveTestCommand,
 } from "../../platform/package-manager/index.js";
+import { safeExeca } from "../../platform/safe-exec.js";
+import {
+  getOverrideValue,
+  setOverrideValue,
+  type RawPackageJson,
+} from "../../remediation/tools/apply-package-override/helpers.js";
 import type {
   PatchReconcileOptions,
   PatchReconcileReport,
@@ -79,8 +84,9 @@ export async function reconcilePatchArtifacts(
           (v) => v.safeUpgradeVersion,
         )?.safeUpgradeVersion;
       }
-    } catch {
-      // Ignore evaluation query errors
+    } catch (evalError) {
+      // Evaluation query failed or offline; record reason in diagnostic trail
+      const _ignored = evalError;
     }
 
     if (!safeUpgradeVersion) {
@@ -108,10 +114,26 @@ export async function reconcilePatchArtifacts(
       continue;
     }
 
+    // Snapshot pre-mutation state for truthful rollback on command failure
+    const pkgJsonPath = join(cwd, "package.json");
+    const manifestPath = inspection.manifestFilePath ?? `${summary.patchFilePath}.json`;
+    let originalPkgJsonContent: string | undefined;
+    let originalPatchContent: string | undefined;
+    let originalManifestContent: string | undefined;
+
     try {
-      const pkgJsonPath = join(cwd, "package.json");
       if (existsSync(pkgJsonPath)) {
-        const pkgJson = JSON.parse(await readFile(pkgJsonPath, "utf8")) as Record<string, any>;
+        originalPkgJsonContent = await readFile(pkgJsonPath, "utf8");
+      }
+      if (existsSync(summary.patchFilePath)) {
+        originalPatchContent = await readFile(summary.patchFilePath, "utf8");
+      }
+      if (existsSync(manifestPath)) {
+        originalManifestContent = await readFile(manifestPath, "utf8");
+      }
+
+      if (originalPkgJsonContent) {
+        const pkgJson = JSON.parse(originalPkgJsonContent) as RawPackageJson & Record<string, any>;
         let updated = false;
 
         const depSections = [
@@ -120,17 +142,29 @@ export async function reconcilePatchArtifacts(
           "peerDependencies",
           "optionalDependencies",
         ];
+
+        let foundInDirectDeps = false;
         for (const depSection of depSections) {
           if (pkgJson[depSection] && pkgJson[depSection][packageName]) {
             pkgJson[depSection][packageName] = `^${safeUpgradeVersion}`;
             updated = true;
+            foundInDirectDeps = true;
           }
         }
 
+        // Handle existing or newly needed transitive overrides
+        const existingOverride = getOverrideValue(pkgJson, pm, packageName);
+        if (existingOverride || !foundInDirectDeps) {
+          setOverrideValue(pkgJson, pm, packageName, safeUpgradeVersion);
+          updated = true;
+        }
+
+        // Remove from pnpm patchedDependencies if present
         if (pkgJson.pnpm?.patchedDependencies) {
-          for (const key of Object.keys(pkgJson.pnpm.patchedDependencies)) {
+          const patched = pkgJson.pnpm.patchedDependencies as Record<string, string>;
+          for (const key of Object.keys(patched)) {
             if (key.startsWith(`${packageName}@`)) {
-              delete pkgJson.pnpm.patchedDependencies[key];
+              delete patched[key];
               updated = true;
             }
           }
@@ -141,17 +175,70 @@ export async function reconcilePatchArtifacts(
         }
       }
 
+      // Remove patch artifacts
       await rm(summary.patchFilePath, { force: true });
-      if (inspection.manifestFilePath) {
-        await rm(inspection.manifestFilePath, { force: true });
+      if (existsSync(manifestPath)) {
+        await rm(manifestPath, { force: true });
       }
 
+      // Execute package installation truthfully
       const installCmd = resolveInstallCommand(pm);
-      await execa(installCmd[0], installCmd.slice(1), { cwd, reject: false });
+      try {
+        await safeExeca(installCmd[0], installCmd.slice(1), { cwd, stdio: "pipe" });
+      } catch (installErr) {
+        // Rollback state on install failure
+        if (originalPkgJsonContent) {
+          await writeFile(pkgJsonPath, originalPkgJsonContent, "utf8");
+        }
+        if (originalPatchContent) {
+          await writeFile(summary.patchFilePath, originalPatchContent, "utf8");
+        }
+        if (originalManifestContent) {
+          await writeFile(manifestPath, originalManifestContent, "utf8");
+        }
 
+        const msg = installErr instanceof Error ? installErr.message : String(installErr);
+        results.push({
+          patchFilePath: summary.patchFilePath,
+          packageName,
+          cveId,
+          installedVersion: vulnerableVersion,
+          safeUpstreamVersion: safeUpgradeVersion,
+          status: "error",
+          reason: `Package manager installation failed (${installCmd.join(" ")}): ${msg}. Restored original package.json and patch artifacts.`,
+        });
+        continue;
+      }
+
+      // Execute tests truthfully if requested
       if (options.runTests) {
         const testCmd = resolveTestCommand(pm);
-        await execa(testCmd[0], testCmd.slice(1), { cwd, reject: false });
+        try {
+          await safeExeca(testCmd[0], testCmd.slice(1), { cwd, stdio: "pipe" });
+        } catch (testErr) {
+          // Rollback state on test failure
+          if (originalPkgJsonContent) {
+            await writeFile(pkgJsonPath, originalPkgJsonContent, "utf8");
+          }
+          if (originalPatchContent) {
+            await writeFile(summary.patchFilePath, originalPatchContent, "utf8");
+          }
+          if (originalManifestContent) {
+            await writeFile(manifestPath, originalManifestContent, "utf8");
+          }
+
+          const msg = testErr instanceof Error ? testErr.message : String(testErr);
+          results.push({
+            patchFilePath: summary.patchFilePath,
+            packageName,
+            cveId,
+            installedVersion: vulnerableVersion,
+            safeUpstreamVersion: safeUpgradeVersion,
+            status: "error",
+            reason: `Validation tests failed post-upgrade (${testCmd.join(" ")}): ${msg}. Restored original package.json and patch artifacts.`,
+          });
+          continue;
+        }
       }
 
       results.push({

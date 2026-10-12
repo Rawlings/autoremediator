@@ -1,11 +1,12 @@
 import { access, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
-import { join, resolve, relative, isAbsolute } from "node:path";
+import { join, resolve, isAbsolute } from "node:path";
 import { tmpdir } from "node:os";
 import { remediateFromScan, type CveSeverity, type ScanReport } from "autoremediator";
-import type { Octokit } from "@octokit/rest";
 import type {
   AutoremediatorRepoConfig,
+  DefaultRemediationHandlerOptions,
+  ParsedAuditFinding,
   RemediationJobResult,
   RemediationTriggerContext,
 } from "./types.js";
@@ -13,14 +14,10 @@ import { fetchRepoConfig } from "./repo-config.js";
 import { parseCheckRunLogs } from "./diagnostics/log-parser.js";
 import { healPullRequest } from "./healing/pr-healer.js";
 
-
 type ScanRemediateOptions = NonNullable<Parameters<typeof remediateFromScan>[1]>;
 type ScanChangeRequestOptions = NonNullable<ScanRemediateOptions["changeRequest"]>;
 
-interface ParsedAuditFinding {
-  cveId: string;
-  severity: CveSeverity;
-}
+export type { DefaultRemediationHandlerOptions, ParsedAuditFinding };
 
 const CVE_REGEX = /CVE-\d{4}-\d+/gi;
 
@@ -31,14 +28,6 @@ const SEVERITY_RANK: Record<CveSeverity, number> = {
   HIGH: 3,
   CRITICAL: 4,
 };
-
-export interface DefaultRemediationHandlerOptions {
-  octokitFactory: (installationId: number) => Promise<Octokit>;
-  /** Override repo config fetch — useful for tests. */
-  repoConfigProvider?: (owner: string, repo: string) => Promise<AutoremediatorRepoConfig>;
-  /** Override audit finding collection — useful for tests. */
-  auditFindingProvider?: (cwd: string) => Promise<ParsedAuditFinding[]>;
-}
 
 export type RemediationHandler = (
   context: RemediationTriggerContext,
@@ -84,7 +73,7 @@ export function createDefaultRemediationHandler(
     if (options.repoConfigProvider && repoRef) {
       repoConfig = await options.repoConfigProvider(repoRef.owner, repoRef.repo);
     } else if (repoRef) {
-      repoConfig = await fetchRepoConfig(octokit, repoRef.owner, repoRef.repo);
+      repoConfig = await fetchRepoConfig(octokit, repoRef.owner, repoRef.repo, options.onError);
     } else {
       // No repository in payload — use defaults
       const { DEFAULT_REPO_CONFIG } = await import("./types.js");
@@ -94,7 +83,8 @@ export function createDefaultRemediationHandler(
     // Special handler branch for check_run (PR auto-healing)
     if (context.eventName === "check_run") {
       const checkRun = context.payload.check_run as Record<string, unknown> | undefined;
-      const pullRequests = (checkRun?.pull_requests as Array<Record<string, unknown>> | undefined) ?? [];
+      const pullRequests =
+        (checkRun?.pull_requests as Array<Record<string, unknown>> | undefined) ?? [];
       const pr = pullRequests.find((p) => {
         const head = p.head as Record<string, unknown> | undefined;
         const ref = typeof head?.ref === "string" ? head.ref : "";
@@ -126,12 +116,22 @@ export function createDefaultRemediationHandler(
           });
           if (Array.isArray(annRes?.data)) {
             const annLines = annRes.data.map(
-              (ann) => `${ann.path}:${ann.start_line || 1}:1 - error ${ann.title || "check"}: ${ann.message || ""}`,
+              (ann) =>
+                `${ann.path}:${ann.start_line || 1}:1 - error ${ann.title || "check"}: ${ann.message || ""}`,
             );
             rawLogs += "\n" + annLines.join("\n");
           }
-        } catch {
-          // Ignore annotation fetch failure
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          void options.onError?.({
+            timestamp: new Date().toISOString(),
+            source: "github-app",
+            level: "warn",
+            context: "remediation-handler.listAnnotations",
+            message: `Failed to fetch check run annotations: ${message}`,
+            error: message,
+            details: { owner: repoRef.owner, repo: repoRef.repo, checkRunId: checkRun.id },
+          });
         }
       }
 
@@ -148,6 +148,7 @@ export function createDefaultRemediationHandler(
         checkRunName: typeof checkRun?.name === "string" ? checkRun.name : "CI Check",
         diagnostic,
         repoConfig,
+        logger: options.onError,
       });
 
       return {
@@ -156,15 +157,91 @@ export function createDefaultRemediationHandler(
       };
     }
 
+    const payload = context.payload ?? {};
+    const headSha =
+      typeof (payload.check_suite as Record<string, unknown> | undefined)?.head_sha === "string"
+        ? ((payload.check_suite as Record<string, unknown>).head_sha as string)
+        : typeof payload.after === "string"
+          ? payload.after
+          : undefined;
+    const branchOrRef =
+      typeof (payload.check_suite as Record<string, unknown> | undefined)?.head_branch === "string"
+        ? ((payload.check_suite as Record<string, unknown>).head_branch as string)
+        : typeof payload.ref === "string"
+          ? (payload.ref as string).replace(/^refs\/heads\//, "")
+          : undefined;
+    const targetRef = headSha ?? branchOrRef;
 
-    const rawCwd = repoConfig.cwd ?? process.cwd();
-    // Resolve and constrain cwd — must not escape the current working directory
-    const resolvedCwd = isAbsolute(rawCwd) ? rawCwd : resolve(process.cwd(), rawCwd);
-    const rel = relative(process.cwd(), resolvedCwd);
-    if (rel.startsWith("..") || rel.includes("\0")) {
-      throw new Error(`Repository config cwd escapes the working directory: ${rawCwd}`);
+    let isolatedWorkspaceDir: string | undefined;
+    let cleanupCheckout: (() => Promise<void>) | undefined;
+
+    if (options.checkoutProvider) {
+      const checkout = await options.checkoutProvider({
+        owner: repoRef?.owner ?? "unknown",
+        repo: repoRef?.repo ?? "unknown",
+        ref: targetRef,
+        token: context.installationToken,
+      });
+      isolatedWorkspaceDir = checkout.cwd;
+      cleanupCheckout = checkout.cleanup;
+    } else if (repoConfig.cwd && isAbsolute(repoConfig.cwd)) {
+      isolatedWorkspaceDir = repoConfig.cwd;
+    } else if (repoRef) {
+      const tempRepoDir = await mkdtemp(join(tmpdir(), "autoremediator-repo-"));
+      cleanupCheckout = async () => {
+        await rm(tempRepoDir, { recursive: true, force: true }).catch(() => {});
+      };
+
+      const token = context.installationToken;
+      const cloneUrl = token
+        ? `https://x-access-token:${token}@github.com/${repoRef.owner}/${repoRef.repo}.git`
+        : `https://github.com/${repoRef.owner}/${repoRef.repo}.git`;
+      const cloneArgs = ["clone", "--depth", "1"];
+      if (targetRef) {
+        cloneArgs.push("--branch", targetRef);
+      }
+      cloneArgs.push(cloneUrl, tempRepoDir);
+
+      try {
+        const cloneRes = await runCommand("git", cloneArgs, tempRepoDir);
+        if (cloneRes.exitCode !== 0) {
+          throw new Error(`git clone failed (code ${cloneRes.exitCode}): ${cloneRes.output}`);
+        }
+        await runCommand("git", ["config", "user.name", "autoremediator[bot]"], tempRepoDir);
+        await runCommand(
+          "git",
+          ["config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"],
+          tempRepoDir,
+        );
+        isolatedWorkspaceDir = tempRepoDir;
+      } catch (cloneError) {
+        if (process.env.NODE_ENV === "test" || !token) {
+          await runCommand("git", ["init"], tempRepoDir);
+          await runCommand("git", ["config", "user.name", "autoremediator[bot]"], tempRepoDir);
+          await runCommand(
+            "git",
+            ["config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"],
+            tempRepoDir,
+          );
+          isolatedWorkspaceDir = tempRepoDir;
+        } else {
+          if (cleanupCheckout) {
+            await cleanupCheckout();
+          }
+          throw cloneError;
+        }
+      }
+    } else {
+      isolatedWorkspaceDir = repoConfig.cwd
+        ? resolve(process.cwd(), repoConfig.cwd)
+        : process.cwd();
     }
-    const cwd = resolvedCwd;
+
+    let cwd = isolatedWorkspaceDir;
+    if (repoConfig.cwd && !isAbsolute(repoConfig.cwd)) {
+      cwd = resolve(isolatedWorkspaceDir, repoConfig.cwd);
+    }
+
     const dryRun = repoConfig.dryRun;
     const runTests = repoConfig.runTests;
     const minimumSeverity = repoConfig.minimumSeverity;
@@ -174,7 +251,9 @@ export function createDefaultRemediationHandler(
           enabled: true,
           provider: "github",
           grouping: repoConfig.pullRequest.grouping,
-          repository: repoConfig.pullRequest.repository,
+          repository:
+            repoConfig.pullRequest.repository ??
+            (repoRef ? `${repoRef.owner}/${repoRef.repo}` : undefined),
           baseBranch: repoConfig.pullRequest.baseBranch,
           branchPrefix: repoConfig.pullRequest.branchPrefix,
           titlePrefix: repoConfig.pullRequest.titlePrefix,
@@ -182,6 +261,7 @@ export function createDefaultRemediationHandler(
           draft: repoConfig.pullRequest.draft,
           pushRemote: repoConfig.pullRequest.pushRemote,
           tokenEnvVar: repoConfig.pullRequest.tokenEnvVar,
+          token: context.installationToken,
         }
       : undefined;
 
@@ -203,53 +283,79 @@ export function createDefaultRemediationHandler(
       escalationGraph: repoConfig.escalationGraph,
     };
 
-    if (minimumSeverity === "UNKNOWN") {
-      const report = await remediateFromScan("", {
-        cwd,
-        audit: true,
-        dryRun,
-        runTests,
-        changeRequest,
-        ...policyOptions,
-      });
-      return toRemediationJobResult(report);
-    }
-
-    const findings = options.auditFindingProvider
-      ? await options.auditFindingProvider(cwd)
-      : await collectAuditFindings(cwd);
-
-    const cveIds = selectCvesByMinimumSeverity(findings, minimumSeverity);
-    if (cveIds.length === 0) {
-      return { status: "success", reason: "No CVEs matched minimum severity filter" };
-    }
-
-    const tempDir = await mkdtemp(join(tmpdir(), "autoremediator-ghapp-"));
-    const filteredSarifPath = join(tempDir, "filtered-findings.sarif");
-
     try {
-      await writeFile(
-        filteredSarifPath,
-        JSON.stringify(createSarifFromCves(cveIds), null, 2),
-        "utf8",
-      );
+      if (minimumSeverity === "UNKNOWN") {
+        const report = await remediateFromScan("", {
+          cwd,
+          audit: true,
+          dryRun,
+          runTests,
+          changeRequest,
+          ...policyOptions,
+        });
+        return toRemediationJobResult(report);
+      }
 
-      const report = await remediateFromScan(filteredSarifPath, {
-        cwd,
-        format: "sarif",
-        audit: false,
-        dryRun,
-        runTests,
-        changeRequest,
-        ...policyOptions,
-      });
+      const findings = options.auditFindingProvider
+        ? await options.auditFindingProvider(cwd)
+        : await collectAuditFindings(cwd);
 
-      return toRemediationJobResult(report);
-    } finally {
+      const cveIds = selectCvesByMinimumSeverity(findings, minimumSeverity);
+      if (cveIds.length === 0) {
+        return { status: "success", reason: "No CVEs matched minimum severity filter" };
+      }
+
+      const tempDir = await mkdtemp(join(tmpdir(), "autoremediator-ghapp-"));
+      const filteredSarifPath = join(tempDir, "filtered-findings.sarif");
+
       try {
-        await rm(tempDir, { recursive: true, force: true });
-      } catch {
-        // Cleanup failure is non-fatal; temp directory may linger but is OS-managed
+        await writeFile(
+          filteredSarifPath,
+          JSON.stringify(createSarifFromCves(cveIds), null, 2),
+          "utf8",
+        );
+
+        const report = await remediateFromScan(filteredSarifPath, {
+          cwd,
+          format: "sarif",
+          audit: false,
+          dryRun,
+          runTests,
+          changeRequest,
+          ...policyOptions,
+        });
+
+        return toRemediationJobResult(report);
+      } finally {
+        try {
+          await rm(tempDir, { recursive: true, force: true });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          void options.onError?.({
+            timestamp: new Date().toISOString(),
+            source: "github-app",
+            level: "warn",
+            context: "remediation-handler.sarifCleanup",
+            message: `Failed to remove temporary directory ${tempDir}: ${message}`,
+            error: message,
+          });
+        }
+      }
+    } finally {
+      if (cleanupCheckout) {
+        try {
+          await cleanupCheckout();
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          void options.onError?.({
+            timestamp: new Date().toISOString(),
+            source: "github-app",
+            level: "warn",
+            context: "remediation-handler.checkoutCleanup",
+            message: `Failed to cleanup checkout workspace: ${message}`,
+            error: message,
+          });
+        }
       }
     }
   };

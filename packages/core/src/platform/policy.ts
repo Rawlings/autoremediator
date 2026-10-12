@@ -1,6 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { parse as yamlParse } from "yaml";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { parse as yamlParse, stringify as yamlStringify } from "yaml";
 import type {
   CveSeverity,
   DispositionPolicy,
@@ -65,15 +65,36 @@ export const DEFAULT_POLICY: AutoremediatorPolicy = {
 };
 
 export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPolicy {
-  const candidate = explicitPath ?? join(cwd, ".github", "autoremediator.yml");
-  if (!existsSync(candidate)) return DEFAULT_POLICY;
+  let content: string | undefined;
+  if (
+    explicitPath &&
+    (explicitPath.trim().startsWith("{") || explicitPath.trim().startsWith("---"))
+  ) {
+    content = explicitPath;
+  } else {
+    const candidate = explicitPath ?? join(cwd, ".github", "autoremediator.yml");
+    if (!existsSync(candidate)) return DEFAULT_POLICY;
+    try {
+      content = readFileSync(candidate, "utf8");
+    } catch {
+      return DEFAULT_POLICY;
+    }
+  }
 
   try {
-    const parsed = yamlParse(readFileSync(candidate, "utf8")) as Partial<AutoremediatorPolicy>;
+    const parsed = yamlParse(content) as Partial<AutoremediatorPolicy>;
     return {
       allowMajorBumps: parsed.allowMajorBumps ?? DEFAULT_POLICY.allowMajorBumps,
-      denyPackages: parsed.denyPackages ?? DEFAULT_POLICY.denyPackages,
-      allowPackages: parsed.allowPackages ?? DEFAULT_POLICY.allowPackages,
+      denyPackages: Array.isArray(parsed.denyPackages)
+        ? (parsed.denyPackages.filter(
+            (p): p is string => typeof p === "string" && p.trim().length > 0,
+          ) as string[])
+        : DEFAULT_POLICY.denyPackages,
+      allowPackages: Array.isArray(parsed.allowPackages)
+        ? (parsed.allowPackages.filter(
+            (p): p is string => typeof p === "string" && p.trim().length > 0,
+          ) as string[])
+        : DEFAULT_POLICY.allowPackages,
       constraints: {
         directDependenciesOnly:
           parsed.constraints?.directDependenciesOnly ??
@@ -146,24 +167,66 @@ export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPo
   }
 }
 
+function isPackageInList(list: unknown[] | undefined, packageName: string): boolean {
+  if (!list || !Array.isArray(list) || typeof packageName !== "string" || !packageName.trim()) {
+    return false;
+  }
+  const target = packageName.trim();
+  return list.some((pattern) => {
+    if (typeof pattern !== "string") return false;
+    const cleanPattern = pattern.trim();
+    if (!cleanPattern) return false;
+    if (cleanPattern === target) return true;
+    if (cleanPattern === "*") return true;
+    if (cleanPattern.endsWith("/*")) {
+      const prefix = cleanPattern.slice(0, -1);
+      return target.startsWith(prefix);
+    }
+    if (cleanPattern.endsWith("*")) {
+      const prefix = cleanPattern.slice(0, -1);
+      return target.startsWith(prefix);
+    }
+    return false;
+  });
+}
+
 export function isPackageAllowed(policy: AutoremediatorPolicy, packageName: string): boolean {
-  if (policy.denyPackages.includes(packageName)) return false;
-  if (policy.allowPackages.length > 0 && !policy.allowPackages.includes(packageName)) {
+  if (!policy || typeof policy !== "object" || typeof packageName !== "string") {
+    return true;
+  }
+  if (isPackageInList(policy.denyPackages, packageName)) return false;
+  const allowList = Array.isArray(policy.allowPackages)
+    ? policy.allowPackages.filter((p): p is string => typeof p === "string" && p.trim().length > 0)
+    : [];
+  if (allowList.length > 0 && !isPackageInList(allowList, packageName)) {
     return false;
   }
   return true;
 }
 
 export function isActiveSuppression(suppression: VexSuppression): boolean {
+  if (!suppression || typeof suppression !== "object") return false;
   if (!suppression.expiresAt) return true;
-  return new Date(suppression.expiresAt) > new Date();
+  const expires = new Date(suppression.expiresAt).getTime();
+  if (isNaN(expires)) return true;
+  return expires > Date.now();
 }
 
 export function findSuppression(
   policy: AutoremediatorPolicy,
   cveId: string,
 ): VexSuppression | undefined {
-  return (policy.suppressions ?? []).find((s) => s.cveId === cveId && isActiveSuppression(s));
+  if (!policy || !Array.isArray(policy.suppressions) || typeof cveId !== "string") {
+    return undefined;
+  }
+  return policy.suppressions.find(
+    (s) =>
+      s &&
+      typeof s === "object" &&
+      typeof s.cveId === "string" &&
+      s.cveId.toUpperCase() === cveId.toUpperCase() &&
+      isActiveSuppression(s),
+  );
 }
 
 export function loadSuppressionsFile(filePath: string): VexSuppression[] {
@@ -182,6 +245,9 @@ export function checkSlaBreach(
   publishedAt: string,
   slaPolicy: SlaPolicy,
 ): SlaBreach | null {
+  if (typeof severity !== "string" || !slaPolicy || typeof slaPolicy !== "object") {
+    return null;
+  }
   const severityKey = severity.toLowerCase() as keyof SlaPolicy;
   const deadlineHours = slaPolicy[severityKey];
   if (typeof deadlineHours !== "number") return null;
@@ -201,4 +267,103 @@ export function checkSlaBreach(
     deadlineAt: new Date(deadlineMs).toISOString(),
     hoursOverdue,
   };
+}
+
+/**
+ * Persists a VEX suppression entry to the repository policy configuration (.github/autoremediator.yml or explicit path).
+ * Preserves existing policy settings and updates or appends the suppression entry.
+ * Returns the resolved path where the policy was written.
+ */
+export function saveSuppressionToPolicy(
+  cwd: string,
+  suppression: VexSuppression,
+  explicitPath?: string,
+): string {
+  const targetPath = explicitPath ?? join(cwd, ".github", "autoremediator.yml");
+  const targetDir = dirname(targetPath);
+  if (!existsSync(targetDir)) {
+    mkdirSync(targetDir, { recursive: true });
+  }
+
+  let data: Record<string, unknown> = {};
+  if (existsSync(targetPath)) {
+    try {
+      const content = readFileSync(targetPath, "utf8");
+      const parsed = yamlParse(content);
+      if (parsed && typeof parsed === "object") {
+        data = parsed as Record<string, unknown>;
+      }
+    } catch {
+      data = {};
+    }
+  }
+
+  const existingSuppressions = Array.isArray(data.suppressions)
+    ? (data.suppressions as VexSuppression[])
+    : [];
+
+  const existingIndex = existingSuppressions.findIndex(
+    (s) =>
+      s &&
+      typeof s === "object" &&
+      typeof s.cveId === "string" &&
+      s.cveId.toUpperCase() === suppression.cveId.toUpperCase(),
+  );
+
+  if (existingIndex >= 0) {
+    existingSuppressions[existingIndex] = {
+      ...existingSuppressions[existingIndex],
+      ...suppression,
+    };
+  } else {
+    existingSuppressions.push(suppression);
+  }
+
+  data.suppressions = existingSuppressions;
+  writeFileSync(targetPath, yamlStringify(data), "utf8");
+  return targetPath;
+}
+
+/**
+ * Persists a VEX suppression entry to a dedicated suppressions YAML file.
+ */
+export function saveSuppressionToFile(filePath: string, suppression: VexSuppression): void {
+  const targetDir = dirname(filePath);
+  if (!existsSync(targetDir)) {
+    mkdirSync(targetDir, { recursive: true });
+  }
+
+  let data: { suppressions?: VexSuppression[] } = {};
+  if (existsSync(filePath)) {
+    try {
+      const content = readFileSync(filePath, "utf8");
+      const parsed = yamlParse(content);
+      if (parsed && typeof parsed === "object") {
+        data = parsed as { suppressions?: VexSuppression[] };
+      }
+    } catch {
+      data = {};
+    }
+  }
+
+  const existingSuppressions = Array.isArray(data.suppressions) ? data.suppressions : [];
+  const existingIndex = existingSuppressions.findIndex(
+    (s) =>
+      s &&
+      typeof s === "object" &&
+      typeof s.cveId === "string" &&
+      s.cveId.toUpperCase() === suppression.cveId.toUpperCase(),
+  );
+
+  if (existingIndex >= 0) {
+    existingSuppressions[existingIndex] = {
+      ...existingSuppressions[existingIndex],
+      ...suppression,
+    };
+  } else {
+    existingSuppressions.push(suppression);
+  }
+
+  data.suppressions = existingSuppressions;
+  writeFileSync(filePath, yamlStringify(data), "utf8");
 }

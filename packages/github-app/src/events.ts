@@ -234,7 +234,8 @@ export async function dispatchGitHubEvent(
       };
     }
 
-    const pullRequests = (checkRun?.pull_requests as Array<Record<string, unknown>> | undefined) ?? [];
+    const pullRequests =
+      (checkRun?.pull_requests as Array<Record<string, unknown>> | undefined) ?? [];
     const isAutoremediatorPr = pullRequests.some((pr) => {
       const head = pr.head as Record<string, unknown> | undefined;
       const ref = typeof head?.ref === "string" ? head.ref : "";
@@ -280,5 +281,4 @@ export async function dispatchGitHubEvent(
 
   void payload;
   return { status: "ignored", reason: `Unhandled event type: ${context.eventName}` };
-
 }

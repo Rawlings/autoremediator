@@ -1,4 +1,10 @@
+import { existsSync } from "node:fs";
 import type { RemediateOptions } from "../../platform/types.js";
+import {
+  loadIntelligenceSnapshot,
+  lookupSnapshotCve,
+  type IntelligenceSnapshot,
+} from "../../intelligence/sources/snapshot.js";
 import { applyPackageOverrideTool } from "../tools/apply-package-override/index.js";
 import { applyPatchFileTool } from "../tools/apply-patch-file/index.js";
 import { applyVersionBumpTool } from "../tools/apply-version-bump.js";
@@ -35,6 +41,11 @@ export function createRuntimeToolsForRun(options: RemediateOptions) {
           input.breakingChangeRefactor ??
           options.breakingChangeRefactor ??
           constraints.enableBreakingChangeRefactor,
+        proofOfFix: input.proofOfFix ?? options.proofOfFix,
+        requireProofOfFix:
+          input.requireProofOfFix ?? options.requireProofOfFix ?? constraints.requireProofOfFix,
+        reproductionTest: input.reproductionTest ?? options.reproductionTest,
+        patchesDir: input.patchesDir ?? options.patchesDir,
         dryRun: preview ? true : input.dryRun,
       }),
   };
@@ -49,6 +60,11 @@ export function createRuntimeToolsForRun(options: RemediateOptions) {
         installPreferOffline: constraints.installPreferOffline,
         enforceFrozenLockfile: constraints.enforceFrozenLockfile,
         workspace: constraints.workspace,
+        proofOfFix: input.proofOfFix ?? options.proofOfFix,
+        requireProofOfFix:
+          input.requireProofOfFix ?? options.requireProofOfFix ?? constraints.requireProofOfFix,
+        reproductionTest: input.reproductionTest ?? options.reproductionTest,
+        patchesDir: input.patchesDir ?? options.patchesDir,
         dryRun: preview ? true : input.dryRun,
       }),
   };
@@ -65,9 +81,9 @@ export function createRuntimeToolsForRun(options: RemediateOptions) {
         workspace: constraints.workspace,
         proofOfFix: input.proofOfFix ?? options.proofOfFix,
         requireProofOfFix:
-          input.requireProofOfFix ??
-          options.requireProofOfFix ??
-          constraints.requireProofOfFix,
+          input.requireProofOfFix ?? options.requireProofOfFix ?? constraints.requireProofOfFix,
+        reproductionTest: input.reproductionTest ?? options.reproductionTest,
+        patchesDir: input.patchesDir ?? options.patchesDir,
         dryRun: preview ? true : input.dryRun,
       }),
   };
@@ -81,18 +97,55 @@ export function createRuntimeToolsForRun(options: RemediateOptions) {
   });
 
   if (options.offlineIntelligence) {
-    const offlineMessage = options.intelligenceSnapshotPath
-      ? `Offline mode: intelligence lookup via snapshot only. No live network calls.`
-      : `Offline mode: intelligence lookup skipped (no snapshot provided).`;
+    let snapshot: IntelligenceSnapshot | null = null;
+    if (options.intelligenceSnapshotPath && existsSync(options.intelligenceSnapshotPath)) {
+      try {
+        snapshot = loadIntelligenceSnapshot(options.intelligenceSnapshotPath);
+      } catch (err) {
+        const _ignored = err;
+        snapshot = null;
+      }
+    }
 
     (tools as Record<string, unknown>)["lookup-cve"] = {
       ...((tools as Record<string, unknown>)["lookup-cve"] as Record<string, unknown>),
-      execute: async (_input: Record<string, unknown>) => ({
-        cveId: ((_input as { cveId?: string }).cveId ?? "unknown").toUpperCase(),
-        found: false,
-        offlineMode: true,
-        message: offlineMessage,
-      }),
+      execute: async (_input: Record<string, unknown>) => {
+        const cveId = ((_input as { cveId?: string }).cveId ?? "unknown").toUpperCase();
+        if (snapshot) {
+          const details = lookupSnapshotCve(snapshot, cveId);
+          if (details) {
+            return {
+              success: true,
+              found: true,
+              cveId,
+              offlineMode: true,
+              data: details,
+              message: `Offline mode: intelligence lookup resolved from snapshot for ${cveId}.`,
+            };
+          }
+          return {
+            success: false,
+            found: false,
+            cveId,
+            offlineMode: true,
+            error: `Offline mode: ${cveId} not found in intelligence snapshot.`,
+            message: `Offline mode: ${cveId} not found in intelligence snapshot.`,
+          };
+        }
+
+        const snapshotErrorMsg = options.intelligenceSnapshotPath
+          ? `Offline mode: intelligence snapshot file not found or invalid at ${options.intelligenceSnapshotPath}.`
+          : `Offline mode: intelligence lookup skipped (no snapshot provided).`;
+
+        return {
+          success: false,
+          found: false,
+          cveId,
+          offlineMode: true,
+          error: snapshotErrorMsg,
+          message: snapshotErrorMsg,
+        };
+      },
     };
   }
 

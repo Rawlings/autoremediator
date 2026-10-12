@@ -11,6 +11,7 @@ import type {
   UnresolvedReason,
 } from "../../platform/types.js";
 import { getPatchConfidenceThreshold } from "../../platform/config.js";
+import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
 
 function resolvePatchProvider(provider: "remote" | "local"): "remote" | "local" {
   if (provider === "local") {
@@ -32,7 +33,8 @@ export function shouldAttemptPatchFallback(
     result.unresolvedReason === "override-apply-failed" ||
     result.unresolvedReason === "validation-failed" ||
     result.unresolvedReason === "major-bump-required" ||
-    result.unresolvedReason === "transitive-dependency"
+    result.unresolvedReason === "transitive-dependency" ||
+    result.unresolvedReason === "proof-of-fix-failed"
   );
 }
 
@@ -69,6 +71,24 @@ export async function tryLocalPatchFallback(params: {
   const usage: LlmUsageMetrics[] = [];
   let steps = 0;
   let consensusVerdict: ConsensusVerdict | undefined;
+
+  const loadedPolicy = loadPolicy(params.cwd, params.policy);
+  if (!isPackageAllowed(loadedPolicy, params.packageName)) {
+    return {
+      steps: 0,
+      usage,
+      result: {
+        packageName: params.packageName,
+        strategy: "none",
+        fromVersion: params.vulnerableVersion,
+        applied: false,
+        dryRun: params.dryRun,
+        dependencyScope: params.dependencyScope,
+        unresolvedReason: "policy-blocked",
+        message: `Policy denyPackages blocked patch fallback for package "${params.packageName}".`,
+      },
+    };
+  }
 
   const sourceResult = await fetchPackageSourceTool.execute({
     packageName: params.packageName,
@@ -269,9 +289,10 @@ export async function tryLocalPatchFallback(params: {
       consensusVerdict,
       unresolvedReason:
         !applyResult.applied && !applyResult.dryRun
-          ? applyResult.validation?.passed === false
-            ? "patch-validation-failed"
-            : "patch-apply-failed"
+          ? (applyResult.unresolvedReason ??
+            (applyResult.validation?.passed === false
+              ? "patch-validation-failed"
+              : "patch-apply-failed"))
           : undefined,
       message: applyResult.message ?? applyResult.error ?? "Patch-file strategy finished.",
       validation:

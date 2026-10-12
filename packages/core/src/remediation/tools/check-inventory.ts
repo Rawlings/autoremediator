@@ -18,12 +18,52 @@ import {
 } from "../../platform/package-manager/index.js";
 import { resolveDenoInventory } from "../../platform/package-manager/list-parser.js";
 import { loadPolicy } from "../../platform/policy.js";
+import semver from "semver";
 import { findDeclaringWorkspacePackage } from "../../platform/workspace.js";
 
 interface PackageJson {
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
+}
+
+export function resolveInventoryVersion(rawVersion: string): string {
+  const trimmed = rawVersion.trim();
+  if (semver.valid(trimmed)) {
+    return semver.clean(trimmed) ?? trimmed;
+  }
+
+  let spec = trimmed;
+  if (spec.startsWith("npm:") && spec.includes("@")) {
+    spec = spec.slice(spec.lastIndexOf("@") + 1);
+  }
+  if (spec.startsWith("workspace:")) {
+    spec = spec.slice("workspace:".length).trim();
+  }
+
+  if (semver.valid(spec)) {
+    return semver.clean(spec) ?? spec;
+  }
+
+  try {
+    const min = semver.minVersion(spec);
+    if (min?.version && semver.valid(min.version)) {
+      return min.version;
+    }
+  } catch {
+    // Invalid semver range syntax
+  }
+
+  try {
+    const coerced = semver.coerce(spec);
+    if (coerced?.version && semver.valid(coerced.version)) {
+      return coerced.version;
+    }
+  } catch {
+    // Coercion failure
+  }
+
+  return semver.clean(trimmed) ?? trimmed;
 }
 
 export const checkInventoryTool = defineTool({
@@ -103,14 +143,15 @@ export const checkInventoryTool = defineTool({
     }
 
     if (packages.length === 0) {
-      // Fallback: only direct deps from package.json (best-effort versions)
+      // Fallback: direct deps from package.json (best-effort versions)
       const allDeps = {
         ...pkgJson.dependencies,
         ...pkgJson.devDependencies,
+        ...pkgJson.peerDependencies,
       };
-      for (const [name, version] of Object.entries(allDeps)) {
-        const cleaned = version.replace(/^[\^~>=<]+/, "").trim();
-        packages.push({ name, version: cleaned, type: "direct" });
+      for (const [name, rawVersion] of Object.entries(allDeps)) {
+        const version = resolveInventoryVersion(rawVersion);
+        packages.push({ name, version, type: "direct" });
       }
     }
 

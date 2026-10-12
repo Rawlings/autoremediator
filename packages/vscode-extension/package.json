@@ -28,12 +28,14 @@
   "publisher": "rawlings",
   "main": "./dist/extension.js",
   "scripts": {
+    "clean": "rm -rf dist *.vsix",
     "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=dist/extension.js --sourcemap",
     "watch": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=dist/extension.js --sourcemap --watch",
     "typecheck": "tsc --noEmit",
     "build:vsix": "pnpm build && pnpm package",
     "package": "vsce package --no-dependencies",
-    "publish": "vsce publish --no-dependencies"
+    "publish": "vsce publish --no-dependencies",
+    "lint": "oxlint"
   },
   "devDependencies": {
     "@types/node": "catalog:",

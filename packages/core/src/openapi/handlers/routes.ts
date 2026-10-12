@@ -25,6 +25,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
 
   routes.set("POST /remediate", async (req, res) => {
     const body = await readJsonBody<{ cveId?: unknown; options?: unknown }>(req, res);
+    if (body === undefined) return;
     const cveId = requireStringField(
       body as Record<string, unknown> | undefined,
       "cveId",
@@ -40,6 +41,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
 
   routes.set("POST /plan-remediation", async (req, res) => {
     const body = await readJsonBody<{ cveId?: unknown; options?: unknown }>(req, res);
+    if (body === undefined) return;
     const cveId = requireStringField(
       body as Record<string, unknown> | undefined,
       "cveId",
@@ -55,6 +57,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
 
   routes.set("POST /remediate-from-scan", async (req, res) => {
     const body = await readJsonBody<{ inputPath?: unknown; options?: unknown }>(req, res);
+    if (body === undefined) return;
     const inputPath = requireStringField(
       body as Record<string, unknown> | undefined,
       "inputPath",
@@ -70,7 +73,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
 
   routes.set("POST /remediate-portfolio", async (req, res) => {
     const body = await readJsonBody<{ targets?: unknown; options?: unknown }>(req, res);
-    if (!body) return;
+    if (body === undefined) return;
     if (!Array.isArray(body.targets)) {
       sendJson(res, 400, { error: "targets is required (array)" });
       return;
@@ -86,7 +89,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
 
   routes.set("POST /patches/list", async (req, res) => {
     const body = await readJsonBody<{ options?: unknown }>(req, res);
-    if (!body) return;
+    if (body === undefined) return;
     await runRequest(res, () =>
       deps.listPatchArtifactsFn(body.options as PatchArtifactQueryOptions),
     );
@@ -94,6 +97,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
 
   routes.set("POST /patches/inspect", async (req, res) => {
     const body = await readJsonBody<{ patchFilePath?: unknown; options?: unknown }>(req, res);
+    if (body === undefined) return;
     const patchFilePath = requireStringField(
       body as Record<string, unknown> | undefined,
       "patchFilePath",
@@ -108,6 +112,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
 
   routes.set("POST /patches/validate", async (req, res) => {
     const body = await readJsonBody<{ patchFilePath?: unknown; options?: unknown }>(req, res);
+    if (body === undefined) return;
     const patchFilePath = requireStringField(
       body as Record<string, unknown> | undefined,
       "patchFilePath",
@@ -122,7 +127,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
 
   routes.set("POST /update-outdated", async (req, res) => {
     const body = await readJsonBody<{ options?: unknown }>(req, res);
-    if (!body) return;
+    if (body === undefined) return;
     await runRequest(res, () =>
       deps.updateOutdatedFn(withOpenApiSource(body.options) as UpdateOutdatedOptions),
     );
@@ -133,7 +138,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
       req,
       res,
     );
-    if (!body) return;
+    if (body === undefined) return;
     if (!body.report || typeof body.report !== "object") {
       sendJson(res, 400, { error: "report is required (object)" });
       return;
@@ -147,6 +152,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
 
   routes.set("POST /jobs/remediate", async (req, res) => {
     const body = await readJsonBody<{ cveId?: unknown; options?: unknown }>(req, res);
+    if (body === undefined) return;
     const cveId = requireStringField(
       body as Record<string, unknown> | undefined,
       "cveId",
@@ -163,6 +169,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
 
   routes.set("POST /jobs/scan", async (req, res) => {
     const body = await readJsonBody<{ inputPath?: unknown; options?: unknown }>(req, res);
+    if (body === undefined) return;
     const inputPath = requireStringField(
       body as Record<string, unknown> | undefined,
       "inputPath",
@@ -179,7 +186,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
 
   routes.set("POST /jobs/portfolio", async (req, res) => {
     const body = await readJsonBody<{ targets?: unknown; options?: unknown }>(req, res);
-    if (!body) return;
+    if (body === undefined) return;
     if (!Array.isArray(body.targets)) {
       sendJson(res, 400, { error: "targets is required (array)" });
       return;

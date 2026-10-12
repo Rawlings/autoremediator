@@ -1,9 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  healPullRequest,
-  repairFileContent,
-  resetHealingAttempts,
-} from "./pr-healer.js";
+import { healPullRequest, repairFileContent, resetHealingAttempts } from "./pr-healer.js";
 import { DEFAULT_REPO_CONFIG } from "../types.js";
 
 describe("PR Auto-Healer", () => {
@@ -54,7 +50,7 @@ describe("PR Auto-Healer", () => {
       expect(repaired).toContain("useState");
     });
 
-    it("inserts @ts-expect-error fallback when typecheck error has line number", () => {
+    it("does not inject @ts-expect-error fallback when typecheck error has line number", () => {
       const code = `const x: number = "hello";\n`;
       const findings = [
         {
@@ -66,8 +62,9 @@ describe("PR Auto-Healer", () => {
         },
       ];
       const repaired = repairFileContent(code, findings);
-      expect(repaired).toContain("// @ts-expect-error [autoremediator-heal]: TS2322");
-      expect(repaired).toContain('const x: number = "hello";');
+      expect(repaired).not.toContain("@ts-expect-error");
+      expect(repaired).not.toContain("@ts-ignore");
+      expect(repaired).toBe(code);
     });
   });
 
@@ -169,7 +166,6 @@ describe("PR Auto-Healer", () => {
         maxHealingAttempts: 2,
       };
 
-      const key = "test-owner/test-repo#42";
       // Simulate attempts reached
       const diagnostic = {
         findings: [{ filePath: "src/app.ts", message: "fail", category: "typescript" as const }],

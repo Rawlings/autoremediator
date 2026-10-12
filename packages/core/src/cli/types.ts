@@ -74,7 +74,6 @@ export interface CommandOptions {
   breakingChangeRefactor?: boolean;
 }
 
-
 export function isCveId(value: string): boolean {
   return (
     /^CVE-\d{4}-\d{1,7}$/i.test(value) || /^GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/i.test(value)

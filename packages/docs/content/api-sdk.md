@@ -366,6 +366,7 @@ The value is a semver range string (e.g. `">=1.0.0 <1.2.6"`) sourced from `Affec
 ### `PatchResult.proofOfFix`
 
 `PatchResult` exposes `proofOfFix?: ProofOfFixVerification` detailing exploit reproduction and neutralization:
+
 - `status`: `"passed"` | `"failed"` | `"skipped"`
 - `negativePhase`: execution result on unpatched baseline (expected failure)
 - `positivePhase`: execution result on patched code (expected pass)

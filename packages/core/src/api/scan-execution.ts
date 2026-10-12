@@ -2,7 +2,6 @@ import type { RemediationReport } from "../platform/types.js";
 import type { ProvenanceContext } from "../platform/types.js";
 import { addEvidenceStep } from "../platform/evidence.js";
 import type { EvidenceLog } from "../platform/evidence.js";
-import { isPackageAllowed } from "../platform/policy.js";
 import type { AutoremediatorPolicy } from "../platform/policy.js";
 import type { ScanOptions } from "./contracts.js";
 import { remediate } from "./remediate/index.js";
@@ -49,10 +48,6 @@ export async function executeScanRemediations(params: {
         source: params.provenance.source,
         constraints: params.constraints,
       });
-
-      report.results = report.results.filter((result) =>
-        isPackageAllowed(params.policy, result.packageName),
-      );
 
       for (const result of report.results) {
         if (result.strategy === "patch-file") {

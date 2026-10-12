@@ -1,6 +1,7 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "oxc", "node", "import", "promise"],
+  "plugins": ["typescript", "unicorn", "oxc", "node", "import", "promise", "vitest"],
+  "ignorePatterns": [".agents/**", "e2e/**"],
   "categories": {
     "correctness": "error"
   },
@@ -9,6 +10,14 @@
     "typeCheck": true
   },
   "rules": {
+    "typescript/ban-ts-comment": [
+      "error",
+      {
+        "ts-expect-error": true,
+        "ts-ignore": true,
+        "ts-nocheck": true
+      }
+    ],
     "typescript/no-floating-promises": "error",
     "typescript/await-thenable": "error",
     "typescript/no-misused-promises": "error",
@@ -27,7 +36,14 @@
     "unicorn/prefer-string-starts-ends-with": "warn",
     "promise/no-return-wrap": "error",
     "promise/param-names": "error",
-    "node/no-exports-assign": "error"
+    "node/no-exports-assign": "error",
+    "vitest/no-focused-tests": "error",
+    "vitest/no-identical-title": "error",
+    "vitest/valid-expect": "error",
+    "vitest/valid-title": "error",
+    "vitest/valid-describe-callback": "error",
+    "vitest/require-mock-type-parameters": "off",
+    "vitest/require-to-throw-message": "off"
   },
   "overrides": [
     {
@@ -41,7 +57,7 @@
       }
     },
     {
-      "files": ["**/*.test.ts", "**/*.spec.ts", "**/tests/**"],
+      "files": ["**/*.test.*", "**/*.spec.*", "**/tests/**", "**/__tests__/**"],
       "rules": {
         "typescript/no-explicit-any": "off",
         "typescript/no-unnecessary-type-assertion": "off"

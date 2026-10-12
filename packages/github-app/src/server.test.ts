@@ -3,14 +3,120 @@ import type { AddressInfo } from "node:net";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { createGitHubAppServer } from "./server.js";
+import { PassThrough } from "node:stream";
+import { createGitHubAppServer as originalCreateGitHubAppServer } from "./server.js";
 import { computeWebhookSignature } from "./signature.js";
 import { createFileAppStateStore, createInMemoryAppStateStore } from "./state.js";
+
+const serverMap = new Map<string, ReturnType<typeof originalCreateGitHubAppServer>>();
+
+async function dispatch(
+  server: ReturnType<typeof originalCreateGitHubAppServer>,
+  urlPath: string,
+  options: RequestInit = {},
+): Promise<Response> {
+  const req = new PassThrough() as any;
+  req.method = options.method ?? "GET";
+  req.url = urlPath;
+  const inHeaders: Record<string, string> = {};
+  if (options.headers) {
+    if (typeof (options.headers as any).entries === "function") {
+      for (const [k, v] of (options.headers as any).entries()) {
+        inHeaders[k.toLowerCase()] = v;
+      }
+    } else {
+      for (const [k, v] of Object.entries(options.headers)) {
+        inHeaders[k.toLowerCase()] = String(v);
+      }
+    }
+  }
+  req.headers = inHeaders;
+
+  const res = new PassThrough() as any;
+  res.statusCode = 200;
+  const outHeaders: Record<string, string> = {};
+  res.setHeader = (k: string, v: string) => {
+    outHeaders[k.toLowerCase()] = String(v);
+  };
+  res.getHeader = (k: string) => outHeaders[k.toLowerCase()];
+  res.writeHead = (code: number, hdrs?: Record<string, string>) => {
+    res.statusCode = code;
+    if (hdrs) {
+      for (const [k, v] of Object.entries(hdrs)) {
+        outHeaders[k.toLowerCase()] = String(v);
+      }
+    }
+  };
+
+  const promise = new Promise<Response>((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    res.on("data", (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+    res.on("end", () => {
+      const buffer = Buffer.concat(chunks);
+      resolve(
+        new Response(buffer, {
+          status: res.statusCode,
+          headers: outHeaders,
+        }),
+      );
+    });
+    res.on("error", reject);
+  });
+
+  server.emit("request", req, res);
+  if (options.body) {
+    if (typeof options.body === "string" || Buffer.isBuffer(options.body)) {
+      req.write(options.body);
+    }
+  }
+  req.end();
+
+  return promise;
+}
+
+const originalFetch = globalThis.fetch;
+globalThis.fetch = (async (
+  input: Parameters<typeof fetch>[0],
+  init?: Parameters<typeof fetch>[1],
+) => {
+  const urlStr =
+    typeof input === "string"
+      ? input
+      : input instanceof URL
+        ? input.toString()
+        : (input as { url: string }).url;
+  for (const [baseUrl, srv] of serverMap.entries()) {
+    if (urlStr.startsWith(baseUrl)) {
+      const path = urlStr.slice(baseUrl.length);
+      return dispatch(srv, path || "/", init);
+    }
+  }
+  return originalFetch(input, init);
+}) as typeof fetch;
+
+function createGitHubAppServer(
+  ...args: Parameters<typeof originalCreateGitHubAppServer>
+): ReturnType<typeof originalCreateGitHubAppServer> {
+  const server = originalCreateGitHubAppServer(...args);
+  const origListen = server.listen.bind(server);
+  server.listen = function (...lArgs: any[]) {
+    const ret = origListen(...lArgs);
+    server.once("listening", () => {
+      const addr = server.address() as AddressInfo;
+      if (addr && typeof addr === "object" && "port" in addr) {
+        serverMap.set(`http://127.0.0.1:${addr.port}`, server);
+      }
+    });
+    return ret;
+  } as any;
+  return server;
+}
 
 const secret = "webhook-secret";
 const serversToClose: Array<ReturnType<typeof createGitHubAppServer>> = [];
 
 afterEach(async () => {
+  serverMap.clear();
   await Promise.all(
     serversToClose.splice(0).map(
       (server) =>
@@ -258,6 +364,124 @@ describe("github app server", () => {
     expect(healthPayload.counters.jobsFailed).toBe(0);
     expect(healthPayload.queue.depth).toBeGreaterThanOrEqual(1);
     expect(healthPayload.queue.completed).toBeGreaterThanOrEqual(1);
+  });
+
+  it("increments jobsFailed and marks queue job failed when remediation result status is failed", async () => {
+    const stateStore = createInMemoryAppStateStore();
+    stateStore.markInstallationActive(555);
+
+    const server = createGitHubAppServer({
+      webhookSecret: secret,
+      stateStore,
+      queuePollIntervalMs: 10,
+      queueMaxAttempts: 1,
+      onRemediationRequested: async () => ({
+        status: "failed",
+        reason: "Exploit repair failed truthfully",
+      }),
+    });
+    serversToClose.push(server);
+
+    await new Promise<void>((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(0, () => resolve());
+    });
+
+    const address = server.address() as AddressInfo;
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    const payload = JSON.stringify({ action: "requested", installation: { id: 555 } });
+    const signature = computeWebhookSignature(secret, payload);
+
+    const webhookResponse = await fetch(`${baseUrl}/webhook`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-github-event": "check_suite",
+        "x-github-delivery": "delivery-fail-1",
+        "x-hub-signature-256": signature,
+      },
+      body: payload,
+    });
+    expect(webhookResponse.status).toBe(202);
+
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
+    const health = await fetch(`${baseUrl}/health`);
+    const healthPayload = (await health.json()) as {
+      counters: {
+        jobsDequeued: number;
+        jobsSucceeded: number;
+        jobsRetried: number;
+        jobsFailed: number;
+      };
+      queue: {
+        depth: number;
+        completed: number;
+        failed: number;
+      };
+    };
+
+    expect(healthPayload.counters.jobsDequeued).toBeGreaterThanOrEqual(1);
+    expect(healthPayload.counters.jobsSucceeded).toBe(0);
+    expect(healthPayload.counters.jobsFailed).toBe(1);
+    expect(healthPayload.queue.failed).toBe(1);
+    expect(healthPayload.queue.completed).toBe(0);
+  });
+
+  it("increments jobsFailed when remediationHandler is undefined rather than falsely succeeding", async () => {
+    const stateStore = createInMemoryAppStateStore();
+    stateStore.markInstallationActive(556);
+
+    const server = createGitHubAppServer({
+      webhookSecret: secret,
+      stateStore,
+      queuePollIntervalMs: 10,
+      queueMaxAttempts: 1,
+      enableDefaultRemediationHandler: false,
+    });
+    serversToClose.push(server);
+
+    await new Promise<void>((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(0, () => resolve());
+    });
+
+    const address = server.address() as AddressInfo;
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    const payload = JSON.stringify({ action: "requested", installation: { id: 556 } });
+    const signature = computeWebhookSignature(secret, payload);
+
+    const webhookResponse = await fetch(`${baseUrl}/webhook`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-github-event": "check_suite",
+        "x-github-delivery": "delivery-nohandler-1",
+        "x-hub-signature-256": signature,
+      },
+      body: payload,
+    });
+    expect(webhookResponse.status).toBe(202);
+
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
+    const health = await fetch(`${baseUrl}/health`);
+    const healthPayload = (await health.json()) as {
+      counters: {
+        jobsDequeued: number;
+        jobsSucceeded: number;
+        jobsFailed: number;
+      };
+      queue: {
+        failed: number;
+        completed: number;
+      };
+    };
+
+    expect(healthPayload.counters.jobsSucceeded).toBe(0);
+    expect(healthPayload.counters.jobsFailed).toBe(1);
+    expect(healthPayload.queue.failed).toBe(1);
+    expect(healthPayload.queue.completed).toBe(0);
   });
 
   it("tracks ignored and duplicate buckets in status counters", async () => {

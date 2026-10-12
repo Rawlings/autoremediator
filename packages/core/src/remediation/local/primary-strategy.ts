@@ -6,7 +6,6 @@ import type {
   PackageManager,
   PatchResult,
   RemediationConstraints,
-  SupplyChainPolicy,
   VulnerablePackage,
 } from "../../platform/types.js";
 
@@ -18,8 +17,24 @@ export async function resolvePrimaryResult(params: {
   policy: string;
   runTests: boolean;
   constraints: RemediationConstraints;
+  proofOfFix?: boolean | string;
+  requireProofOfFix?: boolean;
+  reproductionTest?: string;
+  patchesDir?: string;
 }): Promise<{ result: PatchResult; steps: number }> {
-  const { vulnerable, cwd, packageManager, dryRun, policy, runTests, constraints } = params;
+  const {
+    vulnerable,
+    cwd,
+    packageManager,
+    dryRun,
+    policy,
+    runTests,
+    constraints,
+    proofOfFix,
+    requireProofOfFix = constraints.requireProofOfFix,
+    reproductionTest,
+    patchesDir,
+  } = params;
   const pkg = vulnerable.installed;
   const firstPatchedVersion = vulnerable.affected.firstPatchedVersion;
 
@@ -127,6 +142,10 @@ export async function resolvePrimaryResult(params: {
       installPreferOffline: constraints.installPreferOffline,
       enforceFrozenLockfile: constraints.enforceFrozenLockfile,
       workspace: constraints.workspace,
+      proofOfFix,
+      requireProofOfFix,
+      reproductionTest,
+      patchesDir,
     });
 
     return {
@@ -210,6 +229,10 @@ export async function resolvePrimaryResult(params: {
     enforceFrozenLockfile: constraints.enforceFrozenLockfile,
     workspace: constraints.workspace,
     breakingChangeRefactor: constraints.enableBreakingChangeRefactor,
+    proofOfFix,
+    requireProofOfFix,
+    reproductionTest,
+    patchesDir,
   });
 
   return {

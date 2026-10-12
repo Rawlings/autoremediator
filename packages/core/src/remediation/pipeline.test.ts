@@ -89,7 +89,19 @@ describe("runRemediationPipeline tool gating", () => {
     mocked.getPatchConfidenceThreshold.mockReturnValue(0.7);
     mocked.createModel.mockResolvedValue({ modelId: "fake-model" });
     mocked.detectPackageManager.mockReturnValue("npm");
-    mocked.generateText.mockResolvedValue({ text: "done" });
+    mocked.generateText.mockImplementation(async (opts: any) => {
+      if (opts.tools?.["apply-version-bump"]) {
+        const res = await opts.tools["apply-version-bump"].execute({
+          packageName: "lodash",
+          fromVersion: "4.17.0",
+          toVersion: "4.17.21",
+        });
+        opts.onStepFinish?.({
+          toolResults: [{ toolName: "apply-version-bump", result: res }],
+        });
+      }
+      return { text: "Completed remediation step." };
+    });
     mocked.lookupCveGitHub.mockResolvedValue([]);
     mocked.mergeGhDataIntoCveDetails.mockImplementation((details: unknown) => details);
     mocked.enrichWithNvd.mockImplementation(async (details: unknown) => details);
@@ -108,7 +120,15 @@ describe("runRemediationPipeline tool gating", () => {
   });
 
   it("omits override and patch fallback tools when preferVersionBump is enabled", async () => {
-    await runRemediationPipeline("CVE-2021-23337", {
+    mocked.applyVersionBumpExecute.mockResolvedValueOnce({
+      packageName: "lodash",
+      fromVersion: "4.17.0",
+      toVersion: "4.17.21",
+      strategy: "version-bump",
+      applied: true,
+    });
+
+    const report = await runRemediationPipeline("CVE-2021-23337", {
       cwd: "/tmp/project",
       constraints: { preferVersionBump: true },
     });
@@ -119,10 +139,21 @@ describe("runRemediationPipeline tool gating", () => {
     expect(call.tools["fetch-package-source"]).toBeUndefined();
     expect(call.tools["generate-patch"]).toBeUndefined();
     expect(call.tools["apply-patch-file"]).toBeUndefined();
+    expect(report.agentSteps).toBe(1);
+    expect(report.results[0]?.strategy).toBe("version-bump");
+    expect(report.results[0]?.applied).toBe(true);
   });
 
   it("omits override tool when directDependenciesOnly is enabled", async () => {
-    await runRemediationPipeline("CVE-2021-23337", {
+    mocked.applyVersionBumpExecute.mockResolvedValueOnce({
+      packageName: "lodash",
+      fromVersion: "4.17.0",
+      toVersion: "4.17.21",
+      strategy: "version-bump",
+      applied: true,
+    });
+
+    const report = await runRemediationPipeline("CVE-2021-23337", {
       cwd: "/tmp/project",
       constraints: { directDependenciesOnly: true },
     });
@@ -133,6 +164,7 @@ describe("runRemediationPipeline tool gating", () => {
     expect(call.tools["fetch-package-source"]).toBeDefined();
     expect(call.tools["generate-patch"]).toBeDefined();
     expect(call.tools["apply-patch-file"]).toBeDefined();
+    expect(report.agentSteps).toBe(1);
   });
 
   it("uses patch fallback in local mode when no safe version exists", async () => {

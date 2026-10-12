@@ -3,7 +3,12 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "nod
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { findPackageCallSites } from "./call-site-finder.js";
-import { refactorConsumerCallSites, revertRefactorSnapshots, parseCompilerDiagnostics } from "./refactor-agent.js";
+import {
+  refactorConsumerCallSites,
+  revertRefactorSnapshots,
+  parseCompilerDiagnostics,
+  transformCallArguments,
+} from "./refactor-agent.js";
 
 describe("breaking-change refactoring engine", () => {
   let tempDir: string;
@@ -34,9 +39,7 @@ describe("breaking-change refactoring engine", () => {
     expect(callSites).toHaveLength(1);
     expect(callSites[0]?.filePath).toBe(fileA);
     expect(callSites[0]?.imports).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ localName: "chalk", isDefault: true }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ localName: "chalk", isDefault: true })]),
     );
   });
 
@@ -132,5 +135,120 @@ src/utils.ts:8:10 - error TS2614: Module '"chalk"' has no default export.
     });
 
     expect(readFileSync(fileA, "utf8")).toBe("original content");
+  });
+
+  it("truthfully returns applied: false without injecting @ts-expect-error on unmatched diagnostic", async () => {
+    const srcDir = join(tempDir, "src");
+    mkdirSync(srcDir, { recursive: true });
+
+    const fileA = join(srcDir, "unmatched.ts");
+    const originalCode = `import { foo } from "some-pkg";\nconst x: number = foo();\n`;
+    writeFileSync(fileA, originalCode, "utf8");
+
+    const callSites = findPackageCallSites(tempDir, "some-pkg");
+    const result = await refactorConsumerCallSites({
+      cwd: tempDir,
+      packageName: "some-pkg",
+      fromVersion: "1.0.0",
+      toVersion: "2.0.0",
+      diagnosticError: `src/unmatched.ts:2:7 - error TS2322: Type 'string' is not assignable to type 'number'.`,
+      callSites,
+    });
+
+    expect(result.applied).toBe(false);
+    expect(result.refactoredFiles).toHaveLength(0);
+    expect(result.error).toContain("No automated codemod pattern matched");
+
+    const fileContent = readFileSync(fileA, "utf8");
+    expect(fileContent).toBe(originalCode);
+    expect(fileContent).not.toContain("@ts-expect-error");
+    expect(fileContent).not.toContain("@ts-ignore");
+  });
+
+  it("transforms method call with arguments preserved across multiple lines", async () => {
+    const srcDir = join(tempDir, "src");
+    mkdirSync(srcDir, { recursive: true });
+
+    const fileA = join(srcDir, "multiline.ts");
+    const originalCode = `import rimraf from "rimraf";\nrimraf.sync(\n  "/path/to/dir",\n  { maxRetries: 3 }\n);\n`;
+    writeFileSync(fileA, originalCode, "utf8");
+
+    const callSites = findPackageCallSites(tempDir, "rimraf");
+    const result = await refactorConsumerCallSites({
+      cwd: tempDir,
+      packageName: "rimraf",
+      fromVersion: "3.0.2",
+      toVersion: "5.0.0",
+      diagnosticError: `Property 'sync' does not exist on type 'typeof import("rimraf")'`,
+      callSites,
+    });
+
+    expect(result.applied).toBe(true);
+    const updated = readFileSync(fileA, "utf8");
+    expect(updated).toContain('import { rimrafSync } from "rimraf";');
+    expect(updated).toContain("rimrafSync(");
+    expect(updated).toContain(`"/path/to/dir",`);
+    expect(updated).toContain(`{ maxRetries: 3 }`);
+    expect(updated).not.toContain("@ts-expect-error");
+  });
+
+  it("handles aliased imports in AST refactoring", async () => {
+    const srcDir = join(tempDir, "src");
+    mkdirSync(srcDir, { recursive: true });
+
+    const fileA = join(srcDir, "aliased.ts");
+    const originalCode = `import rm from "rimraf";\nrm.sync("/tmp/target");\n`;
+    writeFileSync(fileA, originalCode, "utf8");
+
+    const callSites = findPackageCallSites(tempDir, "rimraf");
+    const result = await refactorConsumerCallSites({
+      cwd: tempDir,
+      packageName: "rimraf",
+      fromVersion: "3.0.2",
+      toVersion: "5.0.0",
+      diagnosticError: `Property 'sync' does not exist on type 'typeof import("rimraf")'`,
+      callSites,
+    });
+
+    expect(result.applied).toBe(true);
+    const updated = readFileSync(fileA, "utf8");
+    expect(updated).toContain('import { rimrafSync } from "rimraf";');
+    expect(updated).toContain('rimrafSync("/tmp/target")');
+  });
+
+  it("removes deprecated parameter from call expression via AST transformCallArguments", () => {
+    const code = `function run() { executeQuery(sql, deprecatedCallback, options); }`;
+    const res = transformCallArguments(code, {
+      callee: "executeQuery",
+      dropIndex: 1,
+    });
+
+    expect(res.modified).toBe(true);
+    expect(res.newContent).toBe(`function run() { executeQuery(sql, options); }`);
+  });
+
+  it("reorders arguments according to signature specification via AST transformCallArguments", () => {
+    const code = `fetchUrl(url, timeout, headers);`;
+    const res = transformCallArguments(code, {
+      callee: "fetchUrl",
+      reorder: [1, 2],
+    });
+
+    expect(res.modified).toBe(true);
+    expect(res.newContent).toBe(`fetchUrl(url, headers, timeout);`);
+  });
+
+  it("does not mutate identical identifiers inside comments or string literals", () => {
+    const srcDir = join(tempDir, "src");
+    mkdirSync(srcDir, { recursive: true });
+
+    const fileA = join(srcDir, "commented.ts");
+    const originalCode = `// uses rimraf.sync here\nconst note = "rimraf.sync is legacy";\n`;
+    writeFileSync(fileA, originalCode, "utf8");
+
+    const callSites = findPackageCallSites(tempDir, "rimraf");
+    // Should have 0 call sites because there is no import of rimraf
+    expect(callSites).toHaveLength(0);
+    expect(readFileSync(fileA, "utf8")).toBe(originalCode);
   });
 });

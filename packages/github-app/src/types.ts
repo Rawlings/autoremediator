@@ -59,7 +59,6 @@ export const DEFAULT_REPO_CONFIG: AutoremediatorRepoConfig = {
   maxHealingAttempts: 3,
 };
 
-
 export interface GitHubAppConfig {
   appId: string;
   privateKey: string;
@@ -148,4 +147,51 @@ export interface EventProcessingTrace {
   latencyMs: number;
   reason?: string;
   processedAt: string;
+}
+
+export interface AppErrorLog {
+  timestamp: string;
+  source: "github-app";
+  level: "error" | "warn";
+  context: string;
+  message: string;
+  error?: string;
+  stack?: string;
+  details?: Record<string, unknown>;
+}
+
+export type ErrorLogger = (log: AppErrorLog) => void | Promise<void>;
+
+export interface CheckoutProviderParams {
+  owner: string;
+  repo: string;
+  ref?: string;
+  token?: string;
+}
+
+export interface CheckoutResult {
+  cwd: string;
+  cleanup: () => Promise<void>;
+}
+
+export type CheckoutProvider = (params: CheckoutProviderParams) => Promise<CheckoutResult>;
+
+export interface ParsedAuditFinding {
+  cveId: string;
+  packageName?: string;
+  severity: CveSeverity;
+  fixedIn?: string;
+  url?: string;
+}
+
+export interface DefaultRemediationHandlerOptions {
+  octokitFactory: (installationId: number) => Promise<import("@octokit/rest").Octokit>;
+  /** Override repo config fetch — useful for tests. */
+  repoConfigProvider?: (owner: string, repo: string) => Promise<AutoremediatorRepoConfig>;
+  /** Override audit finding collection — useful for tests. */
+  auditFindingProvider?: (cwd: string) => Promise<ParsedAuditFinding[]>;
+  /** Pluggable checkout provider for isolated workspaces — useful for tests. */
+  checkoutProvider?: CheckoutProvider;
+  /** Structured error logger */
+  onError?: ErrorLogger;
 }

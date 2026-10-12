@@ -6,6 +6,8 @@ import type {
   PatchResult,
   SlaBreach,
 } from "../../platform/types.js";
+import type { ProjectSnapshot } from "../../platform/rollback.js";
+import { restoreProjectSnapshotSync } from "../../platform/rollback.js";
 
 const ESCALATE_SEVERITIES_DEFAULT = ["CRITICAL", "HIGH"] as const;
 
@@ -94,12 +96,15 @@ export function computeDisposition(
   return { disposition: "simulate-only", dispositionReason: "unresolved" };
 }
 
-interface DispositionContext {
+export interface DispositionContext {
   exploitSignalTriggered?: boolean;
   slaBreaches?: SlaBreach[];
   severity?: CveSeverity;
   policy?: DispositionPolicy;
   containmentMode?: boolean;
+  cwd?: string;
+  snapshot?: ProjectSnapshot;
+  onContainmentRollback?: () => void;
 }
 
 export function applyDispositionAndContainment(
@@ -133,6 +138,16 @@ export function applyDispositionAndContainment(
     withDisposition.disposition === "escalate" &&
     withDisposition.applied
   ) {
+    if (context.snapshot) {
+      restoreProjectSnapshotSync(context.snapshot);
+    }
+    if (context.onContainmentRollback) {
+      try {
+        context.onContainmentRollback();
+      } catch {
+        // Non-fatal callback error
+      }
+    }
     return {
       ...withDisposition,
       applied: false,

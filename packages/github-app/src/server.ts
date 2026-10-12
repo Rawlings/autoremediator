@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { dispatchGitHubEvent } from "./events.js";
 import { verifyWebhookSignature } from "./signature.js";
 import { type AppStateStore, createInMemoryAppStateStore } from "./state.js";
-import type { EventProcessingTrace, RemediationTriggerContext } from "./types.js";
+import type { ErrorLogger, EventProcessingTrace, RemediationTriggerContext } from "./types.js";
 import { createDefaultRemediationHandler } from "./remediation-handler.js";
 import { createFileBackedJobQueue, createInMemoryJobQueue } from "./queue.js";
 import { startJobWorker } from "./worker.js";
@@ -59,6 +59,7 @@ interface ServerOptions {
   setupSecret?: string;
   githubUrl?: string;
   githubApiUrl?: string;
+  onError?: ErrorLogger;
 }
 
 interface RuntimeCounters {
@@ -589,6 +590,7 @@ export function createGitHubAppServer(options: ServerOptions): Server {
             const { Octokit } = await import("@octokit/rest");
             return new Octokit({ auth: token });
           },
+          onError: options.onError,
         })
       : undefined;
 
@@ -716,11 +718,7 @@ export function createGitHubAppServer(options: ServerOptions): Server {
       }
 
       if (!remediationHandler) {
-        if (normalizedOptions.runtimeCounters) {
-          normalizedOptions.runtimeCounters.jobsSucceeded += 1;
-          normalizedOptions.runtimeCounters.lastJobProcessedAt = new Date().toISOString();
-        }
-        return;
+        throw new Error("No remediation handler configured to process job");
       }
 
       let installationToken: string | undefined;
@@ -742,38 +740,58 @@ export function createGitHubAppServer(options: ServerOptions): Server {
         });
       }
 
-      let remediationResult: RemediationJobResult | void;
-      try {
-        remediationResult = await remediationHandler({
-          eventName: job.eventName,
-          installationId: job.installationId,
-          deliveryId: job.deliveryId,
-          payload: job.payload,
-          installationToken,
-        });
-      } catch (error) {
-        if (statusTarget) {
-          await statusPublisher.publishCompleted({
-            job,
-            installationToken,
-            target: statusTarget,
-            outcome: "failed",
-            reason: error instanceof Error ? error.message : String(error),
-          });
-        }
+      const remediationResult: RemediationJobResult | void = await remediationHandler({
+        eventName: job.eventName,
+        installationId: job.installationId,
+        deliveryId: job.deliveryId,
+        payload: job.payload,
+        installationToken,
+      });
 
-        throw error;
+      if (remediationResult?.status === "failed") {
+        if (statusTarget) {
+          await statusPublisher
+            .publishCompleted({
+              job,
+              installationToken,
+              target: statusTarget,
+              outcome: "failed",
+              reason: remediationResult.reason,
+            })
+            .catch((err) => {
+              void normalizedOptions.onError?.({
+                timestamp: new Date().toISOString(),
+                source: "github-app",
+                level: "warn",
+                context: "server.publishCompleted",
+                message: `Failed to publish completed status: ${err instanceof Error ? err.message : String(err)}`,
+                error: err instanceof Error ? err.message : String(err),
+              });
+            });
+        }
+        throw new Error(remediationResult.reason ?? "Remediation job failed");
       }
 
       if (statusTarget) {
         const outcome = remediationResult?.status ?? "success";
-        await statusPublisher.publishCompleted({
-          job,
-          installationToken,
-          target: statusTarget,
-          outcome,
-          reason: remediationResult?.reason,
-        });
+        await statusPublisher
+          .publishCompleted({
+            job,
+            installationToken,
+            target: statusTarget,
+            outcome,
+            reason: remediationResult?.reason,
+          })
+          .catch((err) => {
+            void normalizedOptions.onError?.({
+              timestamp: new Date().toISOString(),
+              source: "github-app",
+              level: "warn",
+              context: "server.publishCompleted",
+              message: `Failed to publish completed status: ${err instanceof Error ? err.message : String(err)}`,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          });
       }
 
       if (normalizedOptions.runtimeCounters) {
@@ -796,19 +814,30 @@ export function createGitHubAppServer(options: ServerOptions): Server {
         const statusTarget = readRemediationStatusTarget(job.payload);
         if (statusTarget) {
           void (async () => {
-            const installationToken =
-              job.installationId !== undefined
-                ? (await statusPublisherTokenProvider?.getInstallationToken(job.installationId))
-                    ?.token
-                : undefined;
+            try {
+              const installationToken =
+                job.installationId !== undefined
+                  ? (await statusPublisherTokenProvider?.getInstallationToken(job.installationId))
+                      ?.token
+                  : undefined;
 
-            await statusPublisher.publishCompleted({
-              job,
-              installationToken,
-              target: statusTarget,
-              outcome: "failed",
-              reason: job.lastError,
-            });
+              await statusPublisher.publishCompleted({
+                job,
+                installationToken,
+                target: statusTarget,
+                outcome: "failed",
+                reason: job.lastError,
+              });
+            } catch (err) {
+              void normalizedOptions.onError?.({
+                timestamp: new Date().toISOString(),
+                source: "github-app",
+                level: "error",
+                context: "server.onJobFailed.publishCompleted",
+                message: `Failed to publish terminal failed status: ${err instanceof Error ? err.message : String(err)}`,
+                error: err instanceof Error ? err.message : String(err),
+              });
+            }
           })();
         } else {
           void normalizedOptions.onStatusTrace?.(
@@ -835,6 +864,15 @@ export function createGitHubAppServer(options: ServerOptions): Server {
         await handleRequest(request, response, normalizedOptions);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Unexpected server error";
+        void normalizedOptions.onError?.({
+          timestamp: new Date().toISOString(),
+          source: "github-app",
+          level: "error",
+          context: "server.handleRequest",
+          message,
+          error: message,
+          stack: error instanceof Error ? error.stack : undefined,
+        });
         writeJson(response, {
           statusCode: 500,
           body: { error: message },

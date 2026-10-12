@@ -133,6 +133,27 @@ function toBranchName(prefix: string, cveIds: string[]): string {
   return `${sanitizeBranchToken(prefix)}/${token}-${randomBytes(6).toString("hex")}`;
 }
 
+async function detectRepoFromRemote(cwd: string): Promise<string | undefined> {
+  const result = await execa("git", ["config", "--get", "remote.origin.url"], {
+    cwd,
+    stdio: "pipe",
+  }).catch(() => ({ stdout: "" }));
+  const url = result.stdout.trim();
+  const match = url.match(/[:/]([^/]+)\/([^/]+?)(?:\.git)?$/);
+  if (match) {
+    return `${match[1]}/${match[2]}`;
+  }
+  return undefined;
+}
+
+async function ensureRepoHasStagedChanges(cwd: string): Promise<boolean> {
+  const result = await execa("git", ["diff", "--cached", "--name-only"], {
+    cwd,
+    stdio: "pipe",
+  }).catch(() => ({ stdout: "" }));
+  return result.stdout.trim().length > 0;
+}
+
 async function createGitHubRequest(params: {
   cwd: string;
   repository?: string;
@@ -141,7 +162,47 @@ async function createGitHubRequest(params: {
   title: string;
   body: string;
   draft?: boolean;
+  token?: string;
+  githubApiUrl?: string;
 }): Promise<string | undefined> {
+  const token = params.token ?? process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
+
+  let repository = params.repository;
+  if (!repository) {
+    repository = await detectRepoFromRemote(params.cwd);
+  }
+
+  if (token && repository) {
+    const [owner, repo] = repository.split("/");
+    const baseUrl = params.githubApiUrl?.replace(/\/+$/, "") || "https://api.github.com";
+    const endpoint = `${baseUrl}/repos/${owner}/${repo}/pulls`;
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        accept: "application/vnd.github+json",
+        "content-type": "application/json",
+        "user-agent": "autoremediator",
+        "x-github-api-version": "2022-11-28",
+      },
+      body: JSON.stringify({
+        title: params.title,
+        head: params.head,
+        base: params.base,
+        body: params.body,
+        draft: Boolean(params.draft),
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      throw new Error(`GitHub API create pull request failed (${response.status}): ${errText}`);
+    }
+
+    const data = (await response.json()) as { html_url?: string };
+    return data.html_url || undefined;
+  }
+
   const args = [
     "pr",
     "create",
@@ -218,7 +279,11 @@ export async function createChangeRequestsForReports(params: {
   }
 
   const results: ChangeRequestResult[] = [];
-  const hasChanges = await ensureRepoHasChanges(cwd).catch(() => false);
+  const token =
+    options.token ??
+    (options.tokenEnvVar ? process.env[options.tokenEnvVar] : undefined) ??
+    process.env.GITHUB_TOKEN ??
+    process.env.GH_TOKEN;
 
   const baseBranch = options.baseBranch ?? (await detectCurrentBranch(cwd).catch(() => "main"));
   const branchPrefix = options.branchPrefix ?? "autoremediator";
@@ -237,6 +302,7 @@ export async function createChangeRequestsForReports(params: {
     const title = titlePrefix ? `${titlePrefix} ${plan.title}` : plan.title;
     const body = bodyFooter ? `${plan.body}\n\n${bodyFooter}` : plan.body;
 
+    const hasChanges = await ensureRepoHasChanges(cwd).catch(() => false);
     if (!hasChanges) {
       results.push({
         provider,
@@ -254,12 +320,55 @@ export async function createChangeRequestsForReports(params: {
     }
 
     const branchName = toBranchName(branchPrefix, plan.cveIds);
+    let branchCreated = false;
 
     try {
       await execa("git", ["checkout", "-b", branchName], { cwd, stdio: "pipe" });
+      branchCreated = true;
       await execa("git", ["add", "-A"], { cwd, stdio: "pipe" });
-      await execa("git", ["commit", "-m", title], { cwd, stdio: "pipe" });
-      await execa("git", ["push", "-u", pushRemote, branchName], { cwd, stdio: "pipe" });
+
+      const hasStaged = await ensureRepoHasStagedChanges(cwd);
+      if (!hasStaged) {
+        results.push({
+          provider,
+          grouping,
+          repository: options.repository,
+          branchName: "",
+          title,
+          body,
+          created: false,
+          cveIds: plan.cveIds,
+          packageNames: plan.packageNames,
+          error: "No repository changes to include in change request.",
+        });
+        continue;
+      }
+
+      await execa(
+        "git",
+        [
+          "-c",
+          "user.name=autoremediator[bot]",
+          "-c",
+          "user.email=41898282+github-actions[bot]@users.noreply.github.com",
+          "commit",
+          "-m",
+          title,
+        ],
+        { cwd, stdio: "pipe" },
+      );
+
+      const pushArgs = token
+        ? [
+            "-c",
+            `http.extraheader=AUTHORIZATION: basic ${Buffer.from(`x-access-token:${token}`).toString("base64")}`,
+            "push",
+            "-u",
+            pushRemote,
+            branchName,
+          ]
+        : ["push", "-u", pushRemote, branchName];
+      await execa("git", pushArgs, { cwd, stdio: "pipe" });
 
       const url =
         provider === "github"
@@ -271,6 +380,8 @@ export async function createChangeRequestsForReports(params: {
               title,
               body,
               draft: options.draft,
+              token,
+              githubApiUrl: options.githubApiUrl,
             })
           : await createGitLabRequest({
               cwd,
@@ -295,11 +406,6 @@ export async function createChangeRequestsForReports(params: {
         cveIds: plan.cveIds,
         packageNames: plan.packageNames,
       });
-
-      // Switch back to base branch if more groups remain
-      if (groups.length > 1) {
-        await execa("git", ["checkout", baseBranch], { cwd, stdio: "pipe" }).catch(() => {});
-      }
     } catch (error) {
       results.push({
         provider,
@@ -314,6 +420,10 @@ export async function createChangeRequestsForReports(params: {
         packageNames: plan.packageNames,
         error: error instanceof Error ? error.message : String(error),
       });
+    } finally {
+      if (branchCreated) {
+        await execa("git", ["checkout", baseBranch], { cwd, stdio: "pipe" }).catch(() => {});
+      }
     }
   }
 

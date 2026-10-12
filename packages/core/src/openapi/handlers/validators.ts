@@ -10,7 +10,12 @@ export async function readJsonBody<T>(
   res: http.ServerResponse,
 ): Promise<T | undefined> {
   try {
-    return (await readBody(req)) as T;
+    const body = await readBody(req);
+    if (typeof body !== "object" || body === null) {
+      sendJson(res, 400, { error: "Invalid JSON body" });
+      return undefined;
+    }
+    return body as T;
   } catch {
     sendJson(res, 400, { error: "Invalid JSON body" });
     return undefined;

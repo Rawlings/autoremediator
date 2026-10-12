@@ -65,4 +65,36 @@ describe("startJobWorker", () => {
 
     worker.stop();
   });
+
+  it("transitions job to failed status and calls onJobFailed when maxAttempts is exhausted", async () => {
+    vi.useFakeTimers();
+    const queue = createInMemoryJobQueue();
+    queue.enqueue({
+      eventName: "push",
+      payload: {},
+      maxAttempts: 1,
+    });
+
+    const onJobFailed = vi.fn();
+    const processJob = vi.fn<() => Promise<void>>().mockRejectedValue(new Error("fatal error"));
+
+    const worker = startJobWorker({
+      queue,
+      pollIntervalMs: 25,
+      concurrency: 1,
+      retryDelayMs: 50,
+      processJob,
+      onJobFailed,
+    });
+
+    await vi.advanceTimersByTimeAsync(35);
+    expect(processJob).toHaveBeenCalledTimes(1);
+    expect(onJobFailed).toHaveBeenCalledTimes(1);
+    const failedJob = queue.listJobs()[0];
+    expect(failedJob?.status).toBe("failed");
+    expect(failedJob?.lastError).toBe("fatal error");
+    expect(onJobFailed).toHaveBeenCalledWith(expect.objectContaining({ status: "failed" }));
+
+    worker.stop();
+  });
 });

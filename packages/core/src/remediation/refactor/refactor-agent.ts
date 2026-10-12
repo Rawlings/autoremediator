@@ -2,10 +2,17 @@
  * Breaking Change Refactoring Engine
  *
  * Automatically refactors consumer call sites when upgrading a vulnerable package
- * across breaking major versions or breaking minor changes.
+ * across breaking major versions or breaking minor changes using AST analysis.
  */
 import { readFileSync, writeFileSync } from "node:fs";
+import { parseSync } from "oxc-parser";
 import type { ConsumerCallSite } from "./call-site-finder.js";
+
+export interface ArgumentTransformOptions {
+  callee: string;
+  dropIndex?: number;
+  reorder?: [number, number];
+}
 
 export interface RefactorParams {
   cwd: string;
@@ -14,6 +21,7 @@ export interface RefactorParams {
   toVersion: string;
   diagnosticError: string;
   callSites: ConsumerCallSite[];
+  argumentTransforms?: ArgumentTransformOptions;
 }
 
 export interface RefactorExecutionResult {
@@ -31,6 +39,23 @@ export interface ParsedTsDiagnostic {
   message: string;
   suggestedSymbol?: string;
   missingMember?: string;
+}
+
+interface TextEdit {
+  start: number;
+  end: number;
+  replacement: string;
+}
+
+function applyEdits(source: string, edits: TextEdit[]): string {
+  if (edits.length === 0) return source;
+  // Sort descending by start offset to avoid line/index shift skew
+  const sorted = [...edits].sort((a, b) => b.start - a.start);
+  let result = source;
+  for (const edit of sorted) {
+    result = result.slice(0, edit.start) + edit.replacement + result.slice(edit.end);
+  }
+  return result;
 }
 
 /**
@@ -95,229 +120,464 @@ export function revertRefactorSnapshots(snapshots: Record<string, string>): void
 }
 
 /**
- * Known library breaking change migration transforms
+ * Transforms function call arguments via AST manipulation (dropping parameters, reordering arguments).
  */
-const KNOWN_MIGRATIONS: Record<
-  string,
-  Array<{
-    detect: (content: string, diag: string) => boolean;
-    transform: (content: string) => string;
-  }>
-> = {
-  rimraf: [
-    {
-      detect: (content, diag) => diag.includes("sync") && content.includes("rimraf.sync("),
-      transform: (content) => {
-        let res = content.replace(/import\s+rimraf\s+from\s+['"]rimraf['"];?/g, "");
-        res = `import { rimrafSync } from "rimraf";\n` + res;
-        return res.replace(/rimraf\.sync\(/g, "rimrafSync(");
-      },
-    },
-  ],
-  uuid: [
-    {
-      detect: (content, diag) => diag.includes("v4") && content.includes("uuid.v4("),
-      transform: (content) => {
-        let res = content.replace(/import\s+uuid\s+from\s+['"]uuid['"];?/g, "");
-        res = `import { v4 as uuidv4 } from "uuid";\n` + res;
-        return res.replace(/uuid\.v4\(/g, "uuidv4(");
-      },
-    },
-    {
-      // Subpath import migration: `import v4 from "uuid/v4"` -> `import { v4 } from "uuid"`
-      detect: (content) => /from\s+['"]uuid\/v4['"]/.test(content),
-      transform: (content) =>
-        content.replace(
-          /import\s+([a-zA-Z0-9_$]+)\s+from\s+['"]uuid\/v4['"];?/g,
-          `import { v4 as $1 } from "uuid";`,
-        ),
-    },
-  ],
-  glob: [
-    {
-      detect: (content, diag) => diag.includes("sync") && content.includes("glob.sync("),
-      transform: (content) => {
-        let res = content.replace(/import\s+glob\s+from\s+['"]glob['"];?/g, "");
-        res = `import { globSync } from "glob";\n` + res;
-        return res.replace(/glob\.sync\(/g, "globSync(");
-      },
-    },
-  ],
-  mkdirp: [
-    {
-      detect: (content, diag) => diag.includes("sync") && content.includes("mkdirp.sync("),
-      transform: (content) => {
-        let res = content.replace(/import\s+mkdirp\s+from\s+['"]mkdirp['"];?/g, "");
-        res = `import { mkdirpSync } from "mkdirp";\n` + res;
-        return res.replace(/mkdirp\.sync\(/g, "mkdirpSync(");
-      },
-    },
-  ],
-};
+export function transformCallArguments(
+  content: string,
+  options: {
+    callee: string;
+    dropIndex?: number;
+    reorder?: [number, number];
+    filePath?: string;
+  },
+): { modified: boolean; newContent: string } {
+  const parseResult = parseSync(options.filePath ?? "file.ts", content);
+  if (!parseResult.program) {
+    return { modified: false, newContent: content };
+  }
 
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const edits: TextEdit[] = [];
+
+  function walk(node: any) {
+    if (!node || typeof node !== "object") return;
+
+    if (node.type === "CallExpression") {
+      const calleeText = content.slice(node.callee.start, node.callee.end);
+      const matchesCallee =
+        calleeText === options.callee || calleeText.endsWith(`.${options.callee}`);
+
+      if (matchesCallee) {
+        const args = node.arguments || [];
+
+        // Parameter removal / argument dropping
+        if (options.dropIndex !== undefined) {
+          const idx = options.dropIndex;
+          if (idx >= 0 && idx < args.length) {
+            if (args.length === 1) {
+              edits.push({
+                start: args[0].start,
+                end: args[0].end,
+                replacement: "",
+              });
+            } else if (idx < args.length - 1) {
+              // Not the last argument: remove up to the start of the next argument
+              edits.push({
+                start: args[idx].start,
+                end: args[idx + 1].start,
+                replacement: "",
+              });
+            } else {
+              // Last argument: remove from the end of the previous argument up to end of this argument
+              edits.push({
+                start: args[idx - 1].end,
+                end: args[idx].end,
+                replacement: "",
+              });
+            }
+          }
+        }
+
+        // Argument reordering
+        if (options.reorder) {
+          const [i, j] = options.reorder;
+          if (i >= 0 && j >= 0 && i < args.length && j < args.length && i !== j) {
+            const argIText = content.slice(args[i].start, args[i].end);
+            const argJText = content.slice(args[j].start, args[j].end);
+            edits.push({
+              start: args[i].start,
+              end: args[i].end,
+              replacement: argJText,
+            });
+            edits.push({
+              start: args[j].start,
+              end: args[j].end,
+              replacement: argIText,
+            });
+          }
+        }
+      }
+    }
+
+    for (const key of Object.keys(node)) {
+      if (key === "parent") continue;
+      const child = node[key];
+      if (Array.isArray(child)) {
+        for (const item of child) walk(item);
+      } else if (child && typeof child === "object") {
+        walk(child);
+      }
+    }
+  }
+
+  walk(parseResult.program);
+
+  if (edits.length === 0) {
+    return { modified: false, newContent: content };
+  }
+
+  return { modified: true, newContent: applyEdits(content, edits) };
 }
 
 /**
- * Applies deterministic and compiler-guided transformations to a source file.
+ * Applies deterministic and compiler-guided AST transformations to a source file.
  */
 function transformFileContent(
   content: string,
   packageName: string,
   diagnosticError: string,
   filePath?: string,
+  argumentTransforms?: ArgumentTransformOptions,
 ): { modified: boolean; newContent: string } {
+  let currentContent = content;
   let modified = false;
-  let newContent = content;
 
-  // 1. Check known library migrations
-  const migrations = KNOWN_MIGRATIONS[packageName];
-  if (migrations) {
-    for (const mig of migrations) {
-      if (mig.detect(newContent, diagnosticError)) {
-        const transformed = mig.transform(newContent);
-        if (transformed !== newContent) {
-          newContent = transformed;
-          modified = true;
+  const parseResult = parseSync(filePath ?? "file.ts", currentContent);
+  if (!parseResult.program) {
+    return { modified: false, newContent: content };
+  }
+
+  const edits: TextEdit[] = [];
+  const body = (parseResult.program as any).body || [];
+
+  let defaultLocalName: string | undefined;
+  let namespaceLocalName: string | undefined;
+  let defaultImportDecl: any;
+  let subpathImportDecl: any;
+  let subpathName: string | undefined;
+
+  for (const statement of body) {
+    if (statement.type === "ImportDeclaration" && statement.source?.value) {
+      const specText = String(statement.source.value);
+      if (specText === packageName) {
+        for (const spec of statement.specifiers || []) {
+          if (spec.type === "ImportDefaultSpecifier") {
+            defaultLocalName = spec.local?.name;
+            defaultImportDecl = statement;
+          } else if (spec.type === "ImportNamespaceSpecifier") {
+            namespaceLocalName = spec.local?.name;
+          }
+        }
+      } else if (specText.startsWith(`${packageName}/`)) {
+        subpathImportDecl = statement;
+        subpathName = specText.slice(packageName.length + 1);
+        for (const spec of statement.specifiers || []) {
+          if (spec.type === "ImportDefaultSpecifier") {
+            defaultLocalName = spec.local?.name;
+          }
         }
       }
     }
   }
 
-  // 2. Default export removed in favor of namespace or named export
-  // e.g. "Module '\"chalk\"' has no default export", "has no exported member 'default'", TS2614, TS1192
+  // 1. Subpath Import Migration: e.g. `import v4 from "uuid/v4"` -> `import { v4 as v4 } from "uuid";`
   if (
-    diagnosticError.includes("no default export") ||
-    diagnosticError.includes("has no exported member 'default'") ||
-    diagnosticError.includes("has no exported member default") ||
-    diagnosticError.includes("TS2614") ||
-    diagnosticError.includes("TS1192")
+    subpathImportDecl &&
+    (diagnosticError.includes(`Cannot find module '${packageName}/`) ||
+      diagnosticError.includes(`Cannot find module "${packageName}/`))
   ) {
-    // `import foo from "pkg"` -> `import * as foo from "pkg"`
-    const defaultImportRegex = new RegExp(
-      `import\\s+([a-zA-Z0-9_$]+)\\s+from\\s+['"]${escapeRegex(packageName)}['"]`,
-      "g",
-    );
-    if (defaultImportRegex.test(newContent)) {
-      newContent = newContent.replace(
-        defaultImportRegex,
-        `import * as $1 from "${packageName}"`,
-      );
-      modified = true;
+    const local = defaultLocalName || subpathName || "default";
+    const newImport = `import { ${subpathName} as ${local} } from "${packageName}";`;
+    edits.push({
+      start: subpathImportDecl.start,
+      end: subpathImportDecl.end,
+      replacement: newImport,
+    });
+  }
+
+  // 2. Known library breaking change migrations
+  // A. rimraf: rimraf.sync(...) -> rimrafSync(...) with import { rimrafSync } from "rimraf"
+  if (
+    packageName === "rimraf" &&
+    (diagnosticError.includes("sync") ||
+      diagnosticError.includes("rimrafSync") ||
+      currentContent.includes("rimraf.sync(") ||
+      (defaultLocalName && currentContent.includes(`${defaultLocalName}.sync(`)))
+  ) {
+    const targetLocal = defaultLocalName || "rimraf";
+    function walkRimraf(node: any) {
+      if (!node || typeof node !== "object") return;
+      if (
+        node.type === "CallExpression" &&
+        node.callee?.type === "MemberExpression" &&
+        node.callee.object?.type === "Identifier" &&
+        node.callee.object.name === targetLocal &&
+        node.callee.property?.name === "sync"
+      ) {
+        edits.push({
+          start: node.callee.start,
+          end: node.callee.end,
+          replacement: "rimrafSync",
+        });
+      }
+      for (const k of Object.keys(node)) {
+        if (k === "parent") continue;
+        const v = node[k];
+        if (Array.isArray(v)) v.forEach(walkRimraf);
+        else if (v && typeof v === "object") walkRimraf(v);
+      }
+    }
+    walkRimraf(parseResult.program);
+
+    if (defaultImportDecl) {
+      edits.push({
+        start: defaultImportDecl.start,
+        end: defaultImportDecl.end,
+        replacement: `import { rimrafSync } from "rimraf";`,
+      });
     }
   }
 
-  // 3. Namespace import deprecated in favor of default import
-  // e.g. "This module is declared with using 'export =', and can only be used with a default import" (TS1259)
+  // B. uuid: uuid.v4(...) -> uuidv4(...) with import { v4 as uuidv4 } from "uuid"
   if (
-    diagnosticError.includes("can only be used with a default import") ||
-    diagnosticError.includes("only be used with a default import") ||
-    diagnosticError.includes("TS1259")
+    packageName === "uuid" &&
+    (diagnosticError.includes("v4") ||
+      diagnosticError.includes("uuidv4") ||
+      currentContent.includes("uuid.v4(") ||
+      (defaultLocalName && currentContent.includes(`${defaultLocalName}.v4(`)))
   ) {
-    const starImportRegex = new RegExp(
-      `import\\s+\\*\\s+as\\s+([a-zA-Z0-9_$]+)\\s+from\\s+['"]${escapeRegex(packageName)}['"]`,
-      "g",
-    );
-    if (starImportRegex.test(newContent)) {
-      newContent = newContent.replace(
-        starImportRegex,
-        `import $1 from "${packageName}"`,
-      );
-      modified = true;
+    const targetLocal = defaultLocalName || "uuid";
+    function walkUuid(node: any) {
+      if (!node || typeof node !== "object") return;
+      if (
+        node.type === "CallExpression" &&
+        node.callee?.type === "MemberExpression" &&
+        node.callee.object?.type === "Identifier" &&
+        node.callee.object.name === targetLocal &&
+        node.callee.property?.name === "v4"
+      ) {
+        edits.push({
+          start: node.callee.start,
+          end: node.callee.end,
+          replacement: "uuidv4",
+        });
+      }
+      for (const k of Object.keys(node)) {
+        if (k === "parent") continue;
+        const v = node[k];
+        if (Array.isArray(v)) v.forEach(walkUuid);
+        else if (v && typeof v === "object") walkUuid(v);
+      }
+    }
+    walkUuid(parseResult.program);
+
+    if (defaultImportDecl) {
+      edits.push({
+        start: defaultImportDecl.start,
+        end: defaultImportDecl.end,
+        replacement: `import { v4 as uuidv4 } from "uuid";`,
+      });
     }
   }
 
-  // 4. Compiler feedback: "Did you mean 'XYZ'?" auto-replacement
+  // C. glob: glob.sync(...) -> globSync(...) with import { globSync } from "glob"
+  if (
+    packageName === "glob" &&
+    (diagnosticError.includes("sync") ||
+      diagnosticError.includes("globSync") ||
+      currentContent.includes("glob.sync(") ||
+      (defaultLocalName && currentContent.includes(`${defaultLocalName}.sync(`)))
+  ) {
+    const targetLocal = defaultLocalName || "glob";
+    function walkGlob(node: any) {
+      if (!node || typeof node !== "object") return;
+      if (
+        node.type === "CallExpression" &&
+        node.callee?.type === "MemberExpression" &&
+        node.callee.object?.type === "Identifier" &&
+        node.callee.object.name === targetLocal &&
+        node.callee.property?.name === "sync"
+      ) {
+        edits.push({
+          start: node.callee.start,
+          end: node.callee.end,
+          replacement: "globSync",
+        });
+      }
+      for (const k of Object.keys(node)) {
+        if (k === "parent") continue;
+        const v = node[k];
+        if (Array.isArray(v)) v.forEach(walkGlob);
+        else if (v && typeof v === "object") walkGlob(v);
+      }
+    }
+    walkGlob(parseResult.program);
+
+    if (defaultImportDecl) {
+      edits.push({
+        start: defaultImportDecl.start,
+        end: defaultImportDecl.end,
+        replacement: `import { globSync } from "glob";`,
+      });
+    }
+  }
+
+  // D. mkdirp: mkdirp.sync(...) -> mkdirpSync(...) with import { mkdirpSync } from "mkdirp"
+  if (
+    packageName === "mkdirp" &&
+    (diagnosticError.includes("sync") ||
+      diagnosticError.includes("mkdirpSync") ||
+      currentContent.includes("mkdirp.sync(") ||
+      (defaultLocalName && currentContent.includes(`${defaultLocalName}.sync(`)))
+  ) {
+    const targetLocal = defaultLocalName || "mkdirp";
+    function walkMkdirp(node: any) {
+      if (!node || typeof node !== "object") return;
+      if (
+        node.type === "CallExpression" &&
+        node.callee?.type === "MemberExpression" &&
+        node.callee.object?.type === "Identifier" &&
+        node.callee.object.name === targetLocal &&
+        node.callee.property?.name === "sync"
+      ) {
+        edits.push({
+          start: node.callee.start,
+          end: node.callee.end,
+          replacement: "mkdirpSync",
+        });
+      }
+      for (const k of Object.keys(node)) {
+        if (k === "parent") continue;
+        const v = node[k];
+        if (Array.isArray(v)) v.forEach(walkMkdirp);
+        else if (v && typeof v === "object") walkMkdirp(v);
+      }
+    }
+    walkMkdirp(parseResult.program);
+
+    if (defaultImportDecl) {
+      edits.push({
+        start: defaultImportDecl.start,
+        end: defaultImportDecl.end,
+        replacement: `import { mkdirpSync } from "mkdirp";`,
+      });
+    }
+  }
+
+  // 3. Default export removed in favor of namespace (TS2614, TS1192, "no default export")
+  if (
+    defaultImportDecl &&
+    defaultLocalName &&
+    (diagnosticError.includes("no default export") ||
+      diagnosticError.includes("has no exported member 'default'") ||
+      diagnosticError.includes("has no exported member default") ||
+      diagnosticError.includes("TS2614") ||
+      diagnosticError.includes("TS1192"))
+  ) {
+    edits.push({
+      start: defaultImportDecl.start,
+      end: defaultImportDecl.end,
+      replacement: `import * as ${defaultLocalName} from "${packageName}";`,
+    });
+  }
+
+  // 4. Namespace import deprecated in favor of default import (TS1259)
+  if (
+    namespaceLocalName &&
+    (diagnosticError.includes("can only be used with a default import") ||
+      diagnosticError.includes("only be used with a default import") ||
+      diagnosticError.includes("TS1259"))
+  ) {
+    for (const statement of body) {
+      if (
+        statement.type === "ImportDeclaration" &&
+        String(statement.source?.value) === packageName
+      ) {
+        edits.push({
+          start: statement.start,
+          end: statement.end,
+          replacement: `import ${namespaceLocalName} from "${packageName}";`,
+        });
+      }
+    }
+  }
+
+  // 5. Compiler feedback: "Did you mean 'XYZ'?" auto-replacement
   const diagnostics = parseCompilerDiagnostics(diagnosticError);
   for (const diag of diagnostics) {
     if (diag.missingMember && diag.suggestedSymbol) {
-      const missingMember = diag.missingMember;
-      const suggestedSymbol = diag.suggestedSymbol;
+      const missing = diag.missingMember;
+      const suggested = diag.suggestedSymbol;
 
-      // If error specified a line number in this file, target that line specifically
-      if (
-        filePath &&
-        diag.filePath &&
-        filePath.endsWith(diag.filePath) &&
-        diag.line &&
-        diag.line > 0
-      ) {
-        const fileLines = newContent.split("\n");
-        const idx = diag.line - 1;
-        if (idx >= 0 && idx < fileLines.length) {
-          const line = fileLines[idx]!;
-          const replaced = line
-            .replace(new RegExp(`\\.${escapeRegex(missingMember)}\\b`, "g"), `.${suggestedSymbol}`)
-            .replace(new RegExp(`\\b${escapeRegex(missingMember)}\\b`, "g"), suggestedSymbol);
-          if (replaced !== line) {
-            fileLines[idx] = replaced;
-            newContent = fileLines.join("\n");
-            modified = true;
+      const lineStarts: number[] = [0];
+      for (let i = 0; i < currentContent.length; i++) {
+        if (currentContent[i] === "\n") lineStarts.push(i + 1);
+      }
+      function getLine(offset: number): number {
+        let low = 0;
+        let high = lineStarts.length - 1;
+        while (low <= high) {
+          const mid = Math.floor((low + high) / 2);
+          if (lineStarts[mid]! <= offset) {
+            if (mid === lineStarts.length - 1 || lineStarts[mid + 1]! > offset) {
+              return mid + 1;
+            }
+            low = mid + 1;
+          } else {
+            high = mid - 1;
           }
         }
-      } else {
-        // Replace member expression: pkg.missingMember -> pkg.suggestedSymbol
-        const memberRegex = new RegExp(`\\.${escapeRegex(missingMember)}\\b`, "g");
-        if (memberRegex.test(newContent)) {
-          newContent = newContent.replace(memberRegex, `.${suggestedSymbol}`);
-          modified = true;
-        }
+        return 1;
+      }
 
-        // Replace in named imports: import { missingMember } from "pkg"
-        const importPattern = new RegExp(
-          `import\\s*\\{[^}]*\\b${escapeRegex(missingMember)}\\b[^}]*\\}\\s*from\\s*['"]${escapeRegex(packageName)}['"]`,
-          "g",
-        );
-        if (importPattern.test(newContent)) {
-          newContent = newContent.replace(
-            importPattern,
-            (match) => match.replace(new RegExp(`\\b${escapeRegex(missingMember)}\\b`, "g"), suggestedSymbol),
-          );
-          modified = true;
+      function walkDiagnostics(node: any) {
+        if (!node || typeof node !== "object") return;
+        if (node.type === "MemberExpression" && node.property?.name === missing) {
+          const line = getLine(node.start);
+          const lineMatches = !diag.line || diag.line === line;
+          if (lineMatches) {
+            edits.push({
+              start: node.property.start,
+              end: node.property.end,
+              replacement: suggested,
+            });
+          }
+        }
+        if (
+          node.type === "ImportSpecifier" &&
+          (node.imported?.name === missing || node.local?.name === missing)
+        ) {
+          edits.push({
+            start: node.local.start,
+            end: node.local.end,
+            replacement: suggested,
+          });
+        }
+        for (const k of Object.keys(node)) {
+          if (k === "parent") continue;
+          const v = node[k];
+          if (Array.isArray(v)) v.forEach(walkDiagnostics);
+          else if (v && typeof v === "object") walkDiagnostics(v);
         }
       }
+
+      walkDiagnostics(parseResult.program);
     }
   }
 
-  // 5. Targeted type error suppression if errors point specifically to this file
-  // Sort descending by line number to avoid line-shift index skew!
-  const lineDiags = diagnostics
-    .filter(
-      (d) =>
-        Boolean(filePath && d.filePath && filePath.endsWith(d.filePath) && typeof d.line === "number" && d.line > 0),
-    )
-    .sort((a, b) => b.line! - a.line!);
+  if (edits.length > 0) {
+    currentContent = applyEdits(currentContent, edits);
+    modified = true;
+  }
 
-  const processedLines = new Set<number>();
-  for (const diag of lineDiags) {
-    if (processedLines.has(diag.line!)) continue;
-    processedLines.add(diag.line!);
-
-    const fileLines = newContent.split("\n");
-    const targetLineIdx = diag.line! - 1;
-    if (targetLineIdx >= 0 && targetLineIdx < fileLines.length) {
-      const prevLine = targetLineIdx > 0 ? fileLines[targetLineIdx - 1] : "";
-      if (!prevLine?.includes("@ts-expect-error") && !fileLines[targetLineIdx]?.includes("@ts-expect-error")) {
-        const indent = fileLines[targetLineIdx]?.match(/^\s*/)?.[0] || "";
-        fileLines.splice(
-          targetLineIdx,
-          0,
-          `${indent}// @ts-expect-error [autoremediator-refactor]: breaking change in ${packageName}`,
-        );
-        newContent = fileLines.join("\n");
-        modified = true;
-      }
+  // 6. Explicit argument transforms if supplied
+  if (argumentTransforms) {
+    const argResult = transformCallArguments(currentContent, {
+      ...argumentTransforms,
+      filePath,
+    });
+    if (argResult.modified) {
+      currentContent = argResult.newContent;
+      modified = true;
     }
   }
 
-  return { modified, newContent };
+  return { modified, newContent: currentContent };
 }
 
 export async function refactorConsumerCallSites(
   params: RefactorParams,
 ): Promise<RefactorExecutionResult> {
-  const { packageName, diagnosticError, callSites } = params;
+  const { packageName, diagnosticError, callSites, argumentTransforms } = params;
 
   if (callSites.length === 0) {
     return {
@@ -341,6 +601,7 @@ export async function refactorConsumerCallSites(
         packageName,
         diagnosticError,
         site.filePath,
+        argumentTransforms,
       );
 
       if (modified && newContent !== originalContent) {
@@ -369,7 +630,7 @@ export async function refactorConsumerCallSites(
     return {
       applied: false,
       refactoredFiles: [],
-      snapshots: {},
+      snapshots,
       error: `Failed to apply breaking change refactoring: ${message}`,
     };
   }

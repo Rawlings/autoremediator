@@ -6,6 +6,7 @@
  */
 import { defineTool } from "./tool-compat.js";
 import { z } from "zod";
+import semver from "semver";
 import { resolveSafeUpgradeVersion } from "../../intelligence/sources/registry.js";
 
 export const findFixedVersionTool = defineTool({
@@ -54,9 +55,11 @@ export const findFixedVersionTool = defineTool({
       };
     }
 
-    const installedMajor = parseInt(installedVersion.split(".")[0] ?? "0", 10);
-    const safeMajor = parseInt(safeVersion.split(".")[0] ?? "0", 10);
-    const isMajorBump = safeMajor > installedMajor;
+    const parsedInstalled = semver.parse(installedVersion) ?? semver.coerce(installedVersion);
+    const parsedSafe = semver.parse(safeVersion) ?? semver.coerce(safeVersion);
+    const isMajorBump = Boolean(
+      parsedInstalled && parsedSafe && parsedSafe.major > parsedInstalled.major,
+    );
 
     return {
       safeVersion,

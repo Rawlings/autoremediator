@@ -1,5 +1,7 @@
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { RemediationReport } from "../../platform/types.js";
+import type { RemediationReport, VexSuppression } from "../../platform/types.js";
 import type { ScanReport } from "../contracts.js";
 
 export interface CycloneDxVexVulnerabilityAnalysis {
@@ -17,7 +19,7 @@ export interface CycloneDxVexVulnerability {
 export interface CycloneDxVexDocument {
   bomFormat: "CycloneDX";
   specVersion: "1.5";
-  version: 1;
+  version: number;
   serialNumber: string;
   metadata: {
     timestamp: string;
@@ -117,5 +119,72 @@ export function toCycloneDxVex(
       tools: [{ name: "autoremediator", version: toolVersion }],
     },
     vulnerabilities,
+  };
+}
+
+/**
+ * Persists or updates a CycloneDX 1.5 VEX document with a suppressed vulnerability entry.
+ */
+export function saveSuppressionToVexDocument(
+  filePath: string,
+  suppression: VexSuppression,
+  toolVersion = "unknown",
+): void {
+  const targetDir = dirname(filePath);
+  if (!existsSync(targetDir)) {
+    mkdirSync(targetDir, { recursive: true });
+  }
+
+  let doc: CycloneDxVexDocument;
+  if (existsSync(filePath)) {
+    try {
+      doc = JSON.parse(readFileSync(filePath, "utf8")) as CycloneDxVexDocument;
+    } catch {
+      doc = createEmptyVexDocument(toolVersion);
+    }
+  } else {
+    doc = createEmptyVexDocument(toolVersion);
+  }
+
+  if (!Array.isArray(doc.vulnerabilities)) {
+    doc.vulnerabilities = [];
+  }
+
+  const existingIndex = doc.vulnerabilities.findIndex(
+    (v) => v.id.toUpperCase() === suppression.cveId.toUpperCase(),
+  );
+
+  const vulnEntry: CycloneDxVexVulnerability = {
+    id: suppression.cveId,
+    analysis: {
+      state: "not_affected",
+      justification: suppression.justification,
+      detail: suppression.notes ?? suppression.justification,
+    },
+  };
+
+  if (existingIndex >= 0) {
+    doc.vulnerabilities[existingIndex] = vulnEntry;
+  } else {
+    doc.vulnerabilities.push(vulnEntry);
+  }
+
+  doc.metadata.timestamp = new Date().toISOString();
+  doc.version = ((doc.version as number) ?? 1) + 1;
+
+  writeFileSync(filePath, JSON.stringify(doc, null, 2) + "\n", "utf8");
+}
+
+function createEmptyVexDocument(toolVersion: string): CycloneDxVexDocument {
+  return {
+    bomFormat: "CycloneDX",
+    specVersion: "1.5",
+    version: 1,
+    serialNumber: `urn:uuid:${randomUUID()}`,
+    metadata: {
+      timestamp: new Date().toISOString(),
+      tools: [{ name: "autoremediator", version: toolVersion }],
+    },
+    vulnerabilities: [],
   };
 }

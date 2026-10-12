@@ -243,8 +243,8 @@ To prevent patches that merely compile but fail to remediate the vulnerability f
 
 - The test is saved to disk at `patches/<package>+<version>.test.cjs` or supplied via `--proof-of-fix <path>`.
 - **Dual-Stage Verification Gate**:
-  - **Negative Phase (Pre-Mutation Baseline)**: The reproduction script is executed against unpatched dependencies. It *must* trigger a failure (exit code != 0 or assertion error), proving that the test genuinely reproduces the vulnerability and is not a tautological "always passing" test.
-  - **Positive Phase (Post-Mutation Fix)**: After the patch or version update is applied, the reproduction script is executed again. It *must* exit cleanly (exit code 0), verifying that the vulnerability is neutralized.
+  - **Negative Phase (Pre-Mutation Baseline)**: The reproduction script is executed against unpatched dependencies. It _must_ trigger a failure (exit code != 0 or assertion error), proving that the test genuinely reproduces the vulnerability and is not a tautological "always passing" test.
+  - **Positive Phase (Post-Mutation Fix)**: After the patch or version update is applied, the reproduction script is executed again. It _must_ exit cleanly (exit code 0), verifying that the vulnerability is neutralized.
 - If `--require-proof-of-fix` is enabled and the negative test fails to reproduce the bug on unpatched baseline, patch application is rejected with `unresolvedReason: "proof-of-fix-failed"`.
 - If the positive test fails on patched code, the atomic rollback engine restores repository state.
 - The test code and its path are recorded in the patch manifest (`.patch.json`) and `PatchResult.proofOfFix` for continuous regression verification.

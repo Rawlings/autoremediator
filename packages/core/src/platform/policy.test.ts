@@ -1,8 +1,17 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { loadPolicy, DEFAULT_POLICY, loadSuppressionsFile, checkSlaBreach } from "./policy.js";
+import { parse as yamlParse } from "yaml";
+import {
+  loadPolicy,
+  DEFAULT_POLICY,
+  loadSuppressionsFile,
+  checkSlaBreach,
+  isPackageAllowed,
+  saveSuppressionToPolicy,
+  saveSuppressionToFile,
+} from "./policy.js";
 
 function makeTmpDir(): string {
   return mkdtempSync(join(tmpdir(), "autoremediator-policy-test-"));
@@ -223,5 +232,95 @@ describe("checkSlaBreach", () => {
     expect(result).not.toBeNull();
     const expected = new Date(new Date(publishedAt).getTime() + 72 * MS_PER_HOUR).toISOString();
     expect(result?.deadlineAt).toBe(expected);
+  });
+});
+
+describe("isPackageAllowed", () => {
+  it("allows packages by default when deny/allow are empty", () => {
+    expect(isPackageAllowed(DEFAULT_POLICY, "lodash")).toBe(true);
+    expect(isPackageAllowed(DEFAULT_POLICY, "@scope/pkg")).toBe(true);
+  });
+
+  it("blocks packages explicitly listed in denyPackages", () => {
+    const policy = { ...DEFAULT_POLICY, denyPackages: ["lodash", "axios"] };
+    expect(isPackageAllowed(policy, "lodash")).toBe(false);
+    expect(isPackageAllowed(policy, "axios")).toBe(false);
+    expect(isPackageAllowed(policy, "react")).toBe(true);
+  });
+
+  it("blocks packages matching scope wildcards (@scope/*) in denyPackages", () => {
+    const policy = { ...DEFAULT_POLICY, denyPackages: ["@evil/*"] };
+    expect(isPackageAllowed(policy, "@evil/core")).toBe(false);
+    expect(isPackageAllowed(policy, "@evil/utils")).toBe(false);
+    expect(isPackageAllowed(policy, "@good/core")).toBe(true);
+    expect(isPackageAllowed(policy, "evil-core")).toBe(true);
+  });
+
+  it("blocks packages matching name wildcards (prefix-*) in denyPackages", () => {
+    const policy = { ...DEFAULT_POLICY, denyPackages: ["malicious-*"] };
+    expect(isPackageAllowed(policy, "malicious-pkg")).toBe(false);
+    expect(isPackageAllowed(policy, "malicious-tools")).toBe(false);
+    expect(isPackageAllowed(policy, "safe-pkg")).toBe(true);
+  });
+
+  it("enforces allowPackages whitelist when non-empty", () => {
+    const policy = { ...DEFAULT_POLICY, allowPackages: ["react", "@types/*"] };
+    expect(isPackageAllowed(policy, "react")).toBe(true);
+    expect(isPackageAllowed(policy, "@types/node")).toBe(true);
+    expect(isPackageAllowed(policy, "lodash")).toBe(false);
+  });
+});
+
+describe("saveSuppressionToPolicy & saveSuppressionToFile", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = makeTmpDir();
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("saves suppression to .github/autoremediator.yml preserving existing config", () => {
+    const targetFile = saveSuppressionToPolicy(tmpDir, {
+      cveId: "CVE-2024-1111",
+      justification: "not_affected",
+      notes: "False positive in test",
+    });
+
+    expect(existsSync(targetFile)).toBe(true);
+    const content = yamlParse(readFileSync(targetFile, "utf8"));
+    expect(content.suppressions).toEqual([
+      {
+        cveId: "CVE-2024-1111",
+        justification: "not_affected",
+        notes: "False positive in test",
+      },
+    ]);
+
+    // Update existing suppression
+    saveSuppressionToPolicy(tmpDir, {
+      cveId: "CVE-2024-1111",
+      justification: "mitigated",
+      notes: "Mitigated by firewall",
+    });
+
+    const updated = yamlParse(readFileSync(targetFile, "utf8"));
+    expect(updated.suppressions).toHaveLength(1);
+    expect(updated.suppressions[0].justification).toBe("mitigated");
+  });
+
+  it("saves suppression to a dedicated file via saveSuppressionToFile", () => {
+    const suppPath = join(tmpDir, "custom", "suppressions.yaml");
+    saveSuppressionToFile(suppPath, {
+      cveId: "CVE-2025-2222",
+      justification: "under_investigation",
+    });
+
+    expect(existsSync(suppPath)).toBe(true);
+    const content = yamlParse(readFileSync(suppPath, "utf8"));
+    expect(content.suppressions).toHaveLength(1);
+    expect(content.suppressions[0].cveId).toBe("CVE-2025-2222");
   });
 });

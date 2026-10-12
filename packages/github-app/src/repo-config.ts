@@ -1,6 +1,6 @@
 import { parse as yamlParse } from "yaml";
 import type { Octokit } from "@octokit/rest";
-import { type AutoremediatorRepoConfig, DEFAULT_REPO_CONFIG } from "./types.js";
+import { type AutoremediatorRepoConfig, DEFAULT_REPO_CONFIG, type ErrorLogger } from "./types.js";
 
 type RawRepoConfig = Partial<AutoremediatorRepoConfig>;
 
@@ -124,6 +124,7 @@ export async function fetchRepoConfig(
   octokit: Octokit,
   owner: string,
   repo: string,
+  logger?: ErrorLogger,
 ): Promise<AutoremediatorRepoConfig> {
   try {
     const response = await octokit.rest.repos.getContent({
@@ -155,7 +156,16 @@ export async function fetchRepoConfig(
     ) {
       return { ...DEFAULT_REPO_CONFIG };
     }
-    // Any other error (network, parse, etc.) — degrade to defaults silently
+    const message = error instanceof Error ? error.message : String(error);
+    void logger?.({
+      timestamp: new Date().toISOString(),
+      source: "github-app",
+      level: "warn",
+      context: "repo-config.fetch",
+      message: `Failed to parse repository config, falling back to defaults: ${message}`,
+      error: message,
+      details: { owner, repo },
+    });
     return { ...DEFAULT_REPO_CONFIG };
   }
 }

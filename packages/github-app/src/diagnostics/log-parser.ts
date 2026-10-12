@@ -20,7 +20,8 @@ export interface ParsedDiagnostic {
   rawSnippet: string;
 }
 
-const ANSI_REGEX = /\x1b\[[0-9;]*[a-zA-Z]/g;
+const ESC = String.fromCharCode(27);
+const ANSI_REGEX = new RegExp(`${ESC}\\[[0-9;]*[a-zA-Z]`, "g");
 
 export function stripAnsi(text: string): string {
   return text.replace(ANSI_REGEX, "");
@@ -39,7 +40,6 @@ export function parseCheckRunLogs(rawLogs: string): ParsedDiagnostic {
   // Linter (oxlint / eslint): src/app.ts:12:5: @typescript-eslint/no-unused-vars: ...
   const lintRegex =
     /([a-zA-Z0-9_\-./\\]+\.(?:ts|tsx|js|jsx|json))[:(](\d+)[:,](\d+)\)?:?(?:\s*-\s*error|\s+error)?\s+([a-zA-Z0-9_\-/@]+):\s*(.+)/;
-
 
   // Test Failure: FAIL src/app.test.ts or AssertionError: ...
   const testFailRegex = /(?:FAIL|AssertionError:|Expected:|Received:)\s*(.+)/;

@@ -177,7 +177,6 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
     breakingChangeRefactor: opts.breakingChangeRefactor,
   });
 
-
   const reportAsScan = asSingleCveScanReport(report);
 
   if (opts.outputFormat === "sarif") {
@@ -331,7 +330,6 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
     requireProofOfFix: opts.requireProofOfFix,
     breakingChangeRefactor: opts.breakingChangeRefactor,
   });
-
 
   if (opts.summaryFile) {
     const summary = toCiSummary(report);

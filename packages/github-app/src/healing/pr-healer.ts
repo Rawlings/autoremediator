@@ -6,7 +6,7 @@
  * repairs, and pushes healing commits to trigger fresh CI verification.
  */
 import type { Octokit } from "@octokit/rest";
-import type { AutoremediatorRepoConfig } from "../types.js";
+import type { AutoremediatorRepoConfig, ErrorLogger } from "../types.js";
 import type { DiagnosticFinding, ParsedDiagnostic } from "../diagnostics/log-parser.js";
 
 export interface HealPrOptions {
@@ -18,6 +18,7 @@ export interface HealPrOptions {
   checkRunName: string;
   diagnostic: ParsedDiagnostic;
   repoConfig: AutoremediatorRepoConfig;
+  logger?: ErrorLogger;
 }
 
 export interface HealPrResult {
@@ -72,8 +73,11 @@ export function repairFileContent(content: string, findings: DiagnosticFinding[]
       const targetPkg = pkgMatch ? pkgMatch[1] : undefined;
 
       const importRegex = targetPkg
-        ? new RegExp(`import\\s+([a-zA-Z0-9_$]+)\\s+from\\s+['"]${escapeRegex(targetPkg)}['"];?`, "g")
-        : /import\s+([a-zA-Z0-9_$]+)\\s+from\s+['"]([^'"]+)['"];?/g;
+        ? new RegExp(
+            `import\\s+([a-zA-Z0-9_$]+)\\s+from\\s+['"]${escapeRegex(targetPkg)}['"];?`,
+            "g",
+          )
+        : /import\s+([a-zA-Z0-9_$]+)\s+from\s+['"]([^'"]+)['"];?/g;
 
       repaired = repaired.replace(importRegex, (_match, id, matchedPkg) => {
         const pkg = targetPkg || matchedPkg;
@@ -83,14 +87,15 @@ export function repairFileContent(content: string, findings: DiagnosticFinding[]
 
     // 2. TypeScript CJS "export =" default import mismatch (TS1259)
     if (msg.includes("can only be used with a default import") || msg.includes("TS1259")) {
-      const pkgMatch =
-        msg.match(/Module\s+['"]([^'"]+)['"]/i) ||
-        msg.match(/['"]([^'"]+)['"]/);
+      const pkgMatch = msg.match(/Module\s+['"]([^'"]+)['"]/i) || msg.match(/['"]([^'"]+)['"]/);
       const targetPkg = pkgMatch ? pkgMatch[1] : undefined;
 
       const starImportRegex = targetPkg
-        ? new RegExp(`import\\s+\\*\\s+as\\s+([a-zA-Z0-9_$]+)\\s+from\\s+['"]${escapeRegex(targetPkg)}['"];?`, "g")
-        : /import\s+\*\s+as\s+([a-zA-Z0-9_$]+)\\s+from\s+['"]([^'"]+)['"];?/g;
+        ? new RegExp(
+            `import\\s+\\*\\s+as\\s+([a-zA-Z0-9_$]+)\\s+from\\s+['"]${escapeRegex(targetPkg)}['"];?`,
+            "g",
+          )
+        : /import\s+\*\s+as\s+([a-zA-Z0-9_$]+)\s+from\s+['"]([^'"]+)['"];?/g;
 
       repaired = repaired.replace(starImportRegex, (_match, id, matchedPkg) => {
         const pkg = targetPkg || matchedPkg;
@@ -137,7 +142,7 @@ export function repairFileContent(content: string, findings: DiagnosticFinding[]
       if (unusedVarMatch) {
         const unusedVar = unusedVarMatch[1]!;
         const lines = repaired.split("\n");
-        let idx = (finding.line && finding.line > 0) ? finding.line - 1 : -1;
+        let idx = finding.line && finding.line > 0 ? finding.line - 1 : -1;
         if (idx < 0 || idx >= lines.length || !lines[idx]?.includes("import")) {
           // If no line or line didn't match, locate line containing the unused import
           idx = lines.findIndex(
@@ -148,17 +153,21 @@ export function repairFileContent(content: string, findings: DiagnosticFinding[]
           let line = lines[idx]!;
           if (line.includes("import")) {
             const soleNamedImport = new RegExp(
-              `^\\s*import\\s*\\{\\s*${escapeRegex(unusedVar)}\\s*\\}\\s*from\\s*['"][^'"]+['"];?\\s*$`,
+              `^\\s*import\\s*(?:type\\s+)?\\{\\s*(?:type\\s+)?${escapeRegex(unusedVar)}\\s*,?\\s*\\}\\s*from\\s*['"][^'"]+['"];?\\s*$`,
             );
             const defaultImport = new RegExp(
-              `^\\s*import\\s+${escapeRegex(unusedVar)}\\s+from\\s*['"][^'"]+['"];?\\s*$`,
+              `^\\s*import\\s+(?:type\\s+)?${escapeRegex(unusedVar)}\\s+from\\s*['"][^'"]+['"];?\\s*$`,
             );
             if (soleNamedImport.test(line) || defaultImport.test(line)) {
               lines.splice(idx, 1);
             } else {
               line = line.replace(new RegExp(`,\\s*${escapeRegex(unusedVar)}\\b`), "");
               line = line.replace(new RegExp(`\\b${escapeRegex(unusedVar)}\\s*,\\s*`), "");
-              lines[idx] = line;
+              if (/^\s*import\s*(?:type\s+)?\{\s*\}\s*from\s*['"][^'"]+['"];?\s*$/.test(line)) {
+                lines.splice(idx, 1);
+              } else {
+                lines[idx] = line;
+              }
             }
             repaired = lines.join("\n");
           }
@@ -167,51 +176,12 @@ export function repairFileContent(content: string, findings: DiagnosticFinding[]
     }
   }
 
-  // 5. Targeted type error suppression fallback (@ts-expect-error)
-  // Sort descending by line number to prevent insertion index skew!
-  const lineFindings = findings
-    .filter((f) => f.category === "typescript" && typeof f.line === "number" && f.line > 0)
-    .sort((a, b) => b.line! - a.line!);
-
-  const fileLines = repaired.split("\n");
-  const processedLines = new Set<number>();
-
-  for (const finding of lineFindings) {
-    const lineNum = finding.line!;
-    if (processedLines.has(lineNum)) continue;
-    processedLines.add(lineNum);
-
-    const targetIdx = lineNum - 1;
-    if (targetIdx >= 0 && targetIdx < fileLines.length) {
-      const prevLine = targetIdx > 0 ? fileLines[targetIdx - 1] : "";
-      if (
-        !prevLine?.includes("@ts-expect-error") &&
-        !fileLines[targetIdx]?.includes("@ts-expect-error")
-      ) {
-        const indent = fileLines[targetIdx]!.match(/^\s*/)?.[0] || "";
-        fileLines.splice(
-          targetIdx,
-          0,
-          `${indent}// @ts-expect-error [autoremediator-heal]: ${finding.ruleId || "compile-error"}`,
-        );
-      }
-    }
-  }
-
-  return fileLines.join("\n");
+  return repaired;
 }
 
 export async function healPullRequest(options: HealPrOptions): Promise<HealPrResult> {
-  const {
-    octokit,
-    owner,
-    repo,
-    pullNumber,
-    branchName,
-    checkRunName,
-    diagnostic,
-    repoConfig,
-  } = options;
+  const { octokit, owner, repo, pullNumber, branchName, checkRunName, diagnostic, repoConfig } =
+    options;
 
   const maxAttempts = repoConfig.maxHealingAttempts ?? 3;
   const key = getHealingAttemptKey(owner, repo, pullNumber);
@@ -219,7 +189,8 @@ export async function healPullRequest(options: HealPrOptions): Promise<HealPrRes
 
   if (currentAttempts >= maxAttempts) {
     // Exceeded max healing attempts — escalate to human review
-    const commentBody = `### ⚠️ Autoremediator Auto-Healing Limit Reached\n\n` +
+    const commentBody =
+      `### ⚠️ Autoremediator Auto-Healing Limit Reached\n\n` +
       `Check run **${checkRunName}** failed on \`${branchName}\` after **${maxAttempts}** automated healing attempt(s).\n\n` +
       `**Diagnostic Summary:**\n` +
       `\`\`\`\n${diagnostic.summary}\n\`\`\`\n\n` +
@@ -239,8 +210,17 @@ export async function healPullRequest(options: HealPrOptions): Promise<HealPrRes
         issue_number: pullNumber,
         labels: ["autoremediator/needs-human-review"],
       });
-    } catch {
-      // Ignore GitHub API label/comment errors
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      void options.logger?.({
+        timestamp: new Date().toISOString(),
+        source: "github-app",
+        level: "warn",
+        context: "pr-healer.maxAttempts.commentAndLabel",
+        message: `Failed to comment/label PR #${pullNumber}: ${message}`,
+        error: message,
+        details: { owner, repo, pullNumber },
+      });
     }
 
     return {
@@ -268,7 +248,8 @@ export async function healPullRequest(options: HealPrOptions): Promise<HealPrRes
 
   if (fileFindingsMap.size === 0) {
     // Cannot pinpoint broken files from logs
-    const commentBody = `### ⚠️ Autoremediator Auto-Healing Unable to Localize Failure\n\n` +
+    const commentBody =
+      `### ⚠️ Autoremediator Auto-Healing Unable to Localize Failure\n\n` +
       `Check run **${checkRunName}** failed on \`${branchName}\`, but no actionable file paths could be extracted from CI logs.\n\n` +
       `**Diagnostic Summary:**\n` +
       `\`\`\`\n${diagnostic.summary}\n\`\`\`\n\n` +
@@ -287,8 +268,17 @@ export async function healPullRequest(options: HealPrOptions): Promise<HealPrRes
         issue_number: pullNumber,
         labels: ["autoremediator/needs-human-review"],
       });
-    } catch {
-      // Ignore
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      void options.logger?.({
+        timestamp: new Date().toISOString(),
+        source: "github-app",
+        level: "warn",
+        context: "pr-healer.localizeFailure.commentAndLabel",
+        message: `Failed to comment/label PR #${pullNumber}: ${message}`,
+        error: message,
+        details: { owner, repo, pullNumber },
+      });
     }
 
     return {
@@ -332,14 +322,24 @@ export async function healPullRequest(options: HealPrOptions): Promise<HealPrRes
 
         healedFiles.push(filePath);
       }
-    } catch {
-      // Ignore file fetch/update errors for this file and continue to next
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      void options.logger?.({
+        timestamp: new Date().toISOString(),
+        source: "github-app",
+        level: "warn",
+        context: "pr-healer.fetchOrUpdateFile",
+        message: `Failed to fetch or update file ${filePath}: ${message}`,
+        error: message,
+        details: { owner, repo, pullNumber, filePath, branchName },
+      });
     }
   }
 
   if (healedFiles.length === 0) {
     // None of the heuristics could repair the files
-    const commentBody = `### ⚠️ Autoremediator Auto-Healing Unsuccessful\n\n` +
+    const commentBody =
+      `### ⚠️ Autoremediator Auto-Healing Unsuccessful\n\n` +
       `Check run **${checkRunName}** failed on \`${branchName}\`. Automated repair heuristics were unable to resolve the diagnostic errors.\n\n` +
       `**Diagnostic Summary:**\n` +
       `\`\`\`\n${diagnostic.summary}\n\`\`\`\n\n` +
@@ -358,8 +358,17 @@ export async function healPullRequest(options: HealPrOptions): Promise<HealPrRes
         issue_number: pullNumber,
         labels: ["autoremediator/needs-human-review"],
       });
-    } catch {
-      // Ignore
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      void options.logger?.({
+        timestamp: new Date().toISOString(),
+        source: "github-app",
+        level: "warn",
+        context: "pr-healer.unsuccessful.commentAndLabel",
+        message: `Failed to comment/label PR #${pullNumber}: ${message}`,
+        error: message,
+        details: { owner, repo, pullNumber },
+      });
     }
 
     return {
@@ -372,7 +381,8 @@ export async function healPullRequest(options: HealPrOptions): Promise<HealPrRes
   }
 
   // Successfully applied healing commit(s)
-  const commentBody = `### 🩹 Autoremediator Auto-Healing Applied (Attempt ${nextAttempt}/${maxAttempts})\n\n` +
+  const commentBody =
+    `### 🩹 Autoremediator Auto-Healing Applied (Attempt ${nextAttempt}/${maxAttempts})\n\n` +
     `Pushed automated repair commit to \`${branchName}\` addressing diagnostics from **${checkRunName}**:\n` +
     healedFiles.map((f) => `- \`${f}\``).join("\n") +
     `\n\nCI check suite will re-run automatically.`;
@@ -384,8 +394,17 @@ export async function healPullRequest(options: HealPrOptions): Promise<HealPrRes
       issue_number: pullNumber,
       body: commentBody,
     });
-  } catch {
-    // Ignore
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    void options.logger?.({
+      timestamp: new Date().toISOString(),
+      source: "github-app",
+      level: "warn",
+      context: "pr-healer.applied.comment",
+      message: `Failed to comment on PR #${pullNumber}: ${message}`,
+      error: message,
+      details: { owner, repo, pullNumber },
+    });
   }
 
   return {

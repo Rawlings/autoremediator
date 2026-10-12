@@ -165,6 +165,7 @@ export interface ProofOfFixPhaseResult {
   output?: string;
   durationMs?: number;
   error?: string;
+  harnessFailure?: boolean;
 }
 
 export interface ProofOfFixVerification {
@@ -455,6 +456,8 @@ export interface ChangeRequestOptions {
   draft?: boolean;
   pushRemote?: string;
   tokenEnvVar?: string;
+  token?: string;
+  githubApiUrl?: string;
 }
 
 export interface ChangeRequestResult {
@@ -704,6 +707,8 @@ export interface RemediateOptions extends CorrelationContext {
   proofOfFix?: boolean;
   /** If true, reject patches and roll back if proof-of-fix verification fails. */
   requireProofOfFix?: boolean;
+  /** Optional reproduction test script content or file path. */
+  reproductionTest?: string;
   /** If true, attempt agentic call-site refactoring when major version upgrades introduce breaking API changes. */
   breakingChangeRefactor?: boolean;
 }

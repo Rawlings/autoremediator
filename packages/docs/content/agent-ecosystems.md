@@ -49,7 +49,7 @@ Recommended sequence for agent orchestration:
 
 When agents encounter vulnerabilities, autoremediator provides high-assurance validation and repair capabilities:
 
-- **Dual-Stage Proof-of-Fix Verification**: Generates a self-contained reproduction test and executes it across two stages — a *negative phase* asserting failure on unpatched baseline, and a *positive phase* asserting success post-mutation. This guarantees that fixes are empirically proven and not phantom successes.
+- **Dual-Stage Proof-of-Fix Verification**: Generates a self-contained reproduction test and executes it across two stages — a _negative phase_ asserting failure on unpatched baseline, and a _positive phase_ asserting success post-mutation. This guarantees that fixes are empirically proven and not phantom successes.
 - **Agentic Breaking-Change Codemods**: When upgrades introduce breaking API changes, AST analysis via `oxc-parser` detects affected consumer call-sites and applies automated refactorings (such as import renames and function migrations) before validating the test suite.
 - **Upstream Patch Reconciliation**: As projects continue to evolve, upstream maintainers eventually publish safe versions. Agents can invoke `reconcilePatchArtifacts(...)` (or `autoremediator patches reconcile`) to audit existing patches against current installed versions and safely retire obsolete patches.
 

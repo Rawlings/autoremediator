@@ -8,9 +8,19 @@ import { defineTool } from "./tool-compat.js";
 import { z } from "zod";
 import { join } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { safeExeca } from "../../platform/safe-exec.js";
 import semver from "semver";
-import type { PatchResult } from "../../platform/types.js";
+import type {
+  PatchResult,
+  ProofOfFixPhaseResult,
+  ProofOfFixVerification,
+} from "../../platform/types.js";
+import {
+  assembleProofOfFixVerification,
+  prepareReproductionTestFile,
+  runProofOfFixPhase,
+} from "../proof-of-fix/runner.js";
 import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
 import { withRepoLock } from "../../platform/repo-lock.js";
 import {
@@ -26,7 +36,6 @@ import {
 import { findDeclaringWorkspacePackage } from "../../platform/workspace.js";
 import { findPackageCallSites } from "../refactor/call-site-finder.js";
 import { refactorConsumerCallSites, revertRefactorSnapshots } from "../refactor/refactor-agent.js";
-
 
 interface RawPackageJson {
   dependencies?: Record<string, string>;
@@ -66,7 +75,26 @@ export const applyVersionBumpTool = defineTool({
     breakingChangeRefactor: z
       .boolean()
       .optional()
-      .describe("If true, attempt agentic call-site refactoring when validation fails after major upgrade"),
+      .describe(
+        "If true, attempt agentic call-site refactoring when validation fails after major upgrade",
+      ),
+    reproductionTest: z
+      .string()
+      .optional()
+      .describe("Optional reproduction test script verifying fix"),
+    proofOfFix: z
+      .union([z.boolean(), z.string()])
+      .optional()
+      .describe("If true or script path/content, enforce dual-stage exploit reproduction"),
+    requireProofOfFix: z
+      .boolean()
+      .optional()
+      .describe("If true, fail and rollback version bump if proof-of-fix verification fails"),
+    patchesDir: z
+      .string()
+      .optional()
+      .default("./patches")
+      .describe("Directory containing patch/reproduction artifacts"),
   }),
   execute: async ({
     cwd,
@@ -83,6 +111,10 @@ export const applyVersionBumpTool = defineTool({
     enforceFrozenLockfile,
     workspace,
     breakingChangeRefactor,
+    reproductionTest,
+    proofOfFix,
+    requireProofOfFix,
+    patchesDir,
   }): Promise<PatchResult> => {
     const pm = (packageManager ?? detectPackageManager(cwd)) as PackageManager;
 
@@ -203,6 +235,58 @@ export const applyVersionBumpTool = defineTool({
     }
 
     return withRepoLock(cwd, async () => {
+      const prepared = await prepareReproductionTestFile({
+        cwd,
+        packageName,
+        vulnerableVersion: fromVersion,
+        patchesDir,
+        proofOfFix,
+        reproductionTest,
+      });
+      const reproTestPath = prepared.testFilePath;
+      const isProofActive = Boolean(reproTestPath || proofOfFix || requireProofOfFix);
+
+      let negativePhaseResult: ProofOfFixPhaseResult | undefined;
+      if (isProofActive) {
+        if (!reproTestPath) {
+          if (requireProofOfFix) {
+            return {
+              packageName,
+              strategy: "none",
+              fromVersion,
+              toVersion,
+              applied: false,
+              dryRun,
+              unresolvedReason: "policy-blocked",
+              message:
+                "Proof-of-fix verification required, but no reproduction test or script was supplied.",
+            };
+          }
+        } else {
+          negativePhaseResult = await runProofOfFixPhase({
+            stage: "negative",
+            testFilePath: reproTestPath,
+            cwd,
+          });
+
+          if (!negativePhaseResult.passed) {
+            if (prepared.isCreated && reproTestPath) {
+              await rm(reproTestPath, { force: true }).catch(() => {});
+            }
+            return {
+              packageName,
+              strategy: "version-bump",
+              fromVersion,
+              toVersion,
+              applied: false,
+              dryRun: false,
+              unresolvedReason: requireProofOfFix ? "policy-blocked" : "proof-of-fix-failed",
+              message: `Proof-of-fix negative phase failed: ${negativePhaseResult.error}`,
+            };
+          }
+        }
+      }
+
       // Write updated package.json
       pkgJson[depField]![packageName] = newRange;
       writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
@@ -333,6 +417,52 @@ export const applyVersionBumpTool = defineTool({
         };
       }
 
+      let proofOfFixVerification: ProofOfFixVerification | undefined;
+      if (reproTestPath && negativePhaseResult?.passed) {
+        const positivePhaseResult = await runProofOfFixPhase({
+          stage: "positive",
+          testFilePath: reproTestPath,
+          cwd,
+        });
+
+        if (!positivePhaseResult.passed) {
+          pkgJson[depField]![packageName] = currentRange;
+          writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+
+          try {
+            const [rollbackCmd, ...rollbackArgs] = effectiveInstallCommand;
+            await safeExeca(rollbackCmd, rollbackArgs, {
+              cwd,
+              stdio: "pipe",
+            });
+          } catch {}
+
+          if (prepared.isCreated && reproTestPath) {
+            await rm(reproTestPath, { force: true }).catch(() => {});
+          }
+
+          return {
+            packageName,
+            strategy: "version-bump",
+            fromVersion,
+            toVersion,
+            applied: false,
+            dryRun: false,
+            unresolvedReason: requireProofOfFix ? "policy-blocked" : "proof-of-fix-failed",
+            message: `Proof-of-fix positive phase failed: ${positivePhaseResult.error}`,
+          };
+        }
+
+        proofOfFixVerification = assembleProofOfFixVerification({
+          reproductionTestPath: reproTestPath,
+          negativePhase: negativePhaseResult,
+          positivePhase: positivePhaseResult,
+          regressionPhase: {
+            executed: runTests,
+            passed: validationResult.passed,
+          },
+        });
+      }
 
       if (refactoredFilesList && refactoredFilesList.length > 0) {
         return {
@@ -343,10 +473,10 @@ export const applyVersionBumpTool = defineTool({
           applied: true,
           dryRun: false,
           refactoredFiles: refactoredFilesList,
+          proofOfFix: proofOfFixVerification,
           message: `Upgraded "${packageName}" from ${fromVersion} to ${toVersion} and refactored ${refactoredFilesList.length} call-site file(s) across breaking API changes.`,
         };
       }
-
 
       let dedupeNote = "";
 
@@ -370,6 +500,7 @@ export const applyVersionBumpTool = defineTool({
         toVersion,
         applied: true,
         dryRun: false,
+        proofOfFix: proofOfFixVerification,
         message: `Successfully upgraded "${packageName}" from ${fromVersion} to ${toVersion} in ${depField}, then ran ${effectiveInstallCommand.join(" ")}${runTests ? ` and passed ${effectiveTestCommand.join(" ")}` : ""}.${dedupeNote}`,
       };
     });

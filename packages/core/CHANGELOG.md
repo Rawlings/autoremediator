@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.20.0
+
+### Minor Changes
+
+- **Automated Call-Site Refactoring**: Added semantic consumer call-site migrations using the TypeScript Compiler API to safely adapt imports, arguments, and parameter signatures across breaking dependency version upgrades without suppressing compiler diagnostics.
+- **Dual-Stage Proof-of-Fix Verification**: Added two-phase verification (`proofOfFix`, `requireProofOfFix`) that confirms vulnerability reproduction before applying a fix and verifies test passage after remediation, with automated rollback on unexpected test harness or runtime failures.
+- **Enhanced Patching & Unified Diffs**: Upgraded the patch generation engine to produce standard Myers multi-hunk unified diffs and strengthened reconciliation to accurately report and roll back failed patch operations.
+- **Containment Mode & Policy Enforcement**: Enforced pre-mutation package trust policies and automated filesystem restoration when remediation outcomes resolve to escalation.
+- **Platform Hardening & Architecture Guardrails**: Added bounded asynchronous job management with memory leak protection and automated architecture test suites to continuously enforce code quality and execution integrity.
+
 ## 0.18.0
 
 ### Minor Changes

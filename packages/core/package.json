@@ -1,6 +1,6 @@
 {
   "name": "autoremediator",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "private": false,
   "description": "Agentic CVE remediation platform for Node.js. Correlates threat intelligence, applies policy-governed fixes, and delivers auditable remediation outcomes across CI/CD pipelines, agent workflows, and service portfolios.",
   "keywords": [
@@ -84,11 +84,13 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup && tsc --emitDeclarationOnly --declaration",
+    "clean": "rm -rf dist",
+    "build": "tsup && tsc -p tsconfig.build.json",
     "dev": "tsup --watch",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "lint": "oxlint"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",

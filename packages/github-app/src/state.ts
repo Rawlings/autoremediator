@@ -118,13 +118,18 @@ export class FileAppStateStore implements AppStateStore {
       return;
     }
 
-    for (const deliveryId of parsed.deliveries) {
+    const deliveries = Array.isArray(parsed.deliveries) ? parsed.deliveries : [];
+    for (const deliveryId of deliveries) {
       if (typeof deliveryId === "string" && deliveryId.length > 0) {
         this.inMemory.markDeliveryProcessed(deliveryId);
       }
     }
 
-    for (const [installationId, state] of Object.entries(parsed.installations)) {
+    const installations =
+      parsed.installations && typeof parsed.installations === "object"
+        ? Object.entries(parsed.installations)
+        : [];
+    for (const [installationId, state] of installations) {
       const id = Number.parseInt(installationId, 10);
       if (!Number.isFinite(id)) {
         continue;

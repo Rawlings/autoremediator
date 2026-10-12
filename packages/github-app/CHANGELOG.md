@@ -1,5 +1,18 @@
 # @autoremediator/github-app
 
+## 0.3.0
+
+### Minor Changes
+
+- 5b4a2ee: Add CI failure auto-healing to parse check-run logs and commit repairs for build, lint, and test errors on remediation pull requests.
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies [5b4a2ee]
+- Updated dependencies [5b4a2ee]
+  - autoremediator@0.20.0
+
 ## 0.1.3
 
 ### Patch Changes

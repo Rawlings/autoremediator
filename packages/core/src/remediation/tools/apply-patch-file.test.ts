@@ -13,6 +13,7 @@ const mocked = vi.hoisted(() => ({
   resolveInstallCommand: vi.fn(),
   resolveTestCommand: vi.fn(),
   loadPolicy: vi.fn(),
+  isPackageAllowed: vi.fn(),
   withRepoLock: vi.fn(),
 }));
 
@@ -42,6 +43,7 @@ vi.mock("../../platform/package-manager/index.js", () => ({
 
 vi.mock("../../platform/policy.js", () => ({
   loadPolicy: mocked.loadPolicy,
+  isPackageAllowed: mocked.isPackageAllowed,
 }));
 
 vi.mock("../../platform/repo-lock.js", () => ({
@@ -71,6 +73,7 @@ describe("apply-patch-file lock integration", () => {
       test: ["npm", "test"],
     });
     mocked.loadPolicy.mockReturnValue({ constraints: { installMode: "deterministic" } });
+    mocked.isPackageAllowed.mockReturnValue(true);
     mocked.resolveInstallCommand.mockReturnValue(["npm", "ci", "--prefer-offline"]);
     mocked.resolveTestCommand.mockReturnValue(["npm", "test"]);
     mocked.execa.mockResolvedValue({ stdout: "ok", stderr: "" });
@@ -178,7 +181,7 @@ describe("apply-patch-file lock integration", () => {
     );
   });
 
-  it("writes and runs synthesized reproduction test", async () => {
+  it("writes and runs synthesized reproduction test using dual-stage verification", async () => {
     mocked.detectPackageManager.mockReturnValue("npm");
     mocked.getPackageManagerCommands.mockReturnValue({
       install: ["npm", "install"],
@@ -186,7 +189,17 @@ describe("apply-patch-file lock integration", () => {
     });
     mocked.resolveInstallCommand.mockReturnValue(["npm", "install"]);
     mocked.resolveTestCommand.mockReturnValue(["npm", "test"]);
-    mocked.execa.mockResolvedValue({ exitCode: 0, stdout: "ok", stderr: "" });
+    // 1st: negative phase fails assertion (proves exploit)
+    // 2nd: patch apply / install
+    // 3rd: positive phase passes cleanly (mitigated)
+    mocked.execa
+      .mockRejectedValueOnce({
+        exitCode: 1,
+        message: "AssertionError: bug reproduced",
+        stderr: "fail",
+      })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: "ok", stderr: "" })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: "mitigated", stderr: "" });
 
     const result = await (applyPatchFileTool as any).execute({
       packageName: "lodash",
@@ -195,7 +208,7 @@ describe("apply-patch-file lock integration", () => {
       patchesDir: "./patches",
       cwd: "/tmp/project",
       packageManager: "npm",
-      reproductionTest: 'console.log("repro passed");',
+      reproductionTest: 'assert(false, "bug reproduced");',
       validateWithTests: false,
       dryRun: false,
     });
@@ -203,13 +216,17 @@ describe("apply-patch-file lock integration", () => {
     expect(result.success).toBe(true);
     expect(mocked.writeFile).toHaveBeenCalledWith(
       "/tmp/project/patches/lodash+4.17.0.test.cjs",
-      'console.log("repro passed");',
+      'assert(false, "bug reproduced");',
       "utf8",
     );
     expect(result.patchArtifact.validationPhases).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          phase: "reproduction-test",
+          phase: "proof-of-fix-negative",
+          passed: true,
+        }),
+        expect.objectContaining({
+          phase: "proof-of-fix-positive",
           passed: true,
         }),
       ]),
@@ -283,6 +300,115 @@ describe("apply-patch-file lock integration", () => {
 
     expect(result.success).toBe(false);
     expect(result.applied).toBe(false);
+    expect(result.unresolvedReason).toBe("policy-blocked");
     expect(result.message).toContain("Proof-of-fix negative phase failed");
+  });
+
+  it("strictly aborts negative phase failure even when requireProofOfFix is omitted", async () => {
+    mocked.detectPackageManager.mockReturnValue("npm");
+    mocked.resolveInstallCommand.mockReturnValue(["npm", "install"]);
+    mocked.resolveTestCommand.mockReturnValue(["npm", "test"]);
+
+    mocked.execa.mockResolvedValueOnce({ exitCode: 0, stdout: "clean", stderr: "" });
+
+    const result = await (applyPatchFileTool as any).execute({
+      packageName: "lodash",
+      vulnerableVersion: "4.17.0",
+      patchContent: "diff --git a/a.js b/a.js\n--- a/a.js\n+++ b/a.js\n@@ -1 +1 @@\n-old\n+new\n",
+      patchesDir: "./patches",
+      cwd: "/tmp/project",
+      packageManager: "npm",
+      reproductionTest: 'console.log("no bug");',
+      proofOfFix: true,
+      validateWithTests: false,
+      dryRun: false,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.applied).toBe(false);
+    expect(result.unresolvedReason).toBe("proof-of-fix-failed");
+  });
+
+  it("strictly aborts and cleans up when positive phase fails", async () => {
+    mocked.detectPackageManager.mockReturnValue("npm");
+    mocked.resolveInstallCommand.mockReturnValue(["npm", "install"]);
+    mocked.resolveTestCommand.mockReturnValue(["npm", "test"]);
+
+    // 1st: negative phase fails (exploit reproduced)
+    // 2nd: patch apply / install succeeds
+    // 3rd: positive phase fails (exploit STILL works)
+    mocked.execa
+      .mockRejectedValueOnce({
+        exitCode: 1,
+        message: "AssertionError: bug reproduced",
+        stderr: "fail",
+      })
+      .mockResolvedValueOnce({ exitCode: 0, stdout: "ok", stderr: "" })
+      .mockRejectedValueOnce({
+        exitCode: 1,
+        message: "AssertionError: exploit still works post-patch",
+        stderr: "fail",
+      });
+
+    const result = await (applyPatchFileTool as any).execute({
+      packageName: "lodash",
+      vulnerableVersion: "4.17.0",
+      patchContent: "diff --git a/a.js b/a.js\n--- a/a.js\n+++ b/a.js\n@@ -1 +1 @@\n-old\n+new\n",
+      patchesDir: "./patches",
+      cwd: "/tmp/project",
+      packageManager: "npm",
+      reproductionTest: 'assert(false, "bug");',
+      proofOfFix: true,
+      validateWithTests: false,
+      dryRun: false,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.applied).toBe(false);
+    expect(result.unresolvedReason).toBe("proof-of-fix-failed");
+    expect(mocked.rm).toHaveBeenCalled();
+  });
+
+  it("returns policy-blocked when reproduction test is missing under requireProofOfFix", async () => {
+    mocked.detectPackageManager.mockReturnValue("npm");
+    mocked.resolveInstallCommand.mockReturnValue(["npm", "install"]);
+    mocked.resolveTestCommand.mockReturnValue(["npm", "test"]);
+
+    const result = await (applyPatchFileTool as any).execute({
+      packageName: "lodash",
+      vulnerableVersion: "4.17.0",
+      patchContent: "diff --git a/a.js b/a.js\n--- a/a.js\n+++ b/a.js\n@@ -1 +1 @@\n-old\n+new\n",
+      patchesDir: "./patches",
+      cwd: "/tmp/project",
+      packageManager: "npm",
+      requireProofOfFix: true,
+      validateWithTests: false,
+      dryRun: false,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.applied).toBe(false);
+    expect(result.unresolvedReason).toBe("policy-blocked");
+    expect(result.message).toContain(
+      "Proof-of-fix verification required, but no reproduction test or script was supplied",
+    );
+  });
+
+  it("returns policy-blocked when package is denied by policy denyPackages", async () => {
+    mocked.isPackageAllowed.mockReturnValue(false);
+    const result = await (applyPatchFileTool as any).execute({
+      packageName: "forbidden-pkg",
+      vulnerableVersion: "1.0.0",
+      patchContent: "diff --git a/a.js b/a.js\n--- a/a.js\n+++ b/a.js\n@@ -1 +1 @@\n-old\n+new\n",
+      patchesDir: "./patches",
+      cwd: "/tmp/project",
+      dryRun: false,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.applied).toBe(false);
+    expect(result.unresolvedReason).toBe("policy-blocked");
+    expect(result.message).toContain("denyPackages");
+    expect(mocked.writeFile).not.toHaveBeenCalled();
   });
 });
