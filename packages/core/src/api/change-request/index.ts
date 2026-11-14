@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 
 import { safeExeca } from "../../platform/safe-exec.js";
+import { trimChar } from "../../platform/trim.js";
 import type {
   ChangeRequestGrouping,
   ChangeRequestOptions,
@@ -76,11 +77,7 @@ interface ChangeRequestPlan {
 }
 
 function sanitizeBranchToken(value: string): string {
-  return value
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9._/-]+/g, "-")
-    .replaceAll(/^-+|-+$/g, "")
-    .slice(0, 80);
+  return trimChar(value.toLowerCase().replaceAll(/[^a-z0-9._/-]+/g, "-"), "-").slice(0, 80);
 }
 
 function buildPlan(reports: RemediationReport[]): ChangeRequestPlan {
@@ -235,7 +232,9 @@ async function createGitHubRequest(params: {
 
   if (token && repository) {
     const [owner, repo] = repository.split("/");
-    const baseUrl = params.githubApiUrl?.replace(/\/+$/, "") || "https://api.github.com";
+    const baseUrl =
+      (params.githubApiUrl ? trimChar(params.githubApiUrl, "/", "end") : undefined) ||
+      "https://api.github.com";
     const endpoint = `${baseUrl}/repos/${owner}/${repo}/pulls`;
     const response = await fetch(endpoint, {
       method: "POST",

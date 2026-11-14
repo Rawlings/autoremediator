@@ -1,7 +1,7 @@
 {
   "name": "autoremediator-rawlings",
   "displayName": "Node CVE Remediator",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "VS Code extension for risk-aware Node.js CVE diagnostics and remediation using OSV, CISA KEV, and FIRST EPSS signals",
   "categories": [
     "Linters",
@@ -75,6 +75,6 @@
     "workspaceContains:**/package.json"
   ],
   "engines": {
-    "vscode": "^1.134.0"
+    "vscode": "^1.146.0"
   }
 }

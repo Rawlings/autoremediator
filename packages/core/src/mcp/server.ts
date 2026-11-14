@@ -35,7 +35,7 @@ import {
   validatePatchArtifact,
 } from "../api/index.js";
 import { isEntrypoint } from "../platform/entrypoint.js";
-import { PACKAGE_VERSION } from "../version";
+import { PACKAGE_VERSION } from "../version.js";
 
 const PATCH_ARTIFACT_SCHEMA_PROPERTIES = {
   cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },

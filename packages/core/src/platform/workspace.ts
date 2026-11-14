@@ -3,6 +3,8 @@ import { join, resolve, relative } from "node:path";
 
 import yaml from "yaml";
 
+import { trimChar } from "./trim.js";
+
 export interface WorkspacePackage {
   name: string;
   relativeDir: string;
@@ -102,7 +104,7 @@ export function findWorkspacePackages(cwd: string): WorkspacePackage[] {
   const seenDirs = new Set<string>();
 
   for (const glob of packageGlobs) {
-    const cleanGlob = glob.trim().replace(/\/+$/, "");
+    const cleanGlob = trimChar(glob.trim(), "/", "end");
     if (!cleanGlob || cleanGlob.startsWith("!")) continue;
 
     if (cleanGlob.endsWith("/*")) {

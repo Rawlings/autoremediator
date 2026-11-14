@@ -134,24 +134,21 @@ export function addRemediateDispositionStep(
     return;
   }
 
-  const byCveId: Record<
-    string,
-    Record<string, { disposition: string; dispositionReason?: string }>
-  > = {};
-
+  // Map + Object.fromEntries: keys such as "__proto__" become own properties, never prototype writes.
+  const dispositions = new Map<string, { disposition: string; dispositionReason?: string }>();
   for (const result of report.results) {
     if (!result.disposition) continue;
-    byCveId[cveId] ??= {};
-    byCveId[cveId][result.packageName] = {
+    dispositions.set(result.packageName, {
       disposition: result.disposition,
       dispositionReason: result.dispositionReason,
-    };
+    });
   }
 
-  if (Object.keys(byCveId).length === 0) {
+  if (dispositions.size === 0) {
     return;
   }
 
+  const byCveId = Object.fromEntries([[cveId, Object.fromEntries(dispositions)]]);
   addEvidenceStep(evidence, "disposition-summary", { cveId }, { byCveId });
 }
 

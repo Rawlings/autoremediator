@@ -1,6 +1,6 @@
 {
   "name": "autoremediator",
-  "version": "0.21.1",
+  "version": "0.21.2",
   "private": false,
   "description": "Agentic CVE remediation platform for Node.js. Correlates threat intelligence, applies policy-governed fixes, and delivers auditable remediation outcomes across CI/CD pipelines, agent workflows, and service portfolios.",
   "keywords": [
@@ -53,7 +53,7 @@
     "url": "https://github.com/Rawlings"
   },
   "bin": {
-    "autoremediator": "./dist/cli.js",
+    "autoremediator": "./dist/cli/index.js",
     "autoremediator-mcp": "./dist/mcp/server.js"
   },
   "files": [
@@ -62,15 +62,15 @@
     "llms.txt"
   ],
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/api/index.js",
   "types": "./dist/api/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/api/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/api/index.js"
     },
     "./cli": {
-      "import": "./dist/cli.js"
+      "import": "./dist/cli/index.js"
     },
     "./mcp": {
       "import": "./dist/mcp/server.js"
@@ -85,8 +85,8 @@
   },
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "tsup && tsc -p tsconfig.build.json",
-    "dev": "tsup --watch",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -108,7 +108,6 @@
     "@ai-sdk/openai": "^4.0.117",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
-    "tsup": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

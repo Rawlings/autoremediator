@@ -6,8 +6,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "declaration": true,
-    "declarationMap": true,
-    "emitDeclarationOnly": true
+    "declarationMap": true
   },
   "exclude": [
     "node_modules",

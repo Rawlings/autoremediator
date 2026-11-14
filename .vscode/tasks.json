@@ -28,7 +28,7 @@
       "command": "sh",
       "args": [
         "-lc",
-        "pnpm build && pnpm audit --json > /tmp/autoremediator-audit.json || true && node dist/cli.js /tmp/autoremediator-audit.json --cwd . --llm-provider local --dry-run --run-tests"
+        "pnpm build && pnpm audit --json > /tmp/autoremediator-audit.json || true && node dist/cli/index.js /tmp/autoremediator-audit.json --cwd . --llm-provider local --dry-run --run-tests"
       ],
       "isBackground": false
     },
@@ -37,7 +37,7 @@
       "type": "shell",
       "command": "node",
       "args": [
-        "dist/cli.js",
+        "dist/cli/index.js",
         "/tmp/autoremediator-audit.json",
         "--cwd",
         ".",
@@ -54,7 +54,7 @@
       "command": "sh",
       "args": [
         "-lc",
-        "pnpm build && node dist/cli.js /tmp/autoremediator-audit.json --cwd . --llm-provider local --dry-run --run-tests"
+        "pnpm build && node dist/cli/index.js /tmp/autoremediator-audit.json --cwd . --llm-provider local --dry-run --run-tests"
       ],
       "isBackground": false
     },
@@ -64,7 +64,7 @@
       "command": "sh",
       "args": [
         "-lc",
-        "mkdir -p demo-vuln-app && cat > demo-vuln-app/package.json <<'JSON'\n{\n  \"name\": \"demo-vuln-app\",\n  \"private\": true,\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"lodash\": \"4.17.20\"\n  }\n}\nJSON\npnpm --dir demo-vuln-app install >/dev/null 2>&1\nnode dist/cli.js CVE-2021-23337 --cwd ./demo-vuln-app --llm-provider local --dry-run --run-tests"
+        "mkdir -p demo-vuln-app && cat > demo-vuln-app/package.json <<'JSON'\n{\n  \"name\": \"demo-vuln-app\",\n  \"private\": true,\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"lodash\": \"4.17.20\"\n  }\n}\nJSON\npnpm --dir demo-vuln-app install >/dev/null 2>&1\nnode dist/cli/index.js CVE-2021-23337 --cwd ./demo-vuln-app --llm-provider local --dry-run --run-tests"
       ],
       "isBackground": false
     },
@@ -81,7 +81,7 @@
       "command": "sh",
       "args": [
         "-lc",
-        "pnpm build && node dist/cli.js CVE-2021-23337 --cwd ./demo-vuln-app --llm-provider local --dry-run --run-tests"
+        "pnpm build && node dist/cli/index.js CVE-2021-23337 --cwd ./demo-vuln-app --llm-provider local --dry-run --run-tests"
       ],
       "isBackground": false
     },
@@ -91,7 +91,7 @@
       "command": "sh",
       "args": [
         "-lc",
-        "pnpm build && node dist/cli.js CVE-2021-23337 --cwd ./demo-vuln-app --llm-provider local --dry-run --run-tests"
+        "pnpm build && node dist/cli/index.js CVE-2021-23337 --cwd ./demo-vuln-app --llm-provider local --dry-run --run-tests"
       ],
       "isBackground": false
     },
@@ -172,7 +172,7 @@
       "command": "sh",
       "args": [
         "-lc",
-        "pnpm build && node dist/cli.js CVE-2026-4258 --cwd ./demo-vuln-app --run-tests"
+        "pnpm build && node dist/cli/index.js CVE-2026-4258 --cwd ./demo-vuln-app --run-tests"
       ]
     },
     {
@@ -180,7 +180,7 @@
       "type": "shell",
       "command": "node",
       "args": [
-        "dist/cli.js",
+        "dist/cli/index.js",
         "CVE-2026-4258",
         "--cwd",
         "./demo-vuln-app",

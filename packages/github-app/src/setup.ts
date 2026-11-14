@@ -275,7 +275,14 @@ export function renderSetupErrorPage(message: string): string {
 </html>`;
 }
 
-export function renderInstallPage(installationId?: string): string {
+// GitHub installation IDs are numeric; anything else is never reflected into the page.
+const INSTALLATION_ID_PATTERN = /^\d{1,20}$/;
+
+export function renderInstallPage(rawInstallationId?: string): string {
+  const installationId =
+    rawInstallationId !== undefined && INSTALLATION_ID_PATTERN.test(rawInstallationId)
+      ? rawInstallationId
+      : undefined;
   const body = installationId
     ? `<p class="ok">&#10003; Installation ${escapeHtml(installationId)} active.</p>
   <p>Remediation will run on <code>check_suite</code> and <code>workflow_dispatch</code> events. Check the <a href="/health">health endpoint</a> for runtime counters.</p>`

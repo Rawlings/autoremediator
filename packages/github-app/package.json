@@ -1,6 +1,6 @@
 {
   "name": "@autoremediator/github-app",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "private": true,
   "description": "GitHub App MVP foundation for autoremediator",
   "files": [
@@ -11,7 +11,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "tsup && tsc -p tsconfig.build.json",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -25,7 +25,6 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
-    "tsup": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

@@ -8,7 +8,7 @@
     "types": [],
     "libReplacement": false,
 
-    // Modules: sources are bundled (tsup/esbuild), so resolution is "bundler"
+    // Modules: core and github-app are emitted by tsc as-is, so relative imports must carry ".js" extensions
     "module": "ESNext",
     "moduleResolution": "bundler",
     "moduleDetection": "force",

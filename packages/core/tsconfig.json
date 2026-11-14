@@ -2,8 +2,10 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "types": ["node"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "noEmit": true
   },
-  "include": ["src", "test", "tsup.config.ts"],
+  "include": ["src", "test"],
   "exclude": ["node_modules", "dist"]
 }

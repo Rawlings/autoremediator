@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { Command } from "commander";
 
 import { OPTION_DESCRIPTIONS } from "../api/index.js";
-import { PACKAGE_VERSION } from "../version";
+import { PACKAGE_VERSION } from "../version.js";
 import {
   runDiffAudit,
   runEvaluate,

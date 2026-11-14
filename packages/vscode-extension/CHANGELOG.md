@@ -1,5 +1,11 @@
 # autoremediator-rawlings
 
+## 0.3.2
+
+### Patch Changes
+
+- Raise `engines.vscode` to `^1.146.0` so it matches the `@types/vscode` typings (`^1.146.0`). The mismatch made `vsce package` fail. The extension now requires VS Code 1.146 or newer.
+
 ## 0.3.1
 
 ### Patch Changes

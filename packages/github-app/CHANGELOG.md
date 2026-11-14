@@ -1,5 +1,15 @@
 # @autoremediator/github-app
 
+## 0.4.2
+
+### Patch Changes
+
+- Security hardening for CodeQL findings: the GitHub App install page only reflects numeric installation IDs (reflected XSS), branch-name and URL trimming no longer use backtracking regexes (ReDoS), the OpenAPI server returns a generic 500 body instead of internal error messages, and disposition evidence is built without writing attacker-controlled keys onto objects (prototype pollution).
+- Build with plain `tsc` instead of tsup: the published package now ships the compiled source tree (`dist/cli/index.js`, `dist/api/index.js`, `dist/mcp/server.js`, `dist/openapi/server.js`) instead of bundled entry files. Package names, bin names, and export subpaths are unchanged; only the internal file layout under `dist/` differs.
+- Updated dependencies
+- Updated dependencies
+  - autoremediator@0.21.2
+
 ## 0.4.1
 
 ### Patch Changes

@@ -70,8 +70,9 @@ export function createOpenApiServer(deps: OpenApiServerDeps = defaultDeps): http
         }
         sendJson(res, 404, { error: "Not found" });
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Internal Server Error";
-        sendJson(res, 500, { error: message });
+        // Never echo internal error details to the client; log them server-side instead.
+        console.error("autoremediator OpenAPI server error:", err);
+        sendJson(res, 500, { error: "Internal Server Error" });
       }
     })();
   });
