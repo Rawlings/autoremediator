@@ -35,15 +35,24 @@ second run with the same key returns the recorded result instead of repeating th
 
 ## Pull requests
 
-`--create-change-request` commits the change on a new branch and opens a pull request (GitHub, using
-`GITHUB_TOKEN` or `GH_TOKEN`) or a merge request (GitLab, using the `glab` CLI). It is refused with
-`--dry-run` and `--preview`.
+`--create-change-request` commits the change on a new branch, pushes it and opens a pull request or
+merge request. It is refused with `--dry-run` and `--preview`. Each provider reads its own token
+variable; a GitHub token is never sent to another host.
+
+| Provider | Opens | Token variable |
+| -------- | ----- | -------------- |
+| `github` (default) | Pull request | `GITHUB_TOKEN` or `GH_TOKEN` |
+| `gitlab` | Merge request through the REST API, or `glab` when there is no token | `GITLAB_TOKEN` or `GITLAB_ACCESS_TOKEN` |
+| `bitbucket` | Bitbucket Cloud pull request | `BITBUCKET_TOKEN` |
+| `azure-devops` | Azure DevOps Services pull request | `AZURE_DEVOPS_EXT_PAT`, `AZURE_DEVOPS_TOKEN` or `SYSTEM_ACCESSTOKEN` |
+
+See [Other CI systems](../integrations/other-ci.md) for pipeline templates.
 
 | Flag | Meaning |
 | ---- | ------- |
-| `--change-request-provider` | `github` or `gitlab` |
+| `--change-request-provider` | `github`, `gitlab`, `bitbucket` or `azure-devops` |
 | `--change-request-grouping` | `all`, `per-cve` or `per-package`: one request per group |
-| `--change-request-repository` | `owner/name`, when it cannot be inferred from the remote |
+| `--change-request-repository` | `owner/name` (GitLab: `group/subgroup/name`, Azure DevOps: `org/project/repo`), when it cannot be inferred from the remote |
 | `--change-request-base-branch` | Branch the request targets |
 | `--change-request-branch-prefix` | Prefix for the new branch |
 | `--change-request-title-prefix` | Prefix for the request title |

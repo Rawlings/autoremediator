@@ -23,6 +23,11 @@ RUN npm install -g /tmp/autoremediator.tgz && rm /tmp/autoremediator.tgz
 
 WORKDIR /workdir
 
+# git is required for change requests (branch, commit, push). `safe.directory '*'` lets the
+# non-root user work in a bind-mounted checkout owned by a different uid.
+RUN apk add --no-cache git \
+    && git config --system --add safe.directory '*'
+
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
 

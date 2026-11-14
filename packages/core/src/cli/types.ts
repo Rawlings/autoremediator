@@ -1,4 +1,4 @@
-import type { PackageManager } from "../platform/types.js";
+import type { ChangeRequestProvider, PackageManager } from "../platform/types.js";
 
 export type ScanFormat = "auto" | "npm-audit" | "yarn-audit" | "sarif";
 export type OutputFormat = "text" | "json" | "sarif" | "cyclonedx-vex";
@@ -47,7 +47,7 @@ export interface CommandOptions {
   slaCheck?: boolean;
   skipUnreachable?: boolean;
   createChangeRequest?: boolean;
-  changeRequestProvider?: "github" | "gitlab";
+  changeRequestProvider?: ChangeRequestProvider;
   changeRequestGrouping?: "all" | "per-cve" | "per-package";
   changeRequestRepository?: string;
   changeRequestBaseBranch?: string;
