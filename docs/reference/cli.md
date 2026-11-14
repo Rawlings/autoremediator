@@ -13,7 +13,7 @@ options typed after a subcommand apply to it. Unknown options are an error.
 | `cve <id>` | Remediate one CVE or GHSA id (the same as passing it bare) |
 | `plan <id>` | Preview a CVE fix and record it as a [plan](../guides/plan-and-apply.md); prints the run and plan ids |
 | `runs list \| show <id> \| apply [id] \| verify <id> \| resume <id> \| rollback <id>` | Work with recorded runs: `list` takes `--status` and `--limit`, `apply` takes `--plan-id`, `--item`, `--no-verify`, `--repair`/`--no-repair`, `--model` and `--max-repair-rounds`, `verify` takes `--check <name...>` and `--offline`, `rollback` takes `--force`. All take `--cwd` and `--output-format text\|json` |
-| `init` | Set up the project for Autoremediator and your coding agents ([details](../integrations/coding-agents.md)). Takes `--hosts <list>`, `--ci`, `--no-policy`, `--no-agents-md`, `--yes` and `--check`. Without `--yes` and without a terminal it prints a diff and exits `3` |
+| `init` | Set up the project for Autoremediator and your coding agents ([details](../integrations/coding-agents.md)). Takes `--hosts <list>`, `--ci`, `--guard`, `--no-policy`, `--no-agents-md`, `--yes` and `--check`. Without `--yes` and without a terminal it prints a diff and exits `3` |
 | `scan` | Remediate from scanner output (`--input <path>`, or `--audit`) |
 | `update-outdated` | Bump outdated dependencies (`--include-transitive`) |
 | `portfolio` | Run across several projects (`--targets-file <path>`) |
@@ -21,6 +21,8 @@ options typed after a subcommand apply to it. Unknown options are an error.
 | `triage [input]` | Choose what to fix interactively |
 | `patches list \| inspect <path> \| validate <path> \| reconcile` | Manage generated patches. `reconcile --auto-apply` removes patches an upstream release has made obsolete |
 | `reachability` | Is a package or symbol imported by project source (`--package`, `--symbol`) |
+| `guard <package...>` | Judge packages before installing them ([details](../guides/guard.md)); takes `--min-age-hours`, `--offline`, `--output-format`. Exits `0` clear, `3` check first, `4` blocked |
+| `guard-hook` | Claude Code `PreToolUse` hook: reads the hook JSON on stdin, answers allow, ask or deny for package installs |
 | `evaluate <package[@version]>` | Pre-install check (`--pkg-version`) |
 
 `diff` also takes `--ci` and `--output-format text|json`. `patches list` and `inspect` take

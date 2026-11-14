@@ -113,4 +113,16 @@ describe("supply-chain verification gate", () => {
     });
     expect(verdict.trusted).toBe(true);
   });
+
+  it("asks the registry for the full document, since the abbreviated one has no times or scripts", async () => {
+    mocked.httpClient.mockClear();
+    mocked.httpClient.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      data: { name: "foo", time: {}, versions: { "1.0.0": { name: "foo", version: "1.0.0" } } },
+    });
+    await verifyPackageTrust("foo", "1.0.0", { minPublishAgeHours: 48 });
+    const request = mocked.httpClient.mock.calls[0]?.[0] as { headers: Record<string, string> };
+    expect(request.headers.Accept).toBe("application/json");
+  });
 });

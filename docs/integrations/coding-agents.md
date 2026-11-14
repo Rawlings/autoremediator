@@ -24,7 +24,7 @@ decides whether they are kept, so an agent can be given these tools without trus
 | `.github/autoremediator.yml` | everyone | Only when missing. Conservative defaults: no major bumps, 72 hour cooldown, no install scripts, KEV is mandatory |
 | `.gitignore` | everyone | Adds `.autoremediator/` |
 | `AGENTS.md` | any agent | A marked section: how to plan, apply, repair and roll back, and the exit codes. Text outside the markers is never touched |
-| `.mcp.json`, `.claude/skills/*/SKILL.md` | Claude Code | MCP server and three skills (`fix-cve`, `repair-upgrade`, `vet-dependency`) |
+| `.mcp.json`, `.claude/skills/*/SKILL.md` | Claude Code | MCP server and three skills (`fix-cve`, `repair-upgrade`, `vet-dependency`). With `--guard`, also a `.claude/settings.json` hook that [checks package installs](../guides/guard.md) |
 | `.cursor/mcp.json`, `.cursor/rules/autoremediator.mdc` | Cursor | MCP server and a rule |
 | `.vscode/mcp.json` | VS Code | MCP server (`servers` key, `"type": "stdio"`) |
 | `.github/agents/autoremediator.agent.md` | Copilot | A custom agent |
@@ -57,7 +57,7 @@ Instead of per-project files, install the plugin once:
 /plugin install autoremediator@autoremediator
 ```
 
-It adds the MCP server, the three skills, two commands (`/autoremediator:remediate <id>`,
+It adds the MCP server, the [install guard hook](../guides/guard.md), the three skills, two commands (`/autoremediator:remediate <id>`,
 `/autoremediator:vet <package>`) and a `dependency-remediator` subagent. The plugin lives in
 [`plugins/claude-code`](../../plugins/claude-code) and is generated from the same text `init` writes,
 so the two cannot disagree.

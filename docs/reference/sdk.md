@@ -27,6 +27,7 @@ Every function returns a promise unless noted. Option names are identical to the
 | `remediatePortfolio(targets, options?)` | `PortfolioReport` |
 | `updateOutdated(options?)` | `UpdateOutdatedReport` |
 | `init({ cwd?, hosts?, ci?, policy?, agentsMd?, yes?, check? })` | `InitResult`: what was detected, each file's action and diff, `drift`, `applied`, `conflicts`. Writes only with `yes`. See [Coding agents](../integrations/coding-agents.md) |
+| `guardPackage(spec, { cwd?, minPublishAgeHours?, offline? })`, `guardPackages(specs, options?)` | `GuardReport`: `verdict` (`allow`, `warn`, `block`), `findings[]`, `resolvedVersion`, `alternative`. [Guarding new dependencies](../guides/guard.md) |
 | `scanDelta({ cwd?, baseRef?, includeUnstaged?, packageManager? })` | `DeltaScanReport` |
 | `checkReachability({ packageName, symbol?, cwd? })` | `ReachabilityAssessment` |
 | `evaluatePackage(name, { version?, packageManager?, cwd? })` | `PackageEvaluationReport` |

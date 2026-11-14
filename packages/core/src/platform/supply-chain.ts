@@ -59,7 +59,9 @@ export async function verifyPackageTrust(
     const res = await httpClient({
       url,
       headers: {
-        Accept: "application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8",
+        // The abbreviated install document has no publish times and no scripts, which would make
+        // the age and install-script gates below silently pass. Ask for the full document.
+        Accept: "application/json",
         ...registry.headersFor(url),
       },
     });

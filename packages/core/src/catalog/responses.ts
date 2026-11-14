@@ -142,6 +142,19 @@ export const RESPONSES = {
       message: { type: "string" },
     }),
   },
+  guardReport: {
+    description: "GuardReport",
+    schema: object({
+      schemaVersion: { type: "string" },
+      spec: { type: "string" },
+      packageName: { type: "string" },
+      resolvedVersion: { type: "string" },
+      verdict: { type: "string", enum: ["allow", "warn", "block"] },
+      findings: { type: "array", items: { type: "object" } },
+      alternative: { type: "object" },
+      generatedAt: { type: "string" },
+    }),
+  },
   init: {
     description: "InitResult",
     schema: object({

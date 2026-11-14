@@ -14,8 +14,10 @@ import {
   workflowContent,
   copilotAgentContent,
   cursorRuleContent,
+  guardHookCommand,
 } from "./assets.js";
 import {
+  mergeClaudeGuardHook,
   mergeCodexToml,
   mergeGitignore,
   mergeJsonMcpConfig,
@@ -50,7 +52,7 @@ function owned(path: string, reason: string, before: string | undefined, content
   return { path, action, reason, ...(before === undefined ? {} : { before }), after: content };
 }
 
-function hostChanges(cwd: string, host: AgentHost): FileChange[] {
+function hostChanges(cwd: string, host: AgentHost, guard: boolean): FileChange[] {
   const entry = mcpServerEntry();
   const json = (path: string, key: "mcpServers" | "servers", extra: Record<string, unknown> = {}) => {
     const before = readIfExists(cwd, path);
@@ -63,6 +65,19 @@ function hostChanges(cwd: string, host: AgentHost): FileChange[] {
         const path = `.claude/skills/${skill.name}/SKILL.md`;
         return owned(path, "teach Claude Code the safe remediation steps", readIfExists(cwd, path), renderSkill(skill));
       }),
+      ...(guard
+        ? [
+            (() => {
+              const before = readIfExists(cwd, ".claude/settings.json");
+              return toChange(
+                ".claude/settings.json",
+                "check package installs with guard before Claude Code runs them",
+                before,
+                mergeClaudeGuardHook(before, guardHookCommand()),
+              );
+            })(),
+          ]
+        : []),
     ],
     cursor: () => [
       json(".cursor/mcp.json", "mcpServers"),
@@ -107,7 +122,7 @@ export function planInit(facts: ProjectFacts, hosts: AgentHost[], options: InitO
     toChange(".gitignore", "keep run state out of git", gitignoreBefore, mergeGitignore(gitignoreBefore, [".autoremediator/"])),
   );
 
-  for (const host of hosts) changes.push(...hostChanges(cwd, host));
+  for (const host of hosts) changes.push(...hostChanges(cwd, host, options.guard === true));
 
   if (options.agentsMd !== false && hosts.length > 0) {
     const before = readIfExists(cwd, "AGENTS.md");

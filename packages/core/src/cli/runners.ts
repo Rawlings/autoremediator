@@ -9,6 +9,10 @@ import {
   evaluatePackage,
   getRun,
   init,
+  guardPackages,
+  guardExitCode,
+  runClaudeCodeHook,
+  type GuardReport,
   AGENT_HOSTS,
   type AgentHost,
   type InitResult,
@@ -830,6 +834,7 @@ export interface InitCliOptions {
   outputFormat: OutputFormat;
   hosts?: string;
   ci?: boolean;
+  guard?: boolean;
   policy?: boolean;
   agentsMd?: boolean;
   yes?: boolean;
@@ -873,6 +878,7 @@ export async function runInit(opts: InitCliOptions): Promise<void> {
     cwd: opts.cwd,
     hosts: parseHosts(opts.hosts),
     ci: opts.ci,
+    guard: opts.guard,
     policy: opts.policy,
     agentsMd: opts.agentsMd,
   };
@@ -908,4 +914,46 @@ export async function runInit(opts: InitCliOptions): Promise<void> {
     // Changes are waiting for a yes that this run could not get.
     process.exitCode = EXIT_CODES.needsApproval;
   }
+}
+
+export interface GuardCliOptions {
+  cwd: string;
+  outputFormat: OutputFormat;
+  minAgeHours?: number;
+  offline?: boolean;
+}
+
+function describeGuard(report: GuardReport): string {
+  const lines = [`${report.verdict.toUpperCase().padEnd(5)} ${report.spec}${report.resolvedVersion ? ` (${report.resolvedVersion})` : ""}`];
+  for (const finding of report.findings) {
+    lines.push(`  ${finding.severity.padEnd(5)} ${finding.check}: ${finding.message}`);
+  }
+  if (report.alternative) {
+    const { packageName, version, reason } = report.alternative;
+    lines.push(`  instead: ${packageName}${version ? `@${version}` : ""} (${reason})`);
+  }
+  return lines.join("\n");
+}
+
+export async function runGuard(specs: string[], opts: GuardCliOptions): Promise<void> {
+  const reports = await guardPackages(specs, {
+    cwd: opts.cwd,
+    ...(opts.minAgeHours === undefined ? {} : { minPublishAgeHours: opts.minAgeHours }),
+    ...(opts.offline ? { offline: true } : {}),
+  });
+  if (opts.outputFormat === "json") logJson(reports.length === 1 ? reports[0] : reports);
+  else process.stdout.write(`${reports.map((entry) => describeGuard(entry)).join("\n")}\n`);
+  process.exitCode = guardExitCode(reports);
+}
+
+async function readStdin(): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) chunks.push(Buffer.from(chunk as Buffer));
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+/** Claude Code PreToolUse hook: JSON on stdin, a permission decision on stdout, always exit 0. */
+export async function runGuardHook(): Promise<void> {
+  const output = await runClaudeCodeHook(await readStdin());
+  if (output) process.stdout.write(`${output}\n`);
 }

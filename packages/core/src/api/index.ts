@@ -168,6 +168,15 @@ export { checkReachability } from "./reachability/index.js";
 export { evaluatePackage } from "./evaluate/index.js";
 export { scanDelta } from "./delta-scan/index.js";
 export { init, AGENT_HOSTS } from "./init/index.js";
+export {
+  guardPackage,
+  guardPackages,
+  type GuardFinding,
+  type GuardOptions,
+  type GuardReport,
+  type GuardVerdict,
+} from "./guard/index.js";
+export { decideForCommand, guardExitCode, runClaudeCodeHook } from "./guard/hook.js";
 export type { AgentHost, InitOptions, InitResult, ProjectFacts } from "./init/index.js";
 export {
   submitRemediateJob,

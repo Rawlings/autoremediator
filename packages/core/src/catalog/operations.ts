@@ -113,6 +113,10 @@ export const OPERATIONS: readonly Operation[] = [
           .describe("Agent hosts to configure. Default: those found in the project, else those installed."),
         ci: z.boolean().optional().describe("Also write a weekly remediation workflow for GitHub Actions."),
         policy: z.boolean().optional().describe("Write the policy file when missing. Default true."),
+        guard: z
+          .boolean()
+          .optional()
+          .describe("Claude Code: also install a hook that checks package installs with guard. Default false."),
         agentsMd: z.boolean().optional().describe("Add an Autoremediator section to AGENTS.md. Default true."),
         yes: z.boolean().optional().describe("Write the changes. Without it, only report them."),
         check: z.boolean().optional().describe("Report drift only; never write."),
@@ -504,6 +508,34 @@ export const OPERATIONS: readonly Operation[] = [
     http: { method: "POST", path: "/packages/evaluate", positional: ["packageName"] },
     handler: ({ packageName, ...options }, context) =>
       context.api.evaluatePackageFn(packageName, options),
+  }),
+  defineOperation({
+    name: "guardPackage",
+    title: "Guard a package install",
+    description:
+      "Judge an npm package before it is installed: does it exist, is it known malware (OSV), does it imitate a popular package, is the release inside the cooldown, did it gain install scripts or lose provenance, does it have known vulnerabilities. Returns allow, warn or block with the findings and a safer alternative. Call this before adding any dependency. Installs nothing.",
+    input: z
+      .object({
+        spec: z
+          .string("spec is required (string)")
+          .min(1, "spec is required (string)")
+          .max(300)
+          .describe("Package to check, as you would pass it to npm install: name, name@range or @scope/name@range."),
+        cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional(),
+        minPublishAgeHours: z
+          .number()
+          .min(0)
+          .max(24 * 365)
+          .optional()
+          .describe("Block releases younger than this many hours. Default 72; 0 turns the check off."),
+        offline: z.boolean().optional().describe("Skip the OSV malware and advisory lookups."),
+      })
+      .strict(),
+    annotations: READ_ONLY_NETWORK,
+    response: RESPONSES.guardReport,
+    mcp: true,
+    http: { method: "POST", path: "/packages/guard", positional: ["spec"] },
+    handler: ({ spec, ...options }, context) => context.api.guardPackageFn(spec, options),
   }),
   defineOperation({
     name: "scanDelta",

@@ -1,0 +1,55 @@
+/** Widely installed npm packages. A new package whose name sits next to one of these deserves a second look. */
+export const POPULAR_PACKAGES: readonly string[] = [
+  "react", "react-dom", "react-router", "react-router-dom", "react-native", "redux", "react-redux", "next", "vue",
+  "vue-router", "vuex", "nuxt", "angular", "svelte", "express", "koa", "fastify", "hapi", "lodash", "underscore",
+  "ramda", "moment", "dayjs", "date-fns", "luxon", "axios", "node-fetch", "got", "superagent", "request", "chalk",
+  "colors", "debug", "commander", "yargs", "minimist", "inquirer", "ora", "glob", "rimraf", "mkdirp", "fs-extra",
+  "chokidar", "webpack", "webpack-cli", "rollup", "vite", "esbuild", "parcel", "babel-core", "typescript",
+  "ts-node", "eslint", "prettier", "jest", "mocha", "chai", "sinon", "vitest", "cypress", "puppeteer",
+  "playwright", "nodemon", "dotenv", "cors", "body-parser", "cookie-parser", "express-session", "helmet", "morgan",
+  "passport", "jsonwebtoken", "bcrypt", "bcryptjs", "uuid", "nanoid", "validator", "joi", "yup", "zod", "ajv",
+  "mongoose", "mongodb", "mysql", "mysql2", "pg", "redis", "ioredis", "sequelize", "typeorm", "prisma", "knex",
+  "socket.io", "ws", "graphql", "apollo-server", "jquery", "bootstrap", "tailwindcss", "postcss", "autoprefixer",
+  "sass", "less", "styled-components", "classnames", "prop-types", "immer", "rxjs", "bluebird", "async", "semver",
+  "yaml", "js-yaml", "cheerio", "marked", "handlebars", "ejs", "pug", "nodemailer", "winston", "pino", "bunyan",
+  "crypto-js", "jsdom", "tslib", "core-js", "regenerator-runtime", "event-stream", "left-pad", "is-promise",
+  "ms", "qs", "cross-env", "concurrently", "husky", "lint-staged", "storybook", "electron", "aws-sdk", "firebase",
+  "stripe", "twilio", "openai", "langchain", "anthropic", "tensorflow", "three", "d3", "chart.js", "lodash-es",
+  "node-sass", "sharp", "multer", "formidable", "http-proxy", "serve-static", "compression", "ansi-styles",
+  "strip-ansi", "supports-color", "readable-stream", "string-width", "wrap-ansi", "color-convert", "color-name",
+];
+
+const POPULAR_SET = new Set(POPULAR_PACKAGES);
+
+/** Optimal string alignment distance: edits, plus swapping two neighbouring letters. */
+export function editDistance(a: string, b: string): number {
+  const rows = a.length + 1;
+  const cols = b.length + 1;
+  const d = Array.from({ length: rows }, () => Array.from<number>({ length: cols }).fill(0));
+  for (let i = 0; i < rows; i += 1) d[i]![0] = i;
+  for (let j = 0; j < cols; j += 1) d[0]![j] = j;
+  for (let i = 1; i < rows; i += 1) {
+    for (let j = 1; j < cols; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i]![j] = Math.min(d[i - 1]![j]! + 1, d[i]![j - 1]! + 1, d[i - 1]![j - 1]! + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i]![j] = Math.min(d[i]![j]!, d[i - 2]![j - 2]! + 1);
+      }
+    }
+  }
+  return d[a.length]![b.length]!;
+}
+
+const squash = (name: string): string => name.replaceAll(/[-_.]/g, "");
+
+/** The popular package this name imitates, if any. A popular package is never a look-alike. */
+export function findLookalike(name: string): string | undefined {
+  if (name.startsWith("@") || POPULAR_SET.has(name)) return undefined;
+  for (const popular of POPULAR_PACKAGES) {
+    if (popular.length < 5) continue;
+    if (squash(popular) === squash(name)) return popular;
+    const limit = popular.length >= 9 ? 2 : 1;
+    if (Math.abs(popular.length - name.length) <= limit && editDistance(popular, name) <= limit) return popular;
+  }
+  return undefined;
+}

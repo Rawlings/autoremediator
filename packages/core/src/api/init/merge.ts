@@ -100,3 +100,42 @@ export function mergeGitignore(existing: string | undefined, lines: string[]): M
   const prefix = base === "" || base.endsWith("\n") ? base : `${base}\n`;
   return { content: `${prefix}${missing.join("\n")}\n` };
 }
+
+interface HookGroup {
+  matcher?: string;
+  hooks?: Array<{ type?: string; command?: string }>;
+}
+
+/** Add a PreToolUse hook to `.claude/settings.json`, keeping everything else. Present already: unchanged. */
+export function mergeClaudeGuardHook(existing: string | undefined, command: string): MergeResult {
+  let doc: Record<string, unknown> = {};
+  let indent = "  ";
+  if (existing !== undefined && existing.trim() !== "") {
+    indent = detectIndent(existing);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(existing);
+    } catch {
+      return { conflict: "not valid JSON, so it was left alone" };
+    }
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return { conflict: "is not a JSON object, so it was left alone" };
+    }
+    doc = parsed as Record<string, unknown>;
+  }
+  const hooks = doc.hooks;
+  if (hooks !== undefined && (typeof hooks !== "object" || hooks === null || Array.isArray(hooks))) {
+    return { conflict: 'has a "hooks" that is not an object, so it was left alone' };
+  }
+  const events = { ...(hooks as Record<string, unknown> | undefined) };
+  const pre = events.PreToolUse;
+  if (pre !== undefined && !Array.isArray(pre)) {
+    return { conflict: 'has a "hooks.PreToolUse" that is not a list, so it was left alone' };
+  }
+  const groups = [...((pre as HookGroup[] | undefined) ?? [])];
+  const present = groups.some((group) => group.hooks?.some((hook) => hook.command?.includes("guard-hook")));
+  if (!present) {
+    groups.push({ matcher: "Bash", hooks: [{ type: "command", command }] });
+  }
+  return { content: `${JSON.stringify({ ...doc, hooks: { ...events, PreToolUse: groups } }, null, indent)}\n` };
+}

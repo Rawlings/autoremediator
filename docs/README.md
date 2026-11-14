@@ -13,6 +13,7 @@ organized by what you are trying to do.
 
 - [Scanners and inputs](guides/scanners.md): audit output, SARIF, git diffs, portfolios
 - [Automation and CI](guides/automation.md): exit codes, report formats, pull requests and re-runs
+- [Guarding new dependencies](guides/guard.md): checking a package before an agent installs it
 - [Plan, apply and roll back](guides/plan-and-apply.md): reviewing a fix first, resuming, undoing
 - [Patch generation](guides/patch-generation.md): letting a model write a patch
 - [Offline use](guides/offline.md): intelligence sources and snapshots

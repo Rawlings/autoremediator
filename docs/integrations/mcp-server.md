@@ -23,7 +23,7 @@ options. Tools that return a report return it as JSON.
 | Remediate | `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated` |
 | Runs | `applyPlan`, `verifyRun`, `resumeRun`, `rollbackRun`, `getRun`, `listRuns` (see [Plan, apply and roll back](../guides/plan-and-apply.md)) |
 | Attempts | `startAttempt`, `proposePatch`, `verifyAttempt`, `finalizeAttempt`, `abandonAttempt` (see [Letting your agent do the repair](../guides/plan-and-apply.md#letting-your-own-agent-do-the-repair)) |
-| Inspect | `checkReachability`, `evaluatePackage`, `scanDelta`, `toVex` |
+| Inspect | `checkReachability`, `evaluatePackage`, `guardPackage` ([details](../guides/guard.md)), `scanDelta`, `toVex` |
 | Patches | `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `reconcilePatchArtifacts` |
 | Jobs | `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob` |
 | Server | `health` |

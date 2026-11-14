@@ -5,6 +5,7 @@ import {
   evaluatePackage,
   finalizeAttempt,
   getRun,
+  guardPackage,
   init,
   inspectPatchArtifact,
   listPatchArtifacts,
@@ -41,6 +42,7 @@ export interface ApiDeps {
   evaluatePackageFn: typeof evaluatePackage;
   scanDeltaFn: typeof scanDelta;
   initFn: typeof init;
+  guardPackageFn: typeof guardPackage;
   healthFn: () => Promise<{ status: "ok" }>;
   listPatchArtifactsFn: typeof listPatchArtifacts;
   inspectPatchArtifactFn: typeof inspectPatchArtifact;
@@ -74,6 +76,7 @@ export const defaultApiDeps: ApiDeps = {
   evaluatePackageFn: evaluatePackage,
   scanDeltaFn: scanDelta,
   initFn: init,
+  guardPackageFn: guardPackage,
   healthFn: async () => ({ status: "ok" }),
   listPatchArtifactsFn: listPatchArtifacts,
   inspectPatchArtifactFn: inspectPatchArtifact,

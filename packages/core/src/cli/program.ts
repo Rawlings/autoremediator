@@ -18,6 +18,8 @@ import {
   runReconcilePatches,
   runInteractiveTriage,
   runInit,
+  runGuard,
+  runGuardHook,
   runPlan,
   runRunsApply,
   runRunsList,
@@ -271,11 +273,35 @@ export function createProgram(): Command {
   });
 
   program
+    .command("guard <packages...>")
+    .description(
+      "Judge npm packages before installing them: existence, malware, look-alike names, release age, install scripts, provenance, vulnerabilities. Exits 0 clear, 3 check first, 4 blocked",
+    )
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--min-age-hours <hours>", "Block releases younger than this (default 72, 0 turns it off)", (value: string) =>
+      Number.parseFloat(value),
+    )
+    .option("--offline", "Skip the OSV malware and advisory lookups")
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(async (packages: string[], opts: Parameters<typeof runGuard>[1]) => {
+      validateOutputFormat(opts.outputFormat, ["text", "json"], "guard");
+      await runGuard(packages, opts);
+    });
+
+  program
+    .command("guard-hook")
+    .description("Claude Code PreToolUse hook: reads the hook JSON on stdin and answers allow, ask or deny for package installs")
+    .action(async () => {
+      await runGuardHook();
+    });
+
+  program
     .command("init")
     .description("Set up the project: policy file, agent MCP configuration and instructions")
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
     .option("--hosts <list>", "Agent hosts to configure, comma-separated: claude-code,cursor,vscode,codex,gemini,copilot")
     .option("--ci", "Also write a weekly remediation workflow (GitHub Actions)")
+    .option("--guard", "Claude Code: also install a hook that checks package installs with guard")
     .option("--no-policy", "Do not write the policy file")
     .option("--no-agents-md", "Do not add a section to AGENTS.md")
     .option("--yes", "Write the changes without asking")

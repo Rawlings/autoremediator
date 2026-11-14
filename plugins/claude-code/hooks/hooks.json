@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "in=$(cat); case \"$in\" in *npm*|*pnpm*|*yarn*|*bun*) printf '%s' \"$in\" | npx -y -p autoremediator@latest autoremediator guard-hook;; esac",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

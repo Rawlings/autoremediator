@@ -4,7 +4,7 @@
  * and a project set up with `init` teach an agent the same steps. A test keeps the files on disk
  * identical to this output (set UPDATE_PLUGINS=1 when running it to rewrite them).
  */
-import { DOCS_URL, mcpServerEntry, renderSkill, SKILLS } from "./assets.js";
+import { DOCS_URL, guardHookCommand, mcpServerEntry, renderSkill, SKILLS } from "./assets.js";
 
 const REPOSITORY = "https://github.com/Rawlings/autoremediator";
 const DESCRIPTION =
@@ -63,6 +63,13 @@ export function claudeCodePluginFiles(): Record<string, string> {
       keywords: ["security", "npm", "cve", "dependencies", "remediation"],
     }),
     "plugins/claude-code/.mcp.json": json({ mcpServers: { autoremediator: mcpServerEntry("latest") } }),
+    "plugins/claude-code/hooks/hooks.json": json({
+      hooks: {
+        PreToolUse: [
+          { matcher: "Bash", hooks: [{ type: "command", command: guardHookCommand("latest"), timeout: 30 }] },
+        ],
+      },
+    }),
     "plugins/claude-code/commands/remediate.md": REMEDIATE_COMMAND,
     "plugins/claude-code/commands/vet.md": VET_COMMAND,
     "plugins/claude-code/agents/dependency-remediator.md": SUBAGENT,

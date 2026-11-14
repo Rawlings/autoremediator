@@ -54,6 +54,8 @@ export interface InitOptions {
   ci?: boolean;
   /** Write the policy file when missing. Default true. */
   policy?: boolean;
+  /** Claude Code: also install a hook that checks `npm install`-style commands with `guard`. Default false. */
+  guard?: boolean;
   /** Add an Autoremediator section to AGENTS.md. Default true. */
   agentsMd?: boolean;
   /** Write the changes. Without it, `init` only reports what it would do. */

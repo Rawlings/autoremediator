@@ -5,7 +5,8 @@ description: Check an npm package before installing it or after it appears in a 
 
 # Vet a dependency
 
-- Before adding a package: `evaluatePackage` with its name (and version). Report advisories, known exploitation and exploit probability. If it looks unsafe, say so and suggest an alternative instead of installing it.
+- Before adding a package: `guardPackage` with its name (and range). It answers allow, warn or block, and offers a safer alternative. On block, do not install it: say what was found and ask. On warn, tell the user before going ahead.
+- For more detail on a package's advisories and exploit probability: `evaluatePackage`.
 - When reviewing a change to dependencies: `scanDelta` shows the advisories the change introduces compared with the base.
 - To judge how urgent a finding is: `checkReachability` with the package (and the vulnerable symbol if known) says whether project code calls it.
 

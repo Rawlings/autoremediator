@@ -19,6 +19,7 @@ import { chooseHosts, detectProject, gitHostFromRemote } from "./detect.js";
 import { renderDiff } from "./diff.js";
 import { init } from "./index.js";
 import {
+  mergeClaudeGuardHook,
   mergeCodexToml,
   mergeGitignore,
   mergeJsonMcpConfig,
@@ -117,6 +118,18 @@ describe("mergeMarkedSection", () => {
 
   it("refuses an unmatched marker", () => {
     expect(mergeMarkedSection("<!-- autoremediator:begin -->\nx", "body")).toHaveProperty("conflict");
+  });
+});
+
+describe("mergeClaudeGuardHook", () => {
+  it("creates settings with the hook", () => {
+    const merged = mergeClaudeGuardHook(undefined, "cmd guard-hook") as { content: string };
+    expect(JSON.parse(merged.content).hooks.PreToolUse[0].hooks[0].command).toBe("cmd guard-hook");
+  });
+  it("refuses shapes it cannot extend", () => {
+    expect(mergeClaudeGuardHook("{bad", "x")).toHaveProperty("conflict");
+    expect(mergeClaudeGuardHook('{"hooks":[]}', "x")).toHaveProperty("conflict");
+    expect(mergeClaudeGuardHook('{"hooks":{"PreToolUse":{}}}', "x")).toHaveProperty("conflict");
   });
 });
 
@@ -262,6 +275,25 @@ describe("init", () => {
     expect(read(".github/workflows/autoremediator.yml")).toContain("--create-change-request");
   });
 
+  it("installs the guard hook for Claude Code only when asked, keeping the user's settings", async () => {
+    put(".claude/settings.json", JSON.stringify({ permissions: { allow: ["Bash(ls)"] }, hooks: { PreToolUse: [{ matcher: "Edit", hooks: [{ type: "command", command: "lint" }] }] } }));
+    await init({ cwd: dir, hosts: ["claude-code"], yes: true });
+    expect(JSON.parse(read(".claude/settings.json")).hooks.PreToolUse).toHaveLength(1);
+
+    await init({ cwd: dir, hosts: ["claude-code"], guard: true, yes: true });
+    const settings = JSON.parse(read(".claude/settings.json")) as {
+      permissions: unknown;
+      hooks: { PreToolUse: Array<{ matcher: string; hooks: Array<{ command: string }> }> };
+    };
+    expect(settings.permissions).toEqual({ allow: ["Bash(ls)"] });
+    expect(settings.hooks.PreToolUse).toHaveLength(2);
+    expect(settings.hooks.PreToolUse[1]).toMatchObject({ matcher: "Bash" });
+    expect(settings.hooks.PreToolUse[1]?.hooks[0]?.command).toContain("autoremediator guard-hook");
+
+    const again = await init({ cwd: dir, hosts: ["claude-code"], guard: true, yes: true });
+    expect(again.drift).toBe(false);
+  });
+
   it("writes a policy the policy loader accepts", async () => {
     await init({ cwd: dir, hosts: [], yes: true });
     expect(() => loadPolicy(dir)).not.toThrow();
@@ -314,7 +346,7 @@ describe("agent instructions", () => {
   });
 
   it("describes the CLI commands that exist", () => {
-    for (const command of ["autoremediator plan", "runs apply", "runs rollback", "autoremediator evaluate"]) {
+    for (const command of ["autoremediator plan", "runs apply", "runs rollback", "autoremediator guard"]) {
       expect(AGENTS_MD_SECTION).toContain(command);
     }
   });
