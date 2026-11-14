@@ -226,10 +226,15 @@ async function getFileContentAtRef(
   }
 }
 
-export async function scanDelta(options: DeltaScanOptions = {}): Promise<DeltaScanReport> {
-  const cwd = options.cwd ?? process.cwd();
-  const baseRef = options.baseRef ?? "HEAD";
-
+/**
+ * The dependency changes between a git ref and the working tree, from changed `package.json` files
+ * (direct dependencies) and changed lockfiles (everything else the lockfile gained or lost).
+ * Reads files and git only; no network.
+ */
+export async function collectDependencyChanges(
+  cwd: string,
+  baseRef: string,
+): Promise<{ changedManifests: string[]; dependencyChanges: DeltaDependencyChange[] }> {
   const changedManifests = await getChangedManifestPaths(cwd, baseRef);
   const changedLockfiles = await getChangedLockfilePaths(cwd, baseRef);
   const dependencyChanges: DeltaDependencyChange[] = [];
@@ -259,6 +264,14 @@ export async function scanDelta(options: DeltaScanOptions = {}): Promise<DeltaSc
       changedManifests.push(lockfileRel);
     }
   }
+  return { changedManifests, dependencyChanges };
+}
+
+export async function scanDelta(options: DeltaScanOptions = {}): Promise<DeltaScanReport> {
+  const cwd = options.cwd ?? process.cwd();
+  const baseRef = options.baseRef ?? "HEAD";
+
+  const { changedManifests, dependencyChanges } = await collectDependencyChanges(cwd, baseRef);
 
   const introducedFindings: DeltaFinding[] = [];
   const resolvedFindings: DeltaFinding[] = [];

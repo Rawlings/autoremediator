@@ -139,3 +139,47 @@ export function mergeClaudeGuardHook(existing: string | undefined, command: stri
   }
   return { content: `${JSON.stringify({ ...doc, hooks: { ...events, PreToolUse: groups } }, null, indent)}\n` };
 }
+
+/**
+ * Add a hook entry to a `{ "version": 1, "hooks": { "<event>": [...] } }` file, the shape Cursor
+ * (`.cursor/hooks.json`) and Copilot (`.github/hooks/*.json`) both read. Keeps everything the user
+ * wrote; an entry that already runs `guard-hook` leaves the file unchanged.
+ * Sources: https://cursor.com/docs/agent/hooks and docs.github.com/en/copilot/reference/hooks-reference
+ */
+export function mergeHooksFile(existing: string | undefined, event: string, entry: Record<string, unknown>): MergeResult {
+  let doc: Record<string, unknown> = {};
+  let indent = "  ";
+  if (existing !== undefined && existing.trim() !== "") {
+    indent = detectIndent(existing);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(existing);
+    } catch {
+      return { conflict: "not valid JSON, so it was left alone" };
+    }
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return { conflict: "is not a JSON object, so it was left alone" };
+    }
+    doc = parsed as Record<string, unknown>;
+  }
+  const hooks = doc.hooks;
+  if (hooks !== undefined && (typeof hooks !== "object" || hooks === null || Array.isArray(hooks))) {
+    return { conflict: 'has a "hooks" that is not an object, so it was left alone' };
+  }
+  const events = { ...(hooks as Record<string, unknown> | undefined) };
+  const current = events[event];
+  if (current !== undefined && !Array.isArray(current)) {
+    return { conflict: `has a "hooks.${event}" that is not a list, so it was left alone` };
+  }
+  const list = [...((current as unknown[] | undefined) ?? [])];
+  const present = list.some(
+    (item) =>
+      typeof item === "object" &&
+      item !== null &&
+      Object.values(item).some((value) => typeof value === "string" && value.includes("guard-hook")),
+  );
+  if (!present) list.push(entry);
+  return {
+    content: `${JSON.stringify({ version: 1, ...doc, hooks: { ...events, [event]: list } }, null, indent)}\n`,
+  };
+}

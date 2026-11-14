@@ -116,7 +116,7 @@ export const OPERATIONS: readonly Operation[] = [
         guard: z
           .boolean()
           .optional()
-          .describe("Claude Code: also install a hook that checks package installs with guard. Default false."),
+          .describe("Also install guard hooks for Claude Code, Cursor and Copilot, and a pnpmfile for pnpm projects, so package installs are checked first. Default false."),
         agentsMd: z.boolean().optional().describe("Add an Autoremediator section to AGENTS.md. Default true."),
         yes: z.boolean().optional().describe("Write the changes. Without it, only report them."),
         check: z.boolean().optional().describe("Report drift only; never write."),

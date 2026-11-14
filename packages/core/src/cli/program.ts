@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 
 import { Command } from "commander";
 
+import { HOOK_HOSTS, type HookHost } from "../api/guard/hook.js";
 import { OPTION_DESCRIPTIONS } from "../api/index.js";
 import { PACKAGE_VERSION } from "../version.js";
 import {
@@ -273,7 +274,7 @@ export function createProgram(): Command {
   });
 
   program
-    .command("guard <packages...>")
+    .command("guard [packages...]")
     .description(
       "Judge npm packages before installing them: existence, malware, look-alike names, release age, install scripts, provenance, vulnerabilities. Exits 0 clear, 3 check first, 4 blocked",
     )
@@ -282,6 +283,9 @@ export function createProgram(): Command {
       Number.parseFloat(value),
     )
     .option("--offline", "Skip the OSV malware and advisory lookups")
+    .option("--git-diff", "Check the dependencies added or changed in package.json since --base instead of naming packages")
+    .option("--base <ref>", "With --git-diff: git ref to compare with (default HEAD; a branch is compared at the merge base)")
+    .option("--include-transitive", "With --git-diff: also check packages only the lockfile gained")
     .option("--output-format <format>", "Output format: text|json", "text")
     .action(async (packages: string[], opts: Parameters<typeof runGuard>[1]) => {
       validateOutputFormat(opts.outputFormat, ["text", "json"], "guard");
@@ -290,9 +294,13 @@ export function createProgram(): Command {
 
   program
     .command("guard-hook")
-    .description("Claude Code PreToolUse hook: reads the hook JSON on stdin and answers allow, ask or deny for package installs")
-    .action(async () => {
-      await runGuardHook();
+    .description("Agent pre-command hook (Claude Code, Cursor, Copilot): reads the hook JSON on stdin and answers allow, ask or deny for package installs")
+    .option("--host <host>", `Agent host whose hook format to speak: ${HOOK_HOSTS.join("|")}`, "claude-code")
+    .action(async (opts: { host: string }) => {
+      if (!HOOK_HOSTS.includes(opts.host as HookHost)) {
+        throw new Error(`Unknown host "${opts.host}". Use one of: ${HOOK_HOSTS.join(", ")}.`);
+      }
+      await runGuardHook(opts.host as HookHost);
     });
 
   program
@@ -301,7 +309,7 @@ export function createProgram(): Command {
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
     .option("--hosts <list>", "Agent hosts to configure, comma-separated: claude-code,cursor,vscode,codex,gemini,copilot")
     .option("--ci", "Also write a weekly remediation workflow (GitHub Actions)")
-    .option("--guard", "Claude Code: also install a hook that checks package installs with guard")
+    .option("--guard", "Also install guard hooks (Claude Code, Cursor, Copilot) and a pnpmfile (pnpm projects) that check package installs")
     .option("--no-policy", "Do not write the policy file")
     .option("--no-agents-md", "Do not add a section to AGENTS.md")
     .option("--yes", "Write the changes without asking")

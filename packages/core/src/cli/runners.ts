@@ -10,8 +10,10 @@ import {
   getRun,
   init,
   guardPackages,
+  guardGitDiff,
   guardExitCode,
-  runClaudeCodeHook,
+  runHostHook,
+  type HookHost,
   type GuardReport,
   AGENT_HOSTS,
   type AgentHost,
@@ -921,6 +923,10 @@ export interface GuardCliOptions {
   outputFormat: OutputFormat;
   minAgeHours?: number;
   offline?: boolean;
+  /** Guard the dependencies added or changed since `base` instead of the packages named. */
+  gitDiff?: boolean;
+  base?: string;
+  includeTransitive?: boolean;
 }
 
 function describeGuard(report: GuardReport): string {
@@ -936,11 +942,30 @@ function describeGuard(report: GuardReport): string {
 }
 
 export async function runGuard(specs: string[], opts: GuardCliOptions): Promise<void> {
-  const reports = await guardPackages(specs, {
+  const options = {
     cwd: opts.cwd,
     ...(opts.minAgeHours === undefined ? {} : { minPublishAgeHours: opts.minAgeHours }),
     ...(opts.offline ? { offline: true } : {}),
-  });
+  };
+  if (opts.gitDiff) {
+    const result = await guardGitDiff({
+      ...options,
+      ...(opts.base ? { baseRef: opts.base } : {}),
+      ...(opts.includeTransitive ? { includeTransitive: true } : {}),
+    });
+    if (opts.outputFormat === "json") logJson(result);
+    else {
+      const head = `Dependencies added or changed since ${result.baseRef.slice(0, 12)}: ${result.checked} checked, ${result.skipped.length} skipped`;
+      const skipped = result.skipped.map((entry) => `  skip  ${entry.packageName}@${entry.version}: ${entry.reason}`);
+      process.stdout.write(`${[head, ...skipped, ...result.reports.map((entry) => describeGuard(entry))].join("\n")}\n`);
+    }
+    process.exitCode = guardExitCode(result.reports);
+    return;
+  }
+  if (specs.length === 0) {
+    throw new Error("Name at least one package, or use --git-diff to check what changed in the working tree.");
+  }
+  const reports = await guardPackages(specs, options);
   if (opts.outputFormat === "json") logJson(reports.length === 1 ? reports[0] : reports);
   else process.stdout.write(`${reports.map((entry) => describeGuard(entry)).join("\n")}\n`);
   process.exitCode = guardExitCode(reports);
@@ -952,8 +977,8 @@ async function readStdin(): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-/** Claude Code PreToolUse hook: JSON on stdin, a permission decision on stdout, always exit 0. */
-export async function runGuardHook(): Promise<void> {
-  const output = await runClaudeCodeHook(await readStdin());
+/** Agent pre-command hook: JSON on stdin, the host's permission decision on stdout, always exit 0. */
+export async function runGuardHook(host: HookHost = "claude-code"): Promise<void> {
+  const output = await runHostHook(host, await readStdin());
   if (output) process.stdout.write(`${output}\n`);
 }

@@ -54,7 +54,7 @@ export interface InitOptions {
   ci?: boolean;
   /** Write the policy file when missing. Default true. */
   policy?: boolean;
-  /** Claude Code: also install a hook that checks `npm install`-style commands with `guard`. Default false. */
+  /** Also install guard hooks (Claude Code, Cursor, Copilot) and a pnpmfile (pnpm projects) that check package installs. Default false. */
   guard?: boolean;
   /** Add an Autoremediator section to AGENTS.md. Default true. */
   agentsMd?: boolean;
