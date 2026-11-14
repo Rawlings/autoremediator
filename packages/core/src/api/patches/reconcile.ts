@@ -8,6 +8,7 @@ import {
   resolveTestCommand,
 } from "../../platform/package-manager/index.js";
 import { safeExeca } from "../../platform/safe-exec.js";
+import { LONG_RUNNING_TIMEOUT_MS } from "../../platform/timeouts.js";
 import {
   getOverrideValue,
   setOverrideValue,
@@ -184,7 +185,11 @@ export async function reconcilePatchArtifacts(
       // Execute package installation truthfully
       const installCmd = resolveInstallCommand(pm);
       try {
-        await safeExeca(installCmd[0], installCmd.slice(1), { cwd, stdio: "pipe" });
+        await safeExeca(installCmd[0], installCmd.slice(1), {
+          timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+          cwd,
+          stdio: "pipe",
+        });
       } catch (installErr) {
         // Rollback state on install failure
         if (originalPkgJsonContent) {
@@ -214,7 +219,11 @@ export async function reconcilePatchArtifacts(
       if (options.runTests) {
         const testCmd = resolveTestCommand(pm);
         try {
-          await safeExeca(testCmd[0], testCmd.slice(1), { cwd, stdio: "pipe" });
+          await safeExeca(testCmd[0], testCmd.slice(1), {
+            timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+            cwd,
+            stdio: "pipe",
+          });
         } catch (testErr) {
           // Rollback state on test failure
           if (originalPkgJsonContent) {

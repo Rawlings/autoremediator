@@ -3,6 +3,14 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { createOpenApiServer, type OpenApiServerDeps } from "./server.js";
 
+// These suites exercise the HTTP routes themselves, so they opt out of the auth requirement explicitly.
+beforeAll(() => {
+  vi.stubEnv("AUTOREMEDIATOR_INSECURE_NO_AUTH", "1");
+});
+afterAll(() => {
+  vi.unstubAllEnvs();
+});
+
 describe("Milestone 4 Challenge: OpenAPI HTTP Server Edge Conditions", () => {
   let server: http.Server;
 

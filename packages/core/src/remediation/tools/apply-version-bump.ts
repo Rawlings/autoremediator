@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { safeExeca } from "../../platform/safe-exec.js";
+import { LONG_RUNNING_TIMEOUT_MS } from "../../platform/timeouts.js";
 import semver from "semver";
 import type {
   PatchResult,
@@ -295,6 +296,7 @@ export const applyVersionBumpTool = defineTool({
       try {
         const [installCmd, ...installArgs] = effectiveInstallCommand;
         await safeExeca(installCmd, installArgs, {
+          timeoutMs: LONG_RUNNING_TIMEOUT_MS,
           cwd,
           stdio: "pipe",
         });
@@ -328,7 +330,11 @@ export const applyVersionBumpTool = defineTool({
         if (runTests) {
           try {
             const [testCmd, ...testArgs] = effectiveTestCommand;
-            await safeExeca(testCmd, testArgs, { cwd, stdio: "pipe" });
+            await safeExeca(testCmd, testArgs, {
+              timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+              cwd,
+              stdio: "pipe",
+            });
           } catch (err) {
             const execErr = err as { stdout?: string; stderr?: string; message?: string };
             const fullOutput = [execErr.stdout, execErr.stderr, execErr.message]
@@ -343,7 +349,11 @@ export const applyVersionBumpTool = defineTool({
         if (shouldTypecheck && effectiveTypecheckCommand.length > 0) {
           try {
             const [tcCmd, ...tcArgs] = effectiveTypecheckCommand;
-            await safeExeca(tcCmd, tcArgs, { cwd, stdio: "pipe" });
+            await safeExeca(tcCmd, tcArgs, {
+              timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+              cwd,
+              stdio: "pipe",
+            });
           } catch (err) {
             const execErr = err as { stdout?: string; stderr?: string; message?: string };
             const fullOutput = [execErr.stdout, execErr.stderr, execErr.message]
@@ -393,6 +403,7 @@ export const applyVersionBumpTool = defineTool({
         try {
           const [rollbackCmd, ...rollbackArgs] = effectiveInstallCommand;
           await safeExeca(rollbackCmd, rollbackArgs, {
+            timeoutMs: LONG_RUNNING_TIMEOUT_MS,
             cwd,
             stdio: "pipe",
           });
@@ -432,6 +443,7 @@ export const applyVersionBumpTool = defineTool({
           try {
             const [rollbackCmd, ...rollbackArgs] = effectiveInstallCommand;
             await safeExeca(rollbackCmd, rollbackArgs, {
+              timeoutMs: LONG_RUNNING_TIMEOUT_MS,
               cwd,
               stdio: "pipe",
             });
@@ -484,6 +496,7 @@ export const applyVersionBumpTool = defineTool({
         try {
           const [dedupeCmd, ...dedupeArgs] = effectiveDedupeCommand;
           await safeExeca(dedupeCmd, dedupeArgs, {
+            timeoutMs: LONG_RUNNING_TIMEOUT_MS,
             cwd,
             stdio: "pipe",
           });

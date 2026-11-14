@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { fileURLToPath } from "node:url";
 import { createProgram as createCliProgram } from "./program.js";
+import { isEntrypoint } from "../platform/entrypoint.js";
 
 export function createProgram(): Command {
   return createCliProgram();
@@ -13,12 +13,7 @@ async function main(argv = process.argv): Promise<void> {
   await program.parseAsync(argv);
 }
 
-function isMainModule(): boolean {
-  if (!process.argv[1]) return false;
-  return fileURLToPath(import.meta.url) === process.argv[1];
-}
-
-if (isMainModule()) {
+if (isEntrypoint(import.meta.url)) {
   main().catch((error) => {
     const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(`[autoremediator] ${message}\n`);

@@ -1,6 +1,6 @@
 import { extname, resolve } from "node:path";
 import { readFileSync } from "node:fs";
-import { execa } from "execa";
+import { safeExeca } from "../platform/safe-exec.js";
 import { parseNpmAuditJsonFile, type NormalizedFinding } from "./adapters/npm-audit.js";
 import { parseNpmAuditJsonFromString } from "./adapters/npm-audit.js";
 import { parseYarnAuditJsonFile } from "./adapters/yarn-audit.js";
@@ -52,7 +52,7 @@ export async function parseScanInputFromAudit(params: {
   const command = resolveAuditCommand(pm, { workspace: params.workspace });
   const [cmd, ...args] = command;
 
-  const result = await execa(cmd, args, {
+  const result = await safeExeca(cmd, args, {
     cwd: params.cwd,
     stdio: "pipe",
     reject: false,

@@ -254,7 +254,7 @@ export async function tryLocalPatchFallback(params: {
     workspace: params.workspace,
     riskLevel: patchResult.riskLevel,
     validateWithTests: params.runTests,
-    reproductionTest: patchResult.reproductionTest,
+    // Never forward model-written test code: it would be written to disk and executed on the host.
     proofOfFix: params.proofOfFix,
     requireProofOfFix: params.requireProofOfFix,
     dryRun: params.dryRun,

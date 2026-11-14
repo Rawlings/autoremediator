@@ -2,7 +2,10 @@ import { resolveProvider } from "../../platform/config.js";
 import { readIdempotentReport, storeIdempotentReport } from "../../platform/idempotency.js";
 import type { RemediateOptions, RemediationReport } from "../../platform/types.js";
 import { runRemediationPipeline } from "../../remediation/pipeline.js";
-import { createChangeRequestsForReports } from "../change-request/index.js";
+import {
+  assertChangeRequestAllowed,
+  createChangeRequestsForReports,
+} from "../change-request/index.js";
 import {
   resolveConstraints,
   resolveCorrelationContext,
@@ -24,6 +27,7 @@ export async function remediate(
   cveId: string,
   options: RemediateOptions = {},
 ): Promise<RemediationReport> {
+  assertChangeRequestAllowed(options);
   assertValidCveId(cveId);
   assertValidSimulationMode(options);
 

@@ -1,11 +1,71 @@
-import { execa } from "execa";
+import { safeExeca } from "../../platform/safe-exec.js";
 import { randomBytes } from "node:crypto";
+import { existsSync } from "node:fs";
+import { isAbsolute, relative, resolve } from "node:path";
 import type {
   ChangeRequestGrouping,
   ChangeRequestOptions,
   ChangeRequestResult,
   RemediationReport,
 } from "../../platform/types.js";
+
+/**
+ * Change requests commit and push, so they must never run for dry-run/preview/plan flows.
+ * Enforced here (not only in the CLI) so SDK, MCP and HTTP callers get the same guarantee.
+ */
+export function assertChangeRequestAllowed(options: {
+  dryRun?: boolean;
+  preview?: boolean;
+  changeRequest?: { enabled?: boolean };
+}): void {
+  if (options.changeRequest?.enabled && (options.dryRun || options.preview)) {
+    throw new Error(
+      "changeRequest cannot be combined with dryRun/preview (or planRemediation): change requests commit and push.",
+    );
+  }
+}
+
+/**
+ * Remove option fields that redirect credentials or API traffic. These are host configuration,
+ * never something an untrusted MCP/HTTP caller may set. Walks nested objects (e.g. portfolio targets).
+ */
+export function stripUntrustedChangeRequestFields<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((entry) => stripUntrustedChangeRequestFields(entry)) as unknown as T;
+  }
+  if (typeof value !== "object" || value === null) return value;
+  const out: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+    if (key === "changeRequest" && typeof entry === "object" && entry !== null) {
+      const { tokenEnvVar: _t, githubApiUrl: _u, ...rest } = entry as Record<string, unknown>;
+      out[key] = rest;
+    } else {
+      out[key] = stripUntrustedChangeRequestFields(entry);
+    }
+  }
+  return out as T;
+}
+
+async function stageRunChanges(cwd: string, reports: RemediationReport[]): Promise<void> {
+  // Stage modifications to tracked files only; never sweep up unrelated untracked files.
+  await safeExeca("git", ["add", "-u"], { cwd, stdio: "pipe" });
+  // New artifacts the run itself produced (generated patch files) are staged explicitly.
+  const produced = new Set<string>();
+  for (const report of reports) {
+    for (const result of report.results) {
+      if (!result.patchFilePath) continue;
+      const abs = isAbsolute(result.patchFilePath)
+        ? result.patchFilePath
+        : resolve(cwd, result.patchFilePath);
+      const rel = relative(cwd, abs);
+      if (rel.startsWith("..") || isAbsolute(rel) || !existsSync(abs)) continue;
+      produced.add(rel);
+    }
+  }
+  if (produced.size > 0) {
+    await safeExeca("git", ["add", "--", ...produced], { cwd, stdio: "pipe" });
+  }
+}
 
 interface ChangeRequestPlan {
   cveIds: string[];
@@ -113,7 +173,7 @@ export function groupReports(
 }
 
 async function detectCurrentBranch(cwd: string): Promise<string> {
-  const result = await execa("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+  const result = await safeExeca("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
     cwd,
     stdio: "pipe",
   });
@@ -121,7 +181,7 @@ async function detectCurrentBranch(cwd: string): Promise<string> {
 }
 
 async function ensureRepoHasChanges(cwd: string): Promise<boolean> {
-  const diff = await execa("git", ["status", "--porcelain"], {
+  const diff = await safeExeca("git", ["status", "--porcelain"], {
     cwd,
     stdio: "pipe",
   });
@@ -134,7 +194,7 @@ function toBranchName(prefix: string, cveIds: string[]): string {
 }
 
 async function detectRepoFromRemote(cwd: string): Promise<string | undefined> {
-  const result = await execa("git", ["config", "--get", "remote.origin.url"], {
+  const result = await safeExeca("git", ["config", "--get", "remote.origin.url"], {
     cwd,
     stdio: "pipe",
   }).catch(() => ({ stdout: "" }));
@@ -147,7 +207,7 @@ async function detectRepoFromRemote(cwd: string): Promise<string | undefined> {
 }
 
 async function ensureRepoHasStagedChanges(cwd: string): Promise<boolean> {
-  const result = await execa("git", ["diff", "--cached", "--name-only"], {
+  const result = await safeExeca("git", ["diff", "--cached", "--name-only"], {
     cwd,
     stdio: "pipe",
   }).catch(() => ({ stdout: "" }));
@@ -222,7 +282,7 @@ async function createGitHubRequest(params: {
     args.push("--draft");
   }
 
-  const result = await execa("gh", args, {
+  const result = await safeExeca("gh", args, {
     cwd: params.cwd,
     stdio: "pipe",
   });
@@ -257,7 +317,7 @@ async function createGitLabRequest(params: {
     args.push("--draft");
   }
 
-  const result = await execa("glab", args, {
+  const result = await safeExeca("glab", args, {
     cwd: params.cwd,
     stdio: "pipe",
   });
@@ -323,9 +383,9 @@ export async function createChangeRequestsForReports(params: {
     let branchCreated = false;
 
     try {
-      await execa("git", ["checkout", "-b", branchName], { cwd, stdio: "pipe" });
+      await safeExeca("git", ["checkout", "-b", branchName], { cwd, stdio: "pipe" });
       branchCreated = true;
-      await execa("git", ["add", "-A"], { cwd, stdio: "pipe" });
+      await stageRunChanges(cwd, group);
 
       const hasStaged = await ensureRepoHasStagedChanges(cwd);
       if (!hasStaged) {
@@ -344,7 +404,7 @@ export async function createChangeRequestsForReports(params: {
         continue;
       }
 
-      await execa(
+      await safeExeca(
         "git",
         [
           "-c",
@@ -368,7 +428,7 @@ export async function createChangeRequestsForReports(params: {
             branchName,
           ]
         : ["push", "-u", pushRemote, branchName];
-      await execa("git", pushArgs, { cwd, stdio: "pipe" });
+      await safeExeca("git", pushArgs, { cwd, stdio: "pipe" });
 
       const url =
         provider === "github"
@@ -422,7 +482,7 @@ export async function createChangeRequestsForReports(params: {
       });
     } finally {
       if (branchCreated) {
-        await execa("git", ["checkout", baseBranch], { cwd, stdio: "pipe" }).catch(() => {});
+        await safeExeca("git", ["checkout", baseBranch], { cwd, stdio: "pipe" }).catch(() => {});
       }
     }
   }

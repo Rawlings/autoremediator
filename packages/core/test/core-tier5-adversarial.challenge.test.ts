@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from "vitest";
 import { mkdtemp, rm, writeFile, mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -57,6 +57,14 @@ import { reconcilePatchArtifacts } from "../src/api/patches/reconcile.js";
 import { createOpenApiServer } from "../src/openapi/server.js";
 import { handleToolCall, TOOLS } from "../src/mcp/server.js";
 import { runInteractiveTriage } from "../src/cli/triage.js";
+
+// This suite exercises the HTTP routes themselves, so it opts out of the auth requirement explicitly.
+beforeAll(() => {
+  vi.stubEnv("AUTOREMEDIATOR_INSECURE_NO_AUTH", "1");
+});
+afterAll(() => {
+  vi.unstubAllEnvs();
+});
 
 describe("Tier 5 White-Box Adversarial Coverage Hardening Suite", () => {
   let tempDir: string;

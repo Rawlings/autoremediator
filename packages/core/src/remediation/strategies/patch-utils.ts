@@ -8,9 +8,10 @@
  * - Fetching source files from npm
  */
 
-import { existsSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { execa } from "execa";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve, sep } from "node:path";
+import { safeExeca } from "../../platform/safe-exec.js";
 import {
   detectPackageManager,
   getPackageManagerCommands,
@@ -147,7 +148,7 @@ export async function ensurePatchPackage(projectDir: string): Promise<void> {
     const packageManager = detectPackageManager(projectDir);
     const commands = getPackageManagerCommands(packageManager);
     const [cmd, ...args] = commands.installDev("patch-package");
-    await execa(cmd, args, {
+    await safeExeca(cmd, args, {
       cwd: projectDir,
       stdio: "inherit",
     });
@@ -196,7 +197,7 @@ export async function getVulnerableFileContent(
   // Use npm view to fetch tarball URL
   let tarballUrl: string;
   try {
-    const result = await execa("npm", ["view", `${packageName}@${version}`, "dist.tarball"], {
+    const result = await safeExeca("npm", ["view", `${packageName}@${version}`, "dist.tarball"], {
       stdio: "pipe",
     });
     tarballUrl = (result.stdout as string).trim();
@@ -212,19 +213,29 @@ export async function getVulnerableFileContent(
     throw new Error(`No tarball URL found for ${packageName}@${version}`);
   }
 
-  // Create temporary directory for extraction
-  const tempDir = join("/tmp", `autoremediator-${packageName}-${version}-${Date.now()}`);
-  mkdirSync(tempDir, { recursive: true });
+  if (!/^https:\/\//i.test(tarballUrl)) {
+    throw new Error(`Refusing non-https tarball URL for ${packageName}@${version}`);
+  }
+
+  const tempDir = mkdtempSync(join(tmpdir(), "autoremediator-"));
 
   try {
-    // Alternative: use curl and tar
-    await execa("bash", ["-c", `curl -s "${tarballUrl}" | tar xz -C "${tempDir}"`]);
+    // Argument arrays only: the URL comes from a registry and must never reach a shell.
+    const tarballPath = join(tempDir, "package.tgz");
+    await safeExeca("curl", ["-f", "-s", "-S", "-L", "-o", tarballPath, tarballUrl], {
+      timeoutMs: 120_000,
+    });
+    const extractDir = join(tempDir, "extract");
+    mkdirSync(extractDir, { recursive: true });
+    await safeExeca("tar", ["-xzf", tarballPath, "-C", extractDir], { timeoutMs: 120_000 });
 
-    // Read the file from extracted package (npm extracts under "package/" directory)
-    const extractedPath = join(tempDir, "package", filePath);
-    const content = readFileSync(extractedPath, "utf8");
-
-    return content;
+    // npm tarballs extract under "package/"; refuse paths that escape it.
+    const packageRoot = resolve(extractDir, "package");
+    const extractedPath = resolve(packageRoot, filePath);
+    if (extractedPath !== packageRoot && !extractedPath.startsWith(packageRoot + sep)) {
+      throw new Error(`Path escapes package root: ${filePath}`);
+    }
+    return readFileSync(extractedPath, "utf8");
   } catch (err) {
     throw new Error(
       `Failed to fetch file ${filePath} from ${packageName}@${version}: ${
@@ -232,11 +243,6 @@ export async function getVulnerableFileContent(
       }`,
     );
   } finally {
-    // Clean up temporary directory
-    try {
-      await execa("rm", ["-rf", tempDir]);
-    } catch {
-      // Ignore cleanup errors
-    }
+    rmSync(tempDir, { recursive: true, force: true });
   }
 }

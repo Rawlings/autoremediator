@@ -63,11 +63,11 @@ export function validateCommandArguments(file: string, args: readonly string[] =
 /**
  * Safe wrapper around execa that enforces environment sanitization, timeouts, and argument safety.
  */
-export function safeExeca(
+export function safeExeca<OptionsType extends SafeExecOptions = SafeExecOptions>(
   file: string,
   args: readonly string[] = [],
-  options: SafeExecOptions = {},
-): ResultPromise {
+  options: OptionsType = {} as OptionsType,
+): ResultPromise<OptionsType> {
   validateCommandArguments(file, args);
 
   const timeout =
@@ -80,6 +80,8 @@ export function safeExeca(
   return execa(file, args as string[], {
     ...options,
     timeout,
+    // Without this execa merges process.env back in, undoing the sanitization above.
+    extendEnv: false,
     env: sanitizedEnv,
-  });
+  }) as unknown as ResultPromise<OptionsType>;
 }

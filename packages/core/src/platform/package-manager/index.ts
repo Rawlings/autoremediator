@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { execa } from "execa";
+import { safeExeca } from "../safe-exec.js";
 import type { PackageManager, RemediationConstraints } from "../types.js";
 import { parsePackageManagerListOutput } from "./list-parser.js";
 export * from "./driver.js";
@@ -24,7 +24,7 @@ export interface PackageManagerCommands {
  */
 export async function getYarnMajorVersion(cwd: string): Promise<number> {
   try {
-    const result = await execa("yarn", ["--version"], { cwd, stdio: "pipe" });
+    const result = await safeExeca("yarn", ["--version"], { cwd, stdio: "pipe" });
     const major = Number.parseInt(result.stdout.trim().split(".")[0] ?? "1", 10);
     return Number.isNaN(major) ? 1 : major;
   } catch {

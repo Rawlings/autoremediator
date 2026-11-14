@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
-import { execa } from "execa";
+import { safeExeca } from "../../platform/safe-exec.js";
+import { LONG_RUNNING_TIMEOUT_MS } from "../../platform/timeouts.js";
 import {
   addEvidenceStep,
   createEvidenceLog,
@@ -27,7 +28,10 @@ import {
   resolveProvenanceContext,
 } from "../context.js";
 import { queryOutdatedPackages } from "../../intelligence/sources/registry.js";
-import { createChangeRequestsForReports } from "../change-request/index.js";
+import {
+  assertChangeRequestAllowed,
+  createChangeRequestsForReports,
+} from "../change-request/index.js";
 
 // ---------------------------------------------------------------------------
 // Internal types
@@ -95,7 +99,11 @@ async function applyBump(params: {
 
     try {
       const [installCmd, ...installArgs] = params.installCommand;
-      await execa(installCmd, installArgs, { cwd: params.cwd, stdio: "pipe" });
+      await safeExeca(installCmd, installArgs, {
+        timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+        cwd: params.cwd,
+        stdio: "pipe",
+      });
     } catch (err) {
       pkgJson[depField]![params.packageName] = currentRange;
       writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
@@ -109,13 +117,21 @@ async function applyBump(params: {
     if (params.runTests) {
       try {
         const [testCmd, ...testArgs] = params.testCommand;
-        await execa(testCmd, testArgs, { cwd: params.cwd, stdio: "pipe" });
+        await safeExeca(testCmd, testArgs, {
+          timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+          cwd: params.cwd,
+          stdio: "pipe",
+        });
       } catch (err) {
         pkgJson[depField]![params.packageName] = currentRange;
         writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
         try {
           const [rollbackCmd, ...rollbackArgs] = params.installCommand;
-          await execa(rollbackCmd, rollbackArgs, { cwd: params.cwd, stdio: "pipe" });
+          await safeExeca(rollbackCmd, rollbackArgs, {
+            timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+            cwd: params.cwd,
+            stdio: "pipe",
+          });
         } catch {
           // Ignore rollback install failure.
         }
@@ -141,6 +157,7 @@ async function applyBump(params: {
 export async function updateOutdated(
   options: UpdateOutdatedOptions = {},
 ): Promise<UpdateOutdatedReport> {
+  assertChangeRequestAllowed(options);
   const cwd = options.cwd ?? process.cwd();
 
   // Load policy exactly once

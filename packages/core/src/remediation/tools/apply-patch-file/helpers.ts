@@ -3,7 +3,8 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { execa } from "execa";
+import { safeExeca } from "../../../platform/safe-exec.js";
+import { LONG_RUNNING_TIMEOUT_MS } from "../../../platform/timeouts.js";
 import {
   getPackageManagerCommands,
   getYarnMajorVersion,
@@ -99,7 +100,7 @@ export async function configurePatchPackagePostinstall(
     try {
       const commands = getPackageManagerCommands(packageManager);
       const [cmd, ...args] = commands.installDev("patch-package");
-      await execa(cmd, args, {
+      await safeExeca(cmd, args, {
         cwd,
         stdio: "pipe",
       });
@@ -175,7 +176,8 @@ export async function cleanupPatchArtifacts(params: {
 
   try {
     const [installCmd, ...installArgs] = installCommand;
-    await execa(installCmd, installArgs, {
+    await safeExeca(installCmd, installArgs, {
+      timeoutMs: LONG_RUNNING_TIMEOUT_MS,
       cwd,
       stdio: "pipe",
     });
@@ -200,7 +202,7 @@ export async function applyNativePatch(params: {
 
   let patchDir: string;
   try {
-    const createResult = await execa(createCommand, createArgs, {
+    const createResult = await safeExeca(createCommand, createArgs, {
       cwd,
       stdio: "pipe",
     });
@@ -236,7 +238,7 @@ export async function applyNativePatch(params: {
 
   try {
     await writeFile(tempPatchFile, patchContent, "utf8");
-    await execa("patch", ["-p1", "-i", tempPatchFile], {
+    await safeExeca("patch", ["-p1", "-i", tempPatchFile], {
       cwd: patchDir,
       stdio: "pipe",
     });
@@ -245,7 +247,7 @@ export async function applyNativePatch(params: {
     const commitArgs =
       patchMode === "native-pnpm" ? ["patch-commit", patchDir] : ["patch-commit", "-s", patchDir];
 
-    await execa(commitCommand, commitArgs, {
+    await safeExeca(commitCommand, commitArgs, {
       cwd,
       stdio: "pipe",
     });
@@ -296,7 +298,7 @@ export async function validatePatchWithTests(
 ): Promise<ValidationResult> {
   try {
     const [cmd, ...args] = testCommand;
-    const result = await execa(cmd, args, {
+    const result = await safeExeca(cmd, args, {
       cwd,
       timeout: 60000,
       stdio: "pipe",

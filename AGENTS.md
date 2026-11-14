@@ -39,7 +39,7 @@
 ### Mode 5: OpenAPI HTTP Server
 
 - Trigger: `node dist/openapi/server.js [--port 3000]`
-- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/remediate-portfolio`, POST `/update-outdated`, POST `/patches/list`, POST `/patches/inspect`, POST `/patches/validate`, POST `/vex`, POST `/jobs/remediate`, POST `/jobs/scan`, POST `/jobs/portfolio`, `GET /jobs/:jobId` over HTTPS
+- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/remediate-portfolio`, POST `/update-outdated`, POST `/patches/list`, POST `/patches/inspect`, POST `/patches/validate`, POST `/vex`, POST `/jobs/remediate`, POST `/jobs/scan`, POST `/jobs/portfolio`, `GET /jobs/:jobId` over HTTP on `127.0.0.1` (auth required unless `AUTOREMEDIATOR_INSECURE_NO_AUTH=1`; see `packages/docs/content/integrations.md`)
 - Source: `packages/core/src/openapi/server.ts`
 
 ### Mode 6: Governed Multi-Agent Delivery

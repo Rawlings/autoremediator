@@ -595,6 +595,16 @@ The OpenAPI server supports cryptographic token verification and Role-Based Acce
 - **JWT Verification**: Validates HMAC-SHA256 tokens using `AUTOREMEDIATOR_JWT_SECRET`. Extracts user permissions from `role`, `roles`, or `scope` claims while enforcing token expiration (`exp`).
 - **Static Pre-Shared Keys**: Configurable via `AUTOREMEDIATOR_API_TOKENS="admin:secretAdmin,operator:secretOp,reader:secretReader"`.
 
+### OpenAPI server hardening (secure by default)
+
+The server binds to `127.0.0.1` over plain HTTP (terminate TLS in a reverse proxy if you expose it) and refuses to serve mutating routes until you configure it:
+
+- **Authentication is required.** With neither `AUTOREMEDIATOR_API_TOKENS` nor `AUTOREMEDIATOR_JWT_SECRET` set, every route except `GET /health` and `GET /openapi.json` returns `503`. For local development only, set `AUTOREMEDIATOR_INSECURE_NO_AUTH=1` to opt out explicitly.
+- **JSON only.** `POST` requests must send `Content-Type: application/json` (otherwise `415`), which stops cross-site form and text posts. Bodies over 1 MiB are rejected with `413`; tune with `AUTOREMEDIATOR_MAX_BODY_BYTES`.
+- **Host allow-list.** Requests whose `Host` header is not `127.0.0.1`, `localhost` or `[::1]` get `403` (DNS-rebinding defence). Extend with `AUTOREMEDIATOR_ALLOWED_HOSTS="host1,host2"` when running behind a proxy.
+- **Path confinement.** Path options in request bodies (`cwd`, `inputPath`, `patchesDir`, `suppressionsFile`, `intelligenceSnapshotPath`, `policy`, portfolio target `path`, ...) must resolve, after symlink resolution, inside the server's working directory. Allow other directories with `AUTOREMEDIATOR_ALLOWED_ROOTS="/srv/repos,/work"`; violations return `403`.
+- **Host-only credentials.** `changeRequest.tokenEnvVar` and `changeRequest.githubApiUrl` are ignored when sent over HTTP or MCP, so a caller cannot redirect the server's GitHub token. `changeRequest` is also rejected with `dryRun`, `preview` and `planRemediation`, on every surface, because change requests commit and push.
+
 ### Enterprise SIEM Structured Audit Logging (RFC 3339 & CEF)
 
 For centralized security monitoring, compliance (SOC 2, ISO 27001), and SIEM ingestion (Splunk, Datadog, Elastic, Sentinel):

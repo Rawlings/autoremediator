@@ -132,6 +132,10 @@ export function getRoleForToken(
   return undefined;
 }
 
+function isTruthy(value: string | undefined): boolean {
+  return value === "1" || value?.toLowerCase() === "true";
+}
+
 /**
  * Verifies if the request is authorized for the given route based on Bearer token.
  */
@@ -140,13 +144,22 @@ export function checkRbacAuthorization(
   res: http.ServerResponse,
   routeKey: string,
 ): boolean {
-  if (!process.env.AUTOREMEDIATOR_API_TOKENS && !process.env.AUTOREMEDIATOR_JWT_SECRET) {
-    return true;
-  }
-
   // Public health and spec endpoints don't require auth
   if (routeKey === "GET /health" || routeKey === "GET /openapi.json") {
     return true;
+  }
+
+  if (!process.env.AUTOREMEDIATOR_API_TOKENS && !process.env.AUTOREMEDIATOR_JWT_SECRET) {
+    // Every route can mutate the filesystem, so unauthenticated access is opt-in only.
+    if (isTruthy(process.env.AUTOREMEDIATOR_INSECURE_NO_AUTH)) {
+      return true;
+    }
+    sendJson(res, 503, {
+      error:
+        "Authentication is not configured. Set AUTOREMEDIATOR_API_TOKENS or AUTOREMEDIATOR_JWT_SECRET, " +
+        "or set AUTOREMEDIATOR_INSECURE_NO_AUTH=1 to explicitly run without authentication (local development only).",
+    });
+    return false;
   }
 
   const authHeader = req.headers.authorization;

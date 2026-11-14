@@ -1,5 +1,6 @@
 import http from "node:http";
-import { readBody, sendJson } from "../http-utils.js";
+import { HttpError, readBody, sendJson } from "../http-utils.js";
+import { assertPathsConfined } from "../path-guard.js";
 
 function toMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -15,9 +16,16 @@ export async function readJsonBody<T>(
       sendJson(res, 400, { error: "Invalid JSON body" });
       return undefined;
     }
+    assertPathsConfined(body);
     return body as T;
-  } catch {
-    sendJson(res, 400, { error: "Invalid JSON body" });
+  } catch (error) {
+    if (error instanceof HttpError) {
+      sendJson(res, error.status, { error: error.message });
+      // Stop reading an oversized upload once the rejection has been delivered.
+      if (error.status === 413) res.once("finish", () => req.destroy());
+    } else {
+      sendJson(res, 400, { error: "Invalid JSON body" });
+    }
     return undefined;
   }
 }

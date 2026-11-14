@@ -9,7 +9,7 @@ import { z } from "zod";
 import { mkdir, mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { execa } from "execa";
+import { safeExeca } from "../../platform/safe-exec.js";
 
 /**
  * Interface for the tool's return value.
@@ -66,11 +66,11 @@ export const fetchPackageSourceTool = defineTool({
 
       // Download tarball using curl with fail-on-error flag (-f -s -S -L)
       const tarballPath = join(tempBaseDir, "package.tgz");
-      await execa("curl", ["-f", "-s", "-S", "-L", "-o", tarballPath, npmUrl]);
+      await safeExeca("curl", ["-f", "-s", "-S", "-L", "-o", tarballPath, npmUrl]);
 
       // Step 2: Extract tar.gz
       await mkdir(extractDir, { recursive: true });
-      await execa("tar", ["-xzf", tarballPath, "-C", extractDir]);
+      await safeExeca("tar", ["-xzf", tarballPath, "-C", extractDir]);
 
       // Step 3: Discover package root (tar extracts to 'package/' subdirectory)
       const extractedContents = await readdir(extractDir);

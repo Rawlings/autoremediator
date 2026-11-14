@@ -1,18 +1,28 @@
 import { execFileSync, execSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { isAbsolute, join, relative } from "node:path";
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { safeExeca } from "./safe-exec.js";
 
 export interface ProjectSnapshot {
   cwd: string;
   isGit: boolean;
+  /** Absolute git work-tree root; porcelain status paths are relative to this, not to cwd. */
+  gitRoot?: string;
   gitStatusBefore?: string[];
   fileSnapshots: Map<string, string | null>; // relative path -> content or null (if non-existent)
 }
 
 const MANIFEST_PATTERNS = [
   /package\.json$/,
-  /.*lock.*/,
+  /^(package-lock\.json|npm-shrinkwrap\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?|deno\.lock)$/,
   /deno\.jsonc?$/,
   /\.patch$/,
   /\.autoremediator\.ya?ml$/,
@@ -44,7 +54,7 @@ export function recordFileTouch(filePath: string): void {
     if (!snapshot.fileSnapshots.has(relPath)) {
       if (existsSync(absPath)) {
         try {
-          snapshot.fileSnapshots.set(relPath, readFileSync(absPath, "utf8"));
+          snapshot.fileSnapshots.set(relPath, readFileSync(absPath, "latin1"));
         } catch {
           try {
             snapshot.fileSnapshots.set(relPath, readFileSync(absPath).toString("base64"));
@@ -108,6 +118,34 @@ async function isGitRepository(cwd: string): Promise<boolean> {
   }
 }
 
+async function resolveGitRoot(cwd: string): Promise<string | undefined> {
+  try {
+    const res = await safeExeca("git", ["rev-parse", "--show-toplevel"], { cwd, stdio: "pipe" });
+    const root = String(res.stdout).trim();
+    return root.length > 0 ? root : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Map a `git status --porcelain` path (relative to the repo root) to an absolute path,
+ * returning null unless it lies strictly inside the snapshot's cwd. Rollback must never
+ * delete or revert anything outside the project directory it was asked to protect.
+ */
+function resolveGitStatusPath(snapshot: ProjectSnapshot, filePath: string): string | null {
+  const full = resolve(snapshot.gitRoot ?? snapshot.cwd, filePath);
+  let realCwd = snapshot.cwd;
+  try {
+    realCwd = realpathSync(snapshot.cwd);
+  } catch {
+    // fall back to the spelling we were given
+  }
+  const rel = relative(realCwd, full);
+  if (rel === "" || rel.startsWith("..") || isAbsolute(rel)) return null;
+  return join(snapshot.cwd, rel);
+}
+
 export function parsePorcelainLines(stdout: string): string[] {
   return stdout
     .split(/\r?\n/)
@@ -151,6 +189,7 @@ export async function createProjectSnapshot(
 ): Promise<ProjectSnapshot> {
   const isGit = await isGitRepository(cwd);
   const gitStatusBefore = isGit ? await getGitStatusPorcelain(cwd) : undefined;
+  const gitRoot = isGit ? await resolveGitRoot(cwd) : undefined;
   const fileSnapshots = new Map<string, string | null>();
 
   const targetFiles = explicitFiles
@@ -161,7 +200,7 @@ export async function createProjectSnapshot(
     const relPath = relative(cwd, fullPath);
     if (existsSync(fullPath)) {
       try {
-        fileSnapshots.set(relPath, readFileSync(fullPath, "utf8"));
+        fileSnapshots.set(relPath, readFileSync(fullPath, "latin1"));
       } catch {
         try {
           fileSnapshots.set(relPath, readFileSync(fullPath).toString("base64"));
@@ -177,6 +216,7 @@ export async function createProjectSnapshot(
   const snapshot: ProjectSnapshot = {
     cwd,
     isGit,
+    gitRoot,
     gitStatusBefore,
     fileSnapshots,
   };
@@ -201,7 +241,7 @@ export async function restoreProjectSnapshot(snapshot: ProjectSnapshot): Promise
       }
     } else {
       try {
-        writeFileSync(fullPath, previousContent, "utf8");
+        writeFileSync(fullPath, previousContent, "latin1");
       } catch {
         // Ignore write error
       }
@@ -232,7 +272,8 @@ export async function restoreProjectSnapshot(snapshot: ProjectSnapshot): Promise
         const parsed = parseGitPorcelainLine(line);
         if (!parsed) continue;
         const { statusCode, filePath } = parsed;
-        const fullPath = join(snapshot.cwd, filePath);
+        const fullPath = resolveGitStatusPath(snapshot, filePath);
+        if (!fullPath) continue;
 
         if (statusCode === "??" && existsSync(fullPath)) {
           // Untracked newly generated file
@@ -251,7 +292,7 @@ export async function restoreProjectSnapshot(snapshot: ProjectSnapshot): Promise
         ) {
           // Revert tracked modified or deleted file
           try {
-            await safeExeca("git", ["checkout", "--", filePath], {
+            await safeExeca("git", ["checkout", "--", fullPath], {
               cwd: snapshot.cwd,
               stdio: "pipe",
             });
@@ -283,7 +324,7 @@ export function restoreProjectSnapshotSync(snapshot: ProjectSnapshot): void {
       }
     } else {
       try {
-        writeFileSync(fullPath, previousContent, "utf8");
+        writeFileSync(fullPath, previousContent, "latin1");
       } catch {
         // Ignore write error
       }
@@ -319,7 +360,8 @@ export function restoreProjectSnapshotSync(snapshot: ProjectSnapshot): void {
         const parsed = parseGitPorcelainLine(line);
         if (!parsed) continue;
         const { statusCode, filePath } = parsed;
-        const fullPath = join(snapshot.cwd, filePath);
+        const fullPath = resolveGitStatusPath(snapshot, filePath);
+        if (!fullPath) continue;
 
         if (statusCode === "??" && existsSync(fullPath)) {
           try {
@@ -336,7 +378,7 @@ export function restoreProjectSnapshotSync(snapshot: ProjectSnapshot): void {
           statusCode.includes("T")
         ) {
           try {
-            execFileSync("git", ["checkout", "--", filePath], {
+            execFileSync("git", ["checkout", "--", fullPath], {
               cwd: snapshot.cwd,
               stdio: "ignore",
             });

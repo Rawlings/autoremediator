@@ -6,7 +6,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { execa } from "execa";
+import { safeExeca } from "../platform/safe-exec.js";
 import semver from "semver";
 import { evaluatePackage } from "../remediation/evaluate-package.js";
 import type {
@@ -36,7 +36,7 @@ async function getChangedManifestPaths(cwd: string, baseRef: string): Promise<st
 
   try {
     // 1. Files changed between baseRef and working tree/index
-    const { stdout: diffFiles } = await execa(
+    const { stdout: diffFiles } = await safeExeca(
       "git",
       ["diff", "--name-only", baseRef, "--", "package.json", "**/package.json"],
       { cwd, reject: false },
@@ -49,7 +49,7 @@ async function getChangedManifestPaths(cwd: string, baseRef: string): Promise<st
     }
 
     // 2. Untracked new package.json files
-    const { stdout: untrackedFiles } = await execa(
+    const { stdout: untrackedFiles } = await safeExeca(
       "git",
       ["ls-files", "--others", "--exclude-standard", "--", "package.json", "**/package.json"],
       { cwd, reject: false },
@@ -76,7 +76,7 @@ async function getOldManifestContent(
   relPath: string,
 ): Promise<PackageJsonSubset | null> {
   try {
-    const { stdout } = await execa("git", ["show", `${baseRef}:${relPath}`], {
+    const { stdout } = await safeExeca("git", ["show", `${baseRef}:${relPath}`], {
       cwd,
       reject: false,
     });
@@ -169,7 +169,7 @@ const LOCKFILE_PATTERNS = [
 async function getChangedLockfilePaths(cwd: string, baseRef: string): Promise<string[]> {
   const lockfiles = new Set<string>();
   try {
-    const { stdout: diffFiles } = await execa(
+    const { stdout: diffFiles } = await safeExeca(
       "git",
       ["diff", "--name-only", baseRef, "--", ...LOCKFILE_PATTERNS],
       { cwd, reject: false },
@@ -186,7 +186,7 @@ async function getChangedLockfilePaths(cwd: string, baseRef: string): Promise<st
         lockfiles.add(trimmed);
       }
     }
-    const { stdout: untrackedFiles } = await execa(
+    const { stdout: untrackedFiles } = await safeExeca(
       "git",
       ["ls-files", "--others", "--exclude-standard", "--", ...LOCKFILE_PATTERNS],
       { cwd, reject: false },
@@ -215,7 +215,7 @@ async function getFileContentAtRef(
   relPath: string,
 ): Promise<string | null> {
   try {
-    const { stdout } = await execa("git", ["show", `${baseRef}:${relPath}`], {
+    const { stdout } = await safeExeca("git", ["show", `${baseRef}:${relPath}`], {
       cwd,
       reject: false,
     });

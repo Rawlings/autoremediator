@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+.git
+.pnpm-store
+scratch
+.autoremediator
+packages/docs
+packages/vscode-extension
+packages/github-app

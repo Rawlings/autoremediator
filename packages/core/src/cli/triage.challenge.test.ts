@@ -137,10 +137,10 @@ describe("CLI Triage Adversarial White-Box Challenges", () => {
 
     // Verify written policy file on disk
     const loaded = loadPolicy(testDir);
-    expect(loaded.suppressions.length).toBe(1);
-    expect(loaded.suppressions[0]?.cveId).toBe("CVE-2024-9999");
-    expect(loaded.suppressions[0]?.justification).toBe("mitigated");
-    expect(loaded.suppressions[0]?.notes).toBe("Mitigated via firewall");
+    expect(loaded.suppressions?.length).toBe(1);
+    expect(loaded.suppressions?.[0]?.cveId).toBe("CVE-2024-9999");
+    expect(loaded.suppressions?.[0]?.justification).toBe("mitigated");
+    expect(loaded.suppressions?.[0]?.notes).toBe("Mitigated via firewall");
   });
 
   it("persists VEX suppression to dedicated suppressions file and VEX document", async () => {
@@ -232,8 +232,8 @@ describe("CLI Triage Adversarial White-Box Challenges", () => {
 
     expect(out).toContain("Suppressed:     2");
     const loaded = loadPolicy(testDir);
-    expect(loaded.suppressions.length).toBe(2);
-    expect(loaded.suppressions[0]?.justification).toBe("fixed");
-    expect(loaded.suppressions[1]?.justification).toBe("not_affected");
+    expect(loaded.suppressions?.length).toBe(2);
+    expect(loaded.suppressions?.[0]?.justification).toBe("fixed");
+    expect(loaded.suppressions?.[1]?.justification).toBe("not_affected");
   });
 });

@@ -9,7 +9,8 @@ import { defineTool } from "../tool-compat.js";
 import { z } from "zod";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { execa } from "execa";
+import { safeExeca } from "../../../platform/safe-exec.js";
+import { LONG_RUNNING_TIMEOUT_MS } from "../../../platform/timeouts.js";
 import {
   detectPackageManager,
   getYarnMajorVersion,
@@ -464,7 +465,8 @@ export const applyPatchFileTool = defineTool({
         if (patchMode === "patch-package") {
           try {
             const [installCmd, ...installArgs] = installCommand;
-            await execa(installCmd, installArgs, {
+            await safeExeca(installCmd, installArgs, {
+              timeoutMs: LONG_RUNNING_TIMEOUT_MS,
               cwd,
               stdio: "pipe",
             });

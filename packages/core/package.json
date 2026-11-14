@@ -66,8 +66,8 @@
   "types": "./dist/api/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/api/index.d.ts"
+      "types": "./dist/api/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./cli": {
       "import": "./dist/cli.js"

@@ -9,7 +9,10 @@ import {
 import { loadPolicy } from "../../platform/policy.js";
 import { parseScanInput, parseScanInputFromAudit, uniqueCveIds } from "../../scanner/index.js";
 import type { ScanOptions, ScanReport } from "../contracts.js";
-import { createChangeRequestsForReports } from "../change-request/index.js";
+import {
+  assertChangeRequestAllowed,
+  createChangeRequestsForReports,
+} from "../change-request/index.js";
 import {
   resolveConstraints,
   resolveCorrelationContext,
@@ -40,6 +43,7 @@ export async function remediateFromScan(
   inputPath: string,
   options: ScanOptions = {},
 ): Promise<ScanReport> {
+  assertChangeRequestAllowed(options);
   assertValidSimulationMode(options);
   const cwd = options.cwd ?? process.cwd();
 

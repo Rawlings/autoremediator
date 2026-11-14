@@ -7,7 +7,6 @@
  * Start: node dist/openapi/server.js [--port 3000]
  */
 import http from "node:http";
-import { fileURLToPath } from "node:url";
 import {
   inspectPatchArtifact,
   listPatchArtifacts,
@@ -25,6 +24,7 @@ import {
 } from "../api/index.js";
 import { handleOpenApiRequest } from "./handlers/index.js";
 import { parsePort, sendJson } from "./http-utils.js";
+import { isEntrypoint } from "../platform/entrypoint.js";
 
 export { OPENAPI_SPEC } from "./spec/index.js";
 
@@ -76,12 +76,7 @@ export function createOpenApiServer(deps: OpenApiServerDeps = defaultDeps): http
   });
 }
 
-function isMainModule(): boolean {
-  if (!process.argv[1]) return false;
-  return fileURLToPath(import.meta.url) === process.argv[1];
-}
-
-if (isMainModule()) {
+if (isEntrypoint(import.meta.url)) {
   const port = parsePort();
   const server = createOpenApiServer();
   server.listen(port, "127.0.0.1", () => {

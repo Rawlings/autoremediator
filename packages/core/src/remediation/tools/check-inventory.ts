@@ -8,7 +8,7 @@ import { defineTool } from "./tool-compat.js";
 import { z } from "zod";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { execa } from "execa";
+import { safeExeca } from "../../platform/safe-exec.js";
 import type { InventoryPackage } from "../../platform/types.js";
 import {
   detectPackageManager,
@@ -113,7 +113,7 @@ export const checkInventoryTool = defineTool({
       try {
         const [cmd, ...args] = listCommand;
         if (cmd) {
-          const listResult = await execa(cmd, args, {
+          const listResult = await safeExeca(cmd, args, {
             cwd,
             stdio: "pipe",
             reject: false,

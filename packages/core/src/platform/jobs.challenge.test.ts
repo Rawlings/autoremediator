@@ -1,7 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BoundedJobRegistry, type AsyncRemediationJob } from "./jobs.js";
 
 describe("Milestone 4 Challenge: BoundedJobRegistry Stress Tests", () => {
+  // Fixtures use fixed 2026-10-11 timestamps; pin the clock so the default TTL never expires them.
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-11T10:30:00.000Z"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("enforces strict capacity bound across high-volume sequential and concurrent sets", () => {
     const registry = new BoundedJobRegistry({ maxCapacity: 25 });
     expect(registry.getMaxCapacity()).toBe(25);

@@ -1,6 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { OPENAPI_SPEC, createOpenApiServer } from "./server.js";
 
+// These suites exercise the HTTP routes themselves, so they opt out of the auth requirement explicitly.
+beforeAll(() => {
+  vi.stubEnv("AUTOREMEDIATOR_INSECURE_NO_AUTH", "1");
+});
+afterAll(() => {
+  vi.unstubAllEnvs();
+});
+
 describe("openapi server", () => {
   it("exposes plan-remediation route in OpenAPI spec", () => {
     const paths = OPENAPI_SPEC.paths as Record<string, unknown>;

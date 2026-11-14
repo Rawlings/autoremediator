@@ -11,7 +11,7 @@
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { execa } from "execa";
+import { safeExeca } from "../../platform/safe-exec.js";
 import semver from "semver";
 import { httpClient } from "../../platform/http-client.js";
 import { type PackageManager, detectPackageManager } from "../../platform/package-manager/index.js";
@@ -265,7 +265,7 @@ export async function queryOutdatedPackages(
     const yarnArgs = pm === "yarn" ? ["outdated", "--json"] : undefined;
     const finalArgs = yarnArgs ?? args;
 
-    const result = await execa(pm, finalArgs, {
+    const result = await safeExeca(pm, finalArgs, {
       cwd,
       reject: false,
       stdio: "pipe",

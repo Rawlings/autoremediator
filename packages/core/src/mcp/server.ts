@@ -10,7 +10,6 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-import { fileURLToPath } from "node:url";
 import {
   checkReachability,
   createRemediateOptionSchemaProperties,
@@ -34,6 +33,8 @@ import {
   validatePatchArtifact,
 } from "../api/index.js";
 import { PACKAGE_VERSION } from "../version";
+import { stripUntrustedChangeRequestFields } from "../api/change-request/index.js";
+import { isEntrypoint } from "../platform/entrypoint.js";
 
 const PATCH_ARTIFACT_SCHEMA_PROPERTIES = {
   cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
@@ -380,7 +381,7 @@ export async function handleToolCall(
   deps: McpApiDeps = defaultDeps,
 ): Promise<{ content: Array<{ type: "text"; text: string }>; isError?: boolean }> {
   const withMcpSource = (options: Record<string, unknown>): Record<string, unknown> => ({
-    ...options,
+    ...stripUntrustedChangeRequestFields(options),
     source: typeof options.source === "string" ? options.source : "mcp",
   });
 
@@ -599,11 +600,6 @@ async function startMcpServer(): Promise<void> {
   await server.connect(transport);
 }
 
-function isMainModule(): boolean {
-  if (!process.argv[1]) return false;
-  return fileURLToPath(import.meta.url) === process.argv[1];
-}
-
-if (isMainModule()) {
+if (isEntrypoint(import.meta.url)) {
   await startMcpServer();
 }

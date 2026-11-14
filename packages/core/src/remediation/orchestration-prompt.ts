@@ -1,5 +1,3 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import type { PackageManager } from "../platform/types.js";
 
 interface PromptContext {
@@ -38,15 +36,10 @@ function buildProviderAddendum(
 }
 
 export function loadOrchestrationPrompt(ctx: PromptContext): string {
-  const promptPath = join(
-    process.cwd(),
-    ".github",
-    "instructions",
-    "orchestration.instructions.md",
-  );
-
-  if (!existsSync(promptPath)) {
-    return `You are autoremediator, an agentic security remediation system for Node.js package dependencies.
+  // The prompt is built in. It must never be read from the target repo (process.cwd()):
+  // that would let any repository being remediated rewrite the agent's instructions.
+  return (
+    `You are autoremediator, an agentic security remediation system for Node.js package dependencies.
 Working directory: ${ctx.cwd}
   Package manager: ${ctx.packageManager}
 Dry run: ${ctx.dryRun}
@@ -69,24 +62,7 @@ Fallback sequence (when neither version bump nor override can be applied):
 2. generate-patch
 3. apply-patch-file
 
-Always respect dryRun and policy constraints.`;
-  }
-
-  const template = readFileSync(promptPath, "utf8");
-  return (
-    template
-      .replaceAll("{{cveId}}", ctx.cveId)
-      .replaceAll("{{cwd}}", ctx.cwd)
-      .replaceAll("{{packageManager}}", ctx.packageManager)
-      .replaceAll("{{dryRun}}", String(ctx.dryRun))
-      .replaceAll("{{runTests}}", String(ctx.runTests))
-      .replaceAll("{{policy}}", ctx.policy || "undefined")
-      .replaceAll("{{patchesDir}}", ctx.patchesDir)
-      .replaceAll(
-        "{{directDependenciesOnly}}",
-        String(ctx.constraints.directDependenciesOnly ?? false),
-      )
-      .replaceAll("{{preferVersionBump}}", String(ctx.constraints.preferVersionBump ?? false)) +
+Always respect dryRun and policy constraints.` +
     buildProviderAddendum(ctx.llmProvider, ctx.modelPersonality)
   );
 }

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { safeExeca } from "../../../platform/safe-exec.js";
+import { LONG_RUNNING_TIMEOUT_MS } from "../../../platform/timeouts.js";
 import semver from "semver";
 import type {
   PatchResult,
@@ -261,7 +262,11 @@ export const applyPackageOverrideTool = defineTool({
 
         try {
           const [installCmd, ...installArgs] = installCommand;
-          await safeExeca(installCmd, installArgs, { cwd, stdio: "pipe" });
+          await safeExeca(installCmd, installArgs, {
+            timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+            cwd,
+            stdio: "pipe",
+          });
         } catch (err) {
           restoreDenoJsonImportValue(denoJson, overrideSelector, existingEntry);
           writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n", "utf8");
@@ -281,14 +286,22 @@ export const applyPackageOverrideTool = defineTool({
         if (runTests) {
           try {
             const [testCmd, ...testArgs] = testCommand;
-            await safeExeca(testCmd, testArgs, { cwd, stdio: "pipe" });
+            await safeExeca(testCmd, testArgs, {
+              timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+              cwd,
+              stdio: "pipe",
+            });
           } catch (err) {
             restoreDenoJsonImportValue(denoJson, overrideSelector, existingEntry);
             writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n", "utf8");
 
             try {
               const [rollbackCmd, ...rollbackArgs] = installCommand;
-              await safeExeca(rollbackCmd, rollbackArgs, { cwd, stdio: "pipe" });
+              await safeExeca(rollbackCmd, rollbackArgs, {
+                timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+                cwd,
+                stdio: "pipe",
+              });
             } catch {
               // Ignore rollback failure.
             }
@@ -321,7 +334,11 @@ export const applyPackageOverrideTool = defineTool({
 
             try {
               const [rollbackCmd, ...rollbackArgs] = installCommand;
-              await safeExeca(rollbackCmd, rollbackArgs, { cwd, stdio: "pipe" });
+              await safeExeca(rollbackCmd, rollbackArgs, {
+                timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+                cwd,
+                stdio: "pipe",
+              });
             } catch {}
 
             if (prepared.isCreated && reproTestPath) {
@@ -457,7 +474,11 @@ export const applyPackageOverrideTool = defineTool({
 
       try {
         const [installCmd, ...installArgs] = installCommand;
-        await safeExeca(installCmd, installArgs, { cwd, stdio: "pipe" });
+        await safeExeca(installCmd, installArgs, {
+          timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+          cwd,
+          stdio: "pipe",
+        });
       } catch (err) {
         restoreOverrideValue(pkgJson, pm, overrideSelector, previousValue);
         writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
@@ -477,14 +498,22 @@ export const applyPackageOverrideTool = defineTool({
       if (runTests) {
         try {
           const [testCmd, ...testArgs] = testCommand;
-          await safeExeca(testCmd, testArgs, { cwd, stdio: "pipe" });
+          await safeExeca(testCmd, testArgs, {
+            timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+            cwd,
+            stdio: "pipe",
+          });
         } catch (err) {
           restoreOverrideValue(pkgJson, pm, overrideSelector, previousValue);
           writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
           try {
             const [rollbackCmd, ...rollbackArgs] = installCommand;
-            await safeExeca(rollbackCmd, rollbackArgs, { cwd, stdio: "pipe" });
+            await safeExeca(rollbackCmd, rollbackArgs, {
+              timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+              cwd,
+              stdio: "pipe",
+            });
           } catch {
             // Ignore rollback install failure and return original test failure context.
           }
@@ -517,7 +546,11 @@ export const applyPackageOverrideTool = defineTool({
 
           try {
             const [rollbackCmd, ...rollbackArgs] = installCommand;
-            await safeExeca(rollbackCmd, rollbackArgs, { cwd, stdio: "pipe" });
+            await safeExeca(rollbackCmd, rollbackArgs, {
+              timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+              cwd,
+              stdio: "pipe",
+            });
           } catch {}
 
           if (prepared.isCreated && reproTestPath) {
@@ -551,7 +584,11 @@ export const applyPackageOverrideTool = defineTool({
       if (dedupeCommand.length > 0) {
         try {
           const [dedupeCmd, ...dedupeArgs] = dedupeCommand;
-          await safeExeca(dedupeCmd, dedupeArgs, { cwd, stdio: "pipe" });
+          await safeExeca(dedupeCmd, dedupeArgs, {
+            timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+            cwd,
+            stdio: "pipe",
+          });
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           dedupeNote = ` Dedupe warning: ${dedupeCommand.join(" ")} failed (${message}).`;
