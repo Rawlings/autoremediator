@@ -1,7 +1,5 @@
 import type http from "node:http";
 
-import { stripUntrustedChangeRequestFields } from "../api/change-request/index.js";
-
 const DEFAULT_PORT = 3000;
 
 export function parsePort(): number {
@@ -94,13 +92,4 @@ export function sendJson(res: http.ServerResponse, status: number, body: unknown
     "Content-Length": Buffer.byteLength(payload),
   });
   res.end(payload);
-}
-
-export function withOpenApiSource(options: unknown): Record<string, unknown> {
-  const normalized =
-    typeof options === "object" && options !== null ? (options as Record<string, unknown>) : {};
-  return {
-    ...stripUntrustedChangeRequestFields(normalized),
-    source: typeof normalized.source === "string" ? normalized.source : "openapi",
-  };
 }

@@ -15,12 +15,17 @@ It listens on `127.0.0.1` over plain HTTP. If you expose it, terminate TLS in a 
 | Role | Routes |
 | ---- | ------ |
 | public | `GET /health`, `GET /openapi.json` |
-| reader | `GET /jobs/:id`, `POST /vex`, `POST /patches/list`, `/patches/inspect`, `/patches/validate` |
+| reader | `GET /jobs/:id`, `POST /vex`, `POST /reachability`, `POST /packages/evaluate`, `POST /delta-scan`, `POST /patches/list`, `/patches/inspect`, `/patches/validate` |
 | operator | `POST /plan-remediation` |
-| admin | `POST /remediate`, `/remediate-from-scan`, `/remediate-portfolio`, `/update-outdated`, `/jobs/remediate`, `/jobs/scan`, `/jobs/portfolio` |
+| admin | `POST /remediate`, `/remediate-from-scan`, `/remediate-portfolio`, `/update-outdated`, `/patches/reconcile`, `/jobs/remediate`, `/jobs/scan`, `/jobs/portfolio` |
 
-Request bodies are the SDK options as JSON. Roles are cumulative: `admin` can call everything.
-Jobs are held in memory; they are lost on restart and old finished jobs expire.
+Routes, request bodies and the OpenAPI document are generated from the same operation catalog as the
+[MCP tools](mcp-server.md), so they cannot drift. A body holds the operation's main argument at the
+top level (`cveId`, `inputPath`, `targets`, `patchFilePath`, `packageName`, `report`) and every SDK
+option under `options`. Unknown fields, at either level, are rejected with `400`. A role comes from
+the operation's annotations: read-only operations need `reader`, previews `operator`, anything that
+can change the project `admin`. Roles are cumulative: `admin` can call everything. Jobs are held in
+memory; they are lost on restart and old finished jobs expire.
 
 ## Authentication
 
@@ -37,10 +42,11 @@ With neither, every route except health and the spec returns `503`.
 - `POST` bodies must be `application/json` and at most 1 MiB (`AUTOREMEDIATOR_MAX_BODY_BYTES`).
 - The `Host` header must be `127.0.0.1`, `localhost` or `[::1]` (`AUTOREMEDIATOR_ALLOWED_HOSTS` to
   add more), which blocks DNS rebinding.
-- Path options in a body (`cwd`, `inputPath`, `patchesDir`, `policy`, ...) must resolve, after
-  following symlinks, inside the server's working directory (`AUTOREMEDIATOR_ALLOWED_ROOTS` to add
-  more).
-- `changeRequest.tokenEnvVar` and `changeRequest.githubApiUrl` are ignored.
+- Path options (`cwd`, `inputPath`, `patchesDir`, `policy`, `patchFilePath`, ...; the OpenAPI schema
+  marks them `x-path`) must resolve, after following symlinks, inside the server's working
+  directory. `AUTOREMEDIATOR_ALLOWED_ROOTS` replaces that default. Anything outside gets `403`.
+- Change-request credentials and endpoints (`token`, `tokenEnvVar`, `githubApiUrl`) are not accepted
+  from callers; such a request gets `400`.
 
 Variables are listed in [Environment variables](../reference/environment.md#http-server). The
 reasoning behind these limits is in [Safety](../safety.md#trust-boundaries).

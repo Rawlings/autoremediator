@@ -1,7 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createOpenApiRouteHandlers } from "../openapi/handlers/routes.js";
-import { callMcpOperation, OPERATIONS, toMcpTools } from "./index.js";
+import {
+  callMcpOperation,
+  httpOperations,
+  mapRequestToInput,
+  matchHttpRoute,
+  OPERATIONS,
+  roleFor,
+  routeKey,
+  toMcpTools,
+  toOpenApiPaths,
+} from "./index.js";
 import type { ApiDeps } from "./api-deps.js";
 
 function fakeDeps(overrides: Partial<ApiDeps> = {}): ApiDeps {
@@ -171,15 +180,112 @@ describe("calling operations over MCP", () => {
   });
 });
 
-describe("HTTP bindings match the hand-written routes", () => {
-  it("declares exactly the POST routes the OpenAPI server serves", () => {
-    const served = [...createOpenApiRouteHandlers({} as never).keys()]
-      .filter((key) => key.startsWith("POST "))
-      .toSorted();
-    const declared = OPERATIONS.filter((operation) => operation.http?.method === "POST")
-      .map((operation) => `POST ${operation.http!.path}`)
-      .toSorted();
+describe("HTTP adapter", () => {
+  const op = (name: string) => OPERATIONS.find((operation) => operation.name === name)!;
 
-    expect(declared).toEqual(served);
+  it("gives every HTTP operation a unique route", () => {
+    const keys = httpOperations.map((operation) => `${operation.http!.method} ${operation.http!.path}`);
+    expect(new Set(keys).size).toBe(keys.length);
+    // The unauthenticated probe and spec endpoints are not operations.
+    expect(keys).not.toContain("GET /health");
+  });
+
+  it("matches static and parametric routes", () => {
+    expect(matchHttpRoute("POST", "/remediate")?.operation.name).toBe("remediate");
+    expect(matchHttpRoute("POST", "/patches/reconcile")?.operation.name).toBe(
+      "reconcilePatchArtifacts",
+    );
+    expect(matchHttpRoute("GET", "/jobs/abc%20d")).toMatchObject({
+      operation: { name: "pollJob" },
+      params: { jobId: "abc d" },
+    });
+    expect(matchHttpRoute("GET", "/jobs/")).toBeUndefined();
+    expect(matchHttpRoute("GET", "/jobs/a/b")).toBeUndefined();
+    expect(matchHttpRoute("GET", "/remediate")).toBeUndefined();
+    expect(matchHttpRoute("POST", "/nope")).toBeUndefined();
+  });
+
+  it("lifts positional fields and flattens options", () => {
+    expect(
+      mapRequestToInput(op("remediate"), { cveId: "CVE-1", options: { dryRun: true } }),
+    ).toEqual({ ok: true, input: { cveId: "CVE-1", dryRun: true } });
+    expect(mapRequestToInput(op("listPatchArtifacts"), {})).toEqual({ ok: true, input: {} });
+    expect(mapRequestToInput(op("toVex"), { report: { a: 1 }, options: { toolVersion: "1" } })).toEqual({
+      ok: true,
+      input: { toolVersion: "1", report: { a: 1 } },
+    });
+    expect(mapRequestToInput(op("pollJob"), undefined, { jobId: "j1" })).toEqual({
+      ok: true,
+      input: { jobId: "j1" },
+    });
+  });
+
+  it("rejects stray top-level fields, bad options and fields in both places", () => {
+    expect(mapRequestToInput(op("remediate"), { cveId: "CVE-1", dryRun: true })).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('"dryRun"'),
+    });
+    expect(mapRequestToInput(op("remediate"), { cveId: "x", options: "no" })).toMatchObject({
+      ok: false,
+    });
+    expect(
+      mapRequestToInput(op("remediate"), { cveId: "x", options: { cveId: "y" } }),
+    ).toMatchObject({ ok: false, error: expect.stringContaining('"cveId"') });
+    expect(mapRequestToInput(op("remediate"), [])).toMatchObject({ ok: false });
+  });
+
+  it("derives roles from annotations", () => {
+    expect(roleFor(op("toVex"))).toBe("reader");
+    expect(roleFor(op("checkReachability"))).toBe("reader");
+    expect(roleFor(op("planRemediation"))).toBe("operator");
+    expect(roleFor(op("remediate"))).toBe("admin");
+    expect(roleFor(op("submitScanJob"))).toBe("admin");
+    expect(roleFor(op("reconcilePatchArtifacts"))).toBe("admin");
+    expect(routeKey(op("pollJob"))).toBe("GET /jobs");
+  });
+});
+
+describe("generated OpenAPI paths", () => {
+  const paths = toOpenApiPaths() as Record<string, any>;
+
+  it("describes every HTTP operation plus the probe and spec endpoints", () => {
+    for (const operation of httpOperations) {
+      const path = operation.http!.path.replaceAll(/:([^/]+)/g, "{$1}");
+      expect(paths[path]?.[operation.http!.method.toLowerCase()]?.operationId).toBe(operation.name);
+    }
+    expect(paths["/health"]).toBeDefined();
+    expect(paths["/openapi.json"]).toBeDefined();
+  });
+
+  it("nests option fields under options and keeps positional fields at the top", () => {
+    const body = paths["/remediate"].post.requestBody.content["application/json"].schema;
+    expect(body.required).toEqual(["cveId"]);
+    expect(body.properties.cveId).toBeDefined();
+    expect(body.properties.options.properties.dryRun).toBeDefined();
+    expect(body.properties.options.properties.cveId).toBeUndefined();
+    expect(body.additionalProperties).toBe(false);
+  });
+
+  it("marks path arguments so clients can see them", () => {
+    const options =
+      paths["/remediate"].post.requestBody.content["application/json"].schema.properties.options
+        .properties;
+    expect(options.cwd["x-path"]).toBe(true);
+    expect(options.patchesDir["x-path"]).toBe(true);
+    expect(options.dryRun["x-path"]).toBeUndefined();
+  });
+
+  it("uses the declared success status and documents errors", () => {
+    expect(paths["/jobs/remediate"].post.responses["202"]).toBeDefined();
+    expect(paths["/remediate"].post.responses["200"]).toBeDefined();
+    expect(paths["/remediate"].post.responses["403"]).toBeDefined();
+    expect(paths["/jobs/{jobId}"].get.parameters[0]).toMatchObject({ name: "jobId", in: "path" });
+    expect(paths["/jobs/{jobId}"].get.responses["404"]).toBeDefined();
+  });
+
+  it("exposes the operations that previously had no HTTP route", () => {
+    for (const path of ["/reachability", "/packages/evaluate", "/delta-scan", "/patches/reconcile"]) {
+      expect(paths[path]?.post).toBeDefined();
+    }
   });
 });

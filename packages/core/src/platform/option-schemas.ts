@@ -155,6 +155,13 @@ export const OPTION_DESCRIPTIONS = {
 const unitInterval = z.number().min(0).max(1);
 const D = OPTION_DESCRIPTIONS;
 
+/**
+ * A string that names a filesystem path. The `x-path` keyword lands in the generated JSON Schema, so
+ * clients can see which arguments are paths and the path guard knows which fields to confine.
+ */
+export const pathField = (description: string) =>
+  z.string().meta({ "x-path": true }).describe(description);
+
 export const supplyChainPolicySchema = z
   .object({
     minPublishAgeHours: z.number().nonnegative().describe(D.supplyChainMinPublishAgeHours),
@@ -243,7 +250,7 @@ export const changeRequestOptionsSchema = z
 /** Options shared by every operation that remediates; the wire form of `RemediateOptions`. */
 export const remediateOptionsSchema = z
   .object({
-    cwd: z.string().describe(D.cwd),
+    cwd: pathField(D.cwd),
     packageManager: z.enum(PACKAGE_MANAGER_VALUES).describe(D.packageManager),
     dryRun: z.boolean().describe(D.dryRun),
     preview: z.boolean().describe(D.preview),
@@ -255,8 +262,8 @@ export const remediateOptionsSchema = z
     patchConfidenceThresholds: patchConfidenceThresholdsSchema.describe(
       D.patchConfidenceThresholds,
     ),
-    patchesDir: z.string().describe(D.patchesDir),
-    policy: z.string().describe(D.policy),
+    patchesDir: pathField(D.patchesDir),
+    policy: pathField(D.policy),
     evidence: z.boolean().describe(D.evidence),
     requestId: z.string().describe(D.requestId),
     sessionId: z.string().describe(D.sessionId),
@@ -268,7 +275,7 @@ export const remediateOptionsSchema = z
     constraints: constraintsSchema.describe(D.constraints),
     changeRequest: changeRequestOptionsSchema.describe(D.changeRequest),
     exploitSignalOverride: exploitSignalOverrideSchema.describe(D.exploitSignalOverride),
-    suppressionsFile: z.string().describe(D.suppressionsFile),
+    suppressionsFile: pathField(D.suppressionsFile),
     slaCheck: z.boolean().describe(D.slaCheck),
     skipUnreachable: z.boolean().describe(D.skipUnreachable),
     dispositionPolicy: dispositionPolicySchema.describe(D.dispositionPolicy),
@@ -276,10 +283,10 @@ export const remediateOptionsSchema = z
     campaignMode: z.boolean().describe(D.campaignMode),
     escalationGraph: escalationGraphSchema.describe(D.escalationGraph),
     offlineIntelligence: z.boolean().describe(D.offlineIntelligence),
-    intelligenceSnapshotPath: z.string().describe(D.intelligenceSnapshotPath),
+    intelligenceSnapshotPath: pathField(D.intelligenceSnapshotPath),
     proofOfFix: z.boolean().describe(D.proofOfFix),
     requireProofOfFix: z.boolean().describe(D.requireProofOfFix),
-    reproductionTest: z.string().describe(D.reproductionTest),
+    reproductionTest: pathField(D.reproductionTest),
     breakingChangeRefactor: z.boolean().describe(D.breakingChangeRefactor),
   })
   .partial()
@@ -298,10 +305,10 @@ const required = (field: string, kind = "string") => `${field} is required (${ki
 
 export const portfolioTargetSchema = z
   .object({
-    cwd: z.string(required("cwd")).describe(D.cwd),
+    cwd: pathField(D.cwd),
     label: z.string().optional().describe("Display label for this target"),
     cveId: z.string().optional().describe(D.cveId),
-    inputPath: z.string().optional().describe(D.inputPath),
+    inputPath: pathField(D.inputPath).optional(),
     format: z.enum(SCAN_FORMAT_VALUES).optional().describe(D.format),
     audit: z.boolean().optional().describe(D.audit),
     riskHint: z
@@ -318,21 +325,27 @@ export const portfolioTargetSchema = z
 
 export const patchArtifactQuerySchema = z
   .object({
-    cwd: z.string().describe(D.cwd),
-    patchesDir: z.string().describe(D.patchesDir),
+    cwd: pathField(D.cwd),
+    patchesDir: pathField(D.patchesDir),
     packageManager: z.enum(PACKAGE_MANAGER_VALUES).describe(D.packageManager),
   })
   .partial()
   .strict();
 
+export const reconcileOptionsSchema = patchArtifactQuerySchema.extend({
+  autoApply: z.boolean().optional().describe("Apply the upstream fix and retire the patch when one is available"),
+  runTests: z.boolean().optional().describe(D.runTests),
+});
+
 export const patchFilePathSchema = z
   .string(required("patchFilePath"))
   .min(1, required("patchFilePath"))
+  .meta({ "x-path": true })
   .describe("Path to the .patch file");
 
 export const deltaScanOptionsSchema = z
   .object({
-    cwd: z.string().describe(D.cwd),
+    cwd: pathField(D.cwd),
     baseRef: z
       .string()
       .describe("Git base reference to compare against (e.g. 'HEAD', 'origin/main'). Defaults to 'HEAD'."),
@@ -346,7 +359,7 @@ export const evaluatePackageOptionsSchema = z
   .object({
     version: z.string().describe("Specific package version to evaluate"),
     packageManager: z.enum(PACKAGE_MANAGER_VALUES).describe(D.packageManager),
-    cwd: z.string().describe("Project root whose .npmrc selects the registry (default: process.cwd())"),
+    cwd: pathField("Project root whose .npmrc selects the registry (default: process.cwd())"),
     enrichIntelligence: z.boolean().describe("Enrich with live CISA KEV and EPSS intelligence feeds"),
   })
   .partial()

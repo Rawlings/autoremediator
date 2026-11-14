@@ -139,6 +139,7 @@ function addSharedOptions(
     .option("--change-request-title-prefix <prefix>", OPTION_DESCRIPTIONS.changeRequestTitlePrefix)
     .option("--proof-of-fix", OPTION_DESCRIPTIONS.proofOfFix)
     .option("--require-proof-of-fix", OPTION_DESCRIPTIONS.requireProofOfFix)
+    .option("--reproduction-test <path>", OPTION_DESCRIPTIONS.reproductionTest)
     .option("--breaking-change-refactor", OPTION_DESCRIPTIONS.breakingChangeRefactor);
 
   if (includeSimulationMode) {

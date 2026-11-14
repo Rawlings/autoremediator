@@ -22,7 +22,7 @@ options. Tools that return a report return it as JSON.
 | ----- | ----- |
 | Remediate | `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated` |
 | Inspect | `checkReachability`, `evaluatePackage`, `scanDelta`, `toVex` |
-| Patches | `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact` |
+| Patches | `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `reconcilePatchArtifacts` |
 | Jobs | `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob` |
 | Server | `health` |
 
@@ -33,6 +33,15 @@ same ones that validate input. Each tool carries MCP annotations: `readOnlyHint`
 nothing, `destructiveHint` for tools that edit the project unless `dryRun` is set, and `openWorldHint`
 for tools that call external services. Arguments are validated strictly: an unknown field or a value
 of the wrong type is returned as an error result naming the field, instead of being ignored.
+
+## Allowed paths
+
+Path arguments (`cwd`, `inputPath`, `patchesDir`, `policy`, `patchFilePath`, ...) must resolve, after
+following symlinks, inside an allowed root; anything else comes back as an error result. The allowed
+roots are the server's working directory plus any roots the client declares through MCP `roots`.
+Set `AUTOREMEDIATOR_ALLOWED_ROOTS` (comma-separated absolute paths) to replace both. If your host
+starts the server from a different directory than your projects and does not declare roots, set that
+variable.
 
 ## Trust
 

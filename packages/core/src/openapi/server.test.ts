@@ -315,7 +315,7 @@ describe("openapi server", () => {
       const res = await makeRequest("/plan-remediation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cveId: "CVE-2021-23337", options: { dryRun: true } }),
+        body: JSON.stringify({ cveId: "CVE-2021-23337", options: { runTests: false } }),
       });
       expect(res.status).toBe(200);
       const data = await res.json();

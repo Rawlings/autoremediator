@@ -1,8 +1,10 @@
-import { z } from "zod";
+import type { z } from "zod";
 
+import { assertPathsConfined, getAllowedRoots, PathNotAllowedError } from "../../platform/path-guard.js";
 import { type ApiDeps, defaultApiDeps } from "../api-deps.js";
 import type { Operation } from "../define-operation.js";
 import { OPERATIONS } from "../operations.js";
+import { inputJsonSchema } from "../schema.js";
 
 export interface McpTool {
   name: string;
@@ -20,11 +22,8 @@ export type McpToolResult = {
 /** The operations exposed as MCP tools. */
 export const mcpOperations: readonly Operation[] = OPERATIONS.filter((operation) => operation.mcp);
 
-export function toInputSchema(schema: z.ZodObject): McpTool["inputSchema"] {
-  const json = z.toJSONSchema(schema, { io: "input" }) as {
-    properties?: Record<string, unknown>;
-    required?: string[];
-  };
+export function toInputSchema(operation: Operation): McpTool["inputSchema"] {
+  const json = inputJsonSchema(operation);
   return {
     type: "object",
     properties: json.properties ?? {},
@@ -37,7 +36,7 @@ export function toMcpTools(operations: readonly Operation[] = mcpOperations): Mc
     name: operation.name,
     title: operation.title,
     description: operation.description,
-    inputSchema: toInputSchema(operation.input),
+    inputSchema: toInputSchema(operation),
     annotations: { ...operation.annotations, title: operation.title },
   }));
 }
@@ -58,28 +57,46 @@ const text = (value: unknown): McpToolResult => ({
   content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
 });
 
+export interface CallOptions {
+  operations?: readonly Operation[];
+  /** Roots the MCP client declared (`roots/list`); added to the server's own working directory. */
+  clientRoots?: readonly string[];
+  /** Environment used to read `AUTOREMEDIATOR_ALLOWED_ROOTS`. */
+  env?: NodeJS.ProcessEnv;
+}
+
+const errorResult = (message: string): McpToolResult => ({
+  content: [{ type: "text", text: message }],
+  isError: true,
+});
+
 /**
- * Validate a tool call against the operation's input schema and run it. Invalid input and
- * failures come back as `isError` results rather than protocol errors, so a host can show them to
- * the model.
+ * Validate a tool call against the operation's input schema, confine its paths, and run it.
+ * Invalid input, forbidden paths and failures come back as `isError` results rather than protocol
+ * errors, so a host can show them to the model.
  */
 export async function callMcpOperation(
   name: string,
   args: Record<string, unknown> = {},
   deps: ApiDeps = defaultApiDeps,
-  operations: readonly Operation[] = mcpOperations,
+  options: CallOptions = {},
 ): Promise<McpToolResult> {
+  const operations = options.operations ?? mcpOperations;
   const operation = operations.find((candidate) => candidate.name === name);
-  if (!operation) {
-    return { content: [{ type: "text", text: `Unknown tool: ${name}` }], isError: true };
-  }
+  if (!operation) return errorResult(`Unknown tool: ${name}`);
 
   const parsed = operation.input.safeParse(args);
-  if (!parsed.success) {
-    return {
-      content: [{ type: "text", text: JSON.stringify({ error: describeIssues(parsed.error) }) }],
-      isError: true,
-    };
+  if (!parsed.success) return errorResult(JSON.stringify({ error: describeIssues(parsed.error) }));
+
+  try {
+    assertPathsConfined(
+      inputJsonSchema(operation),
+      parsed.data,
+      getAllowedRoots(options.env, options.clientRoots),
+    );
+  } catch (err) {
+    if (err instanceof PathNotAllowedError) return errorResult(JSON.stringify({ error: err.message }));
+    throw err;
   }
 
   try {
@@ -90,9 +107,6 @@ export async function callMcpOperation(
     });
     return text(result);
   } catch (err) {
-    return {
-      content: [{ type: "text", text: err instanceof Error ? err.message : String(err) }],
-      isError: true,
-    };
+    return errorResult(err instanceof Error ? err.message : String(err));
   }
 }

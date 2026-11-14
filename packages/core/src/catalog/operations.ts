@@ -12,20 +12,24 @@ import {
   evaluatePackageOptionsSchema,
   OPTION_DESCRIPTIONS,
   packageNameSchema,
+  pathField,
   patchArtifactQuerySchema,
   patchFilePathSchema,
   portfolioTargetSchema,
+  reconcileOptionsSchema,
   remediateOptionsSchema,
   scanOptionsSchema,
   updateOutdatedOptionsSchema,
 } from "../platform/option-schemas.js";
 import { PACKAGE_VERSION } from "../version.js";
+import { RESPONSES } from "./responses.js";
 import { defineOperation, type Operation, type OperationContext } from "./define-operation.js";
 
 const cveId = z.string("cveId is required (string)").min(1, "cveId is required (string)");
 const inputPath = z
   .string("inputPath is required (string)")
   .min(1, "inputPath is required (string)")
+  .meta({ "x-path": true })
   .describe(OPTION_DESCRIPTIONS.inputPath);
 const targets = z
   .array(portfolioTargetSchema, "targets is required (array)")
@@ -69,8 +73,8 @@ export const OPERATIONS: readonly Operation[] = [
       "Health check tool that returns server readiness status, version, registered tool count, and the list of available capability names.",
     input: z.object({}).strict(),
     annotations: READ_ONLY,
+    response: RESPONSES.health,
     mcp: true,
-    http: { method: "GET", path: "/health" },
     handler: async (_input, context) => ({
       ...(await context.api.healthFn()),
       version: PACKAGE_VERSION,
@@ -85,6 +89,7 @@ export const OPERATIONS: readonly Operation[] = [
       "Remediate a single CVE in a Node.js project. Looks up the CVE, scans the project inventory, and applies a version bump or generates a patch file. Returns a RemediationReport.",
     input: z.object({ cveId: cveId.describe(OPTION_DESCRIPTIONS.cveId), ...remediateOptionsSchema.shape }).strict(),
     annotations: MUTATING,
+    response: RESPONSES.remediationReport,
     mcp: true,
     http: { method: "POST", path: "/remediate", positional: ["cveId"] },
     handler: ({ cveId: id, ...options }, context) =>
@@ -97,6 +102,7 @@ export const OPERATIONS: readonly Operation[] = [
       "Generate a non-mutating remediation preview for a single CVE in a Node.js project. Returns a RemediationReport with planned results.",
     input: z.object({ cveId: cveId.describe(OPTION_DESCRIPTIONS.cveId), ...planOptionShape }).strict(),
     annotations: PLANNING,
+    response: RESPONSES.remediationReport,
     mcp: true,
     http: { method: "POST", path: "/plan-remediation", positional: ["cveId"] },
     handler: ({ cveId: id, ...options }, context) =>
@@ -109,6 +115,7 @@ export const OPERATIONS: readonly Operation[] = [
       "Parse an npm/pnpm/yarn/bun audit JSON or SARIF scan file, extract all CVE IDs, and remediate each one. Returns a ScanReport.",
     input: z.object({ inputPath, ...scanOptionsSchema.shape }).strict(),
     annotations: MUTATING,
+    response: RESPONSES.scanReport,
     mcp: true,
     http: { method: "POST", path: "/remediate-from-scan", positional: ["inputPath"] },
     handler: ({ inputPath: path, ...options }, context) =>
@@ -121,6 +128,7 @@ export const OPERATIONS: readonly Operation[] = [
       "Run CVE or scan remediation across multiple targets and return an aggregated PortfolioReport.",
     input: z.object({ targets, ...remediateOptionsSchema.shape }).strict(),
     annotations: MUTATING,
+    response: RESPONSES.portfolioReport,
     mcp: true,
     http: { method: "POST", path: "/remediate-portfolio", positional: ["targets"] },
     handler: ({ targets: list, ...options }, context) =>
@@ -136,6 +144,7 @@ export const OPERATIONS: readonly Operation[] = [
       "List stored patch artifacts in the configured patches directory. Returns patch summaries with manifest metadata when available.",
     input: patchArtifactQuerySchema,
     annotations: READ_ONLY,
+    response: RESPONSES.patchSummaries,
     mcp: true,
     http: { method: "POST", path: "/patches/list", positional: [] },
     handler: (options, context) => context.api.listPatchArtifactsFn(options),
@@ -146,6 +155,7 @@ export const OPERATIONS: readonly Operation[] = [
     description: "Inspect a stored .patch file and its optional manifest metadata.",
     input: z.object({ patchFilePath: patchFilePathSchema, ...patchArtifactQuerySchema.shape }).strict(),
     annotations: READ_ONLY,
+    response: RESPONSES.patchInspection,
     mcp: true,
     http: { method: "POST", path: "/patches/inspect", positional: ["patchFilePath"] },
     handler: ({ patchFilePath, ...options }, context) =>
@@ -158,10 +168,23 @@ export const OPERATIONS: readonly Operation[] = [
       "Validate a stored patch artifact against its manifest and the current dependency inventory.",
     input: z.object({ patchFilePath: patchFilePathSchema, ...patchArtifactQuerySchema.shape }).strict(),
     annotations: READ_ONLY,
+    response: RESPONSES.patchValidation,
     mcp: true,
     http: { method: "POST", path: "/patches/validate", positional: ["patchFilePath"] },
     handler: ({ patchFilePath, ...options }, context) =>
       context.api.validatePatchArtifactFn(patchFilePath, options),
+  }),
+  defineOperation({
+    name: "reconcilePatchArtifacts",
+    title: "Reconcile patch artifacts",
+    description:
+      "Check each stored patch against upstream advisories and report which are obsolete because a fixed release now exists. With autoApply, bump to the fixed version and retire the patch.",
+    input: reconcileOptionsSchema,
+    annotations: MUTATING,
+    response: RESPONSES.patchReconciliation,
+    mcp: true,
+    http: { method: "POST", path: "/patches/reconcile", positional: [] },
+    handler: (options, context) => context.api.reconcilePatchArtifactsFn(options),
   }),
   defineOperation({
     name: "updateOutdated",
@@ -170,6 +193,7 @@ export const OPERATIONS: readonly Operation[] = [
       "Bump all outdated npm packages to their latest versions without requiring a CVE ID. Respects policy (allowMajorBumps) and supports dry-run. Returns an UpdateOutdatedReport.",
     input: updateOutdatedOptionsSchema,
     annotations: MUTATING,
+    response: RESPONSES.updateOutdatedReport,
     mcp: true,
     http: { method: "POST", path: "/update-outdated", positional: [] },
     handler: (options, context) =>
@@ -194,6 +218,7 @@ export const OPERATIONS: readonly Operation[] = [
       })
       .strict(),
     annotations: READ_ONLY,
+    response: RESPONSES.vexDocument,
     mcp: true,
     http: { method: "POST", path: "/vex", positional: ["report"] },
     handler: ({ report, toolVersion }, context) =>
@@ -209,6 +234,7 @@ export const OPERATIONS: readonly Operation[] = [
       "Submit a single-CVE remediation as a background async job. Returns a JobHandle immediately with a jobId. Use pollJob to check status and retrieve the result.",
     input: z.object({ cveId: cveId.describe(OPTION_DESCRIPTIONS.cveId), ...remediateOptionsSchema.shape }).strict(),
     annotations: MUTATING,
+    response: RESPONSES.jobHandle,
     mcp: true,
     http: { method: "POST", path: "/jobs/remediate", positional: ["cveId"], status: 202 },
     handler: ({ cveId: id, ...options }, context) =>
@@ -221,6 +247,7 @@ export const OPERATIONS: readonly Operation[] = [
       "Submit a scan-file remediation as a background async job. Returns a JobHandle immediately. Use pollJob to check status.",
     input: z.object({ inputPath, ...scanOptionsSchema.shape }).strict(),
     annotations: MUTATING,
+    response: RESPONSES.jobHandle,
     mcp: true,
     http: { method: "POST", path: "/jobs/scan", positional: ["inputPath"], status: 202 },
     handler: ({ inputPath: path, ...options }, context) =>
@@ -233,6 +260,7 @@ export const OPERATIONS: readonly Operation[] = [
       "Submit a portfolio remediation as a background async job. Returns a JobHandle immediately. Use pollJob to check status.",
     input: z.object({ targets, ...remediateOptionsSchema.shape }).strict(),
     annotations: MUTATING,
+    response: RESPONSES.jobHandle,
     mcp: true,
     http: { method: "POST", path: "/jobs/portfolio", positional: ["targets"], status: 202 },
     handler: ({ targets: list, ...options }, context) =>
@@ -255,6 +283,7 @@ export const OPERATIONS: readonly Operation[] = [
       })
       .strict(),
     annotations: READ_ONLY,
+    response: RESPONSES.job,
     mcp: true,
     http: { method: "GET", path: "/jobs/:jobId", pathParam: "jobId" },
     handler: ({ jobId }, context) => context.api.pollJobFn(jobId),
@@ -267,7 +296,7 @@ export const OPERATIONS: readonly Operation[] = [
     input: z
       .object({
         packageName: packageNameSchema.describe("Target package name to trace in project source files."),
-        cwd: z.string().optional().describe(OPTION_DESCRIPTIONS.cwd),
+        cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional(),
         symbol: z
           .string()
           .optional()
@@ -275,7 +304,9 @@ export const OPERATIONS: readonly Operation[] = [
       })
       .strict(),
     annotations: READ_ONLY,
+    response: RESPONSES.reachability,
     mcp: true,
+    http: { method: "POST", path: "/reachability", positional: ["packageName"] },
     handler: ({ packageName, cwd, symbol }, context) =>
       context.api.checkReachabilityFn({ packageName, cwd, symbol }),
   }),
@@ -288,7 +319,9 @@ export const OPERATIONS: readonly Operation[] = [
       .object({ packageName: packageNameSchema.describe("Package name to evaluate."), ...evaluatePackageOptionsSchema.shape })
       .strict(),
     annotations: READ_ONLY_NETWORK,
+    response: RESPONSES.packageEvaluation,
     mcp: true,
+    http: { method: "POST", path: "/packages/evaluate", positional: ["packageName"] },
     handler: ({ packageName, ...options }, context) =>
       context.api.evaluatePackageFn(packageName, options),
   }),
@@ -299,7 +332,9 @@ export const OPERATIONS: readonly Operation[] = [
       "Git-aware delta vulnerability scanner. Identifies new CVEs introduced by uncommitted edits (vs HEAD) or branch differences (vs base branch).",
     input: deltaScanOptionsSchema,
     annotations: READ_ONLY_NETWORK,
+    response: RESPONSES.deltaScan,
     mcp: true,
+    http: { method: "POST", path: "/delta-scan", positional: [] },
     handler: (options, context) => context.api.scanDeltaFn(options),
   }),
 ];

@@ -59,7 +59,7 @@ options typed after a subcommand apply to it. Unknown options are an error.
 | `--install-prefer-offline <bool>` | Override the offline-cache preference |
 | `--enforce-frozen-lockfile <bool>` | Freeze installs. Off by default, see [How it works](../how-it-works.md#verification) |
 | `--skip-unreachable` | Skip CVEs whose package is never imported (heuristic) |
-| `--proof-of-fix`, `--require-proof-of-fix` | [Proof-of-fix verification](../how-it-works.md#verification) |
+| `--proof-of-fix`, `--require-proof-of-fix`, `--reproduction-test <path>` | [Proof-of-fix verification](../how-it-works.md#verification); the last supplies the reproduction test script |
 | `--breaking-change-refactor` | Experimental codemods for `rimraf` and `uuid` |
 
 ## Prioritization and outcomes

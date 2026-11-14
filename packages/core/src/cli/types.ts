@@ -62,6 +62,7 @@ export interface CommandOptions {
   intelligenceSnapshot?: string;
   proofOfFix?: boolean;
   requireProofOfFix?: boolean;
+  reproductionTest?: string;
   breakingChangeRefactor?: boolean;
 }
 

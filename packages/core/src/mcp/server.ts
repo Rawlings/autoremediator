@@ -7,12 +7,15 @@
  *
  * Start: autoremediator-mcp   (stdio transport)
  */
+import { fileURLToPath } from "node:url";
+
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 
 import {
   type ApiDeps,
+  type CallOptions,
   callMcpOperation,
   defaultApiDeps,
   type McpToolResult,
@@ -38,8 +41,26 @@ export async function handleToolCall(
   name: string,
   args: Record<string, unknown> = {},
   deps: McpApiDeps = defaultApiDeps,
+  options?: CallOptions,
 ): Promise<McpToolResult> {
-  return callMcpOperation(name, args, deps);
+  return callMcpOperation(name, args, deps, options);
+}
+
+/** Roots the connected client declared, as filesystem paths; empty when it declared none. */
+async function clientRootPaths(server: Server): Promise<string[]> {
+  if (!server.getClientCapabilities()?.roots) return [];
+  try {
+    const { roots } = await server.listRoots();
+    return roots.flatMap((root) => {
+      try {
+        return root.uri.startsWith("file:") ? [fileURLToPath(root.uri)] : [];
+      } catch {
+        return [];
+      }
+    });
+  } catch {
+    return [];
+  }
 }
 
 export function createMcpServer(): Server {
@@ -49,7 +70,9 @@ export function createMcpServer(): Server {
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
-    return handleToolCall(name, args ?? {});
+    return handleToolCall(name, args ?? {}, defaultApiDeps, {
+      clientRoots: await clientRootPaths(server),
+    });
   });
 
   return server;

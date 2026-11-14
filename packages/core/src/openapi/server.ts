@@ -8,58 +8,37 @@
  */
 import http from "node:http";
 
-import {
-  inspectPatchArtifact,
-  listPatchArtifacts,
-  planRemediation,
-  pollJob,
-  remediate,
-  remediatePortfolio,
-  remediateFromScan,
-  submitPortfolioJob,
-  submitRemediateJob,
-  submitScanJob,
-  toCycloneDxVex,
-  updateOutdated,
-  validatePatchArtifact,
-} from "../api/index.js";
+import { type ApiDeps, defaultApiDeps } from "../catalog/index.js";
 import { isEntrypoint } from "../platform/entrypoint.js";
 import { handleOpenApiRequest } from "./handlers/index.js";
 import { parsePort, sendJson } from "./http-utils.js";
 
 export { OPENAPI_SPEC } from "./spec/index.js";
 
-export interface OpenApiServerDeps {
-  remediateFn: typeof remediate;
-  remediateFromScanFn: typeof remediateFromScan;
-  remediatePortfolioFn: typeof remediatePortfolio;
-  planRemediationFn: typeof planRemediation;
-  updateOutdatedFn: typeof updateOutdated;
-  listPatchArtifactsFn: typeof listPatchArtifacts;
-  inspectPatchArtifactFn: typeof inspectPatchArtifact;
-  validatePatchArtifactFn: typeof validatePatchArtifact;
-  toVexFn: typeof toCycloneDxVex;
-  submitRemediateJobFn: typeof submitRemediateJob;
-  submitScanJobFn: typeof submitScanJob;
-  submitPortfolioJobFn: typeof submitPortfolioJob;
-  pollJobFn: typeof pollJob;
-}
+/**
+ * The SDK functions the server calls. The ones the original routes needed are required; the rest
+ * (reachability, package evaluation, delta scan, patch reconciliation) default to the real
+ * implementations.
+ */
+export type OpenApiServerDeps = Pick<
+  ApiDeps,
+  | "remediateFn"
+  | "remediateFromScanFn"
+  | "remediatePortfolioFn"
+  | "planRemediationFn"
+  | "updateOutdatedFn"
+  | "listPatchArtifactsFn"
+  | "inspectPatchArtifactFn"
+  | "validatePatchArtifactFn"
+  | "toVexFn"
+  | "submitRemediateJobFn"
+  | "submitScanJobFn"
+  | "submitPortfolioJobFn"
+  | "pollJobFn"
+> &
+  Partial<ApiDeps>;
 
-const defaultDeps: OpenApiServerDeps = {
-  remediateFn: remediate,
-  remediateFromScanFn: remediateFromScan,
-  remediatePortfolioFn: remediatePortfolio,
-  planRemediationFn: planRemediation,
-  updateOutdatedFn: updateOutdated,
-  listPatchArtifactsFn: listPatchArtifacts,
-  inspectPatchArtifactFn: inspectPatchArtifact,
-  validatePatchArtifactFn: validatePatchArtifact,
-  toVexFn: toCycloneDxVex,
-  submitRemediateJobFn: submitRemediateJob,
-  submitScanJobFn: submitScanJob,
-  submitPortfolioJobFn: submitPortfolioJob,
-  pollJobFn: pollJob,
-};
+const defaultDeps: OpenApiServerDeps = defaultApiDeps;
 
 export function createOpenApiServer(deps: OpenApiServerDeps = defaultDeps): http.Server {
   return http.createServer((req, res) => {

@@ -1,9 +1,19 @@
 import type http from "node:http";
 
+import {
+  httpOperations,
+  inputJsonSchema,
+  mapRequestToInput,
+  matchHttpRoute,
+  routeKey,
+} from "../../catalog/index.js";
+import { assertPathsConfined, getAllowedRoots, PathNotAllowedError } from "../../platform/path-guard.js";
 import { sendJson } from "../http-utils.js";
 import { checkRbacAuthorization } from "../rbac.js";
 import type { OpenApiServerDeps } from "../server.js";
-import { createOpenApiRouteHandlers } from "./routes.js";
+import { OPENAPI_SPEC } from "../spec/index.js";
+import { runOperation } from "./run-operation.js";
+import { readJsonBody } from "./validators.js";
 
 function isHostAllowed(req: http.IncomingMessage): boolean {
   const configured = process.env.AUTOREMEDIATOR_ALLOWED_HOSTS?.split(",")
@@ -31,37 +41,38 @@ export async function handleOpenApiRequest(
 
   const url = new URL(req.url ?? "/", "http://localhost");
   const method = req.method?.toUpperCase() ?? "GET";
-  const key = `${method} ${url.pathname}`;
 
-  const routes = createOpenApiRouteHandlers(deps);
-  const handler = routes.get(key);
-
-  // Parametric route: GET /jobs/:jobId
-  if (!handler && method === "GET" && url.pathname.startsWith("/jobs/")) {
-    if (!checkRbacAuthorization(req, res, "GET /jobs")) {
-      return true;
-    }
-    const jobId = url.pathname.slice("/jobs/".length);
-    if (jobId && !jobId.includes("/")) {
-      try {
-        const job = deps.pollJobFn(jobId);
-        sendJson(res, 200, job);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        sendJson(res, 404, { error: message });
-      }
-      return true;
-    }
+  // Public probe and spec endpoints are not operations.
+  if (method === "GET" && url.pathname === "/health") {
+    sendJson(res, 200, { status: "ok" });
+    return true;
   }
-
-  if (!handler) {
-    return false;
-  }
-
-  if (!checkRbacAuthorization(req, res, key)) {
+  if (method === "GET" && url.pathname === "/openapi.json") {
+    sendJson(res, 200, OPENAPI_SPEC);
     return true;
   }
 
-  await handler(req, res);
+  const match = matchHttpRoute(method, url.pathname, httpOperations);
+  if (!match) return false;
+  const { operation, params } = match;
+
+  if (!checkRbacAuthorization(req, res, routeKey(operation))) return true;
+
+  let body: unknown;
+  if (operation.http!.method === "POST") {
+    body = await readJsonBody(req, res);
+    if (body === undefined) return true;
+  }
+
+  const mapping = mapRequestToInput(operation, body, params);
+  if (!mapping.ok) {
+    sendJson(res, 400, { error: mapping.error });
+    return true;
+  }
+
+  await runOperation(operation, mapping.input, deps, res, {
+    confine: (input) => assertPathsConfined(inputJsonSchema(operation), input, getAllowedRoots()),
+    isPathError: (error) => error instanceof PathNotAllowedError,
+  });
   return true;
 }

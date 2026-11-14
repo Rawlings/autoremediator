@@ -5,6 +5,7 @@ import {
   listPatchArtifacts,
   planRemediation,
   pollJob,
+  reconcilePatchArtifacts,
   remediate,
   remediateFromScan,
   remediatePortfolio,
@@ -31,6 +32,7 @@ export interface ApiDeps {
   listPatchArtifactsFn: typeof listPatchArtifacts;
   inspectPatchArtifactFn: typeof inspectPatchArtifact;
   validatePatchArtifactFn: typeof validatePatchArtifact;
+  reconcilePatchArtifactsFn: typeof reconcilePatchArtifacts;
   toVexFn: typeof toCycloneDxVex;
   submitRemediateJobFn: typeof submitRemediateJob;
   submitScanJobFn: typeof submitScanJob;
@@ -51,6 +53,7 @@ export const defaultApiDeps: ApiDeps = {
   listPatchArtifactsFn: listPatchArtifacts,
   inspectPatchArtifactFn: inspectPatchArtifact,
   validatePatchArtifactFn: validatePatchArtifact,
+  reconcilePatchArtifactsFn: reconcilePatchArtifacts,
   toVexFn: toCycloneDxVex,
   submitRemediateJobFn: submitRemediateJob,
   submitScanJobFn: submitScanJob,

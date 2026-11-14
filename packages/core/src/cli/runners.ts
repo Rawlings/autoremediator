@@ -13,6 +13,7 @@ import {
   buildSlaBreachSummary,
   buildStrategyCounts,
   buildDependencyScopeCounts,
+  type RemediateOptions,
   type ScanReport,
   toCiSummary,
   toCycloneDxVex,
@@ -82,35 +83,13 @@ function resolveDispositionPolicy(
   return policy;
 }
 
-function asSingleCveScanReport(report: Awaited<ReturnType<typeof remediate>>): ScanReport {
+/**
+ * Every SDK option the shared CLI flags can set, built in one place. Each command used to spell this
+ * out itself, and the copies drifted: `portfolio` and `update-outdated` accepted flags such as
+ * `--proof-of-fix` and `--offline` and silently dropped them.
+ */
+export function toRemediateOptions(opts: CommandOptions): RemediateOptions {
   return {
-    schemaVersion: "1.0",
-    status: report.results.some((result) => !result.applied && !result.dryRun)
-      ? report.results.some((result) => result.applied || result.dryRun)
-        ? "partial"
-        : "failed"
-      : "ok",
-    generatedAt: new Date().toISOString(),
-    cveIds: [report.cveId],
-    reports: [report],
-    successCount: report.results.filter((result) => result.applied || result.dryRun).length,
-    failedCount: report.results.filter((result) => !result.applied && !result.dryRun).length,
-    errors: [],
-    evidenceFile: report.evidenceFile,
-    patchCount: report.results.filter((result) => result.strategy === "patch-file").length,
-    strategyCounts: buildStrategyCounts([report]),
-    dependencyScopeCounts: buildDependencyScopeCounts([report]),
-    slaBreachSummary: buildSlaBreachSummary([report]),
-    correlation: report.correlation,
-    provenance: report.provenance,
-    constraints: report.constraints,
-  };
-}
-
-export async function runSingleCve(cveId: string, opts: CommandOptions): Promise<void> {
-  const changeRequest = resolveChangeRequestOptions(opts);
-
-  const report = await remediate(cveId, {
     cwd: opts.cwd,
     packageManager: opts.packageManager,
     dryRun: opts.dryRun,
@@ -119,7 +98,6 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
     runTests: opts.runTests,
     typecheck: opts.typecheck,
     patchesDir: opts.patchesDir,
-
     policy: opts.policy,
     evidence: opts.evidence,
     model: opts.model,
@@ -158,14 +136,45 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
     slaCheck: opts.slaCheck,
     skipUnreachable: opts.skipUnreachable,
     containmentMode: opts.containmentMode,
-    changeRequest,
+    campaignMode: opts.campaignMode,
+    changeRequest: resolveChangeRequestOptions(opts),
     dispositionPolicy: resolveDispositionPolicy(opts),
     offlineIntelligence: opts.offline,
     intelligenceSnapshotPath: opts.intelligenceSnapshot,
     proofOfFix: opts.proofOfFix,
     requireProofOfFix: opts.requireProofOfFix,
+    reproductionTest: opts.reproductionTest,
     breakingChangeRefactor: opts.breakingChangeRefactor,
-  });
+  };
+}
+
+function asSingleCveScanReport(report: Awaited<ReturnType<typeof remediate>>): ScanReport {
+  return {
+    schemaVersion: "1.0",
+    status: report.results.some((result) => !result.applied && !result.dryRun)
+      ? report.results.some((result) => result.applied || result.dryRun)
+        ? "partial"
+        : "failed"
+      : "ok",
+    generatedAt: new Date().toISOString(),
+    cveIds: [report.cveId],
+    reports: [report],
+    successCount: report.results.filter((result) => result.applied || result.dryRun).length,
+    failedCount: report.results.filter((result) => !result.applied && !result.dryRun).length,
+    errors: [],
+    evidenceFile: report.evidenceFile,
+    patchCount: report.results.filter((result) => result.strategy === "patch-file").length,
+    strategyCounts: buildStrategyCounts([report]),
+    dependencyScopeCounts: buildDependencyScopeCounts([report]),
+    slaBreachSummary: buildSlaBreachSummary([report]),
+    correlation: report.correlation,
+    provenance: report.provenance,
+    constraints: report.constraints,
+  };
+}
+
+export async function runSingleCve(cveId: string, opts: CommandOptions): Promise<void> {
+  const report = await remediate(cveId, toRemediateOptions(opts));
 
   const reportAsScan = asSingleCveScanReport(report);
 
@@ -247,66 +256,10 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
     await runInteractiveTriage(inputPath, opts);
     return;
   }
-  const changeRequest = resolveChangeRequestOptions(opts);
-
   const report = await remediateFromScan(inputPath, {
-    cwd: opts.cwd,
-    packageManager: opts.packageManager,
+    ...toRemediateOptions(opts),
     format: opts.format,
     audit: opts.audit,
-    policy: opts.policy,
-    patchesDir: opts.patchesDir,
-    dryRun: opts.dryRun,
-    preview: opts.preview,
-    simulationMode: opts.simulationMode,
-    runTests: opts.runTests,
-    typecheck: opts.typecheck,
-
-    model: opts.model,
-    patchConfidenceThresholds: {
-      low: typeof opts.patchConfidenceLow === "number" ? opts.patchConfidenceLow : undefined,
-      medium:
-        typeof opts.patchConfidenceMedium === "number" ? opts.patchConfidenceMedium : undefined,
-      high: typeof opts.patchConfidenceHigh === "number" ? opts.patchConfidenceHigh : undefined,
-    },
-    evidence: opts.evidence,
-    requestId: opts.requestId,
-    sessionId: opts.sessionId,
-    parentRunId: opts.parentRunId,
-    idempotencyKey: opts.idempotencyKey,
-    resume: opts.resume,
-    actor: opts.actor,
-    source: opts.source ?? "cli",
-    constraints: {
-      directDependenciesOnly: opts.directDependenciesOnly,
-      preferVersionBump: opts.preferVersionBump,
-      installMode: opts.installMode,
-      installPreferOffline: opts.installPreferOffline,
-      enforceFrozenLockfile: opts.enforceFrozenLockfile,
-      workspace: opts.workspace,
-    },
-    exploitSignalOverride:
-      opts.kevMandatory || opts.epssThreshold != null
-        ? {
-            kev: opts.kevMandatory ? { mandatory: true } : undefined,
-            epss:
-              opts.epssThreshold != null
-                ? { mandatory: true, threshold: opts.epssThreshold }
-                : undefined,
-          }
-        : undefined,
-    suppressionsFile: opts.suppressionsFile,
-    slaCheck: opts.slaCheck,
-    skipUnreachable: opts.skipUnreachable,
-    containmentMode: opts.containmentMode,
-    campaignMode: opts.campaignMode,
-    changeRequest,
-    dispositionPolicy: resolveDispositionPolicy(opts),
-    offlineIntelligence: opts.offline,
-    intelligenceSnapshotPath: opts.intelligenceSnapshot,
-    proofOfFix: opts.proofOfFix,
-    requireProofOfFix: opts.requireProofOfFix,
-    breakingChangeRefactor: opts.breakingChangeRefactor,
   });
 
   if (opts.summaryFile) {
@@ -508,33 +461,9 @@ export async function runValidatePatch(
 }
 
 export async function runUpdateOutdated(opts: CommandOptions): Promise<void> {
-  const changeRequest = resolveChangeRequestOptions(opts);
-
   const report = await updateOutdated({
-    cwd: opts.cwd,
-    packageManager: opts.packageManager,
-    dryRun: opts.dryRun,
-    runTests: opts.runTests,
-    evidence: opts.evidence,
-    policy: opts.policy,
-    patchesDir: opts.patchesDir,
+    ...toRemediateOptions(opts),
     includeTransitive: opts.includeTransitive,
-    requestId: opts.requestId,
-    sessionId: opts.sessionId,
-    parentRunId: opts.parentRunId,
-    idempotencyKey: opts.idempotencyKey,
-    resume: opts.resume,
-    actor: opts.actor,
-    source: opts.source ?? "cli",
-    constraints: {
-      directDependenciesOnly: opts.directDependenciesOnly,
-      preferVersionBump: opts.preferVersionBump,
-      installMode: opts.installMode,
-      installPreferOffline: opts.installPreferOffline,
-      enforceFrozenLockfile: opts.enforceFrozenLockfile,
-      workspace: opts.workspace,
-    },
-    changeRequest,
   });
 
   if (opts.outputFormat === "json") {
@@ -557,8 +486,6 @@ export async function runUpdateOutdated(opts: CommandOptions): Promise<void> {
 }
 
 export async function runPortfolio(targetsFilePath: string, opts: CommandOptions): Promise<void> {
-  const changeRequest = resolveChangeRequestOptions(opts);
-
   let parsedTargets: unknown;
   try {
     parsedTargets = JSON.parse(readFileSync(targetsFilePath, "utf8"));
@@ -573,56 +500,7 @@ export async function runPortfolio(targetsFilePath: string, opts: CommandOptions
     throw new Error("Portfolio targets file must be a JSON array.");
   }
 
-  const report = await remediatePortfolio(parsedTargets, {
-    cwd: opts.cwd,
-    packageManager: opts.packageManager,
-    dryRun: opts.dryRun,
-    preview: opts.preview,
-    simulationMode: opts.simulationMode,
-    runTests: opts.runTests,
-    patchesDir: opts.patchesDir,
-    policy: opts.policy,
-    evidence: opts.evidence,
-    model: opts.model,
-    patchConfidenceThresholds: {
-      low: typeof opts.patchConfidenceLow === "number" ? opts.patchConfidenceLow : undefined,
-      medium:
-        typeof opts.patchConfidenceMedium === "number" ? opts.patchConfidenceMedium : undefined,
-      high: typeof opts.patchConfidenceHigh === "number" ? opts.patchConfidenceHigh : undefined,
-    },
-    requestId: opts.requestId,
-    sessionId: opts.sessionId,
-    parentRunId: opts.parentRunId,
-    idempotencyKey: opts.idempotencyKey,
-    resume: opts.resume,
-    actor: opts.actor,
-    source: opts.source ?? "cli",
-    constraints: {
-      directDependenciesOnly: opts.directDependenciesOnly,
-      preferVersionBump: opts.preferVersionBump,
-      installMode: opts.installMode,
-      installPreferOffline: opts.installPreferOffline,
-      enforceFrozenLockfile: opts.enforceFrozenLockfile,
-      workspace: opts.workspace,
-    },
-    exploitSignalOverride:
-      opts.kevMandatory || opts.epssThreshold != null
-        ? {
-            kev: opts.kevMandatory ? { mandatory: true } : undefined,
-            epss:
-              opts.epssThreshold != null
-                ? { mandatory: true, threshold: opts.epssThreshold }
-                : undefined,
-          }
-        : undefined,
-    suppressionsFile: opts.suppressionsFile,
-    slaCheck: opts.slaCheck,
-    skipUnreachable: opts.skipUnreachable,
-    containmentMode: opts.containmentMode,
-    campaignMode: opts.campaignMode,
-    changeRequest,
-    dispositionPolicy: resolveDispositionPolicy(opts),
-  });
+  const report = await remediatePortfolio(parsedTargets, toRemediateOptions(opts));
 
   if (opts.outputFormat === "json") {
     logJson(report);

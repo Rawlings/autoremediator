@@ -1,6 +1,7 @@
 import type { z } from "zod";
 
 import type { ApiDeps } from "./api-deps.js";
+import type { ResponseSpec } from "./responses.js";
 
 export type OperationSource = "cli" | "sdk" | "mcp" | "openapi";
 
@@ -48,6 +49,8 @@ export interface Operation {
   /** Flat input object. HTTP nests everything outside `http.positional` under `options`. */
   input: z.ZodObject;
   annotations: OperationAnnotations;
+  /** What a successful call returns, as the OpenAPI document describes it. */
+  response: ResponseSpec;
   /** Expose as an MCP tool. */
   mcp: boolean;
   http?: HttpBinding;

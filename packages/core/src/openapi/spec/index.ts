@@ -1,5 +1,5 @@
+import { toOpenApiPaths } from "../../catalog/index.js";
 import { PACKAGE_VERSION } from "../../version.js";
-import { createOpenApiPaths } from "./paths.js";
 
 export const OPENAPI_SPEC = {
   openapi: "3.1.0",
@@ -20,5 +20,6 @@ export const OPENAPI_SPEC = {
     "scanner-driven batch remediation",
     "patch lifecycle validation",
   ],
-  paths: createOpenApiPaths(),
+  // Generated from the operation catalog, so it cannot drift from what the server accepts.
+  paths: toOpenApiPaths(),
 } as const;

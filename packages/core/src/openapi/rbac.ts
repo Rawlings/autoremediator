@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type http from "node:http";
 
+import { httpOperations, roleFor, routeKey as operationRouteKey } from "../catalog/index.js";
 import { sendJson } from "./http-utils.js";
 
 export type Role = "admin" | "operator" | "reader";
@@ -11,22 +12,11 @@ const ROLE_HIERARCHY: Record<Role, number> = {
   admin: 3,
 };
 
+/** Minimum role per route, derived from each operation's annotations (read-only, planning, mutating). */
 const ROUTE_ROLE_REQUIREMENTS: Record<string, Role> = {
   "GET /health": "reader",
   "GET /openapi.json": "reader",
-  "GET /jobs": "reader",
-  "POST /vex": "reader",
-  "POST /patches/list": "reader",
-  "POST /patches/inspect": "reader",
-  "POST /patches/validate": "reader",
-  "POST /plan-remediation": "operator",
-  "POST /jobs/remediate": "admin", // runs the full, mutating remediation
-  "POST /jobs/scan": "admin", // runs the full, mutating remediation
-  "POST /jobs/portfolio": "admin", // runs the full, mutating remediation
-  "POST /remediate": "admin",
-  "POST /remediate-from-scan": "admin",
-  "POST /remediate-portfolio": "admin",
-  "POST /update-outdated": "admin",
+  ...Object.fromEntries(httpOperations.map((operation) => [operationRouteKey(operation), roleFor(operation)])),
 };
 
 export interface JwtPayload {

@@ -5,9 +5,17 @@ import { fileURLToPath } from "node:url";
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TOOLS, createMcpServer, handleToolCall } from "./server.js";
+
+// The path guard is on for every call; these tests use fake project paths under /tmp.
+beforeEach(() => {
+  vi.stubEnv("AUTOREMEDIATOR_ALLOWED_ROOTS", `${process.cwd()},/tmp`);
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe("mcp tool contracts", () => {
   it("includes planRemediation in exposed tools", () => {
