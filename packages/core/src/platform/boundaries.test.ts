@@ -22,7 +22,7 @@ function violations(layer: string, directories: string[]): string[] {
   return sourceFiles(join(SRC, layer)).flatMap((file) => importsOf(file, directories));
 }
 
-describe("module boundaries (see docs/architecture.md)", () => {
+describe("module boundaries (see docs/contributing/architecture.md)", () => {
   it("platform is a leaf: it imports from no other layer", () => {
     expect(
       violations("platform", [

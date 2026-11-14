@@ -39,7 +39,7 @@
 ### Mode 5: OpenAPI HTTP Server
 
 - Trigger: `node dist/openapi/server.js [--port 3000]`
-- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/remediate-portfolio`, POST `/update-outdated`, POST `/patches/list`, POST `/patches/inspect`, POST `/patches/validate`, POST `/vex`, POST `/jobs/remediate`, POST `/jobs/scan`, POST `/jobs/portfolio`, `GET /jobs/:jobId` over HTTP on `127.0.0.1` (auth required unless `AUTOREMEDIATOR_INSECURE_NO_AUTH=1`; see `docs/integrations.md`)
+- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/remediate-portfolio`, POST `/update-outdated`, POST `/patches/list`, POST `/patches/inspect`, POST `/patches/validate`, POST `/vex`, POST `/jobs/remediate`, POST `/jobs/scan`, POST `/jobs/portfolio`, `GET /jobs/:jobId` over HTTP on `127.0.0.1` (auth required unless `AUTOREMEDIATOR_INSECURE_NO_AUTH=1`; see `docs/integrations/http-server.md`)
 - Source: `packages/core/src/openapi/server.ts`
 
 ### Mode 6: Governed Multi-Agent Delivery
@@ -122,6 +122,6 @@ If patch confidence is low or validation fails, result must be marked as unresol
 
 - **Never edit `CHANGELOG.md` directly:** All release notes, version changes, and package updates must be introduced exclusively via Changesets (`.changeset/<name>.md`).
 - **Always document changes:** When adding or changing APIs, CLI commands, MCP tools, configuration options, or runtime behavior, always update:
-  1. Documentation (`docs/`: `usage.md`, `policy.md`, `integrations.md`, `architecture.md`)
+  1. Documentation (`docs/`, indexed by `docs/README.md`; see `.github/instructions/documentation-governance.instructions.md` for which page covers what)
   2. Package READMEs and relevant agent/tool mode summaries
   3. A changeset file in `.changeset/` documenting the package changes and semver bump type (`patch`, `minor`, or `major`)

@@ -9,7 +9,7 @@ permissions: {}
 
 jobs:
   gate:
-    uses: rawlings/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v1
+    uses: rawlings/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v0.21.0
     with:
       audit: true
       dry-run: true

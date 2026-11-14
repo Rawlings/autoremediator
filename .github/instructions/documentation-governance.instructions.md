@@ -1,6 +1,6 @@
 ---
 description: Documentation consistency and change-to-doc mapping rules for runtime and public surface updates.
-applyTo: README.md,CONTRIBUTING.md,AGENTS.md,llms.txt,packages/core/README.md,packages/core/CHANGELOG.md,packages/core/llms.txt,docs/**/*.md,.github/**/*.md
+applyTo: README.md,CONTRIBUTING.md,AGENTS.md,llms.txt,packages/*/README.md,docs/**/*.md,.github/**/*.md
 ---
 
 # Documentation Governance
@@ -19,82 +19,74 @@ Do not default to append-only growth when section-level consolidation is feasibl
 
 ## Canonical Documentation Inventory
 
-Core references:
+Top level:
 
-- `README.md`
-- `CONTRIBUTING.md`
-- `AGENTS.md`
-- `llms.txt`
-- `packages/core/README.md`
-- `packages/core/CHANGELOG.md`
-- `packages/core/llms.txt`
+- `README.md`: overview, quick start, documentation map
+- `CONTRIBUTING.md`, `AGENTS.md`, `llms.txt`, `.github/SECURITY.md`
+- `packages/github-app/README.md`, `packages/vscode-extension/README.md`
+  (`packages/core/README.md` and `llms.txt` are copied from the root at pack time; do not edit them)
 
-User docs:
+User docs (`docs/`, indexed by `docs/README.md`):
 
-- `docs/usage.md`
-- `docs/policy.md`
-- `docs/integrations.md`
-- `docs/architecture.md`
+- Learn: `getting-started.md`, `how-it-works.md`, `safety.md`
+- Guides: `guides/scanners.md`, `guides/automation.md`, `guides/patch-generation.md`, `guides/offline.md`
+- Reference: `reference/cli.md`, `reference/sdk.md`, `reference/policy-file.md`, `reference/environment.md`
+- Integrations: `integrations/github-action.md`, `integrations/github-app.md`, `integrations/mcp-server.md`, `integrations/http-server.md`
+- Contributors: `contributing/architecture.md`
 
 Governance docs:
 
 - `.github/instructions/*.md`
 - `.github/skills/**/SKILL.md`
 
-Delivery-touchpoint docs that must be checked when behavior/contracts change:
+Delivery-touchpoint files that must be checked when behavior or contracts change:
 
 - `action.yml`
 - `.github/workflows/reusable-remediate-from-audit.yml`
-- `packages/github-app/src/**/*.ts` (for config/forwarding parity)
+- `packages/github-app/src/**/*.ts` (for config and forwarding parity)
 
 ## Change-to-Docs Mapping
 
-When public SDK API changes:
+When the public SDK API changes:
 
-- Update `docs/usage.md`.
-- Update `docs/usage.md` examples if user entry points changed.
-- Update `packages/core/llms.txt` and `llms.txt` API references.
-- Update `README.md` if feature summary materially changed.
+- Update `docs/reference/sdk.md` and the examples in `docs/getting-started.md`.
+- Update `llms.txt`, and `README.md` if the feature summary materially changed.
 
-When CLI commands/options/output change:
+When CLI commands, options or output change:
 
-- Update `docs/usage.md`.
-- Update `docs/usage.md` command examples if needed.
-- Update `packages/core/llms.txt` CLI examples.
+- Update `docs/reference/cli.md`, and `llms.txt` CLI examples.
 
-When orchestration/tool order/fallback behavior changes:
+When orchestration, strategy order or fallback behavior changes:
 
-- Update `AGENTS.md`.
-- Update `docs/policy.md`.
-- Update `packages/core/llms.txt` remediation order/tool section.
+- Update `AGENTS.md`, `docs/how-it-works.md` and `docs/reference/policy-file.md`.
 - Update matching instruction and skill files.
 
-When MCP/OpenAPI surfaces change:
+When the MCP or OpenAPI surfaces change:
 
-- Update `docs/integrations.md`.
-- Update `docs/usage.md` when request/response semantics change.
+- Update `docs/integrations/mcp-server.md` and `docs/integrations/http-server.md`.
 - Update `AGENTS.md` mode descriptions if exposed operations changed.
 
-When GitHub Action/reusable workflow inputs change:
+When GitHub Action or reusable workflow inputs change:
 
-- Update `docs/integrations.md` input reference.
-- Update `docs/usage.md` recommended workflow snippets when behavior changed.
+- Update `docs/integrations/github-action.md` and `docs/guides/automation.md`.
 - Update README references if setup expectations changed.
 
-When GitHub App runtime/config behavior changes:
+When GitHub App runtime or config behavior changes:
 
-- Update `docs/integrations.md` GitHub App sections.
-- Update `docs/policy.md` repo-policy guidance as applicable.
+- Update `docs/integrations/github-app.md`.
 - Update `AGENTS.md` mode behavior when trigger or delivery semantics changed.
 
-When scanner/intelligence behavior changes:
+When scanner or intelligence behavior changes:
 
-- Update `docs/usage.md` and/or `docs/policy.md`.
-- Update `packages/core/llms.txt` source/format sections.
+- Update `docs/guides/scanners.md`, `docs/guides/offline.md` and `docs/safety.md` (network access).
 
-When release version/changelog changes:
+When guarantees or trust boundaries change:
 
-- Keep `packages/core/llms.txt` and `llms.txt` references aligned with current capabilities.
+- Update `docs/safety.md`.
+
+When the release version changes:
+
+- Keep `llms.txt` aligned with current capabilities, and pin examples that name a release tag.
 
 ## Guardrails
 

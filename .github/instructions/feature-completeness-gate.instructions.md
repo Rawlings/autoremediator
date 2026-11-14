@@ -30,7 +30,7 @@ For `public-operation`:
 - Shared types/contract updates.
 - Action/workflow and GitHub App parity updates when those delivery surfaces are affected.
 - Tests across affected surfaces.
-- Docs updates (`api-sdk.md`, `cli.md`, `integrations.md`, `getting-started.md` as applicable).
+- Docs updates (the pages under `docs/` listed in `documentation-governance.instructions.md`).
 - Governance updates for API/tool contracts.
 - Changelog updates.
 

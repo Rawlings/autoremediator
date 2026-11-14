@@ -61,11 +61,10 @@ For core releases, update all of:
 
 If release impacts public behavior across surfaces, verify docs are aligned in:
 
-- `docs/usage.md`
-- `docs/integrations.md`
-- `docs/policy.md`
+- `docs/reference/cli.md`, `docs/reference/sdk.md`
+- `docs/integrations/`
+- `docs/reference/policy-file.md`
 - `README.md`
-- `packages/core/llms.txt`
 - `llms.txt`
 
 ## Changelog Style Rules

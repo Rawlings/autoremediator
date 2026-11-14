@@ -34,7 +34,10 @@ Precedence: explicit options, then the policy file (`.github/autoremediator.yml`
 
 ## Documentation
 
-- Usage: https://github.com/Rawlings/autoremediator/blob/master/docs/usage.md
-- Policy and safety: https://github.com/Rawlings/autoremediator/blob/master/docs/policy.md
-- Integrations: https://github.com/Rawlings/autoremediator/blob/master/docs/integrations.md
-- Architecture: https://github.com/Rawlings/autoremediator/blob/master/docs/architecture.md
+- Index: https://github.com/Rawlings/autoremediator/blob/master/docs/README.md
+- How it works: https://github.com/Rawlings/autoremediator/blob/master/docs/how-it-works.md
+- Safety: https://github.com/Rawlings/autoremediator/blob/master/docs/safety.md
+- CLI reference: https://github.com/Rawlings/autoremediator/blob/master/docs/reference/cli.md
+- SDK reference: https://github.com/Rawlings/autoremediator/blob/master/docs/reference/sdk.md
+- Policy file: https://github.com/Rawlings/autoremediator/blob/master/docs/reference/policy-file.md
+- Integrations: https://github.com/Rawlings/autoremediator/tree/master/docs/integrations

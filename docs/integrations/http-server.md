@@ -1,0 +1,46 @@
+# HTTP server
+
+An HTTP API for the same operations as the [SDK](../reference/sdk.md), described by an OpenAPI
+document at `GET /openapi.json`.
+
+```bash
+AUTOREMEDIATOR_API_TOKENS="admin:s3cret" \
+  node node_modules/autoremediator/dist/openapi/server.js --port 3000
+```
+
+It listens on `127.0.0.1` over plain HTTP. If you expose it, terminate TLS in a reverse proxy.
+
+## Routes
+
+| Role | Routes |
+| ---- | ------ |
+| public | `GET /health`, `GET /openapi.json` |
+| reader | `GET /jobs/:id`, `POST /vex`, `POST /patches/list`, `/patches/inspect`, `/patches/validate` |
+| operator | `POST /plan-remediation` |
+| admin | `POST /remediate`, `/remediate-from-scan`, `/remediate-portfolio`, `/update-outdated`, `/jobs/remediate`, `/jobs/scan`, `/jobs/portfolio` |
+
+Request bodies are the SDK options as JSON. Roles are cumulative: `admin` can call everything.
+Jobs are held in memory; they are lost on restart and old finished jobs expire.
+
+## Authentication
+
+Authentication is required. Configure either or both:
+
+- `AUTOREMEDIATOR_API_TOKENS="role:token,role:token"`: static bearer tokens.
+- `AUTOREMEDIATOR_JWT_SECRET`: HMAC-SHA256 JWTs with a `role` claim.
+
+With neither, every route except health and the spec returns `503`.
+`AUTOREMEDIATOR_INSECURE_NO_AUTH=1` disables the requirement, for local development only.
+
+## Request limits
+
+- `POST` bodies must be `application/json` and at most 1 MiB (`AUTOREMEDIATOR_MAX_BODY_BYTES`).
+- The `Host` header must be `127.0.0.1`, `localhost` or `[::1]` (`AUTOREMEDIATOR_ALLOWED_HOSTS` to
+  add more), which blocks DNS rebinding.
+- Path options in a body (`cwd`, `inputPath`, `patchesDir`, `policy`, ...) must resolve, after
+  following symlinks, inside the server's working directory (`AUTOREMEDIATOR_ALLOWED_ROOTS` to add
+  more).
+- `changeRequest.tokenEnvVar` and `changeRequest.githubApiUrl` are ignored.
+
+Variables are listed in [Environment variables](../reference/environment.md#http-server). The
+reasoning behind these limits is in [Safety](../safety.md#trust-boundaries).

@@ -241,23 +241,32 @@ describe("loadSuppressionsFile", () => {
     expect(result[1]?.cveId).toBe("CVE-2024-0002");
   });
 
-  it("returns empty array when file does not exist", () => {
-    const result = loadSuppressionsFile(join(tmpDir, "does-not-exist.yml"));
-    expect(result).toEqual([]);
+  it("throws when the file does not exist", () => {
+    expect(() => loadSuppressionsFile(join(tmpDir, "does-not-exist.yml"))).toThrow(
+      /Cannot read suppressions file/,
+    );
   });
 
-  it("returns empty array when YAML is malformed", () => {
+  it("throws when the YAML is malformed", () => {
     const filePath = join(tmpDir, "bad.yml");
     writeFileSync(filePath, "suppressions: :\n  broken: yaml:", "utf8");
-    const result = loadSuppressionsFile(filePath);
-    expect(result).toEqual([]);
+    expect(() => loadSuppressionsFile(filePath)).toThrow(/Cannot read suppressions file/);
   });
 
-  it("returns empty array when YAML has no suppressions key", () => {
+  it("throws when the file has no suppressions key", () => {
     const filePath = join(tmpDir, "empty.yml");
     writeFileSync(filePath, "allowMajorBumps: true", "utf8");
-    const result = loadSuppressionsFile(filePath);
-    expect(result).toEqual([]);
+    expect(() => loadSuppressionsFile(filePath)).toThrow(/Invalid suppressions file/);
+  });
+
+  it("throws on an unknown justification and names the field", () => {
+    const filePath = join(tmpDir, "typo.yml");
+    writeFileSync(
+      filePath,
+      "suppressions:\n  - cveId: CVE-2024-0001\n    justification: not-affected\n",
+      "utf8",
+    );
+    expect(() => loadSuppressionsFile(filePath)).toThrow(/suppressions\.0\.justification/);
   });
 });
 

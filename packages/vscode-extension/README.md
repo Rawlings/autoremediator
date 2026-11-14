@@ -1,19 +1,32 @@
 # Autoremediator for VS Code
 
-Autoremediator is a risk-aware Node.js vulnerability diagnostics and remediation extension for Visual Studio Code. It combines OSV package intelligence with FIRST EPSS exploit probability scores, CISA KEV exploitation signals, and AST reachability analysis.
+Shows known vulnerabilities in your Node.js dependencies where you edit them, and fixes them with
+[Autoremediator](https://github.com/Rawlings/autoremediator#readme).
 
-## Features
+## What it does
 
-- **Security Intelligence Hovers** — hover over dependencies in `package.json` to view CVSS severity, CISA KEV exploitation status, EPSS score percentiles, AST reachability, and safe upgrade versions.
-- **QuickFix Remediation** — apply version bumps and dependency overrides directly from editor diagnostics and hover actions.
-- **AST Reachability Analysis** — verify whether vulnerable package exports are actually imported and invoked in source files.
-- **Git Delta Scanning** — audit uncommitted working-tree changes without scanning the entire project.
-- **Virtual Patch Previews** — inspect `.patch` artifacts side-by-side using the `autoremediator-patch://` document provider before applying changes.
-- **CodeLens Summaries** — view vulnerability annotations directly above dependency declarations in `package.json`.
+- **Diagnostics** on `package.json` for every vulnerable dependency, with the advisory, severity,
+  CISA KEV status, EPSS score and the safe version when one exists.
+- **Quick fix** that runs Autoremediator for that CVE.
+- **CodeLens** above `dependencies` summarizing findings and how many are fixable.
+- **Commands** (Command Palette):
+  - `Autoremediator: Scan workspace for CVEs`
+  - `Autoremediator: Scan git delta against HEAD`: only dependencies changed since `HEAD`
+  - `Autoremediator: Check package AST reachability`: is the package imported by your source
+  - `Autoremediator: Preview patch artifact`: view a generated `.patch` before applying it
+
+Scans run `npm`, `pnpm` or `yarn audit` and feed the result to the Autoremediator CLI in dry-run
+mode. Nothing changes until you apply a fix.
 
 ## Requirements
 
-The extension requires Node.js 26+ and integrates with the `autoremediator` CLI (installed locally or run via `npx autoremediator`).
+Node.js 26 or later. The extension uses the `autoremediator` CLI from the workspace's
+`node_modules`, or downloads it with `npx`.
+
+## More
+
+Documentation, including the CLI and policy file, is in the
+[main repository](https://github.com/Rawlings/autoremediator/blob/master/docs/README.md).
 
 ## License
 

@@ -80,6 +80,15 @@ const constraintsSchema = z
   .partial()
   .strict();
 
+const suppressionSchema = z
+  .object({
+    cveId: z.string().min(1),
+    justification: z.enum(["not_affected", "fixed", "mitigated", "under_investigation"]),
+    notes: z.string().optional(),
+    expiresAt: z.union([z.string(), z.date().transform((d) => d.toISOString())]).optional(),
+  })
+  .strict();
+
 /** Shape of the policy YAML. Unknown keys are rejected so typos and removed options are caught. */
 const policyFileSchema = z
   .object({
@@ -100,18 +109,7 @@ const policyFileSchema = z
       .partial()
       .strict()
       .optional(),
-    suppressions: z
-      .array(
-        z
-          .object({
-            cveId: z.string().min(1),
-            justification: z.enum(["not_affected", "fixed", "mitigated", "under_investigation"]),
-            notes: z.string().optional(),
-            expiresAt: z.union([z.string(), z.date().transform((d) => d.toISOString())]).optional(),
-          })
-          .strict(),
-      )
-      .default([]),
+    suppressions: z.array(suppressionSchema).default([]),
     sla: z
       .object({
         critical: z.number().positive(),
@@ -272,14 +270,28 @@ export function findSuppression(
   );
 }
 
+/**
+ * Load VEX suppressions from a YAML or JSON file shaped `{ suppressions: [...] }`.
+ * A missing file, invalid YAML or an entry that fails validation throws, so a typo can never turn
+ * into a silently ignored suppression list.
+ */
 export function loadSuppressionsFile(filePath: string): VexSuppression[] {
+  let parsed: unknown;
   try {
-    const content = readFileSync(filePath, "utf8");
-    const parsed = yamlParse(content) as { suppressions?: unknown };
-    return Array.isArray(parsed?.suppressions) ? (parsed.suppressions as VexSuppression[]) : [];
-  } catch {
-    return [];
+    parsed = yamlParse(readFileSync(filePath, "utf8"));
+  } catch (error) {
+    throw new Error(
+      `Cannot read suppressions file ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
+  const result = z
+    .object({ suppressions: z.array(suppressionSchema) })
+    .strict()
+    .safeParse(parsed);
+  if (!result.success) {
+    throw new Error(`Invalid suppressions file ${filePath}: ${describePolicyIssues(result.error)}`);
+  }
+  return result.data.suppressions;
 }
 
 export function checkSlaBreach(

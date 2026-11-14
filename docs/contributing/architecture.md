@@ -1,6 +1,8 @@
 # Architecture
 
-For contributors. Read [AGENTS.md](../AGENTS.md) for the public naming canon and fallback rules.
+For contributors. Read [AGENTS.md](../../AGENTS.md) for the public naming canon and fallback rules,
+and [CONTRIBUTING.md](../../CONTRIBUTING.md) for the workflow. The behavior these modules
+implement is described in [How it works](../how-it-works.md).
 
 ## Layout (`packages/core/src`)
 
@@ -56,14 +58,3 @@ There is no agent loop; the flow is deterministic. The only model call is
 - **Subprocesses** go through `safeExeca` (sanitized environment, argument checks, timeouts).
 - **Untrusted callers** (MCP, HTTP) cannot set credentials, hosts or paths outside the allowed roots.
 - Public names follow the canon in `AGENTS.md`; SDK, CLI, MCP and HTTP must stay in sync.
-
-## Working on it
-
-```bash
-pnpm install
-pnpm build:all && pnpm typecheck:all && pnpm test:all   # what CI runs, plus lint and format
-```
-
-Tests live next to the code (`*.test.ts`), must not touch the network, and mock at module
-boundaries. Add a changeset (`pnpm changeset`) for any user-visible change; never edit
-`CHANGELOG.md` by hand.

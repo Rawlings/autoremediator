@@ -12,6 +12,8 @@ COPY packages/core/package.json packages/core/package.json
 RUN pnpm install --frozen-lockfile --filter autoremediator...
 COPY packages/core packages/core
 RUN pnpm --filter autoremediator build
+# core's prepack hook copies README.md and llms.txt from the repo root into the package.
+COPY README.md llms.txt ./
 RUN cd packages/core && pnpm pack --pack-destination /out
 
 FROM ${NODE_IMAGE}

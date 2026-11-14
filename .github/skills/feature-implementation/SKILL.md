@@ -60,7 +60,7 @@ For `public-operation`:
 - Verify GitHub Action/reusable workflow and GitHub App touchpoints when option or contract behavior can surface there.
 - Update shared types/contracts.
 - Add/update tests across impacted surfaces.
-- Update docs (`api-sdk.md`, `cli.md`, `integrations.md`, `getting-started.md` as applicable).
+- Update docs (the pages under `docs/` listed in `documentation-governance.instructions.md`).
 - Update changelog.
 
 ## Cross-Surface Touchpoint Matrix
