@@ -91,8 +91,18 @@ export interface WebhookContext {
   deliveryId?: string;
 }
 
+/** Events that can start remediation work. */
+export type RemediationEventName =
+  | "check_suite"
+  | "push"
+  | "workflow_dispatch"
+  | "check_run"
+  | "issue_comment"
+  | "dependabot_alert"
+  | "code_scanning_alert";
+
 export interface RemediationTriggerContext {
-  eventName: "check_suite" | "push" | "workflow_dispatch" | "check_run";
+  eventName: RemediationEventName;
   installationId?: number;
   deliveryId?: string;
   payload: Record<string, unknown>;
@@ -110,7 +120,7 @@ export type JobStatus = "queued" | "running" | "completed" | "failed";
 
 export interface QueueJob {
   id: string;
-  eventName: "check_suite" | "push" | "workflow_dispatch" | "check_run";
+  eventName: RemediationEventName;
 
   installationId?: number;
   deliveryId?: string;

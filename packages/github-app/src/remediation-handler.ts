@@ -5,6 +5,9 @@ import { isAbsolute, join, relative, resolve as resolvePath } from "node:path";
 
 import { remediateFromScan, type CveSeverity, type ScanReport } from "autoremediator";
 
+import { codeScanningAlertTarget, dependabotAlertTarget } from "./alerts.js";
+import { HELP_TEXT, parseComment } from "./commands.js";
+import { summarizeScanReport } from "./summary.js";
 import { parseCheckRunLogs } from "./diagnostics/log-parser.js";
 import { healPullRequest } from "./healing/pr-healer.js";
 import { fetchRepoConfig } from "./repo-config.js";
@@ -61,7 +64,10 @@ export function createDefaultRemediationHandler(
       context.eventName !== "check_suite" &&
       context.eventName !== "workflow_dispatch" &&
       context.eventName !== "push" &&
-      context.eventName !== "check_run"
+      context.eventName !== "check_run" &&
+      context.eventName !== "issue_comment" &&
+      context.eventName !== "dependabot_alert" &&
+      context.eventName !== "code_scanning_alert"
     ) {
       return;
     }
@@ -160,6 +166,28 @@ export function createDefaultRemediationHandler(
     }
 
     const payload = context.payload ?? {};
+
+    // Work that names its advisories (a comment command or an alert) instead of scanning for them.
+    let targeted: TargetedRun | undefined;
+    if (context.eventName === "issue_comment") {
+      const outcome = await prepareCommentRun(octokit, repoRef, payload, options);
+      if ("done" in outcome) return outcome.done;
+      targeted = outcome.run;
+    } else if (
+      context.eventName === "dependabot_alert" ||
+      context.eventName === "code_scanning_alert"
+    ) {
+      const target =
+        context.eventName === "dependabot_alert"
+          ? dependabotAlertTarget(payload)
+          : codeScanningAlertTarget(payload);
+      if (!target) return;
+      if (SEVERITY_RANK[normalizeSeverity(target.severity)] < SEVERITY_RANK[repoConfig.minimumSeverity]) {
+        return { status: "success", reason: "Alert is below the configured minimum severity" };
+      }
+      targeted = { cveIds: target.advisoryIds };
+    }
+
     const headSha =
       typeof (payload.check_suite as Record<string, unknown> | undefined)?.head_sha === "string"
         ? ((payload.check_suite as Record<string, unknown>).head_sha as string)
@@ -246,25 +274,28 @@ export function createDefaultRemediationHandler(
       }
     }
 
-    const dryRun = repoConfig.dryRun;
+    const dryRun = targeted?.forceDryRun ?? repoConfig.dryRun;
     const runTests = repoConfig.runTests;
     const minimumSeverity = repoConfig.minimumSeverity;
 
-    const changeRequest: ScanChangeRequestOptions | undefined = repoConfig.pullRequest?.enabled
+    const pullRequest = repoConfig.pullRequest ?? {};
+    // A plan never changes anything; a fix asked for in a comment always ends in a reviewable pull request.
+    const wantsPullRequest = targeted?.forceDryRun
+      ? false
+      : Boolean(pullRequest.enabled || targeted?.forcePullRequest);
+    const changeRequest: ScanChangeRequestOptions | undefined = wantsPullRequest
       ? {
           enabled: true,
           provider: "github",
-          grouping: repoConfig.pullRequest.grouping,
-          repository:
-            repoConfig.pullRequest.repository ??
-            (repoRef ? `${repoRef.owner}/${repoRef.repo}` : undefined),
-          baseBranch: repoConfig.pullRequest.baseBranch,
-          branchPrefix: repoConfig.pullRequest.branchPrefix,
-          titlePrefix: repoConfig.pullRequest.titlePrefix,
-          bodyFooter: repoConfig.pullRequest.bodyFooter,
-          draft: repoConfig.pullRequest.draft,
-          pushRemote: repoConfig.pullRequest.pushRemote,
-          tokenEnvVar: repoConfig.pullRequest.tokenEnvVar,
+          grouping: pullRequest.grouping,
+          repository: pullRequest.repository ?? (repoRef ? `${repoRef.owner}/${repoRef.repo}` : undefined),
+          baseBranch: pullRequest.baseBranch,
+          branchPrefix: pullRequest.branchPrefix,
+          titlePrefix: pullRequest.titlePrefix,
+          bodyFooter: pullRequest.bodyFooter,
+          draft: pullRequest.draft,
+          pushRemote: pullRequest.pushRemote,
+          tokenEnvVar: pullRequest.tokenEnvVar,
           token: context.installationToken,
         }
       : undefined;
@@ -281,7 +312,7 @@ export function createDefaultRemediationHandler(
     };
 
     try {
-      if (minimumSeverity === "UNKNOWN") {
+      if (!targeted && minimumSeverity === "UNKNOWN") {
         const report = await remediateFromScan("", {
           cwd,
           audit: true,
@@ -293,11 +324,14 @@ export function createDefaultRemediationHandler(
         return toRemediationJobResult(report);
       }
 
-      const findings = options.auditFindingProvider
-        ? await options.auditFindingProvider(cwd)
-        : await collectAuditFindings(cwd);
-
-      const cveIds = selectCvesByMinimumSeverity(findings, minimumSeverity);
+      const cveIds =
+        targeted?.cveIds ??
+        selectCvesByMinimumSeverity(
+          options.auditFindingProvider
+            ? await options.auditFindingProvider(cwd)
+            : await collectAuditFindings(cwd),
+          minimumSeverity,
+        );
       if (cveIds.length === 0) {
         return { status: "success", reason: "No CVEs matched minimum severity filter" };
       }
@@ -322,6 +356,15 @@ export function createDefaultRemediationHandler(
           ...policyOptions,
         });
 
+        if (targeted?.reply && repoRef) {
+          await postComment(
+            octokit,
+            repoRef,
+            targeted.reply.issueNumber,
+            summarizeScanReport(report, targeted.reply.mode),
+            options,
+          );
+        }
         return toRemediationJobResult(report);
       } finally {
         try {
@@ -338,6 +381,18 @@ export function createDefaultRemediationHandler(
           });
         }
       }
+    } catch (error) {
+      if (targeted?.reply && repoRef) {
+        // The error text can contain clone URLs, so it stays in the logs and out of the comment.
+        await postComment(
+          octokit,
+          repoRef,
+          targeted.reply.issueNumber,
+          "**Autoremediator** could not finish this request. See the app logs for details.",
+          options,
+        );
+      }
+      throw error;
     } finally {
       if (cleanupCheckout) {
         try {
@@ -355,6 +410,96 @@ export function createDefaultRemediationHandler(
         }
       }
     }
+  };
+}
+
+interface TargetedRun {
+  cveIds: string[];
+  forceDryRun?: boolean;
+  forcePullRequest?: boolean;
+  reply?: { issueNumber: number; mode: "plan" | "fix" };
+}
+
+type RepoRef = { owner: string; repo: string };
+type Octokit = Awaited<ReturnType<DefaultRemediationHandlerOptions["octokitFactory"]>>;
+
+async function postComment(
+  octokit: Octokit,
+  repo: RepoRef,
+  issueNumber: number,
+  body: string,
+  options: DefaultRemediationHandlerOptions,
+): Promise<void> {
+  try {
+    await octokit.issues.createComment({ owner: repo.owner, repo: repo.repo, issue_number: issueNumber, body });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    void options.onError?.({
+      timestamp: new Date().toISOString(),
+      source: "github-app",
+      level: "warn",
+      context: "remediation-handler.postComment",
+      message: `Failed to post comment: ${message}`,
+      error: message,
+    });
+  }
+}
+
+/** Only people who can already push may ask the app to change the repository. */
+async function hasWriteAccess(octokit: Octokit, repo: RepoRef, login: string): Promise<boolean> {
+  try {
+    const { data } = await octokit.repos.getCollaboratorPermissionLevel({
+      owner: repo.owner,
+      repo: repo.repo,
+      username: login,
+    });
+    return data.permission === "admin" || data.permission === "write";
+  } catch {
+    return false;
+  }
+}
+
+async function prepareCommentRun(
+  octokit: Octokit,
+  repo: RepoRef | undefined,
+  payload: Record<string, unknown>,
+  options: DefaultRemediationHandlerOptions,
+): Promise<{ done: RemediationJobResult | undefined } | { run: TargetedRun }> {
+  const comment = payload.comment as Record<string, unknown> | undefined;
+  const issueNumber = (payload.issue as Record<string, unknown> | undefined)?.number;
+  const login = (comment?.user as Record<string, unknown> | undefined)?.login;
+  const command = parseComment(typeof comment?.body === "string" ? comment.body : "");
+  if (!command || !repo || typeof issueNumber !== "number" || typeof login !== "string") {
+    return { done: undefined };
+  }
+
+  if (!(await hasWriteAccess(octokit, repo, login))) {
+    await postComment(
+      octokit,
+      repo,
+      issueNumber,
+      "Autoremediator commands need write access to this repository.",
+      options,
+    );
+    return { done: { status: "success", reason: "Commenter lacks write access" } };
+  }
+
+  if (command.name === "help" || command.advisoryIds.length === 0) {
+    const note =
+      command.name !== "help" && command.advisoryIds.length === 0
+        ? "That command needs at least one CVE or GHSA id.\n\n"
+        : "";
+    await postComment(octokit, repo, issueNumber, `${note}${HELP_TEXT}`, options);
+    return { done: { status: "success" } };
+  }
+
+  return {
+    run: {
+      cveIds: command.advisoryIds,
+      forceDryRun: command.name === "plan",
+      forcePullRequest: command.name === "fix",
+      reply: { issueNumber, mode: command.name },
+    },
   };
 }
 
@@ -618,7 +763,7 @@ function createSarifFromCves(cveIds: string[]): Record<string, unknown> {
           ruleId: cveId,
           level: "warning",
           message: {
-            text: `${cveId} matched configured minimum severity filter`,
+            text: `${cveId} was selected for remediation`,
           },
         })),
       },

@@ -11,6 +11,9 @@ audit on a shallow clone, fixes what it finds, and can open a pull request.
 | `push` to the default branch | Remediate the repository |
 | `workflow_dispatch` | Remediate the repository |
 | `check_run` completed with failure on an `autoremediator/*` branch | [Heal the pull request](#pull-request-healing), when enabled |
+| `issue_comment` created, with a [command](#comment-commands) | Show a plan, or fix and open a pull request |
+| `dependabot_alert` created or reopened | Remediate that advisory under the repository's settings |
+| `code_scanning_alert` created or reopened, when the rule is a CVE or GHSA | Remediate that advisory under the repository's settings |
 
 Webhooks are verified by signature, deduplicated by delivery id, queued, and retried with backoff.
 Remediation is **off until you enable it**, and each repository starts in dry-run mode.
@@ -26,7 +29,36 @@ Remediation is **off until you enable it**, and each repository starts in dry-ru
 4. Install the app on a repository and add `.github/autoremediator.yml` to it.
 5. Once registered, set `AUTOREMEDIATOR_GITHUB_APP_ENABLE_SETUP_ROUTES=false`.
 
-The app requests `contents`, `pull_requests` and `checks` write access and `metadata` read access.
+The app requests `contents`, `pull_requests`, `issues` and `checks` write access and `metadata`,
+`vulnerability_alerts` and `security_events` read access, and subscribes to `check_run`,
+`check_suite`, `issue_comment`, `dependabot_alert`, `code_scanning_alert`, `installation`,
+`installation_repositories` and `push`. An app registered by an earlier version has none of the new
+events: update its permissions and events on GitHub (or register it again) and accept the new
+permissions on each installation. Without `check_run`, pull request healing never fires.
+
+## Comment commands
+
+On an issue or pull request, a comment line that starts with `/autoremediator`:
+
+| Command | Does |
+| ------- | ---- |
+| `/autoremediator plan CVE-2021-23337` | Replies with what would change. Nothing is modified, whatever the repository's `dryRun` says |
+| `/autoremediator fix CVE-2021-23337` | Fixes it and opens a pull request for review, even if the repository defaults to `dryRun` |
+| `/autoremediator help` | Lists the commands |
+
+Give one or more CVE or GHSA ids (up to ten). Only people with **write or admin access** to the
+repository can use them; anyone else gets a one-line refusal and nothing runs. `fix` is an explicit
+request from someone who could push anyway, so it goes ahead and opens a pull request even when
+`dryRun` is on; it never merges. Quoted lines, fenced code and mid-line mentions are ignored, comments
+written by bots (including the app's own replies) are never acted on, and nothing from a comment is
+used except the command word and ids that match a strict pattern.
+
+## Alerts
+
+A new or reopened Dependabot alert that names a CVE or GHSA, or a code scanning alert whose rule is
+one (dependency scanners such as Trivy and Grype report the CVE as the rule id), starts a run for
+that advisory alone, subject to `minimumSeverity` and the repository's `dryRun` and `pullRequest`
+settings. Other code scanning alerts are ignored.
 
 ## Repository configuration
 

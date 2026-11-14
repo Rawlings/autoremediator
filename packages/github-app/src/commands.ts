@@ -1,0 +1,61 @@
+/**
+ * Comment commands: `/autoremediator <command> [ids]` on an issue or pull request.
+ * Comment text is untrusted input, so nothing from it is used except the command word and
+ * advisory ids that match a strict pattern.
+ */
+export const COMMAND_NAMES = ["help", "plan", "fix"] as const;
+export type CommandName = (typeof COMMAND_NAMES)[number];
+
+export interface ParsedCommand {
+  name: CommandName;
+  /** Advisory ids given on the command line, upper-cased and de-duplicated. */
+  advisoryIds: string[];
+  /** Words that were not recognised (reported back, never acted on). */
+  ignored: string[];
+}
+
+const ADVISORY_ID = /^(CVE-\d{4}-\d{4,7}|GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4})$/i;
+const MAX_IDS = 10;
+
+/**
+ * Find the first command in a comment. Quoted lines (`>`) and fenced code are skipped, so quoting
+ * someone's command in a reply, or showing it in an example, does not run it.
+ */
+export function parseComment(body: string): ParsedCommand | undefined {
+  let inFence = false;
+  for (const raw of body.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (line.startsWith("```") || line.startsWith("~~~")) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const match = /^\/autoremediator(?:\s+(.*))?$/i.exec(line);
+    if (!match) continue;
+
+    const words = (match[1] ?? "").split(/\s+/).filter(Boolean);
+    const first = words[0]?.toLowerCase();
+    const name = COMMAND_NAMES.find((candidate) => candidate === first) ?? "help";
+    const rest = first && name === first ? words.slice(1) : words;
+
+    const ids = new Set<string>();
+    const ignored: string[] = [];
+    for (const word of rest) {
+      const cleaned = word.replace(/[,;]+$/, "");
+      if (ADVISORY_ID.test(cleaned) && ids.size < MAX_IDS) ids.add(cleaned.toUpperCase());
+      else ignored.push(cleaned.slice(0, 40));
+    }
+    return { name, advisoryIds: [...ids], ignored: ignored.slice(0, 5) };
+  }
+  return undefined;
+}
+
+export const HELP_TEXT = [
+  "**Autoremediator commands** (write access required):",
+  "",
+  "- `/autoremediator plan CVE-2021-23337` shows what would change. Nothing is modified.",
+  "- `/autoremediator fix CVE-2021-23337` fixes it and opens a pull request for review.",
+  "- `/autoremediator help` shows this message.",
+  "",
+  "Give one or more CVE or GHSA ids, separated by spaces.",
+].join("\n");

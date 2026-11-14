@@ -161,7 +161,15 @@ function loadQueueState(filePath: string): QueueJob[] {
     }
 
     const validStatuses = new Set(["queued", "running", "completed", "failed"]);
-    const validEventNames = new Set(["check_suite", "check_run", "push", "workflow_dispatch"]);
+    const validEventNames = new Set([
+      "check_suite",
+      "check_run",
+      "push",
+      "workflow_dispatch",
+      "issue_comment",
+      "dependabot_alert",
+      "code_scanning_alert",
+    ]);
 
     return parsed.jobs.filter((job): job is QueueJob => {
       return (

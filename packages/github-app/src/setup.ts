@@ -52,10 +52,19 @@ export function buildAppManifest(baseUrl: string): Record<string, unknown> {
       contents: "write",
       pull_requests: "write",
       checks: "write",
+      // Comment commands reply on issues and pull requests.
+      issues: "write",
+      // Dependabot and code scanning alert webhooks.
+      vulnerability_alerts: "read",
+      security_events: "read",
       metadata: "read",
     },
     default_events: [
+      "check_run",
       "check_suite",
+      "code_scanning_alert",
+      "dependabot_alert",
+      "issue_comment",
       "installation",
       "installation_repositories",
       "push",
