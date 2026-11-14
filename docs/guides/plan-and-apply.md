@@ -90,6 +90,26 @@ provider. Credentials are excluded, but source code is not: do not enable this w
 acceptable. File contents and package documentation are treated as data, and the agent is told to
 ignore instructions in them; the scope limits and the verifier are what hold if that fails.
 
+## Letting your own agent do the repair
+
+Instead of the built-in agent, an agent you already use (Claude Code, Cursor, Copilot, a script) can
+do the repair through the same isolated checkout and the same verifier. With the tools of the
+[MCP server](../integrations/mcp-server.md), the HTTP routes under `/attempts/`, or the SDK:
+
+1. `startAttempt` for a plan item opens a checkout with the upgrade applied and returns its path and
+   what the verifier found wrong.
+2. Fix the project there, with your agent's own file tools, or send a unified diff with
+   `proposePatch`. A patch may change project source only, must be plain text, and must apply
+   cleanly; binary changes, renames, mode changes and anything outside source are refused.
+3. `verifyAttempt` runs the verifier and reports what is still wrong. Repeat 2 and 3.
+4. `finalizeAttempt` verifies once more and, if it passes, applies the change to the project through
+   the same promotion step as the built-in agent: re-checked in place, undone if that fails. It
+   returns `finalized: false` with the reasons when it does not verify. `abandonAttempt` throws the
+   attempt away.
+
+Up to four attempts per run can be open at once. An attempt outlives the process that started it, and
+is recorded with the run like any other. The MCP prompt `repair-upgrade` gives a host this sequence.
+
 ## Verify
 
 `runs verify` (`verifyRun`) judges the project as it is now against what the run set out to do. It is

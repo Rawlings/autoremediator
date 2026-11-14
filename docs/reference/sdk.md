@@ -22,6 +22,7 @@ Every function returns a promise unless noted. Option names are identical to the
 | `verifyRun({ runId, checks?, offline?, cwd? })` | `VerificationResult` (plus `runId`): each check's status and details, and the first that failed |
 | `getRun({ runId, cwd? })` | `RunDetails`: record, plan, item outcomes, ledger and whether it is intact |
 | `listRuns({ status?, limit?, cwd? })` | `RunRecord[]`, newest first |
+| `startAttempt({ runId, itemId, cwd? })`, `proposePatch({ runId, attemptId, diff })`, `verifyAttempt({ runId, attemptId, checks? })`, `finalizeAttempt({ runId, attemptId })`, `abandonAttempt({ runId, attemptId })` | `AttemptView`: where to edit, the verifier's findings, whether it was finalized. For [your own agent](../guides/plan-and-apply.md#letting-your-own-agent-do-the-repair) |
 | `remediateFromScan(inputPath, options?)` | `ScanReport`. `options.audit` runs the package manager's audit instead |
 | `remediatePortfolio(targets, options?)` | `PortfolioReport` |
 | `updateOutdated(options?)` | `UpdateOutdatedReport` |

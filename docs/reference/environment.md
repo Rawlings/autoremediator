@@ -24,6 +24,17 @@ See [HTTP server](../integrations/http-server.md) for how these interact.
 | `AUTOREMEDIATOR_ALLOWED_HOSTS` | Extra accepted `Host` values |
 | `AUTOREMEDIATOR_ALLOWED_ROOTS` | Extra directories request paths may point into |
 
+## MCP server
+
+| Variable | Purpose |
+| -------- | ------- |
+| `AUTOREMEDIATOR_MCP_CONFIRM` | `mutating`: ask the user, through the client, before a tool that changes the project (stdio, clients with elicitation). Default off |
+| `AUTOREMEDIATOR_MCP_PORT` | Port for `autoremediator-mcp --http` (also `--port`, then `PORT`). Default 3001 |
+| `AUTOREMEDIATOR_ALLOWED_ROOTS` | Directories path arguments may point into (replaces the working directory and client roots) |
+
+Over `--http` the HTTP server variables above (`AUTOREMEDIATOR_API_TOKENS`, `AUTOREMEDIATOR_JWT_SECRET`,
+`AUTOREMEDIATOR_INSECURE_NO_AUTH`, `AUTOREMEDIATOR_ALLOWED_HOSTS`, `AUTOREMEDIATOR_MAX_BODY_BYTES`) apply.
+
 ## GitHub App
 
 The `AUTOREMEDIATOR_GITHUB_APP_*` variables are documented in

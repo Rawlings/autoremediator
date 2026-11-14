@@ -458,6 +458,43 @@ export const rollbackRunOptionsSchema = runQuerySchema.extend({
     .describe("Reinstall dependencies from the restored lockfile (default: true)"),
 });
 
+const ITEM_ID_PATTERN = /^item_[0-9a-f]{12}$/;
+const ATTEMPT_ID_PATTERN = /^attempt_[0-9a-z]{12}$/;
+
+export const itemIdSchema = z
+  .string(required("itemId"))
+  .regex(ITEM_ID_PATTERN, "itemId must look like item_ followed by 12 hex digits")
+  .describe("Plan item id, from the run's plan");
+
+export const attemptIdSchema = z
+  .string(required("attemptId"))
+  .regex(ATTEMPT_ID_PATTERN, "attemptId must look like attempt_ followed by 12 lowercase letters or digits")
+  .describe("Attempt id returned by startAttempt");
+
+export const startAttemptOptionsSchema = z
+  .object({ runId: runIdSchema, itemId: itemIdSchema, cwd: pathField(D.cwd).optional() })
+  .strict();
+
+export const attemptQuerySchema = z
+  .object({ runId: runIdSchema, attemptId: attemptIdSchema, cwd: pathField(D.cwd).optional() })
+  .strict();
+
+export const proposePatchOptionsSchema = attemptQuerySchema.extend({
+  diff: z
+    .string(required("diff"))
+    .min(1, required("diff"))
+    .describe(
+      "A unified diff (as `git diff` prints it) of project source files. Dependency files, CI and config cannot be changed",
+    ),
+});
+
+export const verifyAttemptOptionsSchema = attemptQuerySchema.extend({
+  checks: z
+    .array(z.enum(VERIFY_CHECK_VALUES))
+    .optional()
+    .describe("Run only these checks (default: everything an attempt is judged on)"),
+});
+
 export const verifyRunOptionsSchema = runQuerySchema.extend({
   checks: z
     .array(z.enum(VERIFY_CHECK_VALUES))

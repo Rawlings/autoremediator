@@ -47,6 +47,13 @@ The CLI and SDK trust their caller. The [MCP server](integrations/mcp-server.md)
 The [GitHub App](integrations/github-app.md) accepts only relative `cwd` values inside the checkout
 and verifies webhook signatures.
 
+## Serving MCP over HTTP
+
+`autoremediator-mcp --http` is stateless, loopback-only, host-checked and role-gated like the HTTP
+API; see [MCP server](integrations/mcp-server.md#over-http). Anyone who can reach it with an `admin`
+token can change your project, as with the HTTP API, so keep tokens secret and put TLS in front of it
+if it leaves the machine.
+
 ## Agent repair
 
 With a model configured, an agent can edit your project's source to adapt it to an upgrade (see

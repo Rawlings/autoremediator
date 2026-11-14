@@ -31,15 +31,15 @@
 
 ### Mode 4: MCP Tool Server
 
-- Trigger: `autoremediator-mcp` (stdio)
+- Trigger: `autoremediator-mcp` (stdio), or `autoremediator-mcp --http` (stateless streamable HTTP on `127.0.0.1`, role-gated; see `docs/integrations/mcp-server.md`)
 - Behavior: exposes every operation in the catalog (`packages/core/src/catalog`) as an MCP tool, generated from one definition shared with the HTTP server
-- Source: `packages/core/src/catalog/`, `packages/core/src/mcp/server.ts`
-- Exposed MCP tools: `health`, `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `reconcilePatchArtifacts`, `applyPlan`, `verifyRun`, `resumeRun`, `rollbackRun`, `getRun`, `listRuns`, `checkReachability`, `evaluatePackage`, `scanDelta`, `toVex`, `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob`
+- Source: `packages/core/src/catalog/`, `packages/core/src/mcp/` (server, resources, prompts, HTTP transport)
+- Exposed MCP tools: `health`, `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `reconcilePatchArtifacts`, `applyPlan`, `verifyRun`, `resumeRun`, `rollbackRun`, `getRun`, `listRuns`, `startAttempt`, `proposePatch`, `verifyAttempt`, `finalizeAttempt`, `abandonAttempt`, `checkReachability`, `evaluatePackage`, `scanDelta`, `toVex`, `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob`
 
 ### Mode 5: OpenAPI HTTP Server
 
 - Trigger: `node dist/openapi/server.js [--port 3000]`
-- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/remediate-portfolio`, POST `/update-outdated`, POST `/patches/list`, POST `/patches/inspect`, POST `/patches/validate`, POST `/patches/reconcile`, POST `/runs/apply`, POST `/runs/verify`, POST `/runs/resume`, POST `/runs/rollback`, POST `/runs/get`, POST `/runs/list`, POST `/reachability`, POST `/packages/evaluate`, POST `/delta-scan`, POST `/vex`, POST `/jobs/remediate`, POST `/jobs/scan`, POST `/jobs/portfolio`, `GET /jobs/:jobId` over HTTP on `127.0.0.1` (auth required unless `AUTOREMEDIATOR_INSECURE_NO_AUTH=1`; see `docs/integrations/http-server.md`)
+- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/remediate-portfolio`, POST `/update-outdated`, POST `/patches/list`, POST `/patches/inspect`, POST `/patches/validate`, POST `/patches/reconcile`, POST `/attempts/start`, POST `/attempts/patch`, POST `/attempts/verify`, POST `/attempts/finalize`, POST `/attempts/abandon`, POST `/runs/apply`, POST `/runs/verify`, POST `/runs/resume`, POST `/runs/rollback`, POST `/runs/get`, POST `/runs/list`, POST `/reachability`, POST `/packages/evaluate`, POST `/delta-scan`, POST `/vex`, POST `/jobs/remediate`, POST `/jobs/scan`, POST `/jobs/portfolio`, `GET /jobs/:jobId` over HTTP on `127.0.0.1` (auth required unless `AUTOREMEDIATOR_INSECURE_NO_AUTH=1`; see `docs/integrations/http-server.md`)
 - Source: `packages/core/src/openapi/server.ts` (routes and OpenAPI document generated from `packages/core/src/catalog/`)
 
 ### Mode 6: Governed Multi-Agent Delivery

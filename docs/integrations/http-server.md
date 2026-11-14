@@ -16,8 +16,8 @@ It listens on `127.0.0.1` over plain HTTP. If you expose it, terminate TLS in a 
 | ---- | ------ |
 | public | `GET /health`, `GET /openapi.json` |
 | reader | `GET /jobs/:id`, `POST /runs/get`, `/runs/list`, `POST /vex`, `POST /reachability`, `POST /packages/evaluate`, `POST /delta-scan`, `POST /patches/list`, `/patches/inspect`, `/patches/validate` |
-| operator | `POST /plan-remediation`, `POST /runs/verify` |
-| admin | `POST /remediate`, `/remediate-from-scan`, `/remediate-portfolio`, `/update-outdated`, `/patches/reconcile`, `/runs/apply`, `/runs/resume`, `/runs/rollback`, `/jobs/remediate`, `/jobs/scan`, `/jobs/portfolio` |
+| operator | `POST /plan-remediation`, `POST /runs/verify`, `POST /attempts/start`, `/attempts/patch`, `/attempts/verify`, `/attempts/abandon` |
+| admin | `POST /remediate`, `/remediate-from-scan`, `/remediate-portfolio`, `/update-outdated`, `/patches/reconcile`, `/runs/apply`, `/runs/resume`, `/runs/rollback`, `/attempts/finalize`, `/jobs/remediate`, `/jobs/scan`, `/jobs/portfolio` |
 
 Routes, request bodies and the OpenAPI document are generated from the same operation catalog as the
 [MCP tools](mcp-server.md), so they cannot drift. A body holds the operation's main argument at the

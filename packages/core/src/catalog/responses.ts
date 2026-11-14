@@ -127,5 +127,20 @@ export const RESPONSES = {
       durationMs: { type: "number" },
     }),
   },
+  attemptView: {
+    description: "AttemptView",
+    schema: object({
+      runId: { type: "string" },
+      attemptId: { type: "string" },
+      itemId: { type: "string" },
+      status: { type: "string" },
+      worktreePath: { type: "string" },
+      verification: { type: "object" },
+      failure: { type: "object" },
+      changedFiles: { type: "array", items: { type: "string" } },
+      finalized: { type: "boolean" },
+      message: { type: "string" },
+    }),
+  },
   health: { description: "Server is healthy", schema: object({ status: { type: "string" } }) },
 } as const satisfies Record<string, ResponseSpec>;

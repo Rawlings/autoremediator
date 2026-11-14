@@ -1,4 +1,4 @@
-import { relative, resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
 
 import type { RepairAgent, RepairBudget } from "../../platform/repair-agent.js";
 import {
@@ -12,10 +12,24 @@ import type { AttemptRequest, AttemptResult } from "../../remediation/repair/att
 import type { VerificationResult, VerifyRequest } from "../../remediation/verify/types.js";
 import { newAttemptId } from "../../runs/ids.js";
 import type { PlanItem, RemediationPlan } from "../../runs/plan.js";
-import type { AttemptRecord, AttemptStatus, RunStore } from "../../runs/run-store.js";
-import { addToSnapshot } from "../../runs/snapshot-store.js";
+import type { AttemptRecord, AttemptStatus, RunStatus, RunStore } from "../../runs/run-store.js";
+import { addToSnapshot, saveSnapshot } from "../../runs/snapshot-store.js";
 
 export const SNAPSHOT_DIR = "snapshot";
+export const SNAPSHOT_MANIFEST = `${SNAPSHOT_DIR}/snapshot.json`;
+
+/** States in which a run still has changes to make. */
+export const APPLICABLE_STATUSES = new Set<RunStatus>(["planned", "applying", "failed", "partial"]);
+
+/**
+ * Take the run's rollback snapshot before its first change; later calls do nothing, because the
+ * state before the first change is the one a rollback must return to.
+ */
+export async function ensureRunSnapshot(store: RunStore, runId: string, cwd: string): Promise<void> {
+  if (store.hasFile(runId, SNAPSHOT_MANIFEST)) return;
+  saveSnapshot(join(store.runDir(runId), SNAPSHOT_DIR), await createProjectSnapshot(cwd));
+  store.ledger(runId).append("snapshot.saved", { dir: SNAPSHOT_DIR });
+}
 
 /** The cheap checks run on the real project after a verified change is applied to it. */
 const PROMOTION_CHECKS = ["scope", "policy", "supply-chain", "vuln-gone"] as const;

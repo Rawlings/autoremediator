@@ -43,6 +43,8 @@ export interface RunRecord {
 }
 
 export type AttemptStatus =
+  | "open"
+  | "abandoned"
   | "verified"
   | "rejected"
   | "failed"
@@ -60,6 +62,8 @@ export interface AttemptRecord {
   /** Times the verifier's findings were handed back to the agent. */
   rounds: number;
   changedFiles: string[];
+  /** An open attempt's checkout: where a host agent edits. Gone once the attempt is closed. */
+  worktreePath?: string;
   inputTokens?: number;
   outputTokens?: number;
   startedAt: string;

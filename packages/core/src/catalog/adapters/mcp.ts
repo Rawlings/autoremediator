@@ -11,13 +11,33 @@ export interface McpTool {
   title: string;
   description: string;
   inputSchema: { type: "object"; properties: Record<string, unknown>; required?: string[] };
+  /** Shape of `structuredContent` on success. */
+  outputSchema: Record<string, unknown>;
   annotations: Operation["annotations"] & { title: string };
 }
 
 export type McpToolResult = {
   content: Array<{ type: "text"; text: string }>;
+  /** The result as an object a host can use without parsing text. */
+  structuredContent?: Record<string, unknown>;
   isError?: boolean;
 };
+
+/** Structured content must be an object, so a list result is wrapped as `{ items }`. */
+const isListResponse = (operation: Operation): boolean => operation.response.schema["type"] === "array";
+
+export function toStructured(operation: Operation, result: unknown): Record<string, unknown> {
+  if (isListResponse(operation)) return { items: result };
+  return result !== null && typeof result === "object" && !Array.isArray(result)
+    ? (result as Record<string, unknown>)
+    : { result };
+}
+
+export function toOutputSchema(operation: Operation): Record<string, unknown> {
+  return isListResponse(operation)
+    ? { type: "object", properties: { items: operation.response.schema }, required: ["items"] }
+    : operation.response.schema;
+}
 
 /** The operations exposed as MCP tools. */
 export const mcpOperations: readonly Operation[] = OPERATIONS.filter((operation) => operation.mcp);
@@ -37,6 +57,7 @@ export function toMcpTools(operations: readonly Operation[] = mcpOperations): Mc
     title: operation.title,
     description: operation.description,
     inputSchema: toInputSchema(operation),
+    outputSchema: toOutputSchema(operation),
     annotations: { ...operation.annotations, title: operation.title },
   }));
 }
@@ -53,8 +74,9 @@ function describeIssues(error: z.ZodError): string {
     .join("; ");
 }
 
-const text = (value: unknown): McpToolResult => ({
+const success = (operation: Operation, value: unknown): McpToolResult => ({
   content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
+  structuredContent: toStructured(operation, value),
 });
 
 export interface CallOptions {
@@ -63,7 +85,16 @@ export interface CallOptions {
   clientRoots?: readonly string[];
   /** Environment used to read `AUTOREMEDIATOR_ALLOWED_ROOTS`. */
   env?: NodeJS.ProcessEnv;
+  /**
+   * Asked before an operation that changes the project runs (after its input is validated). Return
+   * false to stop it; the caller sees that the user declined.
+   */
+  confirm?: (operation: Operation, input: Record<string, unknown>) => Promise<boolean>;
 }
+
+/** An operation that edits the project unless it is told not to. */
+export const changesProject = (operation: Operation): boolean =>
+  !operation.annotations.readOnlyHint && operation.annotations.destructiveHint;
 
 const errorResult = (message: string): McpToolResult => ({
   content: [{ type: "text", text: message }],
@@ -99,13 +130,23 @@ export async function callMcpOperation(
     throw err;
   }
 
+  if (options.confirm && changesProject(operation)) {
+    let approved: boolean;
+    try {
+      approved = await options.confirm(operation, parsed.data);
+    } catch (err) {
+      return errorResult(err instanceof Error ? err.message : String(err));
+    }
+    if (!approved) return errorResult(`${operation.title} was declined by the user; nothing was changed.`);
+  }
+
   try {
     const result = await operation.handler(parsed.data, {
       api: deps,
       source: "mcp",
       operationNames: operations.map((candidate) => candidate.name),
     });
-    return text(result);
+    return success(operation, result);
   } catch (err) {
     return errorResult(err instanceof Error ? err.message : String(err));
   }

@@ -8,25 +8,13 @@ import {
   routeKey,
 } from "../../catalog/index.js";
 import { assertPathsConfined, getAllowedRoots, PathNotAllowedError } from "../../platform/path-guard.js";
+import { isHostAllowed } from "../../platform/http-security.js";
 import { sendJson } from "../http-utils.js";
 import { checkRbacAuthorization } from "../rbac.js";
 import type { OpenApiServerDeps } from "../server.js";
 import { OPENAPI_SPEC } from "../spec/index.js";
 import { runOperation } from "./run-operation.js";
 import { readJsonBody } from "./validators.js";
-
-function isHostAllowed(req: http.IncomingMessage): boolean {
-  const configured = process.env.AUTOREMEDIATOR_ALLOWED_HOSTS?.split(",")
-    .map((h) => h.trim().toLowerCase())
-    .filter(Boolean);
-  const allowed =
-    configured && configured.length > 0 ? configured : ["127.0.0.1", "localhost", "[::1]"];
-  const host = (req.headers.host ?? "").toLowerCase();
-  const name = host.startsWith("[")
-    ? host.slice(0, host.indexOf("]") + 1)
-    : (host.split(":")[0] ?? "");
-  return allowed.includes(name);
-}
 
 export async function handleOpenApiRequest(
   req: http.IncomingMessage,

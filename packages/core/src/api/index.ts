@@ -128,6 +128,8 @@ export {
   resumeRun,
   rollbackRun,
   verifyRun,
+  readAttemptArtifact,
+  type AttemptArtifact,
   type ApplyPlanOptions,
   type ItemOutcome,
   type ListRunsOptions,
@@ -147,6 +149,18 @@ export {
   type CheckResult,
   type VerificationResult,
 } from "./runs/index.js";
+export {
+  abandonAttempt,
+  finalizeAttempt,
+  proposePatch,
+  startAttempt,
+  verifyAttempt,
+  type AttemptQuery,
+  type AttemptView,
+  type ProposePatchOptions,
+  type StartAttemptOptions,
+  type VerifyAttemptOptions,
+} from "./runs/attempts.js";
 export { remediateFromScan } from "./remediate-from-scan/index.js";
 export { updateOutdated } from "./update-outdated/index.js";
 export { checkReachability } from "./reachability/index.js";

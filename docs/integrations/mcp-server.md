@@ -1,6 +1,6 @@
 # MCP server
 
-`autoremediator-mcp` exposes Autoremediator to MCP clients such as editors and agents, over stdio.
+`autoremediator-mcp` exposes Autoremediator to MCP clients such as editors and agents: tools, resources and prompts, over stdio or [HTTP](#over-http).
 
 ```json
 {
@@ -22,6 +22,7 @@ options. Tools that return a report return it as JSON.
 | ----- | ----- |
 | Remediate | `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated` |
 | Runs | `applyPlan`, `verifyRun`, `resumeRun`, `rollbackRun`, `getRun`, `listRuns` (see [Plan, apply and roll back](../guides/plan-and-apply.md)) |
+| Attempts | `startAttempt`, `proposePatch`, `verifyAttempt`, `finalizeAttempt`, `abandonAttempt` (see [Letting your agent do the repair](../guides/plan-and-apply.md#letting-your-own-agent-do-the-repair)) |
 | Inspect | `checkReachability`, `evaluatePackage`, `scanDelta`, `toVex` |
 | Patches | `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `reconcilePatchArtifacts` |
 | Jobs | `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob` |
@@ -37,6 +38,59 @@ same ones that validate input. Each tool carries MCP annotations: `readOnlyHint`
 nothing, `destructiveHint` for tools that edit the project unless `dryRun` is set, and `openWorldHint`
 for tools that call external services. Arguments are validated strictly: an unknown field or a value
 of the wrong type is returned as an error result naming the field, instead of being ignored.
+
+### Results
+
+Every tool declares an `outputSchema` and returns `structuredContent`, so a host can use the result
+without parsing text; the text content carries the same JSON. A tool that returns a list returns it
+as `{ "items": [...] }` in `structuredContent`. A failed call is an error result with a message and no
+structured content.
+
+## Resources
+
+Read-only documents, so a host can look at a run without a tool call:
+
+| URI | Content |
+| --- | ------- |
+| `autoremediator://runs` | Recorded runs, newest first |
+| `autoremediator://runs/{runId}` | The run: record, plan, item outcomes, attempts, ledger check |
+| `autoremediator://runs/{runId}/plan` | The plan |
+| `autoremediator://runs/{runId}/steps` | The hash-chained ledger |
+| `autoremediator://runs/{runId}/attempts/{attemptId}/diff` | The patch an attempt produced |
+| `autoremediator://runs/{runId}/attempts/{attemptId}/verification` | What the verifier made of it |
+| `autoremediator://runs/{runId}/attempts/{attemptId}/transcript` | What the agent said and did |
+| `autoremediator://policy` | The project's `.github/autoremediator.yml` |
+
+Ids are validated before they reach the filesystem; anything else is an unknown resource. The project
+is the client's first declared root, else the server's working directory.
+
+## Prompts
+
+`remediate-cve`, `repair-upgrade` and `review-run` walk a host through the safe order with these
+tools: plan, show me, apply, verify, offer rollback; or fix an upgrade that breaks the project in an
+isolated checkout; or review what a run did.
+
+## Confirming changes
+
+Hosts normally ask before calling a tool annotated as destructive. To have the server ask itself,
+through MCP elicitation, before any tool that changes the project, set
+`AUTOREMEDIATOR_MCP_CONFIRM=mutating`. A client that cannot be asked is refused rather than trusted,
+so use it with clients that support elicitation. Over HTTP the role check is the gate instead.
+
+## Over HTTP
+
+```bash
+AUTOREMEDIATOR_API_TOKENS="reader:r,operator:o,admin:a" autoremediator-mcp --http --port 3001
+```
+
+Streamable HTTP at `POST http://127.0.0.1:3001/mcp`, stateless: every request stands alone, there are
+no sessions, and nothing carries over. It listens on loopback only, checks the `Host` header, and
+uses the same bearer tokens and roles as the [HTTP API](http-server.md#authentication). Reading
+(`tools/list`, resources, prompts, read-only tools) needs `reader`; each tool needs the role its
+annotations imply: tools that work in a checkout `operator`, tools that can change the project
+`admin`. Without tokens configured every request is refused, unless
+`AUTOREMEDIATOR_INSECURE_NO_AUTH=1` (local development only). Path arguments are confined as over
+stdio. Client roots and elicitation need a session, so they are not available over HTTP.
 
 ## Allowed paths
 

@@ -123,3 +123,16 @@ export async function worktreeDiff(worktree: string): Promise<string> {
   await git(worktree, ["add", "--intent-to-add", "--all"]);
   return gitPatch(worktree, ["diff", "HEAD", "--binary"]);
 }
+
+/**
+ * Remove a checkout made by `createWorktree`, given only its path (an attempt can outlive the
+ * process that created it). Safe to call for a checkout that is already gone.
+ */
+export async function discardWorktree(projectCwd: string, checkoutPath: string): Promise<void> {
+  const root = (await git(projectCwd, ["rev-parse", "--show-toplevel"]).catch(() => "")).trim();
+  if (!root) return;
+  const top = existsSync(checkoutPath)
+    ? (await git(checkoutPath, ["rev-parse", "--show-toplevel"]).catch(() => "")).trim()
+    : "";
+  await removeWorktree(root, top || checkoutPath);
+}

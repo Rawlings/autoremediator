@@ -1,4 +1,4 @@
-import { createProjectSnapshot } from "../../platform/rollback.js";
+import { createProjectSnapshot, type ProjectSnapshot } from "../../platform/rollback.js";
 import type {
   RepairAgent,
   RepairBudget,
@@ -103,6 +103,38 @@ export const defaultAttemptDeps: AttemptDeps = {
   diff: worktreeDiff,
 };
 
+/** The verification of an attempt's checkout against what the project was when it began. */
+export function attemptVerifyRequest(params: {
+  checkout: string;
+  packageManager: PackageManager;
+  options: PlanOptions;
+  before: Pick<ProjectSnapshot, "fileSnapshots" | "isGit" | "gitStatusBefore">;
+  advisories: readonly CveDetails[];
+  expectedRemaining: readonly string[];
+  checks?: readonly CheckName[];
+}): VerifyRequest {
+  const { options, before } = params;
+  return {
+    cwd: params.checkout,
+    packageManager: params.packageManager,
+    policy: options.policy,
+    baseFiles: before.fileSnapshots,
+    statusBefore: before.isGit ? (before.gitStatusBefore ?? []) : undefined,
+    advisories: params.advisories,
+    expectedRemaining: params.expectedRemaining,
+    options: {
+      ...(options.runTests === undefined ? {} : { runTests: options.runTests }),
+      ...(options.typecheck === undefined ? {} : { typecheck: options.typecheck }),
+      ...(options.proofOfFix === undefined ? {} : { proofOfFix: options.proofOfFix }),
+      ...(options.requireProofOfFix === undefined ? {} : { requireProofOfFix: options.requireProofOfFix }),
+      ...(options.reproductionTest ? { reproductionTest: options.reproductionTest } : {}),
+      ...(options.constraints ? { constraints: options.constraints } : {}),
+      allowSourceEdits: true,
+    },
+    checks: params.checks ?? ATTEMPT_CHECKS,
+  };
+}
+
 /** The project's own commands an agent may run in a checkout. */
 export function commandsFor(
   checkout: string,
@@ -116,7 +148,8 @@ export function commandsFor(
   };
 }
 
-function failureOf(result: VerificationResult): RepairFailure {
+/** The verifier's findings, in terms an agent (or a host) can act on. */
+export function failureOf(result: VerificationResult): RepairFailure {
   const failed = result.checks.find((check) => check.name === result.failedCheck);
   return {
     failedCheck: result.failedCheck ?? "unknown",
@@ -161,25 +194,16 @@ export async function runRepairAttempt(
     }
 
     const judge = (): Promise<VerificationResult> =>
-      deps.verify({
-        cwd: checkout.path,
-        packageManager,
-        policy: options.policy,
-        baseFiles: before.fileSnapshots,
-        statusBefore: before.isGit ? (before.gitStatusBefore ?? []) : undefined,
-        advisories: request.advisories,
-        expectedRemaining: request.expectedRemaining,
-        options: {
-          ...(options.runTests === undefined ? {} : { runTests: options.runTests }),
-          ...(options.typecheck === undefined ? {} : { typecheck: options.typecheck }),
-          ...(options.proofOfFix === undefined ? {} : { proofOfFix: options.proofOfFix }),
-          ...(options.requireProofOfFix === undefined ? {} : { requireProofOfFix: options.requireProofOfFix }),
-          ...(options.reproductionTest ? { reproductionTest: options.reproductionTest } : {}),
-          ...(options.constraints ? { constraints: options.constraints } : {}),
-          allowSourceEdits: true,
-        },
-        checks: ATTEMPT_CHECKS,
-      });
+      deps.verify(
+        attemptVerifyRequest({
+          checkout: checkout.path,
+          packageManager,
+          options,
+          before,
+          advisories: request.advisories,
+          expectedRemaining: request.expectedRemaining,
+        }),
+      );
 
     let verification = await judge();
     let rounds = 0;

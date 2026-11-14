@@ -1,11 +1,6 @@
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import {
-  detectPackageManager,
-  getYarnMajorVersion,
-  resolveInstallCommand,
-} from "../../platform/package-manager/index.js";
-import { withRepoLock } from "../../platform/repo-lock.js";
 import { createProjectSnapshot, restoreProjectSnapshot } from "../../platform/rollback.js";
 import { getModelSpec } from "../../platform/config.js";
 import {
@@ -13,29 +8,32 @@ import {
   type RepairAgent,
   type RepairBudget,
 } from "../../platform/repair-agent.js";
-import { safeExeca } from "../../platform/safe-exec.js";
 import type { PatchResult, RemediateOptions, RemediationReport } from "../../platform/types.js";
 import { resolveConstraints } from "../context.js";
-import { applyPackageOverrideTool } from "../../remediation/tools/apply-package-override/index.js";
 import { resolveLanguageModel } from "../../remediation/patch/model.js";
-import { runRepairAttempt, type AttemptRequest, type AttemptResult } from "../../remediation/repair/attempt.js";
 import { createBuiltinRepairAgent } from "../../remediation/repair/builtin-agent.js";
-import { applyVersionBumpTool } from "../../remediation/tools/apply-version-bump.js";
 import { fingerprintRepo, sameInputs } from "../../runs/fingerprint.js";
 import { isPlanId, isRunId } from "../../runs/ids.js";
 import type { StepEvent } from "../../runs/ledger.js";
 import { buildPlan, type PlanItem, type PlanOptions, type PlanSkip, type RemediationPlan } from "../../runs/plan.js";
 import { RunStore, type AttemptRecord, type RunRecord, type RunStatus } from "../../runs/run-store.js";
-import { loadSnapshot, saveSnapshot } from "../../runs/snapshot-store.js";
-import { repairItem, SNAPSHOT_DIR, type RepairItemResult } from "./repair.js";
+import { loadSnapshot } from "../../runs/snapshot-store.js";
+import { defaultRunDeps, type RunDeps } from "./deps.js";
+import {
+  APPLICABLE_STATUSES,
+  ensureRunSnapshot,
+  repairItem,
+  SNAPSHOT_DIR,
+  SNAPSHOT_MANIFEST,
+  type RepairItemResult,
+} from "./repair.js";
 import type { CheckName, VerificationResult, VerifyRequest } from "../../remediation/verify/types.js";
-import { verify } from "../../remediation/verify/verifier.js";
 
 export type { AttemptRecord, AttemptStatus, RunRecord, RunStatus } from "../../runs/run-store.js";
+export type { RunDeps } from "./deps.js";
 export type { PlanItem, PlanSkip, RemediationPlan } from "../../runs/plan.js";
 export type { CheckName, CheckResult, VerificationResult } from "../../remediation/verify/types.js";
 
-const SNAPSHOT_MANIFEST = `${SNAPSHOT_DIR}/snapshot.json`;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -151,64 +149,6 @@ export interface RollbackReport {
   reinstallNote?: string;
   message: string;
 }
-
-/** The operations that change the project or run the package manager; replaceable in tests. */
-export interface RunDeps {
-  applyItem: (item: PlanItem, context: { cwd: string; options: PlanOptions }) => Promise<PatchResult>;
-  /** Install exactly what the restored lockfile says. */
-  reinstall: (context: { cwd: string; options: PlanOptions | undefined }) => Promise<void>;
-  verify: (request: VerifyRequest) => Promise<VerificationResult>;
-  /** Try to repair an upgrade in an isolated checkout. */
-  attempt: (request: AttemptRequest) => Promise<AttemptResult>;
-}
-
-const defaultRunDeps: RunDeps = {
-  async applyItem(item, { cwd, options }) {
-    const shared = {
-      cwd,
-      packageName: item.packageName,
-      fromVersion: item.fromVersion,
-      toVersion: item.toVersion,
-      dryRun: false,
-      policy: options.policy,
-      runTests: options.runTests ?? false,
-      installMode: options.constraints?.installMode,
-      installPreferOffline: options.constraints?.installPreferOffline,
-      enforceFrozenLockfile: options.constraints?.enforceFrozenLockfile,
-      workspace: options.constraints?.workspace,
-      reproductionTest: options.reproductionTest,
-      proofOfFix: options.proofOfFix,
-      requireProofOfFix: options.requireProofOfFix,
-      ...(options.packageManager
-        ? { packageManager: options.packageManager as "npm" | "pnpm" | "yarn" | "bun" | "deno" }
-        : {}),
-      ...(options.patchesDir ? { patchesDir: options.patchesDir } : {}),
-    };
-    return item.strategy === "version-bump"
-      ? applyVersionBumpTool.execute({
-          ...shared,
-          typecheck: options.typecheck,
-          breakingChangeRefactor: options.breakingChangeRefactor,
-        })
-      : applyPackageOverrideTool.execute(shared);
-  },
-
-  async reinstall({ cwd, options }) {
-    const pm = (options?.packageManager as ReturnType<typeof detectPackageManager> | undefined) ?? detectPackageManager(cwd);
-    const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
-    // Frozen, so the lockfile that was just restored is installed as it is and not rewritten.
-    const [command, ...args] = resolveInstallCommand(
-      pm,
-      { ...options?.constraints, enforceFrozenLockfile: true },
-      yarnMajor,
-    );
-    if (!command) return;
-    await withRepoLock(cwd, () => safeExeca(command, args, { cwd, stdio: "pipe" }));
-  },
-
-  verify,
-  attempt: (request) => runRepairAttempt(request),
-};
 
 // ---------------------------------------------------------------------------
 // Planning
@@ -376,7 +316,6 @@ async function resolveRepairAgent(
   }
 }
 
-const APPLICABLE = new Set<RunStatus>(["planned", "applying", "failed", "partial"]);
 
 /**
  * Apply a plan. Before the first change the project's manifests and lockfiles are snapshotted to
@@ -393,7 +332,7 @@ export async function applyPlan(
   const run = resolveRun(store, options);
   const runId = run.runId;
 
-  if (!APPLICABLE.has(run.status)) {
+  if (!APPLICABLE_STATUSES.has(run.status)) {
     throw new Error(`Run ${runId} is ${run.status}; there is nothing to apply.`);
   }
   const plan = store.readPlan(runId);
@@ -433,10 +372,7 @@ export async function applyPlan(
   const outcomes: ItemOutcome[] = [];
   try {
     for (const note of notes) ledger.append("repair.unavailable", { message: note });
-    if (!store.hasFile(runId, SNAPSHOT_MANIFEST)) {
-      saveSnapshot(join(store.runDir(runId), SNAPSHOT_DIR), await createProjectSnapshot(cwd));
-      ledger.append("snapshot.saved", { dir: SNAPSHOT_DIR });
-    }
+    await ensureRunSnapshot(store, runId, cwd);
 
     store.update(runId, { status: "applying" });
     ledger.append("apply.start", { itemIds: options.itemIds ?? "all", resumed: run.status !== "planned" });
@@ -787,4 +723,22 @@ export async function verifyRun(
     checks: result.checks.map((check) => `${check.name}:${check.status}`),
   });
   return { runId, ...result };
+}
+
+/** Files an attempt keeps beside its record. */
+export type AttemptArtifact = "diff" | "verification" | "transcript";
+
+const ATTEMPT_FILES: Record<AttemptArtifact, string> = {
+  diff: "diff.patch",
+  verification: "verification.json",
+  transcript: "transcript.jsonl",
+};
+
+/** The text of one of an attempt's artifacts, or undefined when the attempt did not produce it. */
+export function readAttemptArtifact(
+  query: RunQuery & { attemptId: string; artifact: AttemptArtifact },
+): string | undefined {
+  const store = new RunStore(query.cwd ?? process.cwd());
+  const file = join(store.attemptDir(query.runId, query.attemptId), ATTEMPT_FILES[query.artifact]);
+  return existsSync(file) ? readFileSync(file, "utf8") : undefined;
 }

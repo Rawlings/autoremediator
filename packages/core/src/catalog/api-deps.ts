@@ -1,13 +1,16 @@
 import {
+  abandonAttempt,
   applyPlan,
   checkReachability,
   evaluatePackage,
+  finalizeAttempt,
   getRun,
   inspectPatchArtifact,
   listPatchArtifacts,
   listRuns,
   planRemediation,
   pollJob,
+  proposePatch,
   reconcilePatchArtifacts,
   remediate,
   remediateFromScan,
@@ -15,12 +18,14 @@ import {
   resumeRun,
   rollbackRun,
   scanDelta,
+  startAttempt,
   submitPortfolioJob,
   submitRemediateJob,
   submitScanJob,
   toCycloneDxVex,
   updateOutdated,
   validatePatchArtifact,
+  verifyAttempt,
   verifyRun,
 } from "../api/index.js";
 
@@ -50,6 +55,11 @@ export interface ApiDeps {
   getRunFn: typeof getRun;
   listRunsFn: typeof listRuns;
   verifyRunFn: typeof verifyRun;
+  startAttemptFn: typeof startAttempt;
+  proposePatchFn: typeof proposePatch;
+  verifyAttemptFn: typeof verifyAttempt;
+  finalizeAttemptFn: typeof finalizeAttempt;
+  abandonAttemptFn: typeof abandonAttempt;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -77,4 +87,9 @@ export const defaultApiDeps: ApiDeps = {
   getRunFn: getRun,
   listRunsFn: listRuns,
   verifyRunFn: verifyRun,
+  startAttemptFn: startAttempt,
+  proposePatchFn: proposePatch,
+  verifyAttemptFn: verifyAttempt,
+  finalizeAttemptFn: finalizeAttempt,
+  abandonAttemptFn: abandonAttempt,
 };

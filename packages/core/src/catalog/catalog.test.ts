@@ -370,3 +370,52 @@ describe("run operations", () => {
     expect(outside.content[0]?.text).toContain("Path not allowed");
   });
 });
+
+describe("attempt operations for host agents", () => {
+  const byName = (name: string) => OPERATIONS.find((operation) => operation.name === name)!;
+  const runId = "run_" + "a".repeat(20);
+  const attemptId = "attempt_" + "a".repeat(12);
+  const itemId = "item_" + "a".repeat(12);
+
+  it("are on every surface, with roles that follow what they can do", () => {
+    for (const name of ["startAttempt", "proposePatch", "verifyAttempt", "finalizeAttempt", "abandonAttempt"]) {
+      expect(toMcpTools().map((tool) => tool.name)).toContain(name);
+      expect(byName(name).http).toBeDefined();
+    }
+    // Working in a checkout needs operator; changing the project needs admin.
+    for (const name of ["startAttempt", "proposePatch", "verifyAttempt", "abandonAttempt"]) {
+      expect(roleFor(byName(name))).toBe("operator");
+    }
+    expect(roleFor(byName("finalizeAttempt"))).toBe("admin");
+  });
+
+  it("validate every id before it can reach a path", async () => {
+    const deps = fakeDeps({
+      startAttemptFn: vi.fn() as unknown as ApiDeps["startAttemptFn"],
+      finalizeAttemptFn: vi.fn() as unknown as ApiDeps["finalizeAttemptFn"],
+    });
+    for (const args of [
+      { runId: "../x", itemId },
+      { runId, itemId: "item_../../x" },
+      { runId, itemId: "nope" },
+    ]) {
+      expect((await callMcpOperation("startAttempt", args, deps)).isError).toBe(true);
+    }
+    for (const bad of ["../../etc", "attempt_short", "attempt_" + "A".repeat(12)]) {
+      expect((await callMcpOperation("finalizeAttempt", { runId, attemptId: bad }, deps)).isError).toBe(true);
+    }
+    expect(deps.startAttemptFn).not.toHaveBeenCalled();
+    expect(deps.finalizeAttemptFn).not.toHaveBeenCalled();
+
+    const ok = await callMcpOperation("finalizeAttempt", { runId, attemptId }, deps);
+    expect(ok.isError).toBeUndefined();
+    expect(deps.finalizeAttemptFn).toHaveBeenCalledWith({ runId, attemptId });
+  });
+
+  it("require a diff to propose", async () => {
+    const deps = fakeDeps({ proposePatchFn: vi.fn() as unknown as ApiDeps["proposePatchFn"] });
+    expect((await callMcpOperation("proposePatch", { runId, attemptId }, deps)).isError).toBe(true);
+    expect((await callMcpOperation("proposePatch", { runId, attemptId, diff: "" }, deps)).isError).toBe(true);
+    expect(deps.proposePatchFn).not.toHaveBeenCalled();
+  });
+});
