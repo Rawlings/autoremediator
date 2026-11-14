@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { RemediationReport } from "../../platform/types.js";
-import { createChangeRequestsForReports } from "./index.js";
+import { createChangeRequestsForReports, isExistingRequestError } from "./index.js";
 
 const git = (cwd: string, command: string): string =>
   execSync(`git ${command}`, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
@@ -139,5 +139,18 @@ describe("re-running a change request for the same findings", () => {
     // The run's edits are still in the working tree for the person to deal with.
     expect(git(dir, "status --porcelain")).toContain("file.txt");
     expect(git(dir, "rev-parse --abbrev-ref HEAD")).toBe("main");
+  });
+});
+
+describe("isExistingRequestError", () => {
+  it("recognises duplicate-request answers and nothing else", () => {
+    for (const message of [
+      "A pull request already exists for owner:x",
+      "Another open merge request already exists for this source branch",
+      "TF401179: An active pull request for the source and target branch already exists.",
+    ]) {
+      expect(isExistingRequestError(message)).toBe(true);
+    }
+    expect(isExistingRequestError("401 Unauthorized")).toBe(false);
   });
 });

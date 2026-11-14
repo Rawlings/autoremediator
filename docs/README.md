@@ -29,6 +29,7 @@ organized by what you are trying to do.
 
 - [GitHub Action](integrations/github-action.md)
 - [GitHub App](integrations/github-app.md)
+- [GitLab, Bitbucket, Azure DevOps, Docker, Dagger](integrations/other-ci.md)
 - [Coding agents](integrations/coding-agents.md): `init`, Claude Code plugin, Cursor, VS Code, Copilot, Codex, Gemini
 - [MCP server](integrations/mcp-server.md)
 - [A2A](integrations/a2a.md): agent card and Agent2Agent endpoint so other agents can discover and delegate to Autoremediator

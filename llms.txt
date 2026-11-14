@@ -41,5 +41,6 @@ Precedence: explicit options, then the policy file (`.github/autoremediator.yml`
 - SDK reference: https://github.com/Rawlings/autoremediator/blob/master/docs/reference/sdk.md
 - Policy file: https://github.com/Rawlings/autoremediator/blob/master/docs/reference/policy-file.md
 - Integrations: https://github.com/Rawlings/autoremediator/tree/master/docs/integrations
+- Other CI (GitLab, Bitbucket Pipelines, Azure DevOps, Docker, Dagger; `changeRequest.provider` is `github|gitlab|bitbucket|azure-devops`): https://github.com/Rawlings/autoremediator/blob/master/docs/integrations/other-ci.md
 - A2A: `GET /.well-known/agent-card.json` (signed with `AUTOREMEDIATOR_A2A_SIGNING_KEY`) and `POST /a2a` (`SendMessage`, `GetTask`) on the HTTP server: https://github.com/Rawlings/autoremediator/blob/master/docs/integrations/a2a.md
 - Coding agents (init, Claude Code plugin): https://github.com/Rawlings/autoremediator/blob/master/docs/integrations/coding-agents.md

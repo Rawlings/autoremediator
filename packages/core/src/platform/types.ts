@@ -411,7 +411,14 @@ export interface FixExplanation {
   recommendedAction?: string;
 }
 
-export type ChangeRequestProvider = "github" | "gitlab";
+export const CHANGE_REQUEST_PROVIDER_VALUES = [
+  "github",
+  "gitlab",
+  "bitbucket",
+  "azure-devops",
+] as const;
+
+export type ChangeRequestProvider = (typeof CHANGE_REQUEST_PROVIDER_VALUES)[number];
 
 export type ChangeRequestGrouping = "all" | "per-cve" | "per-package" | "by-severity";
 

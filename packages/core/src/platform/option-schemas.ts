@@ -93,7 +93,7 @@ export const OPTION_DESCRIPTIONS = {
   enforceFrozenLockfile: "Override frozen lockfile behavior for install commands",
   workspace: "Workspace/package selector for scoped remediation in monorepos",
   createChangeRequest: "Enable creation of native pull request / merge request after remediation",
-  changeRequestProvider: "Change request provider (github|gitlab)",
+  changeRequestProvider: "Change request provider (github|gitlab|bitbucket|azure-devops)",
   changeRequestGrouping: "Grouping strategy for change requests (all|per-cve|per-package)",
   changeRequestRepository: "Repository slug override for change request creation",
   changeRequestBaseBranch: "Base branch used for change request targeting",

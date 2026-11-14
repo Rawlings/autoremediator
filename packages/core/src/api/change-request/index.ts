@@ -4,12 +4,25 @@ import { isAbsolute, relative, resolve } from "node:path";
 import { safeExeca } from "../../platform/safe-exec.js";
 import { commitMessage, deterministicBranchName } from "./branch.js";
 import { trimChar } from "../../platform/trim.js";
-import type {
-  ChangeRequestGrouping,
-  ChangeRequestOptions,
-  ChangeRequestResult,
-  RemediationReport,
+import {
+  CHANGE_REQUEST_PROVIDER_VALUES,
+  type ChangeRequestGrouping,
+  type ChangeRequestOptions,
+  type ChangeRequestProvider,
+  type ChangeRequestResult,
+  type RemediationReport,
 } from "../../platform/types.js";
+import {
+  buildPushAuthHeader,
+  commitIdentity,
+  createAzureDevOpsPullRequest,
+  createBitbucketPullRequest,
+  createGitLabMergeRequestViaApi,
+  isValidRepositoryForProvider,
+  parseRemoteUrl,
+  repositoryFromRemote,
+  resolveChangeRequestToken,
+} from "./hosts.js";
 
 /**
  * Change requests commit and push, so they must never run for dry-run/preview/plan flows.
@@ -99,8 +112,14 @@ function buildPlan(reports: RemediationReport[]): ChangeRequestPlan {
   };
 }
 
-function resolveProvider(options: ChangeRequestOptions): "github" | "gitlab" {
-  return options.provider ?? "github";
+function resolveProvider(options: ChangeRequestOptions): ChangeRequestProvider {
+  const provider = options.provider ?? "github";
+  if (!CHANGE_REQUEST_PROVIDER_VALUES.includes(provider)) {
+    throw new Error(
+      `Unsupported changeRequest.provider: "${provider}". Supported values: ${CHANGE_REQUEST_PROVIDER_VALUES.join(", ")}`,
+    );
+  }
+  return provider;
 }
 
 function resolveGrouping(options: ChangeRequestOptions): ChangeRequestGrouping {
@@ -182,12 +201,16 @@ async function ensureRepoHasChanges(cwd: string): Promise<boolean> {
   return diff.stdout.trim().length > 0;
 }
 
-async function detectRepoFromRemote(cwd: string): Promise<string | undefined> {
+async function readOriginUrl(cwd: string): Promise<string> {
   const result = await safeExeca("git", ["config", "--get", "remote.origin.url"], {
     cwd,
     stdio: "pipe",
   }).catch(() => ({ stdout: "" }));
-  const url = result.stdout.trim();
+  return result.stdout.trim();
+}
+
+async function detectRepoFromRemote(cwd: string): Promise<string | undefined> {
+  const url = await readOriginUrl(cwd);
   const match = /[:/]([^/]+)\/([^/]+?)(?:\.git)?$/.exec(url);
   if (match) {
     return `${match[1]}/${match[2]}`;
@@ -313,7 +336,28 @@ async function createGitLabRequest(params: {
   title: string;
   body: string;
   draft?: boolean;
+  token?: string;
 }): Promise<string | undefined> {
+  const remote = parseRemoteUrl(await readOriginUrl(params.cwd));
+  const repository =
+    params.repository ?? (remote ? repositoryFromRemote("gitlab", remote) : undefined);
+  const apiUrl =
+    process.env.CI_API_V4_URL || (remote ? `${remote.scheme}://${remote.host}/api/v4` : undefined);
+
+  // With a token and a resolvable project, use the REST API (works in any CI image, no glab needed).
+  if (params.token && repository && apiUrl) {
+    return createGitLabMergeRequestViaApi({
+      apiUrl,
+      repository,
+      head: params.source,
+      base: params.target,
+      title: params.title,
+      body: params.body,
+      draft: params.draft,
+      token: params.token,
+    });
+  }
+
   const args = [
     "mr",
     "create",
@@ -346,21 +390,17 @@ async function createGitLabRequest(params: {
   }
 }
 
-const BOT_NAME = "autoremediator[bot]";
-const BOT_EMAIL = "41898282+github-actions[bot]@users.noreply.github.com";
-
-/** `git` arguments that authenticate over HTTPS with the token, when there is one. */
-function withAuth(token: string | undefined, args: string[]): string[] {
+/** `git` arguments that authenticate over HTTPS with the token, in the way the host expects. */
+function withAuth(provider: ChangeRequestProvider, token: string | undefined, args: string[]): string[] {
   if (!token) return args;
-  const header = `AUTHORIZATION: basic ${Buffer.from(`x-access-token:${token}`).toString("base64")}`;
-  return ["-c", `http.extraheader=${header}`, ...args];
+  return ["-c", `http.extraheader=${buildPushAuthHeader(provider, token)}`, ...args];
 }
 
 /**
  * Commits on `ref` that are not in HEAD and were not made by a previous change-request run
  * (our bot identity plus a `Fixes-CVE:` trailer). Any such commit is somebody's work.
  */
-async function foreignCommits(cwd: string, ref: string): Promise<number> {
+async function foreignCommits(cwd: string, ref: string, provider: ChangeRequestProvider): Promise<number> {
   const result = await safeExeca(
     "git",
     ["log", ref, "--not", "HEAD", "--format=%ae%x1f%B%x1e"],
@@ -371,7 +411,7 @@ async function foreignCommits(cwd: string, ref: string): Promise<number> {
     const text = entry.trim();
     if (!text) continue;
     const [email = "", message = ""] = text.split("\u001f");
-    if (email.trim() !== BOT_EMAIL || !/^Fixes-CVE: /m.test(message)) foreign += 1;
+    if (email.trim() !== commitIdentity(provider).email || !/^Fixes-CVE: /m.test(message)) foreign += 1;
   }
   return foreign;
 }
@@ -385,6 +425,7 @@ interface ExistingBranch {
 
 /** Look at the branch a re-run would reuse before touching it. */
 async function inspectExistingBranch(
+  provider: ChangeRequestProvider,
   cwd: string,
   remote: string,
   branch: string,
@@ -396,16 +437,16 @@ async function inspectExistingBranch(
     stdio: "pipe",
   }).catch(() => undefined);
   if (local?.stdout.trim()) {
-    foreign = (await foreignCommits(cwd, `refs/heads/${branch}`)) > 0;
+    foreign = (await foreignCommits(cwd, `refs/heads/${branch}`, provider)) > 0;
   }
 
-  const listed = await safeExeca("git", withAuth(token, ["ls-remote", "--heads", remote, `refs/heads/${branch}`]), {
+  const listed = await safeExeca("git", withAuth(provider, token, ["ls-remote", "--heads", remote, `refs/heads/${branch}`]), {
     cwd,
     stdio: "pipe",
   }).catch(() => undefined);
   const remoteSha = /^([0-9a-f]{40})\s/.exec((listed?.stdout ?? "").trim())?.[1];
   if (remoteSha) {
-    const fetched = await safeExeca("git", withAuth(token, ["fetch", remote, `refs/heads/${branch}`]), {
+    const fetched = await safeExeca("git", withAuth(provider, token, ["fetch", remote, `refs/heads/${branch}`]), {
       cwd,
       stdio: "pipe",
     }).then(
@@ -413,9 +454,107 @@ async function inspectExistingBranch(
       () => false,
     );
     // If we cannot read what is there, assume the worst rather than overwrite it.
-    foreign = foreign || !fetched || (await foreignCommits(cwd, "FETCH_HEAD")) > 0;
+    foreign = foreign || !fetched || (await foreignCommits(cwd, "FETCH_HEAD", provider)) > 0;
   }
   return { ...(remoteSha ? { remoteSha } : {}), foreign };
+}
+
+async function createBitbucketRequest(params: {
+  cwd: string;
+  repository?: string;
+  head: string;
+  base: string;
+  title: string;
+  body: string;
+  draft?: boolean;
+  token: string;
+}): Promise<string | undefined> {
+  const remote = parseRemoteUrl(await readOriginUrl(params.cwd));
+  const repository =
+    params.repository ?? (remote ? repositoryFromRemote("bitbucket", remote) : undefined);
+  if (!repository) {
+    throw new Error(
+      "Could not determine the Bitbucket repository from remote.origin.url; set changeRequest.repository to workspace/repo.",
+    );
+  }
+  return createBitbucketPullRequest({ ...params, repository });
+}
+
+async function createAzureDevOpsRequest(params: {
+  cwd: string;
+  repository?: string;
+  head: string;
+  base: string;
+  title: string;
+  body: string;
+  draft?: boolean;
+  token: string;
+}): Promise<string | undefined> {
+  const remote = parseRemoteUrl(await readOriginUrl(params.cwd));
+  const repository =
+    params.repository ?? (remote ? repositoryFromRemote("azure-devops", remote) : undefined);
+  if (!repository) {
+    throw new Error(
+      "Could not determine the Azure DevOps repository from remote.origin.url; set changeRequest.repository to organization/project/repo.",
+    );
+  }
+  // SSH remotes use ssh.dev.azure.com; the REST API lives on dev.azure.com.
+  const host = remote?.host.replace(/^(?:vs-)?ssh\./, "");
+  return createAzureDevOpsPullRequest({
+    ...params,
+    repository,
+    baseUrl: remote && host ? `${remote.scheme}://${host}` : undefined,
+  });
+}
+
+async function openChangeRequest(params: {
+  provider: ChangeRequestProvider;
+  cwd: string;
+  repository?: string;
+  head: string;
+  base: string;
+  title: string;
+  body: string;
+  draft?: boolean;
+  token?: string;
+  githubApiUrl?: string;
+}): Promise<string | undefined> {
+  const { provider, token, ...rest } = params;
+  if (provider === "github") {
+    return createGitHubRequest({ ...rest, token });
+  }
+  try {
+    return await openOtherHostRequest(params);
+  } catch (error) {
+    // A re-run updates the branch of a request that is still open; that is not a failure.
+    if (isExistingRequestError(error instanceof Error ? error.message : String(error))) return undefined;
+    throw error;
+  }
+}
+
+/** Hosts answer a duplicate request differently; these are the phrases seen in their API errors. */
+export function isExistingRequestError(message: string): boolean {
+  return /already exists|already an open|active pull request|another open merge request/i.test(message);
+}
+
+async function openOtherHostRequest(params: Parameters<typeof openChangeRequest>[0]): Promise<string | undefined> {
+  const { provider, token, ...rest } = params;
+  if (provider === "gitlab") {
+    return createGitLabRequest({
+      cwd: rest.cwd,
+      repository: rest.repository,
+      source: rest.head,
+      target: rest.base,
+      title: rest.title,
+      body: rest.body,
+      draft: rest.draft,
+      token,
+    });
+  }
+  if (provider === "bitbucket") {
+    return createBitbucketRequest({ ...rest, token: token! });
+  }
+  return createAzureDevOpsRequest({ ...rest, token: token! });
 }
 
 export async function createChangeRequestsForReports(params: {
@@ -433,11 +572,7 @@ export async function createChangeRequestsForReports(params: {
   }
 
   const results: ChangeRequestResult[] = [];
-  const token =
-    options.token ??
-    (options.tokenEnvVar ? process.env[options.tokenEnvVar] : undefined) ??
-    process.env.GITHUB_TOKEN ??
-    process.env.GH_TOKEN;
+  const token = resolveChangeRequestToken(provider, options);
 
   const baseBranch = options.baseBranch ?? (await detectCurrentBranch(cwd).catch(() => "main"));
   const branchPrefix = options.branchPrefix ?? "autoremediator";
@@ -445,7 +580,7 @@ export async function createChangeRequestsForReports(params: {
   if (options.pushRemote && !/^[a-zA-Z0-9._-]+$/.test(options.pushRemote)) {
     throw new Error(`Invalid pushRemote value: ${options.pushRemote}`);
   }
-  if (options.repository && !/^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/.test(options.repository)) {
+  if (options.repository && !isValidRepositoryForProvider(provider, options.repository)) {
     throw new Error(`Invalid repository format: ${options.repository}`);
   }
 
@@ -476,7 +611,7 @@ export async function createChangeRequestsForReports(params: {
     const branchName = deterministicBranchName(branchPrefix, plan.cveIds, plan.packageNames);
     let branchCreated = false;
 
-    const existing = await inspectExistingBranch(cwd, pushRemote, branchName, token);
+    const existing = await inspectExistingBranch(provider, cwd, pushRemote, branchName, token);
     if (existing.foreign) {
       results.push({
         provider,
@@ -494,6 +629,11 @@ export async function createChangeRequestsForReports(params: {
     }
 
     try {
+      if ((provider === "bitbucket" || provider === "azure-devops") && !token) {
+        throw new Error(
+          `A token is required to create a ${provider} pull request: set changeRequest.token/tokenEnvVar or the provider's token environment variable.`,
+        );
+      }
       // -B: a re-run for the same findings restarts the branch from the current base.
       await safeExeca("git", ["checkout", "-B", branchName], { cwd, stdio: "pipe" });
       branchCreated = true;
@@ -516,13 +656,14 @@ export async function createChangeRequestsForReports(params: {
         continue;
       }
 
+      const identity = commitIdentity(provider);
       await safeExeca(
         "git",
         [
           "-c",
-          `user.name=${BOT_NAME}`,
+          `user.name=${identity.name}`,
           "-c",
-          `user.email=${BOT_EMAIL}`,
+          `user.email=${identity.email}`,
           "commit",
           "-m",
           commitMessage(title, group),
@@ -532,6 +673,7 @@ export async function createChangeRequestsForReports(params: {
 
       // A re-run replaces only the commit a previous run pushed, and only if nobody moved the branch since.
       const pushArgs = withAuth(
+        provider,
         token,
         existing.remoteSha
           ? ["push", `--force-with-lease=refs/heads/${branchName}:${existing.remoteSha}`, "-u", pushRemote, branchName]
@@ -539,28 +681,18 @@ export async function createChangeRequestsForReports(params: {
       );
       await safeExeca("git", pushArgs, { cwd, stdio: "pipe" });
 
-      const url =
-        provider === "github"
-          ? await createGitHubRequest({
-              cwd,
-              repository: options.repository,
-              head: branchName,
-              base: baseBranch,
-              title,
-              body,
-              draft: options.draft,
-              token,
-              githubApiUrl: options.githubApiUrl,
-            })
-          : await createGitLabRequest({
-              cwd,
-              repository: options.repository,
-              source: branchName,
-              target: baseBranch,
-              title,
-              body,
-              draft: options.draft,
-            });
+      const url = await openChangeRequest({
+        provider,
+        cwd,
+        repository: options.repository,
+        head: branchName,
+        base: baseBranch,
+        title,
+        body,
+        draft: options.draft,
+        token,
+        githubApiUrl: options.githubApiUrl,
+      });
 
       results.push({
         provider,

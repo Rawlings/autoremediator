@@ -41,6 +41,7 @@ import {
   verifyRun,
   reconcilePatchArtifacts,
 } from "../api/index.js";
+import type { ChangeRequestProvider } from "../platform/types.js";
 import { PACKAGE_VERSION } from "../version.js";
 import { formatCountMap, logJson } from "./output.js";
 import { runInteractiveTriage } from "./triage.js";
@@ -57,7 +58,7 @@ function assertPatchOutputFormat(format: string): void {
 function resolveChangeRequestOptions(opts: CommandOptions):
   | {
       enabled?: boolean;
-      provider: "github" | "gitlab";
+      provider: ChangeRequestProvider;
       grouping?: "all" | "per-cve" | "per-package";
       repository?: string;
       baseBranch?: string;

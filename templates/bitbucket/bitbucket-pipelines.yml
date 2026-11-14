@@ -1,0 +1,43 @@
+# Autoremediator for Bitbucket Pipelines (Bitbucket Cloud).
+#
+# Copy the `custom` pipeline into your bitbucket-pipelines.yml, then add a schedule under
+# Repository settings > Pipelines > Schedules that runs `custom: autoremediator` on your default
+# branch (or run it by hand from the Pipelines page).
+#
+# Required secured repository variable: BITBUCKET_TOKEN, a repository (or workspace) access token
+# with the Repositories: Write and Pull requests: Write scopes. See docs/integrations/other-ci.md.
+#
+# Bitbucket Cloud only. Bitbucket Data Center / Server pull requests are not supported.
+image: node:26
+
+definitions:
+  steps:
+    - step: &autoremediator
+        name: Autoremediator
+        max-time: 30
+        script:
+          - |
+            if [ -z "${BITBUCKET_TOKEN:-}" ]; then
+              echo "BITBUCKET_TOKEN is not set; add a secured repository variable." >&2
+              exit 1
+            fi
+          # Pipelines clones through a local proxy. Point origin at bitbucket.org so the push uses
+          # BITBUCKET_TOKEN and the workspace/repo is detected for the pull request.
+          - git remote set-url origin "https://bitbucket.org/${BITBUCKET_REPO_FULL_NAME}.git"
+          - |
+            status=0
+            npx -y "autoremediator@^0.21.2" --audit --ci --output-format json \
+              --create-change-request --change-request-provider bitbucket \
+              --change-request-repository "$BITBUCKET_REPO_FULL_NAME" \
+              --change-request-base-branch "$BITBUCKET_BRANCH" \
+              > autoremediator-report.json || status=$?
+            cat autoremediator-report.json
+            exit "$status"
+        artifacts:
+          - autoremediator-report.json
+          - .autoremediator/evidence/**
+
+pipelines:
+  custom:
+    autoremediator:
+      - step: *autoremediator

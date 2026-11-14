@@ -1,0 +1,80 @@
+# Autoremediator step template for Azure Pipelines (Azure DevOps Services).
+#
+# Use it from a pipeline (see templates/azure-devops/azure-pipelines.example.yml):
+#
+#   steps:
+#     - checkout: self           # keep persistCredentials false; autoremediator supplies the token
+#     - template: templates/azure-devops/autoremediator.yml@autoremediator
+#
+# The build service identity needs Contribute, Create branch and Contribute to pull requests on the
+# repository. See docs/integrations/other-ci.md.
+parameters:
+  - name: version
+    type: string
+    default: "^0.21.2"
+  - name: nodeVersion
+    type: string
+    default: 26.x
+  - name: workingDirectory
+    type: string
+    default: $(Build.SourcesDirectory)
+  - name: baseBranch
+    type: string
+    default: main
+  - name: createPullRequest
+    type: boolean
+    default: true
+  - name: runTests
+    type: boolean
+    default: false
+  - name: policy
+    type: string
+    default: ""
+  - name: extraArgs
+    type: string
+    default: ""
+  - name: continueOnError
+    type: boolean
+    default: false
+
+steps:
+  - task: NodeTool@0
+    displayName: Use Node.js ${{ parameters.nodeVersion }}
+    inputs:
+      versionSpec: ${{ parameters.nodeVersion }}
+
+  - bash: |
+      set -u
+      git config --global --add safe.directory "$PWD"
+      args=(--audit --ci --output-format json)
+      if [ "${RUN_TESTS}" = "True" ]; then args+=(--run-tests); fi
+      if [ -n "${POLICY}" ]; then args+=(--policy "${POLICY}"); fi
+      if [ "${CREATE_PR}" = "True" ]; then
+        args+=(--create-change-request --change-request-provider azure-devops
+               --change-request-base-branch "${BASE_BRANCH}")
+      fi
+      report="${BUILD_ARTIFACTSTAGINGDIRECTORY}/autoremediator-report.json"
+      status=0
+      # shellcheck disable=SC2086
+      npx -y "autoremediator@${VERSION}" "${args[@]}" ${EXTRA_ARGS} > "$report" || status=$?
+      cat "$report"
+      exit "$status"
+    displayName: Run autoremediator
+    workingDirectory: ${{ parameters.workingDirectory }}
+    continueOnError: ${{ parameters.continueOnError }}
+    env:
+      # System.AccessToken is a JWT; autoremediator sends it as a bearer token.
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+      VERSION: ${{ parameters.version }}
+      BASE_BRANCH: ${{ parameters.baseBranch }}
+      CREATE_PR: ${{ parameters.createPullRequest }}
+      RUN_TESTS: ${{ parameters.runTests }}
+      POLICY: ${{ parameters.policy }}
+      EXTRA_ARGS: ${{ parameters.extraArgs }}
+
+  - task: PublishPipelineArtifact@1
+    displayName: Publish autoremediator report
+    condition: always()
+    inputs:
+      targetPath: $(Build.ArtifactStagingDirectory)/autoremediator-report.json
+      artifact: autoremediator-report

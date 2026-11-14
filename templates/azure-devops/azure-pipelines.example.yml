@@ -1,0 +1,29 @@
+# Example Azure Pipelines definition that runs autoremediator nightly.
+# Copy it to your repository and adjust the `resources.repositories` entry.
+schedules:
+  - cron: "0 3 * * *"
+    displayName: Nightly remediation
+    branches:
+      include: [main]
+    always: true
+
+trigger: none
+
+resources:
+  repositories:
+    - repository: autoremediator
+      type: github
+      name: rawlings/autoremediator
+      ref: refs/tags/v0.21.2
+      endpoint: github-service-connection # GitHub service connection with read access
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+    fetchDepth: 0
+    persistCredentials: false
+  - template: templates/azure-devops/autoremediator.yml@autoremediator
+    parameters:
+      baseBranch: main
