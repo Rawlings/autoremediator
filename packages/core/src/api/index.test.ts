@@ -45,16 +45,9 @@ vi.mock("../intelligence/index.js", () => ({
   findAlternativePackages: mocked.findAlternativePackages,
 }));
 
-vi.mock("../remediation/pipeline.js", async () => {
-  const actual = await vi.importActual<typeof import("../remediation/pipeline.js")>(
-    "../remediation/pipeline.js",
-  );
-  return {
-    ...actual,
-    runRemediationPipeline: mocked.runRemediationPipeline,
-    assessPackageReachability: mocked.assessPackageReachability,
-  };
-});
+vi.mock("../remediation/local/index.js", () => ({
+  runLocalRemediationPipeline: mocked.runRemediationPipeline,
+}));
 
 import { planRemediation, remediate, remediateFromScan, toCiSummary } from "./index.js";
 
@@ -117,7 +110,6 @@ describe("api preview and correlation behavior", () => {
       cveDetails: null,
       vulnerablePackages: [],
       results: [],
-      agentSteps: 1,
       summary: "preview",
     });
 
@@ -170,7 +162,6 @@ describe("api preview and correlation behavior", () => {
       cveDetails: null,
       vulnerablePackages: [],
       results: [],
-      agentSteps: 2,
       summary: "done",
     });
 
@@ -205,7 +196,6 @@ describe("api preview and correlation behavior", () => {
       cveDetails: null,
       vulnerablePackages: [],
       results: [],
-      agentSteps: 1,
       summary: "done",
     });
 
@@ -242,7 +232,6 @@ describe("api preview and correlation behavior", () => {
       cveDetails: null,
       vulnerablePackages: [],
       results: [],
-      agentSteps: 1,
       summary: "done",
     });
 
@@ -263,7 +252,6 @@ describe("api preview and correlation behavior", () => {
       cveDetails: null,
       vulnerablePackages: [],
       results: [],
-      agentSteps: 0,
       summary: "cached",
     });
 
@@ -284,7 +272,6 @@ describe("api preview and correlation behavior", () => {
       cveDetails: null,
       vulnerablePackages: [],
       results: [],
-      agentSteps: 1,
       summary: "done",
     });
 
@@ -330,7 +317,6 @@ describe("api preview and correlation behavior", () => {
           message: "applied",
         },
       ],
-      agentSteps: 1,
       summary: "done",
     });
 
@@ -389,12 +375,10 @@ describe("api preview and correlation behavior", () => {
           dispositionReason: "low-confidence",
           riskLevel: "high" as const,
           escalationAction: "open-issue" as const,
-          regressionDetected: true,
           validation: { passed: false },
           validationPhases: [{ phase: "test" as const, passed: false }],
         },
       ],
-      agentSteps: 1,
       summary: "planned",
       exploitSignalTriggered: true,
       slaBreaches: [
@@ -441,11 +425,6 @@ describe("api preview and correlation behavior", () => {
           sourceSignals: ["unresolvedReason"],
         }),
         expect.objectContaining({ code: "validation-risk", severity: "high" }),
-        expect.objectContaining({
-          code: "regression-risk",
-          severity: "high",
-          sourceSignals: ["regressionDetected"],
-        }),
         expect.objectContaining({ code: "low-confidence", severity: "warning" }),
         expect.objectContaining({
           code: "high-risk-patch",
@@ -496,7 +475,6 @@ describe("api preview and correlation behavior", () => {
           message: "patched",
         },
       ],
-      agentSteps: 1,
       summary: "done",
     });
 
@@ -512,7 +490,6 @@ describe("api preview and correlation behavior", () => {
       cveDetails: null,
       vulnerablePackages: [],
       results: [],
-      agentSteps: 1,
       summary: "done",
     });
 
@@ -539,12 +516,11 @@ describe("api preview and correlation behavior", () => {
           applied: false,
           dryRun: false,
           unresolvedReason: "policy-blocked",
-          disposition: "escalate",
-          dispositionReason: "kev-exploit-signal",
+          disposition: "hold-for-approval",
+          dispositionReason: "low-confidence",
           message: "blocked by containment",
         },
       ],
-      agentSteps: 1,
       summary: "done",
     });
 
@@ -560,7 +536,7 @@ describe("api preview and correlation behavior", () => {
       expect.objectContaining({
         containmentCount: 1,
         blockedUnresolvedReason: "policy-blocked",
-        blockedDisposition: "escalate",
+        blockedDisposition: "hold-for-approval",
       }),
     );
   });
@@ -629,7 +605,6 @@ describe("api preview and correlation behavior", () => {
           message: "unresolved",
         },
       ],
-      agentSteps: 1,
       summary: "done",
     });
 
@@ -736,12 +711,11 @@ describe("api preview and correlation behavior", () => {
             applied: false,
             dryRun: false,
             unresolvedReason: "policy-blocked",
-            disposition: "escalate",
-            dispositionReason: "kev-exploit-signal",
+            disposition: "hold-for-approval",
+            dispositionReason: "low-confidence",
             message: "blocked by containment",
           },
         ],
-        agentSteps: 1,
         summary: "blocked",
       })
       .mockResolvedValueOnce({
@@ -761,7 +735,6 @@ describe("api preview and correlation behavior", () => {
             message: "unresolved",
           },
         ],
-        agentSteps: 1,
         summary: "unresolved",
       });
 
@@ -788,7 +761,6 @@ describe("api preview and correlation behavior", () => {
       cveDetails: null,
       vulnerablePackages: [],
       results: [],
-      agentSteps: 1,
       summary: "done",
     });
 
@@ -815,7 +787,6 @@ describe("api preview and correlation behavior", () => {
       cveDetails: null,
       vulnerablePackages: [],
       results: [],
-      agentSteps: 1,
       summary: "done",
     });
 
@@ -849,7 +820,6 @@ describe("buildSlaBreachSummary", () => {
       cveDetails: null,
       vulnerablePackages: [],
       results: [],
-      agentSteps: 0,
       summary: "ok",
     } as any;
     expect(buildSlaBreachSummary([report])).toBeUndefined();
@@ -879,7 +849,6 @@ describe("buildSlaBreachSummary", () => {
           hoursOverdue: 48,
         },
       ],
-      agentSteps: 1,
       summary: "overdue",
     } as any;
 
@@ -917,7 +886,6 @@ describe("buildSlaBreachSummary", () => {
           hoursOverdue: 72,
         },
       ],
-      agentSteps: 1,
       summary: "escalated",
     } as any;
 
@@ -957,7 +925,6 @@ describe("buildSlaBreachSummary", () => {
               hoursOverdue: 48,
             },
           ],
-          agentSteps: 1,
           summary: "overdue",
         },
       ],

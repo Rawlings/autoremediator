@@ -260,31 +260,34 @@ describe("createDefaultRemediationHandler", () => {
     expect(process.cwd()).toBe(originalCwd);
   });
 
-  it("allows repoConfig.cwd outside process.cwd without throwing escapes working directory", async () => {
-    const originalCwd = process.cwd();
-    const isolatedDir = "/tmp/autoremediator-external-repo";
-
-    const handler = createDefaultRemediationHandler({
-      octokitFactory: makeOctokitFactory(),
-      repoConfigProvider: makeRepoConfigProvider({
-        minimumSeverity: "UNKNOWN",
-        cwd: isolatedDir,
-      }),
-    });
-
-    await expect(
-      handler({
+  describe("repository-supplied cwd", () => {
+    const run = (cwd: string) =>
+      createDefaultRemediationHandler({
+        octokitFactory: makeOctokitFactory(),
+        repoConfigProvider: makeRepoConfigProvider({ minimumSeverity: "UNKNOWN", cwd }),
+      })({
         eventName: "workflow_dispatch",
         payload: { repository: { name: "app", owner: { login: "test" } } },
-      }),
-    ).resolves.not.toThrow();
+      });
 
-    expect(remediateFromScanMock).toHaveBeenCalledWith(
-      "",
-      expect.objectContaining({
-        cwd: isolatedDir,
-      }),
+    it.each(["/tmp/autoremediator-external-repo", "../../etc", "packages/../../escape"])(
+      "refuses %s, which points outside the repository checkout",
+      async (cwd) => {
+        remediateFromScanMock.mockClear();
+        await expect(run(cwd)).rejects.toThrow(/outside the repository checkout/);
+        expect(remediateFromScanMock).not.toHaveBeenCalled();
+      },
     );
-    expect(process.cwd()).toBe(originalCwd);
+
+    it("resolves a relative cwd inside the checkout", async () => {
+      remediateFromScanMock.mockClear();
+      await run("packages/app");
+      expect(remediateFromScanMock).toHaveBeenCalledWith(
+        "",
+        expect.objectContaining({
+          cwd: expect.stringMatching(/autoremediator-repo-.*[\\/]packages[\\/]app$/),
+        }),
+      );
+    });
   });
 });

@@ -58,16 +58,16 @@ on:
         required: false
         type: string
         default: ""
-      llm-provider:
-        description: Patch fallback provider.
+      model:
+        description: Patch fallback language model as "<provider>:<model-id>"; empty disables patch generation.
         required: false
         type: string
-        default: local
+        default: ""
       node-version:
         description: Node.js version for the wrapper workflow.
         required: false
         type: string
-        default: "24"
+        default: "26"
       update-outdated:
         description: Bump all outdated npm packages to their latest versions (no CVE required).
         required: false
@@ -196,7 +196,7 @@ jobs:
           ci: ${{ inputs.ci && 'true' || 'false' }}
           summary-file: ${{ steps.paths.outputs.summary_file }}
           policy: ${{ inputs.policy }}
-          llm-provider: ${{ inputs.llm-provider }}
+          model: ${{ inputs.model }}
           node-version: ${{ inputs.node-version }}
           update-outdated: ${{ inputs.update-outdated && 'true' || 'false' }}
           include-transitive: ${{ inputs.include-transitive && 'true' || 'false' }}

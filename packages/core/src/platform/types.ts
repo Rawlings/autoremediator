@@ -1,3 +1,5 @@
+import type { PatchGenerator } from "./patch-generator.js";
+
 // ---------------------------------------------------------------------------
 // Core domain types for autoremediator
 // ---------------------------------------------------------------------------
@@ -20,7 +22,8 @@ export interface CveDetails {
   publishedAt?: string; // ISO 8601 date string from OSV
   epss?: {
     score: number;
-    percentile: number;
+    /** Absent when the source (e.g. an offline snapshot) only provides the score. */
+    percentile?: number;
     date?: string;
   };
   kev?: {
@@ -29,23 +32,6 @@ export interface CveDetails {
     dueDate?: string;
     requiredAction?: string;
     knownRansomwareCampaignUse?: string;
-  };
-  intelligence?: {
-    cveServicesEnriched?: boolean;
-    gitlabAdvisoryMatched?: boolean;
-    certCcMatched?: boolean;
-    depsDevEnrichedPackages?: number;
-    scorecardProjects?: number;
-    vendorAdvisories?: string[];
-    commercialFeeds?: string[];
-    sourceHealth?: Record<
-      string,
-      {
-        attempted: boolean;
-        changed: boolean;
-        error?: string;
-      }
-    >;
   };
   references: string[];
   affectedPackages: AffectedPackage[];
@@ -60,7 +46,7 @@ export interface AffectedPackage {
   /** The first version that is NOT vulnerable (the safe upgrade target) */
   firstPatchedVersion?: string;
   /** Source that provided this entry */
-  source: "osv" | "github-advisory";
+  source: "osv" | "github-advisory" | "offline-snapshot";
 }
 
 /** A package found in the consumer's project */
@@ -273,7 +259,6 @@ export interface PatchReconcileReport {
 }
 
 export type UnresolvedReason =
-  | "consensus-failed"
   | "constraint-blocked"
   | "transitive-dependency"
   | "transitive-override-unsupported-deno-native"
@@ -302,16 +287,6 @@ export type EscalationAction =
 
 export type EscalationGraph = Partial<Record<UnresolvedReason, EscalationAction>>;
 
-/** Typed result from a second-provider consensus verification run. */
-export interface ConsensusVerdict {
-  agreed: boolean;
-  provider: string;
-  model: string;
-  reason?: string;
-  latencyMs?: number;
-  estimatedCostUsd?: number;
-}
-
 export type Disposition = "auto-apply" | "simulate-only" | "hold-for-approval" | "escalate";
 
 export interface DispositionPolicy {
@@ -328,8 +303,6 @@ export interface DispositionSignals {
   unresolvedReason?: UnresolvedReason;
   confidence?: number;
   riskLevel?: PatchRiskLevel;
-  regressionDetected?: boolean;
-  consensusFailed?: boolean;
   applied: boolean;
   severity?: CveSeverity;
 }
@@ -362,9 +335,7 @@ export interface SimulationMutation {
 export type SimulationRebuttalCode =
   | "unresolved-reason"
   | "policy-blocked"
-  | "consensus-failed"
   | "validation-risk"
-  | "regression-risk"
   | "low-confidence"
   | "high-risk-patch"
   | "transitive-target"
@@ -542,8 +513,6 @@ export interface PatchResult {
   alternativeSuggestions?: AlternativePackageSuggestion[];
   fixExplanation?: FixExplanation;
   suppressedBy?: { justification: VexJustification; notes?: string };
-  /** True when a post-apply inventory re-check finds the package is still in the vulnerable range. */
-  regressionDetected?: boolean;
   validation?: {
     passed: boolean;
     error?: string;
@@ -553,8 +522,6 @@ export interface PatchResult {
   disposition?: Disposition;
   /** Human-readable reason for the assigned disposition. */
   dispositionReason?: string;
-  /** Verdict from second-provider consensus gate, if one was executed. */
-  consensusVerdict?: ConsensusVerdict;
   /** Intended escalation action for unresolved outcomes. */
   escalationAction?: EscalationAction;
   simulation?: ResultSimulation;
@@ -590,32 +557,12 @@ export interface RemediationConstraints {
   enableBreakingChangeRefactor?: boolean;
 }
 
-export type ModelPersonality = "analytical" | "pragmatic" | "balanced";
-
-export type ProviderSafetyProfile = "strict" | "relaxed";
-
-export interface ProgressEvent {
-  stage:
-    | "pipeline-start"
-    | "model-selected"
-    | "agent-step"
-    | "pipeline-finish"
-    | "patch-fallback"
-    | "patch-consensus";
-  detail: string;
-  at: string;
-  provider?: "remote" | "local";
-  model?: string;
-}
-
 export interface LlmUsageMetrics {
-  purpose: "orchestration" | "patch-generation" | "patch-consensus";
-  provider: "remote" | "local";
+  purpose: "patch-generation";
   model: string;
   latencyMs?: number;
-  promptChars?: number;
-  completionChars?: number;
-  estimatedCostUsd?: number;
+  inputTokens?: number;
+  outputTokens?: number;
 }
 
 export interface ProvenanceContext {
@@ -638,28 +585,17 @@ export interface RemediateOptions extends CorrelationContext {
   /** Optional supply chain trust policy for release age, scripts, and provenance */
   supplyChainPolicy?: SupplyChainPolicy;
 
-  /** Override the LLM provider (vendor-neutral surface): remote or local. */
-  llmProvider?: "remote" | "local";
-  /** Override the model name */
+  /**
+   * Language model used for the patch fallback, as `<provider>:<model-id>`
+   * (e.g. `anthropic:claude-sonnet-5-5`). Defaults to `AUTOREMEDIATOR_MODEL`.
+   * Requires the matching `@ai-sdk/<provider>` package; without a model or `patchGenerator`
+   * the patch fallback is reported as unavailable.
+   */
   model?: string;
-  /** Prompt behavior profile for model-guided orchestration and patch generation. */
-  modelPersonality?: ModelPersonality;
-  /** Safety posture for confidence and high-risk patch behavior. */
-  providerSafetyProfile?: ProviderSafetyProfile;
-  /** Require a second-provider agreement for high-risk generated patches. */
-  requireConsensusForHighRisk?: boolean;
-  /** Override provider used for high-risk consensus verification. */
-  consensusProvider?: "remote" | "local";
-  /** Override model used for high-risk consensus verification. */
-  consensusModel?: string;
-  /** Optional per-risk confidence thresholds used for patch acceptance. */
+  /** SDK-only: supply the patch generator directly instead of configuring a model. */
+  patchGenerator?: PatchGenerator;
+  /** Per-risk minimum confidence required to accept a generated patch. */
   patchConfidenceThresholds?: PatchConfidenceThresholds;
-  /** Enable provider-specific dynamic model routing by prompt/input size. */
-  dynamicModelRouting?: boolean;
-  /** Input-size threshold used by dynamic model routing when enabled. */
-  dynamicRoutingThresholdChars?: number;
-  /** Optional SDK callback for progress events during remediation execution. */
-  onProgress?: (event: ProgressEvent) => void;
   /** Optional path to a policy file (.github/autoremediator.yml) */
   policy?: string;
   /** If false, do not write evidence JSON for this run (default: true). */
@@ -689,8 +625,6 @@ export interface RemediateOptions extends CorrelationContext {
   slaCheck?: boolean;
   /** Skip remediation for CVEs where the vulnerable package cannot be reached from any project entry point. */
   skipUnreachable?: boolean;
-  /** After applying a fix, re-check the inventory to verify the package version is no longer in the vulnerable range. */
-  regressionCheck?: boolean;
   /** Override the disposition policy for autonomous outcome classification. */
   dispositionPolicy?: DispositionPolicy;
   /** When true, block results with disposition "escalate" from being applied. */
@@ -731,7 +665,6 @@ export interface RemediationReport {
   cveDetails: CveDetails | null;
   vulnerablePackages: VulnerablePackage[];
   results: PatchResult[];
-  agentSteps: number;
   summary: string;
   evidenceFile?: string;
   correlation?: CorrelationContext;

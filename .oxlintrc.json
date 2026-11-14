@@ -47,16 +47,6 @@
   },
   "overrides": [
     {
-      "files": ["packages/docs/**/*.{ts,tsx}"],
-      "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y"],
-      "rules": {
-        "react/jsx-key": "error",
-        "react/no-unknown-property": "error",
-        "react/jsx-no-target-blank": "warn",
-        "react/set-state-in-effect": "off"
-      }
-    },
-    {
       "files": ["**/*.test.*", "**/*.spec.*", "**/tests/**", "**/__tests__/**"],
       "rules": {
         "typescript/no-explicit-any": "off",

@@ -24,7 +24,7 @@ interface FetchPackageSourceResult {
 export const fetchPackageSourceTool = defineTool({
   description:
     "Download package tarball from npm and extract source files for CVE analysis. Supports custom file patterns (default: *.js, *.ts).",
-  parameters: z.object({
+  inputSchema: z.object({
     packageName: z
       .string()
       .min(1)

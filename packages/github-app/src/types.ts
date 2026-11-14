@@ -18,14 +18,7 @@ export interface AutoremediatorRepoConfig {
     enforceFrozenLockfile?: boolean;
     workspace?: string;
   };
-  modelDefaults?: Partial<Record<"remote" | "local", string>>;
-  providerSafetyProfile?: "strict" | "relaxed";
-  requireConsensusForHighRisk?: boolean;
-  consensusProvider?: "remote" | "local";
-  consensusModel?: string;
   patchConfidenceThresholds?: Partial<Record<"low" | "medium" | "high", number>>;
-  dynamicModelRouting?: boolean;
-  dynamicRoutingThresholdChars?: number;
   // Autonomous defense operator fields
   dispositionPolicy?: DispositionPolicy;
   containmentMode?: boolean;

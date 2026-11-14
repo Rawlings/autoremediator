@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { resolveInventoryVersion } from "../../remediation/tools/check-inventory.js";
-import { findFixedVersionTool } from "../../remediation/tools/find-fixed-version.js";
-import { classifyUpgradeLevel } from "./registry.js";
+import { classifyUpgradeLevel, resolveSafeUpgradeVersion } from "./registry.js";
 
 describe("Feature 14: Adversarial Semver Resolution & Classification (Co-located Challenge Suite)", () => {
   afterEach(() => {
@@ -88,7 +87,7 @@ describe("Feature 14: Adversarial Semver Resolution & Classification (Co-located
     });
   });
 
-  describe("findFixedVersionTool and resolveSafeUpgradeVersion integration", () => {
+  describe("resolveSafeUpgradeVersion", () => {
     it("prefers patch upgrades before minor and major", async () => {
       vi.stubGlobal(
         "fetch",
@@ -107,16 +106,11 @@ describe("Feature 14: Adversarial Semver Resolution & Classification (Co-located
         }),
       );
 
-      const res = await findFixedVersionTool.execute({
-        packageName: "multi-version-pkg",
-        installedVersion: "1.0.0",
-        firstPatchedVersion: "1.0.1",
-        vulnerableRange: "<1.0.1",
-      });
+      const res = await resolveSafeUpgradeVersion("multi-version-pkg", "1.0.0", "1.0.1", "<1.0.1");
 
       expect(res.safeVersion).toBe("1.0.1");
       expect(res.upgradeLevel).toBe("patch");
-      expect(res.isMajorBump).toBe(false);
+      expect(res.upgradeLevel === "major").toBe(false);
       expect(res.majorOnlyFixAvailable).toBe(false);
     });
 
@@ -137,16 +131,11 @@ describe("Feature 14: Adversarial Semver Resolution & Classification (Co-located
         }),
       );
 
-      const res = await findFixedVersionTool.execute({
-        packageName: "minor-fallback-pkg",
-        installedVersion: "1.0.0",
-        firstPatchedVersion: "1.2.0",
-        vulnerableRange: "<1.2.0",
-      });
+      const res = await resolveSafeUpgradeVersion("minor-fallback-pkg", "1.0.0", "1.2.0", "<1.2.0");
 
       expect(res.safeVersion).toBe("1.2.0");
       expect(res.upgradeLevel).toBe("minor");
-      expect(res.isMajorBump).toBe(false);
+      expect(res.upgradeLevel === "major").toBe(false);
       expect(res.majorOnlyFixAvailable).toBe(false);
     });
 
@@ -166,18 +155,12 @@ describe("Feature 14: Adversarial Semver Resolution & Classification (Co-located
         }),
       );
 
-      const res = await findFixedVersionTool.execute({
-        packageName: "major-only-pkg",
-        installedVersion: "v1.0.0",
-        firstPatchedVersion: "2.0.0",
-        vulnerableRange: "<2.0.0",
-      });
+      const res = await resolveSafeUpgradeVersion("major-only-pkg", "v1.0.0", "2.0.0", "<2.0.0");
 
       expect(res.safeVersion).toBe("2.0.0");
       expect(res.upgradeLevel).toBe("major");
-      expect(res.isMajorBump).toBe(true);
+      expect(res.upgradeLevel === "major").toBe(true);
       expect(res.majorOnlyFixAvailable).toBe(true);
-      expect(res.message).toContain("only a major upgrade is available");
     });
 
     it("returns undefined safeVersion when all candidate versions are downgrades", async () => {
@@ -195,16 +178,15 @@ describe("Feature 14: Adversarial Semver Resolution & Classification (Co-located
         }),
       );
 
-      const res = await findFixedVersionTool.execute({
-        packageName: "downgrade-only-pkg",
-        installedVersion: "5.0.0",
-        firstPatchedVersion: "4.17.21",
-        vulnerableRange: "<4.17.21",
-      });
+      const res = await resolveSafeUpgradeVersion(
+        "downgrade-only-pkg",
+        "5.0.0",
+        "4.17.21",
+        "<4.17.21",
+      );
 
       expect(res.safeVersion).toBeUndefined();
-      expect(res.isMajorBump).toBe(false);
-      expect(res.message).toContain("No safe upgrade version found");
+      expect(res.upgradeLevel === "major").toBe(false);
     });
   });
 });

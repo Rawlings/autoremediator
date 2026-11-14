@@ -61,12 +61,9 @@ For core releases, update all of:
 
 If release impacts public behavior across surfaces, verify docs are aligned in:
 
-- `packages/docs/content/api-sdk.md`
-- `packages/docs/content/cli.md`
-- `packages/docs/content/getting-started.md`
-- `packages/docs/content/integrations.md`
-- `packages/docs/content/policy-and-safety.md`
-- `packages/docs/content/changelog.md`
+- `docs/usage.md`
+- `docs/integrations.md`
+- `docs/policy.md`
 - `README.md`
 - `packages/core/llms.txt`
 - `llms.txt`

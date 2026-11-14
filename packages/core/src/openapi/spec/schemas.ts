@@ -17,7 +17,6 @@ export const REMEDIATION_REPORT_SCHEMA = {
     cveDetails: { type: ["object", "null"] },
     vulnerablePackages: { type: "array", items: { type: "object" } },
     results: { type: "array", items: { type: "object" } },
-    agentSteps: { type: "number" },
     summary: { type: "string" },
     evidenceFile: { type: "string" },
     llmUsage: { type: "array", items: { type: "object" } },

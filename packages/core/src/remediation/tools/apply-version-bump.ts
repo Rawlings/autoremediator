@@ -36,7 +36,7 @@ import {
 
 import { findDeclaringWorkspacePackage } from "../../platform/workspace.js";
 import { findPackageCallSites } from "../refactor/call-site-finder.js";
-import { refactorConsumerCallSites, revertRefactorSnapshots } from "../refactor/refactor-agent.js";
+import { refactorConsumerCallSites, revertRefactorSnapshots } from "../refactor/codemods.js";
 
 interface RawPackageJson {
   dependencies?: Record<string, string>;
@@ -50,7 +50,7 @@ type DepField = "dependencies" | "devDependencies" | "peerDependencies";
 export const applyVersionBumpTool = defineTool({
   description:
     "Update package.json to use the safe version of a vulnerable package and run the project's package manager install. In dry-run mode, only reports what would change.",
-  parameters: z.object({
+  inputSchema: z.object({
     cwd: z.string().describe("Absolute path to the consumer project root"),
     packageManager: z
       .enum(["npm", "pnpm", "yarn", "bun", "deno"])

@@ -1,11 +1,12 @@
-# node:24-alpine as of 2026-05-01
-ARG NODE_IMAGE=node:24-alpine@sha256:8e2c930fda481a6ec141fe5a88e8c249c69f8102fe98af505f38c081649ea749
+# node:26-alpine as of 2026-11-14
+ARG NODE_IMAGE=node:26-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5
 
 # Build the CLI from this checkout so the image always matches the source it was built from
 # (previously this installed a hard-coded, long-outdated version from npm).
 FROM ${NODE_IMAGE} AS build
 WORKDIR /src
-RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+# Node 25+ no longer ships corepack, so install pnpm directly.
+RUN npm install -g pnpm@12.18.0
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/core/package.json packages/core/package.json
 RUN pnpm install --frozen-lockfile --filter autoremediator...

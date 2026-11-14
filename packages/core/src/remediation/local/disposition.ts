@@ -25,17 +25,7 @@ export function computeDisposition(
   const holdForTransitive = policy?.holdForTransitive ?? false;
   const minConfidenceForAutoApply = policy?.minConfidenceForAutoApply ?? 0.7;
 
-  // 1. Regression detected
-  if (signals.regressionDetected === true) {
-    return { disposition: "escalate", dispositionReason: "regression-detected" };
-  }
-
-  // 2. Consensus failed
-  if (signals.consensusFailed === true) {
-    return { disposition: "escalate", dispositionReason: "consensus-failed" };
-  }
-
-  // 3. Hard-fail unresolved reasons
+  // 1. Hard-fail unresolved reasons
   const hardFailReasons = [
     "validation-failed",
     "patch-validation-failed",
@@ -119,8 +109,6 @@ export function applyDispositionAndContainment(
       unresolvedReason: result.unresolvedReason,
       confidence: result.confidence,
       riskLevel: result.riskLevel,
-      regressionDetected: result.regressionDetected,
-      consensusFailed: result.unresolvedReason === "consensus-failed",
       applied: result.applied,
       severity: context.severity,
     },
@@ -133,9 +121,12 @@ export function applyDispositionAndContainment(
     dispositionReason: disposition.dispositionReason,
   };
 
+  // Containment holds back autonomous changes that still need a human decision. It must never
+  // undo an `escalate` fix: for applied results that is an exploited (KEV) or overdue (SLA) CVE,
+  // where the fix is exactly what should stay in place while someone is notified.
   if (
     context.containmentMode &&
-    withDisposition.disposition === "escalate" &&
+    withDisposition.disposition === "hold-for-approval" &&
     withDisposition.applied
   ) {
     if (context.snapshot) {

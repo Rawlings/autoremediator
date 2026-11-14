@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { parse as yamlParse, stringify as yamlStringify } from "yaml";
+import { z } from "zod";
 import type {
   CveSeverity,
   DispositionPolicy,
@@ -18,14 +19,7 @@ export interface AutoremediatorPolicy {
   denyPackages: string[];
   allowPackages: string[];
   constraints?: RemediationConstraints;
-  modelDefaults?: Partial<Record<"remote" | "local", string>>;
-  providerSafetyProfile?: "strict" | "relaxed";
-  requireConsensusForHighRisk?: boolean;
-  consensusProvider?: "remote" | "local";
-  consensusModel?: string;
   patchConfidenceThresholds?: PatchConfidenceThresholds;
-  dynamicModelRouting?: boolean;
-  dynamicRoutingThresholdChars?: number;
   exploitSignalOverride?: ExploitSignalOverridePolicy;
   suppressions?: VexSuppression[];
   sla?: SlaPolicy;
@@ -47,14 +41,7 @@ export const DEFAULT_POLICY: AutoremediatorPolicy = {
     enforceFrozenLockfile: undefined,
     workspace: undefined,
   },
-  modelDefaults: {},
-  providerSafetyProfile: "relaxed",
-  requireConsensusForHighRisk: false,
-  consensusProvider: "remote",
-  consensusModel: undefined,
   patchConfidenceThresholds: {},
-  dynamicModelRouting: false,
-  dynamicRoutingThresholdChars: 18000,
   exploitSignalOverride: undefined,
   suppressions: [],
   sla: undefined,
@@ -64,107 +51,163 @@ export const DEFAULT_POLICY: AutoremediatorPolicy = {
   escalationGraph: undefined,
 };
 
+const severity = z.enum(["UNKNOWN", "LOW", "MEDIUM", "HIGH", "CRITICAL"]);
+const unitInterval = z.number().min(0).max(1);
+const packagePattern = z.string().trim().min(1);
+
+const supplyChainPolicySchema = z
+  .object({
+    minPublishAgeHours: z.number().nonnegative(),
+    blockInstallScripts: z.boolean(),
+    requireProvenance: z.boolean(),
+  })
+  .partial()
+  .strict();
+
+const constraintsSchema = z
+  .object({
+    directDependenciesOnly: z.boolean(),
+    preferVersionBump: z.boolean(),
+    installMode: z.enum(["standard", "prefer-offline", "deterministic"]),
+    installPreferOffline: z.boolean(),
+    enforceFrozenLockfile: z.boolean(),
+    workspace: z.string().min(1),
+    typecheck: z.boolean(),
+    requireProofOfFix: z.boolean(),
+    enableBreakingChangeRefactor: z.boolean(),
+    supplyChainPolicy: supplyChainPolicySchema,
+  })
+  .partial()
+  .strict();
+
+/** Shape of the policy YAML. Unknown keys are rejected so typos and removed options are caught. */
+const policyFileSchema = z
+  .object({
+    allowMajorBumps: z.boolean().default(false),
+    denyPackages: z.array(packagePattern).default([]),
+    allowPackages: z.array(packagePattern).default([]),
+    constraints: constraintsSchema.optional(),
+    patchConfidenceThresholds: z
+      .object({ low: unitInterval, medium: unitInterval, high: unitInterval })
+      .partial()
+      .strict()
+      .optional(),
+    exploitSignalOverride: z
+      .object({
+        kev: z.object({ mandatory: z.boolean() }).strict(),
+        epss: z.object({ mandatory: z.boolean(), threshold: unitInterval }).strict(),
+      })
+      .partial()
+      .strict()
+      .optional(),
+    suppressions: z
+      .array(
+        z
+          .object({
+            cveId: z.string().min(1),
+            justification: z.enum(["not_affected", "fixed", "mitigated", "under_investigation"]),
+            notes: z.string().optional(),
+            expiresAt: z.union([z.string(), z.date().transform((d) => d.toISOString())]).optional(),
+          })
+          .strict(),
+      )
+      .default([]),
+    sla: z
+      .object({
+        critical: z.number().positive(),
+        high: z.number().positive(),
+        medium: z.number().positive(),
+        low: z.number().positive(),
+      })
+      .partial()
+      .strict()
+      .optional(),
+    skipUnreachable: z.boolean().default(false),
+    dispositionPolicy: z
+      .object({
+        minConfidenceForAutoApply: unitInterval,
+        holdForTransitive: z.boolean(),
+        escalateOnKev: z.boolean(),
+        escalateOnSlaBreachSeverities: z.array(severity),
+      })
+      .partial()
+      .strict()
+      .optional(),
+    containmentMode: z.boolean().default(false),
+    escalationGraph: z
+      .record(
+        z.string(),
+        z.enum(["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"]),
+      )
+      .optional(),
+  })
+  .strict();
+
+function describePolicyIssues(error: z.ZodError): string {
+  return error.issues
+    .map((issue) => {
+      const where = issue.path.length > 0 ? issue.path.join(".") : "(root)";
+      if (issue.code === "unrecognized_keys") {
+        return `${where}: unknown field(s) ${issue.keys.map((k) => `"${k}"`).join(", ")}`;
+      }
+      return `${where}: ${issue.message}`;
+    })
+    .join("; ");
+}
+
+/**
+ * Load and validate the policy.
+ *
+ * `explicitPath` is a file path, or inline YAML/JSON (when it starts with `{` or `---`).
+ * With no explicit path, `.github/autoremediator.yml` is used if present; a missing default file
+ * means "no policy". An explicit path that does not exist, unreadable files, invalid YAML and
+ * schema violations all throw, so a broken policy can never silently degrade to defaults.
+ */
 export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPolicy {
-  let content: string | undefined;
-  if (
-    explicitPath &&
-    (explicitPath.trim().startsWith("{") || explicitPath.trim().startsWith("---"))
-  ) {
-    content = explicitPath;
+  const isInline =
+    explicitPath !== undefined &&
+    (explicitPath.trim().startsWith("{") || explicitPath.trim().startsWith("---"));
+  const location = isInline
+    ? "(inline policy)"
+    : (explicitPath ?? join(cwd, ".github", "autoremediator.yml"));
+
+  let content: string;
+  if (isInline) {
+    content = explicitPath!;
+  } else if (!existsSync(location)) {
+    if (explicitPath) throw new Error(`Policy file not found: ${location}`);
+    return DEFAULT_POLICY;
   } else {
-    const candidate = explicitPath ?? join(cwd, ".github", "autoremediator.yml");
-    if (!existsSync(candidate)) return DEFAULT_POLICY;
     try {
-      content = readFileSync(candidate, "utf8");
-    } catch {
-      return DEFAULT_POLICY;
+      content = readFileSync(location, "utf8");
+    } catch (error) {
+      throw new Error(`Cannot read policy file ${location}: ${(error as Error).message}`, {
+        cause: error,
+      });
     }
   }
 
+  let raw: unknown;
   try {
-    const parsed = yamlParse(content) as Partial<AutoremediatorPolicy>;
-    return {
-      allowMajorBumps: parsed.allowMajorBumps ?? DEFAULT_POLICY.allowMajorBumps,
-      denyPackages: Array.isArray(parsed.denyPackages)
-        ? (parsed.denyPackages.filter(
-            (p): p is string => typeof p === "string" && p.trim().length > 0,
-          ) as string[])
-        : DEFAULT_POLICY.denyPackages,
-      allowPackages: Array.isArray(parsed.allowPackages)
-        ? (parsed.allowPackages.filter(
-            (p): p is string => typeof p === "string" && p.trim().length > 0,
-          ) as string[])
-        : DEFAULT_POLICY.allowPackages,
-      constraints: {
-        directDependenciesOnly:
-          parsed.constraints?.directDependenciesOnly ??
-          DEFAULT_POLICY.constraints?.directDependenciesOnly ??
-          false,
-        preferVersionBump:
-          parsed.constraints?.preferVersionBump ??
-          DEFAULT_POLICY.constraints?.preferVersionBump ??
-          false,
-        installMode:
-          parsed.constraints?.installMode ??
-          DEFAULT_POLICY.constraints?.installMode ??
-          "deterministic",
-        installPreferOffline:
-          parsed.constraints?.installPreferOffline ??
-          DEFAULT_POLICY.constraints?.installPreferOffline,
-        enforceFrozenLockfile:
-          parsed.constraints?.enforceFrozenLockfile ??
-          DEFAULT_POLICY.constraints?.enforceFrozenLockfile,
-        workspace: parsed.constraints?.workspace ?? DEFAULT_POLICY.constraints?.workspace,
-      },
-      modelDefaults: {
-        remote: parsed.modelDefaults?.remote ?? DEFAULT_POLICY.modelDefaults?.remote,
-        local: parsed.modelDefaults?.local ?? DEFAULT_POLICY.modelDefaults?.local,
-      },
-      providerSafetyProfile: parsed.providerSafetyProfile ?? DEFAULT_POLICY.providerSafetyProfile,
-      requireConsensusForHighRisk:
-        parsed.requireConsensusForHighRisk ?? DEFAULT_POLICY.requireConsensusForHighRisk,
-      consensusProvider: parsed.consensusProvider ?? DEFAULT_POLICY.consensusProvider,
-      consensusModel: parsed.consensusModel ?? DEFAULT_POLICY.consensusModel,
-      patchConfidenceThresholds: {
-        low: parsed.patchConfidenceThresholds?.low ?? DEFAULT_POLICY.patchConfidenceThresholds?.low,
-        medium:
-          parsed.patchConfidenceThresholds?.medium ??
-          DEFAULT_POLICY.patchConfidenceThresholds?.medium,
-        high:
-          parsed.patchConfidenceThresholds?.high ?? DEFAULT_POLICY.patchConfidenceThresholds?.high,
-      },
-      dynamicModelRouting: parsed.dynamicModelRouting ?? DEFAULT_POLICY.dynamicModelRouting,
-      dynamicRoutingThresholdChars:
-        parsed.dynamicRoutingThresholdChars ?? DEFAULT_POLICY.dynamicRoutingThresholdChars,
-      exploitSignalOverride: parsed.exploitSignalOverride
-        ? {
-            kev: parsed.exploitSignalOverride.kev ?? undefined,
-            epss: parsed.exploitSignalOverride.epss ?? undefined,
-          }
-        : undefined,
-      suppressions: Array.isArray(parsed.suppressions)
-        ? (parsed.suppressions as VexSuppression[])
-        : DEFAULT_POLICY.suppressions,
-      sla: parsed.sla
-        ? {
-            critical: (parsed.sla as SlaPolicy).critical,
-            high: (parsed.sla as SlaPolicy).high,
-            medium: (parsed.sla as SlaPolicy).medium,
-            low: (parsed.sla as SlaPolicy).low,
-          }
-        : undefined,
-      skipUnreachable:
-        (parsed as AutoremediatorPolicy).skipUnreachable ?? DEFAULT_POLICY.skipUnreachable,
-      dispositionPolicy:
-        (parsed as AutoremediatorPolicy).dispositionPolicy ?? DEFAULT_POLICY.dispositionPolicy,
-      containmentMode:
-        (parsed as AutoremediatorPolicy).containmentMode ?? DEFAULT_POLICY.containmentMode,
-      escalationGraph:
-        (parsed as AutoremediatorPolicy).escalationGraph ?? DEFAULT_POLICY.escalationGraph,
-    };
-  } catch {
-    return DEFAULT_POLICY;
+    raw = yamlParse(content) ?? {};
+  } catch (error) {
+    throw new Error(`Invalid YAML in policy ${location}: ${(error as Error).message}`, {
+      cause: error,
+    });
   }
+
+  const parsed = policyFileSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new Error(`Invalid policy ${location}: ${describePolicyIssues(parsed.error)}`);
+  }
+
+  return {
+    ...DEFAULT_POLICY,
+    ...parsed.data,
+    constraints: { ...DEFAULT_POLICY.constraints, ...parsed.data.constraints },
+    patchConfidenceThresholds: parsed.data.patchConfidenceThresholds ?? {},
+    escalationGraph: parsed.data.escalationGraph as EscalationGraph | undefined,
+  };
 }
 
 function isPackageInList(list: unknown[] | undefined, packageName: string): boolean {

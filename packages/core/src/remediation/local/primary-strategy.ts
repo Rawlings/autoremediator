@@ -21,7 +21,7 @@ export async function resolvePrimaryResult(params: {
   requireProofOfFix?: boolean;
   reproductionTest?: string;
   patchesDir?: string;
-}): Promise<{ result: PatchResult; steps: number }> {
+}): Promise<{ result: PatchResult }> {
   const {
     vulnerable,
     cwd,
@@ -41,7 +41,6 @@ export async function resolvePrimaryResult(params: {
   if (pkg.type === "transitive") {
     if (constraints.directDependenciesOnly) {
       return {
-        steps: 0,
         result: {
           packageName: pkg.name,
           strategy: "none",
@@ -56,7 +55,6 @@ export async function resolvePrimaryResult(params: {
 
     if (constraints.preferVersionBump) {
       return {
-        steps: 0,
         result: {
           packageName: pkg.name,
           strategy: "none",
@@ -71,7 +69,6 @@ export async function resolvePrimaryResult(params: {
 
     if (!firstPatchedVersion) {
       return {
-        steps: 0,
         result: {
           packageName: pkg.name,
           strategy: "none",
@@ -94,7 +91,6 @@ export async function resolvePrimaryResult(params: {
 
     if (!safeUpgrade.safeVersion) {
       return {
-        steps: 1,
         result: {
           packageName: pkg.name,
           strategy: "none",
@@ -115,7 +111,6 @@ export async function resolvePrimaryResult(params: {
     );
     if (!trust.trusted) {
       return {
-        steps: 1,
         result: {
           packageName: pkg.name,
           strategy: "none",
@@ -149,14 +144,12 @@ export async function resolvePrimaryResult(params: {
     });
 
     return {
-      steps: 2,
       result: { ...overrideResult, vulnerableRange: vulnerable.affected.vulnerableRange },
     };
   }
 
   if (!firstPatchedVersion) {
     return {
-      steps: 0,
       result: {
         packageName: pkg.name,
         strategy: "none",
@@ -179,7 +172,6 @@ export async function resolvePrimaryResult(params: {
 
   if (!safeUpgrade.safeVersion) {
     return {
-      steps: 1,
       result: {
         packageName: pkg.name,
         strategy: "none",
@@ -200,7 +192,6 @@ export async function resolvePrimaryResult(params: {
   );
   if (!trust.trusted) {
     return {
-      steps: 1,
       result: {
         packageName: pkg.name,
         strategy: "none",
@@ -236,7 +227,6 @@ export async function resolvePrimaryResult(params: {
   });
 
   return {
-    steps: 2,
     result: { ...applyResult, vulnerableRange: vulnerable.affected.vulnerableRange },
   };
 }

@@ -8,7 +8,7 @@ This project values clear documentation, deterministic behavior, and safe defaul
 
 Prerequisites:
 
-- Node.js 22+
+- Node.js 26+
 - pnpm (recommended)
 - Git
 

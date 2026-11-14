@@ -11,3 +11,6 @@ memories/
 scratch/
 .agents/
 .autoremediator/
+# Generated from the repository root at pack time (see "prepack" in packages/core/package.json)
+packages/core/README.md
+packages/core/llms.txt

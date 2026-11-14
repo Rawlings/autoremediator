@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { toCycloneDxVex } from "./index.js";
-import type { RemediationReport } from "../../platform/types.js";
+import type { PatchResult, RemediationReport } from "../../platform/types.js";
 import type { ScanReport } from "../contracts.js";
 
 function makeReport(overrides: Partial<RemediationReport> = {}): RemediationReport {
@@ -9,11 +9,70 @@ function makeReport(overrides: Partial<RemediationReport> = {}): RemediationRepo
     cveDetails: null,
     vulnerablePackages: [],
     results: [],
-    agentSteps: 0,
     summary: "test",
     ...overrides,
   };
 }
+
+describe("toCycloneDxVex claims", () => {
+  const result = (overrides: Partial<PatchResult>): PatchResult => ({
+    packageName: "pkg",
+    strategy: "version-bump",
+    fromVersion: "1.0.0",
+    applied: false,
+    dryRun: false,
+    message: "m",
+    ...overrides,
+  });
+  const analysisOf = (results: PatchResult[]) =>
+    toCycloneDxVex(makeReport({ results })).vulnerabilities[0]!.analysis;
+
+  it("does not claim resolved when only some affected packages were fixed", () => {
+    const analysis = analysisOf([
+      result({ packageName: "fixed", applied: true }),
+      result({ packageName: "stuck", unresolvedReason: "no-safe-version" }),
+    ]);
+    expect(analysis.state).toBe("in_triage");
+    expect(analysis.detail).toBe(
+      "1 of 2 affected packages remediated; unresolved: no-safe-version",
+    );
+  });
+
+  it("never turns a static reachability heuristic into a not_affected claim", () => {
+    const analysis = analysisOf([
+      result({
+        unresolvedReason: "no-safe-version",
+        reachability: {
+          status: "not-reachable",
+          reason: "no imports",
+          justification: "code_not_reachable",
+        },
+      } as Partial<PatchResult>),
+    ]);
+    expect(analysis.state).toBe("in_triage");
+    expect(analysis.justification).toBeUndefined();
+    expect(analysis.detail).toContain("heuristic, not asserted as not_affected");
+  });
+
+  it("claims not_affected only when every affected package carries an explicit suppression", () => {
+    const suppressed = { justification: "not_affected" as const, notes: "feature flagged off" };
+    expect(analysisOf([result({ suppressedBy: suppressed })]).state).toBe("not_affected");
+    expect(
+      analysisOf([
+        result({ suppressedBy: suppressed }),
+        result({ unresolvedReason: "no-safe-version" }),
+      ]).state,
+    ).toBe("in_triage");
+  });
+
+  it("treats a mix of fixed and suppressed packages as resolved", () => {
+    const analysis = analysisOf([
+      result({ applied: true }),
+      result({ packageName: "other", suppressedBy: { justification: "mitigated" } }),
+    ]);
+    expect(analysis.state).toBe("resolved");
+  });
+});
 
 describe("toCycloneDxVex", () => {
   it("returns resolved state with update response for version-bump strategy", () => {

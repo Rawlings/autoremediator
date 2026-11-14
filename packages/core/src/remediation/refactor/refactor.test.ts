@@ -8,7 +8,7 @@ import {
   revertRefactorSnapshots,
   parseCompilerDiagnostics,
   transformCallArguments,
-} from "./refactor-agent.js";
+} from "./codemods.js";
 
 describe("breaking-change refactoring engine", () => {
   let tempDir: string;

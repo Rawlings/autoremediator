@@ -2,7 +2,7 @@ import * as readline from "node:readline/promises";
 import { stdin as defaultInput, stdout as defaultOutput } from "node:process";
 import { remediate } from "../api/remediate/index.js";
 import { parseScanInput, parseScanInputFromAudit, uniqueCveIds } from "../scanner/index.js";
-import { evaluatePackage } from "../remediation/evaluate-package.js";
+import { evaluatePackage } from "../api/evaluate/index.js";
 import { saveSuppressionToPolicy, saveSuppressionToFile } from "../platform/policy.js";
 import { saveSuppressionToVexDocument } from "../api/vex/index.js";
 import type { VexJustification, VexSuppression } from "../platform/types.js";

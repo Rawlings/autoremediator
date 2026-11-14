@@ -1,6 +1,6 @@
 ---
 description: Stability and evolution rules for remediation reports, CI summaries, and evidence artifacts.
-applyTo: packages/core/src/{platform,api,cli,mcp,openapi}/**/*.ts,packages/docs/content/{api-sdk,cli,policy-and-safety,changelog}.md
+applyTo: packages/core/src/{platform,api,cli,mcp,openapi}/**/*.ts,docs/*.md
 ---
 
 # Report and Evidence Evolution

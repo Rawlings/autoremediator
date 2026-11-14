@@ -23,17 +23,12 @@ import {
   transformCallArguments,
   refactorConsumerCallSites,
   revertRefactorSnapshots,
-} from "../src/remediation/refactor/refactor-agent.js";
+} from "../src/remediation/refactor/codemods.js";
 import { findPackageCallSites } from "../src/remediation/refactor/call-site-finder.js";
 
 // 3. Remediation Tools
-import {
-  generateUnifiedDiff,
-  validatePatchedCodeSyntax,
-  parseLlmAnalysisResponse,
-  isValidLlmAnalysis,
-  buildGeneratedPatches,
-} from "../src/remediation/tools/generate-patch/helpers.js";
+import { generateUnifiedDiff } from "../src/remediation/patch/diff.js";
+import { validatePatchedCodeSyntax } from "../src/remediation/patch/syntax.js";
 import { resolveInventoryVersion } from "../src/remediation/tools/check-inventory.js";
 import { fetchPackageSourceTool } from "../src/remediation/tools/fetch-package-source.js";
 import { applyVersionBumpTool } from "../src/remediation/tools/apply-version-bump.js";
@@ -414,36 +409,6 @@ export function clean(p: string) {
       expect(validatePatchedCodeSyntax("config.yml", "name: : bad: yaml\n  - \n").valid).toBe(
         false,
       );
-    });
-
-    it("parses LLM analysis responses and builds validated unified diff patches", () => {
-      const llmOutput = `
-Here is the remediation analysis:
-\`\`\`json
-{
-  "analysis": "Fixed prototype pollution vulnerability in merge function",
-  "fixedCode": {
-    "src/index.js": "function merge(a, b) { if (b.__proto__) return a; return Object.assign(a, b); }"
-  },
-  "confidence": 0.95,
-  "riskLevel": "low",
-  "reproductionTest": "const assert = require('assert'); assert(true);"
-}
-\`\`\`
-`;
-      const parsed = parseLlmAnalysisResponse(llmOutput);
-      expect(parsed.ok).toBe(true);
-      const analysis = parsed.ok ? parsed.analysis : ({} as any);
-      expect(isValidLlmAnalysis(analysis)).toBe(true);
-      expect(analysis.confidence).toBe(0.95);
-
-      const sourceFiles = {
-        "src/index.js": "function merge(a, b) { return Object.assign(a, b); }",
-      };
-      const patches = buildGeneratedPatches(sourceFiles, analysis.fixedCode);
-      expect(patches.length).toBe(1);
-      expect(patches[0]!.filePath).toBe("src/index.js");
-      expect(patches[0]!.unifiedDiff).toContain("+function merge(a, b) { if (b.__proto__)");
     });
 
     it("resolves semver inventory strings across workspace, npm aliases, and ranges", () => {

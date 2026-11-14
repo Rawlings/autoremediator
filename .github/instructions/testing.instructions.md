@@ -1,6 +1,6 @@
 ---
 description: Test placement, scope, and verification requirements for feature work.
-applyTo: packages/core/src/**/*.test.ts,packages/core/src/**/*.ts,packages/docs/**/*.ts,packages/docs/**/*.tsx
+applyTo: packages/core/src/**/*.test.ts,packages/core/src/**/*.ts
 ---
 
 # Testing Instructions

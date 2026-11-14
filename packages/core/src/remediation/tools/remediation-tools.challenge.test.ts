@@ -4,11 +4,8 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { checkInventoryTool, resolveInventoryVersion } from "./check-inventory.js";
 import { resolveDenoInventory } from "../../platform/package-manager/list-parser.js";
-import {
-  generateUnifiedDiff,
-  validatePatchedCodeSyntax,
-  buildGeneratedPatches,
-} from "./generate-patch/helpers.js";
+import { generateUnifiedDiff } from "../patch/diff.js";
+import { validatePatchedCodeSyntax } from "../patch/syntax.js";
 import { applyPatchFileTool } from "./apply-patch-file/index.js";
 import { applyVersionBumpTool } from "./apply-version-bump.js";
 
@@ -207,22 +204,6 @@ describe("Remediation Tools Adversarial White-Box Challenges", () => {
       expect(invalidYaml.valid).toBe(false);
       expect(invalidYaml.error).toContain("YAML parse error");
     });
-
-    it("buildGeneratedPatches filters out syntactically invalid patches", () => {
-      const sourceFiles = {
-        "good.ts": "export const a = 1;\n",
-        "bad.ts": "export const b = 2;\n",
-      };
-      const fixedCode = {
-        "good.ts": "export const a = 42;\n",
-        "bad.ts": "export const b = { syntax error!;\n",
-      };
-
-      const patches = buildGeneratedPatches(sourceFiles, fixedCode);
-      expect(patches.length).toBe(1);
-      expect(patches[0]?.filePath).toBe("good.ts");
-      expect(patches[0]?.unifiedDiff).toContain("+export const a = 42;");
-    });
   });
 
   describe("apply-patch-file adversarial validations & rollback", () => {
@@ -281,22 +262,19 @@ denyPackages:
       expect(result.patchArtifact?.integrity).toMatch(/^sha256:/);
     });
 
-    it("reveals defect: omitting patchesDir causes path.join TypeError because zod default is not destructured in execute", async () => {
+    it("applies the schema default when patchesDir is omitted", async () => {
       const diff = generateUnifiedDiff("const x = 1;\n", "const x = 2;\n", "index.js")!;
       const result = await applyPatchFileTool.execute({
         cwd: testDir,
         packageName: "sample-pkg",
         vulnerableVersion: "1.0.0",
         patchContent: diff,
-        // patchesDir omitted
+        // patchesDir omitted: the tool's input schema supplies the default
         dryRun: true,
       });
 
-      // Empirically documents the defect:
-      expect(result.success).toBe(false);
-      expect(result.error).toContain(
-        'The "path" argument must be of type string. Received undefined',
-      );
+      expect(result.error ?? "").not.toContain("must be of type string");
+      expect(result.success).toBe(true);
     });
   });
 

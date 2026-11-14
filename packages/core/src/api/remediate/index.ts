@@ -1,7 +1,7 @@
-import { resolveProvider } from "../../platform/config.js";
+import { getModelSpec } from "../../platform/config.js";
 import { readIdempotentReport, storeIdempotentReport } from "../../platform/idempotency.js";
 import type { RemediateOptions, RemediationReport } from "../../platform/types.js";
-import { runRemediationPipeline } from "../../remediation/pipeline.js";
+import { runLocalRemediationPipeline } from "../../remediation/local/index.js";
 import {
   assertChangeRequestAllowed,
   createChangeRequestsForReports,
@@ -36,12 +36,12 @@ export async function remediate(
   const constraints = resolveConstraints(options, cwd);
   const provenance = resolveProvenanceContext(options);
   const correlation = resolveCorrelationContext(options);
-  const llmProvider = resolveProvider(options);
+  const model = getModelSpec(options.model);
   const evidence = createRemediateEvidence({
     cwd,
     cveId: normalizedCveId,
     options,
-    llmProvider,
+    model,
     correlation,
     provenance,
   });
@@ -67,13 +67,13 @@ export async function remediate(
     evidence,
     cveId: normalizedCveId,
     options,
-    llmProvider,
+    model,
     constraints,
   });
 
   let report: RemediationReport;
   try {
-    report = await runRemediationPipeline(normalizedCveId, {
+    report = await runLocalRemediationPipeline(normalizedCveId, {
       ...options,
       ...correlation,
       constraints,

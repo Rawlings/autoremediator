@@ -6,8 +6,7 @@ on:
       - action.yml
       - .github/workflows/**
       - .github/workflow-templates/**
-      - packages/docs/content/getting-started.md
-      - packages/docs/content/integrations.md
+      - docs/integrations.md
       - README.md
   push:
     branches:
@@ -17,8 +16,7 @@ on:
       - action.yml
       - .github/workflows/**
       - .github/workflow-templates/**
-      - packages/docs/content/getting-started.md
-      - packages/docs/content/integrations.md
+      - docs/integrations.md
       - README.md
   workflow_dispatch:
 
@@ -52,8 +50,7 @@ jobs:
 
           if rg --line-number --no-heading "reusable-remediate-from-audit\.yml@main" \
             .github/workflow-templates \
-            packages/docs/content/getting-started.md \
-            packages/docs/content/integrations.md \
+            docs/integrations.md \
             README.md; then
             echo "Found unstable @main reference for reusable workflow; use @v1 or a pinned SHA instead."
             exit 1

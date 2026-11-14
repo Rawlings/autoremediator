@@ -39,7 +39,7 @@
 ### Mode 5: OpenAPI HTTP Server
 
 - Trigger: `node dist/openapi/server.js [--port 3000]`
-- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/remediate-portfolio`, POST `/update-outdated`, POST `/patches/list`, POST `/patches/inspect`, POST `/patches/validate`, POST `/vex`, POST `/jobs/remediate`, POST `/jobs/scan`, POST `/jobs/portfolio`, `GET /jobs/:jobId` over HTTP on `127.0.0.1` (auth required unless `AUTOREMEDIATOR_INSECURE_NO_AUTH=1`; see `packages/docs/content/integrations.md`)
+- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/remediate-portfolio`, POST `/update-outdated`, POST `/patches/list`, POST `/patches/inspect`, POST `/patches/validate`, POST `/vex`, POST `/jobs/remediate`, POST `/jobs/scan`, POST `/jobs/portfolio`, `GET /jobs/:jobId` over HTTP on `127.0.0.1` (auth required unless `AUTOREMEDIATOR_INSECURE_NO_AUTH=1`; see `docs/integrations.md`)
 - Source: `packages/core/src/openapi/server.ts`
 
 ### Mode 6: Governed Multi-Agent Delivery
@@ -87,7 +87,7 @@ Do not introduce synonym fields for these concepts.
 These runtime controls are additive across the public surfaces described above:
 
 - `dispositionPolicy`: classifies each remediation result as `auto-apply`, `simulate-only`, `hold-for-approval`, or `escalate` using confidence, transitive scope, KEV, and SLA signals.
-- `containmentMode`: blocks applied results whose disposition resolves to `escalate`, rewriting them to unresolved `policy-blocked` outcomes.
+- `containmentMode`: rolls back applied results whose disposition is `hold-for-approval` (low confidence or held transitive changes), rewriting them to unresolved `policy-blocked` outcomes so they wait for approval. Urgent `escalate` results (KEV, SLA breach) stay applied and are escalated instead.
 - `escalationGraph`: maps unresolved reasons to intended follow-up actions such as `open-issue`, `notify-channel`, `create-draft-pr`, or `hold-branch`.
 - `campaignMode`: risk-ranks portfolio targets using `riskHint` signals and returns `threatRank` on each portfolio result.
 - `simulationMode`: dry-run and preview only; adds planned mutation metadata, rebuttal findings, and aggregate `simulationSummary` output.
@@ -122,6 +122,6 @@ If patch confidence is low or validation fails, result must be marked as unresol
 
 - **Never edit `CHANGELOG.md` directly:** All release notes, version changes, and package updates must be introduced exclusively via Changesets (`.changeset/<name>.md`).
 - **Always document changes:** When adding or changing APIs, CLI commands, MCP tools, configuration options, or runtime behavior, always update:
-  1. Documentation website (`packages/docs/content/`, including `api-sdk.md`, `cli.md`, `integrations.md`, `agent-ecosystems.md`, `policy-and-safety.md`)
+  1. Documentation (`docs/`: `usage.md`, `policy.md`, `integrations.md`, `architecture.md`)
   2. Package READMEs and relevant agent/tool mode summaries
   3. A changeset file in `.changeset/` documenting the package changes and semver bump type (`patch`, `minor`, or `major`)

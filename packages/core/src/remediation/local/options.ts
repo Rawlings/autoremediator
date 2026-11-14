@@ -1,4 +1,4 @@
-import { resolveProvider } from "../../platform/config.js";
+import { getModelSpec } from "../../platform/config.js";
 import { loadPolicy } from "../../platform/policy.js";
 import type {
   EscalationGraph,
@@ -20,21 +20,15 @@ export interface LocalRunOptions {
   policy: string;
   patchesDir: string;
   constraints: NonNullable<RemediateOptions["constraints"]>;
-  llmProvider: "remote" | "local";
-  providerSafetyProfile: "strict" | "relaxed";
-  requireConsensusForHighRisk: boolean;
-  consensusProvider: "remote" | "local";
-  consensusModel?: string;
+  /** Language model spec (`provider:model`) used for the patch fallback, if any. */
+  model?: string;
   patchConfidenceThresholds?: PatchConfidenceThresholds;
-  dynamicModelRouting: boolean;
-  dynamicRoutingThresholdChars?: number;
   exploitSignalOverride?: ExploitSignalOverridePolicy;
   suppressions: VexSuppression[];
   suppressionsFile?: string;
   slaCheck: boolean;
   slaPolicy?: SlaPolicy;
   skipUnreachable: boolean;
-  regressionCheck: boolean;
   escalationGraph?: EscalationGraph;
   offlineIntelligence: boolean;
   intelligenceSnapshotPath?: string;
@@ -70,8 +64,6 @@ export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptio
       loadedPolicy.constraints?.requireProofOfFix,
   };
 
-  const llmProvider = resolveProvider(options);
-
   return {
     cwd,
     packageManager,
@@ -81,27 +73,17 @@ export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptio
     policy,
     patchesDir,
     constraints,
-    llmProvider,
-    providerSafetyProfile:
-      options.providerSafetyProfile ?? loadedPolicy.providerSafetyProfile ?? "relaxed",
-    requireConsensusForHighRisk:
-      options.requireConsensusForHighRisk ?? loadedPolicy.requireConsensusForHighRisk ?? false,
-    consensusProvider: options.consensusProvider ?? loadedPolicy.consensusProvider ?? "remote",
-    consensusModel: options.consensusModel ?? loadedPolicy.consensusModel,
+    model: getModelSpec(options.model),
     patchConfidenceThresholds: {
       ...loadedPolicy.patchConfidenceThresholds,
       ...options.patchConfidenceThresholds,
     },
-    dynamicModelRouting: options.dynamicModelRouting ?? loadedPolicy.dynamicModelRouting ?? false,
-    dynamicRoutingThresholdChars:
-      options.dynamicRoutingThresholdChars ?? loadedPolicy.dynamicRoutingThresholdChars,
     exploitSignalOverride: options.exploitSignalOverride ?? loadedPolicy.exploitSignalOverride,
     suppressions: loadedPolicy.suppressions ?? [],
     suppressionsFile: options.suppressionsFile,
     slaCheck: options.slaCheck ?? false,
     slaPolicy: loadedPolicy.sla,
     skipUnreachable: options.skipUnreachable ?? loadedPolicy.skipUnreachable ?? false,
-    regressionCheck: options.regressionCheck ?? false,
     escalationGraph: options.escalationGraph ?? loadedPolicy.escalationGraph,
     offlineIntelligence: options.offlineIntelligence ?? false,
     intelligenceSnapshotPath: options.intelligenceSnapshotPath,

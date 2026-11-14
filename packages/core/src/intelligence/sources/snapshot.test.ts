@@ -64,7 +64,7 @@ describe("lookupSnapshotCve", () => {
 
   it("returns entry when key is present (uppercase)", () => {
     const result = lookupSnapshotCve(snapshot, "CVE-2021-1234");
-    expect(result).toBe(mockCveDetails);
+    expect(result).toEqual(mockCveDetails);
   });
 
   it("returns null when key is absent", () => {
@@ -74,11 +74,11 @@ describe("lookupSnapshotCve", () => {
 
   it("is case-insensitive: lowercased CVE ID matches uppercase key", () => {
     const result = lookupSnapshotCve(snapshot, "cve-2021-1234");
-    expect(result).toBe(mockCveDetails);
+    expect(result).toEqual(mockCveDetails);
   });
 
   it("is case-insensitive: mixed case CVE ID matches uppercase key", () => {
     const result = lookupSnapshotCve(snapshot, "Cve-2021-1234");
-    expect(result).toBe(mockCveDetails);
+    expect(result).toEqual(mockCveDetails);
   });
 });

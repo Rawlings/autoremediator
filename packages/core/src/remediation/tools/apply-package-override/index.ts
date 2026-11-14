@@ -42,7 +42,7 @@ import {
 export const applyPackageOverrideTool = defineTool({
   description:
     "Apply a package-manager-native package.json override for a vulnerable transitive dependency and reinstall. Uses npm overrides, pnpm.overrides, yarn resolutions, bun overrides, or deno.json imports.",
-  parameters: z.object({
+  inputSchema: z.object({
     cwd: z.string().describe("Absolute path to the consumer project root"),
     packageManager: z
       .enum(["npm", "pnpm", "yarn", "bun", "deno"])

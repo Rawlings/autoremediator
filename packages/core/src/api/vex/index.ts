@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { RemediationReport, VexSuppression } from "../../platform/types.js";
+import type { PatchResult, RemediationReport, VexSuppression } from "../../platform/types.js";
 import type { ScanReport } from "../contracts.js";
 
 export interface CycloneDxVexVulnerabilityAnalysis {
@@ -32,61 +32,65 @@ export interface ToCycloneDxVexOptions {
   toolVersion?: string;
 }
 
+const isResolved = (result: PatchResult): boolean => result.applied && !result.unresolvedReason;
+const isSuppressed = (result: PatchResult): boolean => result.suppressedBy != null;
+
+/**
+ * Map one CVE's remediation outcome to a CycloneDX VEX analysis.
+ *
+ * VEX states are assertions that downstream consumers act on, so each one is only claimed when it
+ * holds for *every* affected package: `resolved` when all are fixed, `not_affected` when all carry
+ * an explicit suppression. Reachability is a static import scan, a heuristic, so it is reported as
+ * triage evidence and never promoted to `not_affected`.
+ */
 function mapReportToVulnerability(report: RemediationReport): CycloneDxVexVulnerability {
-  const hasResolved = report.results.some((r) => r.applied && !r.unresolvedReason);
-  const hasSuppressed = report.results.some((r) => r.suppressedBy != null);
-  const notReachableResult = report.results.find((r) => r.reachability?.status === "not-reachable");
+  const { results } = report;
+  const resolved = results.filter(isResolved);
 
-  if (notReachableResult && !hasResolved) {
+  if (results.length > 0 && results.every((r) => isSuppressed(r))) {
+    const suppression = results[0]!.suppressedBy!;
     return {
       id: report.cveId,
       analysis: {
         state: "not_affected",
-        justification: notReachableResult.reachability?.justification ?? "code_not_in_execute_path",
-        detail: notReachableResult.reachability?.reason ?? "Code is not in execution path",
+        justification: suppression.justification,
+        detail: suppression.notes ?? suppression.justification,
       },
     };
   }
 
-  if (hasSuppressed && !hasResolved) {
-    const suppressed = report.results.find((r) => r.suppressedBy != null)!;
-    return {
-      id: report.cveId,
-      analysis: {
-        state: "not_affected",
-        justification: suppressed.suppressedBy!.justification,
-        detail: suppressed.suppressedBy!.notes ?? suppressed.suppressedBy!.justification,
-      },
-    };
-  }
-
-  if (hasResolved) {
-    const resolvedResults = report.results.filter((r) => r.applied && !r.unresolvedReason);
-    const hasVersionBumpOrOverride = resolvedResults.some(
-      (r) => r.strategy === "version-bump" || r.strategy === "override",
-    );
-    const hasPatchFile = resolvedResults.some((r) => r.strategy === "patch-file");
-
+  if (resolved.length > 0 && results.every((r) => isResolved(r) || isSuppressed(r))) {
     const response: ("update" | "workaround_available")[] = [];
-    if (hasVersionBumpOrOverride) response.push("update");
-    if (hasPatchFile) response.push("workaround_available");
+    if (resolved.some((r) => r.strategy === "version-bump" || r.strategy === "override")) {
+      response.push("update");
+    }
+    if (resolved.some((r) => r.strategy === "patch-file")) response.push("workaround_available");
 
     return {
       id: report.cveId,
-      analysis: {
-        state: "resolved",
-        response: response.length > 0 ? response : undefined,
-      },
+      analysis: { state: "resolved", response: response.length > 0 ? response : undefined },
     };
   }
 
-  const firstUnresolved = report.results.find((r) => r.unresolvedReason);
+  const pending = results.filter((r) => !isResolved(r) && !isSuppressed(r));
+  const details: string[] = [];
+  if (resolved.length > 0) {
+    details.push(`${resolved.length} of ${results.length} affected packages remediated`);
+  }
+  const reasons = [...new Set(pending.map((r) => r.unresolvedReason).filter(Boolean))];
+  if (reasons.length > 0) {
+    details.push(resolved.length > 0 ? `unresolved: ${reasons.join(", ")}` : reasons.join(", "));
+  }
+  const unreachable = pending.filter((r) => r.reachability?.status === "not-reachable");
+  if (unreachable.length > 0) {
+    details.push(
+      `static analysis found no usage of ${unreachable.map((r) => r.packageName).join(", ")} (heuristic, not asserted as not_affected)`,
+    );
+  }
+
   return {
     id: report.cveId,
-    analysis: {
-      state: "in_triage",
-      detail: firstUnresolved?.unresolvedReason,
-    },
+    analysis: { state: "in_triage", detail: details.length > 0 ? details.join("; ") : undefined },
   };
 }
 

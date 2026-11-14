@@ -246,13 +246,6 @@
       "isBackground": false
     },
     {
-      "label": "docs build",
-      "type": "shell",
-      "command": "pnpm",
-      "args": ["docs:build"],
-      "isBackground": false
-    },
-    {
       "label": "core typecheck final",
       "type": "shell",
       "command": "pnpm",

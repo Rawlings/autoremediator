@@ -16,12 +16,6 @@ export function validateSharedCommandOptions(opts: CommandOptions): void {
     throw new Error("--resume requires --idempotency-key.");
   }
 
-  if ((opts.consensusProvider || opts.consensusModel) && !opts.requireConsensusForHighRisk) {
-    throw new Error(
-      "--consensus-provider and --consensus-model require --require-consensus-for-high-risk.",
-    );
-  }
-
   if (hasChangeRequestOverrides(opts) && !opts.createChangeRequest) {
     throw new Error("change-request override flags require --create-change-request.");
   }

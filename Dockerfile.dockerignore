@@ -4,6 +4,5 @@
 .pnpm-store
 scratch
 .autoremediator
-packages/docs
 packages/vscode-extension
 packages/github-app

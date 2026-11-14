@@ -3,8 +3,11 @@
  *   - VEX suppression early-exit
  *   - Exploit signal flagging (KEV / EPSS)
  *   - SLA breach detection
- *   - Regression detection
+ *   - Containment, escalation and package denylist enforcement
  */
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { CveDetails } from "../../platform/types.js";
 
@@ -12,15 +15,25 @@ import type { CveDetails } from "../../platform/types.js";
 // Module mocks — use vi.hoisted() so refs are available inside factory scope
 // ---------------------------------------------------------------------------
 
-const { mockOsv, mockGhLookup, mockMergeGh, mockEnrichNvd, mockInventory, mockExploitSignal } =
-  vi.hoisted(() => ({
-    mockOsv: vi.fn(),
-    mockGhLookup: vi.fn(),
-    mockMergeGh: vi.fn((base: CveDetails) => base),
-    mockEnrichNvd: vi.fn(async (d: CveDetails) => d),
-    mockInventory: vi.fn(),
-    mockExploitSignal: vi.fn(),
-  }));
+const {
+  mockOsv,
+  mockGhLookup,
+  mockMergeGh,
+  mockEnrichNvd,
+  mockEnrichKev,
+  mockEnrichEpss,
+  mockInventory,
+  mockExploitSignal,
+} = vi.hoisted(() => ({
+  mockOsv: vi.fn(),
+  mockGhLookup: vi.fn(),
+  mockMergeGh: vi.fn((base: CveDetails) => base),
+  mockEnrichNvd: vi.fn(async (d: CveDetails) => d),
+  mockEnrichKev: vi.fn(async (d: CveDetails) => d),
+  mockEnrichEpss: vi.fn(async (d: CveDetails) => d),
+  mockInventory: vi.fn(),
+  mockExploitSignal: vi.fn(),
+}));
 
 const { mockPrimaryResult, mockShouldFallback, mockFindVulnerable } = vi.hoisted(() => ({
   mockPrimaryResult: vi.fn(),
@@ -41,6 +54,14 @@ vi.mock("../../intelligence/sources/nvd.js", () => ({
   enrichWithNvd: mockEnrichNvd,
 }));
 
+vi.mock("../../intelligence/sources/cisa-kev.js", () => ({
+  enrichWithCisaKev: mockEnrichKev,
+}));
+
+vi.mock("../../intelligence/sources/epss.js", () => ({
+  enrichWithEpss: mockEnrichEpss,
+}));
+
 vi.mock("../tools/check-inventory.js", () => ({
   checkInventoryTool: { execute: mockInventory },
 }));
@@ -55,7 +76,7 @@ vi.mock("./primary-strategy.js", () => ({
 
 vi.mock("./fallback.js", () => ({
   shouldAttemptPatchFallback: mockShouldFallback,
-  tryLocalPatchFallback: vi.fn(),
+  tryPatchFallback: vi.fn(),
 }));
 
 vi.mock("./vulnerability-match.js", () => ({
@@ -95,6 +116,8 @@ beforeEach(() => {
   mockGhLookup.mockResolvedValue([]);
   mockMergeGh.mockImplementation((base: CveDetails) => base);
   mockEnrichNvd.mockImplementation(async (d: CveDetails) => d);
+  mockEnrichKev.mockImplementation(async (d: CveDetails) => d);
+  mockEnrichEpss.mockImplementation(async (d: CveDetails) => d);
   mockFindVulnerable.mockReturnValue([]);
   mockShouldFallback.mockReturnValue(false);
 });
@@ -168,6 +191,62 @@ describe("exploit signal", () => {
         }),
       }),
     );
+  });
+
+  it("feeds online KEV and EPSS enrichment into the exploit-signal check", async () => {
+    mockOsv.mockResolvedValue(makeOsvDetails());
+    mockEnrichKev.mockImplementation(async (d: CveDetails) => ({
+      ...d,
+      kev: { knownExploited: true },
+    }));
+    mockEnrichEpss.mockImplementation(async (d: CveDetails) => ({
+      ...d,
+      epss: { score: 0.93, percentile: 0.99 },
+    }));
+    mockInventory.mockResolvedValue({ packages: [] });
+    mockExploitSignal.mockResolvedValue({ exploitSignalTriggered: true });
+
+    const result = await runLocalRemediationPipeline("CVE-2024-0001", {
+      cwd: process.cwd(),
+      exploitSignalOverride: { kev: { mandatory: true } },
+    } as any);
+
+    expect(result.exploitSignalTriggered).toBe(true);
+    expect(mockExploitSignal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cveDetails: expect.objectContaining({
+          kev: { knownExploited: true },
+          epss: { score: 0.93, percentile: 0.99 },
+        }),
+      }),
+    );
+  });
+
+  it("does not call KEV or EPSS in offline mode", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "offline-run-"));
+    const snapshotPath = join(dir, "snapshot.json");
+    writeFileSync(
+      snapshotPath,
+      JSON.stringify({
+        "CVE-2024-0001": { packageName: "vuln-pkg", vulnerableRange: "<2.0.0", severity: "HIGH" },
+      }),
+    );
+    mockInventory.mockResolvedValue({ packages: [] });
+
+    try {
+      const result = await runLocalRemediationPipeline("CVE-2024-0001", {
+        cwd: process.cwd(),
+        offlineIntelligence: true,
+        intelligenceSnapshotPath: snapshotPath,
+      } as any);
+
+      expect(result.cveDetails?.id).toBe("CVE-2024-0001");
+      expect(mockOsv).not.toHaveBeenCalled();
+      expect(mockEnrichKev).not.toHaveBeenCalled();
+      expect(mockEnrichEpss).not.toHaveBeenCalled();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("leaves exploitSignalTriggered undefined when no exploitSignalOverride is configured", async () => {
@@ -310,7 +389,7 @@ describe("SLA breach", () => {
 // Regression detection
 // ---------------------------------------------------------------------------
 
-describe("regression check", () => {
+describe("containment, escalation and package denylist", () => {
   const vulnerablePackage = {
     installed: { name: "vuln-pkg", version: "1.5.0", type: "direct" as const },
     affected: {
@@ -331,91 +410,7 @@ describe("regression check", () => {
     mockShouldFallback.mockReturnValue(false);
   });
 
-  it("does not set regressionDetected when toVersion is outside the vulnerable range", async () => {
-    mockPrimaryResult.mockResolvedValue({
-      result: {
-        packageName: "vuln-pkg",
-        fromVersion: "1.5.0",
-        strategy: "version-bump",
-        applied: true,
-        dryRun: false,
-        toVersion: "2.0.0",
-      },
-      steps: 1,
-    });
-
-    const result = await runLocalRemediationPipeline("CVE-2024-0001", {
-      cwd: process.cwd(),
-      regressionCheck: true,
-    } as any);
-
-    expect(result.results[0]?.regressionDetected).toBeUndefined();
-  });
-
-  it("sets regressionDetected=true when toVersion is still inside the vulnerable range", async () => {
-    mockPrimaryResult.mockResolvedValue({
-      result: {
-        packageName: "vuln-pkg",
-        fromVersion: "1.5.0",
-        strategy: "version-bump",
-        applied: true,
-        dryRun: false,
-        toVersion: "1.8.0",
-      },
-      steps: 1,
-    });
-
-    const result = await runLocalRemediationPipeline("CVE-2024-0001", {
-      cwd: process.cwd(),
-      regressionCheck: true,
-    } as any);
-
-    expect(result.results[0]?.regressionDetected).toBe(true);
-  });
-
-  it("does not check regression when regressionCheck is false", async () => {
-    mockPrimaryResult.mockResolvedValue({
-      result: {
-        packageName: "vuln-pkg",
-        fromVersion: "1.5.0",
-        strategy: "version-bump",
-        applied: true,
-        dryRun: false,
-        toVersion: "1.8.0",
-      },
-      steps: 1,
-    });
-
-    const result = await runLocalRemediationPipeline("CVE-2024-0001", {
-      cwd: process.cwd(),
-      regressionCheck: false,
-    } as any);
-
-    // Even though toVersion is still in range, no regression flag when option is off
-    expect(result.results[0]?.regressionDetected).toBeUndefined();
-  });
-
-  it("does not set regressionDetected when result was not applied", async () => {
-    mockPrimaryResult.mockResolvedValue({
-      result: {
-        packageName: "vuln-pkg",
-        fromVersion: "1.5.0",
-        strategy: "none",
-        applied: false,
-        dryRun: false,
-      },
-      steps: 1,
-    });
-
-    const result = await runLocalRemediationPipeline("CVE-2024-0001", {
-      cwd: process.cwd(),
-      regressionCheck: true,
-    } as any);
-
-    expect(result.results[0]?.regressionDetected).toBeUndefined();
-  });
-
-  it("blocks applied escalate disposition outcomes when containmentMode is enabled", async () => {
+  it("keeps an applied fix for an actively exploited CVE even with containmentMode (escalate, not blocked)", async () => {
     mockPrimaryResult.mockResolvedValue({
       result: {
         packageName: "vuln-pkg",
@@ -436,11 +431,11 @@ describe("regression check", () => {
     } as any);
 
     expect(result.results[0]?.disposition).toBe("escalate");
-    expect(result.results[0]?.applied).toBe(false);
-    expect(result.results[0]?.unresolvedReason).toBe("policy-blocked");
+    expect(result.results[0]?.applied).toBe(true);
+    expect(result.results[0]?.unresolvedReason).toBeUndefined();
   });
 
-  it("blocks applied escalate disposition outcomes and restores modified files on disk when containmentMode is enabled", async () => {
+  it("blocks applied hold-for-approval outcomes and restores modified files on disk when containmentMode is enabled", async () => {
     const { mkdtempSync, readFileSync, rmSync, writeFileSync } = await import("node:fs");
     const { join } = await import("node:path");
     const { tmpdir } = await import("node:os");
@@ -481,20 +476,18 @@ describe("regression check", () => {
           applied: true,
           dryRun: false,
           toVersion: "2.0.0",
+          confidence: 0.4,
         },
-        steps: 1,
       };
     });
-    mockExploitSignal.mockResolvedValue({ exploitSignalTriggered: true, reason: "KEV match" });
 
     try {
       const result = await runLocalRemediationPipeline("CVE-2024-0001", {
         cwd: dir,
         containmentMode: true,
-        exploitSignalOverride: { kev: { mandatory: true } },
       } as any);
 
-      expect(result.results[0]?.disposition).toBe("escalate");
+      expect(result.results[0]?.disposition).toBe("hold-for-approval");
       expect(result.results[0]?.applied).toBe(false);
       expect(result.results[0]?.unresolvedReason).toBe("policy-blocked");
 

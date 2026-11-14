@@ -74,7 +74,7 @@ interface ApplyPatchFileResult {
 export const applyPatchFileTool = defineTool({
   description:
     "Write generated patch file and apply it using package-manager-native patch flow when available, falling back to patch-package when needed.",
-  parameters: z
+  inputSchema: z
     .object({
       packageName: z.string().min(1).describe("The npm package name"),
       vulnerableVersion: z.string().describe("The vulnerable version string"),

@@ -59,7 +59,6 @@ describe("Milestone 5 Challenge: Multi-Group Change Requests (Feature 24)", () =
         message: "updated pkg-alpha",
       },
     ],
-    agentSteps: 1,
     summary: "Alpha bump",
   };
 
@@ -78,7 +77,6 @@ describe("Milestone 5 Challenge: Multi-Group Change Requests (Feature 24)", () =
         message: "updated pkg-beta",
       },
     ],
-    agentSteps: 1,
     summary: "Beta bump",
   };
 

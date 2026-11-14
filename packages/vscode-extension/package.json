@@ -35,14 +35,17 @@
     "build:vsix": "pnpm build && pnpm package",
     "package": "vsce package --no-dependencies",
     "publish": "vsce publish --no-dependencies",
-    "lint": "oxlint"
+    "lint": "oxlint",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@types/node": "catalog:",
-    "@types/vscode": "^1.140.0",
-    "@vscode/vsce": "^4.0.0",
+    "@types/vscode": "^1.146.0",
+    "@vscode/vsce": "^4.1.1",
+    "autoremediator": "workspace:*",
     "esbuild": "^0.28.2",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "contributes": {
     "commands": [

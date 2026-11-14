@@ -1,151 +1,40 @@
 # autoremediator
 
-> Agentic CVE remediation for Node.js projects — MCP tool server, OpenAPI HTTP API, CLI, portfolio orchestration, and native review creation.
+> Fixes vulnerable npm dependencies from a CVE/GHSA id or scanner output: version bump, package-manager override, or an optional model-generated patch. Verifies every change, rolls back failures, and reports what it could not fix. Runs as a CLI, SDK, GitHub Action, GitHub App, MCP server or HTTP server. Requires Node.js 26+.
 
-## What it does
+## Behavior
 
-autoremediator takes a CVE ID (or a scanner output file) and autonomously:
-1. Looks up the CVE in OSV + GitHub Advisory databases
-2. Scans the project's installed packages for vulnerable versions
-3. Finds the lowest safe upgrade version from the npm registry
-4. Applies a `package.json` version bump and runs the resolved package manager install command
-5. Falls back to generating and applying a unified diff `.patch` file when no safe upgrade exists
+For each installed package in a vulnerable range, strategies are tried in order:
+1. version bump to the lowest safe version (a major only if the policy sets `allowMajorBumps`)
+2. package-manager override, when the package is transitive
+3. generated patch, only when no safe version exists and a `model` (or SDK `patchGenerator`) is configured
 
-Retrieval intent terms: dependency remediation, CVE fix automation, npm audit remediation, yarn audit remediation, pnpm remediation, Node.js vulnerability patching, MCP security tool.
+Changes are installed, optionally tested/type-checked, and rolled back on failure. Unfixed results carry an `unresolvedReason`. Advisories: OSV, GitHub Advisory Database, NVD. Exploit signals: CISA KEV, FIRST EPSS. Offline mode reads advisories from a local snapshot file.
 
-Documentation site:
+## Entry points
 
-- https://rawlings.github.io/autoremediator/
+- CLI: `autoremediator <CVE|GHSA|scan-file> [--dry-run] [--run-tests] [--ci]`, plus `scan`, `update-outdated`, `portfolio`, `diff`, `triage`, `patches`, `reachability`, `evaluate`
+- SDK: `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `scanDelta`, `checkReachability`, `evaluatePackage`, patch-artifact functions, job functions (`submit*Job`, `pollJob`), `toCiSummary`, `toSarifOutput`, `toCycloneDxVex`, `createLlmPatchGenerator`
+- MCP (stdio, `autoremediator-mcp`): `health`, `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `checkReachability`, `evaluatePackage`, `scanDelta`, `toVex`, `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob`
+- HTTP: `POST /remediate`, `/plan-remediation`, `/remediate-from-scan`, `/remediate-portfolio`, `/update-outdated`, `/patches/{list,inspect,validate}`, `/vex`, `/jobs/{remediate,scan,portfolio}`, `GET /jobs/:id`, `GET /health`, `GET /openapi.json`. Authentication is required (`AUTOREMEDIATOR_API_TOKENS` or `AUTOREMEDIATOR_JWT_SECRET`).
 
-## Endpoints / Entry Points
+## Key options
 
-### SDK
+`cwd`, `dryRun`, `preview`, `runTests`, `typecheck`, `packageManager`, `policy`, `patchesDir`, `evidence`, `model` (`provider:model-id`, e.g. `anthropic:claude-sonnet-5-5`, needs `@ai-sdk/<provider>`), `patchConfidenceThresholds`, `offlineIntelligence`, `intelligenceSnapshotPath`, `exploitSignalOverride`, `slaCheck`, `skipUnreachable`, `dispositionPolicy`, `containmentMode`, `escalationGraph`, `campaignMode`, `simulationMode`, `proofOfFix`, `requireProofOfFix`, `breakingChangeRefactor` (experimental), `changeRequest`, `constraints` (`directDependenciesOnly`, `preferVersionBump`, `installMode`, `workspace`, `supplyChainPolicy`).
 
-```ts
-import {
-  inspectPatchArtifact,
-  listPatchArtifacts,
-  remediate,
-  remediatePortfolio,
-  remediateFromScan,
-  updateOutdated,
-  validatePatchArtifact,
-  toCycloneDxVex,
-  submitRemediateJob,
-  submitScanJob,
-  submitPortfolioJob,
-  pollJob,
-} from "autoremediator";
+Precedence: explicit options, then the policy file (`.github/autoremediator.yml`), then defaults. Invalid policy files and snapshots are errors.
 
-// Single CVE
-const report = await remediate("CVE-2021-23337", { cwd: "/my/project" });
+## Autonomy controls
 
-// From scanner output
-const scanReport = await remediateFromScan("./npm-audit.json", { cwd: "/my/project" });
+- `dispositionPolicy` classifies each result as `auto-apply`, `hold-for-approval`, `simulate-only` or `escalate`.
+- `containmentMode` rolls back applied `hold-for-approval` results; urgent `escalate` fixes (KEV, SLA breach) are kept.
+- `escalationGraph` maps unresolved reasons to an intended action recorded in the report (nothing is sent automatically).
+- `campaignMode` orders portfolio targets by `riskHint` and reports `threatRank`.
+- `simulationMode` adds planned-mutation metadata to dry runs.
 
-// Across many repositories
-const portfolioReport = await remediatePortfolio(
-  [{ cwd: "/my/project", cveId: "CVE-2021-23337" }]
-);
+## Documentation
 
-// Bump all outdated packages (no CVE required)
-const outdatedReport = await updateOutdated({ cwd: "/my/project" });
-```
-
-### CLI
-
-```
-autoremediator CVE-2021-23337 --cwd ./my-project [--dry-run] [--llm-provider local]
-autoremediator ./npm-audit.json --cwd ./my-project --ci
-autoremediator portfolio --targets-file ./targets.json
-autoremediator update-outdated --cwd ./my-project [--include-transitive] [--dry-run]
-```
-
-### MCP Tool Server
-
-```
-autoremediator-mcp   # stdio transport — register with any MCP host
-```
-
-Available MCP tools: `health`, `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `toVex`, `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob`
-
-The `health` tool returns `{ status, version, toolCount, capabilities }` — use it to confirm server readiness and enumerate available tools from any MCP host.
-
-## Autonomous Defense Controls
-
-- `dispositionPolicy` classifies remediation results as `auto-apply`, `simulate-only`, `hold-for-approval`, or `escalate`
-- `containmentMode` prevents applied escalation results from mutating the repository and marks them `policy-blocked`
-- `escalationGraph` maps unresolved reasons to intended follow-up actions
-- `campaignMode` risk-ranks portfolio targets and emits `threatRank`
-- `simulationMode` adds deterministic planned mutation metadata, rebuttal findings, and `simulationSummary` in dry-run/preview flows
-
-## Tools (agent / MCP)
-
-| Tool name             | Description |
-|-----------------------|-------------|
-| `lookup-cve`          | Fetch CVE details from OSV + GitHub Advisory + NVD |
-| `check-inventory`     | Read project package.json + lock file |
-| `check-version-match` | Cross-reference inventory against vulnerable ranges |
-| `find-fixed-version`  | Query npm registry for lowest safe upgrade |
-| `apply-version-bump`  | Update package.json and run package-manager install |
-| `apply-package-override` | Apply package-manager-native override for vulnerable transitive dependencies |
-| `fetch-package-source`| Download package tarball for patch generation |
-| `generate-patch`      | Generate unified diff patch via LLM |
-| `apply-patch-file`    | Write/apply patch file via native or compatibility patch flow |
-| `check-suppression`   | Evaluate VEX suppression entries against the current CVE |
-| `check-exploit-signal`| Assess CISA KEV and EPSS exploitation signals against configured thresholds |
-| `check-reachability`  | Static import scan to determine if a package is reachable from project source |
-
-## Remediation Order
-
-```
-lookup-cve → check-inventory → check-version-match → find-fixed-version → apply-version-bump
-  └─ transitive path: apply-package-override
-  └─ fallback: fetch-package-source → generate-patch → apply-patch-file
-```
-
-## Key Options
-
-Core behavioral options: `cwd`, `dryRun`, `preview`, `runTests`, `llmProvider` (`remote`|`local`), `patchesDir`, `policy`, `packageManager`, `evidence`, `offlineIntelligence`, `intelligenceSnapshotPath`.
-
-Autonomous operator options: `dispositionPolicy` (minConfidenceForAutoApply, holdForTransitive, escalateOnKev), `containmentMode`, `campaignMode`, `simulationMode`, `escalationGraph`, `suppressionsFile`, `exploitSignalOverride`, `slaCheck`, `skipUnreachable`, `regressionCheck`.
-
-Correlation options: `requestId`, `sessionId`, `parentRunId`, `idempotencyKey`, `resume`, `actor`, `source`.
-
-Full option reference: https://rawlings.github.io/autoremediator/api-sdk
-
-## Full Documentation
-
-- API and SDK reference: https://rawlings.github.io/autoremediator/api-sdk
-- CLI reference: https://rawlings.github.io/autoremediator/cli
-- Policy and safety controls: https://rawlings.github.io/autoremediator/policy-and-safety
-- Scanner inputs: https://rawlings.github.io/autoremediator/scanner-inputs
-- Integrations (GitHub Actions, GitHub App, MCP, OpenAPI): https://rawlings.github.io/autoremediator/integrations
-- Getting started: https://rawlings.github.io/autoremediator/getting-started
-| `runTests` | boolean | `false` | Run package-manager test command after fix |
-| `packageManager` | `npm\|pnpm\|yarn\|bun\|deno` | auto-detect | Override package manager selection |
-| `llmProvider` | `remote\|local` | `remote` | Provider model (`local` = deterministic primary path; `remote` = model-backed patch generation) |
-| `patchesDir` | string | `./patches` | Directory for .patch files |
-| `changeRequest.provider` | `github\|gitlab` | unset | Open a native PR/MR after mutation-enabled runs |
-| `changeRequest.grouping` | `all` | `all` | Group change requests into a single batch |
-| `policy` | string | `.github/autoremediator.yml` | Policy file path |
-| `preview` | boolean | `false` | Non-mutating remediation preview (forces dry-run behavior) |
-| `simulationMode` | boolean | `false` | Add deterministic simulation metadata for dry-run or preview execution |
-| `dispositionPolicy.minConfidenceForAutoApply` | number | `0.7` | Minimum confidence required before a result is classified as `auto-apply` |
-| `dispositionPolicy.holdForTransitive` | boolean | `false` | Hold transitive remediations for approval instead of auto-applying |
-| `dispositionPolicy.escalateOnKev` | boolean | `true` | Escalate when KEV exploit signal is active |
-| `containmentMode` | boolean | `false` | Prevent applied `escalate` results from mutating repository state |
-| `campaignMode` | boolean | `false` | Risk-rank portfolio targets before execution |
-| `evidence` | boolean | `true` | Write evidence JSON output |
-| `requestId` | string | auto-generated | Request correlation ID |
-| `sessionId` | string | unset | Session correlation ID |
-| `parentRunId` | string | unset | Parent run correlation ID |
-| `idempotencyKey` | string | unset | Replay-safe idempotency key |
-| `resume` | boolean | `false` | Return cached result for matching idempotency key when available |
-| `constraints.directDependenciesOnly` | boolean | `false` | Restrict remediation to direct dependencies |
-| `constraints.preferVersionBump` | boolean | `false` | Reject override and patch remediation |
-| `escalationGraph` | object | unset | Optional mapping from unresolved reason to intended escalation action |
-| `offlineIntelligence` | boolean | `false` | Skip all external CVE intelligence network calls; enables air-gap and sovereign deployment |
-| `intelligenceSnapshotPath` | string | unset | Path to a local JSON file of pre-fetched CVE intelligence; loaded when `offlineIntelligence: true` |
-
-
+- Usage: https://github.com/Rawlings/autoremediator/blob/master/docs/usage.md
+- Policy and safety: https://github.com/Rawlings/autoremediator/blob/master/docs/policy.md
+- Integrations: https://github.com/Rawlings/autoremediator/blob/master/docs/integrations.md
+- Architecture: https://github.com/Rawlings/autoremediator/blob/master/docs/architecture.md

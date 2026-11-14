@@ -19,9 +19,9 @@ const ROUTE_ROLE_REQUIREMENTS: Record<string, Role> = {
   "POST /patches/inspect": "reader",
   "POST /patches/validate": "reader",
   "POST /plan-remediation": "operator",
-  "POST /jobs/remediate": "operator",
-  "POST /jobs/scan": "operator",
-  "POST /jobs/portfolio": "operator",
+  "POST /jobs/remediate": "admin", // runs the full, mutating remediation
+  "POST /jobs/scan": "admin", // runs the full, mutating remediation
+  "POST /jobs/portfolio": "admin", // runs the full, mutating remediation
   "POST /remediate": "admin",
   "POST /remediate-from-scan": "admin",
   "POST /remediate-portfolio": "admin",

@@ -258,6 +258,12 @@ class RemediateActionProvider implements vscode.CodeActionProvider {
   }
 }
 
+function advisoryUrl(id: string): string {
+  return id.toUpperCase().startsWith("GHSA-")
+    ? `https://github.com/advisories/${id}`
+    : `https://nvd.nist.gov/vuln/detail/${id}`;
+}
+
 class PackageHoverProvider implements vscode.HoverProvider {
   provideHover(document: vscode.TextDocument, position: vscode.Position): vscode.Hover | undefined {
     const findings = findingsCache.get(document.uri.toString()) ?? [];
@@ -269,10 +275,12 @@ class PackageHoverProvider implements vscode.HoverProvider {
       if (!range?.contains(position)) continue;
 
       const md = new vscode.MarkdownString();
-      md.isTrusted = true;
+      // Only our own fix command may be invoked from the hover; the advisory text below comes from
+      // external feeds and is inserted as escaped plain text.
+      md.isTrusted = { enabledCommands: ["autoremediator.fixCve"] };
       md.appendMarkdown(`### 🛡️ Autoremediator Security Intel: \`${finding.packageName}\`\n\n`);
       md.appendMarkdown(
-        `**CVE:** [${finding.cveId}](https://nvd.nist.gov/vuln/detail/${finding.cveId}) | **Severity:** \`${finding.severity}\`\n\n`,
+        `**Advisory:** [${finding.cveId}](${advisoryUrl(finding.cveId)}) | **Severity:** \`${finding.severity}\`\n\n`,
       );
 
       if (finding.inCisaKev) {
@@ -289,7 +297,9 @@ class PackageHoverProvider implements vscode.HoverProvider {
         );
       }
 
-      md.appendMarkdown(`**Summary:** ${finding.summary}\n\n`);
+      md.appendMarkdown("**Summary:** ");
+      md.appendText(finding.summary.slice(0, 500));
+      md.appendMarkdown("\n\n");
 
       if (finding.safeUpgradeVersion) {
         md.appendMarkdown(`💡 **Safe Version:** \`${finding.safeUpgradeVersion}\`\n\n`);

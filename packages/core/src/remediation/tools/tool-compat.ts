@@ -1,22 +1,27 @@
-import { tool } from "ai";
 import type { z } from "zod";
 
-type AnyZodSchema = z.ZodTypeAny;
+type AnySchema = z.ZodTypeAny;
 
-export interface CompatToolConfig<TSchema extends AnyZodSchema, TResult> {
+export interface ToolDefinition<TSchema extends AnySchema, TResult> {
   description: string;
-  parameters: TSchema;
-  execute: (input: z.infer<TSchema>) => Promise<TResult> | TResult;
+  inputSchema: TSchema;
+  /** Receives the parsed input: defaults applied, unknown keys stripped. */
+  execute: (input: z.output<TSchema>) => Promise<TResult> | TResult;
 }
 
-export type ExecutableTool<TSchema extends AnyZodSchema, TResult> = {
+export interface Tool<TSchema extends AnySchema, TResult> {
   description: string;
-  parameters: TSchema;
+  inputSchema: TSchema;
+  /** Validates the input against `inputSchema` (throwing a ZodError on mismatch), then runs the tool. */
   execute: (input: z.input<TSchema>) => Promise<TResult>;
-};
+}
 
-export function defineTool<TSchema extends AnyZodSchema, TResult>(
-  config: CompatToolConfig<TSchema, TResult>,
-): ExecutableTool<TSchema, TResult> {
-  return tool(config as any) as unknown as ExecutableTool<TSchema, TResult>;
+export function defineTool<TSchema extends AnySchema, TResult>(
+  definition: ToolDefinition<TSchema, TResult>,
+): Tool<TSchema, TResult> {
+  return {
+    description: definition.description,
+    inputSchema: definition.inputSchema,
+    execute: async (input) => definition.execute(definition.inputSchema.parse(input)),
+  };
 }

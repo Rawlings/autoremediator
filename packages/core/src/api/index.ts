@@ -9,11 +9,8 @@ export type {
   CorrelationContext,
   CveSeverity,
   LlmUsageMetrics,
-  ModelPersonality,
   RemediationConstraints,
   ProvenanceContext,
-  ProgressEvent,
-  ProviderSafetyProfile,
   RemediateOptions,
   RemediationReport,
   ResultSimulation,
@@ -84,7 +81,6 @@ export type { ScanOptions, ScanReport, CiSummary } from "./contracts.js";
 
 export {
   PACKAGE_MANAGER_VALUES,
-  LLM_PROVIDER_VALUES,
   PROVENANCE_SOURCE_VALUES,
   OPTION_DESCRIPTIONS,
   createConstraintSchemaProperties,
@@ -115,6 +111,14 @@ export {
   validatePatchArtifact,
   reconcilePatchArtifacts,
 } from "./patches/index.js";
+export type {
+  PatchGenerator,
+  PatchGeneratorUsage,
+  PatchProposal,
+  PatchRequest,
+} from "../platform/patch-generator.js";
+export { createLlmPatchGenerator } from "../remediation/patch/llm-generator.js";
+export { resolveLanguageModel } from "../remediation/patch/model.js";
 export { remediatePortfolio } from "./portfolio/index.js";
 export { remediate, planRemediation } from "./remediate/index.js";
 export { remediateFromScan } from "./remediate-from-scan/index.js";

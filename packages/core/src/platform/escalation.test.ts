@@ -3,7 +3,6 @@ import { computeEscalationAction, DEFAULT_ESCALATION_GRAPH } from "./escalation.
 
 describe("DEFAULT_ESCALATION_GRAPH", () => {
   it("defines required default actions", () => {
-    expect(DEFAULT_ESCALATION_GRAPH["consensus-failed"]).toBe("create-draft-pr");
     expect(DEFAULT_ESCALATION_GRAPH["patch-validation-failed"]).toBe("open-issue");
     expect(DEFAULT_ESCALATION_GRAPH["patch-confidence-too-low"]).toBe("open-issue");
     expect(DEFAULT_ESCALATION_GRAPH["source-fetch-failed"]).toBe("notify-channel");

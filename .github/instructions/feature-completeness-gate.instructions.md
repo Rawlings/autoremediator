@@ -1,6 +1,6 @@
 ---
 description: Mandatory update bundles for feature implementation so consistency is enforced by default.
-applyTo: packages/core/src/**/*.ts,.github/**/*.md,packages/docs/**/*.md,README.md,CONTRIBUTING.md,AGENTS.md,llms.txt
+applyTo: packages/core/src/**/*.ts,.github/**/*.md,docs/**/*.md,README.md,CONTRIBUTING.md,AGENTS.md,llms.txt
 ---
 
 # Feature Completeness Gate

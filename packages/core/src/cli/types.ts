@@ -15,18 +15,10 @@ export interface CommandOptions {
   interactive?: boolean;
   outputFormat: OutputFormat;
 
-  llmProvider?: "remote" | "local";
   model?: string;
-  modelPersonality?: "analytical" | "pragmatic" | "balanced";
-  providerSafetyProfile?: "strict" | "relaxed";
-  requireConsensusForHighRisk: boolean;
-  consensusProvider?: "remote" | "local";
-  consensusModel?: string;
   patchConfidenceLow?: number;
   patchConfidenceMedium?: number;
   patchConfidenceHigh?: number;
-  dynamicModelRouting: boolean;
-  dynamicRoutingThresholdChars?: number;
   requestId?: string;
   sessionId?: string;
   parentRunId?: string;
@@ -54,7 +46,6 @@ export interface CommandOptions {
   suppressionsFile?: string;
   slaCheck?: boolean;
   skipUnreachable?: boolean;
-  regressionCheck?: boolean;
   createChangeRequest?: boolean;
   changeRequestProvider?: "github" | "gitlab";
   changeRequestGrouping?: "all" | "per-cve" | "per-package";

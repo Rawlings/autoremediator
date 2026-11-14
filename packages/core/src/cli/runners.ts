@@ -120,24 +120,13 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
 
     policy: opts.policy,
     evidence: opts.evidence,
-    llmProvider: opts.llmProvider,
     model: opts.model,
-    modelPersonality: opts.modelPersonality,
-    providerSafetyProfile: opts.providerSafetyProfile,
-    requireConsensusForHighRisk: opts.requireConsensusForHighRisk,
-    consensusProvider: opts.consensusProvider,
-    consensusModel: opts.consensusModel,
     patchConfidenceThresholds: {
       low: typeof opts.patchConfidenceLow === "number" ? opts.patchConfidenceLow : undefined,
       medium:
         typeof opts.patchConfidenceMedium === "number" ? opts.patchConfidenceMedium : undefined,
       high: typeof opts.patchConfidenceHigh === "number" ? opts.patchConfidenceHigh : undefined,
     },
-    dynamicModelRouting: opts.dynamicModelRouting,
-    dynamicRoutingThresholdChars:
-      typeof opts.dynamicRoutingThresholdChars === "number"
-        ? opts.dynamicRoutingThresholdChars
-        : undefined,
     requestId: opts.requestId,
     sessionId: opts.sessionId,
     parentRunId: opts.parentRunId,
@@ -166,7 +155,6 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
     suppressionsFile: opts.suppressionsFile,
     slaCheck: opts.slaCheck,
     skipUnreachable: opts.skipUnreachable,
-    regressionCheck: opts.regressionCheck,
     containmentMode: opts.containmentMode,
     changeRequest,
     dispositionPolicy: resolveDispositionPolicy(opts),
@@ -271,25 +259,14 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
     simulationMode: opts.simulationMode,
     runTests: opts.runTests,
     typecheck: opts.typecheck,
-    llmProvider: opts.llmProvider,
 
     model: opts.model,
-    modelPersonality: opts.modelPersonality,
-    providerSafetyProfile: opts.providerSafetyProfile,
-    requireConsensusForHighRisk: opts.requireConsensusForHighRisk,
-    consensusProvider: opts.consensusProvider,
-    consensusModel: opts.consensusModel,
     patchConfidenceThresholds: {
       low: typeof opts.patchConfidenceLow === "number" ? opts.patchConfidenceLow : undefined,
       medium:
         typeof opts.patchConfidenceMedium === "number" ? opts.patchConfidenceMedium : undefined,
       high: typeof opts.patchConfidenceHigh === "number" ? opts.patchConfidenceHigh : undefined,
     },
-    dynamicModelRouting: opts.dynamicModelRouting,
-    dynamicRoutingThresholdChars:
-      typeof opts.dynamicRoutingThresholdChars === "number"
-        ? opts.dynamicRoutingThresholdChars
-        : undefined,
     evidence: opts.evidence,
     requestId: opts.requestId,
     sessionId: opts.sessionId,
@@ -319,7 +296,6 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
     suppressionsFile: opts.suppressionsFile,
     slaCheck: opts.slaCheck,
     skipUnreachable: opts.skipUnreachable,
-    regressionCheck: opts.regressionCheck,
     containmentMode: opts.containmentMode,
     campaignMode: opts.campaignMode,
     changeRequest,
@@ -604,24 +580,13 @@ export async function runPortfolio(targetsFilePath: string, opts: CommandOptions
     patchesDir: opts.patchesDir,
     policy: opts.policy,
     evidence: opts.evidence,
-    llmProvider: opts.llmProvider,
     model: opts.model,
-    modelPersonality: opts.modelPersonality,
-    providerSafetyProfile: opts.providerSafetyProfile,
-    requireConsensusForHighRisk: opts.requireConsensusForHighRisk,
-    consensusProvider: opts.consensusProvider,
-    consensusModel: opts.consensusModel,
     patchConfidenceThresholds: {
       low: typeof opts.patchConfidenceLow === "number" ? opts.patchConfidenceLow : undefined,
       medium:
         typeof opts.patchConfidenceMedium === "number" ? opts.patchConfidenceMedium : undefined,
       high: typeof opts.patchConfidenceHigh === "number" ? opts.patchConfidenceHigh : undefined,
     },
-    dynamicModelRouting: opts.dynamicModelRouting,
-    dynamicRoutingThresholdChars:
-      typeof opts.dynamicRoutingThresholdChars === "number"
-        ? opts.dynamicRoutingThresholdChars
-        : undefined,
     requestId: opts.requestId,
     sessionId: opts.sessionId,
     parentRunId: opts.parentRunId,
@@ -650,7 +615,6 @@ export async function runPortfolio(targetsFilePath: string, opts: CommandOptions
     suppressionsFile: opts.suppressionsFile,
     slaCheck: opts.slaCheck,
     skipUnreachable: opts.skipUnreachable,
-    regressionCheck: opts.regressionCheck,
     containmentMode: opts.containmentMode,
     campaignMode: opts.campaignMode,
     changeRequest,

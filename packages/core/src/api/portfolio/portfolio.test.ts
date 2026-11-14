@@ -18,7 +18,6 @@ function makeRemediationReport(overrides: Partial<RemediationReport> = {}): Reme
     cveDetails: null,
     vulnerablePackages: [],
     results: [],
-    agentSteps: 0,
     summary: "ok",
     ...overrides,
   };

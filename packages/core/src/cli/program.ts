@@ -20,6 +20,30 @@ import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
 import { validateOutputFormat, validateSharedCommandOptions } from "./validators.js";
 
+/**
+ * Combine a subcommand's options with any root options given before it.
+ * A value the user explicitly typed always beats a default; between two explicit values the more
+ * specific (subcommand) one wins. Plain `optsWithGlobals()` lets the root's defaults override the
+ * subcommand's explicit flags.
+ */
+function mergeCommandOptions(command: Command): CommandOptions {
+  const chain: Command[] = [];
+  for (let current: Command | null = command; current; current = current.parent) {
+    chain.unshift(current);
+  }
+
+  const merged: Record<string, unknown> = {};
+  const explicit = new Set<string>();
+  for (const cmd of chain) {
+    for (const [key, value] of Object.entries(cmd.opts())) {
+      const isExplicit = cmd.getOptionValueSource(key) === "cli";
+      if (isExplicit || !explicit.has(key)) merged[key] = value;
+      if (isExplicit) explicit.add(key);
+    }
+  }
+  return merged as unknown as CommandOptions;
+}
+
 function addSharedOptions(
   program: Command,
   includeInput = false,
@@ -31,27 +55,16 @@ function addSharedOptions(
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
     .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
     .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
-    .option("--dry-run", OPTION_DESCRIPTIONS.dryRun, false)
-    .option("--preview", OPTION_DESCRIPTIONS.preview, false)
-    .option("--run-tests", OPTION_DESCRIPTIONS.runTests, false)
+    .option("--dry-run", OPTION_DESCRIPTIONS.dryRun)
+    .option("--preview", OPTION_DESCRIPTIONS.preview)
+    .option("--run-tests", OPTION_DESCRIPTIONS.runTests)
     .option(
       "--typecheck",
       "Enable typecheck validation (e.g. tsc --noEmit or npm run typecheck) after patching",
-      false,
     )
-    .option("-i, --interactive", "Launch interactive developer CLI triage workflow", false)
+    .option("-i, --interactive", "Launch interactive developer CLI triage workflow")
 
-    .option("--llm-provider <provider>", OPTION_DESCRIPTIONS.llmProvider)
     .option("--model <name>", OPTION_DESCRIPTIONS.model)
-    .option("--model-personality <profile>", OPTION_DESCRIPTIONS.modelPersonality)
-    .option("--provider-safety-profile <profile>", OPTION_DESCRIPTIONS.providerSafetyProfile)
-    .option(
-      "--require-consensus-for-high-risk",
-      OPTION_DESCRIPTIONS.requireConsensusForHighRisk,
-      false,
-    )
-    .option("--consensus-provider <provider>", OPTION_DESCRIPTIONS.consensusProvider)
-    .option("--consensus-model <name>", OPTION_DESCRIPTIONS.consensusModel)
     .option(
       "--patch-confidence-low <value>",
       OPTION_DESCRIPTIONS.patchConfidenceThresholdLow,
@@ -67,21 +80,15 @@ function addSharedOptions(
       OPTION_DESCRIPTIONS.patchConfidenceThresholdHigh,
       (value: string) => parseFloat(value),
     )
-    .option("--dynamic-model-routing", OPTION_DESCRIPTIONS.dynamicModelRouting, false)
-    .option(
-      "--dynamic-routing-threshold-chars <count>",
-      OPTION_DESCRIPTIONS.dynamicRoutingThresholdChars,
-      (value: string) => parseInt(value, 10),
-    )
     .option("--request-id <id>", OPTION_DESCRIPTIONS.requestId)
     .option("--session-id <id>", OPTION_DESCRIPTIONS.sessionId)
     .option("--parent-run-id <id>", OPTION_DESCRIPTIONS.parentRunId)
     .option("--idempotency-key <key>", OPTION_DESCRIPTIONS.idempotencyKey)
-    .option("--resume", OPTION_DESCRIPTIONS.resume, false)
+    .option("--resume", OPTION_DESCRIPTIONS.resume)
     .option("--actor <name>", OPTION_DESCRIPTIONS.actor)
     .option("--source <src>", `${OPTION_DESCRIPTIONS.source}: cli|sdk|mcp|openapi|unknown`)
-    .option("--direct-dependencies-only", OPTION_DESCRIPTIONS.directDependenciesOnly, false)
-    .option("--prefer-version-bump", OPTION_DESCRIPTIONS.preferVersionBump, false)
+    .option("--direct-dependencies-only", OPTION_DESCRIPTIONS.directDependenciesOnly)
+    .option("--prefer-version-bump", OPTION_DESCRIPTIONS.preferVersionBump)
     .option("--install-mode <mode>", OPTION_DESCRIPTIONS.installMode)
     .option(
       "--install-prefer-offline <value>",
@@ -94,32 +101,31 @@ function addSharedOptions(
       parseBooleanFlag,
     )
     .option("--workspace <name>", OPTION_DESCRIPTIONS.workspace)
-    .option("--audit", OPTION_DESCRIPTIONS.audit, false)
+    .option("--audit", OPTION_DESCRIPTIONS.audit)
     .option("--policy <path>", OPTION_DESCRIPTIONS.policy)
     .option("--evidence", OPTION_DESCRIPTIONS.evidence, true)
     .option("--no-evidence", "Disable evidence file output")
-    .option("--ci", "Enable CI behavior (non-zero exit on failed remediations)", false)
+    .option("--ci", "Enable CI behavior (non-zero exit on failed remediations)")
     .option("--output-format <format>", "Output format: text|json|sarif", "text")
-    .option("--kev-mandatory", OPTION_DESCRIPTIONS.kevMandatory, false)
+    .option("--kev-mandatory", OPTION_DESCRIPTIONS.kevMandatory)
     .option("--epss-threshold <value>", OPTION_DESCRIPTIONS.epssThreshold, (v: string) =>
       parseFloat(v),
     )
     .option("--suppressions-file <path>", OPTION_DESCRIPTIONS.suppressionsFile)
-    .option("--sla-check", OPTION_DESCRIPTIONS.slaCheck, false)
-    .option("--skip-unreachable", OPTION_DESCRIPTIONS.skipUnreachable, false)
-    .option("--regression-check", OPTION_DESCRIPTIONS.regressionCheck, false)
+    .option("--sla-check", OPTION_DESCRIPTIONS.slaCheck)
+    .option("--skip-unreachable", OPTION_DESCRIPTIONS.skipUnreachable)
     .option(
       "--min-confidence-for-auto-apply <value>",
       OPTION_DESCRIPTIONS.dispositionPolicyMinConfidenceForAutoApply,
       (v: string) => parseFloat(v),
     )
-    .option("--hold-for-transitive", OPTION_DESCRIPTIONS.dispositionPolicyHoldForTransitive, false)
-    .option("--escalate-on-kev", OPTION_DESCRIPTIONS.dispositionPolicyEscalateOnKev, false)
-    .option("--containment-mode", OPTION_DESCRIPTIONS.containmentMode, false)
-    .option("--campaign-mode", OPTION_DESCRIPTIONS.campaignMode, false)
-    .option("--offline", OPTION_DESCRIPTIONS.offlineIntelligence, false)
+    .option("--hold-for-transitive", OPTION_DESCRIPTIONS.dispositionPolicyHoldForTransitive)
+    .option("--escalate-on-kev", OPTION_DESCRIPTIONS.dispositionPolicyEscalateOnKev)
+    .option("--containment-mode", OPTION_DESCRIPTIONS.containmentMode)
+    .option("--campaign-mode", OPTION_DESCRIPTIONS.campaignMode)
+    .option("--offline", OPTION_DESCRIPTIONS.offlineIntelligence)
     .option("--intelligence-snapshot <path>", OPTION_DESCRIPTIONS.intelligenceSnapshotPath)
-    .option("--create-change-request", OPTION_DESCRIPTIONS.createChangeRequest, false)
+    .option("--create-change-request", OPTION_DESCRIPTIONS.createChangeRequest)
     .option("--change-request-provider <provider>", OPTION_DESCRIPTIONS.changeRequestProvider)
     .option("--change-request-grouping <grouping>", OPTION_DESCRIPTIONS.changeRequestGrouping)
     .option("--change-request-repository <repository>", OPTION_DESCRIPTIONS.changeRequestRepository)
@@ -129,12 +135,12 @@ function addSharedOptions(
       OPTION_DESCRIPTIONS.changeRequestBranchPrefix,
     )
     .option("--change-request-title-prefix <prefix>", OPTION_DESCRIPTIONS.changeRequestTitlePrefix)
-    .option("--proof-of-fix", OPTION_DESCRIPTIONS.proofOfFix, false)
-    .option("--require-proof-of-fix", OPTION_DESCRIPTIONS.requireProofOfFix, false)
-    .option("--breaking-change-refactor", OPTION_DESCRIPTIONS.breakingChangeRefactor, false);
+    .option("--proof-of-fix", OPTION_DESCRIPTIONS.proofOfFix)
+    .option("--require-proof-of-fix", OPTION_DESCRIPTIONS.requireProofOfFix)
+    .option("--breaking-change-refactor", OPTION_DESCRIPTIONS.breakingChangeRefactor);
 
   if (includeSimulationMode) {
-    program.option("--simulation-mode", OPTION_DESCRIPTIONS.simulationMode, false);
+    program.option("--simulation-mode", OPTION_DESCRIPTIONS.simulationMode);
   }
 
   if (includeInput) {
@@ -151,6 +157,10 @@ export function createProgram(): Command {
     .name("autoremediator")
     .description("Scanner-first Node.js vulnerability auto-remediation tool")
     .version(PACKAGE_VERSION)
+    // Root options are only valid before a subcommand. Without this, the root swallows flags such as
+    // `--cwd` and `--output-format` typed after `reachability`/`diff`/`patches`, and the subcommand
+    // silently runs with its defaults.
+    .enablePositionalOptions()
     .showHelpAfterError();
 
   addSharedOptions(
@@ -160,10 +170,7 @@ export function createProgram(): Command {
       .argument("<cveId>", OPTION_DESCRIPTIONS.cveId),
     false,
   ).action(async (cveId: string, opts: CommandOptions, command: Command) => {
-    const merged = {
-      ...opts,
-      ...(command.optsWithGlobals() as Partial<CommandOptions>),
-    } as CommandOptions;
+    const merged = mergeCommandOptions(command);
     validateSharedCommandOptions(merged);
     validateOutputFormat(merged.outputFormat, ["text", "json", "sarif", "cyclonedx-vex"], "cve");
     await runSingleCve(cveId, merged);
@@ -180,10 +187,7 @@ export function createProgram(): Command {
       .option("--summary-file <path>", "Write machine-readable scan summary JSON to path"),
     false,
   ).action(async (opts: CommandOptions, command: Command) => {
-    const merged = {
-      ...opts,
-      ...(command.optsWithGlobals() as Partial<CommandOptions>),
-    } as CommandOptions;
+    const merged = mergeCommandOptions(command);
 
     validateSharedCommandOptions(merged);
     validateOutputFormat(merged.outputFormat, ["text", "json", "sarif", "cyclonedx-vex"], "scan");
@@ -198,14 +202,11 @@ export function createProgram(): Command {
     program
       .command("update-outdated")
       .description("Bump all outdated npm packages to their latest versions")
-      .option("--include-transitive", OPTION_DESCRIPTIONS.includeTransitive, false),
+      .option("--include-transitive", OPTION_DESCRIPTIONS.includeTransitive),
     false,
     false,
   ).action(async (opts: CommandOptions, command: Command) => {
-    const merged = {
-      ...opts,
-      ...(command.optsWithGlobals() as Partial<CommandOptions>),
-    } as CommandOptions;
+    const merged = mergeCommandOptions(command);
     if (merged.simulationMode) {
       throw new Error("--simulation-mode is not supported by update-outdated.");
     }
@@ -221,10 +222,7 @@ export function createProgram(): Command {
       .requiredOption("--targets-file <path>", "Path to portfolio targets JSON file"),
     false,
   ).action(async (opts: CommandOptions, command: Command) => {
-    const merged = {
-      ...opts,
-      ...(command.optsWithGlobals() as Partial<CommandOptions>),
-    } as CommandOptions;
+    const merged = mergeCommandOptions(command);
 
     validateSharedCommandOptions(merged);
     validateOutputFormat(merged.outputFormat, ["text", "json"], "portfolio");
@@ -247,10 +245,10 @@ export function createProgram(): Command {
         opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">,
         command: Command,
       ) => {
-        const merged = {
-          ...(command.optsWithGlobals() as Partial<CommandOptions>),
-          ...opts,
-        } as Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">;
+        const merged = mergeCommandOptions(command) as Pick<
+          CommandOptions,
+          "cwd" | "patchesDir" | "outputFormat"
+        >;
         validateOutputFormat(merged.outputFormat, ["text", "json"], "patches list");
         await runListPatches(merged);
       },
@@ -269,10 +267,10 @@ export function createProgram(): Command {
         opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">,
         command: Command,
       ) => {
-        const merged = {
-          ...(command.optsWithGlobals() as Partial<CommandOptions>),
-          ...opts,
-        } as Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">;
+        const merged = mergeCommandOptions(command) as Pick<
+          CommandOptions,
+          "cwd" | "patchesDir" | "outputFormat"
+        >;
         validateOutputFormat(merged.outputFormat, ["text", "json"], "patches inspect");
         await runInspectPatch(patchPath, merged);
       },
@@ -294,10 +292,10 @@ export function createProgram(): Command {
         opts: Pick<CommandOptions, "cwd" | "patchesDir" | "packageManager" | "outputFormat">,
         command: Command,
       ) => {
-        const merged = {
-          ...(command.optsWithGlobals() as Partial<CommandOptions>),
-          ...opts,
-        } as Pick<CommandOptions, "cwd" | "patchesDir" | "packageManager" | "outputFormat">;
+        const merged = mergeCommandOptions(command) as Pick<
+          CommandOptions,
+          "cwd" | "patchesDir" | "packageManager" | "outputFormat"
+        >;
         validateOutputFormat(merged.outputFormat, ["text", "json"], "patches validate");
         await runValidatePatch(patchPath, merged);
       },
@@ -310,12 +308,8 @@ export function createProgram(): Command {
     )
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
     .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
-    .option(
-      "--auto-apply",
-      "Automatically upgrade packages and remove retired patch artifacts",
-      false,
-    )
-    .option("--run-tests", OPTION_DESCRIPTIONS.runTests, false)
+    .option("--auto-apply", "Automatically upgrade packages and remove retired patch artifacts")
+    .option("--run-tests", OPTION_DESCRIPTIONS.runTests)
     .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
     .option("--output-format <format>", "Output format: text|json", "text")
     .action(
@@ -326,10 +320,7 @@ export function createProgram(): Command {
         > & { autoApply?: boolean },
         command: Command,
       ) => {
-        const merged = {
-          ...(command.optsWithGlobals() as Partial<CommandOptions>),
-          ...opts,
-        };
+        const merged = mergeCommandOptions(command);
         validateOutputFormat(
           (merged.outputFormat ?? "text") as "text" | "json",
           ["text", "json"],
@@ -395,7 +386,7 @@ export function createProgram(): Command {
     .description("Git-aware delta vulnerability scan against base git reference or working tree")
     .option("--base <ref>", "Git base reference (default: HEAD)", "HEAD")
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
-    .option("--ci", "Enable CI exit code behavior on degraded security posture", false)
+    .option("--ci", "Enable CI exit code behavior on degraded security posture")
     .option("--output-format <format>", "Output format: text|json", "text")
     .action(async (opts: { cwd?: string; base?: string; outputFormat?: string; ci?: boolean }) => {
       validateOutputFormat(
@@ -413,7 +404,7 @@ export function createProgram(): Command {
     .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
     .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
     .option("--format <format>", OPTION_DESCRIPTIONS.format, "auto")
-    .option("--run-tests", OPTION_DESCRIPTIONS.runTests, false)
+    .option("--run-tests", OPTION_DESCRIPTIONS.runTests)
     .option("--policy <path>", OPTION_DESCRIPTIONS.policy)
     .action(async (inputArg: string | undefined, opts: CommandOptions) => {
       await runInteractiveTriage(inputArg ? inputArg : opts, opts);

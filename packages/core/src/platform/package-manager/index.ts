@@ -3,14 +3,11 @@ import { join } from "node:path";
 import { safeExeca } from "../safe-exec.js";
 import type { PackageManager, RemediationConstraints } from "../types.js";
 import { parsePackageManagerListOutput } from "./list-parser.js";
-export * from "./driver.js";
 
 export type { PackageManager };
 
 export interface PackageManagerCommands {
   install: string[];
-  installPreferOffline: string[];
-  installDeterministic: string[];
   installDev: (pkg: string) => string[];
   test: string[];
   list: string[];
@@ -56,59 +53,54 @@ function withWorkspace(command: string[], pm: PackageManager, workspace?: string
   return command;
 }
 
+/**
+ * Install command to run after a manifest change.
+ *
+ * The lockfile has to be able to change here, so installs are not frozen unless the caller
+ * explicitly sets `enforceFrozenLockfile`. Managers that freeze implicitly when `CI` is set
+ * (pnpm, Yarn Berry) are told not to. `installMode` only controls cache usage: anything other
+ * than "standard" prefers the offline cache.
+ */
 export function resolveInstallCommand(
   pm: PackageManager,
   constraints?: RemediationConstraints,
   yarnMajor?: number,
 ): string[] {
   const installMode = constraints?.installMode ?? "deterministic";
-  const preferOfflineOverride = constraints?.installPreferOffline;
-  const frozenOverride = constraints?.enforceFrozenLockfile;
+  const frozen = constraints?.enforceFrozenLockfile === true;
+  const workspace = constraints?.workspace;
 
-  // Bun: frozen-lockfile flag
   if (pm === "bun") {
-    const frozen = frozenOverride ?? installMode === "deterministic";
-    const command = ["bun", "install"];
-    if (frozen) command.push("--frozen-lockfile");
-    return withWorkspace(command, pm, constraints?.workspace);
+    return withWorkspace(
+      ["bun", "install", ...(frozen ? ["--frozen-lockfile"] : [])],
+      pm,
+      workspace,
+    );
   }
 
-  // Deno: --frozen flag; approximate prefer-offline with --cache-only
   if (pm === "deno") {
-    const frozen = frozenOverride ?? installMode === "deterministic";
-    const preferOffline = preferOfflineOverride ?? installMode === "prefer-offline";
+    const preferOffline = constraints?.installPreferOffline ?? installMode === "prefer-offline";
     const command = ["deno", "install"];
     if (frozen) command.push("--frozen");
-    if (preferOffline && !frozen) command.push("--cache-only");
-    return withWorkspace(command, pm, constraints?.workspace);
+    else if (preferOffline) command.push("--cache-only");
+    return withWorkspace(command, pm, workspace);
   }
 
-  const includePreferOffline =
-    pm !== "yarn" && (preferOfflineOverride ?? installMode !== "standard");
+  const command = [pm, pm === "npm" && frozen ? "ci" : "install"];
 
-  let includeFrozenLockfile = pm !== "npm" && (frozenOverride ?? installMode === "deterministic");
-
-  if (frozenOverride === false) {
-    includeFrozenLockfile = false;
+  if (frozen) {
+    if (pm === "pnpm") command.push("--frozen-lockfile");
+    if (pm === "yarn") command.push((yarnMajor ?? 1) >= 2 ? "--immutable" : "--frozen-lockfile");
+  } else if (pm === "pnpm") {
+    command.push("--no-frozen-lockfile");
+  } else if (pm === "yarn" && (yarnMajor ?? 1) >= 2) {
+    command.push("--no-immutable");
   }
 
-  const useNpmCi =
-    pm === "npm" &&
-    (frozenOverride === true || (frozenOverride === undefined && installMode === "deterministic"));
+  const preferOffline = constraints?.installPreferOffline ?? installMode !== "standard";
+  if (preferOffline && pm !== "yarn") command.push("--prefer-offline");
 
-  const command: string[] = [pm, pm === "npm" ? (useNpmCi ? "ci" : "install") : "install"];
-
-  if (includeFrozenLockfile) {
-    // Yarn Berry (v2+) uses --immutable instead of --frozen-lockfile
-    const isYarnBerry = pm === "yarn" && (yarnMajor ?? 1) >= 2;
-    command.push(isYarnBerry ? "--immutable" : "--frozen-lockfile");
-  }
-
-  if (includePreferOffline) {
-    command.push("--prefer-offline");
-  }
-
-  return withWorkspace(command, pm, constraints?.workspace);
+  return withWorkspace(command, pm, workspace);
 }
 
 export function resolveListCommand(
@@ -228,8 +220,6 @@ export function getPackageManagerCommands(pm: PackageManager): PackageManagerCom
   if (pm === "pnpm") {
     return {
       install: ["pnpm", "install"],
-      installPreferOffline: ["pnpm", "install", "--prefer-offline"],
-      installDeterministic: resolveInstallCommand("pnpm", { installMode: "deterministic" }),
       installDev: (pkg: string) => ["pnpm", "add", "-D", pkg],
       test: ["pnpm", "test"],
       list: ["pnpm", "list", "--json", "--depth", "99"],
@@ -240,8 +230,6 @@ export function getPackageManagerCommands(pm: PackageManager): PackageManagerCom
   if (pm === "yarn") {
     return {
       install: ["yarn", "install"],
-      installPreferOffline: ["yarn", "install"],
-      installDeterministic: resolveInstallCommand("yarn", { installMode: "deterministic" }),
       installDev: (pkg: string) => ["yarn", "add", "--dev", pkg],
       test: ["yarn", "test"],
       list: ["yarn", "list", "--json"],
@@ -252,8 +240,6 @@ export function getPackageManagerCommands(pm: PackageManager): PackageManagerCom
   if (pm === "bun") {
     return {
       install: ["bun", "install"],
-      installPreferOffline: ["bun", "install"],
-      installDeterministic: resolveInstallCommand("bun", { installMode: "deterministic" }),
       installDev: (pkg: string) => ["bun", "add", "-d", pkg],
       test: ["bun", "test"],
       list: ["bun", "pm", "ls", "--all"],
@@ -264,8 +250,6 @@ export function getPackageManagerCommands(pm: PackageManager): PackageManagerCom
   if (pm === "deno") {
     return {
       install: ["deno", "install"],
-      installPreferOffline: ["deno", "install", "--cache-only"],
-      installDeterministic: resolveInstallCommand("deno", { installMode: "deterministic" }),
       installDev: (pkg: string) => ["deno", "add", pkg],
       test: ["deno", "test"],
       list: [],
@@ -275,8 +259,6 @@ export function getPackageManagerCommands(pm: PackageManager): PackageManagerCom
 
   return {
     install: ["npm", "install"],
-    installPreferOffline: ["npm", "install", "--prefer-offline"],
-    installDeterministic: resolveInstallCommand("npm", { installMode: "deterministic" }),
     installDev: (pkg: string) => ["npm", "install", "--save-dev", pkg],
     test: ["npm", "test"],
     list: ["npm", "list", "--json", "--all"],

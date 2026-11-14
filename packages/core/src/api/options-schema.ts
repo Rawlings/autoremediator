@@ -1,7 +1,6 @@
 export type JsonSchemaProperty = Record<string, unknown>;
 
 export const PACKAGE_MANAGER_VALUES = ["npm", "pnpm", "yarn", "bun", "deno"] as const;
-export const LLM_PROVIDER_VALUES = ["remote", "local"] as const;
 export const PROVENANCE_SOURCE_VALUES = ["cli", "sdk", "mcp", "openapi", "unknown"] as const;
 
 export const OPTION_DESCRIPTIONS = {
@@ -14,20 +13,13 @@ export const OPTION_DESCRIPTIONS = {
   simulationMode:
     "If true, attach deterministic simulation and rebuttal metadata for dry-run or preview execution",
   runTests: "Run package-manager test command after applying fix",
-  llmProvider: "LLM provider override (remote|local)",
-  model: "LLM model override",
-  modelPersonality: "Prompt behavior profile: analytical|pragmatic|balanced",
-  providerSafetyProfile: "Safety posture profile for confidence gates: strict|relaxed",
-  requireConsensusForHighRisk: "Require second-provider agreement for high-risk generated patches",
-  consensusProvider: "Provider override for high-risk consensus verification (remote|local)",
-  consensusModel: "Model override for high-risk consensus verification",
+  model:
+    'Language model for the patch fallback as "<provider>:<model-id>", e.g. "anthropic:claude-sonnet-5-5" (default: AUTOREMEDIATOR_MODEL)',
   patchConfidenceThresholdLow: "Patch acceptance confidence threshold for low-risk patches (0..1)",
   patchConfidenceThresholdMedium:
     "Patch acceptance confidence threshold for medium-risk patches (0..1)",
   patchConfidenceThresholdHigh:
     "Patch acceptance confidence threshold for high-risk patches (0..1)",
-  dynamicModelRouting: "Enable dynamic model selection by input size",
-  dynamicRoutingThresholdChars: "Input size threshold used by dynamic model routing",
   patchesDir: "Directory to write .patch files (default: ./patches)",
   policy: "Optional path to .github/autoremediator.yml policy file",
   requestId: "Request correlation ID",
@@ -67,8 +59,6 @@ export const OPTION_DESCRIPTIONS = {
     "Compare CVE publication dates against configured SLA windows and include breach records in the report output",
   skipUnreachable:
     "Skip remediation for CVEs where the vulnerable package cannot be reached from any project entry point (requires static import analysis)",
-  regressionCheck:
-    "After applying a fix, verify the patched version falls outside the CVE's vulnerable range and flag any regression in the report",
   dispositionPolicy:
     "Autonomous disposition policy controlling when fixes are auto-applied, held, or escalated",
   dispositionPolicyMinConfidenceForAutoApply:
@@ -79,7 +69,7 @@ export const OPTION_DESCRIPTIONS = {
     "CVE severities that trigger escalate disposition on SLA breach",
   dispositionPolicyEscalateOnKev: "Escalate disposition for CVEs with active CISA KEV status",
   containmentMode:
-    "Block escalation-disposition results from being applied and record containment in evidence",
+    "Roll back applied results whose disposition is hold-for-approval (low confidence, held transitive) so they await approval; urgent escalate fixes (KEV, SLA) are kept",
   campaignMode: "Enable portfolio campaign mode to risk-rank targets before execution",
   escalationGraph: "Optional mapping from unresolved reasons to intended escalation actions",
   offlineIntelligence:
@@ -90,7 +80,7 @@ export const OPTION_DESCRIPTIONS = {
     "If true, enforce dual-stage exploit reproduction proof-of-fix verification (assert failure pre-patch, assert pass post-patch)",
   requireProofOfFix: "If true, reject patches and roll back if proof-of-fix verification fails",
   breakingChangeRefactor:
-    "If true, attempt agentic call-site refactoring when major version upgrades introduce breaking API changes",
+    "Experimental: when a major upgrade breaks type checking, rewrite consumer call sites using built-in codemods (currently rimraf and uuid only); reverted if checks still fail",
 } as const;
 
 export function createConstraintSchemaProperties(): Record<string, JsonSchemaProperty> {
@@ -150,32 +140,7 @@ export function createRemediateOptionSchemaProperties(options?: {
       ? { simulationMode: { type: "boolean", description: OPTION_DESCRIPTIONS.simulationMode } }
       : {}),
     runTests: { type: "boolean", description: OPTION_DESCRIPTIONS.runTests },
-    llmProvider: {
-      type: "string",
-      enum: [...LLM_PROVIDER_VALUES],
-      description: OPTION_DESCRIPTIONS.llmProvider,
-    },
     model: { type: "string", description: OPTION_DESCRIPTIONS.model },
-    modelPersonality: {
-      type: "string",
-      enum: ["analytical", "pragmatic", "balanced"],
-      description: OPTION_DESCRIPTIONS.modelPersonality,
-    },
-    providerSafetyProfile: {
-      type: "string",
-      enum: ["strict", "relaxed"],
-      description: OPTION_DESCRIPTIONS.providerSafetyProfile,
-    },
-    requireConsensusForHighRisk: {
-      type: "boolean",
-      description: OPTION_DESCRIPTIONS.requireConsensusForHighRisk,
-    },
-    consensusProvider: {
-      type: "string",
-      enum: [...LLM_PROVIDER_VALUES],
-      description: OPTION_DESCRIPTIONS.consensusProvider,
-    },
-    consensusModel: { type: "string", description: OPTION_DESCRIPTIONS.consensusModel },
     patchConfidenceThresholds: {
       type: "object",
       properties: {
@@ -198,11 +163,6 @@ export function createRemediateOptionSchemaProperties(options?: {
           description: OPTION_DESCRIPTIONS.patchConfidenceThresholdHigh,
         },
       },
-    },
-    dynamicModelRouting: { type: "boolean", description: OPTION_DESCRIPTIONS.dynamicModelRouting },
-    dynamicRoutingThresholdChars: {
-      type: "number",
-      description: OPTION_DESCRIPTIONS.dynamicRoutingThresholdChars,
     },
     patchesDir: { type: "string", description: OPTION_DESCRIPTIONS.patchesDir },
     policy: { type: "string", description: OPTION_DESCRIPTIONS.policy },
@@ -257,7 +217,6 @@ export function createRemediateOptionSchemaProperties(options?: {
     suppressionsFile: { type: "string", description: OPTION_DESCRIPTIONS.suppressionsFile },
     slaCheck: { type: "boolean", description: OPTION_DESCRIPTIONS.slaCheck },
     skipUnreachable: { type: "boolean", description: OPTION_DESCRIPTIONS.skipUnreachable },
-    regressionCheck: { type: "boolean", description: OPTION_DESCRIPTIONS.regressionCheck },
     dispositionPolicy: {
       type: "object",
       description: OPTION_DESCRIPTIONS.dispositionPolicy,
@@ -289,10 +248,6 @@ export function createRemediateOptionSchemaProperties(options?: {
       type: "object",
       description: OPTION_DESCRIPTIONS.escalationGraph,
       properties: {
-        "consensus-failed": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
         "constraint-blocked": {
           type: "string",
           enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
@@ -426,7 +381,8 @@ export function createScanReportSchemaProperties(): Record<string, JsonSchemaPro
     constraints: { type: "object" },
     idempotencyKey: { type: "string" },
     llmUsageCount: { type: "number" },
-    estimatedCostUsd: { type: "number" },
+    totalInputTokens: { type: "number" },
+    totalOutputTokens: { type: "number" },
     totalLlmLatencyMs: { type: "number" },
     changeRequests: { type: "array", items: { type: "object" } },
     simulationSummary: { type: "object" },

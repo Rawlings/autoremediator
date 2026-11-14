@@ -57,8 +57,7 @@ describe("loadPolicy", () => {
     expect(result.constraints?.directDependenciesOnly).toBe(true);
     expect(result.constraints?.installMode).toBe("prefer-offline");
     // Unset fields fall back to defaults
-    expect(result.dynamicModelRouting).toBe(DEFAULT_POLICY.dynamicModelRouting);
-    expect(result.providerSafetyProfile).toBe(DEFAULT_POLICY.providerSafetyProfile);
+    expect(result.skipUnreachable).toBe(DEFAULT_POLICY.skipUnreachable);
   });
 
   it("applies all defaults when YAML file is empty", () => {
@@ -69,7 +68,7 @@ describe("loadPolicy", () => {
     expect(result).toEqual(DEFAULT_POLICY);
   });
 
-  it("returns DEFAULT_POLICY when YAML is malformed", () => {
+  it("throws, instead of silently using defaults, when the YAML is malformed", () => {
     mkdirSync(join(tmpDir, ".github"), { recursive: true });
     writeFileSync(
       join(tmpDir, ".github", "autoremediator.yml"),
@@ -77,8 +76,11 @@ describe("loadPolicy", () => {
       "utf8",
     );
 
-    const result = loadPolicy(tmpDir);
-    expect(result).toEqual(DEFAULT_POLICY);
+    expect(() => loadPolicy(tmpDir)).toThrow(/Invalid YAML in policy/);
+  });
+
+  it("returns defaults when the default policy file is simply absent", () => {
+    expect(loadPolicy(tmpDir)).toEqual(DEFAULT_POLICY);
   });
 
   it("uses explicitPath when provided, ignoring the default .github/autoremediator.yml", () => {
@@ -95,9 +97,82 @@ describe("loadPolicy", () => {
     expect(result.denyPackages).toEqual(["react"]);
   });
 
-  it("returns DEFAULT_POLICY when explicitPath points to a non-existent file", () => {
-    const result = loadPolicy(tmpDir, join(tmpDir, "does-not-exist.yml"));
-    expect(result).toEqual(DEFAULT_POLICY);
+  it("throws when an explicitly requested policy file does not exist", () => {
+    expect(() => loadPolicy(tmpDir, join(tmpDir, "does-not-exist.yml"))).toThrow(
+      /Policy file not found/,
+    );
+  });
+
+  describe("validation", () => {
+    const policyWith = (yaml: string): string => {
+      mkdirSync(join(tmpDir, ".github"), { recursive: true });
+      writeFileSync(join(tmpDir, ".github", "autoremediator.yml"), yaml, "utf8");
+      return tmpDir;
+    };
+
+    it("loads every documented constraint, including ones that used to be dropped", () => {
+      const policy = loadPolicy(
+        policyWith(`
+constraints:
+  typecheck: true
+  requireProofOfFix: true
+  enableBreakingChangeRefactor: true
+  workspace: packages/app
+  supplyChainPolicy:
+    minPublishAgeHours: 72
+    blockInstallScripts: true
+`),
+      );
+
+      expect(policy.constraints).toMatchObject({
+        typecheck: true,
+        requireProofOfFix: true,
+        enableBreakingChangeRefactor: true,
+        workspace: "packages/app",
+        supplyChainPolicy: { minPublishAgeHours: 72, blockInstallScripts: true },
+        // defaults still fill the rest
+        directDependenciesOnly: false,
+        installMode: "deterministic",
+      });
+    });
+
+    it("rejects unknown fields by name, so typos and removed options are caught", () => {
+      expect(() => loadPolicy(policyWith("denyPackage: [lodash]\nmodelDefaults: {}\n"))).toThrow(
+        /unknown field\(s\) "denyPackage", "modelDefaults"/,
+      );
+      expect(() => loadPolicy(policyWith("constraints:\n  typechek: true\n"))).toThrow(
+        /constraints: unknown field\(s\) "typechek"/,
+      );
+    });
+
+    it("rejects wrongly typed and out-of-range values with their location", () => {
+      expect(() => loadPolicy(policyWith("allowMajorBumps: yes-please\n"))).toThrow(
+        /allowMajorBumps/,
+      );
+      expect(() => loadPolicy(policyWith("patchConfidenceThresholds:\n  low: 1.5\n"))).toThrow(
+        /patchConfidenceThresholds\.low/,
+      );
+      expect(() => loadPolicy(policyWith("constraints:\n  installMode: fast\n"))).toThrow(
+        /constraints\.installMode/,
+      );
+    });
+
+    it("accepts inline YAML and treats an empty file as the defaults", () => {
+      expect(loadPolicy(tmpDir, "---\nallowMajorBumps: true\n").allowMajorBumps).toBe(true);
+      expect(loadPolicy(policyWith("")).allowMajorBumps).toBe(false);
+    });
+
+    it("keeps suppression expiry dates written as YAML dates", () => {
+      const policy = loadPolicy(
+        policyWith(`
+suppressions:
+  - cveId: CVE-2024-0001
+    justification: mitigated
+    expiresAt: 2099-01-01
+`),
+      );
+      expect(policy.suppressions?.[0]?.expiresAt).toMatch(/^2099-01-01/);
+    });
   });
 
   it("parses patchConfidenceThresholds correctly", () => {

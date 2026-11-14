@@ -539,7 +539,7 @@ export function assessPackageReachability(
 export const checkReachabilityTool = defineTool({
   description:
     "Scan project source files for import/require/export references and perform AST call-graph reachability analysis for a package and vulnerable symbols using Oxc AST parser. Returns reachability status: reachable, not-reachable, or unknown.",
-  parameters: z.object({
+  inputSchema: z.object({
     cwd: z.string().describe("Project root directory to scan"),
     packageName: z.string().describe("Package name to search for (e.g. 'lodash' or '@babel/core')"),
     symbol: z

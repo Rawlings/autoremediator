@@ -8,7 +8,7 @@ import {
   transformCallArguments,
   refactorConsumerCallSites,
   revertRefactorSnapshots,
-} from "./refactor-agent.js";
+} from "./codemods.js";
 
 describe("AST Refactor Engine Adversarial White-Box Challenges", () => {
   let testDir: string;

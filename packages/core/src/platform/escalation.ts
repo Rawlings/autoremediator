@@ -1,7 +1,6 @@
 import type { EscalationAction, EscalationGraph, UnresolvedReason } from "./types.js";
 
 export const DEFAULT_ESCALATION_GRAPH: EscalationGraph = {
-  "consensus-failed": "create-draft-pr",
   "patch-validation-failed": "open-issue",
   "patch-confidence-too-low": "open-issue",
   "source-fetch-failed": "notify-channel",

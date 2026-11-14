@@ -67,8 +67,6 @@ describe("apply-patch-file lock integration", () => {
     mocked.rm.mockResolvedValue(undefined);
     mocked.detectPackageManager.mockReturnValue("npm");
     mocked.getPackageManagerCommands.mockReturnValue({
-      installDeterministic: ["npm", "ci", "--prefer-offline"],
-      installPreferOffline: ["npm", "install", "--prefer-offline"],
       installDev: (pkg: string) => ["npm", "install", "-D", pkg],
       test: ["npm", "test"],
     });

@@ -48,7 +48,8 @@ export interface ScanReport {
   constraints?: RemediationConstraints;
   idempotencyKey?: string;
   llmUsageCount?: number;
-  estimatedCostUsd?: number;
+  totalInputTokens?: number;
+  totalOutputTokens?: number;
   totalLlmLatencyMs?: number;
   slaBreaches?: SlaBreach[];
   slaBreachSummary?: SlaBreachSummary;
@@ -83,7 +84,8 @@ export interface CiSummary {
   constraints?: RemediationConstraints;
   idempotencyKey?: string;
   llmUsageCount?: number;
-  estimatedCostUsd?: number;
+  totalInputTokens?: number;
+  totalOutputTokens?: number;
   totalLlmLatencyMs?: number;
   slaBreaches?: SlaBreach[];
   slaBreachSummary?: SlaBreachSummary;

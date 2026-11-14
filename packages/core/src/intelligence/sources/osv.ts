@@ -5,6 +5,7 @@
  * No auth required. SEMVER event ranges are machine-readable.
  * Uses shared HTTP client for consistent error handling and timeouts.
  */
+import semver from "semver";
 import type { AffectedPackage, CveDetails } from "../../platform/types.js";
 import { httpClient } from "../../platform/http-client.js";
 
@@ -126,27 +127,48 @@ export async function queryOsvPackage(
 }
 
 /**
- * Convert an OSV SEMVER range event array to a semver range string.
- * OSV uses ordered [introduced, fixed) events.
- * e.g. [{ introduced: "0" }, { fixed: "4.17.21" }] → ">=0.0.0 <4.17.21"
+ * Convert OSV range events into a semver range.
+ *
+ * Events describe a sequence of [introduced, fixed) intervals, and a record can contain several,
+ * so intervals are unioned with `||` (a space-joined range would mean intersection).
+ * e.g. [introduced 0, fixed 1.5, introduced 2.0, fixed 2.3] → "<1.5.0 || >=2.0.0 <2.3.0".
  */
-function osvEventsToSemverRange(events: OsvSemverEvent[]): string {
-  const parts: string[] = [];
+function eventsToSemverRange(events: OsvSemverEvent[]): string | undefined {
+  const intervals: string[] = [];
+  let lower: string | undefined;
 
   for (const event of events) {
     if (event.introduced !== undefined) {
-      const v = event.introduced === "0" ? "0.0.0" : event.introduced;
-      parts.push(`>=${v}`);
-    }
-    if (event.fixed !== undefined) {
-      parts.push(`<${event.fixed}`);
-    }
-    if (event.last_affected !== undefined) {
-      parts.push(`<=${event.last_affected}`);
+      if (lower !== undefined) intervals.push(`>=${lower}`);
+      lower = event.introduced === "0" ? "0.0.0" : event.introduced;
+    } else if (event.fixed !== undefined || event.last_affected !== undefined) {
+      const upper = event.fixed !== undefined ? `<${event.fixed}` : `<=${event.last_affected}`;
+      intervals.push(lower !== undefined ? `>=${lower} ${upper}` : upper);
+      lower = undefined;
     }
   }
+  if (lower !== undefined) intervals.push(`>=${lower}`);
 
-  return parts.join(" ") || ">=0.0.0";
+  return intervals.length > 0 ? intervals.join(" || ") : undefined;
+}
+
+/**
+ * The affected-version range of an OSV `affected` entry, or `undefined` when the record does not
+ * say. Never guesses "everything": claiming all versions are vulnerable would trigger fixes for
+ * installs that are not affected.
+ *
+ * npm advisories carry SEMVER ranges, or ECOSYSTEM ranges (which for npm are also semver, and
+ * are what GitHub-sourced records use), or just an explicit version list.
+ */
+function affectedRange(affected: OsvAffected): string | undefined {
+  const ranges = affected.ranges ?? [];
+  const range =
+    ranges.find((r) => r.type === "SEMVER") ?? ranges.find((r) => r.type === "ECOSYSTEM");
+  const fromEvents = range ? eventsToSemverRange(range.events) : undefined;
+  if (fromEvents) return fromEvents;
+
+  const versions = (affected.versions ?? []).filter((v) => semver.valid(v) !== null);
+  return versions.length > 0 ? versions.map((v) => `=${v}`).join(" || ") : undefined;
 }
 
 /**
@@ -163,12 +185,14 @@ export function parseOsvVuln(vuln: OsvVulnerability): CveDetails {
     if (!packageName || typeof packageName !== "string") continue;
     if (ecosystem.toLowerCase() !== "npm") continue;
 
-    // Find the best SEMVER range
-    const semverRange = affected.ranges?.find((r) => r.type === "SEMVER");
-    const vulnerableRange = semverRange ? osvEventsToSemverRange(semverRange.events) : ">=0.0.0";
+    const vulnerableRange = affectedRange(affected);
+    if (!vulnerableRange) continue;
 
-    // Derive firstPatchedVersion from the "fixed" event
-    const fixedEvent = semverRange?.events.find((e) => e.fixed !== undefined);
+    const events = (
+      affected.ranges?.find((r) => r.type === "SEMVER") ??
+      affected.ranges?.find((r) => r.type === "ECOSYSTEM")
+    )?.events;
+    const fixedEvent = events?.find((e) => e.fixed !== undefined);
 
     npmAffected.push({
       name: packageName,
@@ -186,6 +210,7 @@ export function parseOsvVuln(vuln: OsvVulnerability): CveDetails {
     id: vuln.id,
     summary: vuln.summary ?? vuln.details ?? "No summary available.",
     severity,
+    publishedAt: vuln.published,
     references: vuln.references?.map((r) => r.url) ?? [],
     affectedPackages: npmAffected,
   };

@@ -19,7 +19,7 @@ vi.mock("../refactor/call-site-finder.js", () => ({
   findPackageCallSites: vi.fn(() => [{ filePath: "/tmp/project/src/app.ts", imports: [] }]),
 }));
 
-vi.mock("../refactor/refactor-agent.js", () => ({
+vi.mock("../refactor/codemods.js", () => ({
   refactorConsumerCallSites: vi.fn(async () => ({
     applied: true,
     refactoredFiles: ["/tmp/project/src/app.ts"],

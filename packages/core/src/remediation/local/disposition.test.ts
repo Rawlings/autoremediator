@@ -5,16 +5,6 @@ import type { DispositionSignals, DispositionPolicy } from "../../platform/types
 const base: DispositionSignals = { applied: false };
 
 describe("computeDisposition", () => {
-  it("escalates on regression detected", () => {
-    const r = computeDisposition({ ...base, applied: true, regressionDetected: true });
-    expect(r).toEqual({ disposition: "escalate", dispositionReason: "regression-detected" });
-  });
-
-  it("escalates on consensus failed", () => {
-    const r = computeDisposition({ ...base, consensusFailed: true });
-    expect(r).toEqual({ disposition: "escalate", dispositionReason: "consensus-failed" });
-  });
-
   it("escalates on validation-failed", () => {
     const r = computeDisposition({ ...base, unresolvedReason: "validation-failed" });
     expect(r).toEqual({ disposition: "escalate", dispositionReason: "validation-failed" });
@@ -131,7 +121,7 @@ describe("computeDisposition", () => {
 });
 
 describe("applyDispositionAndContainment", () => {
-  it("blocks applied escalate result when containment mode is enabled", () => {
+  it("keeps an urgent fix applied: containment never rolls back escalate (KEV) results", () => {
     const result = applyDispositionAndContainment(
       {
         packageName: "pkg",
@@ -141,13 +131,31 @@ describe("applyDispositionAndContainment", () => {
         dryRun: false,
         message: "ok",
       },
-      {
-        containmentMode: true,
-        exploitSignalTriggered: true,
-      },
+      { containmentMode: true, exploitSignalTriggered: true },
     );
 
     expect(result.disposition).toBe("escalate");
+    expect(result.applied).toBe(true);
+    expect(result.unresolvedReason).toBeUndefined();
+  });
+
+  it("blocks an applied hold-for-approval result when containment mode is enabled", () => {
+    const result = applyDispositionAndContainment(
+      {
+        packageName: "pkg",
+        fromVersion: "1.0.0",
+        strategy: "version-bump",
+        applied: true,
+        dryRun: false,
+        message: "ok",
+        confidence: 0.4,
+      },
+      {
+        containmentMode: true,
+      },
+    );
+
+    expect(result.disposition).toBe("hold-for-approval");
     expect(result.applied).toBe(false);
     expect(result.unresolvedReason).toBe("policy-blocked");
   });
@@ -161,19 +169,19 @@ describe("applyDispositionAndContainment", () => {
         applied: true,
         dryRun: false,
         message: "ok",
+        confidence: 0.4,
       },
       {
         containmentMode: false,
-        exploitSignalTriggered: true,
       },
     );
 
-    expect(result.disposition).toBe("escalate");
+    expect(result.disposition).toBe("hold-for-approval");
     expect(result.applied).toBe(true);
     expect(result.unresolvedReason).toBeUndefined();
   });
 
-  it("restores files on disk when containmentMode blocks applied escalate outcome", async () => {
+  it("restores files on disk when containmentMode blocks an applied hold-for-approval outcome", async () => {
     const { mkdtempSync, readFileSync, rmSync, writeFileSync } = await import("node:fs");
     const { tmpdir } = await import("node:os");
     const { join } = await import("node:path");
@@ -198,15 +206,15 @@ describe("applyDispositionAndContainment", () => {
           applied: true,
           dryRun: false,
           message: "bumped to 2.0.0",
+          confidence: 0.4,
         },
         {
           containmentMode: true,
-          exploitSignalTriggered: true,
           snapshot,
         },
       );
 
-      expect(result.disposition).toBe("escalate");
+      expect(result.disposition).toBe("hold-for-approval");
       expect(result.applied).toBe(false);
       expect(result.unresolvedReason).toBe("policy-blocked");
 

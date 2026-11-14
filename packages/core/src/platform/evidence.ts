@@ -35,7 +35,8 @@ export interface EvidenceSummary {
   dependencyScopeCounts?: DependencyScopeCounts;
   patchesDir?: string;
   llmUsageCount?: number;
-  estimatedCostUsd?: number;
+  totalInputTokens?: number;
+  totalOutputTokens?: number;
   totalLlmLatencyMs?: number;
   exploitSignalCount?: number;
   slaBreachCount?: number;
@@ -55,7 +56,7 @@ export interface EvidenceLog {
   parentRunId?: string;
   actor?: string;
   source?: "cli" | "sdk" | "mcp" | "openapi" | "unknown";
-  llmProvider?: "remote" | "local";
+  model?: string;
   idempotencyKey?: string;
   offlineMode?: boolean;
   cveIds: string[];
@@ -72,7 +73,7 @@ interface EvidenceContext {
   parentRunId?: string;
   actor?: string;
   source?: "cli" | "sdk" | "mcp" | "openapi" | "unknown";
-  llmProvider?: "remote" | "local";
+  model?: string;
   idempotencyKey?: string;
   offlineMode?: boolean;
 }
@@ -89,7 +90,7 @@ export function createEvidenceLog(
     parentRunId: context.parentRunId,
     actor: context.actor,
     source: context.source,
-    llmProvider: context.llmProvider,
+    model: context.model,
     idempotencyKey: context.idempotencyKey,
     offlineMode: context.offlineMode,
     cveIds,

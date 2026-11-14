@@ -32,9 +32,7 @@ const SIMULATION_MUTATION_REASONS: Record<SimulationMutationTarget, string> = {
 const SIMULATION_REBUTTAL_MESSAGES: Record<SimulationRebuttalCode, string> = {
   "unresolved-reason": "The remediation remains unresolved in simulation mode.",
   "policy-blocked": "Policy would block this remediation from being applied.",
-  "consensus-failed": "Consensus verification would block this remediation path.",
   "validation-risk": "Validation signals indicate this remediation may fail or be unsafe.",
-  "regression-risk": "Regression signals indicate the target may remain vulnerable after apply.",
   "low-confidence": "Patch confidence is below the acceptance threshold.",
   "high-risk-patch": "This remediation path is classified as high risk.",
   "transitive-target": "This result targets a transitive dependency.",
@@ -170,22 +168,8 @@ function buildRebuttalFindings(params: {
     addRebuttalFinding(findings, "policy-blocked", "high", ["unresolvedReason"]);
   }
 
-  if (
-    result.unresolvedReason === "consensus-failed" ||
-    result.dispositionReason === "consensus-failed"
-  ) {
-    addRebuttalFinding(findings, "consensus-failed", "high", [
-      ...(result.unresolvedReason === "consensus-failed" ? ["unresolvedReason"] : []),
-      ...(result.dispositionReason === "consensus-failed" ? ["dispositionReason"] : []),
-    ]);
-  }
-
   if (hasValidationRisk(result)) {
     addRebuttalFinding(findings, "validation-risk", "high", ["validation", "validationPhases"]);
-  }
-
-  if (result.regressionDetected) {
-    addRebuttalFinding(findings, "regression-risk", "high", ["regressionDetected"]);
   }
 
   if (
@@ -478,7 +462,8 @@ export function toCiSummary(report: ScanReport): CiSummary {
     constraints: report.constraints,
     idempotencyKey: report.idempotencyKey,
     llmUsageCount: report.llmUsageCount,
-    estimatedCostUsd: report.estimatedCostUsd,
+    totalInputTokens: report.totalInputTokens,
+    totalOutputTokens: report.totalOutputTokens,
     totalLlmLatencyMs: report.totalLlmLatencyMs,
     slaBreaches: report.slaBreaches,
     slaBreachSummary: buildSlaBreachSummary(report.reports),

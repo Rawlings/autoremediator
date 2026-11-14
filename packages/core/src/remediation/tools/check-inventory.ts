@@ -69,7 +69,7 @@ export function resolveInventoryVersion(rawVersion: string): string {
 export const checkInventoryTool = defineTool({
   description:
     "Read the project's package.json and installed dependencies to list packages and exact versions. Must be called before checking version matches.",
-  parameters: z.object({
+  inputSchema: z.object({
     cwd: z.string().describe("Absolute path to the consumer project's root directory"),
     packageManager: z
       .enum(["npm", "pnpm", "yarn", "bun", "deno"])

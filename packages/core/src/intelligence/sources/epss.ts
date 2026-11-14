@@ -5,7 +5,7 @@
  * Uses shared HTTP client for consistent error handling and timeouts.
  */
 import type { CveDetails } from "../../platform/types.js";
-import { getIntelligenceSourceConfig } from "../../platform/config.js";
+import { getEpssApiUrl } from "../../platform/config.js";
 import { httpClient } from "../../platform/http-client.js";
 
 interface EpssRow {
@@ -20,11 +20,8 @@ interface EpssResponse {
 }
 
 export async function fetchEpss(cveId: string): Promise<EpssRow | undefined> {
-  const { epssApi } = getIntelligenceSourceConfig();
-  if (!epssApi) return undefined;
-
   try {
-    const url = new URL(epssApi);
+    const url = new URL(getEpssApiUrl());
     url.searchParams.set("cve", cveId);
 
     const res = await httpClient({ url: url.toString() });

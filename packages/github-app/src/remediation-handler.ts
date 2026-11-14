@@ -1,6 +1,6 @@
 import { access, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
-import { join, resolve, isAbsolute } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { remediateFromScan, type CveSeverity, type ScanReport } from "autoremediator";
 import type {
@@ -184,8 +184,6 @@ export function createDefaultRemediationHandler(
       });
       isolatedWorkspaceDir = checkout.cwd;
       cleanupCheckout = checkout.cleanup;
-    } else if (repoConfig.cwd && isAbsolute(repoConfig.cwd)) {
-      isolatedWorkspaceDir = repoConfig.cwd;
     } else if (repoRef) {
       const tempRepoDir = await mkdtemp(join(tmpdir(), "autoremediator-repo-"));
       cleanupCheckout = async () => {
@@ -232,14 +230,18 @@ export function createDefaultRemediationHandler(
         }
       }
     } else {
-      isolatedWorkspaceDir = repoConfig.cwd
-        ? resolve(process.cwd(), repoConfig.cwd)
-        : process.cwd();
+      isolatedWorkspaceDir = process.cwd();
     }
 
     let cwd = isolatedWorkspaceDir;
-    if (repoConfig.cwd && !isAbsolute(repoConfig.cwd)) {
+    if (repoConfig.cwd) {
       cwd = resolve(isolatedWorkspaceDir, repoConfig.cwd);
+      const escaped = relative(isolatedWorkspaceDir, cwd);
+      if (escaped.startsWith("..") || isAbsolute(escaped)) {
+        throw new Error(
+          `Configured cwd "${repoConfig.cwd}" resolves outside the repository checkout.`,
+        );
+      }
     }
 
     const dryRun = repoConfig.dryRun;
@@ -270,14 +272,7 @@ export function createDefaultRemediationHandler(
       denyPackages: repoConfig.denyPackages,
       allowPackages: repoConfig.allowPackages,
       constraints: repoConfig.constraints,
-      modelDefaults: repoConfig.modelDefaults,
-      providerSafetyProfile: repoConfig.providerSafetyProfile,
-      requireConsensusForHighRisk: repoConfig.requireConsensusForHighRisk,
-      consensusProvider: repoConfig.consensusProvider,
-      consensusModel: repoConfig.consensusModel,
       patchConfidenceThresholds: repoConfig.patchConfidenceThresholds,
-      dynamicModelRouting: repoConfig.dynamicModelRouting,
-      dynamicRoutingThresholdChars: repoConfig.dynamicRoutingThresholdChars,
       dispositionPolicy: repoConfig.dispositionPolicy,
       containmentMode: repoConfig.containmentMode,
       escalationGraph: repoConfig.escalationGraph,

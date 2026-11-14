@@ -2,7 +2,7 @@
   "name": "autoremediator-monorepo",
   "version": "0.1.0",
   "private": true,
-  "description": "Autoremediator monorepo (core package + docs app)",
+  "description": "Autoremediator monorepo (core package, GitHub App, VS Code extension)",
   "keywords": [
     "agentic",
     "ai",
@@ -39,7 +39,6 @@
     "build": "pnpm --filter autoremediator build",
     "build:core": "pnpm --filter autoremediator build",
     "build:github-app": "pnpm --filter @autoremediator/github-app build",
-    "build:docs": "pnpm --filter docs build",
     "build:vscode": "pnpm --filter autoremediator-rawlings build",
     "build:vsix": "pnpm --filter autoremediator-rawlings build:vsix",
     "build:all": "pnpm -r build",
@@ -50,7 +49,6 @@
     "typecheck": "pnpm --filter autoremediator typecheck",
     "typecheck:core": "pnpm --filter autoremediator typecheck",
     "typecheck:github-app": "pnpm --filter @autoremediator/github-app typecheck",
-    "typecheck:docs": "pnpm --filter docs typecheck",
     "typecheck:vscode": "pnpm --filter autoremediator-rawlings typecheck",
     "typecheck:all": "pnpm -r --if-present typecheck",
     "test": "pnpm --filter autoremediator test",
@@ -58,9 +56,6 @@
     "test:github-app": "pnpm --filter @autoremediator/github-app test",
     "test:watch": "pnpm --filter autoremediator test:watch",
     "test:all": "pnpm -r --if-present test",
-    "docs:dev": "pnpm --filter docs dev",
-    "docs:build": "pnpm --filter docs build",
-    "docs:preview": "pnpm --filter docs preview",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "lint:all": "oxlint",
@@ -72,12 +67,12 @@
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.3",
-    "oxfmt": "^0.72.0",
-    "oxlint": "^1.87.0",
-    "oxlint-tsgolint": "^7.0.2004"
+    "oxfmt": "^0.78.0",
+    "oxlint": "^1.93.0",
+    "oxlint-tsgolint": "^7.0.2007"
   },
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=26.0.0"
   },
-  "packageManager": "pnpm@10.33.0"
+  "packageManager": "pnpm@12.18.0"
 }

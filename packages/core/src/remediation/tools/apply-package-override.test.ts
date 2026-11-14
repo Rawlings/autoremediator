@@ -71,8 +71,6 @@ describe("apply-package-override", () => {
     mocked.isPackageAllowed.mockReturnValue(true);
     mocked.detectPackageManager.mockReturnValue("npm");
     mocked.getPackageManagerCommands.mockReturnValue({
-      installDeterministic: ["npm", "ci", "--prefer-offline"],
-      installPreferOffline: ["npm", "install", "--prefer-offline"],
       test: ["npm", "test"],
     });
     mocked.resolveDedupeCommand.mockReturnValue(["npm", "dedupe"]);

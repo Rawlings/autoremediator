@@ -10,8 +10,6 @@ vi.mock("node:fs", () => ({
 
 import {
   detectPackageManager,
-  detectPackageManagerDriver,
-  getDriver,
   resolveAuditCommand,
   resolveDedupeCommand,
   resolveInstallCommand,
@@ -74,20 +72,21 @@ describe("detectPackageManager", () => {
 });
 
 describe("resolveInstallCommand", () => {
-  it("bun deterministic uses --frozen-lockfile", () => {
+  it("bun uses --frozen-lockfile only when explicitly enforced", () => {
     expect(resolveInstallCommand("bun", { installMode: "deterministic" })).toEqual([
+      "bun",
+      "install",
+    ]);
+    expect(resolveInstallCommand("bun", { enforceFrozenLockfile: true })).toEqual([
       "bun",
       "install",
       "--frozen-lockfile",
     ]);
   });
 
-  it("bun standard install has no frozen flag", () => {
-    expect(resolveInstallCommand("bun", { installMode: "standard" })).toEqual(["bun", "install"]);
-  });
-
-  it("deno deterministic uses --frozen", () => {
-    expect(resolveInstallCommand("deno", { installMode: "deterministic" })).toEqual([
+  it("deno uses --frozen only when explicitly enforced", () => {
+    expect(resolveInstallCommand("deno", { installMode: "standard" })).toEqual(["deno", "install"]);
+    expect(resolveInstallCommand("deno", { enforceFrozenLockfile: true })).toEqual([
       "deno",
       "install",
       "--frozen",
@@ -156,26 +155,5 @@ describe("resolveDedupeCommand", () => {
 
   it("npm returns npm dedupe", () => {
     expect(resolveDedupeCommand("npm")).toEqual(["npm", "dedupe"]);
-  });
-});
-
-describe("package manager drivers", () => {
-  it("detects pnpm driver correctly", () => {
-    mocked.existsSync.mockImplementation((p: string) => p.endsWith("pnpm-lock.yaml"));
-    const driver = detectPackageManagerDriver("/project");
-    expect(driver.id).toBe("pnpm");
-    expect(driver.ecosystem).toBe("npm");
-    expect(driver.resolveTestCommand()).toEqual(["pnpm", "test"]);
-  });
-
-  it("retrieves bun driver with correct commands", () => {
-    const driver = getDriver("bun");
-    expect(driver.id).toBe("bun");
-    expect(driver.ecosystem).toBe("npm");
-    expect(driver.resolveInstallCommand({ installMode: "deterministic" })).toEqual([
-      "bun",
-      "install",
-      "--frozen-lockfile",
-    ]);
   });
 });

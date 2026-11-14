@@ -53,4 +53,27 @@ describe("HTTP server authentication requirement", () => {
     expect(call("POST /remediate", { authorization: "Bearer wrong" }).allowed).toBe(false);
     expect(call("POST /remediate", { authorization: "Bearer s3cret" }).allowed).toBe(true);
   });
+
+  it("keeps operators away from every route that mutates, including queued jobs", () => {
+    vi.stubEnv("AUTOREMEDIATOR_API_TOKENS", "operator:op-secret,admin:admin-secret");
+    const operator = { authorization: "Bearer op-secret" };
+
+    expect(call("POST /plan-remediation", operator).allowed).toBe(true);
+    for (const route of [
+      "POST /remediate",
+      "POST /remediate-from-scan",
+      "POST /remediate-portfolio",
+      "POST /update-outdated",
+      "POST /jobs/remediate",
+      "POST /jobs/scan",
+      "POST /jobs/portfolio",
+    ]) {
+      const attempt = call(route, operator);
+      expect([route, attempt.allowed, attempt.sent.status]).toEqual([route, false, 403]);
+    }
+
+    expect(call("POST /jobs/remediate", { authorization: "Bearer admin-secret" }).allowed).toBe(
+      true,
+    );
+  });
 });

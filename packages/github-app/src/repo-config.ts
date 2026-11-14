@@ -1,8 +1,17 @@
+import { isAbsolute, normalize } from "node:path";
 import { parse as yamlParse } from "yaml";
 import type { Octokit } from "@octokit/rest";
 import { type AutoremediatorRepoConfig, DEFAULT_REPO_CONFIG, type ErrorLogger } from "./types.js";
 
 type RawRepoConfig = Partial<AutoremediatorRepoConfig>;
+
+/**
+ * A repository's own config must only be able to point *inside* its checkout: absolute paths and
+ * `..` segments would let it aim the server at arbitrary host directories.
+ */
+export function isContainedRelativePath(path: string): boolean {
+  return !isAbsolute(path) && !normalize(path).split(/[\\/]/).includes("..");
+}
 
 const VALID_SEVERITIES = new Set(["UNKNOWN", "LOW", "MEDIUM", "HIGH", "CRITICAL"]);
 
@@ -18,7 +27,9 @@ function sanitizeRaw(raw: Record<string, unknown>): RawRepoConfig {
   if (typeof raw.minimumSeverity === "string" && VALID_SEVERITIES.has(raw.minimumSeverity)) {
     out.minimumSeverity = raw.minimumSeverity as AutoremediatorRepoConfig["minimumSeverity"];
   }
-  if (typeof raw.cwd === "string" && raw.cwd.length <= 512) out.cwd = raw.cwd;
+  if (typeof raw.cwd === "string" && raw.cwd.length <= 512 && isContainedRelativePath(raw.cwd)) {
+    out.cwd = raw.cwd;
+  }
   if (typeof raw.allowMajorBumps === "boolean") out.allowMajorBumps = raw.allowMajorBumps;
   if (Array.isArray(raw.denyPackages) && raw.denyPackages.every((p) => typeof p === "string")) {
     out.denyPackages = (raw.denyPackages as string[]).slice(0, 200);
@@ -29,27 +40,9 @@ function sanitizeRaw(raw: Record<string, unknown>): RawRepoConfig {
   if (raw.constraints !== null && typeof raw.constraints === "object") {
     out.constraints = raw.constraints as RawRepoConfig["constraints"];
   }
-  if (raw.modelDefaults !== null && typeof raw.modelDefaults === "object") {
-    out.modelDefaults = raw.modelDefaults as RawRepoConfig["modelDefaults"];
-  }
-  if (raw.providerSafetyProfile === "strict" || raw.providerSafetyProfile === "relaxed") {
-    out.providerSafetyProfile = raw.providerSafetyProfile;
-  }
-  if (typeof raw.requireConsensusForHighRisk === "boolean") {
-    out.requireConsensusForHighRisk = raw.requireConsensusForHighRisk;
-  }
-  if (raw.consensusProvider === "remote" || raw.consensusProvider === "local") {
-    out.consensusProvider = raw.consensusProvider;
-  }
-  if (typeof raw.consensusModel === "string") out.consensusModel = raw.consensusModel.slice(0, 100);
   if (raw.patchConfidenceThresholds !== null && typeof raw.patchConfidenceThresholds === "object") {
     out.patchConfidenceThresholds =
       raw.patchConfidenceThresholds as RawRepoConfig["patchConfidenceThresholds"];
-  }
-  if (typeof raw.dynamicModelRouting === "boolean")
-    out.dynamicModelRouting = raw.dynamicModelRouting;
-  if (typeof raw.dynamicRoutingThresholdChars === "number") {
-    out.dynamicRoutingThresholdChars = raw.dynamicRoutingThresholdChars;
   }
   if (raw.dispositionPolicy !== null && typeof raw.dispositionPolicy === "object") {
     out.dispositionPolicy = raw.dispositionPolicy as RawRepoConfig["dispositionPolicy"];
@@ -100,14 +93,7 @@ function mergeWithDefaults(raw: RawRepoConfig): AutoremediatorRepoConfig {
     denyPackages: raw.denyPackages ?? DEFAULT_REPO_CONFIG.denyPackages,
     allowPackages: raw.allowPackages ?? DEFAULT_REPO_CONFIG.allowPackages,
     constraints: raw.constraints,
-    modelDefaults: raw.modelDefaults,
-    providerSafetyProfile: raw.providerSafetyProfile,
-    requireConsensusForHighRisk: raw.requireConsensusForHighRisk,
-    consensusProvider: raw.consensusProvider,
-    consensusModel: raw.consensusModel,
     patchConfidenceThresholds: raw.patchConfidenceThresholds,
-    dynamicModelRouting: raw.dynamicModelRouting,
-    dynamicRoutingThresholdChars: raw.dynamicRoutingThresholdChars,
     dispositionPolicy: raw.dispositionPolicy,
     containmentMode: raw.containmentMode,
     escalationGraph: raw.escalationGraph,

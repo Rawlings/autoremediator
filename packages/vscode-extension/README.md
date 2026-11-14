@@ -13,7 +13,7 @@ Autoremediator is a risk-aware Node.js vulnerability diagnostics and remediation
 
 ## Requirements
 
-The extension requires Node.js 22+ and integrates with the `autoremediator` CLI (installed locally or run via `npx autoremediator`).
+The extension requires Node.js 26+ and integrates with the `autoremediator` CLI (installed locally or run via `npx autoremediator`).
 
 ## License
 

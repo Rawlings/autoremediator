@@ -6,7 +6,12 @@ import { join } from "node:path";
 import { existsSync, statSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 
+import type { DeltaScanReport, ReachabilityAssessment, ScanReport } from "autoremediator";
+
 const execFileAsync = promisify(execFile);
+
+/** Same advisory ids the CLI accepts: CVE ids and GitHub advisory (GHSA) ids. */
+export const ADVISORY_ID = /^(CVE-\d{4}-\d{4,}|GHSA(-[a-z0-9]{4}){3})$/i;
 
 export interface VulnFinding {
   packageName: string;
@@ -96,11 +101,20 @@ export async function scanForVulns(cwd: string, force = false): Promise<VulnFind
       const { bin, extraArgs } = findBin(cwd);
       const { stdout } = await execFileAsync(
         bin,
-        [...extraArgs, "scan", "--input", auditFile, "--dry-run", "--json"],
+        [
+          ...extraArgs,
+          "scan",
+          "--input",
+          auditFile,
+          "--dry-run",
+          "--no-evidence",
+          "--output-format",
+          "json",
+        ],
         { cwd, maxBuffer: 5 * 1024 * 1024 },
       );
 
-      const findings = extractFindings(JSON.parse(stdout) as ScanReportJson);
+      const findings = extractFindings(JSON.parse(stdout) as ScanReport);
       scanCache.set(cwd, {
         timestamp: Date.now(),
         packageJsonMtime: pkgMtime,
@@ -120,8 +134,8 @@ export async function scanForVulns(cwd: string, force = false): Promise<VulnFind
 }
 
 export async function applyFix(cveId: string, cwd: string): Promise<string> {
-  if (!/^CVE-\d{4}-\d{1,7}$/i.test(cveId)) {
-    throw new Error(`Invalid CVE ID format: ${cveId}`);
+  if (!ADVISORY_ID.test(cveId)) {
+    throw new Error(`Invalid advisory ID format: ${cveId}`);
   }
   const { bin, extraArgs } = findBin(cwd);
   const { stdout } = await execFileAsync(bin, [...extraArgs, "cve", cveId, "--cwd", cwd], {
@@ -154,11 +168,7 @@ export async function checkPackageReachability(
   }
   try {
     const { stdout } = await execFileAsync(bin, args, { cwd, maxBuffer: 2 * 1024 * 1024 });
-    const parsed = JSON.parse(stdout) as {
-      status: string;
-      reason: string;
-      evidence?: Array<{ callCount?: number }>;
-    };
+    const parsed = JSON.parse(stdout) as ReachabilityAssessment;
     const callCount = parsed.evidence?.reduce((acc, e) => acc + (e.callCount ?? 0), 0);
     return { status: parsed.status, reason: parsed.reason, callCount };
   } catch (err: unknown) {
@@ -178,64 +188,37 @@ export async function scanGitDelta(
   const { bin, extraArgs } = findBin(cwd);
   const args = [...extraArgs, "diff", "--base", baseRef, "--cwd", cwd, "--output-format", "json"];
   const { stdout } = await execFileAsync(bin, args, { cwd, maxBuffer: 5 * 1024 * 1024 });
-  const parsed = JSON.parse(stdout) as {
-    netRiskVerdict: string;
-    summary: string;
-    introducedFindings?: unknown[];
-    resolvedFindings?: unknown[];
-  };
+  const parsed = JSON.parse(stdout) as DeltaScanReport;
   return {
     netRiskVerdict: parsed.netRiskVerdict,
     summary: parsed.summary,
-    introducedCount: parsed.introducedFindings?.length ?? 0,
-    resolvedCount: parsed.resolvedFindings?.length ?? 0,
+    introducedCount: parsed.introducedFindings.length,
+    resolvedCount: parsed.resolvedFindings.length,
   };
 }
 
-// Minimal shapes matching autoremediator's ScanReport JSON output.
-interface ScanReportJson {
-  reports?: Array<{
-    cveId: string;
-    cveDetails?: {
-      severity?: string;
-      summary?: string;
-      epss?: { epss?: number; percentile?: number };
-      cisaKev?: boolean;
-    } | null;
-    vulnerablePackages?: Array<{
-      installed: { name: string; version: string; type?: "direct" | "transitive" };
-      affected: { firstPatchedVersion?: string };
-    }>;
-    results?: Array<{
-      packageName: string;
-      reachability?: { status?: string };
-    }>;
-  }>;
-}
-
-function extractFindings(report: ScanReportJson): VulnFinding[] {
+export function extractFindings(report: ScanReport): VulnFinding[] {
   const findings: VulnFinding[] = [];
-  for (const r of report.reports ?? []) {
-    const reachabilityMap = new Map<string, string>();
-    for (const res of r.results ?? []) {
-      if (res.reachability?.status) {
-        reachabilityMap.set(res.packageName, res.reachability.status);
-      }
+  for (const r of report.reports) {
+    const reachability = new Map<string, string>();
+    for (const result of r.results) {
+      if (result.reachability?.status)
+        reachability.set(result.packageName, result.reachability.status);
     }
 
-    for (const vp of r.vulnerablePackages ?? []) {
+    for (const vulnerable of r.vulnerablePackages) {
       findings.push({
-        packageName: vp.installed.name,
+        packageName: vulnerable.installed.name,
         cveId: r.cveId,
         severity: r.cveDetails?.severity ?? "UNKNOWN",
         summary: r.cveDetails?.summary ?? r.cveId,
-        installedVersion: vp.installed.version,
-        safeUpgradeVersion: vp.affected.firstPatchedVersion,
-        inCisaKev: Boolean(r.cveDetails?.cisaKev),
-        epssScore: r.cveDetails?.epss?.epss,
+        installedVersion: vulnerable.installed.version,
+        safeUpgradeVersion: vulnerable.affected.firstPatchedVersion,
+        inCisaKev: r.cveDetails?.kev?.knownExploited === true,
+        epssScore: r.cveDetails?.epss?.score,
         epssPercentile: r.cveDetails?.epss?.percentile,
-        reachabilityStatus: reachabilityMap.get(vp.installed.name),
-        dependencyScope: vp.installed.type ?? "direct",
+        reachabilityStatus: reachability.get(vulnerable.installed.name),
+        dependencyScope: vulnerable.installed.type,
       });
     }
   }

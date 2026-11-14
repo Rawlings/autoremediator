@@ -345,7 +345,6 @@ export async function updateOutdated(
                   dryRun: Boolean(options.dryRun),
                   message: `Updated ${pkg.name} to ${pkg.latestVersion}`,
                 })),
-              agentSteps: 0,
               summary: "update-outdated",
             },
           ],

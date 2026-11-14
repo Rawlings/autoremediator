@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fetchRepoConfig } from "./repo-config.js";
+import { fetchRepoConfig, isContainedRelativePath } from "./repo-config.js";
 import { DEFAULT_REPO_CONFIG } from "./types.js";
 import type { Octokit } from "@octokit/rest";
 
@@ -109,5 +109,15 @@ describe("fetchRepoConfig", () => {
 
     const result = await fetchRepoConfig(octokit, "acme", "web");
     expect(result).toEqual(DEFAULT_REPO_CONFIG);
+  });
+});
+
+describe("isContainedRelativePath", () => {
+  it.each(["packages/app", "app", "./app", "a/b/../c"])("accepts %s", (path) => {
+    expect(isContainedRelativePath(path)).toBe(true);
+  });
+
+  it.each(["/etc", "/tmp/x", "..", "../x", "a/../../x", "a/../.."])("rejects %s", (path) => {
+    expect(isContainedRelativePath(path)).toBe(false);
   });
 });

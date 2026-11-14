@@ -11,7 +11,7 @@ export function createRemediateEvidence(params: {
   cwd: string;
   cveId: string;
   options: RemediateOptions;
-  llmProvider: "remote" | "local";
+  model?: string;
   correlation: { requestId?: string; sessionId?: string; parentRunId?: string };
   provenance: { actor?: string; source?: "cli" | "sdk" | "mcp" | "openapi" | "unknown" };
 }): EvidenceLog | undefined {
@@ -23,7 +23,7 @@ export function createRemediateEvidence(params: {
     ...params.correlation,
     actor: params.provenance.actor,
     source: params.provenance.source,
-    llmProvider: params.llmProvider,
+    model: params.model,
     idempotencyKey: params.options.idempotencyKey,
     offlineMode: params.options.offlineIntelligence === true ? true : undefined,
   });
@@ -33,7 +33,7 @@ export function addRemediateStartStep(params: {
   evidence: EvidenceLog | undefined;
   cveId: string;
   options: RemediateOptions;
-  llmProvider: "remote" | "local";
+  model?: string;
   constraints: { directDependenciesOnly?: boolean; preferVersionBump?: boolean };
 }): void {
   if (!params.evidence) {
@@ -48,7 +48,7 @@ export function addRemediateStartStep(params: {
       dryRun: Boolean(params.options.dryRun),
       preview: Boolean(params.options.preview),
       simulationMode: Boolean(params.options.simulationMode),
-      llmProvider: params.llmProvider,
+      model: params.model,
     },
     {
       directDependenciesOnly: Boolean(params.constraints.directDependenciesOnly),
@@ -83,7 +83,6 @@ export function addRemediateResultSteps(
         reachability: result.reachability?.status,
         hasAlternatives: Boolean(result.alternativeSuggestions?.length),
         suppressedBy: result.suppressedBy?.justification,
-        regressionDetected: result.regressionDetected,
         simulationWouldMutate: result.simulation?.wouldMutate,
         simulationRebuttalCount: result.simulation?.rebuttalFindings.length,
       },
@@ -91,7 +90,8 @@ export function addRemediateResultSteps(
   }
 
   const containmentCount = report.results.filter(
-    (result) => result.unresolvedReason === "policy-blocked" && result.disposition === "escalate",
+    (result) =>
+      result.unresolvedReason === "policy-blocked" && result.disposition === "hold-for-approval",
   ).length;
 
   if (containmentCount > 0) {
@@ -102,7 +102,7 @@ export function addRemediateResultSteps(
       {
         containmentCount,
         blockedUnresolvedReason: "policy-blocked",
-        blockedDisposition: "escalate",
+        blockedDisposition: "hold-for-approval",
       },
     );
   }
@@ -117,7 +117,6 @@ export function addRemediateResultSteps(
       llmUsage: report.llmUsage,
       exploitSignalTriggered: report.exploitSignalTriggered ?? false,
       slaBreachCount: report.slaBreaches?.length ?? 0,
-      regressionDetectedCount: report.results.filter((r) => r.regressionDetected).length,
       containmentCount,
       sbomEntryCount: report.sbom?.length ?? 0,
       simulationSummary: report.simulationSummary,

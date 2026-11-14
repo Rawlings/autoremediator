@@ -132,8 +132,7 @@ describe("mcp tool contracts", () => {
     expect(remediateProps.requestId).toBeDefined();
     expect(remediateProps.sessionId).toBeDefined();
     expect(remediateProps.parentRunId).toBeDefined();
-    expect(remediateProps.consensusProvider).toBeDefined();
-    expect(remediateProps.consensusModel).toBeDefined();
+    expect(remediateProps.model).toBeDefined();
     expect(remediateProps.patchConfidenceThresholds).toBeDefined();
 
     expect(scanProps.preview).toBeDefined();
@@ -141,16 +140,14 @@ describe("mcp tool contracts", () => {
     expect(scanProps.requestId).toBeDefined();
     expect(scanProps.sessionId).toBeDefined();
     expect(scanProps.parentRunId).toBeDefined();
-    expect(scanProps.consensusProvider).toBeDefined();
-    expect(scanProps.consensusModel).toBeDefined();
+    expect(scanProps.model).toBeDefined();
     expect(scanProps.patchConfidenceThresholds).toBeDefined();
 
     expect(planProps.requestId).toBeDefined();
     expect(planProps.simulationMode).toBeDefined();
     expect(planProps.sessionId).toBeDefined();
     expect(planProps.parentRunId).toBeDefined();
-    expect(planProps.consensusProvider).toBeDefined();
-    expect(planProps.consensusModel).toBeDefined();
+    expect(planProps.model).toBeDefined();
     expect(planProps.patchConfidenceThresholds).toBeDefined();
   });
 

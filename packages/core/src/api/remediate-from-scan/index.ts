@@ -1,5 +1,5 @@
 import type { RemediationReport } from "../../platform/types.js";
-import { resolveProvider } from "../../platform/config.js";
+import { getModelSpec } from "../../platform/config.js";
 import {
   addEvidenceStep,
   createEvidenceLog,
@@ -31,7 +31,10 @@ function countContainedResults(reports: RemediationReport[]): number {
   let containmentCount = 0;
   for (const report of reports) {
     for (const result of report.results) {
-      if (result.unresolvedReason === "policy-blocked" && result.disposition === "escalate") {
+      if (
+        result.unresolvedReason === "policy-blocked" &&
+        result.disposition === "hold-for-approval"
+      ) {
         containmentCount += 1;
       }
     }
@@ -62,7 +65,7 @@ export async function remediateFromScan(
       })
     : parseScanInput(inputPath, format);
   const cveIds = uniqueCveIds(findings);
-  const llmProvider = resolveProvider(options);
+  const model = getModelSpec(options.model);
   const correlation = resolveCorrelationContext(options);
   const provenance = resolveProvenanceContext(options);
   const constraints = resolveConstraints(options, cwd);
@@ -71,7 +74,7 @@ export async function remediateFromScan(
     ...correlation,
     actor: provenance.actor,
     source: provenance.source,
-    llmProvider,
+    model,
     idempotencyKey: options.idempotencyKey,
   });
   addEvidenceStep(
@@ -129,7 +132,8 @@ export async function remediateFromScan(
     slaBreachSummary: buildSlaBreachSummary(reports),
     patchesDir: patchCount > 0 ? patchesDir : undefined,
     llmUsageCount: llmUsageTotals.llmUsageCount > 0 ? llmUsageTotals.llmUsageCount : undefined,
-    estimatedCostUsd: llmUsageTotals.estimatedCostUsd,
+    totalInputTokens: llmUsageTotals.totalInputTokens,
+    totalOutputTokens: llmUsageTotals.totalOutputTokens,
     totalLlmLatencyMs: llmUsageTotals.totalLlmLatencyMs,
   };
 
@@ -168,7 +172,8 @@ export async function remediateFromScan(
     constraints,
     idempotencyKey: options.idempotencyKey,
     llmUsageCount: llmUsageTotals.llmUsageCount > 0 ? llmUsageTotals.llmUsageCount : undefined,
-    estimatedCostUsd: llmUsageTotals.estimatedCostUsd,
+    totalInputTokens: llmUsageTotals.totalInputTokens,
+    totalOutputTokens: llmUsageTotals.totalOutputTokens,
     totalLlmLatencyMs: llmUsageTotals.totalLlmLatencyMs,
     changeRequests,
     simulationSummary,

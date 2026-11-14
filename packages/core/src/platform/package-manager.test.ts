@@ -6,7 +6,6 @@ import {
   detectPackageManager,
   getYarnMajorVersion,
   resolveDedupeCommand,
-  getPackageManagerCommands,
   resolveAuditCommand,
   resolveInstallCommand,
   resolveWhyCommand,
@@ -29,83 +28,6 @@ afterEach(() => {
 });
 
 describe("package-manager commands", () => {
-  it("returns deterministic install command for npm", () => {
-    const commands = getPackageManagerCommands("npm");
-    expect(commands.installDeterministic).toEqual(["npm", "ci", "--prefer-offline"]);
-  });
-
-  it("returns deterministic install command for pnpm", () => {
-    const commands = getPackageManagerCommands("pnpm");
-    expect(commands.installDeterministic).toEqual([
-      "pnpm",
-      "install",
-      "--frozen-lockfile",
-      "--prefer-offline",
-    ]);
-  });
-
-  it("returns deterministic install command for yarn", () => {
-    const commands = getPackageManagerCommands("yarn");
-    expect(commands.installDeterministic).toEqual(["yarn", "install", "--frozen-lockfile"]);
-  });
-
-  it("allows standard install mode override", () => {
-    const command = resolveInstallCommand("npm", { installMode: "standard" });
-    expect(command).toEqual(["npm", "install"]);
-  });
-
-  it("allows disabling prefer-offline on deterministic pnpm installs", () => {
-    const command = resolveInstallCommand("pnpm", {
-      installMode: "deterministic",
-      installPreferOffline: false,
-    });
-
-    expect(command).toEqual(["pnpm", "install", "--frozen-lockfile"]);
-  });
-
-  it("allows disabling frozen lockfile for yarn installs", () => {
-    const command = resolveInstallCommand("yarn", {
-      installMode: "deterministic",
-      enforceFrozenLockfile: false,
-    });
-
-    expect(command).toEqual(["yarn", "install"]);
-  });
-
-  it("allows forcing frozen lockfile for npm install mode", () => {
-    const command = resolveInstallCommand("npm", {
-      installMode: "standard",
-      enforceFrozenLockfile: true,
-    });
-
-    expect(command).toEqual(["npm", "ci"]);
-  });
-
-  it("scopes npm install commands to workspace when provided", () => {
-    const command = resolveInstallCommand("npm", {
-      installMode: "standard",
-      workspace: "web-app",
-    });
-
-    expect(command).toEqual(["npm", "install", "--workspace", "web-app"]);
-  });
-
-  it("scopes pnpm install commands with filter when workspace is provided", () => {
-    const command = resolveInstallCommand("pnpm", {
-      installMode: "deterministic",
-      workspace: "@apps/web",
-    });
-
-    expect(command).toEqual([
-      "pnpm",
-      "--filter",
-      "@apps/web",
-      "install",
-      "--frozen-lockfile",
-      "--prefer-offline",
-    ]);
-  });
-
   it("scopes npm audit command to workspace when provided", () => {
     const command = resolveAuditCommand("npm", {
       workspace: "web-app",
@@ -136,25 +58,72 @@ describe("package-manager commands", () => {
     const command = resolveDedupeCommand("npm", { workspace: "web-app" });
     expect(command).toEqual(["npm", "dedupe", "--workspace", "web-app"]);
   });
+});
 
-  it("uses --frozen-lockfile for yarn classic (v1) deterministic install", () => {
-    const command = resolveInstallCommand("yarn", { installMode: "deterministic" }, 1);
-    expect(command).toEqual(["yarn", "install", "--frozen-lockfile"]);
+describe("resolveInstallCommand", () => {
+  // Installs run after the manifest changed, so the lockfile must be allowed to change.
+  it.each([
+    ["npm", {}, ["npm", "install", "--prefer-offline"]],
+    ["pnpm", {}, ["pnpm", "install", "--no-frozen-lockfile", "--prefer-offline"]],
+    ["yarn", {}, ["yarn", "install"]],
+    ["bun", {}, ["bun", "install"]],
+    ["deno", {}, ["deno", "install"]],
+  ] as const)("never freezes the lockfile by default (%s)", (pm, constraints, expected) => {
+    expect(resolveInstallCommand(pm, constraints)).toEqual(expected);
   });
 
-  it("uses --immutable for yarn berry (v2+) deterministic install", () => {
-    const command = resolveInstallCommand("yarn", { installMode: "deterministic" }, 2);
-    expect(command).toEqual(["yarn", "install", "--immutable"]);
+  it("does not freeze even in the default deterministic install mode", () => {
+    const command = resolveInstallCommand("npm", { installMode: "deterministic" });
+    expect(command).not.toContain("ci");
+    expect(command).not.toContain("--frozen-lockfile");
   });
 
-  it("uses --immutable for yarn berry v4 deterministic install", () => {
-    const command = resolveInstallCommand("yarn", { installMode: "deterministic" }, 4);
-    expect(command).toEqual(["yarn", "install", "--immutable"]);
+  it("only uses prefer-offline when the mode or override asks for it", () => {
+    expect(resolveInstallCommand("npm", { installMode: "standard" })).toEqual(["npm", "install"]);
+    expect(resolveInstallCommand("pnpm", { installMode: "standard" })).toEqual([
+      "pnpm",
+      "install",
+      "--no-frozen-lockfile",
+    ]);
+    expect(
+      resolveInstallCommand("npm", { installMode: "standard", installPreferOffline: true }),
+    ).toEqual(["npm", "install", "--prefer-offline"]);
+    expect(resolveInstallCommand("pnpm", { installPreferOffline: false })).toEqual([
+      "pnpm",
+      "install",
+      "--no-frozen-lockfile",
+    ]);
   });
 
-  it("defaults to --frozen-lockfile when yarnMajor is not provided", () => {
-    const command = resolveInstallCommand("yarn", { installMode: "deterministic" });
-    expect(command).toEqual(["yarn", "install", "--frozen-lockfile"]);
+  it("freezes only when explicitly enforced, using each manager's own flag", () => {
+    const frozen = { enforceFrozenLockfile: true, installMode: "standard" as const };
+    expect(resolveInstallCommand("npm", frozen)).toEqual(["npm", "ci"]);
+    expect(resolveInstallCommand("pnpm", frozen)).toEqual(["pnpm", "install", "--frozen-lockfile"]);
+    expect(resolveInstallCommand("yarn", frozen, 1)).toEqual([
+      "yarn",
+      "install",
+      "--frozen-lockfile",
+    ]);
+    expect(resolveInstallCommand("yarn", frozen, 4)).toEqual(["yarn", "install", "--immutable"]);
+    expect(resolveInstallCommand("bun", frozen)).toEqual(["bun", "install", "--frozen-lockfile"]);
+    expect(resolveInstallCommand("deno", frozen)).toEqual(["deno", "install", "--frozen"]);
+  });
+
+  it("opts Yarn Berry out of its implicit CI freeze", () => {
+    expect(resolveInstallCommand("yarn", {}, 4)).toEqual(["yarn", "install", "--no-immutable"]);
+  });
+
+  it("scopes installs to a workspace", () => {
+    expect(
+      resolveInstallCommand("npm", { workspace: "packages/app", installMode: "standard" }),
+    ).toEqual(["npm", "install", "--workspace", "packages/app"]);
+    expect(resolveInstallCommand("pnpm", { workspace: "app", installMode: "standard" })).toEqual([
+      "pnpm",
+      "--filter",
+      "app",
+      "install",
+      "--no-frozen-lockfile",
+    ]);
   });
 });
 

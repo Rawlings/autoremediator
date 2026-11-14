@@ -81,12 +81,12 @@ describe("Milestone 4 Challenge: Filesystem Rollback under Containment Mode", ()
       applied: true,
       dryRun: false,
       message: "Version bump simulated",
+      confidence: 0.4,
     };
 
     let rollbackHookCalled = false;
     const finalResult = applyDispositionAndContainment(mutatedResult, {
       containmentMode: true,
-      exploitSignalTriggered: true,
       snapshot,
       onContainmentRollback: () => {
         rollbackHookCalled = true;
@@ -95,7 +95,7 @@ describe("Milestone 4 Challenge: Filesystem Rollback under Containment Mode", ()
 
     // Verify containment policy semantics
     expect(rollbackHookCalled).toBe(true);
-    expect(finalResult.disposition).toBe("escalate");
+    expect(finalResult.disposition).toBe("hold-for-approval");
     expect(finalResult.applied).toBe(false);
     expect(finalResult.unresolvedReason).toBe("policy-blocked");
 

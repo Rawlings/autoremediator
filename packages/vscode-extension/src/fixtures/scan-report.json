@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "1.0",
+  "status": "ok",
+  "generatedAt": "2026-01-01T00:00:00.000Z",
+  "cveIds": ["GHSA-AAAA-BBBB-CCCC"],
+  "reports": [
+    {
+      "cveId": "GHSA-AAAA-BBBB-CCCC",
+      "cveDetails": {
+        "severity": "HIGH",
+        "id": "GHSA-AAAA-BBBB-CCCC",
+        "summary": "Test vuln",
+        "references": [],
+        "affectedPackages": [
+          {
+            "name": "vuln-pkg",
+            "ecosystem": "npm",
+            "vulnerableRange": "<2.0.0",
+            "firstPatchedVersion": "2.0.0",
+            "source": "offline-snapshot"
+          }
+        ],
+        "epss": {
+          "score": 0.42
+        },
+        "kev": {
+          "knownExploited": true
+        }
+      },
+      "vulnerablePackages": [
+        {
+          "installed": {
+            "name": "vuln-pkg",
+            "version": "1.5.0",
+            "type": "direct"
+          },
+          "affected": {
+            "name": "vuln-pkg",
+            "ecosystem": "npm",
+            "vulnerableRange": "<2.0.0",
+            "firstPatchedVersion": "2.0.0",
+            "source": "offline-snapshot"
+          }
+        }
+      ],
+      "results": [
+        {
+          "packageName": "vuln-pkg",
+          "strategy": "none",
+          "fromVersion": "1.5.0",
+          "applied": false,
+          "dryRun": true,
+          "unresolvedReason": "no-safe-version",
+          "vulnerableRange": "<2.0.0",
+          "message": "No safe upgrade version found for vuln-pkg.",
+          "dependencyScope": "direct",
+          "disposition": "simulate-only",
+          "dispositionReason": "no-safe-version",
+          "escalationAction": "open-issue"
+        }
+      ],
+      "summary": "Local mode completed: vulnerable=1, applied=0, dryRun=1, unresolved=0",
+      "sbom": [
+        {
+          "name": "vuln-pkg",
+          "version": "1.5.0",
+          "scope": "direct",
+          "status": "skipped"
+        }
+      ],
+      "provenance": {
+        "source": "cli"
+      },
+      "constraints": {
+        "directDependenciesOnly": false,
+        "preferVersionBump": false,
+        "installMode": "deterministic"
+      },
+      "resumedFromCache": false
+    }
+  ],
+  "successCount": 1,
+  "failedCount": 0,
+  "errors": [],
+  "patchCount": 0,
+  "strategyCounts": {
+    "none": 1
+  },
+  "dependencyScopeCounts": {
+    "direct": 1
+  },
+  "unresolvedByReason": {
+    "no-safe-version": 1
+  },
+  "dispositionCounts": {
+    "simulate-only": 1
+  },
+  "escalationCounts": {
+    "open-issue": 1
+  },
+  "provenance": {
+    "source": "cli"
+  },
+  "constraints": {
+    "directDependenciesOnly": false,
+    "preferVersionBump": false,
+    "installMode": "deterministic"
+  }
+}

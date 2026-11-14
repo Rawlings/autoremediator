@@ -1,6 +1,6 @@
 ---
 description: Deprecation and removal workflow for public behavior, options, and contracts.
-applyTo: packages/core/src/**/*.ts,packages/docs/**/*.md,README.md,CONTRIBUTING.md,AGENTS.md
+applyTo: packages/core/src/**/*.ts,docs/**/*.md,README.md,CONTRIBUTING.md,AGENTS.md
 ---
 
 # Deprecation Instructions

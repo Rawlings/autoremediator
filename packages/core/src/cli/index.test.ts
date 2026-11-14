@@ -31,7 +31,6 @@ const mocked = vi.hoisted(() => ({
     simulationMode:
       "If true, attach deterministic simulation and rebuttal metadata for dry-run or preview execution",
     runTests: "Run package-manager test command after applying fix",
-    llmProvider: "LLM provider override",
     patchesDir: "Directory to write .patch files (default: ./patches)",
     policy: "Optional path to .github/autoremediator.yml policy file",
     requestId: "Request correlation ID",
@@ -252,7 +251,6 @@ describe("cli preview and correlation option forwarding", () => {
           message: "unresolved",
         },
       ],
-      agentSteps: 1,
       summary: "done",
     });
 
@@ -274,17 +272,14 @@ describe("cli preview and correlation option forwarding", () => {
     expect(process.exitCode).toBe(1);
   });
 
-  it("forwards consensus and patch-confidence options in top-level CVE mode", async () => {
+  it("forwards the model and patch-confidence options in top-level CVE mode", async () => {
     const program = createProgram();
     await program.parseAsync([
       "node",
       "autoremediator",
       "CVE-2021-23337",
-      "--require-consensus-for-high-risk",
-      "--consensus-provider",
-      "remote",
-      "--consensus-model",
-      "claude-mythos-verifier",
+      "--model",
+      "anthropic:claude-sonnet-5-5",
       "--patch-confidence-low",
       "0.61",
       "--patch-confidence-medium",
@@ -296,9 +291,7 @@ describe("cli preview and correlation option forwarding", () => {
     expect(mocked.remediate).toHaveBeenCalledWith(
       "CVE-2021-23337",
       expect.objectContaining({
-        requireConsensusForHighRisk: true,
-        consensusProvider: "remote",
-        consensusModel: "claude-mythos-verifier",
+        model: "anthropic:claude-sonnet-5-5",
         patchConfidenceThresholds: {
           low: 0.61,
           medium: 0.72,
@@ -306,6 +299,89 @@ describe("cli preview and correlation option forwarding", () => {
         },
       }),
     );
+  });
+
+  it("forwards no boolean flag the user did not pass, so policy-file values can apply", async () => {
+    const program = createProgram();
+    await program.parseAsync(["node", "autoremediator", "CVE-2021-23337"]);
+
+    const options = mocked.remediate.mock.calls.at(-1)?.[1] as Record<string, unknown>;
+    for (const key of [
+      "dryRun",
+      "preview",
+      "runTests",
+      "typecheck",
+      "containmentMode",
+      "skipUnreachable",
+      "slaCheck",
+      "offlineIntelligence",
+      "proofOfFix",
+      "requireProofOfFix",
+      "breakingChangeRefactor",
+      "simulationMode",
+      "resume",
+    ]) {
+      expect([key, options[key]]).toEqual([key, undefined]);
+    }
+  });
+
+  describe("options typed after a subcommand reach that subcommand", () => {
+    it("reachability uses its own --cwd and --output-format", async () => {
+      mocked.checkReachability.mockResolvedValue({
+        packageName: "lodash",
+        status: "unknown",
+        reason: "x",
+      });
+      const write = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+      try {
+        await createProgram().parseAsync([
+          "node",
+          "autoremediator",
+          "reachability",
+          "--package",
+          "lodash",
+          "--cwd",
+          "/some/project",
+          "--output-format",
+          "json",
+        ]);
+        expect(mocked.checkReachability).toHaveBeenCalledWith(
+          expect.objectContaining({ cwd: "/some/project", packageName: "lodash" }),
+        );
+        const output = write.mock.calls.map(([chunk]) => String(chunk)).join("");
+        expect(JSON.parse(output)).toMatchObject({ packageName: "lodash" });
+      } finally {
+        write.mockRestore();
+      }
+    });
+
+    it("an explicit subcommand flag beats the root's default (and vice versa)", async () => {
+      await createProgram().parseAsync([
+        "node",
+        "autoremediator",
+        "cve",
+        "CVE-2021-23337",
+        "--cwd",
+        "/explicit/subcommand",
+      ]);
+      expect(mocked.remediate).toHaveBeenLastCalledWith(
+        "CVE-2021-23337",
+        expect.objectContaining({ cwd: "/explicit/subcommand" }),
+      );
+
+      await createProgram().parseAsync([
+        "node",
+        "autoremediator",
+        "--cwd",
+        "/explicit/root",
+        "cve",
+        "CVE-2021-23337",
+      ]);
+      expect(mocked.remediate).toHaveBeenLastCalledWith(
+        "CVE-2021-23337",
+        expect.objectContaining({ cwd: "/explicit/root" }),
+      );
+    });
   });
 
   it("forwards install constraint options in top-level CVE mode", async () => {
@@ -375,10 +451,13 @@ describe("cli preview and correlation option forwarding", () => {
 
   it("does not expose simulation-mode on update-outdated", async () => {
     const program = createProgram();
+    for (const command of [program, ...program.commands]) {
+      command.exitOverride().configureOutput({ writeErr: () => {} });
+    }
 
     await expect(
       program.parseAsync(["node", "autoremediator", "update-outdated", "--simulation-mode"]),
-    ).rejects.toThrow("--simulation-mode is not supported by update-outdated.");
+    ).rejects.toThrow("unknown option '--simulation-mode'");
   });
 
   it("supports explicit scan mode with --audit and no input file", async () => {
