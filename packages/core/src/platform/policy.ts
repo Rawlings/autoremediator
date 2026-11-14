@@ -4,6 +4,13 @@ import { dirname, join } from "node:path";
 import { parse as yamlParse, stringify as yamlStringify } from "yaml";
 import { z } from "zod";
 
+import {
+  constraintsSchema,
+  dispositionPolicySchema,
+  escalationGraphSchema,
+  exploitSignalOverrideSchema,
+  patchConfidenceThresholdsSchema,
+} from "./option-schemas.js";
 import type {
   CveSeverity,
   DispositionPolicy,
@@ -53,34 +60,7 @@ export const DEFAULT_POLICY: AutoremediatorPolicy = {
   escalationGraph: undefined,
 };
 
-const severitySchema = z.enum(["UNKNOWN", "LOW", "MEDIUM", "HIGH", "CRITICAL"]);
-const unitInterval = z.number().min(0).max(1);
 const packagePattern = z.string().trim().min(1);
-
-const supplyChainPolicySchema = z
-  .object({
-    minPublishAgeHours: z.number().nonnegative(),
-    blockInstallScripts: z.boolean(),
-    requireProvenance: z.boolean(),
-  })
-  .partial()
-  .strict();
-
-const constraintsSchema = z
-  .object({
-    directDependenciesOnly: z.boolean(),
-    preferVersionBump: z.boolean(),
-    installMode: z.enum(["standard", "prefer-offline", "deterministic"]),
-    installPreferOffline: z.boolean(),
-    enforceFrozenLockfile: z.boolean(),
-    workspace: z.string().min(1),
-    typecheck: z.boolean(),
-    requireProofOfFix: z.boolean(),
-    enableBreakingChangeRefactor: z.boolean(),
-    supplyChainPolicy: supplyChainPolicySchema,
-  })
-  .partial()
-  .strict();
 
 const suppressionSchema = z
   .object({
@@ -98,19 +78,8 @@ const policyFileSchema = z
     denyPackages: z.array(packagePattern).default([]),
     allowPackages: z.array(packagePattern).default([]),
     constraints: constraintsSchema.optional(),
-    patchConfidenceThresholds: z
-      .object({ low: unitInterval, medium: unitInterval, high: unitInterval })
-      .partial()
-      .strict()
-      .optional(),
-    exploitSignalOverride: z
-      .object({
-        kev: z.object({ mandatory: z.boolean() }).strict(),
-        epss: z.object({ mandatory: z.boolean(), threshold: unitInterval }).strict(),
-      })
-      .partial()
-      .strict()
-      .optional(),
+    patchConfidenceThresholds: patchConfidenceThresholdsSchema.optional(),
+    exploitSignalOverride: exploitSignalOverrideSchema.optional(),
     suppressions: z.array(suppressionSchema).default([]),
     sla: z
       .object({
@@ -123,23 +92,9 @@ const policyFileSchema = z
       .strict()
       .optional(),
     skipUnreachable: z.boolean().default(false),
-    dispositionPolicy: z
-      .object({
-        minConfidenceForAutoApply: unitInterval,
-        holdForTransitive: z.boolean(),
-        escalateOnKev: z.boolean(),
-        escalateOnSlaBreachSeverities: z.array(severitySchema),
-      })
-      .partial()
-      .strict()
-      .optional(),
+    dispositionPolicy: dispositionPolicySchema.optional(),
     containmentMode: z.boolean().default(false),
-    escalationGraph: z
-      .record(
-        z.string(),
-        z.enum(["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"]),
-      )
-      .optional(),
+    escalationGraph: escalationGraphSchema.optional(),
   })
   .strict();
 

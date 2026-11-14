@@ -38,6 +38,12 @@ describe("module boundaries (see docs/contributing/architecture.md)", () => {
     ).toEqual([]);
   });
 
+  it("the operation catalog sits on api/ and platform/ only", () => {
+    expect(
+      violations("catalog", ["remediation", "intelligence", "scanner", "cli", "mcp", "openapi"]),
+    ).toEqual([]);
+  });
+
   it("CLI, MCP and HTTP surfaces go through api/, never into remediation or intelligence", () => {
     expect([
       ...violations("cli", ["remediation", "intelligence"]),

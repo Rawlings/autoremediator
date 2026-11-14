@@ -28,9 +28,16 @@ options. Tools that return a report return it as JSON.
 
 Use the job tools for long runs: submit, then poll with the returned `jobId`.
 
+Tools are generated from one operation catalog (`packages/core/src/catalog`), so their schemas are the
+same ones that validate input. Each tool carries MCP annotations: `readOnlyHint` for tools that change
+nothing, `destructiveHint` for tools that edit the project unless `dryRun` is set, and `openWorldHint`
+for tools that call external services. Arguments are validated strictly: an unknown field or a value
+of the wrong type is returned as an error result naming the field, instead of being ignored.
+
 ## Trust
 
 The server runs with the permissions of its process and the project directories it is pointed at.
-Callers cannot set `changeRequest.tokenEnvVar` or `changeRequest.githubApiUrl`; credentials come
-from the server's environment. Start with `planRemediation`, which never writes. See
+Callers cannot set change-request credentials or endpoints (`tokenEnvVar`, `token`, `githubApiUrl`):
+such calls are rejected, and credentials come from the server's environment. Start with
+`planRemediation`, which changes nothing in the project and writes only its own evidence record. See
 [Safety](../safety.md#trust-boundaries).

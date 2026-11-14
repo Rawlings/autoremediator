@@ -1,115 +1,33 @@
+import { z } from "zod";
+
+import {
+  constraintsSchema,
+  OPTION_DESCRIPTIONS,
+  PACKAGE_MANAGER_VALUES,
+  PROVENANCE_SOURCE_VALUES,
+  remediateOptionsSchema,
+  scanOptionsSchema,
+  updateOutdatedOptionsSchema,
+} from "../platform/option-schemas.js";
+
+export { OPTION_DESCRIPTIONS, PACKAGE_MANAGER_VALUES, PROVENANCE_SOURCE_VALUES };
+
 export type JsonSchemaProperty = Record<string, unknown>;
 
-export const PACKAGE_MANAGER_VALUES = ["npm", "pnpm", "yarn", "bun", "deno"] as const;
-export const PROVENANCE_SOURCE_VALUES = ["cli", "sdk", "mcp", "openapi", "unknown"] as const;
-
-export const OPTION_DESCRIPTIONS = {
-  cveId: "CVE ID, e.g. CVE-2021-23337",
-  inputPath: "Absolute path to the scanner output file",
-  cwd: "Absolute path to the project root (default: process.cwd())",
-  packageManager: "Package manager override (auto-detected by default)",
-  dryRun: "If true, plan changes but write nothing",
-  preview: "If true, enforce non-mutating preview mode",
-  simulationMode:
-    "If true, attach deterministic simulation and rebuttal metadata for dry-run or preview execution",
-  runTests: "Run package-manager test command after applying fix",
-  model:
-    'Language model for the patch fallback as "<provider>:<model-id>", e.g. "anthropic:claude-sonnet-5-5" (default: AUTOREMEDIATOR_MODEL)',
-  patchConfidenceThresholdLow: "Patch acceptance confidence threshold for low-risk patches (0..1)",
-  patchConfidenceThresholdMedium:
-    "Patch acceptance confidence threshold for medium-risk patches (0..1)",
-  patchConfidenceThresholdHigh:
-    "Patch acceptance confidence threshold for high-risk patches (0..1)",
-  patchesDir: "Directory to write .patch files (default: ./patches)",
-  policy: "Optional path to .github/autoremediator.yml policy file",
-  requestId: "Request correlation ID",
-  sessionId: "Session correlation ID",
-  parentRunId: "Parent run correlation ID",
-  idempotencyKey: "Idempotency key for replay-safe execution",
-  resume: "Return cached result for matching idempotency key when available",
-  actor: "Actor identity for evidence provenance",
-  source: "Source system for provenance",
-  format: "Scanner format (default: auto)",
-  audit: "Run package-manager-native audit command instead of reading a scan file",
-  evidence: "Write evidence JSON to .autoremediator/evidence/ (default: true)",
-  directDependenciesOnly: "Restrict remediation to direct dependencies only",
-  preferVersionBump:
-    "Reject override and patch remediation when version-bump-only policy is required",
-  installMode: "Install behavior profile: deterministic|prefer-offline|standard",
-  installPreferOffline: "Override prefer-offline flag behavior for install commands",
-  enforceFrozenLockfile: "Override frozen lockfile behavior for install commands",
-  workspace: "Workspace/package selector for scoped remediation in monorepos",
-  createChangeRequest: "Enable creation of native pull request / merge request after remediation",
-  changeRequestProvider: "Change request provider (github|gitlab)",
-  changeRequestGrouping: "Grouping strategy for change requests (all|per-cve|per-package)",
-  changeRequestRepository: "Repository slug override for change request creation",
-  changeRequestBaseBranch: "Base branch used for change request targeting",
-  changeRequestBranchPrefix: "Branch prefix for generated change request branches",
-  changeRequestTitlePrefix: "Title prefix for generated change requests",
-  includeTransitive: "Include transitive dependencies in the outdated check. Default: false.",
-  updateOutdated:
-    "Run in update-outdated mode: bump all outdated npm packages without requiring a CVE.",
-  kevMandatory:
-    "If true, CVEs with active CISA KEV status bypass severity filtering and are treated as mandatory",
-  epssThreshold:
-    "EPSS probability threshold (0..1) above which a CVE is treated as mandatory regardless of severity",
-  suppressionsFile:
-    "Path to a YAML file containing additional VEX suppression entries to merge with policy-inline suppressions",
-  slaCheck:
-    "Compare CVE publication dates against configured SLA windows and include breach records in the report output",
-  skipUnreachable:
-    "Skip remediation for CVEs where the vulnerable package cannot be reached from any project entry point (requires static import analysis)",
-  dispositionPolicy:
-    "Autonomous disposition policy controlling when fixes are auto-applied, held, or escalated",
-  dispositionPolicyMinConfidenceForAutoApply:
-    "Minimum patch confidence (0–1) required for auto-apply disposition",
-  dispositionPolicyHoldForTransitive:
-    "Hold transitive dependency fixes for human review instead of auto-applying",
-  dispositionPolicyEscalateOnSlaBreachSeverities:
-    "CVE severities that trigger escalate disposition on SLA breach",
-  dispositionPolicyEscalateOnKev: "Escalate disposition for CVEs with active CISA KEV status",
-  containmentMode:
-    "Roll back applied results whose disposition is hold-for-approval (low confidence, held transitive) so they await approval; urgent escalate fixes (KEV, SLA) are kept",
-  campaignMode: "Enable portfolio campaign mode to risk-rank targets before execution",
-  escalationGraph: "Optional mapping from unresolved reasons to intended escalation actions",
-  offlineIntelligence:
-    "Skip all network calls to intelligence sources. Only local inventory and npm-registry version resolution proceed.",
-  intelligenceSnapshotPath:
-    "Path to a local JSON snapshot of pre-fetched CVE intelligence (keyed by CVE ID) used when offline mode is active.",
-  proofOfFix:
-    "If true, enforce dual-stage exploit reproduction proof-of-fix verification (assert failure pre-patch, assert pass post-patch)",
-  requireProofOfFix: "If true, reject patches and roll back if proof-of-fix verification fails",
-  breakingChangeRefactor:
-    "Experimental: when a major upgrade breaks type checking, rewrite consumer call sites using built-in codemods (currently rimraf and uuid only); reverted if checks still fail",
-} as const;
+/**
+ * JSON Schema `properties` for a wire schema, as MCP tools and OpenAPI paths advertise them.
+ * Generated from the zod definitions in `platform/option-schemas.ts`, which also validate input,
+ * so what is advertised and what is accepted cannot differ.
+ */
+export function jsonSchemaProperties(schema: z.ZodType): Record<string, JsonSchemaProperty> {
+  const json = z.toJSONSchema(schema, { io: "input" }) as {
+    properties?: Record<string, JsonSchemaProperty>;
+  };
+  return json.properties ?? {};
+}
 
 export function createConstraintSchemaProperties(): Record<string, JsonSchemaProperty> {
-  return {
-    directDependenciesOnly: {
-      type: "boolean",
-      description: OPTION_DESCRIPTIONS.directDependenciesOnly,
-    },
-    preferVersionBump: { type: "boolean", description: OPTION_DESCRIPTIONS.preferVersionBump },
-    installMode: {
-      type: "string",
-      enum: ["deterministic", "prefer-offline", "standard"],
-      description: OPTION_DESCRIPTIONS.installMode,
-    },
-    installPreferOffline: {
-      type: "boolean",
-      description: OPTION_DESCRIPTIONS.installPreferOffline,
-    },
-    enforceFrozenLockfile: {
-      type: "boolean",
-      description: OPTION_DESCRIPTIONS.enforceFrozenLockfile,
-    },
-    workspace: { type: "string", description: OPTION_DESCRIPTIONS.workspace },
-    requireProofOfFix: { type: "boolean", description: OPTION_DESCRIPTIONS.requireProofOfFix },
-    enableBreakingChangeRefactor: {
-      type: "boolean",
-      description: OPTION_DESCRIPTIONS.breakingChangeRefactor,
-    },
-  };
+  return jsonSchemaProperties(constraintsSchema);
 }
 
 export function createRemediateOptionSchemaProperties(options?: {
@@ -118,232 +36,17 @@ export function createRemediateOptionSchemaProperties(options?: {
   includeSimulationMode?: boolean;
   includeEvidence?: boolean;
 }): Record<string, JsonSchemaProperty> {
-  const includeDryRun = options?.includeDryRun ?? true;
-  const includePreview = options?.includePreview ?? true;
-  const includeSimulationMode = options?.includeSimulationMode ?? true;
-  const includeEvidence = options?.includeEvidence ?? true;
-
-  return {
-    cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
-    packageManager: {
-      type: "string",
-      enum: [...PACKAGE_MANAGER_VALUES],
-      description: OPTION_DESCRIPTIONS.packageManager,
-    },
-    ...(includeDryRun
-      ? { dryRun: { type: "boolean", description: OPTION_DESCRIPTIONS.dryRun } }
-      : {}),
-    ...(includePreview
-      ? { preview: { type: "boolean", description: OPTION_DESCRIPTIONS.preview } }
-      : {}),
-    ...(includeSimulationMode
-      ? { simulationMode: { type: "boolean", description: OPTION_DESCRIPTIONS.simulationMode } }
-      : {}),
-    runTests: { type: "boolean", description: OPTION_DESCRIPTIONS.runTests },
-    model: { type: "string", description: OPTION_DESCRIPTIONS.model },
-    patchConfidenceThresholds: {
-      type: "object",
-      properties: {
-        low: {
-          type: "number",
-          minimum: 0,
-          maximum: 1,
-          description: OPTION_DESCRIPTIONS.patchConfidenceThresholdLow,
-        },
-        medium: {
-          type: "number",
-          minimum: 0,
-          maximum: 1,
-          description: OPTION_DESCRIPTIONS.patchConfidenceThresholdMedium,
-        },
-        high: {
-          type: "number",
-          minimum: 0,
-          maximum: 1,
-          description: OPTION_DESCRIPTIONS.patchConfidenceThresholdHigh,
-        },
-      },
-    },
-    patchesDir: { type: "string", description: OPTION_DESCRIPTIONS.patchesDir },
-    policy: { type: "string", description: OPTION_DESCRIPTIONS.policy },
-    ...(includeEvidence
-      ? { evidence: { type: "boolean", description: OPTION_DESCRIPTIONS.evidence } }
-      : {}),
-    requestId: { type: "string", description: OPTION_DESCRIPTIONS.requestId },
-    sessionId: { type: "string", description: OPTION_DESCRIPTIONS.sessionId },
-    parentRunId: { type: "string", description: OPTION_DESCRIPTIONS.parentRunId },
-    idempotencyKey: { type: "string", description: OPTION_DESCRIPTIONS.idempotencyKey },
-    resume: { type: "boolean", description: OPTION_DESCRIPTIONS.resume },
-    actor: { type: "string", description: OPTION_DESCRIPTIONS.actor },
-    source: {
-      type: "string",
-      enum: [...PROVENANCE_SOURCE_VALUES],
-      description: OPTION_DESCRIPTIONS.source,
-    },
-    constraints: {
-      type: "object",
-      properties: createConstraintSchemaProperties(),
-    },
-    changeRequest: {
-      type: "object",
-      properties: {
-        enabled: { type: "boolean", description: OPTION_DESCRIPTIONS.createChangeRequest },
-        provider: {
-          type: "string",
-          enum: ["github", "gitlab"],
-          description: OPTION_DESCRIPTIONS.changeRequestProvider,
-        },
-        grouping: {
-          type: "string",
-          enum: ["all", "per-cve", "per-package"],
-          description: OPTION_DESCRIPTIONS.changeRequestGrouping,
-        },
-        repository: { type: "string", description: OPTION_DESCRIPTIONS.changeRequestRepository },
-        baseBranch: { type: "string", description: OPTION_DESCRIPTIONS.changeRequestBaseBranch },
-        branchPrefix: {
-          type: "string",
-          description: OPTION_DESCRIPTIONS.changeRequestBranchPrefix,
-        },
-        titlePrefix: { type: "string", description: OPTION_DESCRIPTIONS.changeRequestTitlePrefix },
-      },
-    },
-    kevMandatory: { type: "boolean", description: OPTION_DESCRIPTIONS.kevMandatory },
-    epssThreshold: {
-      type: "number",
-      minimum: 0,
-      maximum: 1,
-      description: OPTION_DESCRIPTIONS.epssThreshold,
-    },
-    suppressionsFile: { type: "string", description: OPTION_DESCRIPTIONS.suppressionsFile },
-    slaCheck: { type: "boolean", description: OPTION_DESCRIPTIONS.slaCheck },
-    skipUnreachable: { type: "boolean", description: OPTION_DESCRIPTIONS.skipUnreachable },
-    dispositionPolicy: {
-      type: "object",
-      description: OPTION_DESCRIPTIONS.dispositionPolicy,
-      properties: {
-        minConfidenceForAutoApply: {
-          type: "number",
-          minimum: 0,
-          maximum: 1,
-          description: OPTION_DESCRIPTIONS.dispositionPolicyMinConfidenceForAutoApply,
-        },
-        holdForTransitive: {
-          type: "boolean",
-          description: OPTION_DESCRIPTIONS.dispositionPolicyHoldForTransitive,
-        },
-        escalateOnSlaBreachSeverities: {
-          type: "array",
-          items: { type: "string", enum: ["critical", "high", "medium", "low"] },
-          description: OPTION_DESCRIPTIONS.dispositionPolicyEscalateOnSlaBreachSeverities,
-        },
-        escalateOnKev: {
-          type: "boolean",
-          description: OPTION_DESCRIPTIONS.dispositionPolicyEscalateOnKev,
-        },
-      },
-    },
-    containmentMode: { type: "boolean", description: OPTION_DESCRIPTIONS.containmentMode },
-    campaignMode: { type: "boolean", description: OPTION_DESCRIPTIONS.campaignMode },
-    escalationGraph: {
-      type: "object",
-      description: OPTION_DESCRIPTIONS.escalationGraph,
-      properties: {
-        "constraint-blocked": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-        "transitive-dependency": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-        "install-failed": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-        "major-bump-required": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-        "no-safe-version": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-        "override-apply-failed": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-        "package-json-not-found": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-        "patch-apply-failed": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-        "patch-confidence-too-low": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-        "patch-generation-failed": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-        "patch-validation-failed": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-        "policy-blocked": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-        "requires-llm-fallback": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-        "source-fetch-failed": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-        "validation-failed": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-        "proof-of-fix-failed": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-        "breaking-change-unresolved": {
-          type: "string",
-          enum: ["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"],
-        },
-      },
-      additionalProperties: false,
-    },
-    offlineIntelligence: { type: "boolean", description: OPTION_DESCRIPTIONS.offlineIntelligence },
-    intelligenceSnapshotPath: {
-      type: "string",
-      description: OPTION_DESCRIPTIONS.intelligenceSnapshotPath,
-    },
-    proofOfFix: { type: "boolean", description: OPTION_DESCRIPTIONS.proofOfFix },
-    requireProofOfFix: { type: "boolean", description: OPTION_DESCRIPTIONS.requireProofOfFix },
-    breakingChangeRefactor: {
-      type: "boolean",
-      description: OPTION_DESCRIPTIONS.breakingChangeRefactor,
-    },
+  const omitted = {
+    ...(options?.includeDryRun === false ? { dryRun: true as const } : {}),
+    ...(options?.includePreview === false ? { preview: true as const } : {}),
+    ...(options?.includeSimulationMode === false ? { simulationMode: true as const } : {}),
+    ...(options?.includeEvidence === false ? { evidence: true as const } : {}),
   };
+  return jsonSchemaProperties(remediateOptionsSchema.omit(omitted));
 }
 
 export function createScanOptionSchemaProperties(): Record<string, JsonSchemaProperty> {
-  return {
-    ...createRemediateOptionSchemaProperties({ includeEvidence: true }),
-    format: {
-      type: "string",
-      enum: ["npm-audit", "yarn-audit", "sarif", "auto"],
-      description: OPTION_DESCRIPTIONS.format,
-    },
-    audit: { type: "boolean", description: OPTION_DESCRIPTIONS.audit },
-    slaCheck: { type: "boolean", description: OPTION_DESCRIPTIONS.slaCheck },
-  };
+  return jsonSchemaProperties(scanOptionsSchema);
 }
 
 export function createScanReportSchemaProperties(): Record<string, JsonSchemaProperty> {
@@ -390,11 +93,5 @@ export function createScanReportSchemaProperties(): Record<string, JsonSchemaPro
 }
 
 export function createUpdateOutdatedOptionSchemaProperties(): Record<string, JsonSchemaProperty> {
-  return {
-    ...createRemediateOptionSchemaProperties({
-      includeEvidence: true,
-      includeSimulationMode: false,
-    }),
-    includeTransitive: { type: "boolean", description: OPTION_DESCRIPTIONS.includeTransitive },
-  };
+  return jsonSchemaProperties(updateOutdatedOptionsSchema);
 }

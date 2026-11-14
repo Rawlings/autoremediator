@@ -9,17 +9,19 @@ implement is described in [How it works](../how-it-works.md).
 | Directory               | Responsibility                                                                         |
 | ----------------------- | -------------------------------------------------------------------------------------- |
 | `api/`                  | The public SDK and report helpers. Everything else is reachable only through it.        |
-| `cli/`, `mcp/`, `openapi/` | Thin entry points: parse input, call `api/`, format output. No remediation logic.    |
+| `catalog/`              | Every capability defined once as an operation (zod input, annotations, handler). MCP tools are generated from it; HTTP routes and CLI commands are next. |
+| `cli/`, `mcp/`, `openapi/` | Thin entry points: parse input, call `api/` or `catalog/`, format output. No remediation logic. |
 | `remediation/local/`    | The pipeline (`run.ts`) and its stages: strategies, fallback, disposition, SBOM.        |
 | `remediation/tools/`    | Single-purpose operations (version bump, override, patch apply, inventory, …).          |
 | `remediation/patch/`    | Patch generation behind the `PatchGenerator` port; diff and syntax validation.          |
 | `remediation/proof-of-fix/`, `remediation/refactor/` | Optional verification and codemods.                     |
 | `intelligence/sources/` | One module per advisory or signal source (OSV, GitHub, NVD, KEV, EPSS, npm registry).   |
 | `scanner/`              | Scanner-output adapters and the git-aware delta scan.                                   |
-| `platform/`             | Shared kernel: types, policy, rollback, safe subprocess execution, evidence, jobs.      |
+| `platform/`             | Shared kernel: types, policy, option schemas (`option-schemas.ts`, the one zod definition of every option), rollback, safe subprocess execution, evidence, jobs. |
 
-`platform/` must not import from the other directories, and the CLI, MCP and HTTP surfaces must go
-through `api/` rather than into `remediation/` or `intelligence/`. `platform/boundaries.test.ts`
+`platform/` must not import from the other directories, `catalog/` may use only `api/` and `platform/`,
+and the CLI, MCP and HTTP surfaces must go through `api/` rather than into `remediation/` or
+`intelligence/`. `platform/boundaries.test.ts`
 enforces both.
 
 ## The pipeline
