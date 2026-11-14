@@ -35,6 +35,11 @@ export interface SafeUpgradeResolution {
   upgradeLevel?: SafeUpgradeLevel;
   candidates: Partial<Record<SafeUpgradeLevel, string>>;
   majorOnlyFixAvailable: boolean;
+  /**
+   * Every acceptable fixed version, best first: smallest upgrade level, then lowest version,
+   * with deprecated releases last. Callers that reject `safeVersion` can try the next one.
+   */
+  ordered: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -43,7 +48,7 @@ export interface SafeUpgradeResolution {
 
 interface NpmPackument {
   name: string;
-  versions: Record<string, { version: string; dist: { tarball: string } }>;
+  versions: Record<string, { version: string; deprecated?: string; dist: { tarball: string } }>;
   "dist-tags": Record<string, string>;
   time: Record<string, string>;
 }
@@ -51,6 +56,45 @@ interface NpmPackument {
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
+
+export interface PackageVersionInfo {
+  versions: string[];
+  /** Versions the maintainers have marked deprecated. */
+  deprecated: Set<string>;
+}
+
+/**
+ * Fetch all published versions for an npm package, noting which are deprecated.
+ * Returns empty info if the package is not found or the registry is unreachable.
+ */
+export async function fetchPackageVersionInfo(
+  packageName: string,
+  registry: RegistryConfig = defaultRegistryConfig,
+): Promise<PackageVersionInfo> {
+  const url = packumentUrl(registry, packageName);
+
+  try {
+    const res = await httpClient({ url, headers: registry.headersFor(url) });
+
+    if (res.status === 404) return { versions: [], deprecated: new Set() };
+    if (!res.ok) {
+      throw new Error(`npm registry error ${res.status} for "${packageName}": ${res.text}`);
+    }
+
+    const data = res.data as NpmPackument;
+    const versions = Object.keys(data.versions);
+    const deprecated = new Set(
+      versions.filter((version) => Boolean(data.versions[version]?.deprecated)),
+    );
+    return { versions, deprecated };
+  } catch (err) {
+    // If httpClient throws (timeout, network error), treat as not found
+    if (err instanceof Error && err.message.includes("registry error")) {
+      throw err;
+    }
+    return { versions: [], deprecated: new Set() };
+  }
+}
 
 /**
  * Fetch all published versions for an npm package.
@@ -60,25 +104,7 @@ export async function fetchPackageVersions(
   packageName: string,
   registry: RegistryConfig = defaultRegistryConfig,
 ): Promise<string[]> {
-  const url = packumentUrl(registry, packageName);
-
-  try {
-    const res = await httpClient({ url, headers: registry.headersFor(url) });
-
-    if (res.status === 404) return [];
-    if (!res.ok) {
-      throw new Error(`npm registry error ${res.status} for "${packageName}": ${res.text}`);
-    }
-
-    const data = res.data as NpmPackument;
-    return Object.keys(data.versions);
-  } catch (err) {
-    // If httpClient throws (timeout, network error), treat as not found
-    if (err instanceof Error && err.message.includes("registry error")) {
-      throw err;
-    }
-    return [];
-  }
+  return (await fetchPackageVersionInfo(packageName, registry)).versions;
 }
 
 /**
@@ -116,19 +142,22 @@ export async function resolveSafeUpgradeVersion(
   vulnerableRange?: string,
   registry?: RegistryConfig,
 ): Promise<SafeUpgradeResolution> {
-  const versions = await fetchPackageVersions(packageName, registry);
-  if (!versions.length) {
-    return {
-      candidates: {},
-      majorOnlyFixAvailable: false,
-    };
-  }
+  const { versions, deprecated } = await fetchPackageVersionInfo(packageName, registry);
+  const none: SafeUpgradeResolution = {
+    candidates: {},
+    majorOnlyFixAvailable: false,
+    ordered: [],
+  };
+  if (!versions.length) return none;
 
-  const installed = semver.parse(installedVersion);
+  // Prereleases are only acceptable when the project is already on one or the advisory's fix is one.
+  const allowPrerelease =
+    Boolean(semver.prerelease(installedVersion)) || Boolean(semver.prerelease(firstPatchedVersion));
 
-  // All versions >= firstPatchedVersion, sorted ascending
-  const candidates = versions
+  // All fixed versions >= firstPatchedVersion that are not themselves in the vulnerable range
+  const fixed = versions
     .filter((v) => semver.valid(v) && semver.gte(v, firstPatchedVersion))
+    .filter((v) => allowPrerelease || !semver.prerelease(v))
     .filter((v) => {
       if (!vulnerableRange) return true;
       try {
@@ -140,53 +169,46 @@ export async function resolveSafeUpgradeVersion(
     })
     .toSorted(semver.compare);
 
-  if (!candidates.length) {
-    return {
-      candidates: {},
-      majorOnlyFixAvailable: false,
-    };
-  }
+  if (!fixed.length) return none;
+
+  // Deprecated releases are a last resort: they often still carry the fix, but maintainers
+  // advise against them.
+  const preferred = fixed.filter((v) => !deprecated.has(v));
+  const pool = preferred.length > 0 ? preferred : fixed;
 
   const categorizedCandidates: SafeUpgradeResolution["candidates"] = {};
+  const levelRank: Record<SafeUpgradeLevel, number> = { patch: 0, minor: 1, major: 2 };
+  const ranked: Array<{ version: string; rank: number }> = [];
 
-  for (const candidate of candidates) {
+  for (const candidate of pool) {
     const level = classifyUpgradeLevel(installedVersion, candidate);
     if (!level) continue;
+    ranked.push({ version: candidate, rank: levelRank[level] });
     if (!categorizedCandidates[level]) {
       categorizedCandidates[level] = candidate;
     }
   }
 
-  const safeVersion =
-    categorizedCandidates.patch ?? categorizedCandidates.minor ?? categorizedCandidates.major;
+  // `pool` is ascending by version, and the sort is stable, so equal ranks stay ascending.
+  const ordered = [
+    ...ranked.toSorted((a, b) => a.rank - b.rank).map((entry) => entry.version),
+    ...(pool === fixed ? [] : fixed.filter((v) => deprecated.has(v))),
+  ];
 
+  const safeVersion = ordered[0];
   if (!safeVersion) {
-    return {
-      candidates: categorizedCandidates,
-      majorOnlyFixAvailable: false,
-    };
-  }
-
-  const upgradeLevel = classifyUpgradeLevel(installedVersion, safeVersion);
-  const majorOnlyFixAvailable =
-    !categorizedCandidates.patch &&
-    !categorizedCandidates.minor &&
-    Boolean(categorizedCandidates.major);
-
-  if (!installed || !upgradeLevel) {
-    return {
-      safeVersion,
-      upgradeLevel,
-      candidates: categorizedCandidates,
-      majorOnlyFixAvailable,
-    };
+    return { candidates: categorizedCandidates, majorOnlyFixAvailable: false, ordered };
   }
 
   return {
     safeVersion,
-    upgradeLevel,
+    upgradeLevel: classifyUpgradeLevel(installedVersion, safeVersion),
     candidates: categorizedCandidates,
-    majorOnlyFixAvailable,
+    majorOnlyFixAvailable:
+      !categorizedCandidates.patch &&
+      !categorizedCandidates.minor &&
+      Boolean(categorizedCandidates.major),
+    ordered,
   };
 }
 

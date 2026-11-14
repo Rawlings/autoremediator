@@ -23,7 +23,8 @@ Optional credentials raise rate limits: `AUTOREMEDIATOR_NVD_API_KEY` and `GITHUB
 autoremediator CVE-2021-23337 --offline --intelligence-snapshot ./intel.json
 ```
 
-`--offline` skips every advisory request. Local inventory and registry version resolution still run.
+`--offline` skips every advisory request, including the check for advisories on candidate versions.
+Local inventory and registry version resolution still run.
 Without `--offline`, the snapshot is ignored.
 
 ## Snapshot format

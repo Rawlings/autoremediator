@@ -268,6 +268,7 @@ export async function runLocalRemediationPipeline(
       requireProofOfFix: resolved.requireProofOfFix,
       reproductionTest: options.reproductionTest,
       patchesDir: resolved.patchesDir,
+      offlineIntelligence: resolved.offlineIntelligence,
     });
 
     if (shouldAttemptPatchFallback(primary.result, constraints.preferVersionBump ?? false)) {

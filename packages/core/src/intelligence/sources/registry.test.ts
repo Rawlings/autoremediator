@@ -139,3 +139,79 @@ describe("classifyUpgradeLevel", () => {
     expect(classifyUpgradeLevel("1.0.0", "invalid")).toBeUndefined();
   });
 });
+
+function stubPackument(versions: Record<string, { deprecated?: string }>) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () =>
+        JSON.stringify({
+          versions: Object.fromEntries(
+            Object.entries(versions).map(([version, extra]) => [
+              version,
+              { version, dist: { tarball: `https://example.test/${version}.tgz` }, ...extra },
+            ]),
+          ),
+        }),
+    }),
+  );
+}
+
+describe("resolveSafeUpgradeVersion candidate selection", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("ignores prereleases unless the project or the advisory fix is itself a prerelease", async () => {
+    stubPackument({ "1.0.0": {}, "1.0.1-beta.1": {}, "1.0.1": {}, "1.1.0-rc.1": {} });
+
+    const stable = await resolveSafeUpgradeVersion("pkg", "1.0.0", "1.0.1", "<1.0.1");
+    expect(stable.ordered).toEqual(["1.0.1"]);
+
+    const onPrerelease = await resolveSafeUpgradeVersion(
+      "pkg",
+      "1.0.1-beta.0",
+      "1.0.1-beta.1",
+      "<1.0.1-beta.1",
+    );
+    expect(onPrerelease.ordered).toContain("1.0.1-beta.1");
+  });
+
+  it("ranks deprecated releases after any non-deprecated fix", async () => {
+    stubPackument({
+      "1.0.0": {},
+      "1.0.1": { deprecated: "use 1.0.2" },
+      "1.0.2": {},
+      "1.1.0": {},
+    });
+
+    const resolution = await resolveSafeUpgradeVersion("pkg", "1.0.0", "1.0.1", "<1.0.1");
+
+    expect(resolution.safeVersion).toBe("1.0.2");
+    expect(resolution.ordered).toEqual(["1.0.2", "1.1.0", "1.0.1"]);
+  });
+
+  it("falls back to a deprecated release when it is the only fix", async () => {
+    stubPackument({ "1.0.0": {}, "1.0.1": { deprecated: "old line" } });
+
+    const resolution = await resolveSafeUpgradeVersion("pkg", "1.0.0", "1.0.1", "<1.0.1");
+
+    expect(resolution.safeVersion).toBe("1.0.1");
+  });
+
+  it("orders every fixed version by upgrade level then version", async () => {
+    stubPackument({
+      "1.2.3": {},
+      "1.2.4": {},
+      "1.2.5": {},
+      "1.3.0": {},
+      "2.0.0": {},
+    });
+
+    const resolution = await resolveSafeUpgradeVersion("pkg", "1.2.3", "1.2.4", "<1.2.4");
+
+    expect(resolution.ordered).toEqual(["1.2.4", "1.2.5", "1.3.0", "2.0.0"]);
+  });
+});

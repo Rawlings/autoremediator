@@ -1,4 +1,4 @@
-import { generateObject, type LanguageModel } from "ai";
+import { generateText, Output, type LanguageModel } from "ai";
 import { z } from "zod";
 
 import type { PatchGenerator } from "../../platform/patch-generator.js";
@@ -24,16 +24,16 @@ export function createLlmPatchGenerator(model: LanguageModel): PatchGenerator {
   return {
     async propose(request) {
       const started = Date.now();
-      const { object, usage } = await generateObject({
+      const { output, usage } = await generateText({
         model,
-        schema: proposalSchema,
+        output: Output.object({ schema: proposalSchema }),
         system: PATCH_SYSTEM_PROMPT,
         prompt: buildPatchPrompt(request),
         temperature: 0,
       });
 
       return {
-        ...object,
+        ...output,
         usage: {
           model: modelName(model),
           latencyMs: Date.now() - started,

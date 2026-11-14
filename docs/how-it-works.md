@@ -22,12 +22,25 @@ the optional [patch fallback](guides/patch-generation.md).
 
 | Order | Strategy | Used when |
 | ----- | -------- | --------- |
-| 1 | **Version bump** | A safe version exists. The lowest one is chosen: patch, then minor. A major bump needs `allowMajorBumps: true`. |
+| 1 | **Version bump** | A safe version exists. The smallest upgrade is chosen: patch, then minor, then major (which needs `allowMajorBumps: true`). |
 | 2 | **Override** | The vulnerable package is transitive. Uses the package manager's own field (`overrides`, `pnpm.overrides`, `resolutions`, or `imports` in `deno.json`). |
 | 3 | **Patch** | No safe version exists, or the first two failed. Needs a [configured model](guides/patch-generation.md). |
 
-Candidate versions can be filtered by [supply-chain rules](reference/policy-file.md#constraints):
-minimum publish age, install scripts, provenance.
+### Choosing the version
+
+Fixed versions are tried best first: smallest upgrade, then lowest version. Prereleases are skipped
+(unless you are already on one), and deprecated releases come last. A candidate is passed over when
+it fails the [supply-chain rules](reference/policy-file.md#constraints) (minimum publish age,
+install scripts, provenance) or has known advisories of its own, and the next one is tried. If
+every fixed version has advisories, the first one is still used, because it removes the advisory
+you asked about. The advisory lookup is skipped with `--offline`, and a failed lookup never blocks
+a choice. Passed-over versions are named in the result message.
+
+A release cooldown set in your package manager is enforced as well, since installing a younger
+version would fail: npm `min-release-age`, pnpm `minimumReleaseAge` (the pnpm 11 default of 24
+hours applies when `packageManager` names pnpm 11 or newer), yarn `npmMinimalAgeGate`, and bun
+`minimumReleaseAge`. The stricter of that and `supplyChainPolicy.minPublishAgeHours` wins, and
+packages the package manager exempts stay exempt.
 
 ## Verification
 

@@ -66,7 +66,7 @@ escalationGraph: { no-safe-version: open-issue }
 | `typecheck` | Run the type checker after each change |
 | `requireProofOfFix` | Roll back changes whose proof of fix fails |
 | `enableBreakingChangeRefactor` | Experimental codemods |
-| `supplyChainPolicy.minPublishAgeHours` | Skip versions published more recently than this |
+| `supplyChainPolicy.minPublishAgeHours` | Skip versions published more recently than this (the package manager's own [cooldown](../how-it-works.md#choosing-the-version) is applied too, whichever is longer) |
 | `supplyChainPolicy.blockInstallScripts` | Skip versions that define install scripts |
 | `supplyChainPolicy.requireProvenance` | Require a provenance attestation |
 

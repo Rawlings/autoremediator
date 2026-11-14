@@ -538,6 +538,8 @@ export interface CorrelationContext {
 export interface SupplyChainPolicy {
   /** Minimum age of package version release in hours (e.g. 48 or 72) */
   minPublishAgeHours?: number;
+  /** Where `minPublishAgeHours` came from when it is not the policy file (e.g. the package manager's own setting). */
+  minPublishAgeSource?: string;
   /** Block versions that define preinstall or postinstall scripts */
   blockInstallScripts?: boolean;
   /** Require cryptographic provenance attestation (Sigstore / GitHub Actions build attestations) */

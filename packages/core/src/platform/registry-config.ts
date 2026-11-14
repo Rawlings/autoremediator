@@ -21,7 +21,7 @@ export interface RegistryConfig {
   headersFor(url: string): Record<string, string>;
 }
 
-type NpmrcValues = Map<string, string>;
+export type NpmrcValues = Map<string, string>;
 
 function expandEnv(value: string, env: NodeJS.ProcessEnv): string | undefined {
   let missing = false;
@@ -138,16 +138,21 @@ export function createRegistryConfig(
   };
 }
 
-export function loadRegistryConfig(
-  cwd?: string,
-  env: NodeJS.ProcessEnv = process.env,
-): RegistryConfig {
+/** User `.npmrc` overlaid by the project `.npmrc` in `cwd`; later sources win. */
+export function readNpmrcChain(cwd?: string, env: NodeJS.ProcessEnv = process.env): NpmrcValues {
   const userConfigPath = env["NPM_CONFIG_USERCONFIG"] ?? join(homedir(), ".npmrc");
   const merged: NpmrcValues = new Map(readNpmrc(userConfigPath, env));
   if (cwd) {
     for (const [key, value] of readNpmrc(join(cwd, ".npmrc"), env)) merged.set(key, value);
   }
-  return createRegistryConfig(merged, env);
+  return merged;
+}
+
+export function loadRegistryConfig(
+  cwd?: string,
+  env: NodeJS.ProcessEnv = process.env,
+): RegistryConfig {
+  return createRegistryConfig(readNpmrcChain(cwd, env), env);
 }
 
 /** Public registry, no credentials: the behaviour when no project configuration is supplied. */

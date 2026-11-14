@@ -92,7 +92,7 @@ export async function verifyPackageTrust(
       return {
         trusted: false,
         publishAgeHours,
-        reason: `Target release "${packageName}@${targetVersion}" was published only ${publishAgeHours.toFixed(1)}h ago (minimum required age is ${policy.minPublishAgeHours}h).`,
+        reason: `Target release "${packageName}@${targetVersion}" was published only ${publishAgeHours.toFixed(1)}h ago (minimum required age is ${policy.minPublishAgeHours}h${policy.minPublishAgeSource ? `, from ${policy.minPublishAgeSource}` : ""}).`,
       };
     }
   }
