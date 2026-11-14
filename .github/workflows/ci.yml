@@ -36,15 +36,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Build first: dependent packages (github-app, vscode-extension) resolve core's
+      # built types, and type-aware lint needs them too.
+      - name: Build all packages
+        run: pnpm build:all
+
       - name: Lint
         run: pnpm lint
 
       - name: Check formatting
         run: pnpm format:check
-
-      # Build first: dependent packages (github-app) typecheck against core's built types.
-      - name: Build all packages
-        run: pnpm build:all
 
       - name: Typecheck all packages
         run: pnpm typecheck:all
