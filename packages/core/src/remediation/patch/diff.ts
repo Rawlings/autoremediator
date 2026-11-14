@@ -6,7 +6,7 @@ interface DiffEdit {
 function splitLines(text: string): string[] {
   if (text.length === 0) return [];
   const lines = text.split(/\r?\n/);
-  if (lines.length > 0 && lines[lines.length - 1] === "") {
+  if (lines.length > 0 && lines.at(-1) === "") {
     lines.pop();
   }
   return lines;
@@ -30,11 +30,13 @@ function myersDiff(aLines: string[], bLines: string[]): DiffEdit[] {
     history.push(vCopy);
 
     for (let k = -d; k <= d; k += 2) {
+      const below = v[offset + k - 1] ?? 0;
+      const above = v[offset + k + 1] ?? 0;
       let x: number;
-      if (k === -d || (k !== d && v[offset + k - 1] < v[offset + k + 1])) {
-        x = v[offset + k + 1]!;
+      if (k === -d || (k !== d && below < above)) {
+        x = above;
       } else {
-        x = v[offset + k - 1]! + 1;
+        x = below + 1;
       }
       let y = x - k;
 
@@ -179,7 +181,7 @@ export function generateUnifiedDiff(
 
   for (const group of groups) {
     const firstChange = group[0]!;
-    const lastChange = group[group.length - 1]!;
+    const lastChange = group.at(-1)!;
 
     const startIndex = Math.max(0, firstChange - context);
     const endIndex = Math.min(edits.length, lastChange + context + 1);

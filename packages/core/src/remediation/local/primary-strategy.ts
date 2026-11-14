@@ -1,6 +1,4 @@
 import { resolveSafeUpgradeVersion } from "../../intelligence/sources/registry.js";
-import { applyVersionBumpTool } from "../tools/apply-version-bump.js";
-import { applyPackageOverrideTool } from "../tools/apply-package-override/index.js";
 import { verifyPackageTrust } from "../../platform/supply-chain.js";
 import type {
   PackageManager,
@@ -8,6 +6,8 @@ import type {
   RemediationConstraints,
   VulnerablePackage,
 } from "../../platform/types.js";
+import { applyPackageOverrideTool } from "../tools/apply-package-override/index.js";
+import { applyVersionBumpTool } from "../tools/apply-version-bump.js";
 
 export async function resolvePrimaryResult(params: {
   vulnerable: VulnerablePackage;

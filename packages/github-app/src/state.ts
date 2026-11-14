@@ -20,7 +20,11 @@ export class InMemoryAppStateStore implements AppStateStore {
   protected readonly deliveryOrder: string[] = [];
   protected readonly installations = new Map<number, "active" | "inactive">();
 
-  public constructor(private readonly maxTrackedDeliveries: number = 1000) {}
+  private readonly maxTrackedDeliveries: number;
+
+  public constructor(maxTrackedDeliveries: number = 1000) {
+    this.maxTrackedDeliveries = maxTrackedDeliveries;
+  }
 
   public hasProcessedDelivery(deliveryId: string): boolean {
     return this.deliveries.has(deliveryId);
@@ -114,7 +118,7 @@ export class FileAppStateStore implements AppStateStore {
       return;
     }
 
-    if (!parsed || parsed.schemaVersion !== 1) {
+    if (parsed?.schemaVersion !== 1) {
       return;
     }
 

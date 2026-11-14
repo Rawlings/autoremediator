@@ -1,10 +1,10 @@
+import type { AppStateStore } from "./state.js";
 import type {
   DispatchResult,
   RemediationJobResult,
   RemediationTriggerContext,
   WebhookContext,
 } from "./types.js";
-import type { AppStateStore } from "./state.js";
 
 interface DispatchOptions {
   stateStore?: AppStateStore;

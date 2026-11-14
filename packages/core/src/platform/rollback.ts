@@ -9,6 +9,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
+
 import { safeExeca } from "./safe-exec.js";
 
 export interface ProjectSnapshot {
@@ -112,7 +113,7 @@ async function isGitRepository(cwd: string): Promise<boolean> {
       cwd,
       stdio: "pipe",
     });
-    return String(res.stdout).trim() === "true";
+    return res.stdout.trim() === "true";
   } catch {
     return false;
   }
@@ -121,7 +122,7 @@ async function isGitRepository(cwd: string): Promise<boolean> {
 async function resolveGitRoot(cwd: string): Promise<string | undefined> {
   try {
     const res = await safeExeca("git", ["rev-parse", "--show-toplevel"], { cwd, stdio: "pipe" });
-    const root = String(res.stdout).trim();
+    const root = res.stdout.trim();
     return root.length > 0 ? root : undefined;
   } catch {
     return undefined;
@@ -163,7 +164,7 @@ export function parseGitPorcelainLine(
     filePath = filePath.split(" -> ").pop()!.trim();
   }
   if (filePath.startsWith('"') && filePath.endsWith('"')) {
-    filePath = filePath.slice(1, -1).replace(/\\"/g, '"');
+    filePath = filePath.slice(1, -1).replaceAll(String.raw`\"`, '"');
   }
   return { statusCode, filePath };
 }
@@ -174,7 +175,7 @@ async function getGitStatusPorcelain(cwd: string): Promise<string[]> {
       cwd,
       stdio: "pipe",
     });
-    return parsePorcelainLines(String(res.stdout));
+    return parsePorcelainLines(res.stdout);
   } catch {
     return [];
   }
@@ -409,7 +410,7 @@ export async function withAtomicRollback<T>(
 
   try {
     const result = await action();
-    if (options.shouldRollback && options.shouldRollback(result)) {
+    if (options.shouldRollback?.(result)) {
       await restoreProjectSnapshot(snapshot);
     }
     return result;

@@ -1,5 +1,6 @@
-import YAML from "yaml";
 import semver from "semver";
+import YAML from "yaml";
+
 import type { DeltaDependencyChange } from "../platform/types.js";
 
 /**
@@ -106,7 +107,7 @@ export function parseLockfileDependencies(
           }
         }
       } else {
-        const match = line.match(/^\s+version\s+"?([^"\s]+)"?/);
+        const match = /^\s+version\s+"?([^"\s]+)"?/.exec(line);
         if (match && currentPackages.length > 0) {
           const ver = match[1];
           for (const pkg of currentPackages) {
@@ -155,7 +156,7 @@ export function computeLockfileDiff(
             manifestPath: filename,
           });
         } else {
-          const [firstOld] = oldVers;
+          const [firstOld = ""] = oldVers;
           const cleanOld = semver.clean(firstOld) || semver.coerce(firstOld)?.version;
           const cleanNew = semver.clean(nVer) || semver.coerce(nVer)?.version;
           const isUpgrade =

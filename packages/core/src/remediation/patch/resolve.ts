@@ -1,6 +1,6 @@
+import type { PatchGenerator } from "../../platform/patch-generator.js";
 import { createLlmPatchGenerator } from "./llm-generator.js";
 import { resolveLanguageModel } from "./model.js";
-import type { PatchGenerator } from "../../platform/patch-generator.js";
 
 /**
  * Pick the patch generator for a run: an explicitly supplied one wins, otherwise a configured

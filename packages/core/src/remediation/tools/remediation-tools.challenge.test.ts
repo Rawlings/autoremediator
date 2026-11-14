@@ -1,13 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { checkInventoryTool, resolveInventoryVersion } from "./check-inventory.js";
+import { join } from "node:path";
+
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+
 import { resolveDenoInventory } from "../../platform/package-manager/list-parser.js";
 import { generateUnifiedDiff } from "../patch/diff.js";
 import { validatePatchedCodeSyntax } from "../patch/syntax.js";
 import { applyPatchFileTool } from "./apply-patch-file/index.js";
 import { applyVersionBumpTool } from "./apply-version-bump.js";
+import { checkInventoryTool, resolveInventoryVersion } from "./check-inventory.js";
 
 describe("Remediation Tools Adversarial White-Box Challenges", () => {
   let testDir: string;

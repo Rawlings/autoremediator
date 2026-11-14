@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type http from "node:http";
+
 import { sendJson } from "./http-utils.js";
 
 export type Role = "admin" | "operator" | "reader";
@@ -120,7 +121,7 @@ export function getRoleForToken(
         secret === token &&
         (role === "admin" || role === "operator" || role === "reader")
       ) {
-        return role as Role;
+        return role;
       }
     }
   }

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+
 import type { CveSeverity } from "../../platform/types.js";
 
 export interface NormalizedFinding {

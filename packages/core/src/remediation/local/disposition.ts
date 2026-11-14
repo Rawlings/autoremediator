@@ -1,3 +1,5 @@
+import type { ProjectSnapshot } from "../../platform/rollback.js";
+import { restoreProjectSnapshotSync } from "../../platform/rollback.js";
 import type {
   CveSeverity,
   Disposition,
@@ -6,8 +8,6 @@ import type {
   PatchResult,
   SlaBreach,
 } from "../../platform/types.js";
-import type { ProjectSnapshot } from "../../platform/rollback.js";
-import { restoreProjectSnapshotSync } from "../../platform/rollback.js";
 
 const ESCALATE_SEVERITIES_DEFAULT = ["CRITICAL", "HIGH"] as const;
 

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+
 import { createJobStatusPublisher, readRemediationStatusTarget } from "./status-publisher.js";
 import type { QueueJob } from "./types.js";
 

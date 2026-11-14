@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+
 import { verifyPackageTrust } from "./supply-chain.js";
 
 const mocked = vi.hoisted(() => ({

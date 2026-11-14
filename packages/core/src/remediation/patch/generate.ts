@@ -1,10 +1,10 @@
-import type { PatchConfidenceThresholds, PatchRiskLevel } from "../../platform/types.js";
-import { generateUnifiedDiff } from "./diff.js";
 import type {
   PatchGenerator,
   PatchProposal,
   PatchRequest,
 } from "../../platform/patch-generator.js";
+import type { PatchConfidenceThresholds, PatchRiskLevel } from "../../platform/types.js";
+import { generateUnifiedDiff } from "./diff.js";
 import { validatePatchedCodeSyntax } from "./syntax.js";
 
 export interface GeneratedPatch {

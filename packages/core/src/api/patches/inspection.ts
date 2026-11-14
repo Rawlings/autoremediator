@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
+
 import type {
   PatchArtifactInspection,
   PatchArtifactQueryOptions,
@@ -29,7 +30,7 @@ export async function listPatchArtifacts(
   const patchFiles = entries
     .filter((entry) => entry.isFile() && entry.name.endsWith(".patch"))
     .map((entry) => join(patchesDirPath, entry.name))
-    .sort((left, right) => left.localeCompare(right));
+    .toSorted((left, right) => left.localeCompare(right));
 
   const summaries = await Promise.all(
     patchFiles.map(async (patchFilePath) => {

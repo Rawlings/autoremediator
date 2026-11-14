@@ -4,8 +4,8 @@ vi.mock("../../platform/config.js", () => ({
   getNvdConfig: () => ({ apiKey: "test-key" }),
 }));
 
-import { enrichWithNvd, fetchNvdCvss } from "./nvd.js";
 import type { CveDetails } from "../../platform/types.js";
+import { enrichWithNvd, fetchNvdCvss } from "./nvd.js";
 
 describe("nvd source", () => {
   it("fetchNvdCvss maps CVSS metric to score and severity", async () => {

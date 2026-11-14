@@ -1,3 +1,10 @@
+import { mkdir, mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { z } from "zod";
+
+import { safeExeca } from "../../platform/safe-exec.js";
 /**
  * Tool: fetch-package-source
  *
@@ -5,11 +12,6 @@
  * Uses curl with -f -s -S -L to download and execa to extract tar archives.
  */
 import { defineTool } from "./tool-compat.js";
-import { z } from "zod";
-import { mkdir, mkdtemp, readdir, readFile, rm } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { safeExeca } from "../../platform/safe-exec.js";
 
 /**
  * Interface for the tool's return value.
@@ -97,7 +99,7 @@ export const fetchPackageSourceTool = defineTool({
             } else if (file.isFile()) {
               // Check if file matches any pattern (escape dots before expanding wildcards)
               const matches = safePatterns.some((pattern) => {
-                const escaped = pattern.replace(/\./g, "\\.").replace(/\*/g, ".*");
+                const escaped = pattern.replaceAll(".", String.raw`\.`).replaceAll("*", ".*");
                 const regex = new RegExp(`^${escaped}$`);
                 return regex.test(file.name);
               });

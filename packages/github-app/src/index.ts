@@ -1,7 +1,8 @@
-import { createGitHubAppServer } from "./server.js";
-import { loadGitHubAppConfig } from "./config.js";
-import { createFileAppStateStore } from "./state.js";
 import { pathToFileURL } from "node:url";
+
+import { loadGitHubAppConfig } from "./config.js";
+import { createGitHubAppServer } from "./server.js";
+import { createFileAppStateStore } from "./state.js";
 
 export { loadGitHubAppConfig } from "./config.js";
 export { createGitHubAppServer, handleRequest } from "./server.js";
@@ -51,13 +52,11 @@ export async function startGitHubAppServer(): Promise<void> {
     githubApiUrl: config.githubApiUrl,
     onEventProcessed: config.logEventTraces
       ? (trace) => {
-          // eslint-disable-next-line no-console
           console.log(JSON.stringify({ source: "github-app", type: "event-trace", ...trace }));
         }
       : undefined,
     onStatusTrace: config.logEventTraces
       ? (message) => {
-          // eslint-disable-next-line no-console
           console.log(JSON.stringify({ source: "github-app", type: "status-trace", message }));
         }
       : undefined,
@@ -70,15 +69,13 @@ export async function startGitHubAppServer(): Promise<void> {
     });
   });
 
-  // eslint-disable-next-line no-console
   console.log(`autoremediator github app server listening on :${config.port}`);
 }
 
 const entrypointArg = process.argv[1];
 if (entrypointArg && import.meta.url === pathToFileURL(entrypointArg).href) {
-  startGitHubAppServer().catch((error) => {
+  startGitHubAppServer().catch((error: unknown) => {
     const message = error instanceof Error ? error.message : "Failed to start github app server";
-    // eslint-disable-next-line no-console
     console.error(message);
     process.exitCode = 1;
   });

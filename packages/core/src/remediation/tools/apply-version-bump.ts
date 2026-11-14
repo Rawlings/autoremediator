@@ -1,29 +1,10 @@
-/**
- * Tool: apply-version-bump
- *
- * Updates the consumer's package.json to the safe version and runs npm install.
- * Respects --dry-run: in dry-run mode it reports what would happen but writes nothing.
- */
-import { defineTool } from "./tool-compat.js";
-import { z } from "zod";
-import { join } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
 import { rm } from "node:fs/promises";
-import { safeExeca } from "../../platform/safe-exec.js";
-import { LONG_RUNNING_TIMEOUT_MS } from "../../platform/timeouts.js";
+import { join } from "node:path";
+
 import semver from "semver";
-import type {
-  PatchResult,
-  ProofOfFixPhaseResult,
-  ProofOfFixVerification,
-} from "../../platform/types.js";
-import {
-  assembleProofOfFixVerification,
-  prepareReproductionTestFile,
-  runProofOfFixPhase,
-} from "../proof-of-fix/runner.js";
-import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
-import { withRepoLock } from "../../platform/repo-lock.js";
+import { z } from "zod";
+
 import {
   detectPackageManager,
   getYarnMajorVersion,
@@ -31,12 +12,31 @@ import {
   resolveInstallCommand,
   resolveTestCommand,
   resolveTypecheckCommand,
-  type PackageManager,
 } from "../../platform/package-manager/index.js";
-
+import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
+import { withRepoLock } from "../../platform/repo-lock.js";
+import { safeExecaCommand } from "../../platform/safe-exec-command.js";
+import { LONG_RUNNING_TIMEOUT_MS } from "../../platform/timeouts.js";
+import type {
+  PatchResult,
+  ProofOfFixPhaseResult,
+  ProofOfFixVerification,
+} from "../../platform/types.js";
 import { findDeclaringWorkspacePackage } from "../../platform/workspace.js";
+import {
+  assembleProofOfFixVerification,
+  prepareReproductionTestFile,
+  runProofOfFixPhase,
+} from "../proof-of-fix/runner.js";
 import { findPackageCallSites } from "../refactor/call-site-finder.js";
 import { refactorConsumerCallSites, revertRefactorSnapshots } from "../refactor/codemods.js";
+/**
+ * Tool: apply-version-bump
+ *
+ * Updates the consumer's package.json to the safe version and runs npm install.
+ * Respects --dry-run: in dry-run mode it reports what would happen but writes nothing.
+ */
+import { defineTool } from "./tool-compat.js";
 
 interface RawPackageJson {
   dependencies?: Record<string, string>;
@@ -117,7 +117,7 @@ export const applyVersionBumpTool = defineTool({
     requireProofOfFix,
     patchesDir,
   }): Promise<PatchResult> => {
-    const pm = (packageManager ?? detectPackageManager(cwd)) as PackageManager;
+    const pm = packageManager ?? detectPackageManager(cwd);
 
     let pkgPath = join(cwd, "package.json");
     const loadedPolicy = loadPolicy(cwd, policy);
@@ -188,7 +188,7 @@ export const applyVersionBumpTool = defineTool({
       const declaringWorkspace = findDeclaringWorkspacePackage(cwd, packageName, workspace);
       if (declaringWorkspace) {
         pkgPath = declaringWorkspace.manifestPath;
-        pkgJson = declaringWorkspace.manifest as RawPackageJson;
+        pkgJson = declaringWorkspace.manifest;
         depField = (["dependencies", "devDependencies", "peerDependencies"] as DepField[]).find(
           (f) => pkgJson[f]?.[packageName] !== undefined,
         );
@@ -211,7 +211,7 @@ export const applyVersionBumpTool = defineTool({
     const currentRange = pkgJson[depField]![packageName]!;
 
     // Preserve the range prefix (^, ~, empty) from the existing entry
-    const prefixMatch = currentRange.match(/^([~^]?)/);
+    const prefixMatch = /^([~^]?)/.exec(currentRange);
     const prefix = prefixMatch?.[1] ?? "";
     const newRange = `${prefix}${toVersion}`;
 
@@ -294,8 +294,7 @@ export const applyVersionBumpTool = defineTool({
 
       // Run package-manager install
       try {
-        const [installCmd, ...installArgs] = effectiveInstallCommand;
-        await safeExeca(installCmd, installArgs, {
+        await safeExecaCommand(effectiveInstallCommand, {
           timeoutMs: LONG_RUNNING_TIMEOUT_MS,
           cwd,
           stdio: "pipe",
@@ -329,8 +328,7 @@ export const applyVersionBumpTool = defineTool({
       }> {
         if (runTests) {
           try {
-            const [testCmd, ...testArgs] = effectiveTestCommand;
-            await safeExeca(testCmd, testArgs, {
+            await safeExecaCommand(effectiveTestCommand, {
               timeoutMs: LONG_RUNNING_TIMEOUT_MS,
               cwd,
               stdio: "pipe",
@@ -348,8 +346,7 @@ export const applyVersionBumpTool = defineTool({
         }
         if (shouldTypecheck && effectiveTypecheckCommand.length > 0) {
           try {
-            const [tcCmd, ...tcArgs] = effectiveTypecheckCommand;
-            await safeExeca(tcCmd, tcArgs, {
+            await safeExecaCommand(effectiveTypecheckCommand, {
               timeoutMs: LONG_RUNNING_TIMEOUT_MS,
               cwd,
               stdio: "pipe",
@@ -401,8 +398,7 @@ export const applyVersionBumpTool = defineTool({
         writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
         try {
-          const [rollbackCmd, ...rollbackArgs] = effectiveInstallCommand;
-          await safeExeca(rollbackCmd, rollbackArgs, {
+          await safeExecaCommand(effectiveInstallCommand, {
             timeoutMs: LONG_RUNNING_TIMEOUT_MS,
             cwd,
             stdio: "pipe",
@@ -410,7 +406,7 @@ export const applyVersionBumpTool = defineTool({
         } catch {}
 
         const failureMessage = validationResult.error || "Unknown validation error";
-        const prefix = validationResult.isTypecheck
+        const failurePrefix = validationResult.isTypecheck
           ? `TypeCheck validation failed (${effectiveTypecheckCommand.join(" ")})`
           : `${effectiveTestCommand.join(" ")} failed`;
 
@@ -424,7 +420,7 @@ export const applyVersionBumpTool = defineTool({
           unresolvedReason: shouldAttemptRefactor
             ? "breaking-change-unresolved"
             : "validation-failed",
-          message: `${prefix} after upgrading "${packageName}" to ${toVersion}. Rolled back to ${currentRange}. Error: ${failureMessage}`,
+          message: `${failurePrefix} after upgrading "${packageName}" to ${toVersion}. Rolled back to ${currentRange}. Error: ${failureMessage}`,
         };
       }
 
@@ -441,8 +437,7 @@ export const applyVersionBumpTool = defineTool({
           writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
           try {
-            const [rollbackCmd, ...rollbackArgs] = effectiveInstallCommand;
-            await safeExeca(rollbackCmd, rollbackArgs, {
+            await safeExecaCommand(effectiveInstallCommand, {
               timeoutMs: LONG_RUNNING_TIMEOUT_MS,
               cwd,
               stdio: "pipe",
@@ -494,8 +489,7 @@ export const applyVersionBumpTool = defineTool({
 
       if (effectiveDedupeCommand.length > 0) {
         try {
-          const [dedupeCmd, ...dedupeArgs] = effectiveDedupeCommand;
-          await safeExeca(dedupeCmd, dedupeArgs, {
+          await safeExecaCommand(effectiveDedupeCommand, {
             timeoutMs: LONG_RUNNING_TIMEOUT_MS,
             cwd,
             stdio: "pipe",

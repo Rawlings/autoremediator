@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { healPullRequest, repairFileContent, resetHealingAttempts } from "./pr-healer.js";
+
 import { DEFAULT_REPO_CONFIG } from "../types.js";
+import { healPullRequest, repairFileContent, resetHealingAttempts } from "./pr-healer.js";
 
 describe("PR Auto-Healer", () => {
   beforeEach(() => {
@@ -135,7 +136,7 @@ describe("PR Auto-Healer", () => {
 
       // Verify healing commit was pushed with new content
       expect(createOrUpdateFileContents).toHaveBeenCalledTimes(1);
-      const commitArgs = createOrUpdateFileContents.mock.calls[0][0];
+      const commitArgs = createOrUpdateFileContents.mock.calls[0]![0];
       expect(commitArgs.branch).toBe("autoremediator/cve-2026-1234");
       expect(commitArgs.sha).toBe("blob-sha-1234");
       const decodedContent = Buffer.from(commitArgs.content, "base64").toString("utf8");

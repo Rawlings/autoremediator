@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { applyDispositionAndContainment, computeDisposition } from "./disposition.js";
+
 import type { DispositionSignals, DispositionPolicy } from "../../platform/types.js";
+import { applyDispositionAndContainment, computeDisposition } from "./disposition.js";
 
 const base: DispositionSignals = { applied: false };
 

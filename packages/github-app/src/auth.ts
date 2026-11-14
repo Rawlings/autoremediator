@@ -1,4 +1,5 @@
 import { createAppAuth } from "@octokit/auth-app";
+
 import type { InstallationToken } from "./types.js";
 
 interface InstallationTokenProvider {
@@ -17,7 +18,9 @@ interface CachedInstallationToken {
 }
 
 function normalizePrivateKey(privateKey: string): string {
-  const normalized = privateKey.includes("\\n") ? privateKey.replace(/\\n/g, "\n") : privateKey;
+  const normalized = privateKey.includes(String.raw`\n`)
+    ? privateKey.replaceAll(String.raw`\n`, "\n")
+    : privateKey;
   if (!normalized.includes("-----BEGIN") || !normalized.includes("-----END")) {
     throw new Error("GitHub App private key does not appear to be valid PEM format");
   }

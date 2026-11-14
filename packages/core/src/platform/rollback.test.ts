@@ -1,7 +1,9 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import {
   createProjectSnapshot,
   discoverProjectFiles,
@@ -30,7 +32,7 @@ describe("rollback", () => {
     writeFileSync(join(dir, "packages", "pkg-b", "unrelated.txt"), "");
 
     const files = discoverProjectFiles(dir);
-    expect(files.length).toBe(4);
+    expect(files).toHaveLength(4);
     expect(files.some((f) => f.includes("pkg-a/package.json"))).toBe(true);
     expect(files.some((f) => f.includes("pnpm-lock.yaml"))).toBe(true);
   });

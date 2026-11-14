@@ -1,11 +1,12 @@
-import * as readline from "node:readline/promises";
 import { stdin as defaultInput, stdout as defaultOutput } from "node:process";
-import { remediate } from "../api/remediate/index.js";
-import { parseScanInput, parseScanInputFromAudit, uniqueCveIds } from "../scanner/index.js";
+import * as readline from "node:readline/promises";
+
 import { evaluatePackage } from "../api/evaluate/index.js";
-import { saveSuppressionToPolicy, saveSuppressionToFile } from "../platform/policy.js";
+import { remediate } from "../api/remediate/index.js";
 import { saveSuppressionToVexDocument } from "../api/vex/index.js";
+import { saveSuppressionToPolicy, saveSuppressionToFile } from "../platform/policy.js";
 import type { VexJustification, VexSuppression } from "../platform/types.js";
+import { parseScanInput, parseScanInputFromAudit, uniqueCveIds } from "../scanner/index.js";
 import type { CommandOptions } from "./types.js";
 
 export interface InteractiveTriageOptions extends Omit<Partial<CommandOptions>, "input"> {
@@ -80,10 +81,7 @@ export async function runInteractiveTriage(
   try {
     for (let i = 0; i < cveIds.length; i++) {
       const cveId = cveIds[i]!;
-      const matchingFindings = findings.filter(
-        (f) => f.cveId.toUpperCase() === cveId.toUpperCase(),
-      );
-      const firstFinding = matchingFindings[0];
+      const firstFinding = findings.find((f) => f.cveId.toUpperCase() === cveId.toUpperCase());
       const pkgName = firstFinding?.packageName ?? "unknown package";
       const severity = firstFinding?.severity ?? "UNKNOWN";
 

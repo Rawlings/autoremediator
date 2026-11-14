@@ -1,4 +1,3 @@
-import type { RemediateOptions, RemediationReport } from "../platform/types.js";
 import {
   addEvidenceStep,
   createEvidenceLog,
@@ -6,6 +5,7 @@ import {
   type EvidenceLog,
   writeEvidenceLog,
 } from "../platform/evidence.js";
+import type { RemediateOptions, RemediationReport } from "../platform/types.js";
 
 export function createRemediateEvidence(params: {
   cwd: string;
@@ -141,9 +141,7 @@ export function addRemediateDispositionStep(
 
   for (const result of report.results) {
     if (!result.disposition) continue;
-    if (!byCveId[cveId]) {
-      byCveId[cveId] = {};
-    }
+    byCveId[cveId] ??= {};
     byCveId[cveId][result.packageName] = {
       disposition: result.disposition,
       dispositionReason: result.dispositionReason,

@@ -1,4 +1,6 @@
 import * as vscode from "vscode";
+
+import { PatchDiffProvider, PATCH_SCHEME } from "./patch-diff-provider";
 import {
   scanForVulns,
   applyFix,
@@ -6,7 +8,6 @@ import {
   scanGitDelta,
   type VulnFinding,
 } from "./runner";
-import { PatchDiffProvider, PATCH_SCHEME } from "./patch-diff-provider";
 
 const DIAGNOSTIC_SOURCE = "autoremediator";
 
@@ -131,17 +132,19 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
 
     vscode.commands.registerCommand("autoremediator.fixCve", (cveId: string, cwd: string) => {
-      void applyFix(cveId, cwd)
-        .then((output) => {
+      void (async () => {
+        try {
+          const output = await applyFix(cveId, cwd);
           void vscode.window.showInformationMessage(`Autoremediator: ${output}`);
           // Refresh diagnostics after fix.
           for (const doc of vscode.workspace.textDocuments) {
             if (isPackageJson(doc)) void scheduleScan(doc, true);
           }
-        })
-        .catch((err: Error) => {
-          void vscode.window.showErrorMessage(`Autoremediator fix failed: ${err.message}`);
-        });
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          void vscode.window.showErrorMessage(`Autoremediator fix failed: ${message}`);
+        }
+      })();
     }),
   );
 
@@ -210,7 +213,7 @@ function findPackageRange(
   doc: vscode.TextDocument,
   packageName: string,
 ): vscode.Range | undefined {
-  const escaped = packageName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escaped = packageName.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
   const re = new RegExp(`"${escaped}"\\s*:`, "g");
   let match: RegExpExecArray | null;
   while ((match = re.exec(text)) !== null) {

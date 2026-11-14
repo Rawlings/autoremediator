@@ -1,7 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { checkReachability } from "./index.js";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { describe, expect, it } from "vitest";
+
+import { checkReachability } from "./index.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const fixtureDir = join(__dirname, "../../../");

@@ -1,8 +1,8 @@
+import type { CheckReachabilityOptions, ReachabilityAssessment } from "../../platform/types.js";
 /**
  * Public SDK API: checkReachability
  */
 import { assessPackageReachability } from "../../remediation/tools/check-reachability.js";
-import type { CheckReachabilityOptions, ReachabilityAssessment } from "../../platform/types.js";
 
 export async function checkReachability(
   options: CheckReachabilityOptions,

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Autoremediator shared baseline (TypeScript 7, Node 26+, ESM, bundler resolution)",
+  "compilerOptions": {
+    // Language and environment
+    "target": "ES2025",
+    "lib": ["ES2025"],
+    "types": [],
+    "libReplacement": false,
+
+    // Modules: sources are bundled (tsup/esbuild), so resolution is "bundler"
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "noUncheckedSideEffectImports": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // Type safety. Deliberately NOT enabled: exactOptionalPropertyTypes (the option bags pass
+    // `T | undefined` into `x?: T` throughout the API surface) and noPropertyAccessFromIndexSignature
+    // (it only forces bracket access on process.env and Records; no safety gain).
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    // Output
+    "sourceMap": true,
+    "skipLibCheck": true
+  }
+}

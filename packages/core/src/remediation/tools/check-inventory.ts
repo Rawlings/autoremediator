@@ -1,3 +1,19 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+import semver from "semver";
+import { z } from "zod";
+
+import {
+  detectPackageManager,
+  parseListOutput,
+  resolveListCommand,
+} from "../../platform/package-manager/index.js";
+import { resolveDenoInventory } from "../../platform/package-manager/list-parser.js";
+import { loadPolicy } from "../../platform/policy.js";
+import { safeExeca } from "../../platform/safe-exec.js";
+import type { InventoryPackage } from "../../platform/types.js";
+import { findDeclaringWorkspacePackage } from "../../platform/workspace.js";
 /**
  * Tool: check-inventory
  *
@@ -5,21 +21,6 @@
  * a flat list of installed packages and their resolved versions.
  */
 import { defineTool } from "./tool-compat.js";
-import { z } from "zod";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { safeExeca } from "../../platform/safe-exec.js";
-import type { InventoryPackage } from "../../platform/types.js";
-import {
-  detectPackageManager,
-  parseListOutput,
-  resolveListCommand,
-  type PackageManager,
-} from "../../platform/package-manager/index.js";
-import { resolveDenoInventory } from "../../platform/package-manager/list-parser.js";
-import { loadPolicy } from "../../platform/policy.js";
-import semver from "semver";
-import { findDeclaringWorkspacePackage } from "../../platform/workspace.js";
 
 interface PackageJson {
   dependencies?: Record<string, string>;
@@ -98,7 +99,7 @@ export const checkInventoryTool = defineTool({
       };
     }
 
-    const pm = (packageManager ?? detectPackageManager(cwd)) as PackageManager;
+    const pm = packageManager ?? detectPackageManager(cwd);
     const loadedPolicy = loadPolicy(cwd, policy);
     const listCommand = resolveListCommand(pm, {
       ...loadedPolicy.constraints,

@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+
 import type { ScanReport } from "autoremediator";
 import { describe, expect, it } from "vitest";
+
 import { ADVISORY_ID, extractFindings } from "./runner.js";
 
 // Captured from `autoremediator scan --output-format json` so the extension is checked against

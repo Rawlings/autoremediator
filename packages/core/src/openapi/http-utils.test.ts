@@ -1,6 +1,8 @@
 import type http from "node:http";
 import { Readable } from "node:stream";
+
 import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { HttpError, readBody } from "./http-utils.js";
 
 function fakeRequest(

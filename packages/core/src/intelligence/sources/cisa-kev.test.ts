@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { findKevEntry } from "./cisa-kev.js";
 
 describe("cisa-kev source", () => {

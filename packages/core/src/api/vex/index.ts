@@ -1,6 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { randomUUID } from "node:crypto";
+
 import type { PatchResult, RemediationReport, VexSuppression } from "../../platform/types.js";
 import type { ScanReport } from "../contracts.js";
 
@@ -45,7 +46,7 @@ const isSuppressed = (result: PatchResult): boolean => result.suppressedBy != nu
  */
 function mapReportToVulnerability(report: RemediationReport): CycloneDxVexVulnerability {
   const { results } = report;
-  const resolved = results.filter(isResolved);
+  const resolved = results.filter((result) => isResolved(result));
 
   if (results.length > 0 && results.every((r) => isSuppressed(r))) {
     const suppression = results[0]!.suppressedBy!;
@@ -105,13 +106,15 @@ export function toCycloneDxVex(
   let remediationReports: RemediationReport[];
 
   // Discriminate: ScanReport has `reports` array; RemediationReport has `cveId`
-  if ("reports" in report && Array.isArray((report as ScanReport).reports)) {
-    remediationReports = (report as ScanReport).reports;
+  if ("reports" in report && Array.isArray(report.reports)) {
+    remediationReports = report.reports;
   } else {
     remediationReports = [report as RemediationReport];
   }
 
-  const vulnerabilities = remediationReports.map(mapReportToVulnerability);
+  const vulnerabilities = remediationReports.map((remediationReport) =>
+    mapReportToVulnerability(remediationReport),
+  );
 
   return {
     bomFormat: "CycloneDX",
@@ -167,14 +170,14 @@ export function saveSuppressionToVexDocument(
     },
   };
 
-  if (existingIndex >= 0) {
+  if (existingIndex !== -1) {
     doc.vulnerabilities[existingIndex] = vulnEntry;
   } else {
     doc.vulnerabilities.push(vulnEntry);
   }
 
   doc.metadata.timestamp = new Date().toISOString();
-  doc.version = ((doc.version as number) ?? 1) + 1;
+  doc.version = (doc.version ?? 1) + 1;
 
   writeFileSync(filePath, JSON.stringify(doc, null, 2) + "\n", "utf8");
 }

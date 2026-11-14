@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildSbom } from "./sbom.js";
+
 import type { InventoryPackage, PatchResult } from "../../platform/types.js";
+import { buildSbom } from "./sbom.js";
 
 const pkg = (name: string, version: string, type: "direct" | "transitive"): InventoryPackage => ({
   name,

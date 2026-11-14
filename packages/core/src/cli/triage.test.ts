@@ -1,12 +1,14 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { PassThrough } from "node:stream";
+
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { parse as yamlParse } from "yaml";
-import { runInteractiveTriage } from "./triage.js";
-import { saveSuppressionToPolicy, saveSuppressionToFile } from "../platform/policy.js";
+
 import { saveSuppressionToVexDocument } from "../api/vex/index.js";
+import { saveSuppressionToPolicy, saveSuppressionToFile } from "../platform/policy.js";
+import { runInteractiveTriage } from "./triage.js";
 
 vi.mock("../remediation/evaluate-package.js", () => ({
   evaluatePackage: vi.fn().mockResolvedValue({ vulnerabilities: [] }),

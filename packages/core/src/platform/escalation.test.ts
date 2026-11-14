@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { computeEscalationAction, DEFAULT_ESCALATION_GRAPH } from "./escalation.js";
 
 describe("DEFAULT_ESCALATION_GRAPH", () => {

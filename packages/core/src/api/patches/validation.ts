@@ -1,9 +1,9 @@
+import { detectPackageManager } from "../../platform/package-manager/index.js";
 import type {
   PatchArtifactQueryOptions,
   PatchArtifactValidationReport,
   PatchValidationPhase,
 } from "../../platform/types.js";
-import { detectPackageManager } from "../../platform/package-manager/index.js";
 import { checkInventoryTool } from "../../remediation/tools/check-inventory.js";
 import { inspectPatchArtifact } from "./inspection.js";
 
@@ -64,13 +64,7 @@ export async function validatePatchArtifact(
 
   const cwd = options.cwd ?? process.cwd();
   const packageManager = options.packageManager ?? detectPackageManager(cwd);
-  const inventory = (await (checkInventoryTool as any).execute({
-    cwd,
-    packageManager,
-  })) as {
-    error?: string;
-    packages?: Array<{ name: string; version: string }>;
-  };
+  const inventory = await checkInventoryTool.execute({ cwd, packageManager });
 
   if (inventory.error) {
     validationPhases.push({

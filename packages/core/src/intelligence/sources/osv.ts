@@ -6,8 +6,9 @@
  * Uses shared HTTP client for consistent error handling and timeouts.
  */
 import semver from "semver";
-import type { AffectedPackage, CveDetails } from "../../platform/types.js";
+
 import { httpClient } from "../../platform/http-client.js";
+import type { AffectedPackage, CveDetails } from "../../platform/types.js";
 
 const OSV_BASE = "https://api.osv.dev/v1";
 
@@ -79,7 +80,7 @@ export async function fetchOsvVuln(cveId: string): Promise<OsvVulnerability | nu
   } catch (err) {
     // If httpClient throws (timeout, network error), convert to HTTP error
     if (err instanceof Error) {
-      throw new Error(`OSV API error for ${cveId}: ${err.message}`);
+      throw new Error(`OSV API error for ${cveId}: ${err.message}`, { cause: err });
     }
     throw err;
   }
@@ -120,7 +121,7 @@ export async function queryOsvPackage(
     return data.vulns ?? [];
   } catch (err) {
     if (err instanceof Error) {
-      throw new Error(`OSV API error for query "${packageName}": ${err.message}`);
+      throw new Error(`OSV API error for query "${packageName}": ${err.message}`, { cause: err });
     }
     throw err;
   }
@@ -221,11 +222,12 @@ function deriveSeverity(severityEntries?: OsvVulnerability["severity"]): CveDeta
 
   // Prefer CVSS_V3 type
   const cvssEntry = severityEntries.find((s) => s.type === "CVSS_V3") ?? severityEntries[0];
+  if (!cvssEntry) return "UNKNOWN";
 
   // Extract base score from vector string, e.g. "CVSS:3.1/AV:N/AC:L/.../7.5/..."
-  const scoreMatch = cvssEntry.score.match(/(\d+\.\d+)$/);
-  if (scoreMatch) {
-    const score = parseFloat(scoreMatch[1]);
+  const scoreMatch = /(\d+\.\d+)$/.exec(cvssEntry.score);
+  if (scoreMatch?.[1] !== undefined) {
+    const score = Number.parseFloat(scoreMatch[1]);
     if (score >= 9.0) return "CRITICAL";
     if (score >= 7.0) return "HIGH";
     if (score >= 4.0) return "MEDIUM";

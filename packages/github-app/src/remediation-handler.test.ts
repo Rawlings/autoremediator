@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { createDefaultRemediationHandler } from "./remediation-handler.js";
 import type { AutoremediatorRepoConfig } from "./types.js";
 import { DEFAULT_REPO_CONFIG } from "./types.js";
@@ -142,7 +143,7 @@ describe("createDefaultRemediationHandler", () => {
     const mockCalls = remediateFromScanMock.mock.calls as unknown as Array<
       [string, Record<string, unknown>]
     >;
-    const [inputPath, options] = mockCalls[0];
+    const [inputPath, options] = mockCalls[0]!;
     expect(inputPath).toContain("filtered-findings.sarif");
     expect(options).toMatchObject({
       format: "sarif",

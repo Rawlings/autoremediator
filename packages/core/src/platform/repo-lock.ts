@@ -12,14 +12,16 @@ interface RepoLock {
 }
 
 async function sleep(ms: number): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, ms));
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 export async function acquireRepoLock(
   cwd: string,
   options: RepoLockOptions = {},
 ): Promise<RepoLock> {
-  const timeoutMs = options.timeoutMs ?? 15000;
+  const timeoutMs = options.timeoutMs ?? 15_000;
   const retryDelayMs = options.retryDelayMs ?? 125;
   const lockRoot = join(cwd, ".autoremediator", "locks");
   const lockPath = join(cwd, ".autoremediator", "locks", "remediation.lock");

@@ -2,9 +2,11 @@ import { execSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createChangeRequestsForReports } from "./index.js";
+
 import type { RemediationReport } from "../../platform/types.js";
+import { createChangeRequestsForReports } from "./index.js";
 
 describe("Milestone 5 Challenge: Multi-Group Change Requests (Feature 24)", () => {
   let testDir: string;

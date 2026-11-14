@@ -20,11 +20,11 @@ export interface ParsedDiagnostic {
   rawSnippet: string;
 }
 
-const ESC = String.fromCharCode(27);
+const ESC = String.fromCodePoint(27);
 const ANSI_REGEX = new RegExp(`${ESC}\\[[0-9;]*[a-zA-Z]`, "g");
 
 export function stripAnsi(text: string): string {
-  return text.replace(ANSI_REGEX, "");
+  return text.replaceAll(ANSI_REGEX, "");
 }
 
 export function parseCheckRunLogs(rawLogs: string): ParsedDiagnostic {
@@ -48,12 +48,12 @@ export function parseCheckRunLogs(rawLogs: string): ParsedDiagnostic {
     const trimmed = line.trim();
     if (!trimmed) continue;
 
-    const tsMatch = trimmed.match(tsRegex);
+    const tsMatch = tsRegex.exec(trimmed);
     if (tsMatch) {
       findings.push({
         filePath: tsMatch[1],
-        line: parseInt(tsMatch[2]!, 10),
-        column: parseInt(tsMatch[3]!, 10),
+        line: Number.parseInt(tsMatch[2]!, 10),
+        column: Number.parseInt(tsMatch[3]!, 10),
         ruleId: tsMatch[4],
         message: tsMatch[5]!.trim(),
         category: "typescript",
@@ -61,12 +61,12 @@ export function parseCheckRunLogs(rawLogs: string): ParsedDiagnostic {
       continue;
     }
 
-    const lintMatch = trimmed.match(lintRegex);
+    const lintMatch = lintRegex.exec(trimmed);
     if (lintMatch && !trimmed.includes("TS")) {
       findings.push({
         filePath: lintMatch[1],
-        line: parseInt(lintMatch[2]!, 10),
-        column: parseInt(lintMatch[3]!, 10),
+        line: Number.parseInt(lintMatch[2]!, 10),
+        column: Number.parseInt(lintMatch[3]!, 10),
         ruleId: lintMatch[4],
         message: lintMatch[5]!.trim(),
         category: "lint",
@@ -74,7 +74,7 @@ export function parseCheckRunLogs(rawLogs: string): ParsedDiagnostic {
       continue;
     }
 
-    const testMatch = trimmed.match(testFailRegex);
+    const testMatch = testFailRegex.exec(trimmed);
     if (testMatch) {
       findings.push({
         message: trimmed,

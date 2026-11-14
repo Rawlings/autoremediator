@@ -7,7 +7,9 @@
  * silently producing empty or partial remediation results.
  */
 import { readFileSync } from "node:fs";
+
 import { z } from "zod";
+
 import type { CveDetails } from "../../platform/types.js";
 
 const severity = z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL", "UNKNOWN"]);
@@ -73,7 +75,7 @@ function entries(snapshot: IntelligenceSnapshot): Record<string, unknown> {
   const nested = snapshot.cves;
   return typeof nested === "object" && nested !== null && !Array.isArray(nested)
     ? (nested as Record<string, unknown>)
-    : (snapshot as Record<string, unknown>);
+    : snapshot;
 }
 
 function describeIssues(error: z.ZodError): string {

@@ -1,62 +1,184 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc", "node", "import", "promise", "vitest"],
-  "ignorePatterns": [".agents/**", "e2e/**"],
+  "ignorePatterns": [".agents/**", "e2e/**", "**/dist/**", "**/coverage/**"],
+  "env": {
+    "builtin": true,
+    "node": true
+  },
   "categories": {
-    "correctness": "error"
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error"
   },
   "options": {
     "typeAware": true,
-    "typeCheck": true
+    "typeCheck": true,
+    "denyWarnings": true,
+    "reportUnusedDisableDirectives": "error"
   },
   "rules": {
+    // --- Category rules intentionally relaxed -------------------------------------------------
+    // Sequential awaits are deliberate (install -> test -> rollback, per-target portfolio runs).
+    "eslint/no-await-in-loop": "off",
+    // Noisy for parsed JSON/process output; revisit once those boundaries are validated by schemas.
+    "typescript/no-unsafe-type-assertion": "off",
+    // `_name` is the sanctioned marker for intentionally unused parameters (noUnusedParameters).
+    "eslint/no-underscore-dangle": "off",
+
+    // --- TypeScript: type-aware correctness ---------------------------------------------------
     "typescript/ban-ts-comment": [
       "error",
-      {
-        "ts-expect-error": true,
-        "ts-ignore": true,
-        "ts-nocheck": true
-      }
+      { "ts-expect-error": true, "ts-ignore": true, "ts-nocheck": true }
     ],
+    "typescript/no-explicit-any": "error",
     "typescript/no-floating-promises": "error",
     "typescript/await-thenable": "error",
     "typescript/no-misused-promises": "error",
-    "typescript/no-unnecessary-type-assertion": "warn",
-    "typescript/prefer-nullish-coalescing": "warn",
-    "typescript/prefer-optional-chain": "warn",
+    "typescript/return-await": ["error", "in-try-catch"],
+    "typescript/only-throw-error": "error",
+    "typescript/prefer-promise-reject-errors": "error",
+    "typescript/use-unknown-in-catch-callback-variable": "error",
+    "typescript/switch-exhaustiveness-check": "error",
+    "typescript/no-base-to-string": "error",
+    "typescript/no-array-delete": "error",
+    "typescript/no-for-in-array": "error",
+    "typescript/no-implied-eval": "error",
+    "typescript/no-unsafe-enum-comparison": "error",
+    "typescript/no-unnecessary-type-assertion": "error",
+    "typescript/no-unnecessary-boolean-literal-compare": "error",
+    "typescript/non-nullable-type-assertion-style": "error",
+    "typescript/prefer-nullish-coalescing": [
+      "error",
+      { "ignorePrimitives": { "string": true, "number": true, "boolean": true, "bigint": true } }
+    ],
+    "typescript/prefer-optional-chain": "error",
+    "typescript/prefer-regexp-exec": "error",
+    // `typeof import("x")` is the idiomatic vitest importOriginal<...>() typing, so it stays allowed.
+    "typescript/consistent-type-imports": [
+      "error",
+      { "fixStyle": "separate-type-imports", "disallowTypeAnnotations": false }
+    ],
     "typescript/no-duplicate-enum-values": "error",
     "typescript/no-extra-non-null-assertion": "error",
     "typescript/no-misused-new": "error",
     "typescript/no-non-null-asserted-optional-chain": "error",
     "typescript/no-this-alias": "error",
+
+    // --- ESLint core ------------------------------------------------------------------------
+    "eslint/eqeqeq": ["error", "always", { "null": "ignore" }],
+    "eslint/no-var": "error",
+    "eslint/prefer-const": "error",
+    "eslint/no-eval": "error",
+    "eslint/no-new-func": "error",
+    "eslint/no-empty": ["error", { "allowEmptyCatch": true }],
+    // (no-useless-assignment is intentionally off: it misreports the init-then-try/catch pattern.)
+    "eslint/no-promise-executor-return": "error",
+    "eslint/no-template-curly-in-string": "error",
+    "eslint/no-unmodified-loop-condition": "error",
+    "eslint/no-unused-private-class-members": "error",
+    "eslint/array-callback-return": "error",
+    "eslint/default-case-last": "error",
+    "eslint/guard-for-in": "error",
+    "eslint/radix": "error",
+
+    // --- Unicorn ----------------------------------------------------------------------------
     "unicorn/prefer-node-protocol": "error",
     "unicorn/no-unnecessary-await": "error",
-    "unicorn/prefer-array-find": "warn",
-    "unicorn/prefer-array-flat-map": "warn",
-    "unicorn/prefer-string-starts-ends-with": "warn",
+    "unicorn/prefer-array-find": "error",
+    "unicorn/prefer-array-flat-map": "error",
+    "unicorn/prefer-string-starts-ends-with": "error",
+    "unicorn/prefer-number-properties": "error",
+    "unicorn/prefer-string-replace-all": "error",
+    "unicorn/prefer-spread": "error",
+    "unicorn/prefer-at": "error",
+    "unicorn/prefer-string-raw": "error",
+    "unicorn/prefer-code-point": "error",
+    "unicorn/prefer-default-parameters": "error",
+    "unicorn/numeric-separators-style": "error",
+    "unicorn/no-array-for-each": "error",
+    "unicorn/no-array-callback-reference": "error",
+    "unicorn/no-lonely-if": "error",
+    "unicorn/consistent-existence-index-check": "error",
+    "unicorn/switch-case-braces": "error",
+    "unicorn/error-message": "error",
+    "unicorn/throw-new-error": "error",
+    "unicorn/new-for-builtins": "error",
+    "unicorn/no-new-array": "error",
+    "unicorn/no-useless-spread": "error",
+    "unicorn/no-useless-promise-resolve-reject": "error",
+    "unicorn/no-typeof-undefined": "error",
+    "unicorn/prefer-regexp-test": "error",
+    "unicorn/prefer-structured-clone": "error",
+    "unicorn/prefer-optional-catch-binding": "error",
+    "unicorn/no-single-promise-in-promise-methods": "error",
+
+    // --- Imports / promises / node / oxc ------------------------------------------------------
+    "import/no-cycle": "error",
+    "import/no-duplicates": "error",
+    "import/no-self-import": "error",
+    "import/first": "error",
+    "import/no-mutable-exports": "error",
+    "import/no-empty-named-blocks": "error",
     "promise/no-return-wrap": "error",
     "promise/param-names": "error",
+    "promise/no-new-statics": "error",
+    "promise/no-nesting": "error",
     "node/no-exports-assign": "error",
+    "oxc/no-accumulating-spread": "error",
+    "oxc/no-const-enum": "error",
+    "oxc/only-used-in-recursion": "error",
+
+    // --- Vitest ------------------------------------------------------------------------------
     "vitest/no-focused-tests": "error",
+    "vitest/no-disabled-tests": "error",
+    "vitest/no-commented-out-tests": "error",
     "vitest/no-identical-title": "error",
+    "vitest/no-standalone-expect": "error",
+    "vitest/no-conditional-expect": "error",
+    "vitest/expect-expect": "error",
     "vitest/valid-expect": "error",
+    "vitest/valid-expect-in-promise": "error",
     "vitest/valid-title": "error",
     "vitest/valid-describe-callback": "error",
+    "vitest/no-alias-methods": "error",
+    "vitest/no-duplicate-hooks": "error",
+    "vitest/no-test-prefixes": "error",
+    "vitest/hoisted-apis-on-top": "error",
+    "vitest/prefer-to-have-length": "error",
+    "vitest/prefer-equality-matcher": "error",
+    "vitest/prefer-expect-resolves": "error",
     "vitest/require-mock-type-parameters": "off",
     "vitest/require-to-throw-message": "off"
   },
   "overrides": [
     {
+      // Tests mock aggressively and index into fixtures; keep type-safety rules on but relax ergonomics.
       "files": ["**/*.test.*", "**/*.spec.*", "**/tests/**", "**/__tests__/**"],
       "rules": {
         "typescript/no-explicit-any": "off",
-        "typescript/no-unnecessary-type-assertion": "off"
+        "typescript/no-non-null-assertion": "off",
+        "typescript/no-unnecessary-type-assertion": "off",
+        "unicorn/consistent-function-scoping": "off",
+        // vi.mock()/vi.hoisted() factories legitimately precede the imports they intercept.
+        "import/first": "off",
+        "eslint/no-shadow": "off",
+        "vitest/no-conditional-expect": "off"
+      }
+    },
+    {
+      // Codemods walk oxc-parser's ESTree-shaped AST dynamically; nodes are deliberately untyped.
+      "files": ["packages/core/src/remediation/refactor/**"],
+      "rules": {
+        "typescript/no-explicit-any": "off"
+      }
+    },
+    {
+      // Tool configs must default-export.
+      "files": ["**/*.config.{ts,js,mjs,cjs}"],
+      "rules": {
+        "import/no-default-export": "off"
       }
     }
-  ],
-  "env": {
-    "builtin": true,
-    "node": true,
-    "browser": true
-  }
+  ]
 }

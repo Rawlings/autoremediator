@@ -1,3 +1,8 @@
+import {
+  checkSlaBreach,
+  isActiveSuppression,
+  loadSuppressionsFile,
+} from "../../platform/policy.js";
 /**
  * SecOps pre-flight checks for the local remediation pipeline.
  *
@@ -13,11 +18,6 @@ import type {
   SlaPolicy,
   VexSuppression,
 } from "../../platform/types.js";
-import {
-  checkSlaBreach,
-  isActiveSuppression,
-  loadSuppressionsFile,
-} from "../../platform/policy.js";
 import { checkExploitSignalTool } from "../tools/check-exploit-signal.js";
 
 export interface SecOpsPreflightOptions {

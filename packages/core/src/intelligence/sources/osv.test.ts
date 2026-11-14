@@ -1,5 +1,6 @@
 import semver from "semver";
 import { describe, expect, it, vi } from "vitest";
+
 import { parseOsvVuln, lookupCveOsv } from "./osv.js";
 
 describe("osv source", () => {

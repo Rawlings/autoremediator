@@ -1,39 +1,20 @@
-/// <reference types="node" />
-import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from "vitest";
-import { mkdtemp, rm, writeFile, mkdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
 import { existsSync } from "node:fs";
-import { PassThrough } from "node:stream";
+import { mkdtemp, rm, writeFile, mkdir, readFile } from "node:fs/promises";
 import { IncomingMessage, ServerResponse } from "node:http";
 import { Socket } from "node:net";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { PassThrough } from "node:stream";
 
-// 1. Proof-of-Fix Runner & Process Isolation
-import {
-  runProofOfFixPhase,
-  isHarnessFailure,
-  isAssertionFailure,
-  sanitizePathLeakage,
-  stripStackTraceFrames,
-} from "../src/remediation/proof-of-fix/runner.js";
+/// <reference types="node" />
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from "vitest";
 
-// 2. Refactor Agent & AST Engine
-import {
-  parseCompilerDiagnostics,
-  transformCallArguments,
-  refactorConsumerCallSites,
-  revertRefactorSnapshots,
-} from "../src/remediation/refactor/codemods.js";
-import { findPackageCallSites } from "../src/remediation/refactor/call-site-finder.js";
-
-// 3. Remediation Tools
-import { generateUnifiedDiff } from "../src/remediation/patch/diff.js";
-import { validatePatchedCodeSyntax } from "../src/remediation/patch/syntax.js";
-import { resolveInventoryVersion } from "../src/remediation/tools/check-inventory.js";
-import { fetchPackageSourceTool } from "../src/remediation/tools/fetch-package-source.js";
-import { applyVersionBumpTool } from "../src/remediation/tools/apply-version-bump.js";
-import { applyPatchFileTool } from "../src/remediation/tools/apply-patch-file/index.js";
-
+import { reconcilePatchArtifacts } from "../src/api/patches/reconcile.js";
+import { runInteractiveTriage } from "../src/cli/triage.js";
+import { handleToolCall, TOOLS } from "../src/mcp/server.js";
+// 5. OpenAPI, MCP, and CLI Triage
+import { createOpenApiServer } from "../src/openapi/server.js";
+import { BoundedJobRegistry, type AsyncRemediationJob } from "../src/platform/jobs.js";
 // 4. Platform Controls (Policy, Rollback, Jobs)
 import {
   DEFAULT_POLICY,
@@ -45,13 +26,29 @@ import {
   findSuppression,
 } from "../src/platform/policy.js";
 import { recordFileTouch, withAtomicRollback } from "../src/platform/rollback.js";
-import { BoundedJobRegistry, type AsyncRemediationJob } from "../src/platform/jobs.js";
-import { reconcilePatchArtifacts } from "../src/api/patches/reconcile.js";
-
-// 5. OpenAPI, MCP, and CLI Triage
-import { createOpenApiServer } from "../src/openapi/server.js";
-import { handleToolCall, TOOLS } from "../src/mcp/server.js";
-import { runInteractiveTriage } from "../src/cli/triage.js";
+// 3. Remediation Tools
+import { generateUnifiedDiff } from "../src/remediation/patch/diff.js";
+import { validatePatchedCodeSyntax } from "../src/remediation/patch/syntax.js";
+// 1. Proof-of-Fix Runner & Process Isolation
+import {
+  runProofOfFixPhase,
+  isHarnessFailure,
+  isAssertionFailure,
+  sanitizePathLeakage,
+  stripStackTraceFrames,
+} from "../src/remediation/proof-of-fix/runner.js";
+import { findPackageCallSites } from "../src/remediation/refactor/call-site-finder.js";
+// 2. Refactor Agent & AST Engine
+import {
+  parseCompilerDiagnostics,
+  transformCallArguments,
+  refactorConsumerCallSites,
+  revertRefactorSnapshots,
+} from "../src/remediation/refactor/codemods.js";
+import { applyPatchFileTool } from "../src/remediation/tools/apply-patch-file/index.js";
+import { applyVersionBumpTool } from "../src/remediation/tools/apply-version-bump.js";
+import { resolveInventoryVersion } from "../src/remediation/tools/check-inventory.js";
+import { fetchPackageSourceTool } from "../src/remediation/tools/fetch-package-source.js";
 
 // This suite exercises the HTTP routes themselves, so it opts out of the auth requirement explicitly.
 beforeAll(() => {
@@ -217,7 +214,7 @@ src/utils/uuid.ts:25:3 - error TS2614: Module '"uuid"' has no exported member 'd
 src/globber.ts(2,1): error TS1259: Module '"glob"' can only be used with a default import using the 'esModuleInterop' flag
 `;
       const diags = parseCompilerDiagnostics(diagOutput);
-      expect(diags.length).toBe(3);
+      expect(diags).toHaveLength(3);
 
       expect(diags[0]).toMatchObject({
         filePath: "src/app.ts",
@@ -305,7 +302,7 @@ const id = otherObj.v4();
       );
 
       const sites = findPackageCallSites(tempDir, "uuid");
-      expect(sites.length).toBe(1);
+      expect(sites).toHaveLength(1);
       expect(sites[0]!.filePath).toBe(fileA);
       expect(sites[0]!.callSites?.length).toBe(1);
       expect(sites[0]!.callSites?.[0]!.memberName).toBe("v4");
@@ -322,7 +319,7 @@ export function clean(p: string) {
       await writeFile(testFile, initialCode, "utf8");
 
       const callSites = findPackageCallSites(tempDir, "rimraf");
-      expect(callSites.length).toBe(1);
+      expect(callSites).toHaveLength(1);
 
       const result = await refactorConsumerCallSites({
         cwd: tempDir,
@@ -522,7 +519,7 @@ export function clean(p: string) {
         autoApply: false,
       });
 
-      expect(report.reconciled.length).toBe(1);
+      expect(report.reconciled).toHaveLength(1);
       expect(report.reconciled[0]!.packageName).toBe("demo-pkg");
       expect(report.reconciled[0]!.status).toBe("patch-retained");
     });
@@ -615,7 +612,7 @@ export function clean(p: string) {
       expect(isActiveSuppression(supp2)).toBe(true);
       const expiredSupp = {
         ...supp2,
-        expiresAt: new Date(Date.now() - 10000).toISOString(),
+        expiresAt: new Date(Date.now() - 10_000).toISOString(),
       };
       expect(isActiveSuppression(expiredSupp)).toBe(false);
     });
@@ -679,7 +676,7 @@ export function clean(p: string) {
       const trackedFile = join(tempDir, "package.json");
       await writeFile(trackedFile, JSON.stringify({ name: "clean-project" }, null, 2), "utf8");
 
-      let createdFile = join(tempDir, "patches", "demo.patch");
+      const createdFile = join(tempDir, "patches", "demo.patch");
 
       await withAtomicRollback(tempDir, async () => {
         // Mutate tracked file

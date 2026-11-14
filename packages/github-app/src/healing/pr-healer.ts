@@ -6,8 +6,9 @@
  * repairs, and pushes healing commits to trigger fresh CI verification.
  */
 import type { Octokit } from "@octokit/rest";
-import type { AutoremediatorRepoConfig, ErrorLogger } from "../types.js";
+
 import type { DiagnosticFinding, ParsedDiagnostic } from "../diagnostics/log-parser.js";
+import type { AutoremediatorRepoConfig, ErrorLogger } from "../types.js";
 
 export interface HealPrOptions {
   octokit: Octokit;
@@ -46,7 +47,7 @@ export function getHealingAttempts(owner: string, repo: string, pullNumber: numb
 }
 
 function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
 /**
@@ -67,9 +68,9 @@ export function repairFileContent(content: string, findings: DiagnosticFinding[]
       msg.includes("TS1192")
     ) {
       const pkgMatch =
-        msg.match(/Module\s+['"]([^'"]+)['"]\s+has\s+no\s+default/i) ||
-        msg.match(/Module\s+['"]([^'"]+)['"]/i) ||
-        msg.match(/['"]([^'"]+)['"]/);
+        /Module\s+['"]([^'"]+)['"]\s+has\s+no\s+default/i.exec(msg) ??
+        /Module\s+['"]([^'"]+)['"]/i.exec(msg) ??
+        /['"]([^'"]+)['"]/.exec(msg);
       const targetPkg = pkgMatch ? pkgMatch[1] : undefined;
 
       const importRegex = targetPkg
@@ -87,7 +88,7 @@ export function repairFileContent(content: string, findings: DiagnosticFinding[]
 
     // 2. TypeScript CJS "export =" default import mismatch (TS1259)
     if (msg.includes("can only be used with a default import") || msg.includes("TS1259")) {
-      const pkgMatch = msg.match(/Module\s+['"]([^'"]+)['"]/i) || msg.match(/['"]([^'"]+)['"]/);
+      const pkgMatch = /Module\s+['"]([^'"]+)['"]/i.exec(msg) ?? /['"]([^'"]+)['"]/.exec(msg);
       const targetPkg = pkgMatch ? pkgMatch[1] : undefined;
 
       const starImportRegex = targetPkg
@@ -104,10 +105,10 @@ export function repairFileContent(content: string, findings: DiagnosticFinding[]
     }
 
     // 3. Compiler suggestion: "Did you mean 'XYZ'?"
-    const suggestionMatch = msg.match(/Did you mean ['"]([a-zA-Z0-9_$]+)['"]\?/);
+    const suggestionMatch = /Did you mean ['"]([a-zA-Z0-9_$]+)['"]\?/.exec(msg);
     const missingMatch =
-      msg.match(/has no exported member ['"]([a-zA-Z0-9_$]+)['"]/) ||
-      msg.match(/Property ['"]([a-zA-Z0-9_$]+)['"] does not exist/);
+      /has no exported member ['"]([a-zA-Z0-9_$]+)['"]/.exec(msg) ??
+      /Property ['"]([a-zA-Z0-9_$]+)['"] does not exist/.exec(msg);
 
     if (suggestionMatch && missingMatch) {
       const oldSymbol = missingMatch[1]!;
@@ -118,7 +119,7 @@ export function repairFileContent(content: string, findings: DiagnosticFinding[]
         const lines = repaired.split("\n");
         const idx = finding.line - 1;
         if (idx >= 0 && idx < lines.length) {
-          lines[idx] = lines[idx]!.replace(
+          lines[idx] = lines[idx]!.replaceAll(
             new RegExp(`\\b${escapeRegex(oldSymbol)}\\b`, "g"),
             newSymbol,
           );
@@ -126,7 +127,7 @@ export function repairFileContent(content: string, findings: DiagnosticFinding[]
         }
       } else {
         // Replace member expression .oldSymbol -> .newSymbol
-        repaired = repaired.replace(
+        repaired = repaired.replaceAll(
           new RegExp(`\\.${escapeRegex(oldSymbol)}\\b`, "g"),
           `.${newSymbol}`,
         );
@@ -138,7 +139,7 @@ export function repairFileContent(content: string, findings: DiagnosticFinding[]
       finding.ruleId &&
       (finding.ruleId.includes("no-unused-vars") || finding.ruleId.includes("unused-imports"))
     ) {
-      const unusedVarMatch = msg.match(/['"]([a-zA-Z0-9_$]+)['"]\s+is\s+(?:defined|imported)/);
+      const unusedVarMatch = /['"]([a-zA-Z0-9_$]+)['"]\s+is\s+(?:defined|imported)/.exec(msg);
       if (unusedVarMatch) {
         const unusedVar = unusedVarMatch[1]!;
         const lines = repaired.split("\n");
@@ -240,7 +241,7 @@ export async function healPullRequest(options: HealPrOptions): Promise<HealPrRes
   const fileFindingsMap = new Map<string, DiagnosticFinding[]>();
   for (const finding of diagnostic.findings) {
     if (finding.filePath) {
-      const existing = fileFindingsMap.get(finding.filePath) || [];
+      const existing = fileFindingsMap.get(finding.filePath) ?? [];
       existing.push(finding);
       fileFindingsMap.set(finding.filePath, existing);
     }

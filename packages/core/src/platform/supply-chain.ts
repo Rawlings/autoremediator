@@ -112,7 +112,7 @@ export async function verifyPackageTrust(
 
   // 3. Check provenance attestation
   const hasProvenance = Boolean(
-    versionData?.dist?.attestations?.provenance || versionData?.dist?.attestations?.url,
+    versionData?.dist?.attestations?.provenance ?? versionData?.dist?.attestations?.url,
   );
   if (policy.requireProvenance && !hasProvenance) {
     return {

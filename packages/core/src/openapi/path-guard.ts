@@ -1,5 +1,6 @@
 import { realpathSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
+
 import { HttpError } from "./http-utils.js";
 
 /** Option names that carry filesystem paths supplied by the caller. */
@@ -26,7 +27,7 @@ function realOrResolve(target: string): string {
   let current = target;
   for (;;) {
     try {
-      return join(realpathSync(current), ...tail.reverse());
+      return join(realpathSync(current), ...tail.toReversed());
     } catch {
       const parent = dirname(current);
       if (parent === current) return target;

@@ -1,4 +1,3 @@
-import type { RemediationReport } from "../../platform/types.js";
 import { getModelSpec } from "../../platform/config.js";
 import {
   addEvidenceStep,
@@ -7,8 +6,8 @@ import {
   writeEvidenceLog,
 } from "../../platform/evidence.js";
 import { loadPolicy } from "../../platform/policy.js";
+import type { RemediationReport } from "../../platform/types.js";
 import { parseScanInput, parseScanInputFromAudit, uniqueCveIds } from "../../scanner/index.js";
-import type { ScanOptions, ScanReport } from "../contracts.js";
 import {
   assertChangeRequestAllowed,
   createChangeRequestsForReports,
@@ -18,14 +17,15 @@ import {
   resolveCorrelationContext,
   resolveProvenanceContext,
 } from "../context.js";
-import { executeScanRemediations } from "../scan-execution.js";
-import { buildScanOutcome } from "../scan-outcome.js";
-import { aggregateScanLlmUsage } from "./report-metrics.js";
+import type { ScanOptions, ScanReport } from "../contracts.js";
 import {
   assertValidSimulationMode,
   buildEscalationCounts,
   buildSlaBreachSummary,
 } from "../reporting.js";
+import { executeScanRemediations } from "../scan-execution.js";
+import { buildScanOutcome } from "../scan-outcome.js";
+import { aggregateScanLlmUsage } from "./report-metrics.js";
 
 function countContainedResults(reports: RemediationReport[]): number {
   let containmentCount = 0;

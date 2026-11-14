@@ -1,11 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtemp, rm, writeFile, readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { PassThrough } from "node:stream";
-import { runInteractiveTriage } from "./triage.js";
-import { loadPolicy } from "../platform/policy.js";
+
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { parse as yamlParse } from "yaml";
+
+import { loadPolicy } from "../platform/policy.js";
+import { runInteractiveTriage } from "./triage.js";
 
 vi.mock("../remediation/evaluate-package.js", () => ({
   evaluatePackage: vi.fn().mockResolvedValue({ vulnerabilities: [] }),

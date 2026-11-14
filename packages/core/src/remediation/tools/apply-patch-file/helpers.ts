@@ -1,15 +1,17 @@
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { safeExeca } from "../../../platform/safe-exec.js";
-import { LONG_RUNNING_TIMEOUT_MS } from "../../../platform/timeouts.js";
+
 import {
   getPackageManagerCommands,
   getYarnMajorVersion,
   type PackageManager,
 } from "../../../platform/package-manager/index.js";
+import { safeExecaCommand } from "../../../platform/safe-exec-command.js";
+import { safeExeca } from "../../../platform/safe-exec.js";
+import { LONG_RUNNING_TIMEOUT_MS } from "../../../platform/timeouts.js";
 import type { PatchArtifact, PatchMode, PatchValidationPhase } from "../../../platform/types.js";
 
 export interface ValidationResult {
@@ -48,19 +50,19 @@ export function patchModeRequiresPackageJsonSnapshot(packageManager: PackageMana
 }
 
 export function buildPatchFileName(packageName: string, vulnerableVersion: string): string {
-  const safeName = packageName.replace(/^@/, "").replace(/\//g, "+");
+  const safeName = packageName.replace(/^@/, "").replaceAll("/", "+");
   return `${safeName}+${vulnerableVersion}.patch`;
 }
 
 export function extractPatchedFiles(patchContent: string): string[] {
-  return Array.from(
-    new Set(
+  return [
+    ...new Set(
       patchContent
         .split(/\r?\n/)
         .filter((line) => line.startsWith("+++ b/"))
         .map((line) => line.slice("+++ b/".length)),
     ),
-  );
+  ];
 }
 
 export function countPatchHunks(patchContent: string): number {
@@ -99,8 +101,7 @@ export async function configurePatchPackagePostinstall(
   if (!devDependencies["patch-package"]) {
     try {
       const commands = getPackageManagerCommands(packageManager);
-      const [cmd, ...args] = commands.installDev("patch-package");
-      await safeExeca(cmd, args, {
+      await safeExecaCommand(commands.installDev("patch-package"), {
         cwd,
         stdio: "pipe",
       });
@@ -112,9 +113,7 @@ export async function configurePatchPackagePostinstall(
     }
   }
 
-  if (!pkgJson.scripts) {
-    pkgJson.scripts = {};
-  }
+  pkgJson.scripts ??= {};
 
   const patchApplyCmd = "patch-package";
   const currentPostinstall = pkgJson.scripts.postinstall || "";
@@ -175,8 +174,7 @@ export async function cleanupPatchArtifacts(params: {
   if (!rerunInstall) return;
 
   try {
-    const [installCmd, ...installArgs] = installCommand;
-    await safeExeca(installCmd, installArgs, {
+    await safeExecaCommand(installCommand, {
       timeoutMs: LONG_RUNNING_TIMEOUT_MS,
       cwd,
       stdio: "pipe",
@@ -281,7 +279,7 @@ function extractPatchDirectory(output: string): string {
       return line;
     }
 
-    const tokens = line.split(/\s+/).map((token) => token.replace(/^['"]|['"]$/g, ""));
+    const tokens = line.split(/\s+/).map((token) => token.replaceAll(/^['"]|['"]$/g, ""));
     for (const token of tokens) {
       if (token.startsWith("/") && existsSync(token)) {
         return token;
@@ -297,10 +295,9 @@ export async function validatePatchWithTests(
   testCommand: string[],
 ): Promise<ValidationResult> {
   try {
-    const [cmd, ...args] = testCommand;
-    const result = await safeExeca(cmd, args, {
+    const result = await safeExecaCommand(testCommand, {
       cwd,
-      timeout: 60000,
+      timeout: 60_000,
       stdio: "pipe",
     });
 
@@ -317,7 +314,7 @@ export async function validatePatchWithTests(
       typeof stdoutVal === "string"
         ? stdoutVal
         : Buffer.isBuffer(stdoutVal)
-          ? (stdoutVal as Buffer).toString("utf8")
+          ? stdoutVal.toString("utf8")
           : "";
     const failedTests = extractFailedTests(errorOutput);
 

@@ -9,6 +9,7 @@
 import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
+
 import { safeExeca } from "../../platform/safe-exec.js";
 import type {
   ProofOfFixPhaseResult,
@@ -206,7 +207,7 @@ export async function prepareReproductionTestFile(
     reproductionTest,
   } = params;
   const patchesDirPath = isAbsolute(patchesDir) ? patchesDir : join(cwd, patchesDir);
-  const safeName = packageName.replace(/^@/, "").replace(/\//g, "+");
+  const safeName = packageName.replace(/^@/, "").replaceAll("/", "+");
   const defaultTestPath = join(patchesDirPath, `${safeName}+${vulnerableVersion}.test.cjs`);
 
   if (typeof proofOfFix === "string" && proofOfFix.trim().length > 0) {
@@ -255,8 +256,8 @@ export async function runProofOfFixPhase(
     });
 
     const durationMs = Date.now() - started;
-    const stdout = String(result.stdout ?? "");
-    const stderr = String(result.stderr ?? "");
+    const stdout = result.stdout ?? "";
+    const stderr = result.stderr ?? "";
     const output = `${stdout}\n${stderr}`.trim();
 
     if (stage === "negative") {
@@ -293,8 +294,8 @@ export async function runProofOfFixPhase(
     };
     const exitCode = typeof execaErr.exitCode === "number" ? execaErr.exitCode : 1;
     const errorMsg = execaErr.message || String(err);
-    const rawStdout = String(execaErr.stdout ?? "").trim();
-    const rawStderr = String(execaErr.stderr ?? "").trim();
+    const rawStdout = (execaErr.stdout ?? "").trim();
+    const rawStderr = (execaErr.stderr ?? "").trim();
     const processOutput = [rawStdout, rawStderr].filter(Boolean).join("\n").trim();
     const output = processOutput || errorMsg;
 

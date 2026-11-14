@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { parseCheckRunLogs, stripAnsi } from "./log-parser.js";
 
 describe("CI check run log parser", () => {

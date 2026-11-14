@@ -10,6 +10,8 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+
+import { stripUntrustedChangeRequestFields } from "../api/change-request/index.js";
 import {
   checkReachability,
   createRemediateOptionSchemaProperties,
@@ -32,9 +34,8 @@ import {
   updateOutdated,
   validatePatchArtifact,
 } from "../api/index.js";
-import { PACKAGE_VERSION } from "../version";
-import { stripUntrustedChangeRequestFields } from "../api/change-request/index.js";
 import { isEntrypoint } from "../platform/entrypoint.js";
+import { PACKAGE_VERSION } from "../version";
 
 const PATCH_ARTIFACT_SCHEMA_PROPERTIES = {
   cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
@@ -375,16 +376,18 @@ export const TOOLS = [
   },
 ];
 
+function withMcpSource(options: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...stripUntrustedChangeRequestFields(options),
+    source: typeof options.source === "string" ? options.source : "mcp",
+  };
+}
+
 export async function handleToolCall(
   name: string,
   args: Record<string, unknown> = {},
   deps: McpApiDeps = defaultDeps,
 ): Promise<{ content: Array<{ type: "text"; text: string }>; isError?: boolean }> {
-  const withMcpSource = (options: Record<string, unknown>): Record<string, unknown> => ({
-    ...stripUntrustedChangeRequestFields(options),
-    source: typeof options.source === "string" ? options.source : "mcp",
-  });
-
   try {
     if (name === "health") {
       const healthStatus = await deps.healthFn();
@@ -399,28 +402,19 @@ export async function handleToolCall(
 
     if (name === "remediate") {
       const { cveId, ...options } = args as { cveId: string; [key: string]: unknown };
-      const report = await deps.remediateFn(
-        cveId,
-        withMcpSource(options) as Parameters<typeof remediate>[1],
-      );
+      const report = await deps.remediateFn(cveId, withMcpSource(options));
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
     if (name === "planRemediation") {
       const { cveId, ...options } = args as { cveId: string; [key: string]: unknown };
-      const report = await deps.planRemediationFn(
-        cveId,
-        withMcpSource(options) as Parameters<typeof planRemediation>[1],
-      );
+      const report = await deps.planRemediationFn(cveId, withMcpSource(options));
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
     if (name === "remediateFromScan") {
       const { inputPath, ...options } = args as { inputPath: string; [key: string]: unknown };
-      const report = await deps.remediateFromScanFn(
-        inputPath,
-        withMcpSource(options) as Parameters<typeof remediateFromScan>[1],
-      );
+      const report = await deps.remediateFromScanFn(inputPath, withMcpSource(options));
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
@@ -428,22 +422,18 @@ export async function handleToolCall(
       const { targets, ...options } = args as { targets: unknown[]; [key: string]: unknown };
       const report = await deps.remediatePortfolioFn(
         targets as Parameters<typeof remediatePortfolio>[0],
-        withMcpSource(options) as Parameters<typeof remediatePortfolio>[1],
+        withMcpSource(options),
       );
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
     if (name === "updateOutdated") {
-      const report = await deps.updateOutdatedFn(
-        withMcpSource(args) as Parameters<typeof updateOutdated>[0],
-      );
+      const report = await deps.updateOutdatedFn(withMcpSource(args));
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
     if (name === "listPatchArtifacts") {
-      const report = await deps.listPatchArtifactsFn(
-        args as Parameters<typeof listPatchArtifacts>[0],
-      );
+      const report = await deps.listPatchArtifactsFn(args);
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
@@ -452,10 +442,7 @@ export async function handleToolCall(
         patchFilePath: string;
         [key: string]: unknown;
       };
-      const report = await deps.inspectPatchArtifactFn(
-        patchFilePath,
-        options as Parameters<typeof inspectPatchArtifact>[1],
-      );
+      const report = await deps.inspectPatchArtifactFn(patchFilePath, options);
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
@@ -464,28 +451,19 @@ export async function handleToolCall(
         patchFilePath: string;
         [key: string]: unknown;
       };
-      const report = await deps.validatePatchArtifactFn(
-        patchFilePath,
-        options as Parameters<typeof validatePatchArtifact>[1],
-      );
+      const report = await deps.validatePatchArtifactFn(patchFilePath, options);
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
     if (name === "submitRemediateJob") {
       const { cveId, ...options } = args as { cveId: string; [key: string]: unknown };
-      const handle = deps.submitRemediateJobFn(
-        cveId,
-        withMcpSource(options) as Parameters<typeof submitRemediateJob>[1],
-      );
+      const handle = deps.submitRemediateJobFn(cveId, withMcpSource(options));
       return { content: [{ type: "text", text: JSON.stringify(handle, null, 2) }] };
     }
 
     if (name === "submitScanJob") {
       const { inputPath, ...options } = args as { inputPath: string; [key: string]: unknown };
-      const handle = deps.submitScanJobFn(
-        inputPath,
-        withMcpSource(options) as Parameters<typeof submitScanJob>[1],
-      );
+      const handle = deps.submitScanJobFn(inputPath, withMcpSource(options));
       return { content: [{ type: "text", text: JSON.stringify(handle, null, 2) }] };
     }
 
@@ -493,7 +471,7 @@ export async function handleToolCall(
       const { targets, ...options } = args as { targets: unknown[]; [key: string]: unknown };
       const handle = deps.submitPortfolioJobFn(
         targets as Parameters<typeof submitPortfolioJob>[0],
-        withMcpSource(options) as Parameters<typeof submitPortfolioJob>[1],
+        withMcpSource(options),
       );
       return { content: [{ type: "text", text: JSON.stringify(handle, null, 2) }] };
     }
@@ -535,10 +513,7 @@ export async function handleToolCall(
           isError: true,
         };
       }
-      const report = await deps.evaluatePackageFn(
-        packageName,
-        options as Parameters<typeof evaluatePackage>[1],
-      );
+      const report = await deps.evaluatePackageFn(packageName, options);
       return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
     }
 
@@ -584,7 +559,7 @@ export function createMcpServer(): Server {
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
-    return handleToolCall(name, (args ?? {}) as Record<string, unknown>);
+    return handleToolCall(name, args ?? {});
   });
 
   return server;

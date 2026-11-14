@@ -1,16 +1,17 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createFileBackedJobQueue, createInMemoryJobQueue } from "./queue.js";
-import { createFileAppStateStore } from "./state.js";
-import { repairFileContent } from "./healing/pr-healer.js";
-import { dispatchGitHubEvent } from "./events.js";
-import { createInMemoryAppStateStore } from "./state.js";
-import { createPullRequestWithOctokit, pushBranchWithToken } from "./index.js";
-import { startJobWorker } from "./worker.js";
-import { readRemediationStatusTarget } from "./status-publisher.js";
+
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { DiagnosticFinding } from "./diagnostics/log-parser.js";
+import { dispatchGitHubEvent } from "./events.js";
+import { repairFileContent } from "./healing/pr-healer.js";
+import { createPullRequestWithOctokit, pushBranchWithToken } from "./index.js";
+import { createFileBackedJobQueue, createInMemoryJobQueue } from "./queue.js";
+import { createFileAppStateStore, createInMemoryAppStateStore } from "./state.js";
+import { readRemediationStatusTarget } from "./status-publisher.js";
+import { startJobWorker } from "./worker.js";
 
 describe("Adversarial White-Box Coverage & Hardening Suite (Challenger 2)", () => {
   let tempDir: string;
@@ -66,7 +67,7 @@ describe("Adversarial White-Box Coverage & Hardening Suite (Challenger 2)", () =
       const queueFile = join(tempDir, "job-queue-crashed.json");
       const queue = createFileBackedJobQueue(queueFile);
 
-      const _job = queue.enqueue({
+      queue.enqueue({
         eventName: "check_suite",
         payload: {},
         maxAttempts: 3,
@@ -85,7 +86,7 @@ describe("Adversarial White-Box Coverage & Hardening Suite (Challenger 2)", () =
       const reclaim = restartedQueue.claimDueJobs(1);
       // Because claimDueJobs only claims "queued" status, a crashed running job is never reclaimed!
       // Confirms running jobs remain orphaned indefinitely without dead-letter recovery
-      expect(reclaim.length).toBe(0);
+      expect(reclaim).toHaveLength(0);
     });
 
     // BUG REPORT: state.ts FileAppStateStore hydrateFromDisk crashes on missing deliveries/installations
@@ -115,42 +116,48 @@ describe("Adversarial White-Box Coverage & Hardening Suite (Challenger 2)", () =
   // =========================================================================
   describe("PR Auto-Healer Regex & Diagnostic Handling", () => {
     // BUG REPORT: pr-healer.ts line 80 has double-escaped `\\s+` in regex literal
-    it("PROBE 4: repairFileContent ESM default export fallback regex matches without double-escaped \\s+", () => {
-      // Diagnostic message without quotes around package name (triggers targetPkg = undefined)
-      const finding: DiagnosticFinding = {
-        filePath: "src/index.ts",
-        line: 1,
-        message: "TS2614: Module has no default export",
-        category: "typescript",
-      };
+    it(
+      String.raw`PROBE 4: repairFileContent ESM default export fallback regex matches without double-escaped \s+`,
+      () => {
+        // Diagnostic message without quotes around package name (triggers targetPkg = undefined)
+        const finding: DiagnosticFinding = {
+          filePath: "src/index.ts",
+          line: 1,
+          message: "TS2614: Module has no default export",
+          category: "typescript",
+        };
 
-      const sourceCode = `import chalk from "chalk";\nconsole.log(chalk.red("test"));\n`;
-      const repaired = repairFileContent(sourceCode, [finding]);
+        const sourceCode = `import chalk from "chalk";\nconsole.log(chalk.red("test"));\n`;
+        const repaired = repairFileContent(sourceCode, [finding]);
 
-      // In pr-healer.ts line 80:
-      // : /import\s+([a-zA-Z0-9_$]+)\\s+from\s+['"]([^'"]+)['"];?/g;
-      // Because of double-escaped "\\s+", the regex literal matches "\s" literally.
-      // Thus it fails to match `import chalk from "chalk";`.
-      expect(repaired).toContain(`import * as chalk from "chalk";`);
-    });
+        // In pr-healer.ts line 80:
+        // : /import\s+([a-zA-Z0-9_$]+)\\s+from\s+['"]([^'"]+)['"];?/g;
+        // Because of double-escaped "\\s+", the regex literal matches "\s" literally.
+        // Thus it fails to match `import chalk from "chalk";`.
+        expect(repaired).toContain(`import * as chalk from "chalk";`);
+      },
+    );
 
     // BUG REPORT: pr-healer.ts line 98 has double-escaped `\\s+` in regex literal
-    it("PROBE 5: repairFileContent CJS export= default import fallback regex matches without double-escaped \\s+", () => {
-      const finding: DiagnosticFinding = {
-        filePath: "src/index.ts",
-        line: 1,
-        message: "TS1259: Module can only be used with a default import",
-        category: "typescript",
-      };
+    it(
+      String.raw`PROBE 5: repairFileContent CJS export= default import fallback regex matches without double-escaped \s+`,
+      () => {
+        const finding: DiagnosticFinding = {
+          filePath: "src/index.ts",
+          line: 1,
+          message: "TS1259: Module can only be used with a default import",
+          category: "typescript",
+        };
 
-      const sourceCode = `import * as express from "express";\nconst app = express();\n`;
-      const repaired = repairFileContent(sourceCode, [finding]);
+        const sourceCode = `import * as express from "express";\nconst app = express();\n`;
+        const repaired = repairFileContent(sourceCode, [finding]);
 
-      // In pr-healer.ts line 98:
-      // : /import\s+\*\s+as\s+([a-zA-Z0-9_$]+)\\s+from\s+['"]([^'"]+)['"];?/g;
-      // Because of double-escaped "\\s+", the regex literal matches "\s" literally.
-      expect(repaired).toContain(`import express from "express";`);
-    });
+        // In pr-healer.ts line 98:
+        // : /import\s+\*\s+as\s+([a-zA-Z0-9_$]+)\\s+from\s+['"]([^'"]+)['"];?/g;
+        // Because of double-escaped "\\s+", the regex literal matches "\s" literally.
+        expect(repaired).toContain(`import express from "express";`);
+      },
+    );
 
     // BUG REPORT: pr-healer.ts lines 155-167 leaves `import { }` on trailing comma removal
     it("PROBE 6: repairFileContent cleanly removes unused import with trailing comma without leaving empty braces", () => {
@@ -324,14 +331,18 @@ describe("Adversarial White-Box Coverage & Hardening Suite (Challenger 2)", () =
           currentInFlight++;
           inFlightMax = Math.max(inFlightMax, currentInFlight);
           const delay = delays[job.id] ?? 20;
-          await new Promise((resolve) => setTimeout(resolve, delay));
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, delay);
+          });
           completedOrder.push((job.payload as any).id);
           currentInFlight--;
         },
       });
 
       // Wait for all 3 jobs to complete
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 250);
+      });
       worker.stop();
 
       // In-flight should NEVER exceed concurrency limit (2)

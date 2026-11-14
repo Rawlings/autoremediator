@@ -2,9 +2,11 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
 import { TOOLS, createMcpServer, handleToolCall } from "./server.js";
 
 describe("mcp tool contracts", () => {
@@ -611,7 +613,7 @@ describe("MCP Client integration via InMemoryTransport", () => {
     await client.connect(clientTransport);
 
     const toolList = await client.listTools();
-    expect(toolList.tools.length).toBe(TOOLS.length);
+    expect(toolList.tools).toHaveLength(TOOLS.length);
 
     const healthResult = await client.callTool({ name: "health", arguments: {} });
     expect(healthResult.isError).toBeFalsy();
@@ -737,7 +739,7 @@ describe("MCP stdio server process integration", () => {
     });
 
     expect(listRes.result.tools).toBeInstanceOf(Array);
-    expect(listRes.result.tools.length).toBe(TOOLS.length);
+    expect(listRes.result.tools).toHaveLength(TOOLS.length);
     const names = listRes.result.tools.map((t: any) => t.name);
     expect(names).toContain("health");
     expect(names).toContain("remediate");

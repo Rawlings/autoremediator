@@ -7,6 +7,7 @@
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+
 import { parseSync } from "oxc-parser";
 
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts"]);
@@ -296,13 +297,11 @@ export function findPackageCallSites(cwd: string, packageName: string): Consumer
               });
             }
           }
-        } else if (node.type === "Identifier") {
-          if (localNames.has(node.name)) {
-            const isImportDecl = Boolean(parentType?.startsWith("Import"));
-            if (!isImportDecl) {
-              const { line } = getLineCol(node.start);
-              referencedLinesSet.add(line);
-            }
+        } else if (node.type === "Identifier" && localNames.has(node.name)) {
+          const isImportDecl = Boolean(parentType?.startsWith("Import"));
+          if (!isImportDecl) {
+            const { line } = getLineCol(node.start);
+            referencedLinesSet.add(line);
           }
         }
 
@@ -321,7 +320,7 @@ export function findPackageCallSites(cwd: string, packageName: string): Consumer
 
       walk(program);
 
-      const referencedLines = Array.from(referencedLinesSet).sort((a, b) => a - b);
+      const referencedLines = [...referencedLinesSet].toSorted((a, b) => a - b);
 
       callSites.push({
         filePath,

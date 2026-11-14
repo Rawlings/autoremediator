@@ -1,3 +1,5 @@
+import { getGitHubToken } from "../../platform/config.js";
+import { httpClient } from "../../platform/http-client.js";
 /**
  * GitHub Advisory Database API client
  *
@@ -7,8 +9,6 @@
  * Uses shared HTTP client for all API communication.
  */
 import type { AffectedPackage, CveDetails } from "../../platform/types.js";
-import { getGitHubToken } from "../../platform/config.js";
-import { httpClient } from "../../platform/http-client.js";
 
 // ---------------------------------------------------------------------------
 // Raw GitHub Advisory response types

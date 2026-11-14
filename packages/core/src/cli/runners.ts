@@ -1,3 +1,5 @@
+import { readFileSync, writeFileSync } from "node:fs";
+
 import {
   checkReachability,
   ciExitCode,
@@ -19,12 +21,12 @@ import {
   validatePatchArtifact,
   reconcilePatchArtifacts,
 } from "../api/index.js";
-import { runInteractiveTriage } from "./triage.js";
-export { runInteractiveTriage };
-import { readFileSync, writeFileSync } from "node:fs";
-import { formatCountMap, logJson } from "./output.js";
-import type { CommandOptions } from "./types.js";
 import { PACKAGE_VERSION } from "../version.js";
+import { formatCountMap, logJson } from "./output.js";
+import { runInteractiveTriage } from "./triage.js";
+import type { CommandOptions } from "./types.js";
+
+export { runInteractiveTriage };
 
 function assertPatchOutputFormat(format: string): void {
   if (format !== "text" && format !== "json") {
@@ -563,6 +565,7 @@ export async function runPortfolio(targetsFilePath: string, opts: CommandOptions
   } catch (error) {
     throw new Error(
       `Could not read targets file at "${targetsFilePath}": ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
     );
   }
 

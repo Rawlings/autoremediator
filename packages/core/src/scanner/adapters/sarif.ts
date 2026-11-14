@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+
 import type { NormalizedFinding } from "./npm-audit.js";
 
 interface SarifResult {

@@ -1,7 +1,5 @@
-import { fetchPackageSourceTool } from "../tools/fetch-package-source.js";
-import { applyPatchFileTool } from "../tools/apply-patch-file/index.js";
-import { generatePatches, type PatchGenerationFailure } from "../patch/generate.js";
 import type { PatchGenerator } from "../../platform/patch-generator.js";
+import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
 import type {
   LlmUsageMetrics,
   PackageManager,
@@ -9,7 +7,9 @@ import type {
   PatchResult,
   UnresolvedReason,
 } from "../../platform/types.js";
-import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
+import { generatePatches, type PatchGenerationFailure } from "../patch/generate.js";
+import { applyPatchFileTool } from "../tools/apply-patch-file/index.js";
+import { fetchPackageSourceTool } from "../tools/fetch-package-source.js";
 
 const FAILURE_REASON: Record<PatchGenerationFailure, UnresolvedReason> = {
   "generator-failed": "patch-generation-failed",
@@ -174,8 +174,8 @@ export async function tryPatchFallback(
       fromVersion: params.vulnerableVersion,
       patchFilePath: applied.patchFilePath ?? applied.patchPath,
       patchArtifact: applied.patchArtifact,
-      applied: Boolean(applied.applied),
-      dryRun: Boolean(applied.dryRun),
+      applied: applied.applied,
+      dryRun: applied.dryRun,
       dependencyScope: params.dependencyScope,
       confidence: proposal.confidence,
       riskLevel: proposal.riskLevel,

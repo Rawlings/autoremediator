@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+
 import type { PackageManager } from "./index.js";
 
 export function parsePackageManagerListOutput(
@@ -143,7 +144,7 @@ export function resolveDenoInventory(cwd: string): Map<string, string> {
     // v3 format: packages.npm keys are "name@version"
     const npmMap = pkgsObj["npm"];
     if (npmMap && typeof npmMap === "object") {
-      for (const key of Object.keys(npmMap as object)) {
+      for (const key of Object.keys(npmMap)) {
         extractNameVersion(key, versions);
       }
       return versions;

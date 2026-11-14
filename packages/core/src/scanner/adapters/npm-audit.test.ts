@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { parseNpmAuditJsonFromString } from "./npm-audit.js";
 
 describe("parseNpmAuditJsonFromString", () => {

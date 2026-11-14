@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { assertChangeRequestAllowed, stripUntrustedChangeRequestFields } from "./index.js";
 
 describe("assertChangeRequestAllowed", () => {

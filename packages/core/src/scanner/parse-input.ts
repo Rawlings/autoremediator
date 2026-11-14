@@ -1,17 +1,20 @@
-import { extname, resolve } from "node:path";
 import { readFileSync } from "node:fs";
-import { safeExeca } from "../platform/safe-exec.js";
-import { parseNpmAuditJsonFile, type NormalizedFinding } from "./adapters/npm-audit.js";
-import { parseNpmAuditJsonFromString } from "./adapters/npm-audit.js";
-import { parseYarnAuditJsonFile } from "./adapters/yarn-audit.js";
-import { parseYarnAuditJsonFromString } from "./adapters/yarn-audit.js";
-import { parseSarifFile } from "./adapters/sarif.js";
-import type { ScanInputFormat } from "./index.js";
+import { extname, resolve } from "node:path";
+
 import {
   detectPackageManager,
   resolveAuditCommand,
   type PackageManager,
 } from "../platform/package-manager/index.js";
+import { safeExecaCommand } from "../platform/safe-exec-command.js";
+import {
+  parseNpmAuditJsonFile,
+  type NormalizedFinding,
+  parseNpmAuditJsonFromString,
+} from "./adapters/npm-audit.js";
+import { parseSarifFile } from "./adapters/sarif.js";
+import { parseYarnAuditJsonFile, parseYarnAuditJsonFromString } from "./adapters/yarn-audit.js";
+import type { ScanInputFormat } from "./index.js";
 
 export function parseScanInput(filePath: string, format: ScanInputFormat): NormalizedFinding[] {
   // Reject null bytes to prevent path injection attacks
@@ -50,9 +53,7 @@ export async function parseScanInputFromAudit(params: {
   }
 
   const command = resolveAuditCommand(pm, { workspace: params.workspace });
-  const [cmd, ...args] = command;
-
-  const result = await safeExeca(cmd, args, {
+  const result = await safeExecaCommand(command, {
     cwd: params.cwd,
     stdio: "pipe",
     reject: false,
@@ -79,6 +80,7 @@ export async function parseScanInputFromAudit(params: {
     const exit = (result.exitCode ?? 0) !== 0 ? ` (exit code ${result.exitCode})` : "";
     throw new Error(
       `Failed to parse output from ${command.join(" ")}${exit} as ${resolved}: ${message}`,
+      { cause: error },
     );
   }
 }

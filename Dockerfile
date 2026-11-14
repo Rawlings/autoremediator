@@ -10,6 +10,7 @@ RUN npm install -g pnpm@12.18.0
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/core/package.json packages/core/package.json
 RUN pnpm install --frozen-lockfile --filter autoremediator...
+COPY tsconfig.base.json ./
 COPY packages/core packages/core
 RUN pnpm --filter autoremediator build
 # core's prepack hook copies README.md and llms.txt from the repo root into the package.

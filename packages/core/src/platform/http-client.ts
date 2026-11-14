@@ -76,7 +76,7 @@ export async function httpClient(request: HttpClientRequest): Promise<HttpClient
     // malicious or compromised intelligence sources.
     const MAX_RESPONSE_BYTES = 10 * 1024 * 1024; // 10 MB
     const contentLength = res.headers?.get?.("content-length") ?? null;
-    if (contentLength && parseInt(contentLength, 10) > MAX_RESPONSE_BYTES) {
+    if (contentLength && Number.parseInt(contentLength, 10) > MAX_RESPONSE_BYTES) {
       throw new HttpError(`Response too large (content-length: ${contentLength})`, "HTTP_ERROR");
     }
 
@@ -126,11 +126,11 @@ export async function httpClientJson<T = unknown>(request: HttpClientRequest): P
  * Custom error class for HTTP client failures.
  */
 export class HttpError extends Error {
-  constructor(
-    message: string,
-    public readonly code: "TIMEOUT" | "NETWORK_ERROR" | "HTTP_ERROR",
-  ) {
+  readonly code: "TIMEOUT" | "NETWORK_ERROR" | "HTTP_ERROR";
+
+  constructor(message: string, code: "TIMEOUT" | "NETWORK_ERROR" | "HTTP_ERROR") {
     super(message);
+    this.code = code;
     this.name = "HttpError";
   }
 }

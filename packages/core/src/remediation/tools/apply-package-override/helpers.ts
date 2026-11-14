@@ -1,5 +1,5 @@
-import { safeExeca } from "../../../platform/safe-exec.js";
 import { resolveWhyCommand, type PackageManager } from "../../../platform/package-manager/index.js";
+import { safeExecaCommand } from "../../../platform/safe-exec-command.js";
 
 export interface RawPackageJson {
   overrides?: Record<string, string>;
@@ -24,8 +24,7 @@ export async function collectDependencyTrace(
   try {
     const whyCommand = resolveWhyCommand(pm, packageName, constraints);
     if (whyCommand.length === 0) return undefined;
-    const [whyCmd, ...whyArgs] = whyCommand;
-    const result = await safeExeca(whyCmd, whyArgs, {
+    const result = await safeExecaCommand(whyCommand, {
       cwd,
       stdio: "pipe",
       reject: false,

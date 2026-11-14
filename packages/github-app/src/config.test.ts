@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
+
 import { loadGitHubAppConfig } from "./config.js";
 
 describe("loadGitHubAppConfig", () => {
   it("loads config from environment values", () => {
     const config = loadGitHubAppConfig({
       AUTOREMEDIATOR_GITHUB_APP_ID: "12345",
-      AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY:
-        "-----BEGIN PRIVATE KEY-----\\nabc\\n-----END PRIVATE KEY-----",
+      AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY: String.raw`-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----`,
       AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET: "secret",
       AUTOREMEDIATOR_GITHUB_APP_PORT: "4010",
       AUTOREMEDIATOR_GITHUB_APP_DATA_DIR: ".autoremediator/github-app",
@@ -40,11 +40,11 @@ describe("loadGitHubAppConfig", () => {
     expect(config.requireDeliveryId).toBe(true);
     expect(config.enableJobQueue).toBe(true);
     expect(config.queuePollIntervalMs).toBe(3000);
-    expect(config.queueRetryDelayMs).toBe(20000);
+    expect(config.queueRetryDelayMs).toBe(20_000);
     expect(config.queueMaxAttempts).toBe(4);
     expect(config.jobWorkerConcurrency).toBe(2);
     expect(config.enableScheduler).toBe(true);
-    expect(config.scheduleIntervalMs).toBe(60000);
+    expect(config.scheduleIntervalMs).toBe(60_000);
     expect(config.enableStatusPublishing).toBe(true);
     expect(config.statusCheckName).toBe("autoremediator/check");
   });
@@ -56,11 +56,11 @@ describe("loadGitHubAppConfig", () => {
       AUTOREMEDIATOR_GITHUB_APP_WEBHOOK_SECRET: "secret",
     });
 
-    expect(config.maxWebhookBodyBytes).toBe(262144);
+    expect(config.maxWebhookBodyBytes).toBe(262_144);
     expect(config.requireJsonContentType).toBe(true);
     expect(config.enableJobQueue).toBe(true);
     expect(config.queuePollIntervalMs).toBe(2000);
-    expect(config.queueRetryDelayMs).toBe(15000);
+    expect(config.queueRetryDelayMs).toBe(15_000);
     expect(config.queueMaxAttempts).toBe(3);
     expect(config.jobWorkerConcurrency).toBe(1);
     expect(config.enableScheduler).toBe(false);

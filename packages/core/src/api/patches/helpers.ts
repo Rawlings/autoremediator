@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { isAbsolute, resolve, sep } from "node:path";
+
 import type {
   PatchArtifact,
   PatchArtifactInspection,
@@ -54,14 +55,14 @@ export async function readManifest(manifestFilePath: string): Promise<PatchArtif
 }
 
 export function derivePatchMetadata(patchContent: string): { files: string[]; hunkCount: number } {
-  const files = Array.from(
-    new Set(
+  const files = [
+    ...new Set(
       patchContent
         .split(/\r?\n/)
         .filter((line) => line.startsWith("+++ b/"))
         .map((line) => line.slice("+++ b/".length)),
     ),
-  );
+  ];
   const hunkCount = patchContent.split(/\r?\n/).filter((line) => line.startsWith("@@ ")).length;
 
   return { files, hunkCount };

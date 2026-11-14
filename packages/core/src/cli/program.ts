@@ -1,6 +1,8 @@
-import { Command } from "commander";
-import { OPTION_DESCRIPTIONS } from "../api/index.js";
 import { existsSync } from "node:fs";
+
+import { Command } from "commander";
+
+import { OPTION_DESCRIPTIONS } from "../api/index.js";
 import { PACKAGE_VERSION } from "../version";
 import {
   runDiffAudit,
@@ -44,13 +46,13 @@ function mergeCommandOptions(command: Command): CommandOptions {
   return merged as unknown as CommandOptions;
 }
 
+const parseBooleanFlag = (value: string): boolean => value === "true";
+
 function addSharedOptions(
   program: Command,
   includeInput = false,
   includeSimulationMode = true,
 ): Command {
-  const parseBooleanFlag = (value: string): boolean => value === "true";
-
   program
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
     .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
@@ -68,17 +70,17 @@ function addSharedOptions(
     .option(
       "--patch-confidence-low <value>",
       OPTION_DESCRIPTIONS.patchConfidenceThresholdLow,
-      (value: string) => parseFloat(value),
+      (value: string) => Number.parseFloat(value),
     )
     .option(
       "--patch-confidence-medium <value>",
       OPTION_DESCRIPTIONS.patchConfidenceThresholdMedium,
-      (value: string) => parseFloat(value),
+      (value: string) => Number.parseFloat(value),
     )
     .option(
       "--patch-confidence-high <value>",
       OPTION_DESCRIPTIONS.patchConfidenceThresholdHigh,
-      (value: string) => parseFloat(value),
+      (value: string) => Number.parseFloat(value),
     )
     .option("--request-id <id>", OPTION_DESCRIPTIONS.requestId)
     .option("--session-id <id>", OPTION_DESCRIPTIONS.sessionId)
@@ -109,7 +111,7 @@ function addSharedOptions(
     .option("--output-format <format>", "Output format: text|json|sarif", "text")
     .option("--kev-mandatory", OPTION_DESCRIPTIONS.kevMandatory)
     .option("--epss-threshold <value>", OPTION_DESCRIPTIONS.epssThreshold, (v: string) =>
-      parseFloat(v),
+      Number.parseFloat(v),
     )
     .option("--suppressions-file <path>", OPTION_DESCRIPTIONS.suppressionsFile)
     .option("--sla-check", OPTION_DESCRIPTIONS.slaCheck)
@@ -117,7 +119,7 @@ function addSharedOptions(
     .option(
       "--min-confidence-for-auto-apply <value>",
       OPTION_DESCRIPTIONS.dispositionPolicyMinConfidenceForAutoApply,
-      (v: string) => parseFloat(v),
+      (v: string) => Number.parseFloat(v),
     )
     .option("--hold-for-transitive", OPTION_DESCRIPTIONS.dispositionPolicyHoldForTransitive)
     .option("--escalate-on-kev", OPTION_DESCRIPTIONS.dispositionPolicyEscalateOnKev)
@@ -169,7 +171,7 @@ export function createProgram(): Command {
       .description("Remediate a single CVE ID")
       .argument("<cveId>", OPTION_DESCRIPTIONS.cveId),
     false,
-  ).action(async (cveId: string, opts: CommandOptions, command: Command) => {
+  ).action(async (cveId: string, _opts: CommandOptions, command: Command) => {
     const merged = mergeCommandOptions(command);
     validateSharedCommandOptions(merged);
     validateOutputFormat(merged.outputFormat, ["text", "json", "sarif", "cyclonedx-vex"], "cve");
@@ -186,7 +188,7 @@ export function createProgram(): Command {
       .option("--format <type>", OPTION_DESCRIPTIONS.format, "auto")
       .option("--summary-file <path>", "Write machine-readable scan summary JSON to path"),
     false,
-  ).action(async (opts: CommandOptions, command: Command) => {
+  ).action(async (_opts: CommandOptions, command: Command) => {
     const merged = mergeCommandOptions(command);
 
     validateSharedCommandOptions(merged);
@@ -205,7 +207,7 @@ export function createProgram(): Command {
       .option("--include-transitive", OPTION_DESCRIPTIONS.includeTransitive),
     false,
     false,
-  ).action(async (opts: CommandOptions, command: Command) => {
+  ).action(async (_opts: CommandOptions, command: Command) => {
     const merged = mergeCommandOptions(command);
     if (merged.simulationMode) {
       throw new Error("--simulation-mode is not supported by update-outdated.");
@@ -221,7 +223,7 @@ export function createProgram(): Command {
       .description("Run CVE or scan remediation across multiple repository targets")
       .requiredOption("--targets-file <path>", "Path to portfolio targets JSON file"),
     false,
-  ).action(async (opts: CommandOptions, command: Command) => {
+  ).action(async (_opts: CommandOptions, command: Command) => {
     const merged = mergeCommandOptions(command);
 
     validateSharedCommandOptions(merged);
@@ -242,7 +244,7 @@ export function createProgram(): Command {
     .option("--output-format <format>", "Output format: text|json", "text")
     .action(
       async (
-        opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">,
+        _opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">,
         command: Command,
       ) => {
         const merged = mergeCommandOptions(command) as Pick<
@@ -264,7 +266,7 @@ export function createProgram(): Command {
     .action(
       async (
         patchPath: string,
-        opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">,
+        _opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">,
         command: Command,
       ) => {
         const merged = mergeCommandOptions(command) as Pick<
@@ -289,7 +291,7 @@ export function createProgram(): Command {
     .action(
       async (
         patchPath: string,
-        opts: Pick<CommandOptions, "cwd" | "patchesDir" | "packageManager" | "outputFormat">,
+        _opts: Pick<CommandOptions, "cwd" | "patchesDir" | "packageManager" | "outputFormat">,
         command: Command,
       ) => {
         const merged = mergeCommandOptions(command) as Pick<
@@ -314,18 +316,14 @@ export function createProgram(): Command {
     .option("--output-format <format>", "Output format: text|json", "text")
     .action(
       async (
-        opts: Pick<
+        _opts: Pick<
           CommandOptions,
           "cwd" | "patchesDir" | "packageManager" | "runTests" | "outputFormat"
         > & { autoApply?: boolean },
         command: Command,
       ) => {
         const merged = mergeCommandOptions(command);
-        validateOutputFormat(
-          (merged.outputFormat ?? "text") as "text" | "json",
-          ["text", "json"],
-          "patches reconcile",
-        );
+        validateOutputFormat(merged.outputFormat ?? "text", ["text", "json"], "patches reconcile");
         await runReconcilePatches(merged);
       },
     );

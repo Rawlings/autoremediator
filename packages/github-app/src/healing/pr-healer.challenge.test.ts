@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { healPullRequest, repairFileContent, resetHealingAttempts } from "./pr-healer.js";
-import { DEFAULT_REPO_CONFIG } from "../types.js";
+
 import type { DiagnosticFinding } from "../diagnostics/log-parser.js";
+import { DEFAULT_REPO_CONFIG } from "../types.js";
+import { healPullRequest, repairFileContent, resetHealingAttempts } from "./pr-healer.js";
 
 describe("Milestone 5 Challenge: PR Auto-Healer Adversarial Verification (Feature 21)", () => {
   beforeEach(() => {
@@ -166,7 +167,7 @@ describe("Milestone 5 Challenge: PR Auto-Healer Adversarial Verification (Featur
         'Module \'"something"; import * as evil from "evil";\' has no default export',
         "Property 'sync' does not exist. Did you mean 'sync\n// @ts-expect-error'?",
         "'admin' is defined but never used; rm -rf /",
-        "\\x00\\x1b[31mTS2614: injected ANSI escape sequence",
+        String.raw`\x00\x1b[31mTS2614: injected ANSI escape sequence`,
       ];
 
       const cleanCode = `import foo from "foo";\nconsole.log(foo);\n`;
@@ -200,7 +201,7 @@ describe("Milestone 5 Challenge: PR Auto-Healer Adversarial Verification (Featur
         },
         {
           filePath: "src/clean.ts",
-          line: 999999,
+          line: 999_999,
           message:
             "Property 'sync' does not exist on type 'typeof import(\"rimraf\")'. Did you mean 'rimrafSync'?",
           category: "typescript",
@@ -277,7 +278,7 @@ describe("Milestone 5 Challenge: PR Auto-Healer Adversarial Verification (Featur
 
       // 3. Must post an explanatory comment
       expect(createComment).toHaveBeenCalledTimes(1);
-      const commentCall = createComment.mock.calls[0][0];
+      const commentCall = createComment.mock.calls[0]![0];
       expect(commentCall.body).toContain("Autoremediator Auto-Healing Unsuccessful");
       expect(commentCall.body).toContain("autoremediator/needs-human-review");
 

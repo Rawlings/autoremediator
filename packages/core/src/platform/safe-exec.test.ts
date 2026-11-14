@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { safeExeca, sanitizeEnvironment, validateCommandArguments } from "./safe-exec.js";
 
 describe("safe-exec", () => {

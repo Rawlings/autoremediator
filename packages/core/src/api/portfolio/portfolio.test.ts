@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { PortfolioTarget, RemediationReport } from "../../platform/types.js";
 import type { ScanReport } from "../contracts.js";
 
@@ -93,7 +94,7 @@ describe("remediatePortfolio campaignMode", () => {
 
     const report = await remediatePortfolio(targets, { campaignMode: false });
 
-    expect(report.targets[0].threatRank).toBeUndefined();
+    expect(report.targets[0]?.threatRank).toBeUndefined();
   });
 
   it("omits threatRank from results when campaignMode is not set", async () => {
@@ -103,7 +104,7 @@ describe("remediatePortfolio campaignMode", () => {
 
     const report = await remediatePortfolio(targets, {});
 
-    expect(report.targets[0].threatRank).toBeUndefined();
+    expect(report.targets[0]?.threatRank).toBeUndefined();
   });
 
   it("preserves original target order when campaignMode is not set", async () => {

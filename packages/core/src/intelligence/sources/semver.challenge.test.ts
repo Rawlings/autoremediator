@@ -110,7 +110,7 @@ describe("Feature 14: Adversarial Semver Resolution & Classification (Co-located
 
       expect(res.safeVersion).toBe("1.0.1");
       expect(res.upgradeLevel).toBe("patch");
-      expect(res.upgradeLevel === "major").toBe(false);
+      expect(res.upgradeLevel).not.toBe("major");
       expect(res.majorOnlyFixAvailable).toBe(false);
     });
 
@@ -135,7 +135,7 @@ describe("Feature 14: Adversarial Semver Resolution & Classification (Co-located
 
       expect(res.safeVersion).toBe("1.2.0");
       expect(res.upgradeLevel).toBe("minor");
-      expect(res.upgradeLevel === "major").toBe(false);
+      expect(res.upgradeLevel).not.toBe("major");
       expect(res.majorOnlyFixAvailable).toBe(false);
     });
 
@@ -159,7 +159,7 @@ describe("Feature 14: Adversarial Semver Resolution & Classification (Co-located
 
       expect(res.safeVersion).toBe("2.0.0");
       expect(res.upgradeLevel).toBe("major");
-      expect(res.upgradeLevel === "major").toBe(true);
+      expect(res.upgradeLevel).toBe("major");
       expect(res.majorOnlyFixAvailable).toBe(true);
     });
 
@@ -186,7 +186,7 @@ describe("Feature 14: Adversarial Semver Resolution & Classification (Co-located
       );
 
       expect(res.safeVersion).toBeUndefined();
-      expect(res.upgradeLevel === "major").toBe(false);
+      expect(res.upgradeLevel).not.toBe("major");
     });
   });
 });

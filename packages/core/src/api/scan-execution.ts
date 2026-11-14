@@ -1,8 +1,7 @@
-import type { RemediationReport } from "../platform/types.js";
-import type { ProvenanceContext } from "../platform/types.js";
 import { addEvidenceStep } from "../platform/evidence.js";
 import type { EvidenceLog } from "../platform/evidence.js";
 import type { AutoremediatorPolicy } from "../platform/policy.js";
+import type { RemediationReport, ProvenanceContext } from "../platform/types.js";
 import type { ScanOptions } from "./contracts.js";
 import { remediate } from "./remediate/index.js";
 

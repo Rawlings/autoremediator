@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { isPackageAllowed, type AutoremediatorPolicy } from "./policy.js";
 
 describe("Milestone 4 Challenge: denyPackages Policy Matching Stress Tests", () => {

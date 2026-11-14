@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
+
 import { BoundedJobRegistry, jobRegistry, type AsyncRemediationJob } from "./jobs.js";
 
 describe("BoundedJobRegistry", () => {

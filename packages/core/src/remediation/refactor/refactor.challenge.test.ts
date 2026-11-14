@@ -1,7 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm, writeFile, readFile, mkdir } from "node:fs/promises";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+
 import { findPackageCallSites } from "./call-site-finder.js";
 import {
   parseCompilerDiagnostics,
@@ -45,7 +47,7 @@ function test() {
       await writeFile(join(testDir, "app.ts"), code, "utf8");
 
       const callSites = findPackageCallSites(testDir, "lodash");
-      expect(callSites.length).toBe(1);
+      expect(callSites).toHaveLength(1);
 
       const site = callSites[0]!;
       expect(site.importSources).toContain("lodash");
@@ -71,7 +73,7 @@ const id = v4();
       await writeFile(join(testDir, "service.ts"), code, "utf8");
 
       const callSites = findPackageCallSites(testDir, "uuid");
-      expect(callSites.length).toBe(1);
+      expect(callSites).toHaveLength(1);
       expect(callSites[0]?.importSources).toContain("uuid/v4");
       expect(callSites[0]?.imports[0]?.localName).toBe("v4");
     });
@@ -92,7 +94,7 @@ const id = v4();
       );
 
       const callSites = findPackageCallSites(testDir, "axios");
-      expect(callSites.length).toBe(0);
+      expect(callSites).toHaveLength(0);
     });
   });
 
@@ -103,7 +105,7 @@ src/app.ts(12,5): error TS2614: Module '"lodash"' has no exported member 'defaul
 src/index.ts:45:10 - error TS2551: Property 'oldMethod' does not exist on type 'Service'. Did you mean 'newMethod'?
 `;
       const diagnostics = parseCompilerDiagnostics(output);
-      expect(diagnostics.length).toBe(2);
+      expect(diagnostics).toHaveLength(2);
 
       const d1 = diagnostics[0]!;
       expect(d1.filePath).toBe("src/app.ts");

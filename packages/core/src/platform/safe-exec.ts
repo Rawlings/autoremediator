@@ -72,10 +72,7 @@ export function safeExeca<OptionsType extends SafeExecOptions = SafeExecOptions>
 
   const timeout =
     options.timeoutMs ?? (typeof options.timeout === "number" ? options.timeout : 60_000);
-  const sanitizedEnv = sanitizeEnvironment(
-    (options.env as NodeJS.ProcessEnv) ?? process.env,
-    options.allowNodeOptions,
-  );
+  const sanitizedEnv = sanitizeEnvironment(options.env ?? process.env, options.allowNodeOptions);
 
   return execa(file, args as string[], {
     ...options,

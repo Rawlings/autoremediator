@@ -1,6 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { randomUUID } from "node:crypto";
+
 import type { QueueJob } from "./types.js";
 
 interface QueueJobInput {
@@ -33,7 +34,7 @@ function nowIso(): string {
 }
 
 function sortJobs(jobs: QueueJob[]): QueueJob[] {
-  return [...jobs].sort((a, b) => Date.parse(a.nextRunAt) - Date.parse(b.nextRunAt));
+  return [...jobs].toSorted((a, b) => Date.parse(a.nextRunAt) - Date.parse(b.nextRunAt));
 }
 
 function isRetryable(job: QueueJob): boolean {
@@ -97,7 +98,7 @@ export function createInMemoryJobQueue(initialJobs: QueueJob[] = []): JobQueue {
 
       const now = Date.now();
       const dueJobs = sortJobs(
-        Array.from(jobs.values()).filter(
+        [...jobs.values()].filter(
           (job) => job.status === "queued" && Date.parse(job.nextRunAt) <= now,
         ),
       ).slice(0, limit);
@@ -146,7 +147,7 @@ export function createInMemoryJobQueue(initialJobs: QueueJob[] = []): JobQueue {
     },
 
     listJobs(): QueueJob[] {
-      return sortJobs(Array.from(jobs.values()));
+      return sortJobs([...jobs.values()]);
     },
   };
 }

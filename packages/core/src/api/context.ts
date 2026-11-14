@@ -1,10 +1,10 @@
+import { loadPolicy } from "../platform/policy.js";
 import type {
   CorrelationContext,
   ProvenanceContext,
   RemediateOptions,
   RemediationConstraints,
 } from "../platform/types.js";
-import { loadPolicy } from "../platform/policy.js";
 
 function buildRequestId(): string {
   return `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

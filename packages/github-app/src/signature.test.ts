@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { computeWebhookSignature, verifyWebhookSignature } from "./signature.js";
 
 describe("verifyWebhookSignature", () => {

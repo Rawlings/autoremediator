@@ -1,4 +1,5 @@
-import http from "node:http";
+import type http from "node:http";
+
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { createOpenApiServer, type OpenApiServerDeps } from "./server.js";
@@ -115,7 +116,7 @@ describe("Milestone 4 Challenge: OpenAPI HTTP Server Edge Conditions", () => {
     }
     req.push(null);
 
-    return await Promise.race([resultPromise, timeoutPromise]);
+    return Promise.race([resultPromise, timeoutPromise]);
   }
 
   it("handles malformed JSON body across all POST endpoints with HTTP 400 without crashing", async () => {

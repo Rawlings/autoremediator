@@ -1,24 +1,25 @@
 import { existsSync } from "node:fs";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { evaluatePackage } from "../../remediation/evaluate-package.js";
+
 import {
   detectPackageManager,
   resolveInstallCommand,
   resolveTestCommand,
 } from "../../platform/package-manager/index.js";
-import { safeExeca } from "../../platform/safe-exec.js";
+import { safeExecaCommand } from "../../platform/safe-exec-command.js";
 import { LONG_RUNNING_TIMEOUT_MS } from "../../platform/timeouts.js";
-import {
-  getOverrideValue,
-  setOverrideValue,
-  type RawPackageJson,
-} from "../../remediation/tools/apply-package-override/helpers.js";
 import type {
   PatchReconcileOptions,
   PatchReconcileReport,
   PatchReconcileResult,
 } from "../../platform/types.js";
+import { evaluatePackage } from "../../remediation/evaluate-package.js";
+import {
+  getOverrideValue,
+  setOverrideValue,
+  type RawPackageJson,
+} from "../../remediation/tools/apply-package-override/helpers.js";
 import { inspectPatchArtifact, listPatchArtifacts } from "./inspection.js";
 
 /**
@@ -85,9 +86,8 @@ export async function reconcilePatchArtifacts(
           (v) => v.safeUpgradeVersion,
         )?.safeUpgradeVersion;
       }
-    } catch (evalError) {
-      // Evaluation query failed or offline; record reason in diagnostic trail
-      const _ignored = evalError;
+    } catch {
+      // Evaluation query failed or offline; fall through to the unresolved-result path below.
     }
 
     if (!safeUpgradeVersion) {
@@ -134,7 +134,8 @@ export async function reconcilePatchArtifacts(
       }
 
       if (originalPkgJsonContent) {
-        const pkgJson = JSON.parse(originalPkgJsonContent) as RawPackageJson & Record<string, any>;
+        const pkgJson = JSON.parse(originalPkgJsonContent) as RawPackageJson &
+          Record<string, Record<string, string> | undefined>;
         let updated = false;
 
         const depSections = [
@@ -146,7 +147,7 @@ export async function reconcilePatchArtifacts(
 
         let foundInDirectDeps = false;
         for (const depSection of depSections) {
-          if (pkgJson[depSection] && pkgJson[depSection][packageName]) {
+          if (pkgJson[depSection]?.[packageName]) {
             pkgJson[depSection][packageName] = `^${safeUpgradeVersion}`;
             updated = true;
             foundInDirectDeps = true;
@@ -185,7 +186,7 @@ export async function reconcilePatchArtifacts(
       // Execute package installation truthfully
       const installCmd = resolveInstallCommand(pm);
       try {
-        await safeExeca(installCmd[0], installCmd.slice(1), {
+        await safeExecaCommand(installCmd, {
           timeoutMs: LONG_RUNNING_TIMEOUT_MS,
           cwd,
           stdio: "pipe",
@@ -219,7 +220,7 @@ export async function reconcilePatchArtifacts(
       if (options.runTests) {
         const testCmd = resolveTestCommand(pm);
         try {
-          await safeExeca(testCmd[0], testCmd.slice(1), {
+          await safeExecaCommand(testCmd, {
             timeoutMs: LONG_RUNNING_TIMEOUT_MS,
             cwd,
             stdio: "pipe",

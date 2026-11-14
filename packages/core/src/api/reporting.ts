@@ -130,7 +130,7 @@ function addRebuttalFinding(
 ): void {
   const existing = findings.get(code);
   if (existing) {
-    existing.sourceSignals = Array.from(new Set([...existing.sourceSignals, ...sourceSignals]));
+    existing.sourceSignals = [...new Set([...existing.sourceSignals, ...sourceSignals])];
     return;
   }
 
@@ -138,15 +138,15 @@ function addRebuttalFinding(
     code,
     severity,
     message: SIMULATION_REBUTTAL_MESSAGES[code],
-    sourceSignals: Array.from(new Set(sourceSignals)),
+    sourceSignals: [...new Set(sourceSignals)],
   });
 }
 
 function hasValidationRisk(result: PatchResult): boolean {
   return (
     result.validation?.passed === false ||
-    result.validationPhases?.some((phase) => phase.passed === false) === true ||
-    result.patchArtifact?.validationPhases?.some((phase) => phase.passed === false) === true
+    result.validationPhases?.some((phase) => !phase.passed) === true ||
+    result.patchArtifact?.validationPhases?.some((phase) => !phase.passed) === true
   );
 }
 

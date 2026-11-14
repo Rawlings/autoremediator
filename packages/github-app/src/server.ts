@@ -1,17 +1,12 @@
-import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { join } from "node:path";
-import { dispatchGitHubEvent } from "./events.js";
-import { verifyWebhookSignature } from "./signature.js";
-import { type AppStateStore, createInMemoryAppStateStore } from "./state.js";
-import type { ErrorLogger, EventProcessingTrace, RemediationTriggerContext } from "./types.js";
-import { createDefaultRemediationHandler } from "./remediation-handler.js";
-import { createFileBackedJobQueue, createInMemoryJobQueue } from "./queue.js";
-import { startJobWorker } from "./worker.js";
-import { startWorkflowDispatchScheduler } from "./scheduler.js";
+
 import { createInstallationTokenProvider } from "./auth.js";
-import { createJobStatusPublisher, readRemediationStatusTarget } from "./status-publisher.js";
-import type { RemediationJobResult } from "./types.js";
+import { dispatchGitHubEvent } from "./events.js";
+import { createFileBackedJobQueue, createInMemoryJobQueue } from "./queue.js";
+import { createDefaultRemediationHandler } from "./remediation-handler.js";
+import { startWorkflowDispatchScheduler } from "./scheduler.js";
 import {
   exchangeManifestCode,
   generateStateToken,
@@ -24,6 +19,16 @@ import {
   renderSetupPage,
   resolveBaseUrl,
 } from "./setup.js";
+import { verifyWebhookSignature } from "./signature.js";
+import { type AppStateStore, createInMemoryAppStateStore } from "./state.js";
+import { createJobStatusPublisher, readRemediationStatusTarget } from "./status-publisher.js";
+import type {
+  ErrorLogger,
+  EventProcessingTrace,
+  RemediationTriggerContext,
+  RemediationJobResult,
+} from "./types.js";
+import { startJobWorker } from "./worker.js";
 
 interface ServerOptions {
   webhookSecret: string;
@@ -701,7 +706,7 @@ export function createGitHubAppServer(options: ServerOptions): Server {
         installationToken,
         target: statusTarget,
       });
-    })().catch((error) => {
+    })().catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       void normalizedOptions.onStatusTrace?.(`Status publish failed (queued): ${message}`);
     });
@@ -711,7 +716,7 @@ export function createGitHubAppServer(options: ServerOptions): Server {
     queue,
     pollIntervalMs: normalizedOptions.queuePollIntervalMs ?? 2000,
     concurrency: normalizedOptions.jobWorkerConcurrency ?? 1,
-    retryDelayMs: normalizedOptions.queueRetryDelayMs ?? 15000,
+    retryDelayMs: normalizedOptions.queueRetryDelayMs ?? 15_000,
     processJob: async (job) => {
       if (normalizedOptions.runtimeCounters) {
         normalizedOptions.runtimeCounters.jobsDequeued += 1;
@@ -758,7 +763,7 @@ export function createGitHubAppServer(options: ServerOptions): Server {
               outcome: "failed",
               reason: remediationResult.reason,
             })
-            .catch((err) => {
+            .catch((err: unknown) => {
               void normalizedOptions.onError?.({
                 timestamp: new Date().toISOString(),
                 source: "github-app",
@@ -782,7 +787,7 @@ export function createGitHubAppServer(options: ServerOptions): Server {
             outcome,
             reason: remediationResult?.reason,
           })
-          .catch((err) => {
+          .catch((err: unknown) => {
             void normalizedOptions.onError?.({
               timestamp: new Date().toISOString(),
               source: "github-app",

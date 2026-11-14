@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+
 import { safeExeca } from "./safe-exec.js";
 
 describe("safeExeca environment isolation (real child process)", () => {

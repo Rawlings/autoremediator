@@ -8,10 +8,12 @@
  */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
+
 import { parseSync, type ParseResult } from "oxc-parser";
-import { defineTool } from "./tool-compat.js";
 import { z } from "zod";
+
 import type { ReachabilityAssessment, ReachabilityEvidence } from "../../platform/types.js";
+import { defineTool } from "./tool-compat.js";
 
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts"]);
 const IGNORED_DIRS = new Set([
@@ -40,7 +42,7 @@ export function loadTsconfigPaths(cwd: string): TsconfigPathsConfig | undefined 
     try {
       const raw = readFileSync(fullPath, "utf8");
       // Remove trailing commas / comments if any for robust parsing
-      const cleaned = raw.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, "");
+      const cleaned = raw.replaceAll(/\/\*[\s\S]*?\*\/|\/\/.*/g, "");
       const parsed = JSON.parse(cleaned);
       const compilerOptions = parsed.compilerOptions;
       if (compilerOptions?.paths) {
@@ -63,7 +65,7 @@ export function resolveAliasedPath(
   importSource: string,
   config?: TsconfigPathsConfig,
 ): string | undefined {
-  if (!config || !config.paths || isAbsolute(importSource) || importSource.startsWith(".")) {
+  if (!config?.paths || isAbsolute(importSource) || importSource.startsWith(".")) {
     return undefined;
   }
 
@@ -173,7 +175,7 @@ export function findTransitiveDependencyPath(
       const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
         dependencies?: Record<string, string>;
       };
-      if (manifest.dependencies && manifest.dependencies[targetPackage]) {
+      if (manifest.dependencies?.[targetPackage]) {
         return {
           directDependency: directPkg,
           version: manifest.dependencies[targetPackage],

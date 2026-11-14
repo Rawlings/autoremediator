@@ -11,11 +11,13 @@
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
-import { safeExeca } from "../../platform/safe-exec.js";
+
 import {
   detectPackageManager,
   getPackageManagerCommands,
 } from "../../platform/package-manager/index.js";
+import { safeExecaCommand } from "../../platform/safe-exec-command.js";
+import { safeExeca } from "../../platform/safe-exec.js";
 
 /**
  * Validation result type for patch diffs
@@ -51,7 +53,7 @@ export function writePatchFile(
   }
 
   // Sanitize package name for filename (remove @ from scoped packages)
-  const safeName = packageName.replace(/^@/, "").replace(/\//g, "+");
+  const safeName = packageName.replace(/^@/, "").replaceAll("/", "+");
   const filename = `${safeName}+${version}.patch`;
   const filePath = join(patchesDir, filename);
 
@@ -133,10 +135,11 @@ export async function ensurePatchPackage(projectDir: string): Promise<void> {
   } catch (err) {
     throw new Error(
       `Failed to read package.json: ${err instanceof Error ? err.message : String(err)}`,
+      { cause: err },
     );
   }
 
-  const devDeps = (pkgJson.devDependencies as Record<string, string> | undefined) || {};
+  const devDeps = (pkgJson.devDependencies as Record<string, string> | undefined) ?? {};
 
   // Check if patch-package is already installed
   if (devDeps["patch-package"]) {
@@ -147,19 +150,19 @@ export async function ensurePatchPackage(projectDir: string): Promise<void> {
   try {
     const packageManager = detectPackageManager(projectDir);
     const commands = getPackageManagerCommands(packageManager);
-    const [cmd, ...args] = commands.installDev("patch-package");
-    await safeExeca(cmd, args, {
+    await safeExecaCommand(commands.installDev("patch-package"), {
       cwd: projectDir,
       stdio: "inherit",
     });
   } catch (err) {
     throw new Error(
       `Failed to install patch-package: ${err instanceof Error ? err.message : String(err)}`,
+      { cause: err },
     );
   }
 
   // Update postinstall script in package.json
-  let scripts = (pkgJson.scripts as Record<string, string> | undefined) || {};
+  const scripts = (pkgJson.scripts as Record<string, string> | undefined) ?? {};
   const existingPostinstall = scripts.postinstall || "";
   const newPostinstall = existingPostinstall
     ? `${existingPostinstall} && patch-package`
@@ -174,6 +177,7 @@ export async function ensurePatchPackage(projectDir: string): Promise<void> {
   } catch (err) {
     throw new Error(
       `Failed to update package.json: ${err instanceof Error ? err.message : String(err)}`,
+      { cause: err },
     );
   }
 }
@@ -200,12 +204,13 @@ export async function getVulnerableFileContent(
     const result = await safeExeca("npm", ["view", `${packageName}@${version}`, "dist.tarball"], {
       stdio: "pipe",
     });
-    tarballUrl = (result.stdout as string).trim();
+    tarballUrl = result.stdout.trim();
   } catch (err) {
     throw new Error(
       `Failed to get tarball URL for ${packageName}@${version}: ${
         err instanceof Error ? err.message : String(err)
       }`,
+      { cause: err },
     );
   }
 
@@ -241,6 +246,7 @@ export async function getVulnerableFileContent(
       `Failed to fetch file ${filePath} from ${packageName}@${version}: ${
         err instanceof Error ? err.message : String(err)
       }`,
+      { cause: err },
     );
   } finally {
     rmSync(tempDir, { recursive: true, force: true });

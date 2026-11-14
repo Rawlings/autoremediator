@@ -1,8 +1,13 @@
-import { access, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { access, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
+import { isAbsolute, join, relative, resolve as resolvePath } from "node:path";
+
 import { remediateFromScan, type CveSeverity, type ScanReport } from "autoremediator";
+
+import { parseCheckRunLogs } from "./diagnostics/log-parser.js";
+import { healPullRequest } from "./healing/pr-healer.js";
+import { fetchRepoConfig } from "./repo-config.js";
 import type {
   AutoremediatorRepoConfig,
   DefaultRemediationHandlerOptions,
@@ -10,9 +15,6 @@ import type {
   RemediationJobResult,
   RemediationTriggerContext,
 } from "./types.js";
-import { fetchRepoConfig } from "./repo-config.js";
-import { parseCheckRunLogs } from "./diagnostics/log-parser.js";
-import { healPullRequest } from "./healing/pr-healer.js";
 
 type ScanRemediateOptions = NonNullable<Parameters<typeof remediateFromScan>[1]>;
 type ScanChangeRequestOptions = NonNullable<ScanRemediateOptions["changeRequest"]>;
@@ -168,7 +170,7 @@ export function createDefaultRemediationHandler(
       typeof (payload.check_suite as Record<string, unknown> | undefined)?.head_branch === "string"
         ? ((payload.check_suite as Record<string, unknown>).head_branch as string)
         : typeof payload.ref === "string"
-          ? (payload.ref as string).replace(/^refs\/heads\//, "")
+          ? payload.ref.replace(/^refs\/heads\//, "")
           : undefined;
     const targetRef = headSha ?? branchOrRef;
 
@@ -235,7 +237,7 @@ export function createDefaultRemediationHandler(
 
     let cwd = isolatedWorkspaceDir;
     if (repoConfig.cwd) {
-      cwd = resolve(isolatedWorkspaceDir, repoConfig.cwd);
+      cwd = resolvePath(isolatedWorkspaceDir, repoConfig.cwd);
       const escaped = relative(isolatedWorkspaceDir, cwd);
       if (escaped.startsWith("..") || isAbsolute(escaped)) {
         throw new Error(
@@ -387,7 +389,7 @@ function selectCvesByMinimumSeverity(
     }
   }
 
-  return [...cves].sort((a, b) => a.localeCompare(b));
+  return [...cves].toSorted((a, b) => a.localeCompare(b));
 }
 
 function normalizeSeverity(raw?: string): CveSeverity {
@@ -520,7 +522,7 @@ async function runCommand(
   args: string[],
   cwd: string,
 ): Promise<{ output: string; exitCode: number }> {
-  return await new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd,
       stdio: ["ignore", "pipe", "pipe"],

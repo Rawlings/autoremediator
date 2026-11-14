@@ -1,11 +1,21 @@
-import { defineTool } from "../tool-compat.js";
-import { z } from "zod";
-import { join } from "node:path";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { rm } from "node:fs/promises";
-import { safeExeca } from "../../../platform/safe-exec.js";
-import { LONG_RUNNING_TIMEOUT_MS } from "../../../platform/timeouts.js";
+import { join } from "node:path";
+
 import semver from "semver";
+import { z } from "zod";
+
+import {
+  detectPackageManager,
+  getYarnMajorVersion,
+  resolveDedupeCommand,
+  resolveInstallCommand,
+  resolveTestCommand,
+} from "../../../platform/package-manager/index.js";
+import { isPackageAllowed, loadPolicy } from "../../../platform/policy.js";
+import { withRepoLock } from "../../../platform/repo-lock.js";
+import { safeExecaCommand } from "../../../platform/safe-exec-command.js";
+import { LONG_RUNNING_TIMEOUT_MS } from "../../../platform/timeouts.js";
 import type {
   PatchResult,
   ProofOfFixPhaseResult,
@@ -16,16 +26,7 @@ import {
   prepareReproductionTestFile,
   runProofOfFixPhase,
 } from "../../proof-of-fix/runner.js";
-import { isPackageAllowed, loadPolicy } from "../../../platform/policy.js";
-import { withRepoLock } from "../../../platform/repo-lock.js";
-import {
-  detectPackageManager,
-  getYarnMajorVersion,
-  resolveDedupeCommand,
-  resolveInstallCommand,
-  resolveTestCommand,
-  type PackageManager,
-} from "../../../platform/package-manager/index.js";
+import { defineTool } from "../tool-compat.js";
 import {
   collectDependencyTrace,
   describeOverrideField,
@@ -102,7 +103,7 @@ export const applyPackageOverrideTool = defineTool({
     requireProofOfFix,
     patchesDir,
   }): Promise<PatchResult> => {
-    const pm = (packageManager ?? detectPackageManager(cwd)) as PackageManager;
+    const pm = packageManager ?? detectPackageManager(cwd);
     const pkgPath = join(cwd, "package.json");
     const denoJsonPath = join(cwd, "deno.json");
     const isDenoNative = pm === "deno" && !existsSync(pkgPath);
@@ -261,8 +262,7 @@ export const applyPackageOverrideTool = defineTool({
         writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n", "utf8");
 
         try {
-          const [installCmd, ...installArgs] = installCommand;
-          await safeExeca(installCmd, installArgs, {
+          await safeExecaCommand(installCommand, {
             timeoutMs: LONG_RUNNING_TIMEOUT_MS,
             cwd,
             stdio: "pipe",
@@ -285,8 +285,7 @@ export const applyPackageOverrideTool = defineTool({
 
         if (runTests) {
           try {
-            const [testCmd, ...testArgs] = testCommand;
-            await safeExeca(testCmd, testArgs, {
+            await safeExecaCommand(testCommand, {
               timeoutMs: LONG_RUNNING_TIMEOUT_MS,
               cwd,
               stdio: "pipe",
@@ -296,8 +295,7 @@ export const applyPackageOverrideTool = defineTool({
             writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n", "utf8");
 
             try {
-              const [rollbackCmd, ...rollbackArgs] = installCommand;
-              await safeExeca(rollbackCmd, rollbackArgs, {
+              await safeExecaCommand(installCommand, {
                 timeoutMs: LONG_RUNNING_TIMEOUT_MS,
                 cwd,
                 stdio: "pipe",
@@ -333,8 +331,7 @@ export const applyPackageOverrideTool = defineTool({
             writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n", "utf8");
 
             try {
-              const [rollbackCmd, ...rollbackArgs] = installCommand;
-              await safeExeca(rollbackCmd, rollbackArgs, {
+              await safeExecaCommand(installCommand, {
                 timeoutMs: LONG_RUNNING_TIMEOUT_MS,
                 cwd,
                 stdio: "pipe",
@@ -473,8 +470,7 @@ export const applyPackageOverrideTool = defineTool({
       writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
       try {
-        const [installCmd, ...installArgs] = installCommand;
-        await safeExeca(installCmd, installArgs, {
+        await safeExecaCommand(installCommand, {
           timeoutMs: LONG_RUNNING_TIMEOUT_MS,
           cwd,
           stdio: "pipe",
@@ -497,8 +493,7 @@ export const applyPackageOverrideTool = defineTool({
 
       if (runTests) {
         try {
-          const [testCmd, ...testArgs] = testCommand;
-          await safeExeca(testCmd, testArgs, {
+          await safeExecaCommand(testCommand, {
             timeoutMs: LONG_RUNNING_TIMEOUT_MS,
             cwd,
             stdio: "pipe",
@@ -508,8 +503,7 @@ export const applyPackageOverrideTool = defineTool({
           writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
           try {
-            const [rollbackCmd, ...rollbackArgs] = installCommand;
-            await safeExeca(rollbackCmd, rollbackArgs, {
+            await safeExecaCommand(installCommand, {
               timeoutMs: LONG_RUNNING_TIMEOUT_MS,
               cwd,
               stdio: "pipe",
@@ -545,8 +539,7 @@ export const applyPackageOverrideTool = defineTool({
           writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
           try {
-            const [rollbackCmd, ...rollbackArgs] = installCommand;
-            await safeExeca(rollbackCmd, rollbackArgs, {
+            await safeExecaCommand(installCommand, {
               timeoutMs: LONG_RUNNING_TIMEOUT_MS,
               cwd,
               stdio: "pipe",
@@ -583,8 +576,7 @@ export const applyPackageOverrideTool = defineTool({
       let dedupeNote = "";
       if (dedupeCommand.length > 0) {
         try {
-          const [dedupeCmd, ...dedupeArgs] = dedupeCommand;
-          await safeExeca(dedupeCmd, dedupeArgs, {
+          await safeExecaCommand(dedupeCommand, {
             timeoutMs: LONG_RUNNING_TIMEOUT_MS,
             cwd,
             stdio: "pipe",

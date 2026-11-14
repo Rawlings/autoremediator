@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { jobRegistry } from "../../platform/jobs.js";
 
 const mocked = vi.hoisted(() => ({
@@ -38,7 +39,9 @@ describe("submitRemediateJob", () => {
     mocked.remediate.mockResolvedValue(reportResult);
     const handle = submitRemediateJob("CVE-2021-1234");
     // Wait for the microtask to settle
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
     const job = pollJob(handle.jobId);
     expect(job.status).toBe("done");
     expect(job.result).toBe(reportResult);
@@ -48,7 +51,9 @@ describe("submitRemediateJob", () => {
   it("job moves to failed when work rejects", async () => {
     mocked.remediate.mockRejectedValue(new Error("network error"));
     const handle = submitRemediateJob("CVE-2021-1234");
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
     const job = pollJob(handle.jobId);
     expect(job.status).toBe("failed");
     expect(job.error).toBe("network error");

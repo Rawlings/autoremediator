@@ -1,7 +1,8 @@
+import type { Octokit } from "@octokit/rest";
 import { describe, expect, it, vi, beforeEach } from "vitest";
+
 import { fetchRepoConfig, isContainedRelativePath } from "./repo-config.js";
 import { DEFAULT_REPO_CONFIG } from "./types.js";
-import type { Octokit } from "@octokit/rest";
 
 function makeOctokit(stub: () => Promise<unknown>): Octokit {
   return {

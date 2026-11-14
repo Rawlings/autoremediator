@@ -1,4 +1,5 @@
 import { Octokit } from "@octokit/rest";
+
 import type { QueueJob } from "./types.js";
 
 type CheckStatus = "queued" | "in_progress" | "completed";
@@ -205,47 +206,29 @@ export function createJobStatusPublisher(
   return {
     async publishQueued(context: PublishStatusContext): Promise<void> {
       await publishSafely(context, "queued", async () => {
-        await publishCheck(
-          context.installationToken as string,
-          context.target,
-          checkName,
-          "queued",
-          {
-            summary: "Remediation job queued.",
-            githubApiUrl: options.githubApiUrl,
-          },
-        );
+        await publishCheck(context.installationToken!, context.target, checkName, "queued", {
+          summary: "Remediation job queued.",
+          githubApiUrl: options.githubApiUrl,
+        });
       });
     },
 
     async publishRunning(context: PublishStatusContext): Promise<void> {
       await publishSafely(context, "running", async () => {
-        await publishCheck(
-          context.installationToken as string,
-          context.target,
-          checkName,
-          "in_progress",
-          {
-            summary: "Remediation job is running.",
-            githubApiUrl: options.githubApiUrl,
-          },
-        );
+        await publishCheck(context.installationToken!, context.target, checkName, "in_progress", {
+          summary: "Remediation job is running.",
+          githubApiUrl: options.githubApiUrl,
+        });
       });
     },
 
     async publishCompleted(context: PublishCompletionContext): Promise<void> {
       await publishSafely(context, "completed", async () => {
-        await publishCheck(
-          context.installationToken as string,
-          context.target,
-          checkName,
-          "completed",
-          {
-            conclusion: normalizeConclusion(context.outcome),
-            summary: normalizeSummary(context.outcome, context.reason),
-            githubApiUrl: options.githubApiUrl,
-          },
-        );
+        await publishCheck(context.installationToken!, context.target, checkName, "completed", {
+          conclusion: normalizeConclusion(context.outcome),
+          summary: normalizeSummary(context.outcome, context.reason),
+          githubApiUrl: options.githubApiUrl,
+        });
       });
     },
   };

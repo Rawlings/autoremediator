@@ -6,9 +6,10 @@
  * and recommends safe upgrade targets.
  */
 import semver from "semver";
-import { queryOsvPackage, parseOsvVuln } from "../intelligence/sources/osv.js";
-import { fetchEpss } from "../intelligence/sources/epss.js";
+
 import { fetchCisaKevFeed, findKevEntry } from "../intelligence/sources/cisa-kev.js";
+import { fetchEpss } from "../intelligence/sources/epss.js";
+import { queryOsvPackage, parseOsvVuln } from "../intelligence/sources/osv.js";
 import { fetchPackageVersions, findSafeUpgradeVersion } from "../intelligence/sources/registry.js";
 import type {
   EvaluatePackageOptions,
@@ -29,8 +30,10 @@ export async function evaluatePackage(
   try {
     versions = await fetchPackageVersions(packageName);
     if (versions.length > 0) {
-      const valid = versions.filter((v) => semver.valid(v)).sort((a, b) => semver.compare(a, b));
-      latestVersion = valid[valid.length - 1];
+      const valid = versions
+        .filter((v) => semver.valid(v))
+        .toSorted((a, b) => semver.compare(a, b));
+      latestVersion = valid.at(-1);
     }
   } catch {
     // Registry lookup failure shouldn't abort OSV checks
@@ -140,9 +143,9 @@ export async function evaluatePackage(
     const upgradeCandidates = entries
       .map((e) => e.safeUpgradeVersion)
       .filter((v): v is string => Boolean(v && semver.valid(v)))
-      .sort((a, b) => semver.compare(a, b));
+      .toSorted((a, b) => semver.compare(a, b));
 
-    recommendedVersion = upgradeCandidates[upgradeCandidates.length - 1] || latestVersion;
+    recommendedVersion = upgradeCandidates.at(-1) || latestVersion;
   } else {
     recommendedVersion = version || latestVersion;
   }

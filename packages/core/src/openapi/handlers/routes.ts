@@ -1,13 +1,14 @@
-import http from "node:http";
+import type http from "node:http";
+
 import type {
   PatchArtifactQueryOptions,
   RemediateOptions,
   ScanOptions,
   UpdateOutdatedOptions,
 } from "../../api/index.js";
-import { OPENAPI_SPEC } from "../spec/index.js";
 import { sendJson, withOpenApiSource } from "../http-utils.js";
 import type { OpenApiServerDeps } from "../server.js";
+import { OPENAPI_SPEC } from "../spec/index.js";
 import { readJsonBody, requireStringField, runRequest } from "./validators.js";
 
 type RouteHandler = (req: http.IncomingMessage, res: http.ServerResponse) => Promise<void>;
@@ -26,12 +27,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
   routes.set("POST /remediate", async (req, res) => {
     const body = await readJsonBody<{ cveId?: unknown; options?: unknown }>(req, res);
     if (body === undefined) return;
-    const cveId = requireStringField(
-      body as Record<string, unknown> | undefined,
-      "cveId",
-      res,
-      "cveId is required (string)",
-    );
+    const cveId = requireStringField(body, "cveId", res, "cveId is required (string)");
     if (!cveId) return;
 
     await runRequest(res, () =>
@@ -42,12 +38,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
   routes.set("POST /plan-remediation", async (req, res) => {
     const body = await readJsonBody<{ cveId?: unknown; options?: unknown }>(req, res);
     if (body === undefined) return;
-    const cveId = requireStringField(
-      body as Record<string, unknown> | undefined,
-      "cveId",
-      res,
-      "cveId is required (string)",
-    );
+    const cveId = requireStringField(body, "cveId", res, "cveId is required (string)");
     if (!cveId) return;
 
     await runRequest(res, () =>
@@ -58,12 +49,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
   routes.set("POST /remediate-from-scan", async (req, res) => {
     const body = await readJsonBody<{ inputPath?: unknown; options?: unknown }>(req, res);
     if (body === undefined) return;
-    const inputPath = requireStringField(
-      body as Record<string, unknown> | undefined,
-      "inputPath",
-      res,
-      "inputPath is required (string)",
-    );
+    const inputPath = requireStringField(body, "inputPath", res, "inputPath is required (string)");
     if (!inputPath) return;
 
     await runRequest(res, () =>
@@ -99,7 +85,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
     const body = await readJsonBody<{ patchFilePath?: unknown; options?: unknown }>(req, res);
     if (body === undefined) return;
     const patchFilePath = requireStringField(
-      body as Record<string, unknown> | undefined,
+      body,
       "patchFilePath",
       res,
       "patchFilePath is required (string)",
@@ -114,7 +100,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
     const body = await readJsonBody<{ patchFilePath?: unknown; options?: unknown }>(req, res);
     if (body === undefined) return;
     const patchFilePath = requireStringField(
-      body as Record<string, unknown> | undefined,
+      body,
       "patchFilePath",
       res,
       "patchFilePath is required (string)",
@@ -153,34 +139,18 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
   routes.set("POST /jobs/remediate", async (req, res) => {
     const body = await readJsonBody<{ cveId?: unknown; options?: unknown }>(req, res);
     if (body === undefined) return;
-    const cveId = requireStringField(
-      body as Record<string, unknown> | undefined,
-      "cveId",
-      res,
-      "cveId is required (string)",
-    );
+    const cveId = requireStringField(body, "cveId", res, "cveId is required (string)");
     if (!cveId) return;
-    const handle = deps.submitRemediateJobFn(
-      cveId,
-      withOpenApiSource(body?.options) as Parameters<OpenApiServerDeps["submitRemediateJobFn"]>[1],
-    );
+    const handle = deps.submitRemediateJobFn(cveId, withOpenApiSource(body?.options));
     sendJson(res, 202, handle);
   });
 
   routes.set("POST /jobs/scan", async (req, res) => {
     const body = await readJsonBody<{ inputPath?: unknown; options?: unknown }>(req, res);
     if (body === undefined) return;
-    const inputPath = requireStringField(
-      body as Record<string, unknown> | undefined,
-      "inputPath",
-      res,
-      "inputPath is required (string)",
-    );
+    const inputPath = requireStringField(body, "inputPath", res, "inputPath is required (string)");
     if (!inputPath) return;
-    const handle = deps.submitScanJobFn(
-      inputPath,
-      withOpenApiSource(body?.options) as Parameters<OpenApiServerDeps["submitScanJobFn"]>[1],
-    );
+    const handle = deps.submitScanJobFn(inputPath, withOpenApiSource(body?.options));
     sendJson(res, 202, handle);
   });
 
@@ -193,7 +163,7 @@ export function createOpenApiRouteHandlers(deps: OpenApiServerDeps): Map<string,
     }
     const handle = deps.submitPortfolioJobFn(
       body.targets as Parameters<OpenApiServerDeps["submitPortfolioJobFn"]>[0],
-      withOpenApiSource(body.options) as Parameters<OpenApiServerDeps["submitPortfolioJobFn"]>[1],
+      withOpenApiSource(body.options),
     );
     sendJson(res, 202, handle);
   });

@@ -1,8 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
-import { fetchPackageSourceTool } from "./fetch-package-source.js";
-import { execa } from "execa";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+
+import { execa } from "execa";
+import { describe, expect, it, vi } from "vitest";
+
+import { fetchPackageSourceTool } from "./fetch-package-source.js";
 
 vi.mock("execa", () => ({
   execa: vi.fn(),

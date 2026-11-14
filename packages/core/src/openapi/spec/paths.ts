@@ -46,7 +46,7 @@ export function createOpenApiPaths() {
                   cveId: {
                     type: "string",
                     description: OPTION_DESCRIPTIONS.cveId,
-                    pattern: "^CVE-\\d{4}-\\d+$",
+                    pattern: String.raw`^CVE-\d{4}-\d+$`,
                   },
                   options: {
                     type: "object",
@@ -85,7 +85,7 @@ export function createOpenApiPaths() {
                   cveId: {
                     type: "string",
                     description: OPTION_DESCRIPTIONS.cveId,
-                    pattern: "^CVE-\\d{4}-\\d+$",
+                    pattern: String.raw`^CVE-\d{4}-\d+$`,
                   },
                   options: {
                     type: "object",
@@ -460,7 +460,7 @@ export function createOpenApiPaths() {
                   cveId: {
                     type: "string",
                     description: OPTION_DESCRIPTIONS.cveId,
-                    pattern: "^CVE-\\d{4}-\\d+$",
+                    pattern: String.raw`^CVE-\d{4}-\d+$`,
                   },
                   options: {
                     type: "object",

@@ -33,6 +33,10 @@ pnpm typecheck:all
 pnpm test:all
 ```
 
+Every package's `tsconfig.json` extends the shared `tsconfig.base.json` at the repo root, so strictness
+flags live in one place. Lint runs type-aware (`.oxlintrc.json`), so build first: it resolves
+`autoremediator` through `packages/core/dist`. Warnings fail lint; fix them or justify an inline disable.
+
 `pnpm format` and `pnpm lint:fix` apply fixes. Tests live next to the code, must not use the
 network, and should mock at module boundaries.
 

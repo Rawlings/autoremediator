@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { toCycloneDxVex } from "./index.js";
+
 import type { PatchResult, RemediationReport } from "../../platform/types.js";
 import type { ScanReport } from "../contracts.js";
+import { toCycloneDxVex } from "./index.js";
 
 function makeReport(overrides: Partial<RemediationReport> = {}): RemediationReport {
   return {

@@ -8,7 +8,9 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
 import { describe, expect, it, vi, beforeEach } from "vitest";
+
 import type { CveDetails } from "../../platform/types.js";
 
 // ---------------------------------------------------------------------------

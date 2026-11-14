@@ -1,4 +1,4 @@
-import { GitHubAppConfig } from "./types.js";
+import type { GitHubAppConfig } from "./types.js";
 
 function parseBooleanEnv(name: string, value: string | undefined, defaultValue: boolean): boolean {
   if (value === undefined) {
@@ -152,7 +152,7 @@ export function loadGitHubAppConfig(env: NodeJS.ProcessEnv = process.env): GitHu
   const queueRetryDelayMs = parsePositiveIntEnv(
     "AUTOREMEDIATOR_GITHUB_APP_QUEUE_RETRY_DELAY_MS",
     env.AUTOREMEDIATOR_GITHUB_APP_QUEUE_RETRY_DELAY_MS,
-    15000,
+    15_000,
   );
 
   const queueMaxAttempts = parsePositiveIntEnv(

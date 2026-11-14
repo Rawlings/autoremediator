@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+
 import { safeExeca } from "../safe-exec.js";
 import type { PackageManager, RemediationConstraints } from "../types.js";
 import { parsePackageManagerListOutput } from "./list-parser.js";
@@ -42,7 +43,8 @@ function withWorkspace(command: string[], pm: PackageManager, workspace?: string
 
   if (pm === "pnpm") {
     // pnpm expects filters before the subcommand: pnpm --filter <selector> install
-    return [command[0], "--filter", workspace, ...command.slice(1)];
+    const [executable, ...rest] = command;
+    return executable === undefined ? command : [executable, "--filter", workspace, ...rest];
   }
 
   if (pm === "npm") {

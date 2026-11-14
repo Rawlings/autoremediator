@@ -1,39 +1,38 @@
-import { lookupCveOsv } from "../../intelligence/sources/osv.js";
+import { enrichWithCisaKev } from "../../intelligence/sources/cisa-kev.js";
+import { enrichWithEpss } from "../../intelligence/sources/epss.js";
 import {
   lookupCveGitHub,
   mergeGhDataIntoCveDetails,
 } from "../../intelligence/sources/github-advisory.js";
-import { enrichWithCisaKev } from "../../intelligence/sources/cisa-kev.js";
-import { enrichWithEpss } from "../../intelligence/sources/epss.js";
 import { enrichWithNvd } from "../../intelligence/sources/nvd.js";
+import { lookupCveOsv } from "../../intelligence/sources/osv.js";
 import {
   loadIntelligenceSnapshot,
   lookupSnapshotCve,
 } from "../../intelligence/sources/snapshot.js";
+import { computeEscalationAction } from "../../platform/escalation.js";
+import type { PatchGenerator } from "../../platform/patch-generator.js";
+import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
+import { createProjectSnapshot } from "../../platform/rollback.js";
 import type {
   CveDetails,
-  InventoryPackage,
   LlmUsageMetrics,
   PatchResult,
   RemediateOptions,
   RemediationReport,
   VulnerablePackage,
 } from "../../platform/types.js";
+import { resolvePatchGenerator } from "../patch/resolve.js";
 import { checkInventoryTool } from "../tools/check-inventory.js";
 import { assessPackageReachability } from "../tools/check-reachability.js";
-import { runSecOpsPreflight } from "./secops-preflight.js";
-import { buildSbom } from "./sbom.js";
-import { resolvePrimaryResult } from "./primary-strategy.js";
+import { applyDispositionAndContainment } from "./disposition.js";
 import { shouldAttemptPatchFallback, tryPatchFallback } from "./fallback.js";
 import { resolveLocalRunOptions } from "./options.js";
-import type { PatchGenerator } from "../../platform/patch-generator.js";
-import { resolvePatchGenerator } from "../patch/resolve.js";
-import { findVulnerablePackages } from "./vulnerability-match.js";
+import { resolvePrimaryResult } from "./primary-strategy.js";
+import { buildSbom } from "./sbom.js";
+import { runSecOpsPreflight } from "./secops-preflight.js";
 import { buildLocalSummary } from "./summary.js";
-import { applyDispositionAndContainment } from "./disposition.js";
-import { computeEscalationAction } from "../../platform/escalation.js";
-import { createProjectSnapshot } from "../../platform/rollback.js";
-import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
+import { findVulnerablePackages } from "./vulnerability-match.js";
 
 export async function runLocalRemediationPipeline(
   cveId: string,
@@ -276,11 +275,7 @@ export async function runLocalRemediationPipeline(
   }
 
   const vulnerableNames = new Set(vulnerablePackages.map((v) => v.installed.name));
-  const sbom = buildSbom(
-    installedPackages as InventoryPackage[],
-    vulnerableNames,
-    collectedResults,
-  );
+  const sbom = buildSbom(installedPackages, vulnerableNames, collectedResults);
 
   return {
     cveId,

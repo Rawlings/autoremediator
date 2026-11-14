@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { CveDetails } from "../../platform/types.js";
 
+import type { CveDetails } from "../../platform/types.js";
 import { enrichWithEpss } from "./epss.js";
 
 describe("epss source", () => {

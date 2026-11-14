@@ -1,3 +1,5 @@
+import { getEpssApiUrl } from "../../platform/config.js";
+import { httpClient } from "../../platform/http-client.js";
 /**
  * FIRST EPSS API client.
  *
@@ -5,8 +7,6 @@
  * Uses shared HTTP client for consistent error handling and timeouts.
  */
 import type { CveDetails } from "../../platform/types.js";
-import { getEpssApiUrl } from "../../platform/config.js";
-import { httpClient } from "../../platform/http-client.js";
 
 interface EpssRow {
   cve: string;

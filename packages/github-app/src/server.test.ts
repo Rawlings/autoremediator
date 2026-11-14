@@ -1,9 +1,11 @@
-import { afterEach, describe, expect, it } from "vitest";
-import type { AddressInfo } from "node:net";
 import { mkdtemp, rm } from "node:fs/promises";
-import { join } from "node:path";
+import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { PassThrough } from "node:stream";
+
+import { afterEach, describe, expect, it } from "vitest";
+
 import { createGitHubAppServer as originalCreateGitHubAppServer } from "./server.js";
 import { computeWebhookSignature } from "./signature.js";
 import { createFileAppStateStore, createInMemoryAppStateStore } from "./state.js";
@@ -36,14 +38,14 @@ async function dispatch(
   res.statusCode = 200;
   const outHeaders: Record<string, string> = {};
   res.setHeader = (k: string, v: string) => {
-    outHeaders[k.toLowerCase()] = String(v);
+    outHeaders[k.toLowerCase()] = v;
   };
   res.getHeader = (k: string) => outHeaders[k.toLowerCase()];
   res.writeHead = (code: number, hdrs?: Record<string, string>) => {
     res.statusCode = code;
     if (hdrs) {
       for (const [k, v] of Object.entries(hdrs)) {
-        outHeaders[k.toLowerCase()] = String(v);
+        outHeaders[k.toLowerCase()] = v;
       }
     }
   };
@@ -64,10 +66,8 @@ async function dispatch(
   });
 
   server.emit("request", req, res);
-  if (options.body) {
-    if (typeof options.body === "string" || Buffer.isBuffer(options.body)) {
-      req.write(options.body);
-    }
+  if (options.body && (typeof options.body === "string" || Buffer.isBuffer(options.body))) {
+    req.write(options.body);
   }
   req.end();
 
@@ -404,7 +404,9 @@ describe("github app server", () => {
     });
     expect(webhookResponse.status).toBe(202);
 
-    await new Promise((resolve) => setTimeout(resolve, 60));
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 60);
+    });
 
     const health = await fetch(`${baseUrl}/health`);
     const healthPayload = (await health.json()) as {
@@ -463,7 +465,9 @@ describe("github app server", () => {
     });
     expect(webhookResponse.status).toBe(202);
 
-    await new Promise((resolve) => setTimeout(resolve, 60));
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 60);
+    });
 
     const health = await fetch(`${baseUrl}/health`);
     const healthPayload = (await health.json()) as {

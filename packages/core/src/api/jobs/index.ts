@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+
 import { jobRegistry } from "../../platform/jobs.js";
 import type { AsyncRemediationJob, JobHandle } from "../../platform/jobs.js";
 import type {
@@ -8,9 +9,9 @@ import type {
   PortfolioReport,
 } from "../../platform/types.js";
 import type { ScanReport, ScanOptions } from "../contracts.js";
-import { remediate } from "../remediate/index.js";
-import { remediateFromScan } from "../remediate-from-scan/index.js";
 import { remediatePortfolio } from "../portfolio/index.js";
+import { remediateFromScan } from "../remediate-from-scan/index.js";
+import { remediate } from "../remediate/index.js";
 
 export type { JobHandle, AsyncRemediationJob } from "../../platform/jobs.js";
 
@@ -26,22 +27,24 @@ function createJob(): AsyncRemediationJob {
   return job;
 }
 
+async function executeJob(job: AsyncRemediationJob, work: () => Promise<unknown>): Promise<void> {
+  // Yield first so callers observe the "pending" status before the work starts.
+  await Promise.resolve();
+  try {
+    job.status = "running";
+    const result = await work();
+    job.status = "done";
+    job.result = result;
+    job.completedAt = new Date().toISOString();
+  } catch (error: unknown) {
+    job.status = "failed";
+    job.error = error instanceof Error ? error.message : String(error);
+    job.completedAt = new Date().toISOString();
+  }
+}
+
 function runJobAsync(job: AsyncRemediationJob, work: () => Promise<unknown>): void {
-  Promise.resolve()
-    .then(() => {
-      job.status = "running";
-      return work();
-    })
-    .then((result) => {
-      job.status = "done";
-      job.result = result;
-      job.completedAt = new Date().toISOString();
-    })
-    .catch((error: unknown) => {
-      job.status = "failed";
-      job.error = error instanceof Error ? error.message : String(error);
-      job.completedAt = new Date().toISOString();
-    });
+  void executeJob(job, work);
 }
 
 export function submitRemediateJob(cveId: string, options?: RemediateOptions): JobHandle {

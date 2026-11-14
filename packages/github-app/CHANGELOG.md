@@ -1,5 +1,16 @@
 # @autoremediator/github-app
 
+## 0.4.1
+
+### Patch Changes
+
+- 77b43d9: Reorganize the documentation into a navigable tree under `docs/` (getting started, how it works, safety, guides, reference, integrations) and correct package READMEs, the security policy and workflow templates to match what the code does.
+- Internal tooling only: all packages now extend a shared root `tsconfig.base.json` (TypeScript 7, ES2025 target, `noUncheckedIndexedAccess`, `verbatimModuleSyntax`, `erasableSyntaxOnly` and related strict flags), and the oxlint and oxfmt configs were tightened. No public API or behavior change.
+- Updated dependencies [77b43d9]
+- Updated dependencies [77b43d9]
+- Updated dependencies
+  - autoremediator@0.21.1
+
 ## 0.4.0
 
 ### Minor Changes

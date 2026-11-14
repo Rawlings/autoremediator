@@ -1,5 +1,6 @@
-import * as vscode from "vscode";
 import { existsSync, readFileSync } from "node:fs";
+
+import * as vscode from "vscode";
 
 export const PATCH_SCHEME = "autoremediator-patch";
 

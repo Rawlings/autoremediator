@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { computeLockfileDiff, parseLockfileDependencies } from "./lockfile-diff.js";
 
 describe("lockfile-diff", () => {

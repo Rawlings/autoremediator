@@ -11,10 +11,12 @@
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { safeExeca } from "../../platform/safe-exec.js";
+
 import semver from "semver";
+
 import { httpClient } from "../../platform/http-client.js";
 import { type PackageManager, detectPackageManager } from "../../platform/package-manager/index.js";
+import { safeExeca } from "../../platform/safe-exec.js";
 
 const NPM_REGISTRY = "https://registry.npmjs.org";
 
@@ -122,7 +124,7 @@ export async function resolveSafeUpgradeVersion(
         return true;
       }
     })
-    .sort(semver.compare);
+    .toSorted(semver.compare);
 
   if (!candidates.length) {
     return {
@@ -186,8 +188,12 @@ export function classifyUpgradeLevel(
 
   if (candidate.major > installed.major) return "major";
   if (candidate.major === installed.major && candidate.minor > installed.minor) return "minor";
-  if (candidate.major === installed.major && candidate.minor === installed.minor) {
-    if (candidate.patch >= installed.patch) return "patch";
+  if (
+    candidate.major === installed.major &&
+    candidate.minor === installed.minor &&
+    candidate.patch >= installed.patch
+  ) {
+    return "patch";
   }
 
   return undefined;
@@ -284,7 +290,7 @@ export async function queryOutdatedPackages(
     stdout = typeof result.stdout === "string" ? result.stdout : "";
   } catch (err) {
     if (err instanceof Error && !err.message.includes("outdated --json failed")) {
-      throw new Error(`Failed to query outdated packages: ${err.message}`);
+      throw new Error(`Failed to query outdated packages: ${err.message}`, { cause: err });
     }
     throw err;
   }

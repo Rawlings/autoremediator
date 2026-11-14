@@ -1,5 +1,7 @@
 import type http from "node:http";
+
 import { afterEach, describe, expect, it, vi } from "vitest";
+
 import { checkRbacAuthorization } from "./rbac.js";
 
 function call(routeKey: string, headers: Record<string, string> = {}) {

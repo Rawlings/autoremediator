@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+
 import type { RemediationReport } from "./types.js";
 
 interface IdempotencyEntry {
@@ -33,7 +34,7 @@ function loadIndex(cwd: string): IdempotencyIndex {
 
   try {
     const parsed = JSON.parse(readFileSync(filePath, "utf8")) as IdempotencyIndex;
-    if (parsed && parsed.schemaVersion === "1.0" && parsed.entries) {
+    if (parsed?.schemaVersion === "1.0" && parsed.entries) {
       return parsed;
     }
     return DEFAULT_INDEX;

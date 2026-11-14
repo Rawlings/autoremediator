@@ -1,4 +1,5 @@
-import http from "node:http";
+import type http from "node:http";
+
 import { HttpError, readBody, sendJson } from "../http-utils.js";
 import { assertPathsConfined } from "../path-guard.js";
 
@@ -48,9 +49,9 @@ export function requireStringField(
   res: http.ServerResponse,
   errorMessage: string,
 ): string | undefined {
-  if (!body || typeof body[field] !== "string" || !(body[field] as string)) {
+  if (!body || typeof body[field] !== "string" || !body[field]) {
     sendJson(res, 400, { error: errorMessage });
     return undefined;
   }
-  return body[field] as string;
+  return body[field];
 }

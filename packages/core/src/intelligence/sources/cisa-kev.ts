@@ -1,3 +1,4 @@
+import { httpClient } from "../../platform/http-client.js";
 /**
  * CISA Known Exploited Vulnerabilities (KEV) feed client.
  *
@@ -6,7 +7,6 @@
  * Uses shared HTTP client for consistent error handling and timeouts.
  */
 import type { CveDetails } from "../../platform/types.js";
-import { httpClient } from "../../platform/http-client.js";
 
 const CISA_KEV_URL =
   "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json";

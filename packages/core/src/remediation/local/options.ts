@@ -1,4 +1,5 @@
 import { getModelSpec } from "../../platform/config.js";
+import { detectPackageManager } from "../../platform/package-manager/index.js";
 import { loadPolicy } from "../../platform/policy.js";
 import type {
   EscalationGraph,
@@ -9,7 +10,6 @@ import type {
   SlaPolicy,
   VexSuppression,
 } from "../../platform/types.js";
-import { detectPackageManager } from "../../platform/package-manager/index.js";
 
 export interface LocalRunOptions {
   cwd: string;

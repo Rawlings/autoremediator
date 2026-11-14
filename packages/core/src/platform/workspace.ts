@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve, relative } from "node:path";
+
 import yaml from "yaml";
 
 export interface WorkspacePackage {
@@ -186,7 +187,7 @@ export function findDeclaringWorkspacePackage(
     return (
       wp.name === filter ||
       wp.relativeDir === filter ||
-      wp.relativeDir.replace(/\\/g, "/") === filter.replace(/\\/g, "/")
+      wp.relativeDir.replaceAll("\\", "/") === filter.replaceAll("\\", "/")
     );
   };
 

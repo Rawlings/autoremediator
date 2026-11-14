@@ -7,6 +7,7 @@
  * Start: node dist/openapi/server.js [--port 3000]
  */
 import http from "node:http";
+
 import {
   inspectPatchArtifact,
   listPatchArtifacts,
@@ -22,9 +23,9 @@ import {
   updateOutdated,
   validatePatchArtifact,
 } from "../api/index.js";
+import { isEntrypoint } from "../platform/entrypoint.js";
 import { handleOpenApiRequest } from "./handlers/index.js";
 import { parsePort, sendJson } from "./http-utils.js";
-import { isEntrypoint } from "../platform/entrypoint.js";
 
 export { OPENAPI_SPEC } from "./spec/index.js";
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { parseSarifFromString } from "./sarif.js";
 
 describe("parseSarifFromString", () => {

@@ -7,7 +7,9 @@
  * transforms) are supported, and anything else is reported as "no codemod matched".
  */
 import { readFileSync, writeFileSync } from "node:fs";
+
 import { parseSync } from "oxc-parser";
+
 import type { ConsumerCallSite } from "./call-site-finder.js";
 
 export interface ArgumentTransformOptions {
@@ -52,7 +54,7 @@ interface TextEdit {
 function applyEdits(source: string, edits: TextEdit[]): string {
   if (edits.length === 0) return source;
   // Sort descending by start offset to avoid line/index shift skew
-  const sorted = [...edits].sort((a, b) => b.start - a.start);
+  const sorted = [...edits].toSorted((a, b) => b.start - a.start);
   let result = source;
   for (const edit of sorted) {
     result = result.slice(0, edit.start) + edit.replacement + result.slice(edit.end);
@@ -73,30 +75,31 @@ export function parseCompilerDiagnostics(diagnosticError: string): ParsedTsDiagn
 
     // Pattern 1: path/to/file.ts(line,col): error TSxxxx: message
     // Pattern 2: path/to/file.ts:line:col - error TSxxxx: message
-    const match = trimmed.match(
-      /(?:([^\s:(]+)[:(](\d+)[:,](\d+)\)?:?\s*(?:-\s*)?(?:error\s+)?(TS\d+)?:?\s*(.*))/i,
-    );
+    const match =
+      /(?:([^\s:(]+)[:(](\d+)[:,](\d+)\)?:?\s*(?:-\s*)?(?:error\s+)?(TS\d+)?:?\s*(.*))/i.exec(
+        trimmed,
+      );
 
     if (match) {
       const [, filePath, lineStr, colStr, code, message] = match;
       const diag: ParsedTsDiagnostic = {
         filePath,
-        line: lineStr ? parseInt(lineStr, 10) : undefined,
-        column: colStr ? parseInt(colStr, 10) : undefined,
+        line: lineStr ? Number.parseInt(lineStr, 10) : undefined,
+        column: colStr ? Number.parseInt(colStr, 10) : undefined,
         code,
         message: message || trimmed,
       };
 
       // Extract "Did you mean 'xyz'?"
-      const suggestionMatch = diag.message.match(/Did you mean ['"]([a-zA-Z0-9_$]+)['"]\?/i);
+      const suggestionMatch = /Did you mean ['"]([a-zA-Z0-9_$]+)['"]\?/i.exec(diag.message);
       if (suggestionMatch) {
         diag.suggestedSymbol = suggestionMatch[1];
       }
 
       // Extract missing exported member or property
       const missingMatch =
-        diag.message.match(/has no exported member ['"]([a-zA-Z0-9_$]+)['"]/i) ||
-        diag.message.match(/Property ['"]([a-zA-Z0-9_$]+)['"] does not exist/i);
+        /has no exported member ['"]([a-zA-Z0-9_$]+)['"]/i.exec(diag.message) ??
+        /Property ['"]([a-zA-Z0-9_$]+)['"] does not exist/i.exec(diag.message);
       if (missingMatch) {
         diag.missingMember = missingMatch[1];
       }
@@ -314,8 +317,9 @@ function transformFileContent(
       for (const k of Object.keys(node)) {
         if (k === "parent") continue;
         const v = node[k];
-        if (Array.isArray(v)) v.forEach(walkRimraf);
-        else if (v && typeof v === "object") walkRimraf(v);
+        if (Array.isArray(v)) {
+          for (const child of v) walkRimraf(child);
+        } else if (v && typeof v === "object") walkRimraf(v);
       }
     }
     walkRimraf(parseResult.program);
@@ -356,8 +360,9 @@ function transformFileContent(
       for (const k of Object.keys(node)) {
         if (k === "parent") continue;
         const v = node[k];
-        if (Array.isArray(v)) v.forEach(walkUuid);
-        else if (v && typeof v === "object") walkUuid(v);
+        if (Array.isArray(v)) {
+          for (const child of v) walkUuid(child);
+        } else if (v && typeof v === "object") walkUuid(v);
       }
     }
     walkUuid(parseResult.program);
@@ -398,8 +403,9 @@ function transformFileContent(
       for (const k of Object.keys(node)) {
         if (k === "parent") continue;
         const v = node[k];
-        if (Array.isArray(v)) v.forEach(walkGlob);
-        else if (v && typeof v === "object") walkGlob(v);
+        if (Array.isArray(v)) {
+          for (const child of v) walkGlob(child);
+        } else if (v && typeof v === "object") walkGlob(v);
       }
     }
     walkGlob(parseResult.program);
@@ -440,8 +446,9 @@ function transformFileContent(
       for (const k of Object.keys(node)) {
         if (k === "parent") continue;
         const v = node[k];
-        if (Array.isArray(v)) v.forEach(walkMkdirp);
-        else if (v && typeof v === "object") walkMkdirp(v);
+        if (Array.isArray(v)) {
+          for (const child of v) walkMkdirp(child);
+        } else if (v && typeof v === "object") walkMkdirp(v);
       }
     }
     walkMkdirp(parseResult.program);
@@ -547,8 +554,9 @@ function transformFileContent(
         for (const k of Object.keys(node)) {
           if (k === "parent") continue;
           const v = node[k];
-          if (Array.isArray(v)) v.forEach(walkDiagnostics);
-          else if (v && typeof v === "object") walkDiagnostics(v);
+          if (Array.isArray(v)) {
+            for (const child of v) walkDiagnostics(child);
+          } else if (v && typeof v === "object") walkDiagnostics(v);
         }
       }
 

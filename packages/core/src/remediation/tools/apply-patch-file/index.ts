@@ -1,27 +1,19 @@
-/**
- * Tool: apply-patch-file
- *
- * Writes generated patch files to disk and applies them using package-manager-aware
- * patch mechanisms (native pnpm/yarn when available, patch-package compatibility otherwise).
- * Optionally validates patches by running tests.
- */
-import { defineTool } from "../tool-compat.js";
-import { z } from "zod";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { safeExeca } from "../../../platform/safe-exec.js";
-import { LONG_RUNNING_TIMEOUT_MS } from "../../../platform/timeouts.js";
+
+import { z } from "zod";
+
 import {
   detectPackageManager,
   getYarnMajorVersion,
   resolveInstallCommand,
   resolveTestCommand,
-  type PackageManager,
 } from "../../../platform/package-manager/index.js";
-import { withRepoLock } from "../../../platform/repo-lock.js";
 import { isPackageAllowed, loadPolicy } from "../../../platform/policy.js";
+import { withRepoLock } from "../../../platform/repo-lock.js";
 import { recordFileTouch } from "../../../platform/rollback.js";
-import { validatePatchDiff } from "../../strategies/patch-utils.js";
+import { safeExecaCommand } from "../../../platform/safe-exec-command.js";
+import { LONG_RUNNING_TIMEOUT_MS } from "../../../platform/timeouts.js";
 import type {
   PatchArtifact,
   PatchMode,
@@ -35,6 +27,15 @@ import {
   prepareReproductionTestFile,
   runProofOfFixPhase,
 } from "../../proof-of-fix/runner.js";
+import { validatePatchDiff } from "../../strategies/patch-utils.js";
+/**
+ * Tool: apply-patch-file
+ *
+ * Writes generated patch files to disk and applies them using package-manager-aware
+ * patch mechanisms (native pnpm/yarn when available, patch-package compatibility otherwise).
+ * Optionally validates patches by running tests.
+ */
+import { defineTool } from "../tool-compat.js";
 import {
   applyNativePatch,
   buildPatchFileName,
@@ -169,7 +170,7 @@ export const applyPatchFileTool = defineTool({
     dryRun,
   }): Promise<ApplyPatchFileResult> => {
     try {
-      const pm = (packageManager ?? detectPackageManager(cwd)) as PackageManager;
+      const pm = packageManager ?? detectPackageManager(cwd);
       const loadedPolicy = loadPolicy(cwd, policy);
       if (!isPackageAllowed(loadedPolicy, packageName)) {
         return {
@@ -273,7 +274,7 @@ export const applyPatchFileTool = defineTool({
         };
       }
 
-      return withRepoLock(cwd, async () => {
+      return await withRepoLock(cwd, async () => {
         const packageJsonSnapshot = patchModeRequiresPackageJsonSnapshot(pm)
           ? await capturePackageJsonSnapshot(cwd)
           : undefined;
@@ -307,7 +308,6 @@ export const applyPatchFileTool = defineTool({
         artifact.validationPhases = validationPhases;
         await writePatchManifest(manifestFilePath, artifact);
 
-        let reproductionTestPath: string | undefined;
         let negativePhaseResult: ProofOfFixPhaseResult | undefined;
 
         const preparedRepro = await prepareReproductionTestFile({
@@ -318,7 +318,7 @@ export const applyPatchFileTool = defineTool({
           proofOfFix,
           reproductionTest,
         });
-        reproductionTestPath = preparedRepro.testFilePath;
+        const reproductionTestPath = preparedRepro.testFilePath;
 
         const hasReproductionScript = Boolean(reproductionTestPath);
         const isProofOfFixActive = Boolean(
@@ -464,8 +464,7 @@ export const applyPatchFileTool = defineTool({
 
         if (patchMode === "patch-package") {
           try {
-            const [installCmd, ...installArgs] = installCommand;
-            await safeExeca(installCmd, installArgs, {
+            await safeExecaCommand(installCommand, {
               timeoutMs: LONG_RUNNING_TIMEOUT_MS,
               cwd,
               stdio: "pipe",

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { buildResultSimulation, buildSlaBreachSummary } from "./reporting.js";
 
 const mocked = vi.hoisted(() => ({
@@ -392,7 +393,7 @@ describe("api preview and correlation behavior", () => {
       ],
     };
 
-    const simulation = buildResultSimulation(report, report.results[0], {
+    const simulation = buildResultSimulation(report, report.results[0]!, {
       dryRun: true,
       simulationMode: true,
       runTests: false,

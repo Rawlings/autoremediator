@@ -1,7 +1,8 @@
-import { safeExeca } from "../../platform/safe-exec.js";
 import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
+
+import { safeExeca } from "../../platform/safe-exec.js";
 import type {
   ChangeRequestGrouping,
   ChangeRequestOptions,
@@ -77,16 +78,16 @@ interface ChangeRequestPlan {
 function sanitizeBranchToken(value: string): string {
   return value
     .toLowerCase()
-    .replace(/[^a-z0-9._/-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
+    .replaceAll(/[^a-z0-9._/-]+/g, "-")
+    .replaceAll(/^-+|-+$/g, "")
     .slice(0, 80);
 }
 
 function buildPlan(reports: RemediationReport[]): ChangeRequestPlan {
-  const cveIds = Array.from(new Set(reports.map((report) => report.cveId)));
-  const packageNames = Array.from(
-    new Set(reports.flatMap((report) => report.results.map((result) => result.packageName))),
-  );
+  const cveIds = [...new Set(reports.map((report) => report.cveId))];
+  const packageNames = [
+    ...new Set(reports.flatMap((report) => report.results.map((result) => result.packageName))),
+  ];
 
   const titleSuffix = cveIds.length === 1 ? cveIds[0]! : `${cveIds.length} CVEs`;
   const title = `security remediation: ${titleSuffix}`;
@@ -136,7 +137,7 @@ export function groupReports(
       list.push(report);
       map.set(key, list);
     }
-    return Array.from(map.values());
+    return [...map.values()];
   }
 
   if (grouping === "per-package") {
@@ -155,7 +156,7 @@ export function groupReports(
         }
       }
     }
-    return Array.from(map.values());
+    return [...map.values()];
   }
 
   if (grouping === "by-severity") {
@@ -166,7 +167,7 @@ export function groupReports(
       list.push(report);
       map.set(sev, list);
     }
-    return Array.from(map.values());
+    return [...map.values()];
   }
 
   return [reports];
@@ -199,7 +200,7 @@ async function detectRepoFromRemote(cwd: string): Promise<string | undefined> {
     stdio: "pipe",
   }).catch(() => ({ stdout: "" }));
   const url = result.stdout.trim();
-  const match = url.match(/[:/]([^/]+)\/([^/]+?)(?:\.git)?$/);
+  const match = /[:/]([^/]+)\/([^/]+?)(?:\.git)?$/.exec(url);
   if (match) {
     return `${match[1]}/${match[2]}`;
   }

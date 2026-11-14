@@ -1,7 +1,9 @@
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
+
 import { acquireRepoLock, withRepoLock } from "./repo-lock.js";
 
 describe("repo-lock", () => {
@@ -11,12 +13,16 @@ describe("repo-lock", () => {
 
     const first = withRepoLock(cwd, async () => {
       order.push("first-start");
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 150);
+      });
       order.push("first-end");
       return "first";
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 20);
+    });
 
     const second = withRepoLock(cwd, async () => {
       order.push("second-start");

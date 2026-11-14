@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { confidenceThreshold, DEFAULT_CONFIDENCE_THRESHOLDS, generatePatches } from "./generate.js";
+
 import type {
   PatchGenerator,
   PatchProposal,
   PatchRequest,
 } from "../../platform/patch-generator.js";
+import { confidenceThreshold, DEFAULT_CONFIDENCE_THRESHOLDS, generatePatches } from "./generate.js";
 
 const request: PatchRequest = {
   cveId: "CVE-2024-0001",
@@ -72,20 +73,22 @@ describe("generatePatches", () => {
 
   it("enforces a confidence threshold that depends on the assessed risk", async () => {
     const lowConfidence = proposal({ confidence: 0.75, riskLevel: "high" });
-    expect(await generatePatches(request, generatorReturning(lowConfidence))).toMatchObject({
+    await expect(
+      generatePatches(request, generatorReturning(lowConfidence)),
+    ).resolves.toMatchObject({
       ok: false,
       reason: "confidence-too-low",
     });
-    expect(
-      await generatePatches(request, generatorReturning({ ...lowConfidence, riskLevel: "low" })),
-    ).toMatchObject({ ok: true });
+    await expect(
+      generatePatches(request, generatorReturning({ ...lowConfidence, riskLevel: "low" })),
+    ).resolves.toMatchObject({ ok: true });
   });
 
   it("honours caller-supplied thresholds", async () => {
     const generator = generatorReturning(proposal({ confidence: 0.75, riskLevel: "high" }));
-    expect(
-      await generatePatches(request, generator, { confidenceThresholds: { high: 0.7 } }),
-    ).toMatchObject({ ok: true });
+    await expect(
+      generatePatches(request, generator, { confidenceThresholds: { high: 0.7 } }),
+    ).resolves.toMatchObject({ ok: true });
   });
 });
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { parseYarnAuditJsonFromString } from "./yarn-audit.js";
 
 describe("parseYarnAuditJsonFromString", () => {

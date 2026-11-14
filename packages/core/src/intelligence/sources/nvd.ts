@@ -1,3 +1,5 @@
+import { getNvdConfig } from "../../platform/config.js";
+import { httpClient } from "../../platform/http-client.js";
 /**
  * NVD (National Vulnerability Database) API v2 client
  *
@@ -8,8 +10,6 @@
  * Uses shared HTTP client for consistent error handling and timeouts.
  */
 import type { CveDetails } from "../../platform/types.js";
-import { getNvdConfig } from "../../platform/config.js";
-import { httpClient } from "../../platform/http-client.js";
 
 const NVD_BASE = "https://services.nvd.nist.gov/rest/json/cves/2.0";
 

@@ -1,7 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+
 import { parse as yamlParse, stringify as yamlStringify } from "yaml";
 import { z } from "zod";
+
 import type {
   CveSeverity,
   DispositionPolicy,
@@ -51,7 +53,7 @@ export const DEFAULT_POLICY: AutoremediatorPolicy = {
   escalationGraph: undefined,
 };
 
-const severity = z.enum(["UNKNOWN", "LOW", "MEDIUM", "HIGH", "CRITICAL"]);
+const severitySchema = z.enum(["UNKNOWN", "LOW", "MEDIUM", "HIGH", "CRITICAL"]);
 const unitInterval = z.number().min(0).max(1);
 const packagePattern = z.string().trim().min(1);
 
@@ -126,7 +128,7 @@ const policyFileSchema = z
         minConfidenceForAutoApply: unitInterval,
         holdForTransitive: z.boolean(),
         escalateOnKev: z.boolean(),
-        escalateOnSlaBreachSeverities: z.array(severity),
+        escalateOnSlaBreachSeverities: z.array(severitySchema),
       })
       .partial()
       .strict()
@@ -204,7 +206,7 @@ export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPo
     ...parsed.data,
     constraints: { ...DEFAULT_POLICY.constraints, ...parsed.data.constraints },
     patchConfidenceThresholds: parsed.data.patchConfidenceThresholds ?? {},
-    escalationGraph: parsed.data.escalationGraph as EscalationGraph | undefined,
+    escalationGraph: parsed.data.escalationGraph,
   };
 }
 
@@ -249,7 +251,7 @@ export function isActiveSuppression(suppression: VexSuppression): boolean {
   if (!suppression || typeof suppression !== "object") return false;
   if (!suppression.expiresAt) return true;
   const expires = new Date(suppression.expiresAt).getTime();
-  if (isNaN(expires)) return true;
+  if (Number.isNaN(expires)) return true;
   return expires > Date.now();
 }
 
@@ -282,6 +284,7 @@ export function loadSuppressionsFile(filePath: string): VexSuppression[] {
   } catch (error) {
     throw new Error(
       `Cannot read suppressions file ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
     );
   }
   const result = z
@@ -308,7 +311,7 @@ export function checkSlaBreach(
   if (typeof deadlineHours !== "number") return null;
 
   const publishedMs = new Date(publishedAt).getTime();
-  if (isNaN(publishedMs)) return null;
+  if (Number.isNaN(publishedMs)) return null;
 
   const deadlineMs = publishedMs + deadlineHours * 60 * 60 * 1000;
   const nowMs = Date.now();
@@ -365,7 +368,7 @@ export function saveSuppressionToPolicy(
       s.cveId.toUpperCase() === suppression.cveId.toUpperCase(),
   );
 
-  if (existingIndex >= 0) {
+  if (existingIndex !== -1) {
     existingSuppressions[existingIndex] = {
       ...existingSuppressions[existingIndex],
       ...suppression,
@@ -410,7 +413,7 @@ export function saveSuppressionToFile(filePath: string, suppression: VexSuppress
       s.cveId.toUpperCase() === suppression.cveId.toUpperCase(),
   );
 
-  if (existingIndex >= 0) {
+  if (existingIndex !== -1) {
     existingSuppressions[existingIndex] = {
       ...existingSuppressions[existingIndex],
       ...suppression,

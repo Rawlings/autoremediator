@@ -27,8 +27,7 @@ export interface ManifestConversionResult {
   ownerLogin: string;
 }
 
-export function resolveBaseUrl(hostHeader: string | undefined): string {
-  const host = hostHeader ?? "localhost:3001";
+export function resolveBaseUrl(host: string | undefined = "localhost:3001"): string {
   const isLocal =
     host.startsWith("localhost") ||
     host.startsWith("127.") ||
@@ -111,11 +110,11 @@ export async function exchangeManifestCode(
 
 function escapeHtml(str: string): string {
   return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#x27;");
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#x27;");
 }
 
 export function renderSetupPage(

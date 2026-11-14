@@ -70,7 +70,7 @@ export class BoundedJobRegistry extends Map<string, AsyncRemediationJob> {
   public isExpired(job: AsyncRemediationJob, now = Date.now()): boolean {
     const timestampStr = job.completedAt ?? job.submittedAt;
     const timeMs = new Date(timestampStr).getTime();
-    if (isNaN(timeMs)) return false;
+    if (Number.isNaN(timeMs)) return false;
     return now - timeMs > this.ttlMs;
   }
 
@@ -169,18 +169,22 @@ export class BoundedJobRegistry extends Map<string, AsyncRemediationJob> {
     let failed = 0;
     for (const job of super.values()) {
       switch (job.status) {
-        case "pending":
+        case "pending": {
           pending++;
           break;
-        case "running":
+        }
+        case "running": {
           running++;
           break;
-        case "done":
+        }
+        case "done": {
           done++;
           break;
-        case "failed":
+        }
+        case "failed": {
           failed++;
           break;
+        }
       }
     }
     return {

@@ -6,8 +6,8 @@ import type {
   RemediationReport,
 } from "../../platform/types.js";
 import type { ScanReport } from "../contracts.js";
-import { remediate } from "../remediate/index.js";
 import { remediateFromScan } from "../remediate-from-scan/index.js";
+import { remediate } from "../remediate/index.js";
 import { assertValidSimulationMode, buildSlaBreachSummary } from "../reporting.js";
 import { rankPortfolioTargets } from "./risk-score.js";
 
@@ -56,7 +56,9 @@ export async function remediatePortfolio(
     throw new Error("Portfolio requires at least one target.");
   }
 
-  normalizedTargets.forEach((target, index) => validateTarget(target, index));
+  for (const [index, target] of normalizedTargets.entries()) {
+    validateTarget(target, index);
+  }
 
   const executionTargets =
     options.campaignMode === true

@@ -1,6 +1,8 @@
 import { isAbsolute, normalize } from "node:path";
-import { parse as yamlParse } from "yaml";
+
 import type { Octokit } from "@octokit/rest";
+import { parse as yamlParse } from "yaml";
+
 import { type AutoremediatorRepoConfig, DEFAULT_REPO_CONFIG, type ErrorLogger } from "./types.js";
 
 type RawRepoConfig = Partial<AutoremediatorRepoConfig>;
@@ -32,10 +34,10 @@ function sanitizeRaw(raw: Record<string, unknown>): RawRepoConfig {
   }
   if (typeof raw.allowMajorBumps === "boolean") out.allowMajorBumps = raw.allowMajorBumps;
   if (Array.isArray(raw.denyPackages) && raw.denyPackages.every((p) => typeof p === "string")) {
-    out.denyPackages = (raw.denyPackages as string[]).slice(0, 200);
+    out.denyPackages = raw.denyPackages.slice(0, 200);
   }
   if (Array.isArray(raw.allowPackages) && raw.allowPackages.every((p) => typeof p === "string")) {
-    out.allowPackages = (raw.allowPackages as string[]).slice(0, 200);
+    out.allowPackages = raw.allowPackages.slice(0, 200);
   }
   if (raw.constraints !== null && typeof raw.constraints === "object") {
     out.constraints = raw.constraints as RawRepoConfig["constraints"];
@@ -131,15 +133,10 @@ export async function fetchRepoConfig(
       return { ...DEFAULT_REPO_CONFIG };
     }
 
-    return mergeWithDefaults(sanitizeRaw(parsed as Record<string, unknown>));
+    return mergeWithDefaults(sanitizeRaw(parsed));
   } catch (error: unknown) {
     // 404 = file absent — that's fine, use defaults
-    if (
-      error !== null &&
-      typeof error === "object" &&
-      "status" in error &&
-      (error as { status: unknown }).status === 404
-    ) {
+    if (error !== null && typeof error === "object" && "status" in error && error.status === 404) {
       return { ...DEFAULT_REPO_CONFIG };
     }
     const message = error instanceof Error ? error.message : String(error);

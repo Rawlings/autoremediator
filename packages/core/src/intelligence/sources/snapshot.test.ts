@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { loadIntelligenceSnapshot, lookupSnapshotCve } from "./snapshot.js";
+
 import type { CveDetails } from "../../platform/types.js";
+import { loadIntelligenceSnapshot, lookupSnapshotCve } from "./snapshot.js";
 
 vi.mock("node:fs");
 

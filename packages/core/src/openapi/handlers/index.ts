@@ -1,8 +1,9 @@
-import http from "node:http";
-import type { OpenApiServerDeps } from "../server.js";
-import { createOpenApiRouteHandlers } from "./routes.js";
+import type http from "node:http";
+
 import { sendJson } from "../http-utils.js";
 import { checkRbacAuthorization } from "../rbac.js";
+import type { OpenApiServerDeps } from "../server.js";
+import { createOpenApiRouteHandlers } from "./routes.js";
 
 function isHostAllowed(req: http.IncomingMessage): boolean {
   const configured = process.env.AUTOREMEDIATOR_ALLOWED_HOSTS?.split(",")
@@ -10,8 +11,10 @@ function isHostAllowed(req: http.IncomingMessage): boolean {
     .filter(Boolean);
   const allowed =
     configured && configured.length > 0 ? configured : ["127.0.0.1", "localhost", "[::1]"];
-  const host = String(req.headers.host ?? "").toLowerCase();
-  const name = host.startsWith("[") ? host.slice(0, host.indexOf("]") + 1) : host.split(":")[0];
+  const host = (req.headers.host ?? "").toLowerCase();
+  const name = host.startsWith("[")
+    ? host.slice(0, host.indexOf("]") + 1)
+    : (host.split(":")[0] ?? "");
   return allowed.includes(name);
 }
 

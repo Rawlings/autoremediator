@@ -1,15 +1,13 @@
-import { join } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
-import { safeExeca } from "../../platform/safe-exec.js";
-import { LONG_RUNNING_TIMEOUT_MS } from "../../platform/timeouts.js";
+import { join } from "node:path";
+
+import { queryOutdatedPackages } from "../../intelligence/sources/registry.js";
 import {
   addEvidenceStep,
   createEvidenceLog,
   finalizeEvidence,
   writeEvidenceLog,
 } from "../../platform/evidence.js";
-import { loadPolicy } from "../../platform/policy.js";
-import { withRepoLock } from "../../platform/repo-lock.js";
 import {
   detectPackageManager,
   getYarnMajorVersion,
@@ -17,21 +15,24 @@ import {
   resolveTestCommand,
   type PackageManager,
 } from "../../platform/package-manager/index.js";
+import { loadPolicy } from "../../platform/policy.js";
+import { withRepoLock } from "../../platform/repo-lock.js";
+import { safeExecaCommand } from "../../platform/safe-exec-command.js";
+import { LONG_RUNNING_TIMEOUT_MS } from "../../platform/timeouts.js";
 import type {
   OutdatedPackage,
   UpdateOutdatedOptions,
   UpdateOutdatedReport,
 } from "../../platform/types.js";
 import {
+  assertChangeRequestAllowed,
+  createChangeRequestsForReports,
+} from "../change-request/index.js";
+import {
   resolveConstraints,
   resolveCorrelationContext,
   resolveProvenanceContext,
 } from "../context.js";
-import { queryOutdatedPackages } from "../../intelligence/sources/registry.js";
-import {
-  assertChangeRequestAllowed,
-  createChangeRequestsForReports,
-} from "../change-request/index.js";
 
 // ---------------------------------------------------------------------------
 // Internal types
@@ -89,7 +90,7 @@ async function applyBump(params: {
   }
 
   const currentRange = pkgJson[depField]![params.packageName]!;
-  const prefixMatch = currentRange.match(/^([~^]?)/);
+  const prefixMatch = /^([~^]?)/.exec(currentRange);
   const prefix = prefixMatch?.[1] ?? "";
   const newRange = `${prefix}${params.toVersion}`;
 
@@ -98,8 +99,7 @@ async function applyBump(params: {
     writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
 
     try {
-      const [installCmd, ...installArgs] = params.installCommand;
-      await safeExeca(installCmd, installArgs, {
+      await safeExecaCommand(params.installCommand, {
         timeoutMs: LONG_RUNNING_TIMEOUT_MS,
         cwd: params.cwd,
         stdio: "pipe",
@@ -116,8 +116,7 @@ async function applyBump(params: {
 
     if (params.runTests) {
       try {
-        const [testCmd, ...testArgs] = params.testCommand;
-        await safeExeca(testCmd, testArgs, {
+        await safeExecaCommand(params.testCommand, {
           timeoutMs: LONG_RUNNING_TIMEOUT_MS,
           cwd: params.cwd,
           stdio: "pipe",
@@ -126,8 +125,7 @@ async function applyBump(params: {
         pkgJson[depField]![params.packageName] = currentRange;
         writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
         try {
-          const [rollbackCmd, ...rollbackArgs] = params.installCommand;
-          await safeExeca(rollbackCmd, rollbackArgs, {
+          await safeExecaCommand(params.installCommand, {
             timeoutMs: LONG_RUNNING_TIMEOUT_MS,
             cwd: params.cwd,
             stdio: "pipe",
@@ -214,16 +212,14 @@ export async function updateOutdated(
     };
   }
 
-  const outdatedPackages: OutdatedPackage[] = Array.from(outdatedMap.entries()).map(
-    ([name, info]) => ({
-      name,
-      currentVersion: info.currentVersion,
-      wantedVersion: info.wantedVersion,
-      latestVersion: info.latestVersion,
-      isMajorBump: info.isMajorBump,
-      dependencyScope: info.dependencyScope,
-    }),
-  );
+  const outdatedPackages: OutdatedPackage[] = [...outdatedMap.entries()].map(([name, info]) => ({
+    name,
+    currentVersion: info.currentVersion,
+    wantedVersion: info.wantedVersion,
+    latestVersion: info.latestVersion,
+    isMajorBump: info.isMajorBump,
+    dependencyScope: info.dependencyScope,
+  }));
 
   addEvidenceStep(
     evidence,
@@ -233,7 +229,7 @@ export async function updateOutdated(
   );
 
   // Resolve install/test commands once (before the loop)
-  const pm = (options.packageManager ?? detectPackageManager(cwd)) as PackageManager;
+  const pm = options.packageManager ?? detectPackageManager(cwd);
   const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
   const installCommand = resolveInstallCommand(pm, constraints, yarnMajor);
   const testCommand = resolveTestCommand(pm, constraints);

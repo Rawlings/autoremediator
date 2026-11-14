@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { dispatchGitHubEvent } from "./events.js";
 import { createInMemoryAppStateStore } from "./state.js";
 

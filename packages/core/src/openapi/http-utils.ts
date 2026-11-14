@@ -1,27 +1,29 @@
-import http from "node:http";
+import type http from "node:http";
+
 import { stripUntrustedChangeRequestFields } from "../api/change-request/index.js";
 
 const DEFAULT_PORT = 3000;
 
 export function parsePort(): number {
   const idx = process.argv.indexOf("--port");
-  if (idx !== -1 && process.argv[idx + 1]) {
-    const p = parseInt(process.argv[idx + 1], 10);
-    if (!isNaN(p)) return p;
+  const rawPort = process.argv[idx + 1];
+  if (idx !== -1 && rawPort) {
+    const p = Number.parseInt(rawPort, 10);
+    if (!Number.isNaN(p)) return p;
   }
   if (process.env.PORT) {
-    const p = parseInt(process.env.PORT, 10);
-    if (!isNaN(p)) return p;
+    const p = Number.parseInt(process.env.PORT, 10);
+    if (!Number.isNaN(p)) return p;
   }
   return DEFAULT_PORT;
 }
 
 export class HttpError extends Error {
-  constructor(
-    readonly status: number,
-    message: string,
-  ) {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
     super(message);
+    this.status = status;
     this.name = "HttpError";
   }
 }
@@ -41,14 +43,14 @@ function getMaxBodyBytes(): number {
  */
 export function readBody(req: http.IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
-    const contentType = String(req.headers["content-type"] ?? "");
+    const contentType = req.headers["content-type"] ?? "";
     if (!/^application\/json\s*(;|$)/i.test(contentType)) {
       reject(new HttpError(415, "Content-Type must be application/json"));
       return;
     }
 
     const limit = getMaxBodyBytes();
-    const declared = Number.parseInt(String(req.headers["content-length"] ?? ""), 10);
+    const declared = Number.parseInt(req.headers["content-length"] ?? "", 10);
     if (Number.isFinite(declared) && declared > limit) {
       reject(new HttpError(413, `Request body exceeds ${limit} bytes`));
       return;
@@ -71,11 +73,14 @@ export function readBody(req: http.IncomingMessage): Promise<unknown> {
     });
     req.on("end", () => {
       if (failed) return;
+      let parsed: unknown;
       try {
-        resolve(raw ? JSON.parse(raw) : {});
+        parsed = raw ? JSON.parse(raw) : {};
       } catch {
         reject(new HttpError(400, "Invalid JSON body"));
+        return;
       }
+      resolve(parsed);
     });
     req.on("error", reject);
   });

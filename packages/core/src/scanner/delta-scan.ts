@@ -6,15 +6,18 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { safeExeca } from "../platform/safe-exec.js";
+
 import semver from "semver";
-import { evaluatePackage } from "../remediation/evaluate-package.js";
+
+import { safeExeca } from "../platform/safe-exec.js";
 import type {
   DeltaDependencyChange,
   DeltaFinding,
   DeltaScanOptions,
   DeltaScanReport,
 } from "../platform/types.js";
+import { evaluatePackage } from "../remediation/evaluate-package.js";
+import { computeLockfileDiff } from "./lockfile-diff.js";
 
 const DEP_SECTIONS = [
   "dependencies",
@@ -67,7 +70,7 @@ async function getChangedManifestPaths(cwd: string, baseRef: string): Promise<st
     }
   }
 
-  return Array.from(manifests);
+  return [...manifests];
 }
 
 async function getOldManifestContent(
@@ -80,7 +83,7 @@ async function getOldManifestContent(
       cwd,
       reject: false,
     });
-    if (!stdout || !stdout.trim()) return null;
+    if (!stdout?.trim()) return null;
     return JSON.parse(stdout) as PackageJsonSubset;
   } catch {
     return null;
@@ -155,8 +158,6 @@ function computeDependencyDiff(
   return changes;
 }
 
-import { computeLockfileDiff } from "./lockfile-diff.js";
-
 const LOCKFILE_PATTERNS = [
   "package-lock.json",
   "**/package-lock.json",
@@ -206,7 +207,7 @@ async function getChangedLockfilePaths(cwd: string, baseRef: string): Promise<st
   } catch {
     // Ignore git errors
   }
-  return Array.from(lockfiles);
+  return [...lockfiles];
 }
 
 async function getFileContentAtRef(

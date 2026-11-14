@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
 import { OPENAPI_SPEC, createOpenApiServer } from "./server.js";
 
 // These suites exercise the HTTP routes themselves, so they opt out of the auth requirement explicitly.
@@ -199,7 +200,11 @@ describe("openapi server", () => {
     });
 
     afterAll(async () => {
-      await new Promise<void>((resolve) => server.close(() => resolve()));
+      await new Promise<void>((resolve) => {
+        server.close(() => {
+          resolve();
+        });
+      });
     });
 
     async function makeRequest(
@@ -283,7 +288,7 @@ describe("openapi server", () => {
           }
           req.push(null);
 
-          return await resultPromise;
+          return resultPromise;
         }
         throw err;
       }

@@ -1,10 +1,10 @@
 import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { randomBytes } from "node:crypto";
+import { existsSync, statSync } from "node:fs";
 import { writeFile, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { existsSync, statSync } from "node:fs";
-import { randomBytes } from "node:crypto";
+import { promisify } from "node:util";
 
 import type { DeltaScanReport, ReachabilityAssessment, ScanReport } from "autoremediator";
 
@@ -61,7 +61,7 @@ export async function scanForVulns(cwd: string, force = false): Promise<VulnFind
 
   const cached = scanCache.get(cwd);
   const now = Date.now();
-  if (!force && cached?.packageJsonMtime === pkgMtime && now - cached.timestamp < 15000) {
+  if (!force && cached?.packageJsonMtime === pkgMtime && now - cached.timestamp < 15_000) {
     return cached.findings;
   }
 
