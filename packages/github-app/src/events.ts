@@ -1,5 +1,6 @@
 import { codeScanningAlertTarget, dependabotAlertTarget } from "./alerts.js";
 import { parseComment } from "./commands.js";
+import { botKindOfBranch, isForkPullRequest } from "./doctor/bot-pr.js";
 import type { AppStateStore } from "./state.js";
 import type {
   DispatchResult,
@@ -243,11 +244,25 @@ export async function dispatchGitHubEvent(
       const ref = typeof head?.ref === "string" ? head.ref : "";
       return ref.startsWith("autoremediator/") || ref.includes("autoremediator");
     });
+    // Dependabot and Renovate branches go to the bot PR doctor, which the repository must enable.
+    // A pull request from a fork is dropped here already; the handler checks the rest.
+    const isBotPr = pullRequests.some((pr) => {
+      const head = pr.head as Record<string, unknown> | undefined;
+      const ref = typeof head?.ref === "string" ? head.ref : "";
+      return botKindOfBranch(ref) !== undefined && !isForkPullRequest(pr);
+    });
 
-    if (!isAutoremediatorPr && pullRequests.length > 0) {
+    if (!isAutoremediatorPr && !isBotPr && pullRequests.length > 0) {
+      const onlyForkedBot = pullRequests.every((pr) => {
+        const head = pr.head as Record<string, unknown> | undefined;
+        const ref = typeof head?.ref === "string" ? head.ref : "";
+        return botKindOfBranch(ref) !== undefined && isForkPullRequest(pr);
+      });
       return {
         status: "ignored",
-        reason: "check_run failure not on an autoremediator pull request branch",
+        reason: onlyForkedBot
+          ? "check_run failure on a bot pull request from a fork"
+          : "check_run failure not on an autoremediator pull request branch",
       };
     }
 
