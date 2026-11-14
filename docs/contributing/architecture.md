@@ -17,6 +17,7 @@ implement is described in [How it works](../how-it-works.md).
 | `remediation/proof-of-fix/`, `remediation/refactor/` | Optional verification and codemods.                     |
 | `intelligence/sources/` | One module per advisory or signal source (OSV, GitHub, NVD, KEV, EPSS, npm registry).   |
 | `scanner/`              | Scanner-output adapters and the git-aware delta scan.                                   |
+| `runs/`                 | Run records on disk: hash-chained ledger, project fingerprints, persisted snapshots, plans. Imports `platform/` only. `api/runs` drives it. |
 | `platform/`             | Shared kernel: types, policy, option schemas (`option-schemas.ts`, the one zod definition of every option), rollback, safe subprocess execution, evidence, jobs. |
 
 `platform/` must not import from the other directories, `catalog/` may use only `api/` and `platform/`,

@@ -47,6 +47,12 @@ The CLI and SDK trust their caller. The [MCP server](integrations/mcp-server.md)
 The [GitHub App](integrations/github-app.md) accepts only relative `cwd` values inside the checkout
 and verifies webhook signatures.
 
+## Runs on disk
+
+`planRemediation` and `applyPlan` keep a record under `.autoremediator/runs/`, including a copy of
+your manifests, lockfiles and patch files taken before the first change. Rollback restores from it
+and refuses if the project changed since. See [Plan, apply and roll back](guides/plan-and-apply.md).
+
 ## Network access
 
 Remediation contacts public, read-only endpoints. No repository code or credentials are sent to

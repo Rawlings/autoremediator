@@ -1,0 +1,530 @@
+import { join } from "node:path";
+
+import {
+  detectPackageManager,
+  getYarnMajorVersion,
+  resolveInstallCommand,
+} from "../../platform/package-manager/index.js";
+import { withRepoLock } from "../../platform/repo-lock.js";
+import { createProjectSnapshot, restoreProjectSnapshot } from "../../platform/rollback.js";
+import { safeExeca } from "../../platform/safe-exec.js";
+import type { PatchResult, RemediateOptions, RemediationReport } from "../../platform/types.js";
+import { resolveConstraints } from "../context.js";
+import { applyPackageOverrideTool } from "../../remediation/tools/apply-package-override/index.js";
+import { applyVersionBumpTool } from "../../remediation/tools/apply-version-bump.js";
+import { fingerprintRepo, sameInputs } from "../../runs/fingerprint.js";
+import { isPlanId, isRunId } from "../../runs/ids.js";
+import type { StepEvent } from "../../runs/ledger.js";
+import { buildPlan, type PlanItem, type PlanOptions, type PlanSkip, type RemediationPlan } from "../../runs/plan.js";
+import { RunStore, type RunRecord, type RunStatus } from "../../runs/run-store.js";
+import { loadSnapshot, saveSnapshot } from "../../runs/snapshot-store.js";
+
+export type { RunRecord, RunStatus } from "../../runs/run-store.js";
+export type { PlanItem, PlanSkip, RemediationPlan } from "../../runs/plan.js";
+
+const SNAPSHOT_DIR = "snapshot";
+const SNAPSHOT_MANIFEST = `${SNAPSHOT_DIR}/snapshot.json`;
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export interface RunQuery {
+  /** Project directory (default: process.cwd()). */
+  cwd?: string;
+  runId: string;
+}
+
+export interface ApplyPlanOptions {
+  cwd?: string;
+  /** The run that holds the plan. */
+  runId?: string;
+  /** Alternative to `runId`: the content id of the plan. */
+  planId?: string;
+  /** Apply only these plan items (default: every item not yet applied). */
+  itemIds?: string[];
+}
+
+export interface RollbackRunOptions extends RunQuery {
+  /** Roll back even though the project changed since the run's last step. */
+  force?: boolean;
+  /**
+   * Reinstall dependencies from the restored lockfile so `node_modules` matches again (default:
+   * true). Without it the restored manifests and the installed packages disagree.
+   */
+  reinstall?: boolean;
+}
+
+export interface ListRunsOptions {
+  cwd?: string;
+  status?: RunStatus;
+  limit?: number;
+}
+
+export interface ItemOutcome {
+  itemId: string;
+  packageName: string;
+  fromVersion: string;
+  toVersion: string;
+  strategy: PlanItem["strategy"];
+  status: "applied" | "failed";
+  message: string;
+  unresolvedReason?: string;
+}
+
+export interface RunReport {
+  runId: string;
+  planId?: string;
+  status: RunStatus;
+  cwd: string;
+  /** Outcomes of the items this call attempted. */
+  items: ItemOutcome[];
+  /** Plan items that were not attempted by this call. */
+  pending: string[];
+  skipped: PlanSkip[];
+  message: string;
+}
+
+export interface RunDetails {
+  run: RunRecord;
+  plan?: RemediationPlan;
+  /** Outcome of every plan item that has been attempted, from the ledger. */
+  items: ItemOutcome[];
+  ledger: { ok: boolean; reason?: string; events: StepEvent[] };
+}
+
+export interface RollbackReport {
+  runId: string;
+  status: "rolled-back";
+  restoredFiles: number;
+  /** Manifests and lockfiles match the state the plan was made against again. */
+  matchesBase: boolean;
+  /** Whether dependencies were reinstalled from the restored lockfile. */
+  reinstalled: boolean;
+  /** Why the reinstall did not happen or failed. */
+  reinstallNote?: string;
+  message: string;
+}
+
+/** The operations that change the project or run the package manager; replaceable in tests. */
+export interface RunDeps {
+  applyItem: (item: PlanItem, context: { cwd: string; options: PlanOptions }) => Promise<PatchResult>;
+  /** Install exactly what the restored lockfile says. */
+  reinstall: (context: { cwd: string; options: PlanOptions | undefined }) => Promise<void>;
+}
+
+const defaultRunDeps: RunDeps = {
+  async applyItem(item, { cwd, options }) {
+    const shared = {
+      cwd,
+      packageName: item.packageName,
+      fromVersion: item.fromVersion,
+      toVersion: item.toVersion,
+      dryRun: false,
+      policy: options.policy,
+      runTests: options.runTests ?? false,
+      installMode: options.constraints?.installMode,
+      installPreferOffline: options.constraints?.installPreferOffline,
+      enforceFrozenLockfile: options.constraints?.enforceFrozenLockfile,
+      workspace: options.constraints?.workspace,
+      reproductionTest: options.reproductionTest,
+      proofOfFix: options.proofOfFix,
+      requireProofOfFix: options.requireProofOfFix,
+      ...(options.packageManager
+        ? { packageManager: options.packageManager as "npm" | "pnpm" | "yarn" | "bun" | "deno" }
+        : {}),
+      ...(options.patchesDir ? { patchesDir: options.patchesDir } : {}),
+    };
+    return item.strategy === "version-bump"
+      ? applyVersionBumpTool.execute({
+          ...shared,
+          typecheck: options.typecheck,
+          breakingChangeRefactor: options.breakingChangeRefactor,
+        })
+      : applyPackageOverrideTool.execute(shared);
+  },
+
+  async reinstall({ cwd, options }) {
+    const pm = (options?.packageManager as ReturnType<typeof detectPackageManager> | undefined) ?? detectPackageManager(cwd);
+    const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
+    // Frozen, so the lockfile that was just restored is installed as it is and not rewritten.
+    const [command, ...args] = resolveInstallCommand(
+      pm,
+      { ...options?.constraints, enforceFrozenLockfile: true },
+      yarnMajor,
+    );
+    if (!command) return;
+    await withRepoLock(cwd, () => safeExeca(command, args, { cwd, stdio: "pipe" }));
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Planning
+// ---------------------------------------------------------------------------
+
+function planOptionsFrom(options: RemediateOptions, cwd: string): PlanOptions {
+  const constraints = resolveConstraints(options, cwd);
+  return {
+    ...(options.packageManager ? { packageManager: options.packageManager } : {}),
+    ...(options.policy ? { policy: options.policy } : {}),
+    ...(options.runTests === undefined ? {} : { runTests: options.runTests }),
+    ...(constraints.typecheck === undefined ? {} : { typecheck: constraints.typecheck }),
+    ...(options.patchesDir ? { patchesDir: options.patchesDir } : {}),
+    ...(options.proofOfFix === undefined ? {} : { proofOfFix: options.proofOfFix }),
+    ...(constraints.requireProofOfFix === undefined
+      ? {}
+      : { requireProofOfFix: constraints.requireProofOfFix }),
+    ...(options.reproductionTest ? { reproductionTest: options.reproductionTest } : {}),
+    ...(constraints.enableBreakingChangeRefactor === undefined
+      ? {}
+      : { breakingChangeRefactor: constraints.enableBreakingChangeRefactor }),
+    constraints,
+  };
+}
+
+/**
+ * Record a preview as a run with a plan that can be applied later. Returns the ids to put on the
+ * report. Nothing in the project is touched.
+ */
+export async function persistPlan(
+  report: RemediationReport,
+  options: RemediateOptions,
+  cwd: string,
+): Promise<{ runId: string; planId: string }> {
+  const store = new RunStore(cwd);
+  const planOptions = planOptionsFrom(options, cwd);
+  const base = await fingerprintRepo(cwd, options.policy);
+  const run = store.create({
+    cwd,
+    cveIds: [report.cveId],
+    source: options.source,
+    base,
+    status: "planned",
+  });
+  const plan = buildPlan({ runId: run.runId, cwd, report, base, options: planOptions });
+
+  store.writeJson(run.runId, "plan.json", plan);
+  store.writeJson(run.runId, "report.json", report);
+  store.update(run.runId, { planId: plan.planId });
+  store
+    .ledger(run.runId)
+    .append("plan.created", {
+      planId: plan.planId,
+      cveId: report.cveId,
+      items: plan.items.length,
+      skipped: plan.skipped.length,
+    });
+  return { runId: run.runId, planId: plan.planId };
+}
+
+// ---------------------------------------------------------------------------
+// Reading runs
+// ---------------------------------------------------------------------------
+
+function outcomesFrom(events: StepEvent[], plan: RemediationPlan | undefined): ItemOutcome[] {
+  const byItem = new Map<string, ItemOutcome>();
+  for (const event of events) {
+    if (event.type !== "item.done" && event.type !== "item.error") continue;
+    const itemId = String(event.data["itemId"]);
+    const item = plan?.items.find((candidate) => candidate.itemId === itemId);
+    if (!item) continue;
+    byItem.set(itemId, {
+      itemId,
+      packageName: item.packageName,
+      fromVersion: item.fromVersion,
+      toVersion: item.toVersion,
+      strategy: item.strategy,
+      status: event.type === "item.done" && event.data["status"] === "applied" ? "applied" : "failed",
+      message: typeof event.data["message"] === "string" ? event.data["message"] : "",
+      ...(typeof event.data["unresolvedReason"] === "string"
+        ? { unresolvedReason: event.data["unresolvedReason"] }
+        : {}),
+    });
+  }
+  return [...byItem.values()];
+}
+
+export function getRun(query: RunQuery): RunDetails {
+  const store = new RunStore(query.cwd ?? process.cwd());
+  const run = store.load(query.runId);
+  const plan = store.readPlan(run.runId);
+  const ledger = store.ledger(run.runId);
+  const check = ledger.verify();
+  const events = check.ok || check.seq > 1 ? safeRead(ledger) : [];
+  return {
+    run,
+    ...(plan ? { plan } : {}),
+    items: outcomesFrom(events, plan),
+    ledger: check.ok ? { ok: true, events } : { ok: false, reason: check.reason, events },
+  };
+}
+
+function safeRead(ledger: ReturnType<RunStore["ledger"]>): StepEvent[] {
+  try {
+    return ledger.read();
+  } catch {
+    return [];
+  }
+}
+
+export function listRuns(options: ListRunsOptions = {}): RunRecord[] {
+  const store = new RunStore(options.cwd ?? process.cwd());
+  const runs = store.list().filter((run) => !options.status || run.status === options.status);
+  return options.limit && options.limit > 0 ? runs.slice(0, options.limit) : runs;
+}
+
+// ---------------------------------------------------------------------------
+// Applying
+// ---------------------------------------------------------------------------
+
+function resolveRun(store: RunStore, options: ApplyPlanOptions): RunRecord {
+  if (options.runId) {
+    if (!isRunId(options.runId)) throw new Error(`Invalid run id: ${JSON.stringify(options.runId)}`);
+    return store.load(options.runId);
+  }
+  if (options.planId) {
+    if (!isPlanId(options.planId)) throw new Error(`Invalid plan id: ${JSON.stringify(options.planId)}`);
+    const match = store.list().find((run) => run.planId === options.planId && run.status !== "rolled-back");
+    if (!match) throw new Error(`No run found for plan ${options.planId}`);
+    return match;
+  }
+  throw new Error("applyPlan needs a runId or a planId.");
+}
+
+const APPLICABLE = new Set<RunStatus>(["planned", "applying", "failed", "partial"]);
+
+/**
+ * Apply a plan. Before the first change the project's manifests and lockfiles are snapshotted to
+ * disk, each item is recorded in the run's ledger as it is attempted, and the run can be resumed
+ * after a crash or undone with `rollbackRun`. A plan made against inputs that have since changed is
+ * refused rather than applied to a project it was not made for.
+ */
+export async function applyPlan(
+  options: ApplyPlanOptions,
+  deps: RunDeps = defaultRunDeps,
+): Promise<RunReport> {
+  const cwd = options.cwd ?? process.cwd();
+  const store = new RunStore(cwd);
+  const run = resolveRun(store, options);
+  const runId = run.runId;
+
+  if (!APPLICABLE.has(run.status)) {
+    throw new Error(`Run ${runId} is ${run.status}; there is nothing to apply.`);
+  }
+  const plan = store.readPlan(runId);
+  if (!plan) throw new Error(`Run ${runId} has no plan.`);
+
+  const ledger = store.ledger(runId);
+  const chain = ledger.verify();
+  if (!chain.ok) throw new Error(`Run ${runId}: ledger failed verification (${chain.reason}).`);
+
+  const known = new Set(plan.items.map((item) => item.itemId));
+  for (const id of options.itemIds ?? []) {
+    if (!known.has(id)) throw new Error(`Plan ${plan.planId} has no item ${id}.`);
+  }
+
+  const events = ledger.read();
+  const applied = new Set(
+    events
+      .filter((event) => event.type === "item.done" && event.data["status"] === "applied")
+      .map((event) => String(event.data["itemId"])),
+  );
+
+  // The project must still be what the plan (or the last completed step) left it.
+  const expected = run.after ?? run.base;
+  const current = await fingerprintRepo(cwd, plan.options.policy);
+  if (!sameInputs(current, expected)) {
+    throw new Error(
+      run.status === "planned"
+        ? `The project changed since plan ${plan.planId} was made (manifests, lockfiles or policy differ). Plan again.`
+        : `The project changed since run ${runId}'s last completed step, possibly by an interrupted install. Inspect it, or roll the run back.`,
+    );
+  }
+
+  const release = store.acquireApplyLock(runId);
+  const outcomes: ItemOutcome[] = [];
+  try {
+    if (!store.hasFile(runId, SNAPSHOT_MANIFEST)) {
+      saveSnapshot(join(store.runDir(runId), SNAPSHOT_DIR), await createProjectSnapshot(cwd));
+      ledger.append("snapshot.saved", { dir: SNAPSHOT_DIR });
+    }
+
+    store.update(runId, { status: "applying" });
+    ledger.append("apply.start", { itemIds: options.itemIds ?? "all", resumed: run.status !== "planned" });
+
+    const selected = plan.items.filter(
+      (item) => !applied.has(item.itemId) && (!options.itemIds || options.itemIds.includes(item.itemId)),
+    );
+
+    let failure: string | undefined;
+    for (const item of selected) {
+      ledger.append("item.start", { itemId: item.itemId, packageName: item.packageName });
+      let result: PatchResult;
+      try {
+        result = await deps.applyItem(item, { cwd, options: plan.options });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        ledger.append("item.error", { itemId: item.itemId, message });
+        outcomes.push(outcomeOf(item, "failed", message));
+        failure = message;
+        break;
+      }
+
+      const ok = result.applied && !result.unresolvedReason;
+      const after = await fingerprintRepo(cwd, plan.options.policy);
+      ledger.append("item.done", {
+        itemId: item.itemId,
+        status: ok ? "applied" : "failed",
+        message: result.message,
+        ...(result.unresolvedReason ? { unresolvedReason: result.unresolvedReason } : {}),
+        filesSha256: after.filesSha256,
+      });
+      store.update(runId, { after });
+      outcomes.push(outcomeOf(item, ok ? "applied" : "failed", result.message, result.unresolvedReason));
+      if (ok) applied.add(item.itemId);
+    }
+
+    const status: RunStatus = failure
+      ? "failed"
+      : plan.items.every((item) => applied.has(item.itemId))
+        ? "applied"
+        : "partial";
+    store.update(runId, { status, ...(failure ? { error: failure } : {}) });
+    ledger.append("apply.end", { status });
+
+    return {
+      runId,
+      planId: plan.planId,
+      status,
+      cwd,
+      items: outcomes,
+      pending: plan.items.filter((item) => !applied.has(item.itemId)).map((item) => item.itemId),
+      skipped: plan.skipped,
+      message: summarize(status, outcomes, plan),
+    };
+  } finally {
+    release();
+  }
+}
+
+function outcomeOf(
+  item: PlanItem,
+  status: ItemOutcome["status"],
+  message: string,
+  unresolvedReason?: string,
+): ItemOutcome {
+  return {
+    itemId: item.itemId,
+    packageName: item.packageName,
+    fromVersion: item.fromVersion,
+    toVersion: item.toVersion,
+    strategy: item.strategy,
+    status,
+    message,
+    ...(unresolvedReason ? { unresolvedReason } : {}),
+  };
+}
+
+function summarize(status: RunStatus, outcomes: ItemOutcome[], plan: RemediationPlan): string {
+  const done = outcomes.filter((outcome) => outcome.status === "applied").length;
+  const failed = outcomes.length - done;
+  if (plan.items.length === 0) return "The plan has no changes to apply.";
+  return `${status}: ${done} applied, ${failed} failed of ${outcomes.length} attempted (${plan.items.length} in plan).`;
+}
+
+/** Continue a run that was interrupted or left partial, skipping items already applied. */
+export async function resumeRun(query: RunQuery, deps: RunDeps = defaultRunDeps): Promise<RunReport> {
+  const run = new RunStore(query.cwd ?? process.cwd()).load(query.runId);
+  if (run.status === "planned") {
+    throw new Error(`Run ${run.runId} has not started; use applyPlan.`);
+  }
+  return applyPlan({ cwd: query.cwd, runId: query.runId }, deps);
+}
+
+// ---------------------------------------------------------------------------
+// Rolling back
+// ---------------------------------------------------------------------------
+
+/**
+ * Undo a run: restore the manifests, lockfiles and patch files it changed from the snapshot taken
+ * before its first change. Refused when the project has changed since the run's last step, because
+ * restoring would silently discard that work (pass `force` to override).
+ */
+export async function rollbackRun(
+  options: RollbackRunOptions,
+  deps: RunDeps = defaultRunDeps,
+): Promise<RollbackReport> {
+  const cwd = options.cwd ?? process.cwd();
+  const store = new RunStore(cwd);
+  const run = store.load(options.runId);
+  const runId = run.runId;
+
+  if (run.status === "planned") throw new Error(`Run ${runId} made no changes; there is nothing to roll back.`);
+  if (run.status === "rolled-back") throw new Error(`Run ${runId} is already rolled back.`);
+  if (!store.hasFile(runId, SNAPSHOT_MANIFEST)) {
+    throw new Error(`Run ${runId} has no snapshot to restore.`);
+  }
+
+  const release = store.acquireApplyLock(runId);
+  try {
+    const plan = store.readPlan(runId);
+    const policy = plan?.options.policy;
+    const current = await fingerprintRepo(cwd, policy);
+    if (!options.force && !sameInputs(current, run.after ?? run.base)) {
+      throw new Error(
+        `The project changed since run ${runId}'s last step; rolling back would discard those changes. Review them, or pass force.`,
+      );
+    }
+
+    const snapshot = loadSnapshot(join(store.runDir(runId), SNAPSHOT_DIR));
+    if (snapshot.cwd !== run.cwd) {
+      throw new Error(`Run ${runId}: snapshot was taken for a different directory; refusing to restore.`);
+    }
+    await restoreProjectSnapshot(snapshot);
+
+    let reinstalled = false;
+    let reinstallNote: string | undefined;
+    if (options.reinstall === false) {
+      reinstallNote = "skipped (reinstall: false)";
+    } else {
+      try {
+        await deps.reinstall({ cwd, options: plan?.options });
+        reinstalled = true;
+      } catch (error) {
+        reinstallNote = error instanceof Error ? error.message.split("\n")[0] : String(error);
+      }
+    }
+
+    const restored = await fingerprintRepo(cwd, policy);
+    const matchesBase = sameInputs(restored, run.base);
+    store.update(runId, { status: "rolled-back", after: restored });
+    store.ledger(runId).append("rollback", {
+      restoredFiles: snapshot.fileSnapshots.size,
+      matchesBase,
+      reinstalled,
+      forced: Boolean(options.force),
+    });
+
+    return {
+      runId,
+      status: "rolled-back",
+      restoredFiles: snapshot.fileSnapshots.size,
+      matchesBase,
+      reinstalled,
+      ...(reinstallNote ? { reinstallNote } : {}),
+      message: describeRollback(matchesBase, reinstalled, reinstallNote),
+    };
+  } finally {
+    release();
+  }
+}
+
+
+function describeRollback(matchesBase: boolean, reinstalled: boolean, note?: string): string {
+  const files = matchesBase
+    ? "Restored manifests, lockfiles and patch files."
+    : "Restored the recorded files, but the project still differs from when the plan was made (files the snapshot does not cover).";
+  return reinstalled
+    ? `${files} Reinstalled dependencies from the restored lockfile.`
+    : `${files} Dependencies were not reinstalled (${note}); run your package manager's install to refresh node_modules.`;
+}

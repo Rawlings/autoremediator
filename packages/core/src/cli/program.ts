@@ -17,6 +17,13 @@ import {
   runValidatePatch,
   runReconcilePatches,
   runInteractiveTriage,
+  runPlan,
+  runRunsApply,
+  runRunsList,
+  runRunsResume,
+  runRunsRollback,
+  runRunsShow,
+  type RunsOptions as RunsCliOptions,
 } from "./runners.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
@@ -153,6 +160,21 @@ function addSharedOptions(
   return program;
 }
 
+const runsOptions = (command: Command): Command =>
+  command
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--output-format <format>", "Output format: text|json", "text");
+
+const runsAction =
+  (name: string, run: (args: string[], opts: RunsCliOptions) => Promise<void>) =>
+  async (...received: unknown[]) => {
+    const command = received.at(-1) as Command;
+    const args = received.slice(0, -2).filter((arg): arg is string => typeof arg === "string");
+    const merged = mergeCommandOptions(command) as unknown as RunsCliOptions;
+    validateOutputFormat(merged.outputFormat, ["text", "json"], `runs ${name}`);
+    await run(args, merged);
+  };
+
 export function createProgram(): Command {
   const program = new Command();
 
@@ -232,6 +254,62 @@ export function createProgram(): Command {
 
     await runPortfolio(merged.targetsFile!, merged);
   });
+
+  addSharedOptions(
+    program
+      .command("plan")
+      .description("Preview the fix for a CVE and record it as a plan you can apply later")
+      .argument("<cveId>", OPTION_DESCRIPTIONS.cveId),
+    false,
+  ).action(async (cveId: string, _opts: CommandOptions, command: Command) => {
+    const merged = mergeCommandOptions(command);
+    validateSharedCommandOptions(merged);
+    validateOutputFormat(merged.outputFormat, ["text", "json"], "plan");
+    await runPlan(cveId, merged);
+  });
+
+  const runs = program
+    .command("runs")
+    .description("List, apply, resume and roll back recorded plans and runs");
+
+  runsOptions(
+    runs
+      .command("list")
+      .description("List recorded runs, newest first")
+      .option("--status <status>", "Only runs in this state")
+      .option("--limit <n>", "Show at most this many", (value: string) => Number.parseInt(value, 10)),
+  ).action(runsAction("list", async (_args, opts) => runRunsList(opts)));
+
+  runsOptions(
+    runs
+      .command("show")
+      .description("Show a run's plan, item outcomes and ledger check")
+      .argument("<runId>", "Run id"),
+  ).action(runsAction("show", async ([runId], opts) => runRunsShow(runId!, opts)));
+
+  runsOptions(
+    runs
+      .command("apply")
+      .description("Apply a plan, after checking the project still matches it")
+      .argument("[runId]", "Run id (or use --plan-id)")
+      .option("--plan-id <id>", "Plan id, instead of a run id")
+      .option("--item <id...>", "Apply only these plan items"),
+  ).action(runsAction("apply", async ([runId], opts) => runRunsApply(runId, opts)));
+
+  runsOptions(
+    runs
+      .command("resume")
+      .description("Continue an interrupted or partial run, skipping items already applied")
+      .argument("<runId>", "Run id"),
+  ).action(runsAction("resume", async ([runId], opts) => runRunsResume(runId!, opts)));
+
+  runsOptions(
+    runs
+      .command("rollback")
+      .description("Restore the manifests and lockfiles a run changed")
+      .argument("<runId>", "Run id")
+      .option("--force", "Roll back even if the project changed since the run's last step"),
+  ).action(runsAction("rollback", async ([runId], opts) => runRunsRollback(runId!, opts)));
 
   const patches = program
     .command("patches")

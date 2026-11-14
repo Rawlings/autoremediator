@@ -1,14 +1,19 @@
 import {
+  applyPlan,
   checkReachability,
   evaluatePackage,
+  getRun,
   inspectPatchArtifact,
   listPatchArtifacts,
+  listRuns,
   planRemediation,
   pollJob,
   reconcilePatchArtifacts,
   remediate,
   remediateFromScan,
   remediatePortfolio,
+  resumeRun,
+  rollbackRun,
   scanDelta,
   submitPortfolioJob,
   submitRemediateJob,
@@ -38,6 +43,11 @@ export interface ApiDeps {
   submitScanJobFn: typeof submitScanJob;
   submitPortfolioJobFn: typeof submitPortfolioJob;
   pollJobFn: typeof pollJob;
+  applyPlanFn: typeof applyPlan;
+  resumeRunFn: typeof resumeRun;
+  rollbackRunFn: typeof rollbackRun;
+  getRunFn: typeof getRun;
+  listRunsFn: typeof listRuns;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -59,4 +69,9 @@ export const defaultApiDeps: ApiDeps = {
   submitScanJobFn: submitScanJob,
   submitPortfolioJobFn: submitPortfolioJob,
   pollJobFn: pollJob,
+  applyPlanFn: applyPlan,
+  resumeRunFn: resumeRun,
+  rollbackRunFn: rollbackRun,
+  getRunFn: getRun,
+  listRunsFn: listRuns,
 };

@@ -15,7 +15,12 @@ Every function returns a promise unless noted. Option names are identical to the
 | Function | Returns |
 | -------- | ------- |
 | `remediate(cveId, options?)` | `RemediationReport` |
-| `planRemediation(cveId, options?)` | `RemediationReport`. Always a dry run; do not pass `dryRun` or `preview` |
+| `planRemediation(cveId, options?)` | `RemediationReport` with `runId` and `planId`. Always a dry run; do not pass `dryRun` or `preview`. Records the [plan](../guides/plan-and-apply.md) unless `evidence` is `false` |
+| `applyPlan({ runId \| planId, itemIds?, cwd? })` | `RunReport`: each item's outcome, the status, what is pending |
+| `resumeRun({ runId, cwd? })` | `RunReport` |
+| `rollbackRun({ runId, force?, reinstall?, cwd? })` | `RollbackReport` |
+| `getRun({ runId, cwd? })` | `RunDetails`: record, plan, item outcomes, ledger and whether it is intact |
+| `listRuns({ status?, limit?, cwd? })` | `RunRecord[]`, newest first |
 | `remediateFromScan(inputPath, options?)` | `ScanReport`. `options.audit` runs the package manager's audit instead |
 | `remediatePortfolio(targets, options?)` | `PortfolioReport` |
 | `updateOutdated(options?)` | `UpdateOutdatedReport` |

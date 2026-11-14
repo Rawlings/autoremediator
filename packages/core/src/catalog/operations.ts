@@ -8,6 +8,10 @@ import type {
   UpdateOutdatedOptions,
 } from "../api/index.js";
 import {
+  applyPlanOptionsSchema,
+  listRunsOptionsSchema,
+  rollbackRunOptionsSchema,
+  runQuerySchema,
   deltaScanOptionsSchema,
   evaluatePackageOptionsSchema,
   OPTION_DESCRIPTIONS,
@@ -56,6 +60,13 @@ const MUTATING = {
   destructiveHint: true,
   idempotentHint: false,
   openWorldHint: true,
+} as const;
+/** Undoes a run: edits the project, but only by restoring what the run changed. */
+const ROLLBACK = {
+  readOnlyHint: false,
+  destructiveHint: true,
+  idempotentHint: false,
+  openWorldHint: false,
 } as const;
 /** Computes a preview; writes only its own evidence record. */
 const PLANNING = {
@@ -185,6 +196,65 @@ export const OPERATIONS: readonly Operation[] = [
     mcp: true,
     http: { method: "POST", path: "/patches/reconcile", positional: [] },
     handler: (options, context) => context.api.reconcilePatchArtifactsFn(options),
+  }),
+  defineOperation({
+    name: "applyPlan",
+    title: "Apply a plan",
+    description:
+      "Apply the plan from a planRemediation run (by runId or planId). The project's manifests and lockfiles are snapshotted first, each item is recorded as it is attempted, and the run can be resumed or rolled back. Refused if the project, lockfiles or policy changed since the plan was made. Model-generated patches are not part of a plan.",
+    input: applyPlanOptionsSchema,
+    annotations: MUTATING,
+    response: RESPONSES.runReport,
+    mcp: true,
+    http: { method: "POST", path: "/runs/apply", positional: ["runId", "planId"] },
+    handler: (options, context) => context.api.applyPlanFn(options),
+  }),
+  defineOperation({
+    name: "resumeRun",
+    title: "Resume a run",
+    description:
+      "Continue a run that was interrupted or ended partial or failed, skipping items already applied. Refused if the project changed since the run's last completed step.",
+    input: runQuerySchema,
+    annotations: MUTATING,
+    response: RESPONSES.runReport,
+    mcp: true,
+    http: { method: "POST", path: "/runs/resume", positional: ["runId"] },
+    handler: (options, context) => context.api.resumeRunFn(options),
+  }),
+  defineOperation({
+    name: "rollbackRun",
+    title: "Roll back a run",
+    description:
+      "Undo a run by restoring the manifests, lockfiles and patch files it changed from the snapshot taken before its first change. Refused if the project changed since the run's last step, unless force is set. Run your package manager's install afterwards to refresh node_modules.",
+    input: rollbackRunOptionsSchema,
+    annotations: ROLLBACK,
+    response: RESPONSES.rollbackReport,
+    mcp: true,
+    http: { method: "POST", path: "/runs/rollback", positional: ["runId"] },
+    handler: (options, context) => context.api.rollbackRunFn(options),
+  }),
+  defineOperation({
+    name: "getRun",
+    title: "Get a run",
+    description:
+      "Return a run's record, its plan, the outcome of each attempted item, and its step ledger with a check that the ledger has not been altered.",
+    input: runQuerySchema,
+    annotations: READ_ONLY,
+    response: RESPONSES.runDetails,
+    mcp: true,
+    http: { method: "POST", path: "/runs/get", positional: ["runId"] },
+    handler: (options, context) => context.api.getRunFn(options),
+  }),
+  defineOperation({
+    name: "listRuns",
+    title: "List runs",
+    description: "List recorded runs in a project, newest first, optionally filtered by status.",
+    input: listRunsOptionsSchema,
+    annotations: READ_ONLY,
+    response: RESPONSES.runList,
+    mcp: true,
+    http: { method: "POST", path: "/runs/list", positional: [] },
+    handler: (options, context) => context.api.listRunsFn(options),
   }),
   defineOperation({
     name: "updateOutdated",

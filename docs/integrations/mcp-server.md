@@ -21,12 +21,16 @@ options. Tools that return a report return it as JSON.
 | Group | Tools |
 | ----- | ----- |
 | Remediate | `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated` |
+| Runs | `applyPlan`, `resumeRun`, `rollbackRun`, `getRun`, `listRuns` (see [Plan, apply and roll back](../guides/plan-and-apply.md)) |
 | Inspect | `checkReachability`, `evaluatePackage`, `scanDelta`, `toVex` |
 | Patches | `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `reconcilePatchArtifacts` |
 | Jobs | `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob` |
 | Server | `health` |
 
 Use the job tools for long runs: submit, then poll with the returned `jobId`.
+
+A host agent that should review before changing anything calls `planRemediation`, shows the plan,
+then `applyPlan` with the returned `runId`; `rollbackRun` undoes it.
 
 Tools are generated from one operation catalog (`packages/core/src/catalog`), so their schemas are the
 same ones that validate input. Each tool carries MCP annotations: `readOnlyHint` for tools that change

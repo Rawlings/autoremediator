@@ -121,6 +121,26 @@ export { createLlmPatchGenerator } from "../remediation/patch/llm-generator.js";
 export { resolveLanguageModel } from "../remediation/patch/model.js";
 export { remediatePortfolio } from "./portfolio/index.js";
 export { remediate, planRemediation } from "./remediate/index.js";
+export {
+  applyPlan,
+  getRun,
+  listRuns,
+  resumeRun,
+  rollbackRun,
+  type ApplyPlanOptions,
+  type ItemOutcome,
+  type ListRunsOptions,
+  type PlanItem,
+  type PlanSkip,
+  type RemediationPlan,
+  type RollbackReport,
+  type RollbackRunOptions,
+  type RunDetails,
+  type RunQuery,
+  type RunRecord,
+  type RunReport,
+  type RunStatus,
+} from "./runs/index.js";
 export { remediateFromScan } from "./remediate-from-scan/index.js";
 export { updateOutdated } from "./update-outdated/index.js";
 export { checkReachability } from "./reachability/index.js";

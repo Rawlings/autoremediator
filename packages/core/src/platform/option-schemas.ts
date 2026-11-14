@@ -370,6 +370,69 @@ export const packageNameSchema = z
   .min(1, required("packageName"))
   .describe("Package name");
 
+const RUN_ID_PATTERN = /^run_[0-9a-z]{20}$/;
+const PLAN_ID_PATTERN = /^plan_[0-9a-f]{16}$/;
+export const RUN_STATUS_VALUES = [
+  "planned",
+  "applying",
+  "applied",
+  "partial",
+  "failed",
+  "rolled-back",
+] as const;
+
+export const runIdSchema = z
+  .string(required("runId"))
+  .regex(RUN_ID_PATTERN, "runId must look like run_ followed by 20 lowercase letters or digits")
+  .describe("Run id returned by planRemediation");
+
+export const optionalRunIdSchema = z
+  .string()
+  .regex(RUN_ID_PATTERN, "runId must look like run_ followed by 20 lowercase letters or digits")
+  .optional()
+  .describe("Run id returned by planRemediation");
+
+export const planIdSchema = z
+  .string()
+  .regex(PLAN_ID_PATTERN, "planId must look like plan_ followed by 16 hex digits")
+  .optional()
+  .describe("Plan id returned by planRemediation (alternative to runId)");
+
+export const applyPlanOptionsSchema = z
+  .object({
+    cwd: pathField(D.cwd).optional(),
+    runId: optionalRunIdSchema,
+    planId: planIdSchema,
+    itemIds: z
+      .array(z.string())
+      .optional()
+      .describe("Apply only these plan items (default: every item not yet applied)"),
+  })
+  .strict();
+
+export const runQuerySchema = z
+  .object({ runId: runIdSchema, cwd: pathField(D.cwd).optional() })
+  .strict();
+
+export const rollbackRunOptionsSchema = runQuerySchema.extend({
+  force: z
+    .boolean()
+    .optional()
+    .describe("Roll back even though the project changed since the run's last step"),
+  reinstall: z
+    .boolean()
+    .optional()
+    .describe("Reinstall dependencies from the restored lockfile (default: true)"),
+});
+
+export const listRunsOptionsSchema = z
+  .object({
+    cwd: pathField(D.cwd).optional(),
+    status: z.enum(RUN_STATUS_VALUES).optional().describe("Only runs in this state"),
+    limit: z.number().int().positive().optional().describe("Return at most this many runs"),
+  })
+  .strict();
+
 // Compile-time guard: the wire schema and the SDK options type must list the same fields.
 type WireKeys = keyof z.input<typeof remediateOptionsSchema>;
 type SdkOnly = "patchGenerator";

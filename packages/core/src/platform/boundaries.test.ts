@@ -38,6 +38,21 @@ describe("module boundaries (see docs/contributing/architecture.md)", () => {
     ).toEqual([]);
   });
 
+  it("run records depend on platform/ only", () => {
+    expect(
+      violations("runs", [
+        "remediation",
+        "api",
+        "catalog",
+        "cli",
+        "mcp",
+        "openapi",
+        "intelligence",
+        "scanner",
+      ]),
+    ).toEqual([]);
+  });
+
   it("the operation catalog sits on api/ and platform/ only", () => {
     expect(
       violations("catalog", ["remediation", "intelligence", "scanner", "cli", "mcp", "openapi"]),

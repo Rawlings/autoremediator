@@ -1,19 +1,26 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 import {
+  applyPlan,
   checkReachability,
   ciExitCode,
   evaluatePackage,
+  getRun,
   inspectPatchArtifact,
   listPatchArtifacts,
+  listRuns,
+  planRemediation,
   remediatePortfolio,
   remediate,
   remediateFromScan,
+  resumeRun,
+  rollbackRun,
   scanDelta,
   buildSlaBreachSummary,
   buildStrategyCounts,
   buildDependencyScopeCounts,
   type RemediateOptions,
+  type RunStatus,
   type ScanReport,
   toCiSummary,
   toCycloneDxVex,
@@ -25,7 +32,7 @@ import {
 import { PACKAGE_VERSION } from "../version.js";
 import { formatCountMap, logJson } from "./output.js";
 import { runInteractiveTriage } from "./triage.js";
-import type { CommandOptions } from "./types.js";
+import type { CommandOptions, OutputFormat } from "./types.js";
 
 export { runInteractiveTriage };
 
@@ -660,4 +667,111 @@ export async function runReconcilePatches(
       process.stdout.write(`  Reason: ${item.reason}\n`);
     }
   }
+}
+
+export async function runPlan(cveId: string, opts: CommandOptions): Promise<void> {
+  // A plan is always a preview; planRemediation rejects the flags that would say otherwise.
+  const { dryRun: _dryRun, preview: _preview, ...options } = toRemediateOptions(opts);
+  const report = await planRemediation(cveId, options);
+
+  if (opts.outputFormat === "json") {
+    logJson(report);
+    return;
+  }
+
+  process.stdout.write(`${report.summary}\n`);
+  if (report.runId) {
+    process.stdout.write(`Plan: ${report.planId}\nRun:  ${report.runId}\n`);
+    process.stdout.write(`Apply it with: autoremediator runs apply ${report.runId}\n`);
+  }
+}
+
+export interface RunsOptions {
+  cwd: string;
+  outputFormat: OutputFormat;
+  status?: string;
+  limit?: number;
+  planId?: string;
+  force?: boolean;
+  item?: string[];
+}
+
+export async function runRunsList(opts: RunsOptions): Promise<void> {
+  const runs = listRuns({
+    cwd: opts.cwd,
+    status: opts.status as RunStatus | undefined,
+    limit: opts.limit,
+  });
+  if (opts.outputFormat === "json") {
+    logJson(runs);
+    return;
+  }
+  if (runs.length === 0) {
+    process.stdout.write("No runs recorded.\n");
+    return;
+  }
+  for (const run of runs) {
+    process.stdout.write(
+      `${run.runId}  ${run.status.padEnd(11)}  ${run.cveIds.join(",")}  ${run.createdAt}\n`,
+    );
+  }
+}
+
+export async function runRunsShow(runId: string, opts: RunsOptions): Promise<void> {
+  const details = getRun({ cwd: opts.cwd, runId });
+  if (opts.outputFormat === "json") {
+    logJson(details);
+    return;
+  }
+  const { run, plan } = details;
+  process.stdout.write(`Run ${run.runId}: ${run.status}\n`);
+  if (plan) {
+    process.stdout.write(`Plan ${plan.planId}: ${plan.items.length} change(s), ${plan.skipped.length} skipped\n`);
+    for (const item of plan.items) {
+      const outcome = details.items.find((candidate) => candidate.itemId === item.itemId);
+      process.stdout.write(
+        `  ${outcome?.status ?? "pending".padEnd(7)}  ${item.packageName} ${item.fromVersion} -> ${item.toVersion} (${item.strategy}) [${item.itemId}]\n`,
+      );
+    }
+    for (const skip of plan.skipped) {
+      process.stdout.write(`  skipped  ${skip.packageName}: ${skip.reason}\n`);
+    }
+  }
+  process.stdout.write(
+    details.ledger.ok
+      ? `Ledger: ${details.ledger.events.length} events, intact\n`
+      : `Ledger: FAILED VERIFICATION (${details.ledger.reason})\n`,
+  );
+}
+
+function printRunReport(report: Awaited<ReturnType<typeof applyPlan>>): void {
+  process.stdout.write(`${report.message}\n`);
+  for (const item of report.items) {
+    process.stdout.write(
+      `  ${item.status}  ${item.packageName} ${item.fromVersion} -> ${item.toVersion}: ${item.message}\n`,
+    );
+  }
+  if (report.pending.length > 0) {
+    process.stdout.write(`Pending: ${report.pending.join(", ")}\n`);
+  }
+}
+
+export async function runRunsApply(runId: string | undefined, opts: RunsOptions): Promise<void> {
+  const report = await applyPlan({ cwd: opts.cwd, runId, planId: opts.planId, itemIds: opts.item });
+  if (opts.outputFormat === "json") logJson(report);
+  else printRunReport(report);
+  if (report.status !== "applied") process.exitCode = 1;
+}
+
+export async function runRunsResume(runId: string, opts: RunsOptions): Promise<void> {
+  const report = await resumeRun({ cwd: opts.cwd, runId });
+  if (opts.outputFormat === "json") logJson(report);
+  else printRunReport(report);
+  if (report.status !== "applied") process.exitCode = 1;
+}
+
+export async function runRunsRollback(runId: string, opts: RunsOptions): Promise<void> {
+  const report = await rollbackRun({ cwd: opts.cwd, runId, force: opts.force });
+  if (opts.outputFormat === "json") logJson(report);
+  else process.stdout.write(`${report.message}\n`);
 }

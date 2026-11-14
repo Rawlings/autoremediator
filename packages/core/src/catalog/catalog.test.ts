@@ -289,3 +289,51 @@ describe("generated OpenAPI paths", () => {
     }
   });
 });
+
+describe("run operations", () => {
+  const byName = (name: string) => OPERATIONS.find((operation) => operation.name === name)!;
+  const tools = toMcpTools();
+
+  it("are exposed as MCP tools and HTTP routes", () => {
+    for (const name of ["applyPlan", "resumeRun", "rollbackRun", "getRun", "listRuns"]) {
+      expect(tools.map((tool) => tool.name)).toContain(name);
+      expect(byName(name).http).toBeDefined();
+    }
+  });
+
+  it("need the right role: reading a run is a read, changing the project is admin", () => {
+    expect(roleFor(byName("getRun"))).toBe("reader");
+    expect(roleFor(byName("listRuns"))).toBe("reader");
+    for (const name of ["applyPlan", "resumeRun", "rollbackRun"]) {
+      expect(roleFor(byName(name))).toBe("admin");
+    }
+  });
+
+  it("validate run and plan ids before they reach the filesystem", async () => {
+    const deps = fakeDeps({ getRunFn: vi.fn() as unknown as ApiDeps["getRunFn"] });
+    for (const runId of ["../../etc", "run_short", "RUN_" + "a".repeat(20)]) {
+      const result = await callMcpOperation("getRun", { runId }, deps);
+      expect(result.isError).toBe(true);
+      expect(result.content[0]?.text).toContain("runId");
+    }
+    expect(deps.getRunFn).not.toHaveBeenCalled();
+
+    const bad = await callMcpOperation("applyPlan", { planId: "plan_nothex" }, deps);
+    expect(bad.isError).toBe(true);
+    expect(bad.content[0]?.text).toContain("planId");
+  });
+
+  it("pass a valid id through and confine the project path", async () => {
+    const getRunFn = vi.fn(() => ({ run: {} }));
+    const deps = fakeDeps({ getRunFn: getRunFn as unknown as ApiDeps["getRunFn"] });
+    const runId = "run_" + "a".repeat(20);
+
+    const ok = await callMcpOperation("getRun", { runId }, deps);
+    expect(ok.isError).toBeUndefined();
+    expect(getRunFn).toHaveBeenCalledWith({ runId });
+
+    const outside = await callMcpOperation("getRun", { runId, cwd: "/etc" }, deps);
+    expect(outside.isError).toBe(true);
+    expect(outside.content[0]?.text).toContain("Path not allowed");
+  });
+});

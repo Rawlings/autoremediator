@@ -673,6 +673,10 @@ export interface RemediationReport {
   provenance?: ProvenanceContext;
   constraints?: RemediationConstraints;
   resumedFromCache?: boolean;
+  /** `planRemediation` only: the run holding this preview as an applicable plan. */
+  runId?: string;
+  /** `planRemediation` only: content id of that plan. */
+  planId?: string;
   llmUsage?: LlmUsageMetrics[];
   changeRequests?: ChangeRequestResult[];
   exploitSignalTriggered?: boolean;

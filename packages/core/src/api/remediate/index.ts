@@ -21,6 +21,7 @@ import {
   writeRemediateEvidence,
 } from "../remediate.evidence.js";
 import { applySimulationMetadata, assertValidSimulationMode } from "../reporting.js";
+import { persistPlan } from "../runs/index.js";
 import { assertValidCveId } from "./validators.js";
 
 export async function remediate(
@@ -125,9 +126,15 @@ export async function planRemediation(
     );
   }
 
-  return remediate(cveId, {
+  const report = await remediate(cveId, {
     ...options,
     preview: true,
     dryRun: true,
   });
+
+  // The preview becomes a plan that `applyPlan` can carry out later. `evidence: false` asks for no
+  // files to be written, so no run is recorded then.
+  if (options.evidence === false) return report;
+  const { runId, planId } = await persistPlan(report, options, options.cwd ?? process.cwd());
+  return { ...report, runId, planId };
 }
