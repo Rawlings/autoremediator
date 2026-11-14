@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { decideForCommand, guardExitCode, runClaudeCodeHook } from "./hook.js";
+import { commandFromHookInput, decideForCommand, guardExitCode, runClaudeCodeHook, runHostHook } from "./hook.js";
 import type { GuardReport } from "./types.js";
 
 const report = (verdict: GuardReport["verdict"], spec = "pkg"): GuardReport => ({
@@ -77,5 +77,81 @@ describe("guardExitCode", () => {
     expect(guardExitCode([report("allow")])).toBe(0);
     expect(guardExitCode([report("allow"), report("warn")])).toBe(3);
     expect(guardExitCode([report("warn"), report("block")])).toBe(4);
+  });
+});
+
+describe("runHostHook", () => {
+  const cursorInput = (command: string) => JSON.stringify({ hook_event_name: "beforeShellExecution", command, cwd: "/work" });
+  const copilotInput = (command: string, tool = "bash") =>
+    JSON.stringify({ sessionId: "s", timestamp: 1, cwd: "/work", toolName: tool, toolArgs: JSON.stringify({ command }) });
+  const copilotVsCodeInput = (command: string) =>
+    JSON.stringify({ hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command } });
+
+  it("answers Cursor with its permission schema, and always with JSON", async () => {
+    const deny = JSON.parse((await runHostHook("cursor", cursorInput("npm i evil"), async () => [report("block", "evil")])) ?? "") as Record<string, string>;
+    expect(deny).toMatchObject({ permission: "deny" });
+    expect(deny.user_message).toContain("evil");
+    expect(deny.agent_message).toContain("Instead: good");
+
+    const ask = JSON.parse((await runHostHook("cursor", cursorInput("npm i x"), async () => [report("warn")])) ?? "") as Record<string, string>;
+    expect(ask.permission).toBe("ask");
+
+    for (const stdin of [cursorInput("npm i fine"), cursorInput("ls"), "not json", JSON.stringify({})]) {
+      const out = await runHostHook("cursor", stdin, async () => [report("allow")]);
+      expect(JSON.parse(out ?? "")).toEqual({ permission: "allow" });
+    }
+    const failed = await runHostHook("cursor", cursorInput("npm i x"), async () => {
+      throw new Error("boom");
+    });
+    expect(JSON.parse(failed ?? "")).toEqual({ permission: "allow" });
+  });
+
+  it("answers Copilot with a top-level permission decision and prints nothing to allow", async () => {
+    const deny = JSON.parse((await runHostHook("copilot", copilotInput("npm i evil"), async () => [report("block", "evil")])) ?? "") as Record<string, string>;
+    expect(deny.permissionDecision).toBe("deny");
+    expect(deny.permissionDecisionReason).toContain("evil");
+    expect(Object.keys(deny).toSorted()).toEqual(["permissionDecision", "permissionDecisionReason"]);
+
+    const ask = JSON.parse((await runHostHook("copilot", copilotInput("npm i x"), async () => [report("warn")])) ?? "") as Record<string, string>;
+    expect(ask.permissionDecision).toBe("ask");
+
+    await expect(runHostHook("copilot", copilotInput("npm i fine"), async () => [report("allow")])).resolves.toBeUndefined();
+    await expect(runHostHook("copilot", copilotInput("ls"))).resolves.toBeUndefined();
+    await expect(runHostHook("copilot", "not json")).resolves.toBeUndefined();
+  });
+
+  it("reads Copilot's PascalCase alias and object-valued arguments, and only shell tools", async () => {
+    const out = await runHostHook("copilot", copilotVsCodeInput("pnpm add evil"), async () => [report("block", "evil")]);
+    expect(JSON.parse(out ?? "")).toMatchObject({ permissionDecision: "deny" });
+
+    const objectArgs = JSON.stringify({ toolName: "powershell", toolArgs: { command: "npm i evil" } });
+    expect(JSON.parse((await runHostHook("copilot", objectArgs, async () => [report("block", "evil")])) ?? "")).toMatchObject({
+      permissionDecision: "deny",
+    });
+
+    let called = false;
+    await runHostHook("copilot", copilotInput("npm i evil", "edit"), async () => {
+      called = true;
+      return [report("block")];
+    });
+    expect(called).toBe(false);
+  });
+
+  it("keeps Claude Code's output exactly as before", async () => {
+    const input = JSON.stringify({ tool_name: "Bash", tool_input: { command: "npm install evil" } });
+    const viaHost = await runHostHook("claude-code", input, async () => [report("block", "evil")]);
+    const direct = await runClaudeCodeHook(input, async () => [report("block", "evil")]);
+    expect(viaHost).toBe(direct);
+    await expect(runHostHook("claude-code", input, async () => [report("allow")])).resolves.toBeUndefined();
+  });
+});
+
+describe("commandFromHookInput", () => {
+  it("finds the command in each host's payload", () => {
+    expect(commandFromHookInput("claude-code", { tool_name: "Bash", tool_input: { command: "a" } })).toBe("a");
+    expect(commandFromHookInput("claude-code", { tool_name: "Edit", tool_input: { command: "a" } })).toBeUndefined();
+    expect(commandFromHookInput("cursor", { command: "b" })).toBe("b");
+    expect(commandFromHookInput("copilot", { toolName: "bash", toolArgs: '{"command":"c"}' })).toBe("c");
+    expect(commandFromHookInput("copilot", { toolName: "bash", toolArgs: "not json" })).toBeUndefined();
   });
 });

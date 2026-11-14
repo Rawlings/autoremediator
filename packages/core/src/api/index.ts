@@ -186,7 +186,18 @@ export {
   type GuardReport,
   type GuardVerdict,
 } from "./guard/index.js";
-export { decideForCommand, guardExitCode, runClaudeCodeHook } from "./guard/hook.js";
+export {
+  copilotHookOutput,
+  cursorHookOutput,
+  decideForCommand,
+  guardExitCode,
+  hookOutputFor,
+  runClaudeCodeHook,
+  runHostHook,
+  HOOK_HOSTS,
+  type HookHost,
+} from "./guard/hook.js";
+export { guardGitDiff, type GuardDiffOptions, type GuardDiffResult } from "./guard/diff.js";
 export type { AgentHost, InitOptions, InitResult, ProjectFacts } from "./init/index.js";
 export {
   submitRemediateJob,

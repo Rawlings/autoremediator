@@ -17,7 +17,17 @@ import {
   guardHookCommand,
 } from "./assets.js";
 import {
+  COPILOT_HOOKS_PATH,
+  copilotGuardHookEntry,
+  CURSOR_HOOKS_PATH,
+  cursorGuardHookEntry,
+  pnpmfileGuardContent,
+  PNPMFILE_MARKER,
+  PNPMFILE_PATH,
+} from "./guard-assets.js";
+import {
   mergeClaudeGuardHook,
+  mergeHooksFile,
   mergeCodexToml,
   mergeGitignore,
   mergeJsonMcpConfig,
@@ -52,11 +62,22 @@ function owned(path: string, reason: string, before: string | undefined, content
   return { path, action, reason, ...(before === undefined ? {} : { before }), after: content };
 }
 
-function hostChanges(cwd: string, host: AgentHost, guard: boolean): FileChange[] {
+function hostChanges(cwd: string, host: AgentHost, guard: boolean, hosts: AgentHost[]): FileChange[] {
   const entry = mcpServerEntry();
   const json = (path: string, key: "mcpServers" | "servers", extra: Record<string, unknown> = {}) => {
     const before = readIfExists(cwd, path);
     return toChange(path, "connect the Autoremediator MCP server", before, mergeJsonMcpConfig(before, key, entry, extra));
+  };
+  const copilotHooks = (): FileChange[] => {
+    const before = readIfExists(cwd, COPILOT_HOOKS_PATH);
+    return [
+      toChange(
+        COPILOT_HOOKS_PATH,
+        "check package installs with guard before Copilot runs shell commands",
+        before,
+        mergeHooksFile(before, "preToolUse", copilotGuardHookEntry()),
+      ),
+    ];
   };
   const builders: Record<AgentHost, () => FileChange[]> = {
     "claude-code": () => [
@@ -82,8 +103,25 @@ function hostChanges(cwd: string, host: AgentHost, guard: boolean): FileChange[]
     cursor: () => [
       json(".cursor/mcp.json", "mcpServers"),
       owned(CURSOR_RULE_PATH, "teach Cursor the safe remediation steps", readIfExists(cwd, CURSOR_RULE_PATH), cursorRuleContent()),
+      ...(guard
+        ? [
+            (() => {
+              const before = readIfExists(cwd, CURSOR_HOOKS_PATH);
+              return toChange(
+                CURSOR_HOOKS_PATH,
+                "check package installs with guard before Cursor runs them",
+                before,
+                mergeHooksFile(before, "beforeShellExecution", cursorGuardHookEntry()),
+              );
+            })(),
+          ]
+        : []),
     ],
-    vscode: () => [json(".vscode/mcp.json", "servers", { type: "stdio" })],
+    // The Copilot harness in VS Code reads the same repository hook files as Copilot itself.
+    vscode: () => [
+      json(".vscode/mcp.json", "servers", { type: "stdio" }),
+      ...(guard && !hosts.includes("copilot") ? copilotHooks() : []),
+    ],
     gemini: () => [json(".gemini/settings.json", "mcpServers")],
     codex: () => {
       const before = readIfExists(cwd, ".codex/config.toml");
@@ -96,9 +134,44 @@ function hostChanges(cwd: string, host: AgentHost, guard: boolean): FileChange[]
         readIfExists(cwd, COPILOT_AGENT_PATH),
         copilotAgentContent(),
       ),
+      ...(guard ? copilotHooks() : []),
     ],
   };
   return builders[host]();
+}
+
+/**
+ * The pnpmfile that checks new dependencies. Ours is refreshed; any other `.pnpmfile.cjs` or a
+ * `.pnpmfile.mjs` (which pnpm prefers) is the user's, so it is reported as a conflict rather than edited.
+ */
+function pnpmfileChange(cwd: string): FileChange {
+  const reason = "check dependencies pnpm is about to add with guard (run pnpm install once afterwards to record it in the lockfile)";
+  const before = readIfExists(cwd, PNPMFILE_PATH);
+  const content = pnpmfileGuardContent();
+  if (readIfExists(cwd, ".pnpmfile.mjs") !== undefined) {
+    return {
+      path: PNPMFILE_PATH,
+      action: "conflict",
+      reason: `${PNPMFILE_PATH} is not used because .pnpmfile.mjs exists; add the guard to that file by hand (see the guard guide)`,
+      after: before ?? "",
+    };
+  }
+  if (before !== undefined && !before.includes(PNPMFILE_MARKER)) {
+    return {
+      path: PNPMFILE_PATH,
+      action: "conflict",
+      reason: `${PNPMFILE_PATH} has hooks of its own, so it was left alone; add the guard to it by hand (see the guard guide)`,
+      before,
+      after: before,
+    };
+  }
+  return {
+    path: PNPMFILE_PATH,
+    action: before === undefined ? "create" : before === content ? "unchanged" : "update",
+    reason,
+    ...(before === undefined ? {} : { before }),
+    after: content,
+  };
 }
 
 /** Everything `init` would write, in a stable order. Reads the project; writes nothing. */
@@ -122,7 +195,9 @@ export function planInit(facts: ProjectFacts, hosts: AgentHost[], options: InitO
     toChange(".gitignore", "keep run state out of git", gitignoreBefore, mergeGitignore(gitignoreBefore, [".autoremediator/"])),
   );
 
-  for (const host of hosts) changes.push(...hostChanges(cwd, host, options.guard === true));
+  for (const host of hosts) changes.push(...hostChanges(cwd, host, options.guard === true, hosts));
+
+  if (options.guard && facts.packageManager === "pnpm") changes.push(pnpmfileChange(cwd));
 
   if (options.agentsMd !== false && hosts.length > 0) {
     const before = readIfExists(cwd, "AGENTS.md");

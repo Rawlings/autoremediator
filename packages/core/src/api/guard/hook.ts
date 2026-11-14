@@ -82,6 +82,99 @@ export async function runClaudeCodeHook(
   }
 }
 
+/** Agent hosts whose pre-command hook `guard-hook` can answer. */
+export const HOOK_HOSTS = ["claude-code", "cursor", "copilot"] as const;
+export type HookHost = (typeof HOOK_HOSTS)[number];
+
+/**
+ * The JSON a Cursor `beforeShellExecution` hook prints. Always JSON, including for allow: Cursor
+ * blocks the action when the output is not valid JSON for its schema, and the schema is
+ * `{ permission: "allow" | "deny" | "ask", user_message?, agent_message? }`.
+ * Source: https://cursor.com/docs/agent/hooks (beforeShellExecution).
+ */
+export function cursorHookOutput(decision: HookDecision): string {
+  if (decision.decision === "allow") return JSON.stringify({ permission: "allow" });
+  return JSON.stringify({
+    permission: decision.decision,
+    user_message: decision.reason,
+    agent_message: decision.reason,
+  });
+}
+
+/**
+ * The JSON a Copilot `preToolUse` hook prints (Copilot CLI, the cloud agent, and the Copilot
+ * harness in VS Code): `{ permissionDecision: "allow" | "deny" | "ask", permissionDecisionReason }`.
+ * Nothing is printed to allow, which leaves the normal permission flow in charge instead of
+ * pre-approving the command. Under the cloud agent and CLI autopilot `ask` becomes a deny.
+ * Source: docs.github.com/en/copilot/reference/hooks-reference (preToolUse decision control).
+ */
+export function copilotHookOutput(decision: HookDecision): string | undefined {
+  if (decision.decision === "allow") return undefined;
+  return JSON.stringify({ permissionDecision: decision.decision, permissionDecisionReason: decision.reason });
+}
+
+/** What `host` expects on stdout for `decision`; `undefined` means print nothing. */
+export function hookOutputFor(host: HookHost, decision: HookDecision): string | undefined {
+  if (host === "cursor") return cursorHookOutput(decision);
+  if (host === "copilot") return copilotHookOutput(decision);
+  return claudeCodeHookOutput(decision);
+}
+
+const SHELL_TOOLS = /^(?:bash|powershell)$/i;
+
+function objectOf(value: unknown): Record<string, unknown> | undefined {
+  if (typeof value === "string") {
+    try {
+      return objectOf(JSON.parse(value));
+    } catch {
+      return undefined;
+    }
+  }
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
+}
+
+/**
+ * The shell command a hook call is about to run, or undefined when it is not a shell call.
+ *
+ * - Claude Code: `{ tool_name: "Bash", tool_input: { command } }`
+ * - Cursor `beforeShellExecution`: `{ command, cwd }`
+ * - Copilot `preToolUse`: `{ toolName: "bash", toolArgs: "{\"command\":\"ls\"}" }` (toolArgs is a JSON
+ *   string), or for the PascalCase `PreToolUse` alias `{ tool_name: "Bash", tool_input }`.
+ */
+export function commandFromHookInput(host: HookHost, input: Record<string, unknown>): string | undefined {
+  if (host === "cursor") return typeof input.command === "string" ? input.command : undefined;
+  const tool = host === "copilot" ? (input.toolName ?? input.tool_name) : input.tool_name;
+  if (tool !== undefined) {
+    const shell = host === "claude-code" ? tool === "Bash" : typeof tool === "string" && SHELL_TOOLS.test(tool);
+    if (!shell) return undefined;
+  }
+  const args = host === "copilot" ? (input.toolArgs ?? input.tool_input) : input.tool_input;
+  const command = objectOf(args)?.command;
+  return typeof command === "string" ? command : undefined;
+}
+
+/**
+ * Handle one hook call for any supported host: `stdin` is the hook's JSON input, the result is what
+ * to print (or nothing). Never throws and never blocks on its own failure: malformed input or an
+ * internal error lets the command through (Cursor still gets an explicit allow, because it rejects
+ * output that is not valid JSON).
+ */
+export async function runHostHook(
+  host: HookHost,
+  stdin: string,
+  check?: (specs: string[]) => Promise<GuardReport[]>,
+): Promise<string | undefined> {
+  const proceed: HookDecision = { decision: "allow", reason: "not checked" };
+  try {
+    const input = objectOf(stdin);
+    const command = input ? commandFromHookInput(host, input) : undefined;
+    if (command === undefined) return hookOutputFor(host, proceed);
+    return hookOutputFor(host, await decideForCommand(command, check));
+  } catch {
+    return hookOutputFor(host, proceed);
+  }
+}
+
 /** Exit code for the `guard` command: 0 clear, 3 something to check, 4 blocked. */
 export function guardExitCode(reports: readonly GuardReport[]): number {
   if (reports.some((report) => report.verdict === "block")) return 4;

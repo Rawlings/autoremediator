@@ -1,6 +1,8 @@
 import { evaluatePackage } from "../../remediation/evaluate-package.js";
 import { queryOsvPackage } from "../../intelligence/sources/osv.js";
+import { readCooldown, withCooldown } from "../../platform/cooldown.js";
 import { httpClient } from "../../platform/http-client.js";
+import { detectPackageManager } from "../../platform/package-manager/index.js";
 import { loadRegistryConfig, packumentUrl } from "../../platform/registry-config.js";
 import { judgePackument, resolveVersion, verdictOf, type Packument } from "./checks.js";
 import { findLookalike } from "./popular.js";
@@ -38,6 +40,25 @@ export const defaultGuardDeps: GuardDeps = {
   evaluate: evaluatePackage,
   now: () => Date.now(),
 };
+
+/** Default minimum release age when the caller sets none. */
+export const DEFAULT_MIN_AGE_HOURS = 72;
+
+/**
+ * The minimum release age to enforce for one package: what the caller asked for, else the larger of
+ * the default and the project's own package manager cooldown (a version younger than that cooldown
+ * would fail to install anyway). A caller-supplied value, including 0, is used as given.
+ */
+export function minAgeHoursFor(name: string, options: GuardOptions): number {
+  if (options.minPublishAgeHours !== undefined) return options.minPublishAgeHours;
+  const cwd = options.cwd ?? process.cwd();
+  try {
+    const cooldown = readCooldown(cwd, detectPackageManager(cwd));
+    return withCooldown({ minPublishAgeHours: DEFAULT_MIN_AGE_HOURS }, cooldown, name)?.minPublishAgeHours ?? DEFAULT_MIN_AGE_HOURS;
+  } catch {
+    return DEFAULT_MIN_AGE_HOURS;
+  }
+}
 
 function report(
   spec: string,
@@ -123,7 +144,7 @@ export async function guardPackage(
     packument: { ...packument, name },
     version,
     now,
-    minPublishAgeHours: options.minPublishAgeHours ?? 72,
+    minPublishAgeHours: minAgeHoursFor(name, options),
   });
   const findings = [...judged.findings];
   let alternative: GuardAlternative | undefined = judged.alternative;
