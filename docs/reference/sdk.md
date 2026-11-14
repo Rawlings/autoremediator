@@ -19,6 +19,7 @@ Every function returns a promise unless noted. Option names are identical to the
 | `applyPlan({ runId \| planId, itemIds?, cwd? })` | `RunReport`: each item's outcome, the status, what is pending |
 | `resumeRun({ runId, cwd? })` | `RunReport` |
 | `rollbackRun({ runId, force?, reinstall?, cwd? })` | `RollbackReport` |
+| `verifyRun({ runId, checks?, offline?, cwd? })` | `VerificationResult` (plus `runId`): each check's status and details, and the first that failed |
 | `getRun({ runId, cwd? })` | `RunDetails`: record, plan, item outcomes, ledger and whether it is intact |
 | `listRuns({ status?, limit?, cwd? })` | `RunRecord[]`, newest first |
 | `remediateFromScan(inputPath, options?)` | `ScanReport`. `options.audit` runs the package manager's audit instead |

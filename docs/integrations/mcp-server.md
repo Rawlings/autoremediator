@@ -21,7 +21,7 @@ options. Tools that return a report return it as JSON.
 | Group | Tools |
 | ----- | ----- |
 | Remediate | `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated` |
-| Runs | `applyPlan`, `resumeRun`, `rollbackRun`, `getRun`, `listRuns` (see [Plan, apply and roll back](../guides/plan-and-apply.md)) |
+| Runs | `applyPlan`, `verifyRun`, `resumeRun`, `rollbackRun`, `getRun`, `listRuns` (see [Plan, apply and roll back](../guides/plan-and-apply.md)) |
 | Inspect | `checkReachability`, `evaluatePackage`, `scanDelta`, `toVex` |
 | Patches | `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `reconcilePatchArtifacts` |
 | Jobs | `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob` |

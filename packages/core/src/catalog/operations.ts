@@ -24,6 +24,7 @@ import {
   remediateOptionsSchema,
   scanOptionsSchema,
   updateOutdatedOptionsSchema,
+  verifyRunOptionsSchema,
 } from "../platform/option-schemas.js";
 import { PACKAGE_VERSION } from "../version.js";
 import { RESPONSES } from "./responses.js";
@@ -232,6 +233,18 @@ export const OPERATIONS: readonly Operation[] = [
     mcp: true,
     http: { method: "POST", path: "/runs/rollback", positional: ["runId"] },
     handler: (options, context) => context.api.rollbackRunFn(options),
+  }),
+  defineOperation({
+    name: "verifyRun",
+    title: "Verify a run",
+    description:
+      "Judge a run's project as it is now with deterministic checks, cheapest first, stopping at the first failure: scope (only dependency files changed), policy, supply-chain gate, frozen install, advisories no longer matching installed packages, then type check, tests and the reproduction test when requested. No model is consulted. The result is stored with the run.",
+    input: verifyRunOptionsSchema,
+    annotations: PLANNING,
+    response: RESPONSES.verification,
+    mcp: true,
+    http: { method: "POST", path: "/runs/verify", positional: ["runId"] },
+    handler: (options, context) => context.api.verifyRunFn(options),
   }),
   defineOperation({
     name: "getRun",

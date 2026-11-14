@@ -21,6 +21,7 @@ import {
   toCycloneDxVex,
   updateOutdated,
   validatePatchArtifact,
+  verifyRun,
 } from "../api/index.js";
 
 /** The SDK functions operations call. Injectable so tests and embedders can substitute them. */
@@ -48,6 +49,7 @@ export interface ApiDeps {
   rollbackRunFn: typeof rollbackRun;
   getRunFn: typeof getRun;
   listRunsFn: typeof listRuns;
+  verifyRunFn: typeof verifyRun;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -74,4 +76,5 @@ export const defaultApiDeps: ApiDeps = {
   rollbackRunFn: rollbackRun,
   getRunFn: getRun,
   listRunsFn: listRuns,
+  verifyRunFn: verifyRun,
 };

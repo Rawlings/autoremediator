@@ -39,7 +39,34 @@ Reviewing the plan is the approval step; `--item <id>` applies only some of it.
 - **One apply at a time.** A run is locked while it is being applied. A lock left by a process that
   has died is taken over.
 
-The run ends `applied` (every item applied), `partial` (some not) or `failed`.
+- **Each item is verified.** After an item applies, the [verifier](#verify) checks that only
+  dependency files changed, the policy and supply-chain rules hold, and no installed package still
+  matches the advisory. If any check fails, the item is taken back out (the project is restored from
+  a copy taken just before it and dependencies are reinstalled), the reason is recorded, and the
+  next item goes ahead. `--no-verify` (`verify: false`) turns this off.
+
+The run ends `applied` (every item applied), `partial` (some not, including ones that were rejected)
+or `failed`.
+
+## Verify
+
+`runs verify` (`verifyRun`) judges the project as it is now against what the run set out to do. It is
+deterministic: no model is consulted, and what the change's author says about it is not taken on
+trust. Checks run cheapest first and stop at the first failure; the rest are reported as skipped.
+
+| Check | Passes when |
+| ----- | ----------- |
+| `scope` | Only dependency files changed: manifests, lockfiles, patch files, package-manager state. Never CI workflows, the policy file, `.git` or `node_modules`; project source only when the change is allowed to edit it. Skipped outside a git repository |
+| `policy` | Every changed dependency is allowed by `allowPackages`/`denyPackages`, major bumps are allowed, and `directDependenciesOnly`/`preferVersionBump` are respected |
+| `supply-chain` | Each new version passes the age, install-script and provenance rules, including your package manager's cooldown |
+| `install` | A frozen install succeeds, so the lockfile matches the manifests |
+| `vuln-gone` | No installed package still matches the advisory (findings the plan knowingly left are excepted) |
+| `typecheck`, `tests` | The type checker and test script pass, when requested |
+| `proof-of-fix` | The reproduction test passes now, when supplied (or fails the check when `requireProofOfFix` is set and none is) |
+
+Applying runs the first four of these that are cheap (`scope`, `policy`, `supply-chain`,
+`vuln-gone`) after every item; `runs verify` runs all of them, or only those named with `--check`.
+The result is stored in the run as `verification.json` and noted in the ledger.
 
 ## Resume
 

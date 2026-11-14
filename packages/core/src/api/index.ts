@@ -127,6 +127,7 @@ export {
   listRuns,
   resumeRun,
   rollbackRun,
+  verifyRun,
   type ApplyPlanOptions,
   type ItemOutcome,
   type ListRunsOptions,
@@ -140,6 +141,11 @@ export {
   type RunRecord,
   type RunReport,
   type RunStatus,
+  type RunVerification,
+  type VerifyRunOptions,
+  type CheckName,
+  type CheckResult,
+  type VerificationResult,
 } from "./runs/index.js";
 export { remediateFromScan } from "./remediate-from-scan/index.js";
 export { updateOutdated } from "./update-outdated/index.js";

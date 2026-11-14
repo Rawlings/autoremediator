@@ -116,5 +116,16 @@ export const RESPONSES = {
     matchesBase: { type: "boolean" },
     message: { type: "string" },
   }) },
+  verification: {
+    description: "VerificationResult",
+    schema: object({
+      runId: { type: "string" },
+      passed: { type: "boolean" },
+      failedCheck: { type: "string" },
+      checks: { type: "array", items: { type: "object" } },
+      changedFiles: { type: "array", items: { type: "string" } },
+      durationMs: { type: "number" },
+    }),
+  },
   health: { description: "Server is healthy", schema: object({ status: { type: "string" } }) },
 } as const satisfies Record<string, ResponseSpec>;

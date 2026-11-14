@@ -23,6 +23,7 @@ import {
   runRunsResume,
   runRunsRollback,
   runRunsShow,
+  runRunsVerify,
   type RunsOptions as RunsCliOptions,
 } from "./runners.js";
 import type { CommandOptions } from "./types.js";
@@ -293,8 +294,18 @@ export function createProgram(): Command {
       .description("Apply a plan, after checking the project still matches it")
       .argument("[runId]", "Run id (or use --plan-id)")
       .option("--plan-id <id>", "Plan id, instead of a run id")
-      .option("--item <id...>", "Apply only these plan items"),
+      .option("--item <id...>", "Apply only these plan items")
+      .option("--no-verify", "Do not verify each item after applying it"),
   ).action(runsAction("apply", async ([runId], opts) => runRunsApply(runId, opts)));
+
+  runsOptions(
+    runs
+      .command("verify")
+      .description("Check a run's project with the verifier: scope, policy, install, advisories, tests")
+      .argument("<runId>", "Run id")
+      .option("--check <name...>", "Run only these checks")
+      .option("--offline", "Skip checks that need the network"),
+  ).action(runsAction("verify", async ([runId], opts) => runRunsVerify(runId!, opts)));
 
   runsOptions(
     runs

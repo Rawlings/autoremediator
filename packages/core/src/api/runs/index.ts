@@ -18,9 +18,12 @@ import type { StepEvent } from "../../runs/ledger.js";
 import { buildPlan, type PlanItem, type PlanOptions, type PlanSkip, type RemediationPlan } from "../../runs/plan.js";
 import { RunStore, type RunRecord, type RunStatus } from "../../runs/run-store.js";
 import { loadSnapshot, saveSnapshot } from "../../runs/snapshot-store.js";
+import type { CheckName, VerificationResult, VerifyRequest } from "../../remediation/verify/types.js";
+import { verify } from "../../remediation/verify/verifier.js";
 
 export type { RunRecord, RunStatus } from "../../runs/run-store.js";
 export type { PlanItem, PlanSkip, RemediationPlan } from "../../runs/plan.js";
+export type { CheckName, CheckResult, VerificationResult } from "../../remediation/verify/types.js";
 
 const SNAPSHOT_DIR = "snapshot";
 const SNAPSHOT_MANIFEST = `${SNAPSHOT_DIR}/snapshot.json`;
@@ -43,6 +46,19 @@ export interface ApplyPlanOptions {
   planId?: string;
   /** Apply only these plan items (default: every item not yet applied). */
   itemIds?: string[];
+  /**
+   * Verify each item after applying it, and take it back out if verification fails (default:
+   * true). Runs the cheap checks (scope, policy, supply-chain, vuln-gone); tests and type checks
+   * already ran inside the apply step when requested.
+   */
+  verify?: boolean;
+}
+
+export interface VerifyRunOptions extends RunQuery {
+  /** Run only these checks (default: all, in order). */
+  checks?: CheckName[];
+  /** Skip checks that need the network. */
+  offline?: boolean;
 }
 
 export interface RollbackRunOptions extends RunQuery {
@@ -70,6 +86,8 @@ export interface ItemOutcome {
   status: "applied" | "failed";
   message: string;
   unresolvedReason?: string;
+  /** Set when verification ran for this item; a failed one is why the item was taken back out. */
+  verification?: VerificationResult;
 }
 
 export interface RunReport {
@@ -111,6 +129,7 @@ export interface RunDeps {
   applyItem: (item: PlanItem, context: { cwd: string; options: PlanOptions }) => Promise<PatchResult>;
   /** Install exactly what the restored lockfile says. */
   reinstall: (context: { cwd: string; options: PlanOptions | undefined }) => Promise<void>;
+  verify: (request: VerifyRequest) => Promise<VerificationResult>;
 }
 
 const defaultRunDeps: RunDeps = {
@@ -156,6 +175,8 @@ const defaultRunDeps: RunDeps = {
     if (!command) return;
     await withRepoLock(cwd, () => safeExeca(command, args, { cwd, stdio: "pipe" }));
   },
+
+  verify,
 };
 
 // ---------------------------------------------------------------------------
@@ -224,7 +245,7 @@ export async function persistPlan(
 function outcomesFrom(events: StepEvent[], plan: RemediationPlan | undefined): ItemOutcome[] {
   const byItem = new Map<string, ItemOutcome>();
   for (const event of events) {
-    if (event.type !== "item.done" && event.type !== "item.error") continue;
+    if (!["item.done", "item.error", "item.rejected"].includes(event.type)) continue;
     const itemId = String(event.data["itemId"]);
     const item = plan?.items.find((candidate) => candidate.itemId === itemId);
     if (!item) continue;
@@ -356,8 +377,14 @@ export async function applyPlan(
       (item) => !applied.has(item.itemId) && (!options.itemIds || options.itemIds.includes(item.itemId)),
     );
 
+    const advisories = store.readReport(runId)?.cveDetails;
+    const verifyItems = options.verify !== false;
+    const skippedNames = plan.skipped.map((skip) => skip.packageName);
+
     let failure: string | undefined;
     for (const item of selected) {
+      // Taken before the item, so a rejected item can be put back exactly.
+      const before = await createProjectSnapshot(cwd);
       ledger.append("item.start", { itemId: item.itemId, packageName: item.packageName });
       let result: PatchResult;
       try {
@@ -371,16 +398,63 @@ export async function applyPlan(
       }
 
       const ok = result.applied && !result.unresolvedReason;
+      let message = result.message;
+      let verification: VerificationResult | undefined;
+
+      if (ok && verifyItems) {
+        const others = plan.items
+          .filter((candidate) => candidate.itemId !== item.itemId && !applied.has(candidate.itemId))
+          .map((candidate) => candidate.packageName);
+        verification = await deps.verify({
+          cwd,
+          ...(plan.options.packageManager
+            ? { packageManager: plan.options.packageManager as VerifyRequest["packageManager"] }
+            : {}),
+          policy: plan.options.policy,
+          baseFiles: before.fileSnapshots,
+          statusBefore: before.isGit ? (before.gitStatusBefore ?? []) : undefined,
+          advisories: advisories ? [advisories] : [],
+          expectedRemaining: [...skippedNames, ...others],
+          options: { ...verifyOptionsOf(plan.options), allowSourceEdits: plan.options.breakingChangeRefactor },
+          checks: ["scope", "policy", "supply-chain", "vuln-gone"],
+        });
+
+        if (!verification.passed) {
+          // The verifier disposes: whatever the tool reported, this change does not stand.
+          const failed = verification.checks.find((check) => check.name === verification!.failedCheck);
+          message = `Verification failed (${verification.failedCheck}): ${failed?.message ?? "see details"}`;
+          await restoreProjectSnapshot(before);
+          const reinstallNote = await deps
+            .reinstall({ cwd, options: plan.options })
+            .then(() => undefined)
+            .catch((error: unknown) => (error instanceof Error ? error.message : String(error)));
+          ledger.append("item.rejected", {
+            itemId: item.itemId,
+            message,
+            failedCheck: verification.failedCheck,
+            details: failed?.details ?? [],
+            ...(reinstallNote ? { reinstallNote } : {}),
+          });
+          store.update(runId, { after: await fingerprintRepo(cwd, plan.options.policy) });
+          outcomes.push({ ...outcomeOf(item, "failed", message), verification });
+          continue;
+        }
+      }
+
       const after = await fingerprintRepo(cwd, plan.options.policy);
       ledger.append("item.done", {
         itemId: item.itemId,
         status: ok ? "applied" : "failed",
-        message: result.message,
+        message,
         ...(result.unresolvedReason ? { unresolvedReason: result.unresolvedReason } : {}),
+        ...(verification ? { verified: true } : {}),
         filesSha256: after.filesSha256,
       });
       store.update(runId, { after });
-      outcomes.push(outcomeOf(item, ok ? "applied" : "failed", result.message, result.unresolvedReason));
+      outcomes.push({
+        ...outcomeOf(item, ok ? "applied" : "failed", message, result.unresolvedReason),
+        ...(verification ? { verification } : {}),
+      });
       if (ok) applied.add(item.itemId);
     }
 
@@ -527,4 +601,85 @@ function describeRollback(matchesBase: boolean, reinstalled: boolean, note?: str
   return reinstalled
     ? `${files} Reinstalled dependencies from the restored lockfile.`
     : `${files} Dependencies were not reinstalled (${note}); run your package manager's install to refresh node_modules.`;
+}
+
+function verifyOptionsOf(options: PlanOptions): VerifyRequest["options"] {
+  return {
+    ...(options.runTests === undefined ? {} : { runTests: options.runTests }),
+    ...(options.typecheck === undefined ? {} : { typecheck: options.typecheck }),
+    ...(options.proofOfFix === undefined ? {} : { proofOfFix: options.proofOfFix }),
+    ...(options.requireProofOfFix === undefined ? {} : { requireProofOfFix: options.requireProofOfFix }),
+    ...(options.reproductionTest ? { reproductionTest: options.reproductionTest } : {}),
+    ...(options.patchesDir ? { patchesDir: options.patchesDir } : {}),
+    ...(options.constraints ? { constraints: options.constraints } : {}),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Verifying
+// ---------------------------------------------------------------------------
+
+export interface RunVerification extends VerificationResult {
+  runId: string;
+}
+
+/**
+ * Judge a run's project as it is now against what the run set out to do, with the full set of
+ * checks (or the ones asked for): the changes stayed in scope and within policy, the new versions
+ * pass the supply-chain gate, a frozen install works, the advisories no longer match, and the
+ * requested tests, type check and reproduction test pass. The result is stored with the run.
+ */
+export async function verifyRun(
+  options: VerifyRunOptions,
+  deps: RunDeps = defaultRunDeps,
+): Promise<RunVerification> {
+  const cwd = options.cwd ?? process.cwd();
+  const store = new RunStore(cwd);
+  const run = store.load(options.runId);
+  const runId = run.runId;
+
+  if (!store.hasFile(runId, SNAPSHOT_MANIFEST)) {
+    throw new Error(`Run ${runId} has not been applied; there is nothing to verify.`);
+  }
+  const plan = store.readPlan(runId);
+  if (!plan) throw new Error(`Run ${runId} has no plan.`);
+
+  const snapshot = loadSnapshot(join(store.runDir(runId), SNAPSHOT_DIR));
+  const applied = new Set(
+    store
+      .ledger(runId)
+      .read()
+      .filter((event) => event.type === "item.done" && event.data["status"] === "applied")
+      .map((event) => String(event.data["itemId"])),
+  );
+  const advisories = store.readReport(runId)?.cveDetails;
+
+  const result = await deps.verify({
+    cwd,
+    ...(plan.options.packageManager
+      ? { packageManager: plan.options.packageManager as VerifyRequest["packageManager"] }
+      : {}),
+    policy: plan.options.policy,
+    baseFiles: snapshot.fileSnapshots,
+    statusBefore: snapshot.isGit ? (snapshot.gitStatusBefore ?? []) : undefined,
+    advisories: advisories ? [advisories] : [],
+    expectedRemaining: [
+      ...plan.skipped.map((skip) => skip.packageName),
+      ...plan.items.filter((item) => !applied.has(item.itemId)).map((item) => item.packageName),
+    ],
+    options: {
+      ...verifyOptionsOf(plan.options),
+      allowSourceEdits: plan.options.breakingChangeRefactor,
+      ...(options.offline ? { offline: true } : {}),
+    },
+    ...(options.checks ? { checks: options.checks } : {}),
+  });
+
+  store.writeJson(runId, "verification.json", result);
+  store.ledger(runId).append("verify", {
+    passed: result.passed,
+    ...(result.failedCheck ? { failedCheck: result.failedCheck } : {}),
+    checks: result.checks.map((check) => `${check.name}:${check.status}`),
+  });
+  return { runId, ...result };
 }

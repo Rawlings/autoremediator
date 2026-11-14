@@ -295,7 +295,7 @@ describe("run operations", () => {
   const tools = toMcpTools();
 
   it("are exposed as MCP tools and HTTP routes", () => {
-    for (const name of ["applyPlan", "resumeRun", "rollbackRun", "getRun", "listRuns"]) {
+    for (const name of ["applyPlan", "verifyRun", "resumeRun", "rollbackRun", "getRun", "listRuns"]) {
       expect(tools.map((tool) => tool.name)).toContain(name);
       expect(byName(name).http).toBeDefined();
     }
@@ -304,9 +304,22 @@ describe("run operations", () => {
   it("need the right role: reading a run is a read, changing the project is admin", () => {
     expect(roleFor(byName("getRun"))).toBe("reader");
     expect(roleFor(byName("listRuns"))).toBe("reader");
+    // Verifying installs and runs the project's tests, but changes nothing it was asked to protect.
+    expect(roleFor(byName("verifyRun"))).toBe("operator");
     for (const name of ["applyPlan", "resumeRun", "rollbackRun"]) {
       expect(roleFor(byName(name))).toBe("admin");
     }
+  });
+
+  it("accepts only real check names when verifying", async () => {
+    const deps = fakeDeps({ verifyRunFn: vi.fn() as unknown as ApiDeps["verifyRunFn"] });
+    const runId = "run_" + "a".repeat(20);
+    const bad = await callMcpOperation("verifyRun", { runId, checks: ["scope", "nonsense"] }, deps);
+    expect(bad.isError).toBe(true);
+    expect(deps.verifyRunFn).not.toHaveBeenCalled();
+    const good = await callMcpOperation("verifyRun", { runId, checks: ["scope", "vuln-gone"] }, deps);
+    expect(good.isError).toBeUndefined();
+    expect(deps.verifyRunFn).toHaveBeenCalledWith({ runId, checks: ["scope", "vuln-gone"] });
   });
 
   it("validate run and plan ids before they reach the filesystem", async () => {

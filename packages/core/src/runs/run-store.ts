@@ -12,6 +12,7 @@ import { join } from "node:path";
 import type { RepoFingerprint } from "./fingerprint.js";
 import { isRunId, newRunId } from "./ids.js";
 import { Ledger } from "./ledger.js";
+import type { RemediationReport } from "../platform/types.js";
 import type { RemediationPlan } from "./plan.js";
 
 export type RunStatus =
@@ -131,6 +132,14 @@ export class RunStore {
     const file = join(this.runDir(runId), "plan.json");
     return existsSync(file)
       ? (JSON.parse(readFileSync(file, "utf8")) as RemediationPlan)
+      : undefined;
+  }
+
+  /** The preview report a plan was made from, when the run has one. */
+  readReport(runId: string): RemediationReport | undefined {
+    const file = join(this.runDir(runId), "report.json");
+    return existsSync(file)
+      ? (JSON.parse(readFileSync(file, "utf8")) as RemediationReport)
       : undefined;
   }
 

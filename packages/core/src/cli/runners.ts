@@ -20,6 +20,7 @@ import {
   buildStrategyCounts,
   buildDependencyScopeCounts,
   type RemediateOptions,
+  type CheckName,
   type RunStatus,
   type ScanReport,
   toCiSummary,
@@ -27,6 +28,7 @@ import {
   toSarifOutput,
   updateOutdated,
   validatePatchArtifact,
+  verifyRun,
   reconcilePatchArtifacts,
 } from "../api/index.js";
 import { PACKAGE_VERSION } from "../version.js";
@@ -694,6 +696,9 @@ export interface RunsOptions {
   planId?: string;
   force?: boolean;
   item?: string[];
+  check?: string[];
+  offline?: boolean;
+  verify?: boolean;
 }
 
 export async function runRunsList(opts: RunsOptions): Promise<void> {
@@ -757,7 +762,14 @@ function printRunReport(report: Awaited<ReturnType<typeof applyPlan>>): void {
 }
 
 export async function runRunsApply(runId: string | undefined, opts: RunsOptions): Promise<void> {
-  const report = await applyPlan({ cwd: opts.cwd, runId, planId: opts.planId, itemIds: opts.item });
+  const report = await applyPlan({
+    cwd: opts.cwd,
+    runId,
+    planId: opts.planId,
+    itemIds: opts.item,
+    // `--no-verify` arrives as verify: false; verification is on unless it is turned off.
+    ...(opts.verify === false ? { verify: false } : {}),
+  });
   if (opts.outputFormat === "json") logJson(report);
   else printRunReport(report);
   if (report.status !== "applied") process.exitCode = 1;
@@ -774,4 +786,23 @@ export async function runRunsRollback(runId: string, opts: RunsOptions): Promise
   const report = await rollbackRun({ cwd: opts.cwd, runId, force: opts.force });
   if (opts.outputFormat === "json") logJson(report);
   else process.stdout.write(`${report.message}\n`);
+}
+
+export async function runRunsVerify(runId: string, opts: RunsOptions): Promise<void> {
+  const result = await verifyRun({
+    cwd: opts.cwd,
+    runId,
+    ...(opts.check ? { checks: opts.check as CheckName[] } : {}),
+    ...(opts.offline ? { offline: true } : {}),
+  });
+  if (opts.outputFormat === "json") {
+    logJson(result);
+  } else {
+    process.stdout.write(`${result.passed ? "Verified" : `Failed (${result.failedCheck})`}\n`);
+    for (const check of result.checks) {
+      process.stdout.write(`  ${check.status.padEnd(7)}  ${check.name}: ${check.message}\n`);
+      for (const detail of check.details ?? []) process.stdout.write(`           ${detail}\n`);
+    }
+  }
+  if (!result.passed) process.exitCode = 1;
 }

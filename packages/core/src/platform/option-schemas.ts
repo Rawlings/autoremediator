@@ -381,6 +381,18 @@ export const RUN_STATUS_VALUES = [
   "rolled-back",
 ] as const;
 
+/** Verification checks in the order they run (cheap and static first). */
+export const VERIFY_CHECK_VALUES = [
+  "scope",
+  "policy",
+  "supply-chain",
+  "install",
+  "vuln-gone",
+  "typecheck",
+  "tests",
+  "proof-of-fix",
+] as const;
+
 export const runIdSchema = z
   .string(required("runId"))
   .regex(RUN_ID_PATTERN, "runId must look like run_ followed by 20 lowercase letters or digits")
@@ -407,6 +419,10 @@ export const applyPlanOptionsSchema = z
       .array(z.string())
       .optional()
       .describe("Apply only these plan items (default: every item not yet applied)"),
+    verify: z
+      .boolean()
+      .optional()
+      .describe("Verify each item after applying it and take it back out if it fails (default: true)"),
   })
   .strict();
 
@@ -423,6 +439,14 @@ export const rollbackRunOptionsSchema = runQuerySchema.extend({
     .boolean()
     .optional()
     .describe("Reinstall dependencies from the restored lockfile (default: true)"),
+});
+
+export const verifyRunOptionsSchema = runQuerySchema.extend({
+  checks: z
+    .array(z.enum(VERIFY_CHECK_VALUES))
+    .optional()
+    .describe("Run only these checks (default: all, in order, stopping at the first failure)"),
+  offline: z.boolean().optional().describe("Skip checks that need the network"),
 });
 
 export const listRunsOptionsSchema = z

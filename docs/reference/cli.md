@@ -12,7 +12,7 @@ options typed after a subcommand apply to it. Unknown options are an error.
 | ------- | ------- |
 | `cve <id>` | Remediate one CVE or GHSA id (the same as passing it bare) |
 | `plan <id>` | Preview a CVE fix and record it as a [plan](../guides/plan-and-apply.md); prints the run and plan ids |
-| `runs list \| show <id> \| apply [id] \| resume <id> \| rollback <id>` | Work with recorded runs: `list` takes `--status` and `--limit`, `apply` takes `--plan-id` and `--item`, `rollback` takes `--force`. All take `--cwd` and `--output-format text\|json` |
+| `runs list \| show <id> \| apply [id] \| verify <id> \| resume <id> \| rollback <id>` | Work with recorded runs: `list` takes `--status` and `--limit`, `apply` takes `--plan-id`, `--item` and `--no-verify`, `verify` takes `--check <name...>` and `--offline`, `rollback` takes `--force`. All take `--cwd` and `--output-format text\|json` |
 | `scan` | Remediate from scanner output (`--input <path>`, or `--audit`) |
 | `update-outdated` | Bump outdated dependencies (`--include-transitive`) |
 | `portfolio` | Run across several projects (`--targets-file <path>`) |

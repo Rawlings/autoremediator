@@ -16,6 +16,7 @@ import {
 import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
 import { withRepoLock } from "../../platform/repo-lock.js";
 import { safeExecaCommand } from "../../platform/safe-exec-command.js";
+import { runCommandCheck } from "../verify/command-check.js";
 import { LONG_RUNNING_TIMEOUT_MS } from "../../platform/timeouts.js";
 import type {
   PatchResult,
@@ -327,41 +328,12 @@ export const applyVersionBumpTool = defineTool({
         isTypecheck?: boolean;
       }> {
         if (runTests) {
-          try {
-            await safeExecaCommand(effectiveTestCommand, {
-              timeoutMs: LONG_RUNNING_TIMEOUT_MS,
-              cwd,
-              stdio: "pipe",
-            });
-          } catch (err) {
-            const execErr = err as { stdout?: string; stderr?: string; message?: string };
-            const fullOutput = [execErr.stdout, execErr.stderr, execErr.message]
-              .filter(Boolean)
-              .join("\n");
-            return {
-              passed: false,
-              error: fullOutput || (err instanceof Error ? err.message : String(err)),
-            };
-          }
+          const outcome = await runCommandCheck(effectiveTestCommand, cwd);
+          if (!outcome.passed) return { passed: false, error: outcome.output };
         }
         if (shouldTypecheck && effectiveTypecheckCommand.length > 0) {
-          try {
-            await safeExecaCommand(effectiveTypecheckCommand, {
-              timeoutMs: LONG_RUNNING_TIMEOUT_MS,
-              cwd,
-              stdio: "pipe",
-            });
-          } catch (err) {
-            const execErr = err as { stdout?: string; stderr?: string; message?: string };
-            const fullOutput = [execErr.stdout, execErr.stderr, execErr.message]
-              .filter(Boolean)
-              .join("\n");
-            return {
-              passed: false,
-              isTypecheck: true,
-              error: fullOutput || (err instanceof Error ? err.message : String(err)),
-            };
-          }
+          const outcome = await runCommandCheck(effectiveTypecheckCommand, cwd);
+          if (!outcome.passed) return { passed: false, isTypecheck: true, error: outcome.output };
         }
         return { passed: true };
       }

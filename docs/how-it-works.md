@@ -56,6 +56,10 @@ just changed; set `enforceFrozenLockfile` to freeze them anyway. Optional steps:
 - `--breaking-change-refactor` (experimental) repairs call sites broken by a major upgrade, using
   built-in codemods for `rimraf` and `uuid` only.
 
+Changes made through a [plan](guides/plan-and-apply.md) get a second, independent check: the
+[verifier](guides/plan-and-apply.md#verify) looks at the project afterwards and does not take the
+apply step's word for it.
+
 ## Outcomes
 
 A result is either applied or unresolved. Unresolved results carry an `unresolvedReason`:
