@@ -56,10 +56,19 @@ them.
 | ---- | ------- |
 | `api.osv.dev` | OSV advisories |
 | `api.github.com` | GitHub Advisory Database; pull requests when requested |
-| `services.nvd.nist.gov` | NVD severity and ranges |
+| `services.nvd.nist.gov` | NVD severity (CVSS) |
 | `www.cisa.gov` | CISA Known Exploited Vulnerabilities |
 | `api.first.org` | EPSS scores |
-| `registry.npmjs.org` | Package versions, metadata and source (or your configured registry) |
+| `registry.npmjs.org` | Package versions, metadata and source, or the registry set in your `.npmrc` (see below) |
+
+### Registries and credentials
+
+Package metadata and source come from the registry your project is configured for: `registry` and
+`@scope:registry` in the project `.npmrc` (then the user `.npmrc`, or `NPM_CONFIG_USERCONFIG`), and
+`npm_config_registry` over both. `_authToken` and `_auth` entries are sent only to URLs under the
+registry prefix they were written for, never over plain `http` except to `localhost`, and
+`${VAR}` references are read from the environment. Downloaded tarballs are checked against the
+registry's integrity digest before they are unpacked. Yarn Berry's `.yarnrc.yml` is not read.
 
 Your package manager contacts its own registry when it installs. A configured model receives the advisory summary and the
 published source of the vulnerable package (not your own code). `--offline` disables the advisory

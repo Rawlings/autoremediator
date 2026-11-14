@@ -1,4 +1,5 @@
 import { resolveSafeUpgradeVersion } from "../../intelligence/sources/registry.js";
+import { loadRegistryConfig } from "../../platform/registry-config.js";
 import { verifyPackageTrust } from "../../platform/supply-chain.js";
 import type {
   PackageManager,
@@ -37,6 +38,7 @@ export async function resolvePrimaryResult(params: {
   } = params;
   const pkg = vulnerable.installed;
   const firstPatchedVersion = vulnerable.affected.firstPatchedVersion;
+  const registry = loadRegistryConfig(cwd);
 
   if (pkg.type === "transitive") {
     if (constraints.directDependenciesOnly) {
@@ -87,6 +89,7 @@ export async function resolvePrimaryResult(params: {
       pkg.version,
       firstPatchedVersion,
       vulnerable.affected.vulnerableRange,
+      registry,
     );
 
     if (!safeUpgrade.safeVersion) {
@@ -108,6 +111,7 @@ export async function resolvePrimaryResult(params: {
       pkg.name,
       safeUpgrade.safeVersion,
       constraints.supplyChainPolicy,
+      registry,
     );
     if (!trust.trusted) {
       return {
@@ -168,6 +172,7 @@ export async function resolvePrimaryResult(params: {
     pkg.version,
     firstPatchedVersion,
     vulnerable.affected.vulnerableRange,
+    registry,
   );
 
   if (!safeUpgrade.safeVersion) {
@@ -189,6 +194,7 @@ export async function resolvePrimaryResult(params: {
     pkg.name,
     safeUpgrade.safeVersion,
     constraints.supplyChainPolicy,
+    registry,
   );
   if (!trust.trusted) {
     return {

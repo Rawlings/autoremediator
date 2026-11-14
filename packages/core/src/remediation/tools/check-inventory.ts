@@ -9,7 +9,10 @@ import {
   parseListOutput,
   resolveListCommand,
 } from "../../platform/package-manager/index.js";
-import { resolveDenoInventory } from "../../platform/package-manager/list-parser.js";
+import {
+  type InstalledVersions,
+  resolveDenoInventory,
+} from "../../platform/package-manager/list-parser.js";
 import { loadPolicy } from "../../platform/policy.js";
 import { safeExeca } from "../../platform/safe-exec.js";
 import type { InventoryPackage } from "../../platform/types.js";
@@ -67,6 +70,27 @@ export function resolveInventoryVersion(rawVersion: string): string {
   return semver.clean(trimmed) ?? trimmed;
 }
 
+function declaredRange(pkgJson: PackageJson, name: string): string | undefined {
+  return pkgJson.dependencies?.[name] ?? pkgJson.devDependencies?.[name] ?? pkgJson.peerDependencies?.[name];
+}
+
+/**
+ * Choose which installed copy is the project's own dependency. With a single copy that is
+ * trivially it; with several, prefer the highest copy satisfying the declared range, and when
+ * the range is not a semver range (workspace:, file:, git) fall back to the highest copy.
+ */
+export function pickDirectVersion(versions: string[], range: string | undefined): string | undefined {
+  if (versions.length === 0) return undefined;
+  if (versions.length === 1) return versions[0];
+  const valid = versions.filter((v) => semver.valid(v));
+  const sorted = valid.toSorted(semver.rcompare);
+  if (range && semver.validRange(range)) {
+    const match = sorted.find((v) => semver.satisfies(v, range));
+    if (match) return match;
+  }
+  return sorted[0] ?? versions[0];
+}
+
 export const checkInventoryTool = defineTool({
   description:
     "Read the project's package.json and installed dependencies to list packages and exact versions. Must be called before checking version matches.",
@@ -105,7 +129,7 @@ export const checkInventoryTool = defineTool({
       ...loadedPolicy.constraints,
       workspace: workspace ?? loadedPolicy.constraints?.workspace,
     });
-    let installedVersions = new Map<string, string>();
+    let installedVersions: InstalledVersions = new Map();
 
     if (pm === "deno") {
       // Deno inventory is built from deno.lock directly, not a shell command.
@@ -128,19 +152,27 @@ export const checkInventoryTool = defineTool({
 
     const packages: InventoryPackage[] = [];
 
-    for (const [name, version] of installedVersions.entries()) {
+    for (const [name, versions] of installedVersions.entries()) {
       const declaringWorkspace = findDeclaringWorkspacePackage(cwd, name, workspace);
-      const isDirect =
+      const declaredDirect =
         Boolean(pkgJson.dependencies?.[name]) ||
         Boolean(pkgJson.devDependencies?.[name]) ||
         Boolean(pkgJson.peerDependencies?.[name]) ||
         Boolean(declaringWorkspace);
 
-      packages.push({
-        name,
-        version,
-        type: isDirect ? "direct" : "transitive",
-      });
+      // When several copies are installed, only the one satisfying the declared range is the
+      // direct dependency; the others are transitive copies pulled in by other packages.
+      const directVersion = declaredDirect
+        ? pickDirectVersion(versions, declaredRange(pkgJson, name))
+        : undefined;
+
+      for (const version of versions) {
+        packages.push({
+          name,
+          version,
+          type: version === directVersion ? "direct" : "transitive",
+        });
+      }
     }
 
     if (packages.length === 0) {

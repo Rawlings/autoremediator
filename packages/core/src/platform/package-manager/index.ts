@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { safeExeca } from "../safe-exec.js";
 import type { PackageManager, RemediationConstraints } from "../types.js";
-import { parsePackageManagerListOutput } from "./list-parser.js";
+import { type InstalledVersions, parsePackageManagerListOutput } from "./list-parser.js";
 
 export type { PackageManager };
 
@@ -268,6 +268,6 @@ export function getPackageManagerCommands(pm: PackageManager): PackageManagerCom
   };
 }
 
-export function parseListOutput(pm: PackageManager, stdout: string): Map<string, string> {
+export function parseListOutput(pm: PackageManager, stdout: string): InstalledVersions {
   return parsePackageManagerListOutput(pm, stdout);
 }

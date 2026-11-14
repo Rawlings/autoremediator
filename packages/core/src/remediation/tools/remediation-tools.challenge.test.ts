@@ -50,8 +50,8 @@ describe("Remediation Tools Adversarial White-Box Challenges", () => {
       await writeFile(join(testDir, "deno.lock"), JSON.stringify(v3Lock, null, 2), "utf8");
 
       const v3Inventory = resolveDenoInventory(testDir);
-      expect(v3Inventory.get("express")).toBe("4.18.2");
-      expect(v3Inventory.get("@types/node")).toBe("20.11.0");
+      expect(v3Inventory.get("express")).toEqual(["4.18.2"]);
+      expect(v3Inventory.get("@types/node")).toEqual(["20.11.0"]);
 
       const v4Lock = {
         version: "4",
@@ -63,8 +63,8 @@ describe("Remediation Tools Adversarial White-Box Challenges", () => {
       await writeFile(join(testDir, "deno.lock"), JSON.stringify(v4Lock, null, 2), "utf8");
 
       const v4Inventory = resolveDenoInventory(testDir);
-      expect(v4Inventory.get("chalk")).toBe("5.3.0");
-      expect(v4Inventory.get("@fastify/cors")).toBe("9.0.1");
+      expect(v4Inventory.get("chalk")).toEqual(["5.3.0"]);
+      expect(v4Inventory.get("@fastify/cors")).toEqual(["9.0.1"]);
     });
 
     it("handles missing package.json gracefully without throwing", async () => {

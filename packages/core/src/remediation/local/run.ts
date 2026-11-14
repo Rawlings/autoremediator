@@ -29,7 +29,7 @@ import { applyDispositionAndContainment } from "./disposition.js";
 import { shouldAttemptPatchFallback, tryPatchFallback } from "./fallback.js";
 import { resolveLocalRunOptions } from "./options.js";
 import { resolvePrimaryResult } from "./primary-strategy.js";
-import { buildSbom } from "./sbom.js";
+import { buildSbom, sbomKey } from "./sbom.js";
 import { runSecOpsPreflight } from "./secops-preflight.js";
 import { buildLocalSummary } from "./summary.js";
 import { findVulnerablePackages } from "./vulnerability-match.js";
@@ -111,12 +111,46 @@ export async function runLocalRemediationPipeline(
   const preflight = await runSecOpsPreflight(normalizedId, cveDetails, resolved);
 
   if (preflight.suppressed) {
+    // Nothing is modified for a suppressed CVE, but the report still names the installed copies it
+    // covers so VEX can assert not_affected and the SBOM can mark them suppressed.
+    const suppressedInventory =
+      cveDetails.affectedPackages.length > 0
+        ? await checkInventoryTool.execute({
+            cwd,
+            packageManager,
+            policy: options.policy,
+            workspace: constraints.workspace,
+          })
+        : { packages: [] };
+    const suppressedInstalled = suppressedInventory.error ? [] : suppressedInventory.packages;
+    const suppressedPackages = findVulnerablePackages(cveDetails, suppressedInstalled);
+    const suppressedBy = {
+      justification: preflight.suppression.justification,
+      ...(preflight.suppression.notes ? { notes: preflight.suppression.notes } : {}),
+    };
+
+    const suppressedResults: PatchResult[] = suppressedPackages.map((vulnerable) => ({
+      packageName: vulnerable.installed.name,
+      fromVersion: vulnerable.installed.version,
+      strategy: "none",
+      applied: false,
+      dryRun,
+      dependencyScope: vulnerable.installed.type === "direct" ? "direct" : "transitive",
+      suppressedBy,
+      message: preflight.summary,
+    }));
+
     return {
       cveId,
       cveDetails,
-      vulnerablePackages: [],
-      results: [],
+      vulnerablePackages: suppressedPackages,
+      results: suppressedResults,
       summary: preflight.summary,
+      sbom: buildSbom(
+        suppressedInstalled,
+        new Set(suppressedPackages.map((v) => sbomKey(v.installed.name, v.installed.version))),
+        suppressedResults,
+      ),
       correlation,
     };
   }
@@ -274,8 +308,10 @@ export async function runLocalRemediationPipeline(
     collectedResults.push(finalizePatchResult(primaryResult));
   }
 
-  const vulnerableNames = new Set(vulnerablePackages.map((v) => v.installed.name));
-  const sbom = buildSbom(installedPackages, vulnerableNames, collectedResults);
+  const vulnerableKeys = new Set(
+    vulnerablePackages.map((v) => sbomKey(v.installed.name, v.installed.version)),
+  );
+  const sbom = buildSbom(installedPackages, vulnerableKeys, collectedResults);
 
   return {
     cveId,

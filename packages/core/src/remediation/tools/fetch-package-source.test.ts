@@ -2,13 +2,53 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { execa } from "execa";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { fetchPackageSourceTool } from "./fetch-package-source.js";
 
 vi.mock("execa", () => ({
   execa: vi.fn(),
 }));
+
+interface RegistryStubCall {
+  url: string;
+  headers: Record<string, string>;
+}
+
+/** Stub global fetch: version metadata answers at `.../<version>`, any other URL serves the tarball. */
+function stubRegistry(options: {
+  metadataStatus?: number;
+  tarballUrl?: string;
+  integrity?: string;
+  tarballBytes?: Uint8Array;
+  failWith?: Error;
+}): RegistryStubCall[] {
+  const calls: RegistryStubCall[] = [];
+  const tarballUrl = options.tarballUrl ?? "https://registry.npmjs.org/pkg/-/pkg-1.0.0.tgz";
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string | URL, init?: RequestInit) => {
+      const target = String(url);
+      calls.push({ url: target, headers: { ...(init?.headers as Record<string, string>) } });
+      if (options.failWith) throw options.failWith;
+      if (target === tarballUrl) {
+        return new Response(options.tarballBytes ?? new Uint8Array([1, 2, 3]), { status: 200 });
+      }
+      if ((options.metadataStatus ?? 200) !== 200) {
+        return new Response("not found", { status: options.metadataStatus });
+      }
+      return new Response(
+        JSON.stringify({ dist: { tarball: tarballUrl, integrity: options.integrity } }),
+        { status: 200 },
+      );
+    }),
+  );
+  return calls;
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("fetchPackageSourceTool", () => {
   it("rejects malicious or invalid package names", async () => {
@@ -30,10 +70,8 @@ describe("fetchPackageSourceTool", () => {
     expect(res.error).toContain("No valid file patterns");
   });
 
-  it("returns truthful 404 error when curl fails with exit code 22", async () => {
-    const error = new Error("curl: (22) The requested URL returned error: 404");
-    (error as unknown as { exitCode: number }).exitCode = 22;
-    vi.mocked(execa).mockRejectedValueOnce(error);
+  it("returns truthful not-found error when the registry has no such version", async () => {
+    stubRegistry({ metadataStatus: 404 });
 
     const res = await fetchPackageSourceTool.execute({
       packageName: "nonexistent-pkg-xyz",
@@ -46,6 +84,7 @@ describe("fetchPackageSourceTool", () => {
   });
 
   it("extracts and includes files in dist/ and build/ directories", async () => {
+    stubRegistry({});
     vi.mocked(execa).mockImplementation((async (cmd: any, args: any) => {
       if (cmd === "tar") {
         // args: ["-xzf", tarballPath, "-C", extractDir]

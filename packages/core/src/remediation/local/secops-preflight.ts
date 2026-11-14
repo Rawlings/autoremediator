@@ -7,7 +7,7 @@ import {
  * SecOps pre-flight checks for the local remediation pipeline.
  *
  * Runs before inventory and per-package remediation:
- *   1. VEX suppression — exits early if the CVE is actively suppressed
+ *   1. VEX suppression — stops remediation if the CVE is actively suppressed
  *   2. Exploit signal — KEV / EPSS override gate
  *   3. SLA breach — detects response-window violations
  */
@@ -29,7 +29,7 @@ export interface SecOpsPreflightOptions {
 }
 
 export type SecOpsPreflightResult =
-  | { suppressed: true; summary: string }
+  | { suppressed: true; summary: string; suppression: VexSuppression }
   | {
       suppressed: false;
       exploitSignalTriggered?: boolean;
@@ -52,6 +52,7 @@ export async function runSecOpsPreflight(
     return {
       suppressed: true,
       summary: `CVE ${normalizedId} suppressed by VEX policy: ${activeSuppression.justification}${activeSuppression.notes ? ` — ${activeSuppression.notes}` : ""}`,
+      suppression: activeSuppression,
     };
   }
 

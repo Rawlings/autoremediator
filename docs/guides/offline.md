@@ -7,10 +7,11 @@ a file.
 
 | Data | Source |
 | ---- | ------ |
-| Affected ranges, fixed versions | OSV, GitHub Advisory Database, NVD |
+| Affected ranges, fixed versions | OSV, GitHub Advisory Database |
+| Severity | NVD |
 | Exploitation | CISA Known Exploited Vulnerabilities |
 | Exploit probability | FIRST EPSS |
-| Candidate versions | npm registry |
+| Candidate versions | npm registry (from your `.npmrc`) |
 
 Optional credentials raise rate limits: `AUTOREMEDIATOR_NVD_API_KEY` and `GITHUB_TOKEN`.
 `AUTOREMEDIATOR_EPSS_API` points at a different EPSS endpoint. See

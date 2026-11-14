@@ -14,11 +14,19 @@ import { join } from "node:path";
 
 import semver from "semver";
 
+import { createHash } from "node:crypto";
+
 import { httpClient } from "../../platform/http-client.js";
 import { type PackageManager, detectPackageManager } from "../../platform/package-manager/index.js";
+import {
+  type RegistryConfig,
+  defaultRegistryConfig,
+  packumentUrl,
+} from "../../platform/registry-config.js";
 import { safeExeca } from "../../platform/safe-exec.js";
 
-const NPM_REGISTRY = "https://registry.npmjs.org";
+const MAX_TARBALL_BYTES = 100 * 1024 * 1024;
+const TARBALL_TIMEOUT_MS = 60_000;
 
 export type SafeUpgradeLevel = "patch" | "minor" | "major";
 
@@ -48,11 +56,14 @@ interface NpmPackument {
  * Fetch all published versions for an npm package.
  * Returns an empty array if the package is not found.
  */
-export async function fetchPackageVersions(packageName: string): Promise<string[]> {
-  const url = `${NPM_REGISTRY}/${encodeURIComponent(packageName)}`;
+export async function fetchPackageVersions(
+  packageName: string,
+  registry: RegistryConfig = defaultRegistryConfig,
+): Promise<string[]> {
+  const url = packumentUrl(registry, packageName);
 
   try {
-    const res = await httpClient({ url });
+    const res = await httpClient({ url, headers: registry.headersFor(url) });
 
     if (res.status === 404) return [];
     if (!res.ok) {
@@ -85,12 +96,14 @@ export async function findSafeUpgradeVersion(
   installedVersion: string,
   firstPatchedVersion: string,
   vulnerableRange?: string,
+  registry?: RegistryConfig,
 ): Promise<string | undefined> {
   const resolution = await resolveSafeUpgradeVersion(
     packageName,
     installedVersion,
     firstPatchedVersion,
     vulnerableRange,
+    registry,
   );
 
   return resolution.safeVersion;
@@ -101,8 +114,9 @@ export async function resolveSafeUpgradeVersion(
   installedVersion: string,
   firstPatchedVersion: string,
   vulnerableRange?: string,
+  registry?: RegistryConfig,
 ): Promise<SafeUpgradeResolution> {
-  const versions = await fetchPackageVersions(packageName);
+  const versions = await fetchPackageVersions(packageName, registry);
   if (!versions.length) {
     return {
       candidates: {},
@@ -199,27 +213,93 @@ export function classifyUpgradeLevel(
   return undefined;
 }
 
+export interface TarballInfo {
+  url: string;
+  /** Subresource-integrity string, e.g. `sha512-<base64>`. */
+  integrity?: string;
+  /** Legacy hex SHA-1, present on older packages without `integrity`. */
+  shasum?: string;
+}
+
 /**
- * Get the tarball URL for a specific package version.
- * Used by the patch generation fallback path.
+ * Look up where a version's tarball lives and how to verify it.
+ * Returns undefined when the registry has no such package/version; throws on network failure.
  */
-export async function getTarballUrl(
+export async function getTarballInfo(
   packageName: string,
   version: string,
-): Promise<string | undefined> {
-  const url = `${NPM_REGISTRY}/${encodeURIComponent(packageName)}/${encodeURIComponent(version)}`;
+  registry: RegistryConfig = defaultRegistryConfig,
+): Promise<TarballInfo | undefined> {
+  const url = `${packumentUrl(registry, packageName)}/${encodeURIComponent(version)}`;
+  const res = await httpClient({ url, headers: registry.headersFor(url) });
 
+  if (res.status === 404) return undefined;
+  if (!res.ok) {
+    throw new Error(`npm registry error ${res.status} for "${packageName}@${version}"`);
+  }
+
+  const dist = (res.data as { dist?: { tarball?: string; integrity?: string; shasum?: string } })
+    .dist;
+  if (!dist?.tarball) return undefined;
+  return { url: dist.tarball, integrity: dist.integrity, shasum: dist.shasum };
+}
+
+/** Check tarball bytes against the registry-advertised digest. Missing digests cannot be checked. */
+export function verifyTarballIntegrity(
+  bytes: Uint8Array,
+  info: Pick<TarballInfo, "integrity" | "shasum">,
+): { ok: true; verified: boolean } | { ok: false; reason: string } {
+  if (info.integrity) {
+    // An SRI string may list several digests; any one matching is enough.
+    const entries: Array<{ algorithm: string; digest: string }> = [];
+    for (const entry of info.integrity.split(/\s+/)) {
+      const dash = entry.indexOf("-");
+      if (dash <= 0) continue;
+      const algorithm = entry.slice(0, dash);
+      if (["sha512", "sha384", "sha256"].includes(algorithm)) {
+        entries.push({ algorithm, digest: entry.slice(dash + 1) });
+      }
+    }
+    if (entries.length > 0) {
+      const matches = entries.some(
+        ({ algorithm, digest }) => createHash(algorithm).update(bytes).digest("base64") === digest,
+      );
+      return matches ? { ok: true, verified: true } : { ok: false, reason: "integrity mismatch" };
+    }
+  }
+  if (info.shasum) {
+    const matches = createHash("sha1").update(bytes).digest("hex") === info.shasum.toLowerCase();
+    return matches ? { ok: true, verified: true } : { ok: false, reason: "shasum mismatch" };
+  }
+  return { ok: true, verified: false };
+}
+
+/** Download a tarball, sending registry credentials only if configured for that exact URL. */
+export async function downloadTarball(
+  info: TarballInfo,
+  registry: RegistryConfig = defaultRegistryConfig,
+): Promise<Uint8Array> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TARBALL_TIMEOUT_MS);
   try {
-    const res = await httpClient({ url });
-
-    if (!res.ok) return undefined;
-
-    const data = res.data as {
-      dist?: { tarball?: string };
-    };
-    return data.dist?.tarball;
-  } catch {
-    return undefined;
+    const res = await fetch(info.url, {
+      headers: registry.headersFor(info.url),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} downloading ${info.url}`);
+    }
+    const declared = Number.parseInt(res.headers.get("content-length") ?? "", 10);
+    if (declared > MAX_TARBALL_BYTES) {
+      throw new Error(`Tarball too large (${declared} bytes)`);
+    }
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if (bytes.byteLength > MAX_TARBALL_BYTES) {
+      throw new Error(`Tarball too large (${bytes.byteLength} bytes)`);
+    }
+    return bytes;
+  } finally {
+    clearTimeout(timer);
   }
 }
 

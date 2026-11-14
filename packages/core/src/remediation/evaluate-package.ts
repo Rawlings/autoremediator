@@ -11,6 +11,7 @@ import { fetchCisaKevFeed, findKevEntry } from "../intelligence/sources/cisa-kev
 import { fetchEpss } from "../intelligence/sources/epss.js";
 import { queryOsvPackage, parseOsvVuln } from "../intelligence/sources/osv.js";
 import { fetchPackageVersions, findSafeUpgradeVersion } from "../intelligence/sources/registry.js";
+import { loadRegistryConfig } from "../platform/registry-config.js";
 import type {
   EvaluatePackageOptions,
   PackageEvaluationReport,
@@ -24,11 +25,12 @@ export async function evaluatePackage(
   const version = options.version?.trim();
   const enrich = options.enrichIntelligence !== false;
 
+  const registry = loadRegistryConfig(options.cwd);
   let versions: string[] = [];
   let latestVersion: string | undefined;
 
   try {
-    versions = await fetchPackageVersions(packageName);
+    versions = await fetchPackageVersions(packageName, registry);
     if (versions.length > 0) {
       const valid = versions
         .filter((v) => semver.valid(v))
@@ -98,6 +100,8 @@ export async function evaluatePackage(
           packageName,
           version || "0.0.0",
           affected.firstPatchedVersion,
+          undefined,
+          registry,
         );
         safeUpgradeVersion = safe ?? affected.firstPatchedVersion;
       } catch {

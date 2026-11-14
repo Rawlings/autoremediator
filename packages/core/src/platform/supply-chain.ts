@@ -7,6 +7,7 @@
  * 3. Unattested builds when provenance is required
  */
 import { httpClient } from "./http-client.js";
+import { type RegistryConfig, defaultRegistryConfig, packumentUrl } from "./registry-config.js";
 import type { SupplyChainPolicy } from "./types.js";
 
 export interface PackageTrustVerdict {
@@ -42,6 +43,7 @@ export async function verifyPackageTrust(
   packageName: string,
   targetVersion: string,
   policy?: SupplyChainPolicy,
+  registry: RegistryConfig = defaultRegistryConfig,
 ): Promise<PackageTrustVerdict> {
   if (
     !policy ||
@@ -50,13 +52,16 @@ export async function verifyPackageTrust(
     return { trusted: true };
   }
 
-  const url = `https://registry.npmjs.org/${encodeURIComponent(packageName)}`;
+  const url = packumentUrl(registry, packageName);
 
   let packument: NpmPackument | null = null;
   try {
     const res = await httpClient({
       url,
-      headers: { Accept: "application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8" },
+      headers: {
+        Accept: "application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8",
+        ...registry.headersFor(url),
+      },
     });
     if (res.ok && res.data) {
       packument = res.data as NpmPackument;

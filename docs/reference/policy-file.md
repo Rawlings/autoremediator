@@ -79,8 +79,9 @@ report, which feeds [escalation](../how-it-works.md#outcomes).
 ## Suppressions
 
 Records that an advisory does not need action, in VEX terms. `justification` is `not_affected`,
-`fixed`, `mitigated` or `under_investigation`. Entries past `expiresAt` are ignored. Suppressed
-results are marked in the report and drive `not_affected` in VEX output. More entries can be merged
+`fixed`, `mitigated` or `under_investigation`. Entries past `expiresAt` are ignored. A suppressed
+advisory changes nothing, but the report lists each installed copy it covers as a suppressed
+result, which drives `not_affected` in VEX output and `suppressed` in the SBOM. More entries can be merged
 from a file with `--suppressions-file`: a YAML file with a top-level `suppressions` list of the same
 entries. A missing file or an invalid entry is an error.
 

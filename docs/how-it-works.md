@@ -6,10 +6,10 @@ the optional [patch fallback](guides/patch-generation.md).
 
 ## The run
 
-1. **Look up the advisory.** Affected ranges and fixed versions come from OSV, the GitHub Advisory
-   Database and NVD. CISA KEV and FIRST EPSS add exploit signals. Offline runs read a
+1. **Look up the advisory.** Affected ranges and fixed versions come from OSV and the GitHub Advisory
+   Database; NVD adds severity. CISA KEV and FIRST EPSS add exploit signals. Offline runs read a
    [snapshot](guides/offline.md) instead.
-2. **Check policy.** Suppressed advisories are skipped. Exploit signals and
+2. **Check policy.** Suppressed advisories are reported but never changed. Exploit signals and
    [SLA](reference/policy-file.md#sla) breaches are recorded.
 3. **Find what is affected.** The installed packages are matched against the vulnerable ranges.
 4. **Fix each package** with the first strategy that works (below).

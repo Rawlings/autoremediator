@@ -110,6 +110,7 @@ export async function tryPatchFallback(
   }
 
   const source = await fetchPackageSourceTool.execute({
+    cwd: params.cwd,
     packageName: params.packageName,
     version: params.vulnerableVersion,
   });
