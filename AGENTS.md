@@ -19,7 +19,7 @@
 
 ### Guard: `autoremediator guard <pkg...>`
 
-- Trigger: `autoremediator guard <spec...>`, `guardPackage(spec, options)` (MCP tool and `POST /packages/guard` too), or the `guard-hook` Claude Code PreToolUse hook (`init --guard`, or the plugin)
+- Trigger: `autoremediator guard <spec...>`, `guardPackage(spec, options)` (MCP tool and `POST /packages/guard` too), `guard --git-diff` (dependencies added since a git ref), or the `guard-hook --host claude-code|cursor|copilot` pre-command hook (`init --guard` writes the host's hook file and a `.pnpmfile.cjs` for pnpm; the Claude Code plugin ships its own)
 - Behavior: judges a package before install (existence, OSV malware, look-alike names, release age, install scripts, provenance, vulnerabilities) as `allow`/`warn`/`block`; lookup failures warn; exit `0`/`3`/`4`; the hook is a guard rail for plain install commands, not a security boundary
 - Source: `packages/core/src/api/guard/`
 

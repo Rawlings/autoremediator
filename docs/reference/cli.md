@@ -13,7 +13,7 @@ options typed after a subcommand apply to it. Unknown options are an error.
 | `cve <id>` | Remediate one CVE or GHSA id (the same as passing it bare) |
 | `plan <id>` | Preview a CVE fix and record it as a [plan](../guides/plan-and-apply.md); prints the run and plan ids |
 | `runs list \| show <id> \| apply [id] \| verify <id> \| resume <id> \| rollback <id>` | Work with recorded runs: `list` takes `--status` and `--limit`, `apply` takes `--plan-id`, `--item`, `--no-verify`, `--repair`/`--no-repair`, `--model` and `--max-repair-rounds`, `verify` takes `--check <name...>` and `--offline`, `rollback` takes `--force`. All take `--cwd` and `--output-format text\|json` |
-| `init` | Set up the project for Autoremediator and your coding agents ([details](../integrations/coding-agents.md)). Takes `--hosts <list>`, `--ci`, `--guard`, `--no-policy`, `--no-agents-md`, `--yes` and `--check`. Without `--yes` and without a terminal it prints a diff and exits `3` |
+| `init` | Set up the project for Autoremediator and your coding agents ([details](../integrations/coding-agents.md)). Takes `--hosts <list>`, `--ci`, `--guard` (also install guard hooks for Claude Code, Cursor and Copilot, and a pnpmfile for pnpm projects), `--no-policy`, `--no-agents-md`, `--yes` and `--check`. Without `--yes` and without a terminal it prints a diff and exits `3` |
 | `hook install \| uninstall \| status` | Add, remove or check the git hooks that run `diff` on push and merge ([details](../guides/git-hooks.md)). Takes `--hooks <list>` (`pre-push`, `post-merge`), `--manager husky\|lefthook\|pre-commit\|git`, `--yes` (install, uninstall). Without `--yes` and without a terminal it prints a diff and exits `3`; `status` exits `1` on drift |
 | `scan` | Remediate from scanner output (`--input <path>`, or `--audit`) |
 | `update-outdated` | Bump outdated dependencies (`--include-transitive`) |
@@ -22,8 +22,8 @@ options typed after a subcommand apply to it. Unknown options are an error.
 | `triage [input]` | Choose what to fix interactively |
 | `patches list \| inspect <path> \| validate <path> \| reconcile` | Manage generated patches. `reconcile --auto-apply` removes patches an upstream release has made obsolete |
 | `reachability` | Is a package or symbol imported by project source (`--package`, `--symbol`) |
-| `guard <package...>` | Judge packages before installing them ([details](../guides/guard.md)); takes `--min-age-hours`, `--offline`, `--output-format`. Exits `0` clear, `3` check first, `4` blocked |
-| `guard-hook` | Claude Code `PreToolUse` hook: reads the hook JSON on stdin, answers allow, ask or deny for package installs |
+| `guard [package...]` | Judge packages before installing them ([details](../guides/guard.md)); takes `--min-age-hours`, `--offline`, `--output-format`, and `--git-diff` (check dependencies added or changed in `package.json` since `--base <ref>`, default `HEAD`; a branch is compared at the merge base; `--include-transitive` adds packages only the lockfile gained, and the package list is then optional). Exits `0` clear, `3` check first, `4` blocked |
+| `guard-hook` | Agent pre-command hook: reads the hook JSON on stdin, answers allow, ask or deny for package installs. `--host claude-code\|cursor\|copilot` (default `claude-code`) picks the output format |
 | `evaluate <package[@version]>` | Pre-install check (`--pkg-version`) |
 
 `diff` also takes `--ci` and `--output-format text|json`. `patches list` and `inspect` take
