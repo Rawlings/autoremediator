@@ -10,6 +10,8 @@
 | `GITHUB_TOKEN` | Raises GitHub Advisory Database rate limits; opens [pull requests](../guides/automation.md#pull-requests) |
 | `GH_TOKEN` | Fallback for opening pull requests |
 | `AUTOREMEDIATOR_EPSS_API` | Alternative EPSS endpoint |
+| `AUTOREMEDIATOR_SKIP_HOOKS` | `1` makes the [git hooks](../guides/git-hooks.md) do nothing |
+| `AUTOREMEDIATOR_HOOK_TIMEOUT` | Seconds a git hook may run (default 60 for pre-push, 30 for post-merge) |
 
 ## HTTP server
 

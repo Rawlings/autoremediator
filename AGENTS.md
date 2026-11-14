@@ -23,6 +23,12 @@
 - Behavior: judges a package before install (existence, OSV malware, look-alike names, release age, install scripts, provenance, vulnerabilities) as `allow`/`warn`/`block`; lookup failures warn; exit `0`/`3`/`4`; the hook is a guard rail for plain install commands, not a security boundary
 - Source: `packages/core/src/api/guard/`
 
+### Git hooks: `autoremediator hook install|uninstall|status`
+
+- Trigger: `autoremediator hook <install|uninstall|status> [--hooks pre-push,post-merge] [--manager ...] [--yes]` or `installHooks(options)` (CLI and SDK only; deliberately not an MCP tool or HTTP route, because it writes files that run on every push)
+- Behavior: detects husky, lefthook, the pre-commit framework or plain git hooks; writes a marked block or named entry per hook and never overwrites what it cannot merge (reported as a conflict); `pre-push` runs `diff --ci` against the upstream only when a manifest or lockfile changed and blocks only on a DEGRADED verdict; `post-merge` prints a one-line advisory and never fails; skip with `AUTOREMEDIATOR_SKIP_HOOKS=1`; exits `3` when not confirmed, `status` exits `1` on drift
+- Source: `packages/core/src/api/hooks/`
+
 ### Mode 2: Scan & Delta Input
 
 - Trigger: `autoremediator <scan-file>`, `autoremediator diff`, `autoremediator triage`, or `remediateFromScan(inputPath, options)`

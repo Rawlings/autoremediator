@@ -14,6 +14,7 @@ options typed after a subcommand apply to it. Unknown options are an error.
 | `plan <id>` | Preview a CVE fix and record it as a [plan](../guides/plan-and-apply.md); prints the run and plan ids |
 | `runs list \| show <id> \| apply [id] \| verify <id> \| resume <id> \| rollback <id>` | Work with recorded runs: `list` takes `--status` and `--limit`, `apply` takes `--plan-id`, `--item`, `--no-verify`, `--repair`/`--no-repair`, `--model` and `--max-repair-rounds`, `verify` takes `--check <name...>` and `--offline`, `rollback` takes `--force`. All take `--cwd` and `--output-format text\|json` |
 | `init` | Set up the project for Autoremediator and your coding agents ([details](../integrations/coding-agents.md)). Takes `--hosts <list>`, `--ci`, `--guard`, `--no-policy`, `--no-agents-md`, `--yes` and `--check`. Without `--yes` and without a terminal it prints a diff and exits `3` |
+| `hook install \| uninstall \| status` | Add, remove or check the git hooks that run `diff` on push and merge ([details](../guides/git-hooks.md)). Takes `--hooks <list>` (`pre-push`, `post-merge`), `--manager husky\|lefthook\|pre-commit\|git`, `--yes` (install, uninstall). Without `--yes` and without a terminal it prints a diff and exits `3`; `status` exits `1` on drift |
 | `scan` | Remediate from scanner output (`--input <path>`, or `--audit`) |
 | `update-outdated` | Bump outdated dependencies (`--include-transitive`) |
 | `portfolio` | Run across several projects (`--targets-file <path>`) |
