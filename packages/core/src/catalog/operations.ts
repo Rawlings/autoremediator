@@ -30,6 +30,7 @@ import {
   updateOutdatedOptionsSchema,
   verifyRunOptionsSchema,
 } from "../platform/option-schemas.js";
+import { HOOK_MANAGERS, HOOK_NAMES } from "../api/hooks/types.js";
 import { AGENT_HOSTS } from "../api/init/types.js";
 import { PACKAGE_VERSION } from "../version.js";
 import { RESPONSES } from "./responses.js";
@@ -131,6 +132,37 @@ export const OPERATIONS: readonly Operation[] = [
     response: RESPONSES.init,
     mcp: false,
     handler: (options, context) => context.api.initFn(options),
+  }),
+  defineOperation({
+    name: "installHooks",
+    title: "Install git hooks",
+    description:
+      "Install, remove or check git hooks that run Autoremediator: pre-push blocks a push whose lockfile changes make the project less safe, post-merge prints a one-line advisory. Detects husky, lefthook, the pre-commit framework or plain git hooks and writes a marked block, never overwriting what it cannot merge. Reports what it would change unless yes is set. Command line and SDK only.",
+    input: z
+      .object({
+        cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional(),
+        hooks: z
+          .array(z.enum(HOOK_NAMES))
+          .optional()
+          .describe("Hooks to handle. Default: pre-push and post-merge."),
+        manager: z
+          .enum(HOOK_MANAGERS)
+          .optional()
+          .describe("Hook manager to write for. Default: detected (husky, lefthook, pre-commit, else git)."),
+        uninstall: z.boolean().optional().describe("Remove the hooks Autoremediator installed."),
+        yes: z.boolean().optional().describe("Write the changes. Without it, only report them."),
+        check: z.boolean().optional().describe("Report drift only; never write."),
+      })
+      .strict(),
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    response: RESPONSES.installHooks,
+    mcp: false,
+    handler: (options, context) => context.api.installHooksFn(options),
   }),
   defineOperation({
     name: "remediate",

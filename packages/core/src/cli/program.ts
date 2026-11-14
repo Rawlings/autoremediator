@@ -18,6 +18,7 @@ import {
   runReconcilePatches,
   runInteractiveTriage,
   runInit,
+  runHook,
   runGuard,
   runGuardHook,
   runPlan,
@@ -179,6 +180,20 @@ const runsAction =
     await run(args, merged);
   };
 
+const hookOptions = (command: Command): Command =>
+  command
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--hooks <list>", "Hooks to handle, comma-separated: pre-push,post-merge (default both)")
+    .option("--manager <name>", "Hook manager to write for: husky|lefthook|pre-commit|git (default: detected)")
+    .option("--output-format <format>", "Output format: text|json", "text");
+const hookAction =
+  (mode: "install" | "uninstall" | "status") =>
+  async (...received: unknown[]) => {
+    const merged = mergeCommandOptions(received.at(-1) as Command) as unknown as Parameters<typeof runHook>[1];
+    validateOutputFormat(merged.outputFormat, ["text", "json"], `hook ${mode}`);
+    await runHook(mode, merged);
+  };
+
 export function createProgram(): Command {
   const program = new Command();
 
@@ -311,6 +326,25 @@ export function createProgram(): Command {
       validateOutputFormat(opts.outputFormat, ["text", "json"], "init");
       await runInit(opts);
     });
+
+  const hook = program
+    .command("hook")
+    .description("Install git hooks that check dependency changes: pre-push blocks a risky push, post-merge advises");
+  hookOptions(
+    hook
+      .command("install")
+      .description("Add the hooks (reports a diff; writes only with --yes or after you confirm)")
+      .option("--yes", "Write the changes without asking"),
+  ).action(hookAction("install"));
+  hookOptions(
+    hook
+      .command("uninstall")
+      .description("Remove only the blocks and entries Autoremediator wrote")
+      .option("--yes", "Write the changes without asking"),
+  ).action(hookAction("uninstall"));
+  hookOptions(
+    hook.command("status").description("Report installed, missing or modified hooks; exits 1 on drift"),
+  ).action(hookAction("status"));
 
   const runs = program
     .command("runs")

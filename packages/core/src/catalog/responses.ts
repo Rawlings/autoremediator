@@ -167,5 +167,21 @@ export const RESPONSES = {
       conflicts: { type: "array", items: { type: "string" } },
     }),
   },
+  installHooks: {
+    description: "HooksResult",
+    schema: object({
+      cwd: { type: "string" },
+      root: { type: "string" },
+      manager: { type: "string", enum: ["husky", "lefthook", "pre-commit", "git"] },
+      managerReason: { type: "string" },
+      action: { type: "string", enum: ["install", "uninstall"] },
+      hooks: { type: "array", items: { type: "object" } },
+      changes: { type: "array", items: { type: "object" } },
+      drift: { type: "boolean" },
+      applied: { type: "boolean" },
+      conflicts: { type: "array", items: { type: "string" } },
+      nextSteps: { type: "array", items: { type: "string" } },
+    }),
+  },
   health: { description: "Server is healthy", schema: object({ status: { type: "string" } }) },
 } as const satisfies Record<string, ResponseSpec>;

@@ -168,6 +168,16 @@ export { checkReachability } from "./reachability/index.js";
 export { evaluatePackage } from "./evaluate/index.js";
 export { scanDelta } from "./delta-scan/index.js";
 export { init, AGENT_HOSTS } from "./init/index.js";
+export { installHooks, HOOK_MANAGERS, HOOK_NAMES } from "./hooks/index.js";
+export type {
+  HookChangeSummary,
+  HookManager,
+  HookName,
+  HooksOptions,
+  HooksResult,
+  HookState,
+  HookStatus,
+} from "./hooks/index.js";
 export {
   guardPackage,
   guardPackages,
