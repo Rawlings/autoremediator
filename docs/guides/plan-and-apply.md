@@ -65,6 +65,10 @@ Repair is on when a model is configured (`--model` or `AUTOREMEDIATOR_MODEL`) an
 tokens. It only applies to failures of your own checks, not to a failed install or a policy block.
 The provider package (`@ai-sdk/<provider>`) must be installed next to autoremediator.
 
+Before the agent is asked anything, [recipes](recipes.md) (what earlier repairs learned, kept as data)
+are tried on the checkout, and one the verifier accepts is used with no model. With no model
+configured, a project that already has a matching recipe still gets that attempt.
+
 What happens:
 
 1. **An isolated checkout.** The project is checked out as a git worktree in your user cache
@@ -106,6 +110,9 @@ do the repair through the same isolated checkout and the same verifier. With the
    the same promotion step as the built-in agent: re-checked in place, undone if that fails. It
    returns `finalized: false` with the reasons when it does not verify. `abandonAttempt` throws the
    attempt away.
+
+If the upgrade has [recipes](recipes.md), `startAttempt` lists them (`recipes`), and `applyRecipe`
+applies one to the checkout and verifies it, undoing it when the verifier rejects it.
 
 Up to four attempts per run can be open at once. An attempt outlives the process that started it, and
 is recorded with the run like any other. The MCP prompt `repair-upgrade` gives a host this sequence.

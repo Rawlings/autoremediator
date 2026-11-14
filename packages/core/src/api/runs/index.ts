@@ -19,6 +19,7 @@ import { buildPlan, type PlanItem, type PlanOptions, type PlanSkip, type Remedia
 import { RunStore, type AttemptRecord, type RunRecord, type RunStatus } from "../../runs/run-store.js";
 import { loadSnapshot } from "../../runs/snapshot-store.js";
 import { defaultRunDeps, type RunDeps } from "./deps.js";
+import { hasRecipeFor } from "./recipes.js";
 import {
   APPLICABLE_STATUSES,
   ensureRunSnapshot,
@@ -407,7 +408,11 @@ export async function applyPlan(
       let repair: ItemOutcome["repair"];
 
       // The upgrade works for the dependency but breaks the project: ask an agent to adapt it.
-      if (!ok && agent && result.unresolvedReason && REPAIRABLE.has(result.unresolvedReason)) {
+      // With no agent (no model configured) a repair is still worth an attempt when a recipe for this upgrade exists.
+      const repairable =
+        agent !== undefined ||
+        (options.repair !== false && hasRecipeFor(cwd, item, plan.options.policy));
+      if (!ok && repairable && result.unresolvedReason && REPAIRABLE.has(result.unresolvedReason)) {
         const others = plan.items
           .filter((candidate) => candidate.itemId !== item.itemId && !applied.has(candidate.itemId))
           .map((candidate) => candidate.packageName);
@@ -432,7 +437,7 @@ export async function applyPlan(
         repair = { attemptId: repaired.attemptId, status: repaired.status, rounds: repaired.rounds, reason: repaired.message };
         if (repaired.status === "promoted") {
           ok = true;
-          message = `Upgraded ${item.packageName} to ${item.toVersion} and repaired the project with an agent: ${repaired.message}`;
+          message = `Upgraded ${item.packageName} to ${item.toVersion} and repaired the project with ${repaired.agentId.startsWith("recipe:") ? "a recipe" : "an agent"}: ${repaired.message}`;
           verification = repaired.verification;
           store.update(runId, { allowSourceEdits: true });
         } else {

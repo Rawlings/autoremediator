@@ -36,6 +36,8 @@ export interface AutoremediatorPolicy {
   dispositionPolicy?: DispositionPolicy;
   containmentMode?: boolean;
   escalationGraph?: EscalationGraph;
+  /** Packages whose `recipes/` are trusted as recipe sources (see docs/guides/recipes.md). */
+  recipes?: { packages: string[] };
 }
 
 export const DEFAULT_POLICY: AutoremediatorPolicy = {
@@ -95,6 +97,14 @@ const policyFileSchema = z
     dispositionPolicy: dispositionPolicySchema.optional(),
     containmentMode: z.boolean().default(false),
     escalationGraph: escalationGraphSchema.optional(),
+    recipes: z
+      .object({
+        packages: z
+          .array(z.string().regex(/^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/, "must be an npm package name"))
+          .default([]),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 

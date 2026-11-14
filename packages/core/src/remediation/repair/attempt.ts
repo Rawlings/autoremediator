@@ -24,6 +24,7 @@ import { applyVersionBumpTool } from "../tools/apply-version-bump.js";
 import type { PlanItem, PlanOptions } from "../../runs/plan.js";
 import { verify } from "../verify/verifier.js";
 import type { CheckName, VerificationResult, VerifyRequest } from "../verify/types.js";
+import { findApplicableRecipes, type FindRecipesParams, type FoundRecipes, tryRecipes } from "./recipe-attempt.js";
 
 /** Everything except `install`: the agent cannot change dependencies, and the upgrade already installed. */
 export const ATTEMPT_CHECKS: readonly CheckName[] = [
@@ -50,7 +51,10 @@ export interface AttemptResult {
   changedFiles: string[];
   usage: LlmUsageMetrics[];
   transcript: TranscriptEntry[];
+  /** `recipe:<id>` when a recipe made the project work, otherwise the agent's id. */
   agentId: string;
+  /** What the verifier found wrong with the upgrade before anything was changed. */
+  initialFailure?: RepairFailure;
 }
 
 export interface AttemptRequest {
@@ -63,7 +67,8 @@ export interface AttemptRequest {
   advisories: readonly CveDetails[];
   /** Packages the plan knowingly leaves vulnerable. */
   expectedRemaining: readonly string[];
-  agent: RepairAgent;
+  /** Without one, only recipes are tried. */
+  agent?: RepairAgent | undefined;
   budget: RepairBudget;
   signal: AbortSignal;
 }
@@ -74,6 +79,8 @@ export interface AttemptDeps {
   applyUpgrade: (item: PlanItem, checkout: string, options: PlanOptions) => Promise<PatchResult>;
   verify: (request: VerifyRequest) => Promise<VerificationResult>;
   diff: (checkout: string) => Promise<string>;
+  /** Recipes for the upgrade: the project's, the policy's recipe packages, and the checkout's installed packages. */
+  findRecipes: (params: FindRecipesParams) => FoundRecipes;
 }
 
 export const defaultAttemptDeps: AttemptDeps = {
@@ -101,6 +108,7 @@ export const defaultAttemptDeps: AttemptDeps = {
   },
   verify,
   diff: worktreeDiff,
+  findRecipes: findApplicableRecipes,
 };
 
 /** The verification of an attempt's checkout against what the project was when it began. */
@@ -174,7 +182,7 @@ export async function runRepairAttempt(
   const { agent, budget, item, options } = request;
   const usage: LlmUsageMetrics[] = [];
   const transcript: TranscriptEntry[] = [];
-  const base = { agentId: agent.id, usage, transcript, changedFiles: [] as string[], diff: "" };
+  const base: Pick<AttemptResult, "agentId" | "usage" | "transcript" | "changedFiles" | "diff" | "initialFailure"> = { agentId: agent?.id ?? "recipes", usage, transcript, changedFiles: [] as string[], diff: "" };
   const fail = (status: AttemptStatus, reason: string, rounds: number, verification?: VerificationResult): AttemptResult => ({
     ...base,
     status,
@@ -209,7 +217,57 @@ export async function runRepairAttempt(
     let rounds = 0;
     const previousRounds: string[] = [];
 
+    if (!verification.passed) {
+      base.initialFailure = failureOf(verification);
+
+      // Recipes first: what an earlier repair learned costs no tokens, and the verifier still decides.
+      let found: FoundRecipes;
+      try {
+        found = deps.findRecipes({
+          projectDir: request.cwd,
+          installRoot: checkout.path,
+          packageName: item.packageName,
+          fromVersion: item.fromVersion,
+          toVersion: item.toVersion,
+          ...(options.policy ? { policy: options.policy } : {}),
+        });
+      } catch (error) {
+        found = { recipes: [], problems: [{ file: "(recipes)", error: error instanceof Error ? error.message : String(error) }] };
+      }
+      for (const problem of found.problems) transcript.push({ step: 0, text: `recipe ${problem.file}: unusable: ${problem.error}` });
+      let trial: Awaited<ReturnType<typeof tryRecipes>>;
+      try {
+        trial = await tryRecipes({ checkout: checkout.path, recipes: found.recipes, judge });
+      } catch (error) {
+        return fail("failed", error instanceof Error ? error.message : String(error), 0, verification);
+      }
+      transcript.push(...trial.transcript);
+      if (trial.fixed) {
+        return {
+          ...base,
+          agentId: `recipe:${trial.fixed.entry.id}`,
+          status: "verified",
+          reason: `recipe ${trial.fixed.entry.id} made the project work (${trial.fixed.files.join(", ")}); no model was asked`,
+          rounds: 0,
+          diff: await deps.diff(checkout.path),
+          verification: trial.fixed.verification,
+          changedFiles: trial.fixed.verification.changedFiles ?? [],
+        };
+      }
+      if (!agent) {
+        return fail(
+          "rejected",
+          found.recipes.length > 0
+            ? `no recipe made the project work (${found.recipes.length} tried) and no repair agent is configured`
+            : "no recipe applies and no repair agent is configured (set a model to have one try)",
+          0,
+          verification,
+        );
+      }
+    }
+
     while (!verification.passed && rounds < budget.maxRepairRounds) {
+      if (!agent) break; // unreachable: without an agent the block above has already returned
       if (request.signal.aborted) return fail("rejected", "the attempt was cancelled", rounds, verification);
       const spent = sum(usage, "inputTokens") + sum(usage, "outputTokens");
       if (budget.maxTotalTokens !== undefined && spent >= budget.maxTotalTokens) {

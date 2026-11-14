@@ -581,6 +581,40 @@ export const OPERATIONS: readonly Operation[] = [
     http: { method: "POST", path: "/delta-scan", positional: [] },
     handler: (options, context) => context.api.scanDeltaFn(options),
   }),
+  defineOperation({
+    name: "listRecipes",
+    title: "List recipes",
+    description:
+      "List the recipes available to the project: what earlier agent repairs learned about adopting a dependency's new version, kept as data (the project's committed .autoremediator/recipes, policy recipe packages, packages shipping their own). Filter by package and versions; pass recipeId for one recipe's full hunks. Read-only; recipes are never executed.",
+    input: z
+      .object({
+        cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional(),
+        packageName: z.string().min(1).max(214).optional().describe("Only recipes for this package"),
+        fromVersion: z.string().min(1).max(100).optional().describe("With toVersion: mark which recipes apply to upgrading from this version"),
+        toVersion: z.string().min(1).max(100).optional().describe("With fromVersion: the version upgraded to"),
+        recipeId: z.string().min(1).max(300).optional().describe("Include this recipe in full"),
+      })
+      .strict(),
+    annotations: READ_ONLY,
+    response: RESPONSES.recipeListing,
+    mcp: true,
+    http: { method: "POST", path: "/recipes/list", positional: [] },
+    handler: (options, context) => context.api.listRecipesFn(options),
+  }),
+  defineOperation({
+    name: "applyRecipe",
+    title: "Apply a recipe to an attempt",
+    description:
+      "Apply a recipe to an open attempt's checkout and judge it: its hunks must match the project's source exactly (no fuzz), the resulting diff goes through the same validation as proposePatch, and the verifier decides. If it does not pass, the recipe is undone and the checkout is as it was. Recipe ids come from listRecipes or startAttempt.",
+    input: attemptQuerySchema.extend({
+      recipeId: z.string("recipeId is required (string)").min(1).max(300).describe("Recipe id from listRecipes or startAttempt"),
+    }),
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    response: RESPONSES.attemptView,
+    mcp: true,
+    http: { method: "POST", path: "/attempts/recipe", positional: ["runId", "attemptId", "recipeId"] },
+    handler: (options, context) => context.api.applyRecipeFn(options),
+  }),
 ];
 
 export function getOperation(name: string): Operation | undefined {

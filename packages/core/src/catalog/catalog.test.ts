@@ -419,3 +419,32 @@ describe("attempt operations for host agents", () => {
     expect(deps.proposePatchFn).not.toHaveBeenCalled();
   });
 });
+
+describe("recipe operations", () => {
+  const byName = (name: string) => OPERATIONS.find((operation) => operation.name === name)!;
+  const runId = "run_" + "a".repeat(20);
+  const attemptId = "attempt_" + "a".repeat(12);
+
+  it("expose reading and attempt-scoped applying, and no operation that writes outside a checkout", () => {
+    const tools = toMcpTools().map((tool) => tool.name);
+    expect(tools).toEqual(expect.arrayContaining(["listRecipes", "applyRecipe"]));
+    expect(tools).not.toContain("captureRecipe");
+    expect(tools).not.toContain("exportRecipes");
+    expect(byName("listRecipes").http).toMatchObject({ path: "/recipes/list" });
+    expect(byName("applyRecipe").http).toMatchObject({ path: "/attempts/recipe" });
+    expect(roleFor(byName("listRecipes"))).toBe("reader");
+    // Like proposePatch: it changes a checkout, never the project.
+    expect(roleFor(byName("applyRecipe"))).toBe("operator");
+  });
+
+  it("validate ids and require a recipe id before anything runs", async () => {
+    const deps = fakeDeps({ applyRecipeFn: vi.fn() as unknown as ApiDeps["applyRecipeFn"], listRecipesFn: vi.fn(() => ({ recipes: [], problems: [] })) as unknown as ApiDeps["listRecipesFn"] });
+    for (const args of [{ runId, attemptId }, { runId, attemptId, recipeId: "" }, { runId: "../x", attemptId, recipeId: "dep#abc" }, { runId, attemptId: "../../x", recipeId: "dep#abc" }]) {
+      expect((await callMcpOperation("applyRecipe", args, deps)).isError).toBe(true);
+    }
+    expect(deps.applyRecipeFn).not.toHaveBeenCalled();
+    expect((await callMcpOperation("applyRecipe", { runId, attemptId, recipeId: "dep#0123456789" }, deps)).isError).toBeUndefined();
+    expect(deps.applyRecipeFn).toHaveBeenCalledWith({ runId, attemptId, recipeId: "dep#0123456789" });
+    expect((await callMcpOperation("listRecipes", { packageName: "dep" }, deps)).isError).toBeUndefined();
+  });
+});

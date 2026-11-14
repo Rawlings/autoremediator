@@ -1,6 +1,7 @@
 import {
   abandonAttempt,
   applyPlan,
+  applyRecipe,
   checkReachability,
   evaluatePackage,
   finalizeAttempt,
@@ -10,6 +11,7 @@ import {
   installHooks,
   inspectPatchArtifact,
   listPatchArtifacts,
+  listRecipes,
   listRuns,
   planRemediation,
   pollJob,
@@ -66,6 +68,8 @@ export interface ApiDeps {
   verifyAttemptFn: typeof verifyAttempt;
   finalizeAttemptFn: typeof finalizeAttempt;
   abandonAttemptFn: typeof abandonAttempt;
+  listRecipesFn: typeof listRecipes;
+  applyRecipeFn: typeof applyRecipe;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -101,4 +105,6 @@ export const defaultApiDeps: ApiDeps = {
   verifyAttemptFn: verifyAttempt,
   finalizeAttemptFn: finalizeAttempt,
   abandonAttemptFn: abandonAttempt,
+  listRecipesFn: listRecipes,
+  applyRecipeFn: applyRecipe,
 };

@@ -5,17 +5,17 @@
  * verifier and the same promotion step as the built-in agent decide what reaches the project.
  */
 import { rmSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
 import { createProjectSnapshot } from "../../platform/rollback.js";
-import { safeExeca } from "../../platform/safe-exec.js";
 import type { RepairFailure } from "../../platform/repair-agent.js";
 import {
   attemptVerifyRequest,
   defaultAttemptDeps,
   failureOf,
 } from "../../remediation/repair/attempt.js";
-import { ScopeGuard, ScopeViolation } from "../../remediation/repair/scope-guard.js";
+import type { RecipeEntry } from "../../recipes/discover.js";
+import { validateAndApplyPatch } from "../../remediation/repair/patch-apply.js";
 import type { CheckName, VerificationResult } from "../../remediation/verify/types.js";
 import { fingerprintRepo, sameInputs } from "../../runs/fingerprint.js";
 import { newAttemptId } from "../../runs/ids.js";
@@ -27,7 +27,15 @@ import { defaultRunDeps, type RunDeps } from "./deps.js";
 import { APPLICABLE_STATUSES, ensureRunSnapshot, promoteChange } from "./repair.js";
 
 const MAX_OPEN_ATTEMPTS = 4;
-const MAX_PATCH_BYTES = 200_000;
+
+function recipeSuggestion(entry: RecipeEntry): { id: string; source: string; summary?: string } {
+  const suggestion: { id: string; source: string; summary?: string } = {
+    id: entry.id,
+    source: entry.source.kind === "project" ? "project" : entry.source.package,
+  };
+  if (entry.recipe.summary) suggestion.summary = entry.recipe.summary;
+  return suggestion;
+}
 
 export interface AttemptQuery {
   cwd?: string;
@@ -62,12 +70,16 @@ export interface AttemptView {
   /** What the verifier found wrong, when it failed. */
   failure?: RepairFailure;
   changedFiles: string[];
+  /** `startAttempt` only: recipes that apply to this upgrade; try one with `applyRecipe`. */
+  recipes?: { id: string; source: string; summary?: string }[];
+  /** `applyRecipe` only: what became of the recipe. */
+  recipe?: { id: string; applied: boolean; files: string[]; rejectedBy?: string };
   /** `finalizeAttempt` only: whether the change reached the project. */
   finalized?: boolean;
   message: string;
 }
 
-function viewOf(record: AttemptRecord, runId: string, extra: Partial<AttemptView> = {}): AttemptView {
+export function viewOf(record: AttemptRecord, runId: string, extra: Partial<AttemptView> = {}): AttemptView {
   return {
     runId,
     attemptId: record.attemptId,
@@ -80,18 +92,18 @@ function viewOf(record: AttemptRecord, runId: string, extra: Partial<AttemptView
   };
 }
 
-const withVerification = (verification: VerificationResult): Partial<AttemptView> => ({
+export const withVerification = (verification: VerificationResult): Partial<AttemptView> => ({
   verification,
   ...(verification.passed ? {} : { failure: failureOf(verification) }),
   changedFiles: verification.changedFiles ?? [],
 });
 
-function context(options: { cwd?: string; runId: string }) {
+export function context(options: { cwd?: string; runId: string }) {
   const cwd = options.cwd ?? process.cwd();
   return { cwd, store: new RunStore(cwd) };
 }
 
-function loadOpen(store: RunStore, runId: string, attemptId: string): AttemptRecord & { worktreePath: string } {
+export function loadOpen(store: RunStore, runId: string, attemptId: string): AttemptRecord & { worktreePath: string } {
   const record = store.listAttempts(runId).find((candidate) => candidate.attemptId === attemptId);
   if (!record) throw new Error(`Attempt not found: ${attemptId}`);
   if (record.status !== "open" || !record.worktreePath) {
@@ -177,6 +189,25 @@ export async function startAttempt(
     throw error;
   }
 
+  // What earlier repairs learned: the host can try one of these before spending effort of its own.
+  let recipes: NonNullable<AttemptView["recipes"]> = [];
+  if (!verification.passed) {
+    try {
+      recipes = ad
+        .findRecipes({
+          projectDir: cwd,
+          installRoot: checkout.path,
+          packageName: item.packageName,
+          fromVersion: item.fromVersion,
+          toVersion: item.toVersion,
+          ...(plan.options.policy ? { policy: plan.options.policy } : {}),
+        })
+        .recipes.map((entry) => recipeSuggestion(entry));
+    } catch {
+      // Recipes are an optional extra; a broken policy shows up in the verifier's findings anyway.
+    }
+  }
+
   const now = new Date().toISOString();
   const record: AttemptRecord = {
     attemptId,
@@ -194,18 +225,13 @@ export async function startAttempt(
   };
   store.writeAttempt(run.runId, record, { "verification.json": `${JSON.stringify(verification, null, 2)}\n` });
   store.ledger(run.runId).append("attempt.start", { attemptId, itemId: item.itemId, agent: "host" });
-  return viewOf(record, run.runId, withVerification(verification));
+  return viewOf(record, run.runId, {
+    ...withVerification(verification),
+    ...(recipes.length > 0 ? { recipes, message: `${record.reason} ${recipes.length} recipe(s) apply to this upgrade: try applyRecipe before editing.` } : {}),
+  });
 }
 
 // ---------------------------------------------------------------------------
-
-const FORBIDDEN_PATCH = [
-  [/^GIT binary patch/m, "binary changes"],
-  [/^Binary files /m, "binary changes"],
-  [/^(old|new) mode /m, "file mode changes"],
-  [/^(rename|copy) (from|to) /m, "renames and copies"],
-  [/^new file mode 120000/m, "symbolic links"],
-] as const;
 
 /**
  * Apply a unified diff to an open attempt's checkout. Only project source may change, as for the
@@ -214,41 +240,7 @@ const FORBIDDEN_PATCH = [
 export async function proposePatch(options: ProposePatchOptions): Promise<AttemptView> {
   const { store } = context(options);
   const record = loadOpen(store, options.runId, options.attemptId);
-  const { diff } = options;
-
-  if (diff.trim().length === 0) throw new Error("The patch is empty.");
-  if (Buffer.byteLength(diff) > MAX_PATCH_BYTES) throw new Error(`The patch is larger than ${MAX_PATCH_BYTES} bytes.`);
-  for (const [pattern, what] of FORBIDDEN_PATCH) {
-    if (pattern.test(diff)) throw new Error(`The patch contains ${what}, which an attempt may not change.`);
-  }
-  const text = diff.endsWith("\n") ? diff : `${diff}\n`;
-
-  const top = (await safeExeca("git", ["rev-parse", "--show-toplevel"], { cwd: record.worktreePath, stdio: "pipe" })).stdout.trim();
-  let files: string[];
-  try {
-    const numstat = await safeExeca("git", ["apply", "--numstat", "-"], { cwd: top, input: text, stdio: "pipe" });
-    files = numstat.stdout.split("\n").filter(Boolean).map((line) => line.split("\t")[2] ?? "").filter(Boolean);
-  } catch (cause) {
-    throw new Error("The patch is not a valid unified diff.", { cause });
-  }
-  if (files.length === 0) throw new Error("The patch changes no files.");
-
-  const guard = new ScopeGuard(record.worktreePath);
-  for (const file of files) {
-    try {
-      guard.assertWritable(resolve(top, file));
-    } catch (error) {
-      if (error instanceof ScopeViolation) throw new Error(`Patch refused: ${error.message}`, { cause: error });
-      throw error;
-    }
-  }
-
-  try {
-    await safeExeca("git", ["apply", "--check", "-"], { cwd: top, input: text, stdio: "pipe" });
-  } catch (cause) {
-    throw new Error("The patch does not apply to the checkout as it is now (read the files again and rebase it).", { cause });
-  }
-  await safeExeca("git", ["apply", "-"], { cwd: top, input: text, stdio: "pipe" });
+  const { files } = await validateAndApplyPatch(record.worktreePath, options.diff);
 
   const updated: AttemptRecord = { ...record, endedAt: new Date().toISOString() };
   store.writeAttempt(options.runId, updated);

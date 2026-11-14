@@ -17,6 +17,7 @@ implement is described in [How it works](../how-it-works.md).
 | `remediation/patch/`    | Patch generation behind the `PatchGenerator` port; diff and syntax validation.          |
 | `remediation/proof-of-fix/`, `remediation/refactor/` | Optional verification and codemods.                     |
 | `remediation/repair/`   | Agent repair: the scoped tools and guard, the built-in agent loop, and the attempt (checkout, upgrade, verify, feedback rounds). |
+| `recipes/`              | Recipes as data: the schema, exact-context matching that turns a recipe into a diff, discovery (project, policy packages, installed packages), capture from a repair diff, and export. Imports `platform/` only; never touches a checkout. `remediation/repair/recipe-attempt.ts` applies one through the same patch validation as an agent's. |
 | `remediation/verify/`   | The verifier: independent checks (scope, policy, supply chain, install, advisories, tests) that judge a changed project, whoever changed it. |
 | `intelligence/sources/` | One module per advisory or signal source (OSV, GitHub, NVD, KEV, EPSS, npm registry).   |
 | `scanner/`              | Scanner-output adapters and the git-aware delta scan.                                   |

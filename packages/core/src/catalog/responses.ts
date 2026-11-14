@@ -139,7 +139,16 @@ export const RESPONSES = {
       failure: { type: "object" },
       changedFiles: { type: "array", items: { type: "string" } },
       finalized: { type: "boolean" },
+      recipes: { type: "array", items: { type: "object" } },
+      recipe: { type: "object" },
       message: { type: "string" },
+    }),
+  },
+  recipeListing: {
+    description: "RecipeListing",
+    schema: object({
+      recipes: { type: "array", items: { type: "object" } },
+      problems: { type: "array", items: { type: "object" } },
     }),
   },
   guardReport: {

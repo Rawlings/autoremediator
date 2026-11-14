@@ -191,6 +191,14 @@ suppressions:
     expect(result.patchConfidenceThresholds?.high).toBe(0.9);
   });
 
+  it("parses recipes.packages and rejects names that are paths or unknown keys", () => {
+    expect(loadPolicy(tmpdir(), "---\nrecipes:\n  packages:\n    - \"@acme/autoremediator-recipes\"\n    - plain-recipes").recipes).toEqual({
+      packages: ["@acme/autoremediator-recipes", "plain-recipes"],
+    });
+    expect(() => loadPolicy(tmpdir(), "---\nrecipes:\n  packages:\n    - ../../etc")).toThrow(/recipes\.packages\.0/);
+    expect(() => loadPolicy(tmpdir(), "---\nrecipes:\n  run: true")).toThrow(/unknown field/);
+  });
+
   it("parses escalationGraph mapping when provided", () => {
     mkdirSync(join(tmpDir, ".github"), { recursive: true });
     writeFileSync(

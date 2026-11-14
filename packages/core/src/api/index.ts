@@ -208,3 +208,17 @@ export {
   type AsyncRemediationJob,
   type TypedAsyncRemediationJob,
 } from "./jobs/index.js";
+export {
+  applyRecipe,
+  captureRecipe,
+  exportRecipes,
+  listRecipes,
+  type ApplyRecipeOptions,
+  type CaptureRecipeOptions,
+  type CaptureRecipeResult,
+  type ExportRecipesOptions,
+  type ExportResult,
+  type ListRecipesOptions,
+  type RecipeListing,
+  type RecipeSummary,
+} from "./recipes/index.js";

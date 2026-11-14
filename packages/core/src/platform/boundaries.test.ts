@@ -53,6 +53,22 @@ describe("module boundaries (see docs/contributing/architecture.md)", () => {
     ).toEqual([]);
   });
 
+  it("recipes are data and depend on platform/ only", () => {
+    expect(
+      violations("recipes", [
+        "remediation",
+        "api",
+        "catalog",
+        "cli",
+        "mcp",
+        "openapi",
+        "intelligence",
+        "scanner",
+        "runs",
+      ]),
+    ).toEqual([]);
+  });
+
   it("the operation catalog sits on api/ and platform/ only", () => {
     expect(
       violations("catalog", ["remediation", "intelligence", "scanner", "cli", "mcp", "openapi"]),

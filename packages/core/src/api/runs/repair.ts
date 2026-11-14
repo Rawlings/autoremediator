@@ -10,10 +10,12 @@ import { safeExeca } from "../../platform/safe-exec.js";
 import type { CveDetails, LlmUsageMetrics } from "../../platform/types.js";
 import type { AttemptRequest, AttemptResult } from "../../remediation/repair/attempt.js";
 import type { VerificationResult, VerifyRequest } from "../../remediation/verify/types.js";
+import { recipeId, serializeRecipe } from "../../recipes/schema.js";
 import { newAttemptId } from "../../runs/ids.js";
 import type { PlanItem, RemediationPlan } from "../../runs/plan.js";
 import type { AttemptRecord, AttemptStatus, RunStatus, RunStore } from "../../runs/run-store.js";
 import { addToSnapshot, saveSnapshot } from "../../runs/snapshot-store.js";
+import { recipeFromAttempt } from "./recipes.js";
 
 export const SNAPSHOT_DIR = "snapshot";
 export const SNAPSHOT_MANIFEST = `${SNAPSHOT_DIR}/snapshot.json`;
@@ -150,7 +152,8 @@ export interface RepairItemContext {
   plan: RemediationPlan;
   advisories: readonly CveDetails[];
   expectedRemaining: readonly string[];
-  agent: RepairAgent;
+  /** Without one, only recipes are tried. */
+  agent: RepairAgent | undefined;
   budget: RepairBudget;
   signal: AbortSignal;
 }
@@ -161,6 +164,8 @@ export interface RepairItemResult {
   message: string;
   rounds: number;
   usage: LlmUsageMetrics[];
+  /** `recipe:<id>` when a recipe did it. */
+  agentId: string;
   verification?: VerificationResult;
 }
 
@@ -185,7 +190,7 @@ export async function repairItem(
   const attemptId = newAttemptId();
   const ledger = store.ledger(runId);
   const startedAt = new Date().toISOString();
-  ledger.append("attempt.start", { attemptId, itemId: item.itemId, agent: context.agent.id });
+  ledger.append("attempt.start", { attemptId, itemId: item.itemId, agent: context.agent?.id ?? "recipes" });
 
   const attempt = await deps.attempt({
     cwd: context.cwd,
@@ -203,6 +208,7 @@ export async function repairItem(
   let status: AttemptStatus = attempt.status;
   let reason = attempt.reason;
   let verification = attempt.verification;
+  let recipeJson: string | undefined;
 
   if (attempt.status === "verified" && attempt.diff.trim().length > 0) {
     const promoted = await promoteChange({
@@ -218,6 +224,28 @@ export async function repairItem(
     status = promoted.ok ? "promoted" : "promotion-failed";
     reason = promoted.ok ? attempt.reason : promoted.message;
     verification = promoted.verification ?? verification;
+
+    // What an agent learned is kept with the attempt, ready for `recipes capture`. A recipe's own fix is not recaptured.
+    if (promoted.ok && !attempt.agentId.startsWith("recipe:")) {
+      const captured = recipeFromAttempt({
+        diff: attempt.diff,
+        packageName: item.packageName,
+        fromVersion: item.fromVersion,
+        toVersion: item.toVersion,
+        runId,
+        attemptId,
+        agentId: attempt.agentId,
+        failure: attempt.initialFailure,
+        verification: attempt.verification,
+        summary: attempt.reason,
+      });
+      if ("recipe" in captured) {
+        recipeJson = serializeRecipe(captured.recipe);
+        ledger.append("recipe.captured", { attemptId, itemId: item.itemId, recipeId: recipeId(captured.recipe) });
+      } else {
+        ledger.append("recipe.not-captured", { attemptId, itemId: item.itemId, reason: captured.error });
+      }
+    }
   }
 
   const record: AttemptRecord = {
@@ -236,6 +264,7 @@ export async function repairItem(
   };
   store.writeAttempt(runId, record, {
     ...(attempt.diff ? { "diff.patch": attempt.diff } : {}),
+    ...(recipeJson ? { "recipe.json": recipeJson } : {}),
     ...(verification ? { "verification.json": `${JSON.stringify(verification, null, 2)}\n` } : {}),
     ...(attempt.transcript.length > 0
       ? { "transcript.jsonl": `${attempt.transcript.map((entry) => JSON.stringify(entry)).join("\n")}\n` }
@@ -249,6 +278,7 @@ export async function repairItem(
     message: reason,
     rounds: attempt.rounds,
     usage: attempt.usage,
+    agentId: attempt.agentId,
     ...(verification ? { verification } : {}),
   };
 }

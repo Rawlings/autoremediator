@@ -31,6 +31,7 @@ import {
   runRunsVerify,
   type RunsOptions as RunsCliOptions,
 } from "./runners.js";
+import { addRecipesCommand } from "./recipes.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
 import { validateOutputFormat, validateSharedCommandOptions } from "./validators.js";
@@ -410,6 +411,8 @@ export function createProgram(): Command {
       .argument("<runId>", "Run id")
       .option("--force", "Roll back even if the project changed since the run's last step"),
   ).action(runsAction("rollback", async ([runId], opts) => runRunsRollback(runId!, opts)));
+
+  addRecipesCommand(program);
 
   const patches = program
     .command("patches")
