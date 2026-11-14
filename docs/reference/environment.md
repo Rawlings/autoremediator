@@ -23,6 +23,8 @@ See [HTTP server](../integrations/http-server.md) for how these interact.
 | `AUTOREMEDIATOR_MAX_BODY_BYTES` | Request body limit. Default 1 MiB |
 | `AUTOREMEDIATOR_ALLOWED_HOSTS` | Extra accepted `Host` values |
 | `AUTOREMEDIATOR_ALLOWED_ROOTS` | Extra directories request paths may point into |
+| `AUTOREMEDIATOR_A2A_BASE_URL` | Public URL the [A2A](../integrations/a2a.md) Agent Card advertises. Default: `http://` plus the request's `Host` |
+| `AUTOREMEDIATOR_A2A_SIGNING_KEY` | Path to a PEM private key (EC P-256/384/521 or Ed25519). When set, the Agent Card is served signed |
 
 ## MCP server
 

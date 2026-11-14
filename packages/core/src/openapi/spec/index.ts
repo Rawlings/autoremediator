@@ -1,3 +1,4 @@
+import { A2A_ENDPOINT_PATH, AGENT_CARD_PATH } from "../../a2a/index.js";
 import { toOpenApiPaths } from "../../catalog/index.js";
 import { PACKAGE_VERSION } from "../../version.js";
 
@@ -21,5 +22,39 @@ export const OPENAPI_SPEC = {
     "patch lifecycle validation",
   ],
   // Generated from the operation catalog, so it cannot drift from what the server accepts.
-  paths: toOpenApiPaths(),
+  paths: {
+    ...toOpenApiPaths(),
+    [AGENT_CARD_PATH]: {
+      get: {
+        operationId: "a2aAgentCard",
+        summary: "A2A Agent Card",
+        description:
+          "Public Agent2Agent discovery document (A2A 1.0). Signed when AUTOREMEDIATOR_A2A_SIGNING_KEY is set.",
+        responses: {
+          "200": {
+            description: "The Agent Card",
+            content: { "application/json": { schema: { type: "object" } } },
+          },
+        },
+      },
+    },
+    [A2A_ENDPOINT_PATH]: {
+      post: {
+        operationId: "a2aJsonRpc",
+        summary: "A2A JSON-RPC endpoint (SendMessage, GetTask)",
+        description:
+          "Agent2Agent 1.0 JSON-RPC binding. SendMessage runs the catalog operation named in a data part and returns a completed or failed task; GetTask returns a task again. Requires a bearer token.",
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { type: "object" } } },
+        },
+        responses: {
+          "200": {
+            description: "A JSON-RPC 2.0 response",
+            content: { "application/json": { schema: { type: "object" } } },
+          },
+        },
+      },
+    },
+  },
 } as const;
