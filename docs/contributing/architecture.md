@@ -10,6 +10,7 @@ implement is described in [How it works](../how-it-works.md).
 | ----------------------- | -------------------------------------------------------------------------------------- |
 | `api/`                  | The public SDK and report helpers. Everything else is reachable only through it.        |
 | `catalog/`              | Every capability defined once as an operation (zod input, annotations, handler). MCP tools are generated from it; HTTP routes and CLI commands are next. |
+| `api/init/`             | `init`: a planner that turns detected facts into reviewable file changes (safe JSON/TOML/Markdown merges, never overwrites an existing entry), plus the text shared by the generated agent files and the Claude Code plugin under `plugins/`. CLI and SDK only. |
 | `cli/`, `mcp/`, `openapi/` | Thin entry points: parse input, call `api/` or `catalog/`, format output. No remediation logic. |
 | `remediation/local/`    | The pipeline (`run.ts`) and its stages: strategies, fallback, disposition, SBOM.        |
 | `remediation/tools/`    | Single-purpose operations (version bump, override, patch apply, inventory, …).          |

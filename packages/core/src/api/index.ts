@@ -93,6 +93,7 @@ export {
 export {
   toCiSummary,
   ciExitCode,
+  EXIT_CODES,
   buildSlaBreachSummary,
   buildStrategyCounts,
   buildDependencyScopeCounts,
@@ -166,6 +167,8 @@ export { updateOutdated } from "./update-outdated/index.js";
 export { checkReachability } from "./reachability/index.js";
 export { evaluatePackage } from "./evaluate/index.js";
 export { scanDelta } from "./delta-scan/index.js";
+export { init, AGENT_HOSTS } from "./init/index.js";
+export type { AgentHost, InitOptions, InitResult, ProjectFacts } from "./init/index.js";
 export {
   submitRemediateJob,
   submitScanJob,

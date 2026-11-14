@@ -30,6 +30,7 @@ import {
   updateOutdatedOptionsSchema,
   verifyRunOptionsSchema,
 } from "../platform/option-schemas.js";
+import { AGENT_HOSTS } from "../api/init/types.js";
 import { PACKAGE_VERSION } from "../version.js";
 import { RESPONSES } from "./responses.js";
 import { defineOperation, type Operation, type OperationContext } from "./define-operation.js";
@@ -97,6 +98,35 @@ export const OPERATIONS: readonly Operation[] = [
       toolCount: context.operationNames.length,
       capabilities: context.operationNames,
     }),
+  }),
+  defineOperation({
+    name: "init",
+    title: "Set up a project",
+    description:
+      "Set the project up for Autoremediator and the coding agents it uses: policy file, .gitignore, MCP configuration per agent host, agent instructions. Reports what it would change unless yes is set. Command line and SDK only.",
+    input: z
+      .object({
+        cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional(),
+        hosts: z
+          .array(z.enum(AGENT_HOSTS))
+          .optional()
+          .describe("Agent hosts to configure. Default: those found in the project, else those installed."),
+        ci: z.boolean().optional().describe("Also write a weekly remediation workflow for GitHub Actions."),
+        policy: z.boolean().optional().describe("Write the policy file when missing. Default true."),
+        agentsMd: z.boolean().optional().describe("Add an Autoremediator section to AGENTS.md. Default true."),
+        yes: z.boolean().optional().describe("Write the changes. Without it, only report them."),
+        check: z.boolean().optional().describe("Report drift only; never write."),
+      })
+      .strict(),
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    response: RESPONSES.init,
+    mcp: false,
+    handler: (options, context) => context.api.initFn(options),
   }),
   defineOperation({
     name: "remediate",

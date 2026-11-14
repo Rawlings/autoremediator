@@ -439,6 +439,8 @@ export interface ChangeRequestResult {
   title: string;
   body: string;
   created: boolean;
+  /** The branch already existed from an earlier run for the same findings and was updated. */
+  updated?: boolean;
   draft?: boolean;
   url?: string;
   cveIds: string[];

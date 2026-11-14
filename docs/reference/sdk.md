@@ -26,6 +26,7 @@ Every function returns a promise unless noted. Option names are identical to the
 | `remediateFromScan(inputPath, options?)` | `ScanReport`. `options.audit` runs the package manager's audit instead |
 | `remediatePortfolio(targets, options?)` | `PortfolioReport` |
 | `updateOutdated(options?)` | `UpdateOutdatedReport` |
+| `init({ cwd?, hosts?, ci?, policy?, agentsMd?, yes?, check? })` | `InitResult`: what was detected, each file's action and diff, `drift`, `applied`, `conflicts`. Writes only with `yes`. See [Coding agents](../integrations/coding-agents.md) |
 | `scanDelta({ cwd?, baseRef?, includeUnstaged?, packageManager? })` | `DeltaScanReport` |
 | `checkReachability({ packageName, symbol?, cwd? })` | `ReachabilityAssessment` |
 | `evaluatePackage(name, { version?, packageManager?, cwd? })` | `PackageEvaluationReport` |
@@ -33,7 +34,7 @@ Every function returns a promise unless noted. Option names are identical to the
 | `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob` (sync) | `{ jobId, status, submittedAt }` |
 | `pollJob(jobId)` (sync) | The job: its `status`, and its report as `result` once finished |
 
-Report helpers: `toCiSummary`, `ciExitCode`, `toSarifOutput`, `toCycloneDxVex`.
+Report helpers: `toCiSummary`, `ciExitCode` (returns one of `EXIT_CODES`: `ok` 0, `failed` 1, `partial` 2, `needsApproval` 3, `policyBlocked` 4), `toSarifOutput`, `toCycloneDxVex`.
 
 Jobs run in the same process and are kept in memory only.
 
@@ -72,7 +73,7 @@ The full type definitions ship with the package. Invalid options throw.
 | `exploitSignalTriggered`, `slaBreaches` | Prioritization signals |
 | `dispositionCounts`, `escalationCounts` | Aggregates over `results` |
 | `llmUsage[]` | Model, tokens and latency for patch generation |
-| `changeRequests[]` | Pull or merge requests created |
+| `changeRequests[]` | Pull or merge requests created; `updated` is set when a re-run reused the branch of an earlier one |
 | `evidenceFile` | Path of the evidence file |
 
 ### `PatchResult`

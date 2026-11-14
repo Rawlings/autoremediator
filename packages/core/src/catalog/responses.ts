@@ -142,5 +142,17 @@ export const RESPONSES = {
       message: { type: "string" },
     }),
   },
+  init: {
+    description: "InitResult",
+    schema: object({
+      cwd: { type: "string" },
+      facts: { type: "object" },
+      hosts: { type: "array", items: { type: "string" } },
+      changes: { type: "array", items: { type: "object" } },
+      drift: { type: "boolean" },
+      applied: { type: "boolean" },
+      conflicts: { type: "array", items: { type: "string" } },
+    }),
+  },
   health: { description: "Server is healthy", schema: object({ status: { type: "string" } }) },
 } as const satisfies Record<string, ResponseSpec>;

@@ -5,6 +5,7 @@ import {
   evaluatePackage,
   finalizeAttempt,
   getRun,
+  init,
   inspectPatchArtifact,
   listPatchArtifacts,
   listRuns,
@@ -39,6 +40,7 @@ export interface ApiDeps {
   checkReachabilityFn: typeof checkReachability;
   evaluatePackageFn: typeof evaluatePackage;
   scanDeltaFn: typeof scanDelta;
+  initFn: typeof init;
   healthFn: () => Promise<{ status: "ok" }>;
   listPatchArtifactsFn: typeof listPatchArtifacts;
   inspectPatchArtifactFn: typeof inspectPatchArtifact;
@@ -71,6 +73,7 @@ export const defaultApiDeps: ApiDeps = {
   checkReachabilityFn: checkReachability,
   evaluatePackageFn: evaluatePackage,
   scanDeltaFn: scanDelta,
+  initFn: init,
   healthFn: async () => ({ status: "ok" }),
   listPatchArtifactsFn: listPatchArtifacts,
   inspectPatchArtifactFn: inspectPatchArtifact,

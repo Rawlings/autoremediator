@@ -13,6 +13,7 @@ options typed after a subcommand apply to it. Unknown options are an error.
 | `cve <id>` | Remediate one CVE or GHSA id (the same as passing it bare) |
 | `plan <id>` | Preview a CVE fix and record it as a [plan](../guides/plan-and-apply.md); prints the run and plan ids |
 | `runs list \| show <id> \| apply [id] \| verify <id> \| resume <id> \| rollback <id>` | Work with recorded runs: `list` takes `--status` and `--limit`, `apply` takes `--plan-id`, `--item`, `--no-verify`, `--repair`/`--no-repair`, `--model` and `--max-repair-rounds`, `verify` takes `--check <name...>` and `--offline`, `rollback` takes `--force`. All take `--cwd` and `--output-format text\|json` |
+| `init` | Set up the project for Autoremediator and your coding agents ([details](../integrations/coding-agents.md)). Takes `--hosts <list>`, `--ci`, `--no-policy`, `--no-agents-md`, `--yes` and `--check`. Without `--yes` and without a terminal it prints a diff and exits `3` |
 | `scan` | Remediate from scanner output (`--input <path>`, or `--audit`) |
 | `update-outdated` | Bump outdated dependencies (`--include-transitive`) |
 | `portfolio` | Run across several projects (`--targets-file <path>`) |
@@ -90,7 +91,7 @@ options typed after a subcommand apply to it. Unknown options are an error.
 | ---- | ------- |
 | `--output-format <text\|json\|sarif>` | Report format |
 | `--summary-file <path>` | Write a machine-readable summary |
-| `--ci` | Exit `1` if any remediation failed |
+| `--ci` | Exit non-zero if any remediation failed: `1` failed, `2` partly fixed, `3` waiting for approval, `4` blocked by policy (see [exit codes](../guides/automation.md#exit-codes)) |
 | `--no-evidence` | Do not write `.autoremediator/evidence/` |
 | `--create-change-request` | Open a pull or merge request. See [Automation](../guides/automation.md#pull-requests) |
 | `--change-request-provider`, `--change-request-grouping`, `--change-request-repository`, `--change-request-base-branch`, `--change-request-branch-prefix`, `--change-request-title-prefix` | Change request settings |

@@ -67,6 +67,7 @@ fixed that was not verified.
 | **CLI and [SDK](docs/reference/sdk.md)** | Local runs, scripts, pipelines |
 | **[GitHub Action](docs/integrations/github-action.md)** | A nightly pull request that fixes what audit finds |
 | **[GitHub App](docs/integrations/github-app.md)** | Remediation across every repository you install it on |
+| **[Coding agents](docs/integrations/coding-agents.md)** | `npx autoremediator init` sets up Claude Code, Cursor, VS Code, Copilot, Codex and Gemini CLI; a Claude Code plugin is included |
 | **[MCP server](docs/integrations/mcp-server.md)** | Give your editor or agent a safe way to fix dependencies |
 | **[HTTP server](docs/integrations/http-server.md)** | Call it from internal services |
 | **[VS Code](packages/vscode-extension/README.md)** | Findings and one-click fixes in `package.json` |

@@ -1,11 +1,17 @@
 import { readFileSync, writeFileSync } from "node:fs";
+import { createInterface } from "node:readline/promises";
 
 import {
   applyPlan,
   checkReachability,
   ciExitCode,
+  EXIT_CODES,
   evaluatePackage,
   getRun,
+  init,
+  AGENT_HOSTS,
+  type AgentHost,
+  type InitResult,
   inspectPatchArtifact,
   listPatchArtifacts,
   listRuns,
@@ -494,6 +500,11 @@ export async function runUpdateOutdated(opts: CommandOptions): Promise<void> {
   }
 }
 
+function portfolioExitCode(report: { failedCount: number; successCount: number }): number {
+  if (report.failedCount <= 0) return EXIT_CODES.ok;
+  return report.successCount > 0 ? EXIT_CODES.partial : EXIT_CODES.failed;
+}
+
 export async function runPortfolio(targetsFilePath: string, opts: CommandOptions): Promise<void> {
   let parsedTargets: unknown;
   try {
@@ -514,7 +525,7 @@ export async function runPortfolio(targetsFilePath: string, opts: CommandOptions
   if (opts.outputFormat === "json") {
     logJson(report);
     if (opts.ci) {
-      process.exitCode = report.failedCount > 0 ? 1 : 0;
+      process.exitCode = portfolioExitCode(report);
     }
     return;
   }
@@ -523,7 +534,7 @@ export async function runPortfolio(targetsFilePath: string, opts: CommandOptions
   process.stdout.write(`Successful targets: ${report.successCount}\n`);
   process.stdout.write(`Failed targets: ${report.failedCount}\n`);
   if (opts.ci) {
-    process.exitCode = report.failedCount > 0 ? 1 : 0;
+    process.exitCode = portfolioExitCode(report);
   }
 }
 
@@ -812,4 +823,89 @@ export async function runRunsVerify(runId: string, opts: RunsOptions): Promise<v
     }
   }
   if (!result.passed) process.exitCode = 1;
+}
+
+export interface InitCliOptions {
+  cwd: string;
+  outputFormat: OutputFormat;
+  hosts?: string;
+  ci?: boolean;
+  policy?: boolean;
+  agentsMd?: boolean;
+  yes?: boolean;
+  check?: boolean;
+}
+
+function parseHosts(value: string | undefined): AgentHost[] | undefined {
+  if (!value) return undefined;
+  const hosts = value.split(",").map((host) => host.trim()).filter(Boolean);
+  const unknown = hosts.filter((host) => !(AGENT_HOSTS as readonly string[]).includes(host));
+  if (unknown.length > 0) {
+    throw new Error(`Unknown host: ${unknown.join(", ")}. Choose from ${AGENT_HOSTS.join(", ")}.`);
+  }
+  return hosts as AgentHost[];
+}
+
+function describeInit(result: InitResult, header: string): string {
+  const lines = [header];
+  const { facts } = result;
+  lines.push(
+    `Package manager ${facts.packageManager}, git host ${facts.gitHost}, CI ${facts.ci.join(", ") || "none"}`,
+    `Agent hosts: ${result.hosts.join(", ") || "none found (use --hosts)"}`,
+  );
+  for (const change of result.changes) {
+    lines.push(`  ${change.action.padEnd(9)} ${change.path}${change.action === "conflict" ? `  (${change.reason})` : ""}`);
+  }
+  return lines.join("\n");
+}
+
+async function confirmInteractively(question: string): Promise<boolean> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    return /^y(es)?$/i.test((await rl.question(question)).trim());
+  } finally {
+    rl.close();
+  }
+}
+
+export async function runInit(opts: InitCliOptions): Promise<void> {
+  const base = {
+    cwd: opts.cwd,
+    hosts: parseHosts(opts.hosts),
+    ci: opts.ci,
+    policy: opts.policy,
+    agentsMd: opts.agentsMd,
+  };
+  let result = await init({ ...base, check: opts.check, yes: opts.yes });
+  const json = opts.outputFormat === "json";
+  const interactive = !json && !opts.yes && !opts.check && process.stdin.isTTY && process.stdout.isTTY;
+
+  if (!json) {
+    process.stdout.write(`${describeInit(result, opts.check ? "Checking setup" : "Setup plan")}\n`);
+    if (!result.applied) {
+      for (const change of result.changes) {
+        if (change.diff) process.stdout.write(`\n${change.diff}\n`);
+      }
+    }
+  }
+
+  if (interactive && result.drift) {
+    if (await confirmInteractively(`\nWrite ${result.changes.filter((c) => c.diff).length} file(s)? [y/N] `)) {
+      result = await init({ ...base, yes: true });
+      process.stdout.write("Done.\n");
+    }
+    return;
+  }
+
+  if (json) logJson(result);
+  else if (result.applied) process.stdout.write("\nWritten.\n");
+  else if (!opts.check && result.drift) process.stdout.write("\nNothing written. Run again with --yes to apply.\n");
+  else if (!result.drift) process.stdout.write("\nAlready set up.\n");
+
+  if (opts.check) {
+    if (result.drift || result.conflicts.length > 0) process.exitCode = EXIT_CODES.failed;
+  } else if (!result.applied && result.drift) {
+    // Changes are waiting for a yes that this run could not get.
+    process.exitCode = EXIT_CODES.needsApproval;
+  }
 }

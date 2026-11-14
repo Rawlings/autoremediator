@@ -1,8 +1,8 @@
-import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 
 import { safeExeca } from "../../platform/safe-exec.js";
+import { commitMessage, deterministicBranchName } from "./branch.js";
 import { trimChar } from "../../platform/trim.js";
 import type {
   ChangeRequestGrouping,
@@ -74,10 +74,6 @@ interface ChangeRequestPlan {
   packageNames: string[];
   title: string;
   body: string;
-}
-
-function sanitizeBranchToken(value: string): string {
-  return trimChar(value.toLowerCase().replaceAll(/[^a-z0-9._/-]+/g, "-"), "-").slice(0, 80);
 }
 
 function buildPlan(reports: RemediationReport[]): ChangeRequestPlan {
@@ -186,11 +182,6 @@ async function ensureRepoHasChanges(cwd: string): Promise<boolean> {
   return diff.stdout.trim().length > 0;
 }
 
-function toBranchName(prefix: string, cveIds: string[]): string {
-  const token = sanitizeBranchToken(cveIds.join("-") || "remediation");
-  return `${sanitizeBranchToken(prefix)}/${token}-${randomBytes(6).toString("hex")}`;
-}
-
 async function detectRepoFromRemote(cwd: string): Promise<string | undefined> {
   const result = await safeExeca("git", ["config", "--get", "remote.origin.url"], {
     cwd,
@@ -256,6 +247,22 @@ async function createGitHubRequest(params: {
 
     if (!response.ok) {
       const errText = await response.text().catch(() => "");
+      if (response.status === 422 && /already exists/i.test(errText)) {
+        // A re-run updated the branch of an open pull request: point at that one instead of failing.
+        const found = await fetch(
+          `${baseUrl}/repos/${owner}/${repo}/pulls?state=open&head=${encodeURIComponent(`${owner}:${params.head}`)}`,
+          {
+            headers: {
+              authorization: `Bearer ${token}`,
+              accept: "application/vnd.github+json",
+              "user-agent": "autoremediator",
+              "x-github-api-version": "2022-11-28",
+            },
+          },
+        ).catch(() => undefined);
+        const pulls = found?.ok ? ((await found.json().catch(() => [])) as Array<{ html_url?: string }>) : [];
+        return pulls[0]?.html_url;
+      }
       throw new Error(`GitHub API create pull request failed (${response.status}): ${errText}`);
     }
 
@@ -282,11 +289,20 @@ async function createGitHubRequest(params: {
     args.push("--draft");
   }
 
-  const result = await safeExeca("gh", args, {
-    cwd: params.cwd,
-    stdio: "pipe",
-  });
-  return result.stdout.trim() || undefined;
+  try {
+    const result = await safeExeca("gh", args, {
+      cwd: params.cwd,
+      stdio: "pipe",
+    });
+    return result.stdout.trim() || undefined;
+  } catch (error) {
+    if (!/already exists/i.test(error instanceof Error ? error.message : String(error))) throw error;
+    const view = await safeExeca("gh", ["pr", "view", params.head, "--json", "url", "--jq", ".url"], {
+      cwd: params.cwd,
+      stdio: "pipe",
+    }).catch(() => undefined);
+    return view?.stdout.trim() || undefined;
+  }
 }
 
 async function createGitLabRequest(params: {
@@ -317,11 +333,89 @@ async function createGitLabRequest(params: {
     args.push("--draft");
   }
 
-  const result = await safeExeca("glab", args, {
-    cwd: params.cwd,
+  try {
+    const result = await safeExeca("glab", args, {
+      cwd: params.cwd,
+      stdio: "pipe",
+    });
+    return result.stdout.trim() || undefined;
+  } catch (error) {
+    // The branch update already refreshed the open merge request.
+    if (/already exists/i.test(error instanceof Error ? error.message : String(error))) return undefined;
+    throw error;
+  }
+}
+
+const BOT_NAME = "autoremediator[bot]";
+const BOT_EMAIL = "41898282+github-actions[bot]@users.noreply.github.com";
+
+/** `git` arguments that authenticate over HTTPS with the token, when there is one. */
+function withAuth(token: string | undefined, args: string[]): string[] {
+  if (!token) return args;
+  const header = `AUTHORIZATION: basic ${Buffer.from(`x-access-token:${token}`).toString("base64")}`;
+  return ["-c", `http.extraheader=${header}`, ...args];
+}
+
+/**
+ * Commits on `ref` that are not in HEAD and were not made by a previous change-request run
+ * (our bot identity plus a `Fixes-CVE:` trailer). Any such commit is somebody's work.
+ */
+async function foreignCommits(cwd: string, ref: string): Promise<number> {
+  const result = await safeExeca(
+    "git",
+    ["log", ref, "--not", "HEAD", "--format=%ae%x1f%B%x1e"],
+    { cwd, stdio: "pipe" },
+  ).catch(() => ({ stdout: "" }));
+  let foreign = 0;
+  for (const entry of result.stdout.split("\u001e")) {
+    const text = entry.trim();
+    if (!text) continue;
+    const [email = "", message = ""] = text.split("\u001f");
+    if (email.trim() !== BOT_EMAIL || !/^Fixes-CVE: /m.test(message)) foreign += 1;
+  }
+  return foreign;
+}
+
+interface ExistingBranch {
+  /** Where the branch already exists on the remote, if it does. */
+  remoteSha?: string;
+  /** Someone else's commits are on it (locally or remotely), so it must not be overwritten. */
+  foreign: boolean;
+}
+
+/** Look at the branch a re-run would reuse before touching it. */
+async function inspectExistingBranch(
+  cwd: string,
+  remote: string,
+  branch: string,
+  token: string | undefined,
+): Promise<ExistingBranch> {
+  let foreign = false;
+  const local = await safeExeca("git", ["rev-parse", "--verify", "--quiet", `refs/heads/${branch}`], {
+    cwd,
     stdio: "pipe",
-  });
-  return result.stdout.trim() || undefined;
+  }).catch(() => undefined);
+  if (local?.stdout.trim()) {
+    foreign = (await foreignCommits(cwd, `refs/heads/${branch}`)) > 0;
+  }
+
+  const listed = await safeExeca("git", withAuth(token, ["ls-remote", "--heads", remote, `refs/heads/${branch}`]), {
+    cwd,
+    stdio: "pipe",
+  }).catch(() => undefined);
+  const remoteSha = /^([0-9a-f]{40})\s/.exec((listed?.stdout ?? "").trim())?.[1];
+  if (remoteSha) {
+    const fetched = await safeExeca("git", withAuth(token, ["fetch", remote, `refs/heads/${branch}`]), {
+      cwd,
+      stdio: "pipe",
+    }).then(
+      () => true,
+      () => false,
+    );
+    // If we cannot read what is there, assume the worst rather than overwrite it.
+    foreign = foreign || !fetched || (await foreignCommits(cwd, "FETCH_HEAD")) > 0;
+  }
+  return { ...(remoteSha ? { remoteSha } : {}), foreign };
 }
 
 export async function createChangeRequestsForReports(params: {
@@ -379,11 +473,29 @@ export async function createChangeRequestsForReports(params: {
       continue;
     }
 
-    const branchName = toBranchName(branchPrefix, plan.cveIds);
+    const branchName = deterministicBranchName(branchPrefix, plan.cveIds, plan.packageNames);
     let branchCreated = false;
 
+    const existing = await inspectExistingBranch(cwd, pushRemote, branchName, token);
+    if (existing.foreign) {
+      results.push({
+        provider,
+        grouping,
+        repository: options.repository,
+        branchName: "",
+        title,
+        body,
+        created: false,
+        cveIds: plan.cveIds,
+        packageNames: plan.packageNames,
+        error: `Branch ${branchName} already exists with commits that autoremediator did not make; not overwriting it.`,
+      });
+      continue;
+    }
+
     try {
-      await safeExeca("git", ["checkout", "-b", branchName], { cwd, stdio: "pipe" });
+      // -B: a re-run for the same findings restarts the branch from the current base.
+      await safeExeca("git", ["checkout", "-B", branchName], { cwd, stdio: "pipe" });
       branchCreated = true;
       await stageRunChanges(cwd, group);
 
@@ -408,26 +520,23 @@ export async function createChangeRequestsForReports(params: {
         "git",
         [
           "-c",
-          "user.name=autoremediator[bot]",
+          `user.name=${BOT_NAME}`,
           "-c",
-          "user.email=41898282+github-actions[bot]@users.noreply.github.com",
+          `user.email=${BOT_EMAIL}`,
           "commit",
           "-m",
-          title,
+          commitMessage(title, group),
         ],
         { cwd, stdio: "pipe" },
       );
 
-      const pushArgs = token
-        ? [
-            "-c",
-            `http.extraheader=AUTHORIZATION: basic ${Buffer.from(`x-access-token:${token}`).toString("base64")}`,
-            "push",
-            "-u",
-            pushRemote,
-            branchName,
-          ]
-        : ["push", "-u", pushRemote, branchName];
+      // A re-run replaces only the commit a previous run pushed, and only if nobody moved the branch since.
+      const pushArgs = withAuth(
+        token,
+        existing.remoteSha
+          ? ["push", `--force-with-lease=refs/heads/${branchName}:${existing.remoteSha}`, "-u", pushRemote, branchName]
+          : ["push", "-u", pushRemote, branchName],
+      );
       await safeExeca("git", pushArgs, { cwd, stdio: "pipe" });
 
       const url =
@@ -461,6 +570,7 @@ export async function createChangeRequestsForReports(params: {
         title,
         body,
         created: true,
+        ...(existing.remoteSha ? { updated: true } : {}),
         draft: options.draft,
         url,
         cveIds: plan.cveIds,

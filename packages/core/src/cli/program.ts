@@ -17,6 +17,7 @@ import {
   runValidatePatch,
   runReconcilePatches,
   runInteractiveTriage,
+  runInit,
   runPlan,
   runRunsApply,
   runRunsList,
@@ -268,6 +269,22 @@ export function createProgram(): Command {
     validateOutputFormat(merged.outputFormat, ["text", "json"], "plan");
     await runPlan(cveId, merged);
   });
+
+  program
+    .command("init")
+    .description("Set up the project: policy file, agent MCP configuration and instructions")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--hosts <list>", "Agent hosts to configure, comma-separated: claude-code,cursor,vscode,codex,gemini,copilot")
+    .option("--ci", "Also write a weekly remediation workflow (GitHub Actions)")
+    .option("--no-policy", "Do not write the policy file")
+    .option("--no-agents-md", "Do not add a section to AGENTS.md")
+    .option("--yes", "Write the changes without asking")
+    .option("--check", "Report what is out of date and exit 1 if anything is; writes nothing")
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(async (opts: Parameters<typeof runInit>[0]) => {
+      validateOutputFormat(opts.outputFormat, ["text", "json"], "init");
+      await runInit(opts);
+    });
 
   const runs = program
     .command("runs")

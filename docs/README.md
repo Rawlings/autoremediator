@@ -12,7 +12,7 @@ organized by what you are trying to do.
 ## Guides
 
 - [Scanners and inputs](guides/scanners.md): audit output, SARIF, git diffs, portfolios
-- [Automation and CI](guides/automation.md): exit codes, report formats, pull requests
+- [Automation and CI](guides/automation.md): exit codes, report formats, pull requests and re-runs
 - [Plan, apply and roll back](guides/plan-and-apply.md): reviewing a fix first, resuming, undoing
 - [Patch generation](guides/patch-generation.md): letting a model write a patch
 - [Offline use](guides/offline.md): intelligence sources and snapshots
@@ -28,6 +28,7 @@ organized by what you are trying to do.
 
 - [GitHub Action](integrations/github-action.md)
 - [GitHub App](integrations/github-app.md)
+- [Coding agents](integrations/coding-agents.md): `init`, Claude Code plugin, Cursor, VS Code, Copilot, Codex, Gemini
 - [MCP server](integrations/mcp-server.md)
 - [HTTP server](integrations/http-server.md)
 - [VS Code extension](../packages/vscode-extension/README.md)

@@ -1,0 +1,17 @@
+{
+  "name": "autoremediator",
+  "description": "Fix vulnerable npm dependencies safely: plan, apply with verification, repair upgrades that break the project, roll back.",
+  "author": {
+    "name": "Rawlings"
+  },
+  "homepage": "https://github.com/Rawlings/autoremediator/tree/master/docs",
+  "repository": "https://github.com/Rawlings/autoremediator",
+  "license": "MIT",
+  "keywords": [
+    "security",
+    "npm",
+    "cve",
+    "dependencies",
+    "remediation"
+  ]
+}

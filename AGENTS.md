@@ -11,6 +11,12 @@
   - .github/instructions/agent-safety.instructions.md
   - .github/instructions/tool-contracts.instructions.md
 
+### Setup: `autoremediator init`
+
+- Trigger: `autoremediator init [--hosts a,b] [--ci] [--yes|--check]` or `init(options)` (CLI and SDK only; deliberately not an MCP tool or HTTP route, because it writes configuration)
+- Behavior: detects package manager, git host, CI and agent hosts; merges the MCP server entry into each host's config, writes the policy file, `.gitignore` entry, agent skills/rules/custom agent and an `AGENTS.md` section; never replaces an existing `autoremediator` entry; needs `--yes` when not interactive (otherwise exits `3`)
+- Source: `packages/core/src/api/init/`; the Claude Code plugin under `plugins/claude-code/` is generated from the same text (`UPDATE_PLUGINS=1 pnpm --filter autoremediator test plugin-files`)
+
 ### Mode 2: Scan & Delta Input
 
 - Trigger: `autoremediator <scan-file>`, `autoremediator diff`, `autoremediator triage`, or `remediateFromScan(inputPath, options)`
@@ -26,7 +32,7 @@
 ### Mode 3: CI
 
 - Trigger: `--ci`
-- Behavior: non-interactive output, deterministic summary and exit code; `slaBreachSummary` appears in scan/portfolio output when `--sla-check` is enabled and at least one CVE exceeds its SLA window
+- Behavior: non-interactive output, deterministic summary and exit code (`0` ok, `1` failed, `2` partial, `3` waiting for approval, `4` blocked by policy; `EXIT_CODES` in the SDK); `slaBreachSummary` appears in scan/portfolio output when `--sla-check` is enabled and at least one CVE exceeds its SLA window
 - Instruction set: Mode 2 + evidence/ci skill
 
 ### Mode 4: MCP Tool Server

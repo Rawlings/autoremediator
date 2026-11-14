@@ -13,9 +13,9 @@ Changes are installed, optionally tested/type-checked, and rolled back on failur
 
 ## Entry points
 
-- CLI: `autoremediator <CVE|GHSA|scan-file> [--dry-run] [--run-tests] [--ci]`, plus `scan`, `update-outdated`, `portfolio`, `diff`, `triage`, `patches`, `reachability`, `evaluate`
-- SDK: `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `scanDelta`, `checkReachability`, `evaluatePackage`, patch-artifact functions, job functions (`submit*Job`, `pollJob`), `toCiSummary`, `toSarifOutput`, `toCycloneDxVex`, `createLlmPatchGenerator`
-- MCP (stdio, `autoremediator-mcp`): `health`, `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `checkReachability`, `evaluatePackage`, `scanDelta`, `toVex`, `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob`
+- CLI: `autoremediator <CVE|GHSA|scan-file> [--dry-run] [--run-tests] [--ci]`, plus `init` (sets up the project and coding-agent configuration), `plan`, `runs`, `scan`, `update-outdated`, `portfolio`, `diff`, `triage`, `patches`, `reachability`, `evaluate`. With `--ci`, exit codes: 0 fixed or nothing to do, 1 failed, 2 partly fixed, 3 waiting for approval, 4 blocked by policy
+- SDK: `init`, `remediate`, `planRemediation`, `applyPlan`, `verifyRun`, `rollbackRun`, `getRun`, `listRuns`, attempt functions, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `scanDelta`, `checkReachability`, `evaluatePackage`, patch-artifact functions, job functions (`submit*Job`, `pollJob`), `toCiSummary`, `toSarifOutput`, `toCycloneDxVex`, `createLlmPatchGenerator`
+- MCP (stdio, `autoremediator-mcp`): `health`, `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `applyPlan`, `verifyRun`, `resumeRun`, `rollbackRun`, `getRun`, `listRuns`, `startAttempt`, `proposePatch`, `verifyAttempt`, `finalizeAttempt`, `abandonAttempt`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `reconcilePatchArtifacts`, `checkReachability`, `evaluatePackage`, `scanDelta`, `toVex`, `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob`
 - HTTP: `POST /remediate`, `/plan-remediation`, `/remediate-from-scan`, `/remediate-portfolio`, `/update-outdated`, `/patches/{list,inspect,validate}`, `/vex`, `/jobs/{remediate,scan,portfolio}`, `GET /jobs/:id`, `GET /health`, `GET /openapi.json`. Authentication is required (`AUTOREMEDIATOR_API_TOKENS` or `AUTOREMEDIATOR_JWT_SECRET`).
 
 ## Key options
@@ -41,3 +41,4 @@ Precedence: explicit options, then the policy file (`.github/autoremediator.yml`
 - SDK reference: https://github.com/Rawlings/autoremediator/blob/master/docs/reference/sdk.md
 - Policy file: https://github.com/Rawlings/autoremediator/blob/master/docs/reference/policy-file.md
 - Integrations: https://github.com/Rawlings/autoremediator/tree/master/docs/integrations
+- Coding agents (init, Claude Code plugin): https://github.com/Rawlings/autoremediator/blob/master/docs/integrations/coding-agents.md
