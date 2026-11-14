@@ -53,6 +53,22 @@ describe("module boundaries (see docs/contributing/architecture.md)", () => {
     ).toEqual([]);
   });
 
+  it("earned autonomy (pure computation and the track record) depends on platform/ only", () => {
+    expect(
+      violations("autonomy", [
+        "remediation",
+        "api",
+        "catalog",
+        "cli",
+        "mcp",
+        "openapi",
+        "intelligence",
+        "scanner",
+        "runs",
+      ]),
+    ).toEqual([]);
+  });
+
   it("the operation catalog sits on api/ and platform/ only", () => {
     expect(
       violations("catalog", ["remediation", "intelligence", "scanner", "cli", "mcp", "openapi"]),

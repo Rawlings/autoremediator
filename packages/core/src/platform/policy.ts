@@ -5,6 +5,8 @@ import { parse as yamlParse, stringify as yamlStringify } from "yaml";
 import { z } from "zod";
 
 import {
+  autonomyPolicySchema,
+  type AutonomyPolicy,
   constraintsSchema,
   dispositionPolicySchema,
   escalationGraphSchema,
@@ -36,6 +38,8 @@ export interface AutoremediatorPolicy {
   dispositionPolicy?: DispositionPolicy;
   containmentMode?: boolean;
   escalationGraph?: EscalationGraph;
+  /** Earned autonomy. Absent means the feature is off and behaviour is unchanged. */
+  autonomy?: AutonomyPolicy;
 }
 
 export const DEFAULT_POLICY: AutoremediatorPolicy = {
@@ -95,6 +99,7 @@ const policyFileSchema = z
     dispositionPolicy: dispositionPolicySchema.optional(),
     containmentMode: z.boolean().default(false),
     escalationGraph: escalationGraphSchema.optional(),
+    autonomy: autonomyPolicySchema.optional(),
   })
   .strict();
 

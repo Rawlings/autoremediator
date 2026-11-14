@@ -697,6 +697,22 @@ export interface RemediationReport {
   /** Counts of intended escalation actions across all results in this report. */
   escalationCounts?: EscalationCounts;
   simulationSummary?: SimulationSummary;
+  /** Set when the policy configures earned autonomy: the level in force and what it says about this result. */
+  autonomy?: AutonomySummary;
+}
+
+/** What a report says about the autonomy level its project was at (policy `autonomy` key). */
+export interface AutonomySummary {
+  /** The level in force: the lower of the policy ceiling and the level the track record earned. */
+  level: "L0" | "L1" | "L2" | "L3" | "L4";
+  ceiling: "L0" | "L1" | "L2" | "L3" | "L4";
+  earned: "L0" | "L1" | "L2" | "L3" | "L4";
+  name: string;
+  /** A merge rule may trust this result without a person looking (L3 and L4 only; Autoremediator never merges). */
+  autoMergeEligible: boolean;
+  /** A person should look at this result (L4 only). */
+  escalate: boolean;
+  note: string;
 }
 
 // ---------------------------------------------------------------------------

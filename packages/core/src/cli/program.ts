@@ -5,6 +5,7 @@ import { Command } from "commander";
 import { HOOK_HOSTS, type HookHost } from "../api/guard/hook.js";
 import { OPTION_DESCRIPTIONS } from "../api/index.js";
 import { PACKAGE_VERSION } from "../version.js";
+import { type AutonomyCliOptions, runAutonomy } from "./autonomy.js";
 import {
   runDiffAudit,
   runEvaluate,
@@ -410,6 +411,26 @@ export function createProgram(): Command {
       .argument("<runId>", "Run id")
       .option("--force", "Roll back even if the project changed since the run's last step"),
   ).action(runsAction("rollback", async ([runId], opts) => runRunsRollback(runId!, opts)));
+
+  const autonomy = program
+    .command("autonomy")
+    .description("Show the autonomy level this repository has earned, and why");
+  for (const [mode, text] of [
+    ["status", "Show the level in force, the ceiling, the level earned and what the next one needs"],
+    ["explain", "Explain the level: the evidence, the settings and every promotion and demotion with its cause"],
+  ] as const) {
+    autonomy
+      .command(mode)
+      .description(text)
+      .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+      .option("--policy <path>", "Path to the policy file (default: .github/autoremediator.yml)")
+      .option("--output-format <format>", "Output format: text|json", "text")
+      .action(async (_opts: AutonomyCliOptions, command: Command) => {
+        const merged = mergeCommandOptions(command) as unknown as AutonomyCliOptions;
+        validateOutputFormat(merged.outputFormat, ["text", "json"], `autonomy ${mode}`);
+        await runAutonomy(mode, merged);
+      });
+  }
 
   const patches = program
     .command("patches")

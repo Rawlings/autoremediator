@@ -11,6 +11,7 @@ import {
 import { DEFAULT_POLICY, isPackageAllowed, loadPolicy } from "../../platform/policy.js";
 import type { AutoremediatorPolicy } from "../../platform/policy.js";
 import { loadRegistryConfig } from "../../platform/registry-config.js";
+import { TRACK_RECORD_PATH } from "../../platform/track-record-path.js";
 import { verifyPackageTrust } from "../../platform/supply-chain.js";
 import type { InventoryPackage, PackageManager } from "../../platform/types.js";
 import { prepareReproductionTestFile, runProofOfFixPhase } from "../proof-of-fix/runner.js";
@@ -72,7 +73,12 @@ export function createCheckContext(request: VerifyRequest): CheckContext {
     packageManager,
     policy,
     ...(policyError ? { policyError } : {}),
-    changedFiles: () => (files ??= changedFilesSince(request.cwd, request.statusBefore)),
+    changedFiles: () =>
+      (files ??= changedFilesSince(
+        request.cwd,
+        request.statusBefore,
+        options.ignoreTrackRecord ? [TRACK_RECORD_PATH] : [],
+      )),
     changes: () => (changes ??= manifestChanges(request.cwd, request.baseFiles)),
     inventory: () =>
       (inventory ??= checkInventoryTool

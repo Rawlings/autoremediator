@@ -28,6 +28,7 @@ import {
   assertChangeRequestAllowed,
   createChangeRequestsForReports,
 } from "../change-request/index.js";
+import { assertAutonomyAllows } from "../autonomy/index.js";
 import {
   resolveConstraints,
   resolveCorrelationContext,
@@ -160,6 +161,7 @@ export async function updateOutdated(
 
   // Load policy exactly once
   const policy = loadPolicy(cwd, options.policy);
+  if (!options.dryRun) assertAutonomyAllows(cwd, options.policy, "apply", "updateOutdated");
   const correlation = resolveCorrelationContext(options);
   const provenance = resolveProvenanceContext(options);
   const constraints = resolveConstraints(options, cwd);

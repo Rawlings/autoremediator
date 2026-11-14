@@ -23,6 +23,8 @@ import type { PlanItem, RemediationPlan } from "../../runs/plan.js";
 import { type AttemptRecord, type AttemptStatus, RunStore } from "../../runs/run-store.js";
 import { loadSnapshot, saveSnapshot } from "../../runs/snapshot-store.js";
 import { discardWorktree } from "../../runs/worktree.js";
+import { assertAutonomyAllows } from "../autonomy/index.js";
+import { finalizeEvent, recordOutcomes } from "./autonomy-events.js";
 import { defaultRunDeps, type RunDeps } from "./deps.js";
 import { APPLICABLE_STATUSES, ensureRunSnapshot, promoteChange } from "./repair.js";
 
@@ -315,6 +317,8 @@ export async function finalizeAttempt(
   const item = plan?.items.find((candidate) => candidate.itemId === record.itemId);
   if (!plan || !item) throw new Error(`Attempt ${record.attemptId} refers to a plan item that no longer exists.`);
   if (!APPLICABLE_STATUSES.has(run.status)) throw new Error(`Run ${run.runId} is ${run.status}; nothing can be finalized.`);
+  // Earned autonomy (opt-in via the policy): below L2 nothing is put in the project.
+  assertAutonomyAllows(cwd, plan.options.policy, "apply", `Finalizing attempt ${record.attemptId}`);
   const applied = appliedItems(store, run.runId);
   if (applied.has(item.itemId)) throw new Error(`Item ${item.itemId} is already applied.`);
   if (!sameInputs(await fingerprintRepo(cwd, plan.options.policy), run.after ?? run.base)) {
@@ -354,7 +358,17 @@ export async function finalizeAttempt(
     await discardWorktree(cwd, record.worktreePath);
     ledger.append("attempt.done", { attemptId: record.attemptId, itemId: item.itemId, status: closed.status, rounds: 0 });
 
-    if (!promoted.ok) return viewOf(closed, run.runId, { finalized: false, verification: promoted.verification ?? checked.verification });
+    const recordProblem = (problem: string) => ledger.append("autonomy.record-failed", { message: problem });
+    if (!promoted.ok) {
+      await recordOutcomes(cwd, plan.options.policy, [finalizeEvent(run, item.itemId, item.packageName, { promoted: false, message: promoted.message })], recordProblem);
+      return viewOf(closed, run.runId, { finalized: false, verification: promoted.verification ?? checked.verification });
+    }
+    await recordOutcomes(
+      cwd,
+      plan.options.policy,
+      [finalizeEvent(run, item.itemId, item.packageName, { promoted: true, message: "", verification: checked.verification })],
+      recordProblem,
+    );
 
     const after = await fingerprintRepo(cwd, plan.options.policy);
     ledger.append("item.done", {

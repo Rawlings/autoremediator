@@ -18,6 +18,7 @@ import {
   runQuerySchema,
   deltaScanOptionsSchema,
   evaluatePackageOptionsSchema,
+  getAutonomyOptionsSchema,
   OPTION_DESCRIPTIONS,
   packageNameSchema,
   pathField,
@@ -568,6 +569,18 @@ export const OPERATIONS: readonly Operation[] = [
     mcp: true,
     http: { method: "POST", path: "/packages/guard", positional: ["spec"] },
     handler: ({ spec, ...options }, context) => context.api.guardPackageFn(spec, options),
+  }),
+  defineOperation({
+    name: "getAutonomy",
+    title: "Get the autonomy level",
+    description:
+      "Report the autonomy level a repository is at: the ceiling its policy sets (L0 observe, L1 suggest, L2 open pull request, L3 auto-merge eligible, L4 autonomous with escalation), the level its own verified track record has earned, the lower of the two, the evidence (verified runs, rollbacks, verifier failures, whether tests and type check were part of verification), every past promotion and demotion with the event behind it, and what the next promotion needs. Read-only. Reports configured: false when the policy has no autonomy key.",
+    input: getAutonomyOptionsSchema,
+    annotations: READ_ONLY,
+    response: RESPONSES.autonomyStatus,
+    mcp: true,
+    http: { method: "POST", path: "/autonomy", positional: [] },
+    handler: (options, context) => context.api.getAutonomyFn(options),
   }),
   defineOperation({
     name: "scanDelta",
