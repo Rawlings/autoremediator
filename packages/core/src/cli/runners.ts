@@ -699,6 +699,9 @@ export interface RunsOptions {
   check?: string[];
   offline?: boolean;
   verify?: boolean;
+  repair?: boolean;
+  model?: string;
+  maxRepairRounds?: number;
 }
 
 export async function runRunsList(opts: RunsOptions): Promise<void> {
@@ -769,6 +772,10 @@ export async function runRunsApply(runId: string | undefined, opts: RunsOptions)
     itemIds: opts.item,
     // `--no-verify` arrives as verify: false; verification is on unless it is turned off.
     ...(opts.verify === false ? { verify: false } : {}),
+    // `--repair` / `--no-repair`; unset means "on when a model is configured".
+    ...(opts.repair === undefined ? {} : { repair: opts.repair }),
+    ...(opts.model ? { model: opts.model } : {}),
+    ...(opts.maxRepairRounds ? { repairBudget: { maxRepairRounds: opts.maxRepairRounds } } : {}),
   });
   if (opts.outputFormat === "json") logJson(report);
   else printRunReport(report);

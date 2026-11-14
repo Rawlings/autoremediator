@@ -15,6 +15,7 @@ import {
 import { isPackageAllowed, loadPolicy } from "../../../platform/policy.js";
 import { withRepoLock } from "../../../platform/repo-lock.js";
 import { safeExecaCommand } from "../../../platform/safe-exec-command.js";
+import { serializeManifest } from "../manifest-format.js";
 import { LONG_RUNNING_TIMEOUT_MS } from "../../../platform/timeouts.js";
 import type {
   PatchResult,
@@ -31,9 +32,7 @@ import {
   collectDependencyTrace,
   describeOverrideField,
   getDenoJsonImportValue,
-  getOverrideValue,
   restoreDenoJsonImportValue,
-  restoreOverrideValue,
   setDenoJsonImportValue,
   setOverrideValue,
   type DenoJson,
@@ -396,7 +395,6 @@ export const applyPackageOverrideTool = defineTool({
     }
 
     const overrideLabel = describeOverrideField(pm);
-    const previousValue = getOverrideValue(pkgJson, pm, overrideSelector);
 
     const dependencyTrace = await collectDependencyTrace(cwd, pm, packageName, commandConstraints);
     const dependencyTraceSuffix = dependencyTrace ? ` Dependency trace: ${dependencyTrace}` : "";
@@ -466,8 +464,9 @@ export const applyPackageOverrideTool = defineTool({
         }
       }
 
+      const originalManifest = readFileSync(pkgPath, "utf8");
       setOverrideValue(pkgJson, pm, overrideSelector, toVersion);
-      writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+      writeFileSync(pkgPath, serializeManifest(originalManifest, pkgJson), "utf8");
 
       try {
         await safeExecaCommand(installCommand, {
@@ -476,8 +475,7 @@ export const applyPackageOverrideTool = defineTool({
           stdio: "pipe",
         });
       } catch (err) {
-        restoreOverrideValue(pkgJson, pm, overrideSelector, previousValue);
-        writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+        writeFileSync(pkgPath, originalManifest, "utf8");
         const message = err instanceof Error ? err.message : String(err);
         return {
           packageName,
@@ -499,8 +497,7 @@ export const applyPackageOverrideTool = defineTool({
             stdio: "pipe",
           });
         } catch (err) {
-          restoreOverrideValue(pkgJson, pm, overrideSelector, previousValue);
-          writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+          writeFileSync(pkgPath, originalManifest, "utf8");
 
           try {
             await safeExecaCommand(installCommand, {
@@ -535,8 +532,7 @@ export const applyPackageOverrideTool = defineTool({
         });
 
         if (!positivePhaseResult.passed) {
-          restoreOverrideValue(pkgJson, pm, overrideSelector, previousValue);
-          writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+          writeFileSync(pkgPath, originalManifest, "utf8");
 
           try {
             await safeExecaCommand(installCommand, {

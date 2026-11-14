@@ -17,6 +17,7 @@ import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
 import { withRepoLock } from "../../platform/repo-lock.js";
 import { safeExecaCommand } from "../../platform/safe-exec-command.js";
 import { runCommandCheck } from "../verify/command-check.js";
+import { serializeManifest } from "./manifest-format.js";
 import { LONG_RUNNING_TIMEOUT_MS } from "../../platform/timeouts.js";
 import type {
   PatchResult,
@@ -289,9 +290,11 @@ export const applyVersionBumpTool = defineTool({
         }
       }
 
-      // Write updated package.json
+      // Write updated package.json, keeping the file's own formatting; a failed upgrade puts the
+      // original bytes back, so nothing about it shows up in a diff.
+      const originalManifest = readFileSync(pkgPath, "utf8");
       pkgJson[depField]![packageName] = newRange;
-      writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+      writeFileSync(pkgPath, serializeManifest(originalManifest, pkgJson), "utf8");
 
       // Run package-manager install
       try {
@@ -302,8 +305,7 @@ export const applyVersionBumpTool = defineTool({
         });
       } catch (err) {
         // Revert the package.json change on install failure
-        pkgJson[depField]![packageName] = currentRange;
-        writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+        writeFileSync(pkgPath, originalManifest, "utf8");
 
         const message = err instanceof Error ? err.message : String(err);
         return {
@@ -366,8 +368,7 @@ export const applyVersionBumpTool = defineTool({
       }
 
       if (!validationResult.passed) {
-        pkgJson[depField]![packageName] = currentRange;
-        writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+        writeFileSync(pkgPath, originalManifest, "utf8");
 
         try {
           await safeExecaCommand(effectiveInstallCommand, {
@@ -405,8 +406,7 @@ export const applyVersionBumpTool = defineTool({
         });
 
         if (!positivePhaseResult.passed) {
-          pkgJson[depField]![packageName] = currentRange;
-          writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+          writeFileSync(pkgPath, originalManifest, "utf8");
 
           try {
             await safeExecaCommand(effectiveInstallCommand, {

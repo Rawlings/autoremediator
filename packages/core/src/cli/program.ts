@@ -295,7 +295,11 @@ export function createProgram(): Command {
       .argument("[runId]", "Run id (or use --plan-id)")
       .option("--plan-id <id>", "Plan id, instead of a run id")
       .option("--item <id...>", "Apply only these plan items")
-      .option("--no-verify", "Do not verify each item after applying it"),
+      .option("--no-verify", "Do not verify each item after applying it")
+      .option("--repair", "Have an agent repair the project when an upgrade breaks it (needs a model)")
+      .option("--no-repair", "Never use an agent, even if a model is configured")
+      .option("--model <name>", OPTION_DESCRIPTIONS.model)
+      .option("--max-repair-rounds <n>", "Times the verifier's findings go back to the agent (default 3)", (value: string) => Number.parseInt(value, 10)),
   ).action(runsAction("apply", async ([runId], opts) => runRunsApply(runId, opts)));
 
   runsOptions(

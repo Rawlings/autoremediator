@@ -47,6 +47,15 @@ The CLI and SDK trust their caller. The [MCP server](integrations/mcp-server.md)
 The [GitHub App](integrations/github-app.md) accepts only relative `cwd` values inside the checkout
 and verifies webhook signatures.
 
+## Agent repair
+
+With a model configured, an agent can edit your project's source to adapt it to an upgrade (see
+[Repair with an agent](guides/plan-and-apply.md#repair-with-an-agent)). It works in a separate git
+checkout, with tools that cannot touch dependency files, CI, the policy, credentials or anything
+outside the checkout, under step, command, time and token limits. Its result is applied only if the
+deterministic verifier accepts it, and again checked once it is in your project. The files it reads
+and your checks' output are sent to your model provider.
+
 ## Runs on disk
 
 `planRemediation` and `applyPlan` keep a record under `.autoremediator/runs/`, including a copy of

@@ -113,6 +113,53 @@ describe("applyVersionBumpTool authentic on-disk verification", () => {
     expect(JSON.parse(restoredPkg).dependencies.lodash).toBe("^4.17.0");
   });
 
+  it("puts back the exact original bytes when the upgrade is rolled back", async () => {
+    const pkgPath = join(tempDir, "package.json");
+    // Tabs, CRLF line endings, no final newline, and a key order JSON.stringify would not choose.
+    const original = '{\r\n\t"name": "demo",\r\n\t"dependencies": {\r\n\t\t"lodash": "^4.17.0"\r\n\t}\r\n}';
+    writeFileSync(pkgPath, original);
+    writeFileSync(join(tempDir, "tsconfig.json"), "{}");
+    mockSafeExeca.mockImplementation(async (file: string, args: readonly string[]) => {
+      if (file === "npx" || args?.includes("tsc")) {
+        throw Object.assign(new Error("TS2322"), { exitCode: 2, stderr: "TS2322" });
+      }
+      return { exitCode: 0, stdout: "ok", stderr: "" } as any;
+    });
+
+    const result = await (applyVersionBumpTool as any).execute({
+      cwd: tempDir,
+      packageManager: "npm",
+      packageName: "lodash",
+      fromVersion: "4.17.0",
+      toVersion: "4.17.21",
+      dryRun: false,
+      runTests: false,
+      typecheck: true,
+    });
+
+    expect(result.applied).toBe(false);
+    expect(readFileSync(pkgPath, "utf8")).toBe(original);
+  });
+
+  it("keeps the file's indentation, line endings and final newline when it upgrades", async () => {
+    const pkgPath = join(tempDir, "package.json");
+    writeFileSync(pkgPath, '{\n\t"name": "demo",\n\t"dependencies": {\n\t\t"lodash": "^4.17.0"\n\t}\n}\n');
+
+    await (applyVersionBumpTool as any).execute({
+      cwd: tempDir,
+      packageManager: "npm",
+      packageName: "lodash",
+      fromVersion: "4.17.0",
+      toVersion: "4.17.21",
+      dryRun: false,
+      runTests: false,
+    });
+
+    expect(readFileSync(pkgPath, "utf8")).toBe(
+      '{\n\t"name": "demo",\n\t"dependencies": {\n\t\t"lodash": "^4.17.21"\n\t}\n}\n',
+    );
+  });
+
   it("preserves package.json untouched in dryRun mode", async () => {
     const pkgPath = join(tempDir, "package.json");
     const initialContent = JSON.stringify(

@@ -31,7 +31,7 @@ export class PathNotAllowedError extends Error {
 const MAX_DEPTH = 12;
 
 /** Resolve symlinks for the deepest existing ancestor so not-yet-created paths are still checked. */
-function realOrResolve(target: string): string {
+export function realOrResolve(target: string): string {
   const tail: string[] = [];
   let current = target;
   for (;;) {

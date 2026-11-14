@@ -15,10 +15,11 @@ implement is described in [How it works](../how-it-works.md).
 | `remediation/tools/`    | Single-purpose operations (version bump, override, patch apply, inventory, …).          |
 | `remediation/patch/`    | Patch generation behind the `PatchGenerator` port; diff and syntax validation.          |
 | `remediation/proof-of-fix/`, `remediation/refactor/` | Optional verification and codemods.                     |
+| `remediation/repair/`   | Agent repair: the scoped tools and guard, the built-in agent loop, and the attempt (checkout, upgrade, verify, feedback rounds). |
 | `remediation/verify/`   | The verifier: independent checks (scope, policy, supply chain, install, advisories, tests) that judge a changed project, whoever changed it. |
 | `intelligence/sources/` | One module per advisory or signal source (OSV, GitHub, NVD, KEV, EPSS, npm registry).   |
 | `scanner/`              | Scanner-output adapters and the git-aware delta scan.                                   |
-| `runs/`                 | Run records on disk: hash-chained ledger, project fingerprints, persisted snapshots, plans. Imports `platform/` only. `api/runs` drives it. |
+| `runs/`                 | Run records on disk: hash-chained ledger, project fingerprints, persisted snapshots, plans, git worktrees. Imports `platform/` only. `api/runs` drives it. |
 | `platform/`             | Shared kernel: types, policy, option schemas (`option-schemas.ts`, the one zod definition of every option), rollback, safe subprocess execution, evidence, jobs. |
 
 `platform/` must not import from the other directories, `catalog/` may use only `api/` and `platform/`,

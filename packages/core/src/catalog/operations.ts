@@ -202,13 +202,17 @@ export const OPERATIONS: readonly Operation[] = [
     name: "applyPlan",
     title: "Apply a plan",
     description:
-      "Apply the plan from a planRemediation run (by runId or planId). The project's manifests and lockfiles are snapshotted first, each item is recorded as it is attempted, and the run can be resumed or rolled back. Refused if the project, lockfiles or policy changed since the plan was made. Model-generated patches are not part of a plan.",
+      "Apply the plan from a planRemediation run (by runId or planId). The project's manifests and lockfiles are snapshotted first, each item is recorded as it is attempted and verified, and the run can be resumed or rolled back. Refused if the project, lockfiles or policy changed since the plan was made. If an upgrade breaks the project's checks and a model is configured, an agent repairs the project's source in an isolated checkout and the result is kept only if the verifier accepts it. Model-generated patches are not part of a plan.",
     input: applyPlanOptionsSchema,
     annotations: MUTATING,
     response: RESPONSES.runReport,
     mcp: true,
     http: { method: "POST", path: "/runs/apply", positional: ["runId", "planId"] },
-    handler: (options, context) => context.api.applyPlanFn(options),
+    handler: ({ maxRepairRounds, ...options }, context) =>
+      context.api.applyPlanFn({
+        ...options,
+        ...(maxRepairRounds ? { repairBudget: { maxRepairRounds } } : {}),
+      }),
   }),
   defineOperation({
     name: "resumeRun",

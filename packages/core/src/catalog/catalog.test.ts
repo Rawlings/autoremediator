@@ -311,6 +311,26 @@ describe("run operations", () => {
     }
   });
 
+  it("passes the repair options to applyPlan, mapping the round limit into a budget", async () => {
+    const applyPlanFn = vi.fn();
+    const deps = fakeDeps({ applyPlanFn: applyPlanFn as unknown as ApiDeps["applyPlanFn"] });
+    const runId = "run_" + "a".repeat(20);
+
+    await callMcpOperation("applyPlan", { runId, repair: true, model: "anthropic:claude-sonnet-5-5", maxRepairRounds: 2 }, deps);
+    expect(applyPlanFn).toHaveBeenCalledWith({
+      runId,
+      repair: true,
+      model: "anthropic:claude-sonnet-5-5",
+      repairBudget: { maxRepairRounds: 2 },
+    });
+
+    const bad = await callMcpOperation("applyPlan", { runId, maxRepairRounds: 0 }, deps);
+    expect(bad.isError).toBe(true);
+    // The SDK-only knobs are not part of the wire schema.
+    const smuggled = await callMcpOperation("applyPlan", { runId, repairAgent: {} }, deps);
+    expect(smuggled.isError).toBe(true);
+  });
+
   it("accepts only real check names when verifying", async () => {
     const deps = fakeDeps({ verifyRunFn: vi.fn() as unknown as ApiDeps["verifyRunFn"] });
     const runId = "run_" + "a".repeat(20);

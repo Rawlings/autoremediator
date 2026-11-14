@@ -48,6 +48,48 @@ Reviewing the plan is the approval step; `--item <id>` applies only some of it.
 The run ends `applied` (every item applied), `partial` (some not, including ones that were rejected)
 or `failed`.
 
+## Repair with an agent
+
+An upgrade that fixes the advisory can still break your project: a removed argument, a renamed
+export. When an item fails the project's own checks (`--run-tests`, `--typecheck`) and a model is
+configured, `runs apply` hands it to an agent instead of giving up:
+
+```bash
+AUTOREMEDIATOR_MODEL=anthropic:claude-sonnet-5-5 autoremediator runs apply <runId>
+autoremediator runs apply <runId> --model openai:gpt-5 --max-repair-rounds 2
+autoremediator runs apply <runId> --no-repair     # never use a model
+```
+
+Repair is on when a model is configured (`--model` or `AUTOREMEDIATOR_MODEL`) and off otherwise;
+`--repair` without a model is an error before anything changes, and `--no-repair` never spends
+tokens. It only applies to failures of your own checks, not to a failed install or a policy block.
+The provider package (`@ai-sdk/<provider>`) must be installed next to autoremediator.
+
+What happens:
+
+1. **An isolated checkout.** The project is checked out as a git worktree in your user cache
+   directory (not inside the project), carrying your uncommitted changes, and the upgrade is applied
+   and installed there. Your project is not touched while the agent works.
+2. **The agent edits project source.** It has a small set of tools: read files, search, list,
+   edit or create `.js`/`.ts` source files, read the upgraded package's changelog and type
+   definitions, and run your type check, tests or build, and nothing else. It cannot change
+   `package.json`, lockfiles, CI workflows or the policy file, cannot read credentials (`.env`,
+   `.npmrc`, keys), cannot leave the checkout, and is limited in steps, commands, time and tokens.
+3. **The verifier decides.** Each time the agent submits, the verifier runs on the checkout. If it
+   fails, its findings go back to the agent, up to `--max-repair-rounds` (default 3). The agent's own
+   opinion that it succeeded counts for nothing.
+4. **Only a verified change is applied.** It is brought into your project as a patch, re-checked there
+   (scope, policy, supply chain, advisories), and taken back out with the project restored if that
+   fails. Source edits are included in the run's snapshot, so `runs rollback` undoes them too.
+
+Everything is kept with the run, under `attempts/<id>/`: the record, the patch, the agent's
+transcript and the verification. `runs show` lists the attempts.
+
+The model sees the files it reads and the output of your checks, so those go to your model
+provider. Credentials are excluded, but source code is not: do not enable this where that is not
+acceptable. File contents and package documentation are treated as data, and the agent is told to
+ignore instructions in them; the scope limits and the verifier are what hold if that fails.
+
 ## Verify
 
 `runs verify` (`verifyRun`) judges the project as it is now against what the run set out to do. It is

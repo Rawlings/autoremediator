@@ -10,7 +10,7 @@ import {
 import { join } from "node:path";
 
 import type { RepoFingerprint } from "./fingerprint.js";
-import { isRunId, newRunId } from "./ids.js";
+import { isAttemptId, isRunId, newRunId } from "./ids.js";
 import { Ledger } from "./ledger.js";
 import type { RemediationReport } from "../platform/types.js";
 import type { RemediationPlan } from "./plan.js";
@@ -33,11 +33,37 @@ export interface RunRecord {
   createdAt: string;
   updatedAt: string;
   planId?: string;
+  /** An agent repaired project source in this run, so a verification must allow source edits. */
+  allowSourceEdits?: boolean;
   /** Inputs the plan was made against. */
   base: RepoFingerprint;
   /** Inputs as the last completed step left them; a rollback is only safe while they still match. */
   after?: RepoFingerprint;
   error?: string;
+}
+
+export type AttemptStatus =
+  | "verified"
+  | "rejected"
+  | "failed"
+  | "promoted"
+  | "promotion-failed";
+
+/** One try, by an agent, at making an upgrade work. */
+export interface AttemptRecord {
+  attemptId: string;
+  itemId: string;
+  agentId: string;
+  status: AttemptStatus;
+  /** What happened, in a sentence: the agent's summary, or why it was rejected. */
+  reason: string;
+  /** Times the verifier's findings were handed back to the agent. */
+  rounds: number;
+  changedFiles: string[];
+  inputTokens?: number;
+  outputTokens?: number;
+  startedAt: string;
+  endedAt: string;
 }
 
 export interface RunInit {
@@ -141,6 +167,35 @@ export class RunStore {
     return existsSync(file)
       ? (JSON.parse(readFileSync(file, "utf8")) as RemediationReport)
       : undefined;
+  }
+
+  /** Directory of one attempt; both ids are validated. */
+  attemptDir(runId: string, attemptId: string): string {
+    if (!isAttemptId(attemptId)) throw new Error(`Invalid attempt id: ${JSON.stringify(attemptId)}`);
+    return join(this.runDir(runId), "attempts", attemptId);
+  }
+
+  /** An attempt's record and the files that explain it (`diff.patch`, `transcript.jsonl`, ...). */
+  writeAttempt(runId: string, record: AttemptRecord, files: Record<string, string> = {}): void {
+    const dir = this.attemptDir(runId, record.attemptId);
+    mkdirSync(dir, { recursive: true });
+    for (const [name, content] of Object.entries(files)) writeFileSync(join(dir, name), content, "utf8");
+    this.writeJson(runId, `attempts/${record.attemptId}/attempt.json`, record);
+  }
+
+  listAttempts(runId: string): AttemptRecord[] {
+    const root = join(this.runDir(runId), "attempts");
+    if (!existsSync(root)) return [];
+    const records: AttemptRecord[] = [];
+    for (const name of readdirSync(root)) {
+      if (!isAttemptId(name)) continue;
+      try {
+        records.push(JSON.parse(readFileSync(join(root, name, "attempt.json"), "utf8")) as AttemptRecord);
+      } catch {
+        // Skip a damaged attempt rather than hiding the others.
+      }
+    }
+    return records.toSorted((a, b) => a.startedAt.localeCompare(b.startedAt));
   }
 
   /** Write atomically (temp file, then rename), so readers never see a half-written file. */

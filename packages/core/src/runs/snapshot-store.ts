@@ -68,3 +68,26 @@ export function loadSnapshot(dir: string): ProjectSnapshot {
     fileSnapshots,
   };
 }
+
+/**
+ * Record more files in an existing snapshot (their content before a later change), keeping what
+ * is already there: the first recorded content of a file is the one that matters for a rollback.
+ */
+export function addToSnapshot(dir: string, files: ReadonlyMap<string, string | null>): void {
+  const manifestPath = join(dir, "snapshot.json");
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as SnapshotManifest;
+  const blobs = join(dir, "blobs");
+  mkdirSync(blobs, { recursive: true });
+  for (const [path, content] of files) {
+    if (path in manifest.files) continue;
+    if (content === null) {
+      manifest.files[path] = null;
+      continue;
+    }
+    const bytes = toBytes(content);
+    const hash = sha256(bytes);
+    writeFileSync(join(blobs, hash), bytes);
+    manifest.files[path] = hash;
+  }
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+}

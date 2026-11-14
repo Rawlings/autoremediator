@@ -72,6 +72,11 @@ const twoItemReport = () =>
     result({ packageName: "qs", fromVersion: "6.0.0", toVersion: undefined, strategy: "none", unresolvedReason: "no-safe-version" }),
   ]);
 
+/** No agent is configured in these tests, so an attempt is never started. */
+const noAttempt: RunDeps["attempt"] = async () => {
+  throw new Error("no repair attempt expected");
+};
+
 const passing: VerificationResult = {
   passed: true,
   checks: [{ name: "vuln-gone", status: "passed", message: "ok", durationMs: 0 }],
@@ -83,6 +88,7 @@ function bumping(calls: string[] = []): RunDeps {
   return {
     reinstall: vi.fn(async () => undefined),
     verify: vi.fn(async () => passing),
+    attempt: noAttempt,
     async applyItem(item) {
       calls.push(item.packageName);
       const manifest = pkg();
@@ -219,6 +225,7 @@ describe("applyPlan", () => {
     const deps: RunDeps = {
       reinstall: bumping().reinstall,
       verify: bumping().verify,
+      attempt: noAttempt,
       async applyItem(item) {
         if (item.packageName === "lodash") {
           return result({ applied: false, dryRun: false, unresolvedReason: "install-failed", message: "install failed" });
@@ -245,6 +252,7 @@ describe("resumeRun", () => {
     const crashing: RunDeps = {
       reinstall: bumping().reinstall,
       verify: bumping().verify,
+      attempt: noAttempt,
       async applyItem(item, context) {
         if (item.packageName === "minimist") throw new Error("disk on fire");
         return bumping(calls).applyItem(item, context);
@@ -270,6 +278,7 @@ describe("resumeRun", () => {
     const halfDone: RunDeps = {
       reinstall: bumping().reinstall,
       verify: bumping().verify,
+      attempt: noAttempt,
       async applyItem(item, context) {
         if (item.packageName === "minimist") {
           writePkg({ lodash: "4.17.21", minimist: "1.2.0", stray: "0.0.1" });

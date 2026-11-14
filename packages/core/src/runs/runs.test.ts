@@ -58,6 +58,17 @@ describe("Ledger", () => {
     expect(again.read().map((event) => event.seq)).toEqual([1, 2]);
   });
 
+  it("stays one chain when several holders of the same file append in turn", () => {
+    const file = join(dir, "steps.jsonl");
+    const one = new Ledger(file);
+    const two = new Ledger(file);
+    one.append("a");
+    two.append("b");
+    one.append("c");
+    expect(one.read().map((event) => event.seq)).toEqual([1, 2, 3]);
+    expect(two.verify()).toEqual({ ok: true });
+  });
+
   it("detects edited, removed and reordered events", () => {
     const file = join(dir, "steps.jsonl");
     const ledger = new Ledger(file);

@@ -100,6 +100,9 @@ const depsThat = (change: () => void): RunDeps => ({
   },
   reinstall: vi.fn(async () => undefined),
   verify: (request) => verify(request),
+  attempt: async () => {
+    throw new Error("no repair attempt expected");
+  },
 });
 
 describe("applyPlan with the real verifier", () => {

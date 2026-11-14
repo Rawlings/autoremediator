@@ -88,34 +88,6 @@ export function setOverrideValue(
   pkgJson.resolutions = { ...pkgJson.resolutions, [packageName]: version };
 }
 
-export function restoreOverrideValue(
-  pkgJson: RawPackageJson,
-  packageManager: PackageManager,
-  packageName: string,
-  previousValue?: string,
-): void {
-  if (packageManager === "npm" || packageManager === "bun" || packageManager === "deno") {
-    pkgJson.overrides = restoreRecord(pkgJson.overrides, packageName, previousValue);
-    return;
-  }
-
-  if (packageManager === "pnpm") {
-    pkgJson.pnpm = {
-      ...pkgJson.pnpm,
-      overrides: restoreRecord(pkgJson.pnpm?.overrides, packageName, previousValue),
-    };
-    if (!pkgJson.pnpm.overrides) {
-      delete pkgJson.pnpm.overrides;
-    }
-    if (Object.keys(pkgJson.pnpm).length === 0) {
-      delete pkgJson.pnpm;
-    }
-    return;
-  }
-
-  pkgJson.resolutions = restoreRecord(pkgJson.resolutions, packageName, previousValue);
-}
-
 // ---- Deno native (deno.json import map) override helpers ----
 
 export interface DenoJson {
@@ -178,20 +150,4 @@ export function restoreDenoJsonImportValue(
   }
 
   denoJson.imports = Object.keys(imports).length > 0 ? imports : undefined;
-}
-
-function restoreRecord(
-  record: Record<string, string> | undefined,
-  key: string,
-  previousValue?: string,
-): Record<string, string> | undefined {
-  const nextRecord = { ...record };
-
-  if (previousValue === undefined) {
-    delete nextRecord[key];
-  } else {
-    nextRecord[key] = previousValue;
-  }
-
-  return Object.keys(nextRecord).length > 0 ? nextRecord : undefined;
 }

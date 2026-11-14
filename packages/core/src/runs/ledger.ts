@@ -27,7 +27,6 @@ function hashEvent(prevHash: string, event: Omit<StepEvent, "prevHash" | "hash">
 /** Append-only, hash-chained record of what a run did (`steps.jsonl`). */
 export class Ledger {
   readonly file: string;
-  private last: { seq: number; hash: string } | undefined;
 
   constructor(file: string) {
     this.file = file;
@@ -42,19 +41,13 @@ export class Ledger {
   }
 
   append(type: string, data: Record<string, unknown> = {}): StepEvent {
-    if (!this.last) {
-      const events = this.read();
-      const tail = events.at(-1);
-      this.last = tail ? { seq: tail.seq, hash: tail.hash } : { seq: 0, hash: GENESIS };
-    }
-    const base = { seq: this.last.seq + 1, at: new Date().toISOString(), type, data };
-    const event: StepEvent = {
-      ...base,
-      prevHash: this.last.hash,
-      hash: hashEvent(this.last.hash, base),
-    };
+    // Always continue from what is on disk: other holders of this file (one per code path that
+    // asked the store for the ledger) may have appended since.
+    const tail = this.read().at(-1);
+    const last = tail ? { seq: tail.seq, hash: tail.hash } : { seq: 0, hash: GENESIS };
+    const base = { seq: last.seq + 1, at: new Date().toISOString(), type, data };
+    const event: StepEvent = { ...base, prevHash: last.hash, hash: hashEvent(last.hash, base) };
     appendFileSync(this.file, `${JSON.stringify(event)}\n`, "utf8");
-    this.last = { seq: event.seq, hash: event.hash };
     return event;
   }
 

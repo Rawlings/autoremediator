@@ -16,7 +16,7 @@ Every function returns a promise unless noted. Option names are identical to the
 | -------- | ------- |
 | `remediate(cveId, options?)` | `RemediationReport` |
 | `planRemediation(cveId, options?)` | `RemediationReport` with `runId` and `planId`. Always a dry run; do not pass `dryRun` or `preview`. Records the [plan](../guides/plan-and-apply.md) unless `evidence` is `false` |
-| `applyPlan({ runId \| planId, itemIds?, cwd? })` | `RunReport`: each item's outcome, the status, what is pending |
+| `applyPlan({ runId \| planId, itemIds?, verify?, repair?, model?, repairAgent?, repairBudget?, cwd? })` | `RunReport`: each item's outcome (with `repair` when an agent was asked), the status, what is pending. `repairAgent` plugs in your own [`RepairAgent`](../guides/plan-and-apply.md#repair-with-an-agent) |
 | `resumeRun({ runId, cwd? })` | `RunReport` |
 | `rollbackRun({ runId, force?, reinstall?, cwd? })` | `RollbackReport` |
 | `verifyRun({ runId, checks?, offline?, cwd? })` | `VerificationResult` (plus `runId`): each check's status and details, and the first that failed |

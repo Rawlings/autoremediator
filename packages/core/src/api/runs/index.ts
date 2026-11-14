@@ -7,25 +7,34 @@ import {
 } from "../../platform/package-manager/index.js";
 import { withRepoLock } from "../../platform/repo-lock.js";
 import { createProjectSnapshot, restoreProjectSnapshot } from "../../platform/rollback.js";
+import { getModelSpec } from "../../platform/config.js";
+import {
+  DEFAULT_REPAIR_BUDGET,
+  type RepairAgent,
+  type RepairBudget,
+} from "../../platform/repair-agent.js";
 import { safeExeca } from "../../platform/safe-exec.js";
 import type { PatchResult, RemediateOptions, RemediationReport } from "../../platform/types.js";
 import { resolveConstraints } from "../context.js";
 import { applyPackageOverrideTool } from "../../remediation/tools/apply-package-override/index.js";
+import { resolveLanguageModel } from "../../remediation/patch/model.js";
+import { runRepairAttempt, type AttemptRequest, type AttemptResult } from "../../remediation/repair/attempt.js";
+import { createBuiltinRepairAgent } from "../../remediation/repair/builtin-agent.js";
 import { applyVersionBumpTool } from "../../remediation/tools/apply-version-bump.js";
 import { fingerprintRepo, sameInputs } from "../../runs/fingerprint.js";
 import { isPlanId, isRunId } from "../../runs/ids.js";
 import type { StepEvent } from "../../runs/ledger.js";
 import { buildPlan, type PlanItem, type PlanOptions, type PlanSkip, type RemediationPlan } from "../../runs/plan.js";
-import { RunStore, type RunRecord, type RunStatus } from "../../runs/run-store.js";
+import { RunStore, type AttemptRecord, type RunRecord, type RunStatus } from "../../runs/run-store.js";
 import { loadSnapshot, saveSnapshot } from "../../runs/snapshot-store.js";
+import { repairItem, SNAPSHOT_DIR, type RepairItemResult } from "./repair.js";
 import type { CheckName, VerificationResult, VerifyRequest } from "../../remediation/verify/types.js";
 import { verify } from "../../remediation/verify/verifier.js";
 
-export type { RunRecord, RunStatus } from "../../runs/run-store.js";
+export type { AttemptRecord, AttemptStatus, RunRecord, RunStatus } from "../../runs/run-store.js";
 export type { PlanItem, PlanSkip, RemediationPlan } from "../../runs/plan.js";
 export type { CheckName, CheckResult, VerificationResult } from "../../remediation/verify/types.js";
 
-const SNAPSHOT_DIR = "snapshot";
 const SNAPSHOT_MANIFEST = `${SNAPSHOT_DIR}/snapshot.json`;
 
 // ---------------------------------------------------------------------------
@@ -52,6 +61,21 @@ export interface ApplyPlanOptions {
    * already ran inside the apply step when requested.
    */
   verify?: boolean;
+  /**
+   * When an upgrade breaks the project's type check or tests, have an agent repair the project's
+   * source in an isolated checkout, and keep the result only if the verifier accepts it. Default:
+   * on when a model is configured (`model` or `AUTOREMEDIATOR_MODEL`), off otherwise. `true`
+   * without a model is an error; `false` never spends tokens.
+   */
+  repair?: boolean;
+  /** Language model for repair, as `<provider>:<model-id>` (default: `AUTOREMEDIATOR_MODEL`). */
+  model?: string;
+  /** SDK only: supply the agent yourself instead of configuring a model. */
+  repairAgent?: RepairAgent;
+  /** Limits for one repair attempt (defaults: 40 steps, 10 minutes, 12 commands, 3 rounds). */
+  repairBudget?: Partial<RepairBudget>;
+  /** SDK only: cancel in-flight repairs. */
+  signal?: AbortSignal;
 }
 
 export interface VerifyRunOptions extends RunQuery {
@@ -88,6 +112,8 @@ export interface ItemOutcome {
   unresolvedReason?: string;
   /** Set when verification ran for this item; a failed one is why the item was taken back out. */
   verification?: VerificationResult;
+  /** Set when an agent was asked to repair this item. */
+  repair?: { attemptId: string; status: string; rounds: number; reason: string };
 }
 
 export interface RunReport {
@@ -108,6 +134,8 @@ export interface RunDetails {
   plan?: RemediationPlan;
   /** Outcome of every plan item that has been attempted, from the ledger. */
   items: ItemOutcome[];
+  /** Agent repair attempts, oldest first. */
+  attempts: AttemptRecord[];
   ledger: { ok: boolean; reason?: string; events: StepEvent[] };
 }
 
@@ -130,6 +158,8 @@ export interface RunDeps {
   /** Install exactly what the restored lockfile says. */
   reinstall: (context: { cwd: string; options: PlanOptions | undefined }) => Promise<void>;
   verify: (request: VerifyRequest) => Promise<VerificationResult>;
+  /** Try to repair an upgrade in an isolated checkout. */
+  attempt: (request: AttemptRequest) => Promise<AttemptResult>;
 }
 
 const defaultRunDeps: RunDeps = {
@@ -177,6 +207,7 @@ const defaultRunDeps: RunDeps = {
   },
 
   verify,
+  attempt: (request) => runRepairAttempt(request),
 };
 
 // ---------------------------------------------------------------------------
@@ -260,6 +291,7 @@ function outcomesFrom(events: StepEvent[], plan: RemediationPlan | undefined): I
       ...(typeof event.data["unresolvedReason"] === "string"
         ? { unresolvedReason: event.data["unresolvedReason"] }
         : {}),
+      ...(event.data["repair"] ? { repair: event.data["repair"] as ItemOutcome["repair"] } : {}),
     });
   }
   return [...byItem.values()];
@@ -276,6 +308,7 @@ export function getRun(query: RunQuery): RunDetails {
     run,
     ...(plan ? { plan } : {}),
     items: outcomesFrom(events, plan),
+    attempts: store.listAttempts(run.runId),
     ledger: check.ok ? { ok: true, events } : { ok: false, reason: check.reason, events },
   };
 }
@@ -310,6 +343,37 @@ function resolveRun(store: RunStore, options: ApplyPlanOptions): RunRecord {
     return match;
   }
   throw new Error("applyPlan needs a runId or a planId.");
+}
+
+/** Failures of the project's own checks after an upgrade: the ones an agent can do something about. */
+const REPAIRABLE = new Set(["validation-failed", "breaking-change-unresolved"]);
+
+/**
+ * The agent to use for repairs, or undefined when repair is off. Asking for repair explicitly
+ * without anything to repair with is an error; a model that merely happens to be configured but
+ * cannot be loaded only disables repair, and the run says so.
+ */
+async function resolveRepairAgent(
+  options: ApplyPlanOptions,
+  note: (message: string) => void,
+): Promise<RepairAgent | undefined> {
+  if (options.repair === false) return undefined;
+  if (options.repairAgent) return options.repairAgent;
+
+  const spec = getModelSpec(options.model);
+  if (!spec) {
+    if (options.repair === true) {
+      throw new Error('Repair needs a model: pass `model` ("<provider>:<model-id>") or set AUTOREMEDIATOR_MODEL.');
+    }
+    return undefined;
+  }
+  try {
+    return createBuiltinRepairAgent(await resolveLanguageModel(spec));
+  } catch (error) {
+    if (options.repair === true) throw error;
+    note(`repair unavailable: ${error instanceof Error ? error.message : String(error)}`);
+    return undefined;
+  }
 }
 
 const APPLICABLE = new Set<RunStatus>(["planned", "applying", "failed", "partial"]);
@@ -362,9 +426,13 @@ export async function applyPlan(
     );
   }
 
+  const notes: string[] = [];
+  const agent = await resolveRepairAgent(options, (message) => notes.push(message));
+
   const release = store.acquireApplyLock(runId);
   const outcomes: ItemOutcome[] = [];
   try {
+    for (const note of notes) ledger.append("repair.unavailable", { message: note });
     if (!store.hasFile(runId, SNAPSHOT_MANIFEST)) {
       saveSnapshot(join(store.runDir(runId), SNAPSHOT_DIR), await createProjectSnapshot(cwd));
       ledger.append("snapshot.saved", { dir: SNAPSHOT_DIR });
@@ -397,11 +465,46 @@ export async function applyPlan(
         break;
       }
 
-      const ok = result.applied && !result.unresolvedReason;
+      let ok = result.applied && !result.unresolvedReason;
       let message = result.message;
       let verification: VerificationResult | undefined;
+      let repair: ItemOutcome["repair"];
 
-      if (ok && verifyItems) {
+      // The upgrade works for the dependency but breaks the project: ask an agent to adapt it.
+      if (!ok && agent && result.unresolvedReason && REPAIRABLE.has(result.unresolvedReason)) {
+        const others = plan.items
+          .filter((candidate) => candidate.itemId !== item.itemId && !applied.has(candidate.itemId))
+          .map((candidate) => candidate.packageName);
+        const repaired: RepairItemResult = await repairItem(
+          {
+            cwd,
+            store,
+            runId,
+            item,
+            plan,
+            advisories: advisories ? [advisories] : [],
+            expectedRemaining: [...skippedNames, ...others],
+            agent,
+            budget: { ...DEFAULT_REPAIR_BUDGET, ...options.repairBudget },
+            signal: options.signal ?? new AbortController().signal,
+          },
+          {
+            attempt: deps.attempt,
+            promote: { verify: deps.verify, reinstall: () => deps.reinstall({ cwd, options: plan.options }) },
+          },
+        );
+        repair = { attemptId: repaired.attemptId, status: repaired.status, rounds: repaired.rounds, reason: repaired.message };
+        if (repaired.status === "promoted") {
+          ok = true;
+          message = `Upgraded ${item.packageName} to ${item.toVersion} and repaired the project with an agent: ${repaired.message}`;
+          verification = repaired.verification;
+          store.update(runId, { allowSourceEdits: true });
+        } else {
+          message = `${message} An agent repair was tried and not accepted (${repaired.status}): ${repaired.message}`;
+        }
+      }
+
+      if (ok && verifyItems && !repair) {
         const others = plan.items
           .filter((candidate) => candidate.itemId !== item.itemId && !applied.has(candidate.itemId))
           .map((candidate) => candidate.packageName);
@@ -448,12 +551,14 @@ export async function applyPlan(
         message,
         ...(result.unresolvedReason ? { unresolvedReason: result.unresolvedReason } : {}),
         ...(verification ? { verified: true } : {}),
+        ...(repair ? { repair } : {}),
         filesSha256: after.filesSha256,
       });
       store.update(runId, { after });
       outcomes.push({
         ...outcomeOf(item, ok ? "applied" : "failed", message, result.unresolvedReason),
         ...(verification ? { verification } : {}),
+        ...(repair ? { repair } : {}),
       });
       if (ok) applied.add(item.itemId);
     }
@@ -669,7 +774,7 @@ export async function verifyRun(
     ],
     options: {
       ...verifyOptionsOf(plan.options),
-      allowSourceEdits: plan.options.breakingChangeRefactor,
+      allowSourceEdits: run.allowSourceEdits === true || plan.options.breakingChangeRefactor,
       ...(options.offline ? { offline: true } : {}),
     },
     ...(options.checks ? { checks: options.checks } : {}),

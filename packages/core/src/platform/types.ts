@@ -560,7 +560,7 @@ export interface RemediationConstraints {
 }
 
 export interface LlmUsageMetrics {
-  purpose: "patch-generation";
+  purpose: "patch-generation" | "upgrade-repair";
   model: string;
   latencyMs?: number;
   inputTokens?: number;

@@ -423,6 +423,23 @@ export const applyPlanOptionsSchema = z
       .boolean()
       .optional()
       .describe("Verify each item after applying it and take it back out if it fails (default: true)"),
+    repair: z
+      .boolean()
+      .optional()
+      .describe(
+        "When an upgrade breaks the project's type check or tests, have an agent repair the project's source in an isolated checkout and keep the result only if the verifier accepts it. Default: on when a model is configured; true without a model is an error",
+      ),
+    model: z
+      .string()
+      .optional()
+      .describe('Language model for repair as "<provider>:<model-id>" (default: AUTOREMEDIATOR_MODEL)'),
+    maxRepairRounds: z
+      .number()
+      .int()
+      .min(1)
+      .max(10)
+      .optional()
+      .describe("Times the verifier's findings are handed back to the agent per item (default: 3)"),
   })
   .strict();
 
