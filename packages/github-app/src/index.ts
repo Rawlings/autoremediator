@@ -11,6 +11,8 @@ export { dispatchGitHubEvent } from "./events.js";
 export { createInMemoryAppStateStore, createFileAppStateStore } from "./state.js";
 export { createDefaultRemediationHandler } from "./remediation-handler.js";
 export { fetchRepoConfig } from "./repo-config.js";
+export { regexRepairStrategy } from "./healing/pr-healer.js";
+export type { RepairRequest, RepairStrategy } from "./healing/repair-strategy.js";
 export { DEFAULT_REPO_CONFIG } from "./types.js";
 export { createPullRequestWithOctokit, pushBranchWithToken } from "./pr-creation.js";
 export type { CreatePullRequestParams, PushBranchParams } from "./pr-creation.js";

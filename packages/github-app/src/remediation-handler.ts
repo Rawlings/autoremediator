@@ -8,8 +8,11 @@ import { remediateFromScan, type CveSeverity, type ScanReport } from "autoremedi
 import { codeScanningAlertTarget, dependabotAlertTarget } from "./alerts.js";
 import { HELP_TEXT, parseComment } from "./commands.js";
 import { summarizeScanReport } from "./summary.js";
+import { botKindOfBranch, isForkPullRequest } from "./doctor/bot-pr.js";
+import { runBotPrDoctor } from "./doctor/bot-pr-doctor.js";
+import { collectCheckRunLogs } from "./diagnostics/check-run-logs.js";
 import { parseCheckRunLogs } from "./diagnostics/log-parser.js";
-import { healPullRequest } from "./healing/pr-healer.js";
+import { healPullRequest, regexRepairStrategy } from "./healing/pr-healer.js";
 import { fetchRepoConfig } from "./repo-config.js";
 import type {
   AutoremediatorRepoConfig,
@@ -33,6 +36,11 @@ const SEVERITY_RANK: Record<CveSeverity, number> = {
   HIGH: 3,
   CRITICAL: 4,
 };
+
+function headRefOf(pullRequest: Record<string, unknown>): string {
+  const head = pullRequest.head as Record<string, unknown> | undefined;
+  return typeof head?.ref === "string" ? head.ref : "";
+}
 
 export type RemediationHandler = (
   context: RemediationTriggerContext,
@@ -93,9 +101,28 @@ export function createDefaultRemediationHandler(
       const checkRun = context.payload.check_run as Record<string, unknown> | undefined;
       const pullRequests =
         (checkRun?.pull_requests as Array<Record<string, unknown>> | undefined) ?? [];
+      // Bot branches are the doctor's, even when a dependency name puts "autoremediator" in them.
+      const botPr = pullRequests.find((p) => botKindOfBranch(headRefOf(p)) !== undefined);
+      if (botPr) {
+        if (typeof botPr.number !== "number" || !repoRef || !checkRun) return;
+        // The webhook shows the head repository; the doctor checks again against the live pull request.
+        if (isForkPullRequest(botPr)) return { status: "success", reason: "Pull request comes from a fork" };
+        return runBotPrDoctor({
+          octokit,
+          owner: repoRef.owner,
+          repo: repoRef.repo,
+          pullNumber: botPr.number,
+          checkRun,
+          repoConfig,
+          stateStore: options.stateStore,
+          strategy: options.repairStrategy ?? regexRepairStrategy,
+          selfAppId: options.selfAppId,
+          logger: options.onError,
+        });
+      }
+
       const pr = pullRequests.find((p) => {
-        const head = p.head as Record<string, unknown> | undefined;
-        const ref = typeof head?.ref === "string" ? head.ref : "";
+        const ref = headRefOf(p);
         return ref.startsWith("autoremediator/") || ref.includes("autoremediator");
       });
 
@@ -107,41 +134,7 @@ export function createDefaultRemediationHandler(
         return { status: "success", reason: "PR auto-healing disabled in repo config" };
       }
 
-      let rawLogs = [
-        (checkRun?.output as Record<string, unknown> | undefined)?.title,
-        (checkRun?.output as Record<string, unknown> | undefined)?.summary,
-        (checkRun?.output as Record<string, unknown> | undefined)?.text,
-      ]
-        .filter(Boolean)
-        .join("\n");
-
-      if (typeof checkRun?.id === "number") {
-        try {
-          const annRes = await octokit.checks.listAnnotations({
-            owner: repoRef.owner,
-            repo: repoRef.repo,
-            check_run_id: checkRun.id,
-          });
-          if (Array.isArray(annRes?.data)) {
-            const annLines = annRes.data.map(
-              (ann) =>
-                `${ann.path}:${ann.start_line || 1}:1 - error ${ann.title || "check"}: ${ann.message || ""}`,
-            );
-            rawLogs += "\n" + annLines.join("\n");
-          }
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          void options.onError?.({
-            timestamp: new Date().toISOString(),
-            source: "github-app",
-            level: "warn",
-            context: "remediation-handler.listAnnotations",
-            message: `Failed to fetch check run annotations: ${message}`,
-            error: message,
-            details: { owner: repoRef.owner, repo: repoRef.repo, checkRunId: checkRun.id },
-          });
-        }
-      }
+      const rawLogs = await collectCheckRunLogs(octokit, repoRef, checkRun, options.onError);
 
       const diagnostic = parseCheckRunLogs(rawLogs);
       const head = pr.head as Record<string, unknown> | undefined;
@@ -466,7 +459,8 @@ async function prepareCommentRun(
   options: DefaultRemediationHandlerOptions,
 ): Promise<{ done: RemediationJobResult | undefined } | { run: TargetedRun }> {
   const comment = payload.comment as Record<string, unknown> | undefined;
-  const issueNumber = (payload.issue as Record<string, unknown> | undefined)?.number;
+  const issue = payload.issue as Record<string, unknown> | undefined;
+  const issueNumber = issue?.number;
   const login = (comment?.user as Record<string, unknown> | undefined)?.login;
   const command = parseComment(typeof comment?.body === "string" ? comment.body : "");
   if (!command || !repo || typeof issueNumber !== "number" || typeof login !== "string") {
@@ -484,6 +478,17 @@ async function prepareCommentRun(
     return { done: { status: "success", reason: "Commenter lacks write access" } };
   }
 
+  if (command.name === "rollback") {
+    await postComment(
+      octokit,
+      repo,
+      issueNumber,
+      await rollbackReply(octokit, repo, issueNumber, Boolean(issue?.pull_request)),
+      options,
+    );
+    return { done: { status: "success" } };
+  }
+
   if (command.name === "help" || command.advisoryIds.length === 0) {
     const note =
       command.name !== "help" && command.advisoryIds.length === 0
@@ -493,14 +498,118 @@ async function prepareCommentRun(
     return { done: { status: "success" } };
   }
 
+  const modeKey = (id: string) => `${repo.owner}/${repo.repo}:${id}`.toLowerCase();
+  let mode: "plan" | "fix";
+  if (command.name === "retry") {
+    // Retry runs each advisory the way it was last run in this repository. That history lives in
+    // the state store, so without one there is nothing to repeat.
+    const known = command.advisoryIds.map((id) => ({
+      id,
+      mode: options.stateStore?.getRemediationMode(modeKey(id)),
+    }));
+    const unknown = known.filter((entry) => entry.mode === undefined).map((entry) => entry.id);
+    if (unknown.length > 0) {
+      await postComment(
+        octokit,
+        repo,
+        issueNumber,
+        `Nothing to retry for ${unknown.join(", ")}: no earlier \`plan\` or \`fix\` of it was recorded for this repository. Use \`/autoremediator plan\` or \`/autoremediator fix\` first.`,
+        options,
+      );
+      return { done: { status: "success", reason: "Nothing to retry" } };
+    }
+    const modes = new Set(known.map((entry) => entry.mode));
+    if (modes.size > 1) {
+      await postComment(
+        octokit,
+        repo,
+        issueNumber,
+        "Those advisories were last run in different modes (plan and fix). Retry them in separate comments.",
+        options,
+      );
+      return { done: { status: "success", reason: "Mixed retry modes" } };
+    }
+    mode = known[0]?.mode === "fix" ? "fix" : "plan";
+  } else {
+    mode = command.name === "fix" ? "fix" : "plan";
+  }
+
+  // Remember the request before running it, so a run that fails can still be retried.
+  for (const id of command.advisoryIds) options.stateStore?.recordRemediationMode(modeKey(id), mode);
+
   return {
     run: {
       cveIds: command.advisoryIds,
-      forceDryRun: command.name === "plan",
-      forcePullRequest: command.name === "fix",
-      reply: { issueNumber, mode: command.name },
+      forceDryRun: mode === "plan",
+      forcePullRequest: mode === "fix",
+      reply: { issueNumber, mode },
     },
   };
+}
+
+const RUN_TRAILER = /^Autoremediator-Run:[ \t]*(run_[0-9a-z]{20})[ \t]*$/gm;
+const MAX_ROLLBACK_RUNS = 5;
+
+function runIdsIn(text: string | null | undefined): string[] {
+  return [...(text ?? "").matchAll(RUN_TRAILER)].map((match) => match[1] ?? "").filter(Boolean);
+}
+
+/**
+ * The comment for `/autoremediator rollback`: the exact command that undoes a recorded run. The
+ * app never rolls back itself. Run ids are read from `Autoremediator-Run:` trailers and echoed
+ * only if they match the run id format exactly.
+ */
+async function rollbackReply(
+  octokit: Octokit,
+  repo: RepoRef,
+  issueNumber: number,
+  isPullRequest: boolean,
+): Promise<string> {
+  const runIds = new Set<string>();
+  try {
+    const { data } = await octokit.issues.get({
+      owner: repo.owner,
+      repo: repo.repo,
+      issue_number: issueNumber,
+    });
+    for (const id of runIdsIn(data.body)) runIds.add(id);
+
+    if (runIds.size === 0 && isPullRequest) {
+      const { data: commits } = await octokit.pulls.listCommits({
+        owner: repo.owner,
+        repo: repo.repo,
+        pull_number: issueNumber,
+        per_page: 100,
+      });
+      for (const commit of commits) {
+        for (const id of runIdsIn(commit.commit.message)) runIds.add(id);
+      }
+    }
+  } catch {
+    return "**Autoremediator** could not read this pull request to look for a recorded run. Try again, or revert its commits.";
+  }
+
+  const ids = [...runIds].slice(0, MAX_ROLLBACK_RUNS);
+  if (ids.length === 0) {
+    return [
+      "**Autoremediator rollback**",
+      "",
+      "No `Autoremediator-Run:` trailer was found in this description or its commits, so there is no recorded run to roll back.",
+      "To undo the change, revert its commits or close the pull request.",
+    ].join("\n");
+  }
+
+  return [
+    "**Autoremediator rollback**",
+    "",
+    "Autoremediator does not roll anything back from a comment. This records the following run(s); to undo one, run this in the checkout that made it:",
+    "",
+    "```sh",
+    ...ids.map((id) => `autoremediator runs rollback ${id}`),
+    "```",
+    "",
+    "It restores the files the run changed and reinstalls. A run is recorded in the `.autoremediator/runs` folder of the checkout where it ran: if this pull request was opened by the app from a temporary checkout, that record is gone, and reverting the pull request's commits is the way back.",
+  ].join("\n");
 }
 
 function toRemediationJobResult(report: ScanReport): RemediationJobResult {

@@ -3,7 +3,13 @@ import { isAbsolute, normalize } from "node:path";
 import type { Octokit } from "@octokit/rest";
 import { parse as yamlParse } from "yaml";
 
-import { type AutoremediatorRepoConfig, DEFAULT_REPO_CONFIG, type ErrorLogger } from "./types.js";
+import {
+  type AutoremediatorRepoConfig,
+  type BotPrDoctorConfig,
+  DEFAULT_REPO_CONFIG,
+  type ErrorLogger,
+  MAX_DOCTOR_ATTEMPTS,
+} from "./types.js";
 
 type RawRepoConfig = Partial<AutoremediatorRepoConfig>;
 
@@ -21,6 +27,26 @@ const VALID_SEVERITIES = new Set(["UNKNOWN", "LOW", "MEDIUM", "HIGH", "CRITICAL"
  * Validate field types from untrusted YAML input before merging with defaults.
  * Fields with wrong types are silently dropped in favour of defaults.
  */
+function sanitizeBotPrDoctor(raw: unknown): BotPrDoctorConfig | undefined {
+  const defaults = DEFAULT_REPO_CONFIG.botPrDoctor ?? { enabled: false, maxAttempts: 2 };
+  // `botPrDoctor: true` is shorthand for "on, with the default cap".
+  if (typeof raw === "boolean") return { ...defaults, enabled: raw };
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+
+  const candidate = raw as Record<string, unknown>;
+  const attempts = candidate.maxAttempts;
+  return {
+    enabled: candidate.enabled === true,
+    maxAttempts:
+      typeof attempts === "number" &&
+      Number.isInteger(attempts) &&
+      attempts >= 1 &&
+      attempts <= MAX_DOCTOR_ATTEMPTS
+        ? attempts
+        : defaults.maxAttempts,
+  };
+}
+
 function sanitizeRaw(raw: Record<string, unknown>): RawRepoConfig {
   const out: RawRepoConfig = {};
 
@@ -49,6 +75,17 @@ function sanitizeRaw(raw: Record<string, unknown>): RawRepoConfig {
   if (raw.dispositionPolicy !== null && typeof raw.dispositionPolicy === "object") {
     out.dispositionPolicy = raw.dispositionPolicy as RawRepoConfig["dispositionPolicy"];
   }
+  if (typeof raw.enablePrAutoHealing === "boolean") out.enablePrAutoHealing = raw.enablePrAutoHealing;
+  if (
+    typeof raw.maxHealingAttempts === "number" &&
+    Number.isInteger(raw.maxHealingAttempts) &&
+    raw.maxHealingAttempts >= 1 &&
+    raw.maxHealingAttempts <= 10
+  ) {
+    out.maxHealingAttempts = raw.maxHealingAttempts;
+  }
+  const botPrDoctor = sanitizeBotPrDoctor(raw.botPrDoctor);
+  if (botPrDoctor) out.botPrDoctor = botPrDoctor;
   if (typeof raw.containmentMode === "boolean") out.containmentMode = raw.containmentMode;
   if (raw.escalationGraph !== null && typeof raw.escalationGraph === "object") {
     out.escalationGraph = raw.escalationGraph as RawRepoConfig["escalationGraph"];
@@ -100,6 +137,9 @@ function mergeWithDefaults(raw: RawRepoConfig): AutoremediatorRepoConfig {
     containmentMode: raw.containmentMode,
     escalationGraph: raw.escalationGraph,
     pullRequest: raw.pullRequest,
+    enablePrAutoHealing: raw.enablePrAutoHealing ?? DEFAULT_REPO_CONFIG.enablePrAutoHealing,
+    maxHealingAttempts: raw.maxHealingAttempts ?? DEFAULT_REPO_CONFIG.maxHealingAttempts,
+    botPrDoctor: raw.botPrDoctor ?? DEFAULT_REPO_CONFIG.botPrDoctor,
   };
 }
 

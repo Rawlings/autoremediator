@@ -1,11 +1,34 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
+/** How far one pull request has got with the bot PR doctor. */
+export interface DoctorRecord {
+  /** Attempts reserved so far. */
+  attempts: number;
+  /** Head commit the latest attempt was made for; the same commit is never attempted twice. */
+  lastSha: string;
+  /** Whether the "limit reached" comment has been posted. */
+  announced: boolean;
+}
+
+export type DoctorReservation =
+  | { outcome: "granted"; attempt: number }
+  /** This head commit already has an attempt (several checks fail at once, or a redelivery). */
+  | { outcome: "duplicate" }
+  | { outcome: "limit"; /** True only the first time, so the limit is announced once. */ announce: boolean };
+
+export type RemediationMode = "plan" | "fix";
+
 interface StateData {
   schemaVersion: 1;
   deliveries: string[];
   installations: Record<string, "active" | "inactive">;
+  doctor?: Record<string, DoctorRecord>;
+  modes?: Record<string, RemediationMode>;
 }
+
+/** Counters and modes are kept for the most recent pull requests and advisories only. */
+const MAX_TRACKED_KEYS = 2000;
 
 export interface AppStateStore {
   hasProcessedDelivery(deliveryId: string): boolean;
@@ -13,12 +36,33 @@ export interface AppStateStore {
   isInstallationActive(installationId: number): boolean;
   markInstallationActive(installationId: number): void;
   markInstallationInactive(installationId: number): void;
+  /**
+   * Take one bot PR doctor attempt for a pull request (`owner/repo#number`) at a head commit.
+   * Attempts are counted here, in the state store, so a restart does not reset the cap.
+   */
+  reserveDoctorAttempt(prKey: string, headSha: string, maxAttempts: number): DoctorReservation;
+  /** Remember how an advisory was last run in a repository, so `retry` can run it the same way. */
+  recordRemediationMode(key: string, mode: RemediationMode): void;
+  getRemediationMode(key: string): RemediationMode | undefined;
+}
+
+function remember<T>(map: Map<string, T>, key: string, value: T): void {
+  // Re-insert so the most recently used keys are the last to be evicted.
+  map.delete(key);
+  map.set(key, value);
+  while (map.size > MAX_TRACKED_KEYS) {
+    const oldest = map.keys().next().value;
+    if (oldest === undefined) break;
+    map.delete(oldest);
+  }
 }
 
 export class InMemoryAppStateStore implements AppStateStore {
   protected readonly deliveries = new Set<string>();
   protected readonly deliveryOrder: string[] = [];
   protected readonly installations = new Map<number, "active" | "inactive">();
+  protected readonly doctor = new Map<string, DoctorRecord>();
+  protected readonly modes = new Map<string, RemediationMode>();
 
   private readonly maxTrackedDeliveries: number;
 
@@ -59,6 +103,61 @@ export class InMemoryAppStateStore implements AppStateStore {
     this.installations.set(installationId, "inactive");
   }
 
+  public reserveDoctorAttempt(
+    prKey: string,
+    headSha: string,
+    maxAttempts: number,
+  ): DoctorReservation {
+    const record = this.doctor.get(prKey);
+    if (record?.lastSha === headSha) {
+      return { outcome: "duplicate" };
+    }
+
+    const attempts = record?.attempts ?? 0;
+    if (attempts >= maxAttempts) {
+      const announce = !record?.announced;
+      remember(this.doctor, prKey, { attempts, lastSha: headSha, announced: true });
+      return { outcome: "limit", announce };
+    }
+
+    remember(this.doctor, prKey, {
+      attempts: attempts + 1,
+      lastSha: headSha,
+      announced: false,
+    });
+    return { outcome: "granted", attempt: attempts + 1 };
+  }
+
+  public recordRemediationMode(key: string, mode: RemediationMode): void {
+    remember(this.modes, key, mode);
+  }
+
+  public getRemediationMode(key: string): RemediationMode | undefined {
+    return this.modes.get(key);
+  }
+
+  /** Restore saved records without changing their order or applying the cap logic again. */
+  public restore(data: Pick<StateData, "doctor" | "modes">): void {
+    for (const [key, record] of Object.entries(data.doctor ?? {})) {
+      if (
+        record &&
+        typeof record === "object" &&
+        Number.isInteger(record.attempts) &&
+        record.attempts >= 0 &&
+        typeof record.lastSha === "string"
+      ) {
+        remember(this.doctor, key, {
+          attempts: record.attempts,
+          lastSha: record.lastSha,
+          announced: record.announced,
+        });
+      }
+    }
+    for (const [key, mode] of Object.entries(data.modes ?? {})) {
+      if (mode === "plan" || mode === "fix") remember(this.modes, key, mode);
+    }
+  }
+
   public snapshot(): StateData {
     const installations: Record<string, "active" | "inactive"> = {};
     for (const [installationId, state] of this.installations.entries()) {
@@ -69,6 +168,8 @@ export class InMemoryAppStateStore implements AppStateStore {
       schemaVersion: 1,
       deliveries: [...this.deliveryOrder],
       installations,
+      ...(this.doctor.size > 0 ? { doctor: Object.fromEntries(this.doctor) } : {}),
+      ...(this.modes.size > 0 ? { modes: Object.fromEntries(this.modes) } : {}),
     };
   }
 }
@@ -106,6 +207,26 @@ export class FileAppStateStore implements AppStateStore {
     this.persist();
   }
 
+  public reserveDoctorAttempt(
+    prKey: string,
+    headSha: string,
+    maxAttempts: number,
+  ): DoctorReservation {
+    const reservation = this.inMemory.reserveDoctorAttempt(prKey, headSha, maxAttempts);
+    // Persist before the caller acts: a crash after a push must not forget the attempt.
+    this.persist();
+    return reservation;
+  }
+
+  public recordRemediationMode(key: string, mode: RemediationMode): void {
+    this.inMemory.recordRemediationMode(key, mode);
+    this.persist();
+  }
+
+  public getRemediationMode(key: string): RemediationMode | undefined {
+    return this.inMemory.getRemediationMode(key);
+  }
+
   private hydrateFromDisk(): void {
     if (!existsSync(this.stateFilePath)) {
       return;
@@ -128,6 +249,17 @@ export class FileAppStateStore implements AppStateStore {
         this.inMemory.markDeliveryProcessed(deliveryId);
       }
     }
+
+    this.inMemory.restore({
+      doctor:
+        parsed.doctor && typeof parsed.doctor === "object" && !Array.isArray(parsed.doctor)
+          ? parsed.doctor
+          : undefined,
+      modes:
+        parsed.modes && typeof parsed.modes === "object" && !Array.isArray(parsed.modes)
+          ? parsed.modes
+          : undefined,
+    });
 
     const installations =
       parsed.installations && typeof parsed.installations === "object"

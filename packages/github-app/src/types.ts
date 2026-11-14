@@ -1,5 +1,8 @@
 import type { CveSeverity, DispositionPolicy, EscalationGraph } from "autoremediator";
 
+import type { RepairStrategy } from "./healing/repair-strategy.js";
+import type { AppStateStore } from "./state.js";
+
 export interface AutoremediatorRepoConfig {
   // Remediation behavior
   dryRun: boolean;
@@ -39,7 +42,17 @@ export interface AutoremediatorRepoConfig {
   // PR Auto-healing with CI feedback loop
   enablePrAutoHealing?: boolean;
   maxHealingAttempts?: number;
+  // Repair of failing Dependabot and Renovate pull requests (off unless a repository opts in)
+  botPrDoctor?: BotPrDoctorConfig;
 }
+
+export interface BotPrDoctorConfig {
+  enabled: boolean;
+  /** Repair attempts per pull request, counted in the app state store. */
+  maxAttempts: number;
+}
+
+export const MAX_DOCTOR_ATTEMPTS = 5;
 
 export const DEFAULT_REPO_CONFIG: AutoremediatorRepoConfig = {
   dryRun: true,
@@ -50,6 +63,7 @@ export const DEFAULT_REPO_CONFIG: AutoremediatorRepoConfig = {
   allowPackages: [],
   enablePrAutoHealing: false,
   maxHealingAttempts: 3,
+  botPrDoctor: { enabled: false, maxAttempts: 2 },
 };
 
 export interface GitHubAppConfig {
@@ -197,4 +211,13 @@ export interface DefaultRemediationHandlerOptions {
   checkoutProvider?: CheckoutProvider;
   /** Structured error logger */
   onError?: ErrorLogger;
+  /**
+   * Where bot PR doctor attempts and `retry` modes are kept. Without it the doctor does nothing
+   * (it cannot cap attempts) and `retry` explains that it has no history to go on.
+   */
+  stateStore?: AppStateStore;
+  /** How the bot PR doctor repairs files (default: the pattern-based strategy). */
+  repairStrategy?: RepairStrategy;
+  /** This app's own id, so the doctor never diagnoses the app's own check runs. */
+  selfAppId?: string;
 }

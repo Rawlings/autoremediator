@@ -2,8 +2,11 @@
  * Comment commands: `/autoremediator <command> [ids]` on an issue or pull request.
  * Comment text is untrusted input, so nothing from it is used except the command word and
  * advisory ids that match a strict pattern.
+ *
+ * There is deliberately no `approve`: nothing in the app can safely stand in for a reviewer's
+ * approval, so the word is unrecognised and answered with help like any other unknown word.
  */
-export const COMMAND_NAMES = ["help", "plan", "fix"] as const;
+export const COMMAND_NAMES = ["help", "plan", "fix", "retry", "rollback"] as const;
 export type CommandName = (typeof COMMAND_NAMES)[number];
 
 export interface ParsedCommand {
@@ -55,7 +58,9 @@ export const HELP_TEXT = [
   "",
   "- `/autoremediator plan CVE-2021-23337` shows what would change. Nothing is modified.",
   "- `/autoremediator fix CVE-2021-23337` fixes it and opens a pull request for review.",
+  "- `/autoremediator retry CVE-2021-23337` runs it again the way it was last run here (plan or fix).",
+  "- `/autoremediator rollback` replies with the command that undoes the run this pull request records. The app never rolls back by itself.",
   "- `/autoremediator help` shows this message.",
   "",
-  "Give one or more CVE or GHSA ids, separated by spaces.",
+  "Give one or more CVE or GHSA ids, separated by spaces (`plan`, `fix` and `retry`).",
 ].join("\n");
