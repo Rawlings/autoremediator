@@ -14,10 +14,12 @@ It listens on `127.0.0.1` over plain HTTP. If you expose it, terminate TLS in a 
 
 | Role | Routes |
 | ---- | ------ |
-| public | `GET /health`, `GET /openapi.json` |
+| public | `GET /health`, `GET /openapi.json`, `GET /.well-known/agent-card.json` |
 | reader | `GET /jobs/:id`, `POST /runs/get`, `/runs/list`, `POST /vex`, `POST /reachability`, `POST /packages/evaluate`, `POST /packages/guard`, `POST /delta-scan`, `POST /patches/list`, `/patches/inspect`, `/patches/validate` |
 | operator | `POST /plan-remediation`, `POST /runs/verify`, `POST /attempts/start`, `/attempts/patch`, `/attempts/verify`, `/attempts/abandon` |
 | admin | `POST /remediate`, `/remediate-from-scan`, `/remediate-portfolio`, `/update-outdated`, `/patches/reconcile`, `/runs/apply`, `/runs/resume`, `/runs/rollback`, `/attempts/finalize`, `/jobs/remediate`, `/jobs/scan`, `/jobs/portfolio` |
+
+`POST /a2a` is the [A2A](a2a.md) JSON-RPC endpoint (`SendMessage`, `GetTask`). It needs a valid bearer token, then the role of the operation named in the message.
 
 Routes, request bodies and the OpenAPI document are generated from the same operation catalog as the
 [MCP tools](mcp-server.md), so they cannot drift. A body holds the operation's main argument at the
@@ -34,7 +36,7 @@ Authentication is required. Configure either or both:
 - `AUTOREMEDIATOR_API_TOKENS="role:token,role:token"`: static bearer tokens.
 - `AUTOREMEDIATOR_JWT_SECRET`: HMAC-SHA256 JWTs with a `role` claim.
 
-With neither, every route except health and the spec returns `503`.
+With neither, every route except health, the spec and the agent card returns `503`.
 `AUTOREMEDIATOR_INSECURE_NO_AUTH=1` disables the requirement, for local development only.
 
 ## Request limits

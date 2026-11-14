@@ -31,6 +31,7 @@ organized by what you are trying to do.
 - [GitHub App](integrations/github-app.md)
 - [Coding agents](integrations/coding-agents.md): `init`, Claude Code plugin, Cursor, VS Code, Copilot, Codex, Gemini
 - [MCP server](integrations/mcp-server.md)
+- [A2A](integrations/a2a.md): agent card and Agent2Agent endpoint so other agents can discover and delegate to Autoremediator
 - [HTTP server](integrations/http-server.md)
 - [VS Code extension](../packages/vscode-extension/README.md)
 
