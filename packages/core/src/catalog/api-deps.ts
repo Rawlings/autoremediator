@@ -1,5 +1,6 @@
 import {
   abandonAttempt,
+  bisectLockfile,
   applyPlan,
   checkReachability,
   evaluatePackage,
@@ -66,6 +67,7 @@ export interface ApiDeps {
   verifyAttemptFn: typeof verifyAttempt;
   finalizeAttemptFn: typeof finalizeAttempt;
   abandonAttemptFn: typeof abandonAttempt;
+  bisectLockfileFn: typeof bisectLockfile;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -101,4 +103,5 @@ export const defaultApiDeps: ApiDeps = {
   verifyAttemptFn: verifyAttempt,
   finalizeAttemptFn: finalizeAttempt,
   abandonAttemptFn: abandonAttempt,
+  bisectLockfileFn: bisectLockfile,
 };

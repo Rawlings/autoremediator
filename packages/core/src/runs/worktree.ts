@@ -136,3 +136,32 @@ export async function discardWorktree(projectCwd: string, checkoutPath: string):
     : "";
   await removeWorktree(root, top || checkoutPath);
 }
+
+/**
+ * An isolated checkout of the repository at a given commit or ref, exactly as committed: nothing from
+ * the project's working tree is carried over. `cwd` may be a subdirectory of the repository; the
+ * returned path then points at the same subdirectory inside the checkout. `remove` is idempotent.
+ */
+export async function createRefWorktree(
+  cwd: string,
+  name: string,
+  ref: string,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<Worktree & { root: string }> {
+  const root = (await git(cwd, ["rev-parse", "--show-toplevel"]).catch(() => "")).trim();
+  if (!root) throw new Error("A checkout needs a git repository: this directory is not one.");
+  const commit = (await git(root, ["rev-parse", "--verify", "--end-of-options", `${ref}^{commit}`]).catch(() => "")).trim();
+  if (!commit) throw new Error(`Cannot resolve git ref ${JSON.stringify(ref)} to a commit.`);
+
+  const repoWorktree = join(worktreeRoot(root, env), name);
+  mkdirSync(dirname(repoWorktree), { recursive: true });
+  await git(root, ["worktree", "add", "--detach", repoWorktree, commit]);
+
+  const sub = relative(realpathSync(root), realpathSync(cwd));
+  return {
+    path: sub ? join(repoWorktree, sub) : repoWorktree,
+    root: repoWorktree,
+    base: commit,
+    remove: () => removeWorktree(root, repoWorktree),
+  };
+}
