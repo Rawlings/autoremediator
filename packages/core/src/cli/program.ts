@@ -43,6 +43,7 @@ import { registerIncidentCommands } from "./incident-commands.js";
 import { registerPolicyCommands } from "./policy-commands.js";
 import { registerMaintainCommands } from "./maintain-commands.js";
 import { registerProveCommands } from "./prove-commands.js";
+import { registerRadarCommands } from "./radar-commands.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
 import { validateOutputFormat, validateSharedCommandOptions } from "./validators.js";
@@ -355,6 +356,7 @@ export function createProgram(): Command {
   registerPolicyCommands(program);
   registerMaintainCommands(program);
   registerProveCommands(program);
+  registerRadarCommands(program);
 
   program
     .command("init")

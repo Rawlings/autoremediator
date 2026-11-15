@@ -34,6 +34,8 @@ export interface PackageFiles {
   files: Map<string, string>;
   /** Parsed root `package.json`. */
   manifest: Record<string, unknown>;
+  /** Root-level changelog and release-notes files by name, when `includeDocs` was asked for. */
+  docs?: Map<string, string>;
   stats: {
     entries: number;
     unpackedBytes: number;
@@ -114,10 +116,21 @@ export function normalizeEntryPath(raw: string): string {
   return segments.slice(1).join("/");
 }
 
+/** Root-level files that hold release history (`CHANGELOG.md`, `HISTORY`, `RELEASES.txt`, …). */
+const DOC_PATTERN =
+  /^(?:changelog|changes|history|releases?|news|release[-_ ]?notes)(?:\.(?:md|markdown|txt|rst))?$/i;
+const MAX_DOC_BYTES = 2 * 1024 * 1024;
+
+export interface ReadTarballOptions {
+  /** Also keep root-level changelog files (read as text, capped at 2 MiB each). */
+  includeDocs?: boolean;
+}
+
 /** Decompress and read a package tarball; see the module comment for what is refused. */
 export function readPackageTarball(
   bytes: Uint8Array,
   limits: TarballLimits = DEFAULT_TARBALL_LIMITS,
+  options: ReadTarballOptions = {},
 ): PackageFiles {
   let archive: Buffer;
   try {
@@ -135,6 +148,7 @@ export function readPackageTarball(
   }
 
   const files = new Map<string, string>();
+  const docs = new Map<string, string>();
   const stats: PackageFiles["stats"] = {
     entries: 0,
     unpackedBytes: archive.length,
@@ -196,6 +210,10 @@ export function readPackageTarball(
     if (path.split("/").includes("node_modules")) continue;
 
     const isManifest = path === "package.json";
+    if (options.includeDocs && DOC_PATTERN.test(path) && size <= MAX_DOC_BYTES) {
+      docs.set(path, archive.subarray(dataStart, dataEnd).toString("utf8"));
+      continue;
+    }
     if (!isManifest && (!SOURCE_PATTERN.test(path) || MINIFIED_PATTERN.test(path))) continue;
     if (size > limits.maxFileBytes) {
       stats.skippedLarge++;
@@ -223,5 +241,10 @@ export function readPackageTarball(
   if (typeof manifest !== "object" || manifest === null || Array.isArray(manifest)) {
     throw new TarballError("Tarball package.json is not an object");
   }
-  return { files, manifest: manifest as Record<string, unknown>, stats };
+  return {
+    files,
+    manifest: manifest as Record<string, unknown>,
+    stats,
+    ...(options.includeDocs ? { docs } : {}),
+  };
 }

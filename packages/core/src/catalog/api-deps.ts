@@ -24,6 +24,7 @@ import {
   pollJob,
   premortem,
   proposePatch,
+  radar,
   reconcilePatchArtifacts,
   remediate,
   remediateFromScan,
@@ -96,6 +97,7 @@ export interface ApiDeps {
   maintainFn: typeof maintain;
   readMaintainerVexFn: typeof readMaintainerVex;
   generateProofOfFixFn: typeof generateProofOfFix;
+  radarFn: typeof radar;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -146,4 +148,5 @@ export const defaultApiDeps: ApiDeps = {
   maintainFn: maintain,
   readMaintainerVexFn: readMaintainerVex,
   generateProofOfFixFn: generateProofOfFix,
+  radarFn: radar,
 };
