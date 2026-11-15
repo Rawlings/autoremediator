@@ -28,6 +28,13 @@ Every function returns a promise unless noted. Option names are identical to the
 | `updateOutdated(options?)` | `UpdateOutdatedReport` |
 | `init({ cwd?, hosts?, ci?, policy?, agentsMd?, yes?, check? })` | `InitResult`: what was detected, each file's action and diff, `drift`, `applied`, `conflicts`. Writes only with `yes`. See [Coding agents](../integrations/coding-agents.md) |
 | `guardGitDiff({ cwd?, baseRef?, includeTransitive?, ... })` | `{ schemaVersion, baseRef, checked, skipped, verdict, reports }`: guards the dependencies a change added or upgraded |
+| `getAutonomy({ cwd?, policy? })` | `AutonomyStatus`: level, ceiling, earned level, evidence, history, next promotion. Run and plan reports gain an `autonomy` summary |
+| `listRecipes(options)`, `applyRecipe({ runId, attemptId, recipeId })`, `captureRecipe(options)`, `exportRecipes(options)` | [Recipes](../guides/recipes.md); `captureRecipe` and `exportRecipes` write files |
+| `traceRun({ command, cwd?, packages?, calls?, out?, timeoutMs? })` | `{ exitCode, traceFile, report }`. SDK and CLI only. `checkReachability` gains `traceFile` and returns `evidenceKind`, `runtime` |
+| `assessUpgrade({ packageName, from, to, cwd? })`, `findVulnerableSymbols({ packageName, from, to, advisoryText?, cwes?, ... })` | `AssessUpgradeResult`, `VulnerableSymbolsResult` ([details](../guides/upgrade-impact.md)) |
+| `incident(target, options)`, `incidentExitCode(report)`, `renderIncidentMarkdown(report)`, `premortem(options)` | `IncidentReport`, premortem report ([details](../guides/incident-response.md)) |
+| `bisectLockfile({ cwd?, good, bad?, command, ... })` | `BisectReport`. SDK and CLI only |
+| `analyzeDependencies({ cwd? })`, `removeUnusedDependencies(options)` | `DependencyDietReport`; `DietApplyResult` (writes; SDK and CLI only) |
 | `installHooks({ cwd?, hooks?, manager?, uninstall?, yes?, check? })` | `HooksResult`: detected manager, per-hook state (`installed`, `missing`, `modified`, `conflict`), changes with diffs, `drift`, `applied`. Writes only with `yes`. See [Git hooks](../guides/git-hooks.md) |
 | `guardPackage(spec, { cwd?, minPublishAgeHours?, offline? })`, `guardPackages(specs, options?)` | `GuardReport`: `verdict` (`allow`, `warn`, `block`), `findings[]`, `resolvedVersion`, `alternative`. [Guarding new dependencies](../guides/guard.md) |
 | `scanDelta({ cwd?, baseRef?, includeUnstaged?, packageManager? })` | `DeltaScanReport` |

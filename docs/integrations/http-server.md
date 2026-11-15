@@ -15,9 +15,9 @@ It listens on `127.0.0.1` over plain HTTP. If you expose it, terminate TLS in a 
 | Role | Routes |
 | ---- | ------ |
 | public | `GET /health`, `GET /openapi.json`, `GET /.well-known/agent-card.json` |
-| reader | `GET /jobs/:id`, `POST /runs/get`, `/runs/list`, `POST /vex`, `POST /reachability`, `POST /packages/evaluate`, `POST /packages/guard`, `POST /delta-scan`, `POST /patches/list`, `/patches/inspect`, `/patches/validate` |
-| operator | `POST /plan-remediation`, `POST /runs/verify`, `POST /attempts/start`, `/attempts/patch`, `/attempts/verify`, `/attempts/abandon` |
-| admin | `POST /remediate`, `/remediate-from-scan`, `/remediate-portfolio`, `/update-outdated`, `/patches/reconcile`, `/runs/apply`, `/runs/resume`, `/runs/rollback`, `/attempts/finalize`, `/jobs/remediate`, `/jobs/scan`, `/jobs/portfolio` |
+| reader | `POST /patches/list`, `POST /patches/inspect`, `POST /patches/validate`, `POST /runs/get`, `POST /runs/list`, `POST /vex`, `GET /jobs/:jobId`, `POST /reachability`, `POST /packages/evaluate`, `POST /packages/guard`, `POST /autonomy`, `POST /packages/diet`, `POST /delta-scan`, `POST /recipes/list`, `POST /packages/assess-upgrade`, `POST /packages/vulnerable-symbols` |
+| operator | `POST /plan-remediation`, `POST /runs/verify`, `POST /attempts/start`, `POST /attempts/patch`, `POST /attempts/verify`, `POST /attempts/abandon`, `POST /attempts/recipe`, `POST /incident`, `POST /premortem` |
+| admin | `POST /remediate`, `POST /remediate-from-scan`, `POST /remediate-portfolio`, `POST /patches/reconcile`, `POST /runs/apply`, `POST /runs/resume`, `POST /runs/rollback`, `POST /attempts/finalize`, `POST /update-outdated`, `POST /jobs/remediate`, `POST /jobs/scan`, `POST /jobs/portfolio` |
 
 `POST /a2a` is the [A2A](a2a.md) JSON-RPC endpoint (`SendMessage`, `GetTask`). It needs a valid bearer token, then the role of the operation named in the message.
 

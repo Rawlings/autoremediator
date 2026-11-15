@@ -23,7 +23,8 @@ options. Tools that return a report return it as JSON.
 | Remediate | `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated` |
 | Runs | `applyPlan`, `verifyRun`, `resumeRun`, `rollbackRun`, `getRun`, `listRuns` (see [Plan, apply and roll back](../guides/plan-and-apply.md)) |
 | Attempts | `startAttempt`, `proposePatch`, `verifyAttempt`, `finalizeAttempt`, `abandonAttempt` (see [Letting your agent do the repair](../guides/plan-and-apply.md#letting-your-own-agent-do-the-repair)) |
-| Inspect | `checkReachability`, `evaluatePackage`, `guardPackage` ([details](../guides/guard.md)), `scanDelta`, `toVex` |
+| Inspect | `checkReachability`, `evaluatePackage`, `guardPackage` ([details](../guides/guard.md)), `assessUpgrade`, `findVulnerableSymbols` ([details](../guides/upgrade-impact.md)), `analyzeDependencies` ([details](../guides/dependency-diet.md)), `incident`, `premortem` ([details](../guides/incident-response.md)), `getAutonomy` ([details](../guides/earned-autonomy.md)), `scanDelta`, `toVex` |
+| Recipes | `listRecipes`, `applyRecipe` ([details](../guides/recipes.md)) |
 | Patches | `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `reconcilePatchArtifacts` |
 | Jobs | `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob` |
 | Server | `health` |

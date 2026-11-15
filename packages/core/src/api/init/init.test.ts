@@ -22,6 +22,7 @@ import {
   mergeClaudeGuardHook,
   mergeCodexToml,
   mergeGitignore,
+  mergeRunStateIgnore,
   mergeJsonMcpConfig,
   mergeMarkedSection,
 } from "./merge.js";
@@ -149,6 +150,24 @@ describe("mergeGitignore", () => {
   });
 });
 
+describe("mergeRunStateIgnore", () => {
+  const block = ".autoremediator/*\n!.autoremediator/recipes/\n!.autoremediator/track-record.json\n";
+  it("adds the block to a file without it, and is then stable", () => {
+    const once = (mergeRunStateIgnore("dist\n") as { content: string }).content;
+    expect(once).toBe(`dist\n${block}`);
+    expect(mergeRunStateIgnore(once)).toEqual({ content: once });
+  });
+
+  it("replaces the whole-directory entry so the negations can take effect", () => {
+    expect((mergeRunStateIgnore("a\n.autoremediator/\nb\n") as { content: string }).content).toBe(`a\n${block}b\n`);
+    expect((mergeRunStateIgnore(".autoremediator\n") as { content: string }).content).toBe(block);
+  });
+
+  it("completes a partial block", () => {
+    expect((mergeRunStateIgnore(".autoremediator/*\n") as { content: string }).content).toBe(block);
+  });
+});
+
 describe("renderDiff", () => {
   it("shows additions and removals", () => {
     const diff = renderDiff("a.txt", "one\ntwo\n", "one\nthree\n");
@@ -222,7 +241,7 @@ describe("init", () => {
     expect(read(".claude/skills/fix-cve/SKILL.md")).toContain("planRemediation");
     expect(read(".cursor/rules/autoremediator.mdc")).toContain("alwaysApply: false");
     expect(read("AGENTS.md")).toContain("autoremediator:begin");
-    expect(read(".gitignore")).toBe(".autoremediator/\n");
+    expect(read(".gitignore")).toBe(".autoremediator/*\n!.autoremediator/recipes/\n!.autoremediator/track-record.json\n");
     expect(read(".github/autoremediator.yml")).toContain("allowMajorBumps: false");
 
     const again = await init({ cwd: dir, hosts: ["claude-code", "cursor", "vscode", "codex", "gemini", "copilot"], yes: true });
@@ -238,7 +257,7 @@ describe("init", () => {
     await init({ cwd: dir, hosts: ["cursor"], yes: true });
     expect(JSON.parse(read(".cursor/mcp.json")).mcpServers.github).toEqual({ url: "https://x" });
     expect(read("AGENTS.md").startsWith("# Team rules\n\nBe kind.\n")).toBe(true);
-    expect(read(".gitignore")).toBe("node_modules/\n.autoremediator/\n");
+    expect(read(".gitignore")).toBe("node_modules/\n.autoremediator/*\n!.autoremediator/recipes/\n!.autoremediator/track-record.json\n");
   });
 
   it("leaves a file it cannot merge alone and says so", async () => {

@@ -183,3 +183,31 @@ export function mergeHooksFile(existing: string | undefined, event: string, entr
     content: `${JSON.stringify({ version: 1, ...doc, hooks: { ...events, [event]: list } }, null, indent)}\n`,
   };
 }
+/**
+ * Ignore run state but keep the few files meant to be committed (recipes, the autonomy track record).
+ * Git cannot re-include a file under an ignored directory, so the directory entry `.autoremediator/`
+ * is replaced by `.autoremediator/*` plus the negations.
+ */
+export const RUN_STATE_IGNORE = [
+  ".autoremediator/*",
+  "!.autoremediator/recipes/",
+  "!.autoremediator/track-record.json",
+] as const;
+
+export function mergeRunStateIgnore(text = ""): MergeResult {
+  const lines = text === "" ? [] : text.replace(/\n$/, "").split("\n");
+  const has = (line: string): boolean => lines.some((entry) => entry.trim() === line);
+  const directoryForm = lines.findIndex((entry) => [".autoremediator/", ".autoremediator"].includes(entry.trim()));
+
+  if (directoryForm !== -1) {
+    lines.splice(directoryForm, 1, ...RUN_STATE_IGNORE);
+  } else if (has(".autoremediator/*")) {
+    const at = lines.findIndex((entry) => entry.trim() === ".autoremediator/*");
+    const missing = RUN_STATE_IGNORE.slice(1).filter((line) => !has(line));
+    lines.splice(at + 1, 0, ...missing);
+  } else {
+    lines.push(...RUN_STATE_IGNORE);
+  }
+  const content = `${lines.join("\n")}\n`;
+  return { content: content === text ? text : content };
+}

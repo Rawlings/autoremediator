@@ -29,7 +29,7 @@ import {
   mergeClaudeGuardHook,
   mergeHooksFile,
   mergeCodexToml,
-  mergeGitignore,
+  mergeRunStateIgnore,
   mergeJsonMcpConfig,
   mergeMarkedSection,
   type MergeResult,
@@ -192,7 +192,7 @@ export function planInit(facts: ProjectFacts, hosts: AgentHost[], options: InitO
 
   const gitignoreBefore = readIfExists(cwd, ".gitignore");
   changes.push(
-    toChange(".gitignore", "keep run state out of git", gitignoreBefore, mergeGitignore(gitignoreBefore, [".autoremediator/"])),
+    toChange(".gitignore", "keep run state out of git, but not recipes or the autonomy track record", gitignoreBefore, mergeRunStateIgnore(gitignoreBefore)),
   );
 
   for (const host of hosts) changes.push(...hostChanges(cwd, host, options.guard === true, hosts));

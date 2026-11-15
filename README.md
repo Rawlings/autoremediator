@@ -68,9 +68,13 @@ fixed that was not verified.
 | **[GitHub Action](docs/integrations/github-action.md)** | A nightly pull request that fixes what audit finds |
 | **[GitHub App](docs/integrations/github-app.md)** | Remediation across every repository you install it on |
 | **[Coding agents](docs/integrations/coding-agents.md)** | `npx autoremediator init` sets up Claude Code, Cursor, VS Code, Copilot, Codex and Gemini CLI; a Claude Code plugin is included |
+| **[Other CI](docs/integrations/other-ci.md)** | GitLab, Bitbucket Pipelines, Azure DevOps, Docker and Dagger |
+| **[A2A](docs/integrations/a2a.md)** | An Agent2Agent card and endpoint so other agents can delegate to it |
 | **[MCP server](docs/integrations/mcp-server.md)** | Give your editor or agent a safe way to fix dependencies |
 | **[HTTP server](docs/integrations/http-server.md)** | Call it from internal services |
 | **[VS Code](packages/vscode-extension/README.md)** | Findings and one-click fixes in `package.json` |
+
+Beyond fixing a CVE: [guard](docs/guides/guard.md) packages before an agent installs them, [diet](docs/guides/dependency-diet.md) what you depend on, [bisect](docs/guides/bisect.md) a broken lockfile, respond to a [compromised package](docs/guides/incident-response.md), and let a repository [earn autonomy](docs/guides/earned-autonomy.md).
 
 Works with npm, pnpm, Yarn, Bun and Deno projects. Requires Node.js 26 or later.
 

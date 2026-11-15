@@ -29,6 +29,52 @@
 - Behavior: detects husky, lefthook, the pre-commit framework or plain git hooks; writes a marked block or named entry per hook and never overwrites what it cannot merge (reported as a conflict); `pre-push` runs `diff --ci` against the upstream only when a manifest or lockfile changed and blocks only on a DEGRADED verdict; `post-merge` prints a one-line advisory and never fails; skip with `AUTOREMEDIATOR_SKIP_HOOKS=1`; exits `3` when not confirmed, `status` exits `1` on drift
 - Source: `packages/core/src/api/hooks/`
 
+### Earned autonomy: `autoremediator autonomy status|explain`
+
+- Trigger: policy key `autonomy: { ceiling: L0..L4, ... }`, `getAutonomy` (MCP, `POST /autonomy`, SDK), `autonomy status|explain`
+- Behavior: the level in force is min(policy ceiling, level earned from the committed track record `.autoremediator/track-record.json`); a rollback or verifier failure demotes immediately; below L2 apply, resume, finalize and non-dry `remediate` refuse; L3/L4 only set `autoMergeEligible`/`escalate` signals (no auto-merge exists); the key is policy-file only, never settable by a caller
+- Source: `packages/core/src/autonomy/`, `packages/core/src/api/autonomy/`; guide `docs/guides/earned-autonomy.md`
+
+### Recipes: `autoremediator recipes list|show|capture|export`
+
+- Trigger: accepted agent repairs are captured as data-only recipes; `listRecipes`, `applyRecipe` (MCP/HTTP/SDK), `recipes ...` (CLI); policy key `recipes.packages`
+- Behavior: exact-context hunks only, fail closed on drift, same validation as `proposePatch`, then the verifier; tried before an agent attempt; never executable code
+- Source: `packages/core/src/recipes/`, `packages/core/src/remediation/repair/recipe-attempt.ts`; guide `docs/guides/recipes.md`
+
+### Runtime reachability: `autoremediator trace run`
+
+- Trigger: `autoremediator trace run [--packages a,b] [--calls] -- <command>`, `traceRun` (CLI and SDK only: runs arbitrary commands), `checkReachability` with `traceFile`; hook export `autoremediator/trace`
+- Behavior: records which dependencies are loaded (and, opt-in, which exported functions are called) while tests run; a runtime verdict is evidence, never proof of unreachability
+- Source: `packages/core/src/trace/`; guide `docs/guides/runtime-reachability.md`
+
+### Upgrade impact: `assess`, `symbols`
+
+- Trigger: `assessUpgrade`, `findVulnerableSymbols` (MCP, HTTP, SDK), `autoremediator assess|symbols`
+- Behavior: compares two versions' public API against the project's own usage (High/Medium/Low with file:line sites); lists exports a fix changed as heuristic candidate vulnerable symbols
+- Source: `packages/core/src/remediation/impact/`; guide `docs/guides/upgrade-impact.md`
+
+### Incident response: `autoremediator incident`, `autoremediator premortem`
+
+- Trigger: `incident <id|pkg@range>`, `premortem`, matching MCP tools, `POST /incident`, `POST /premortem`, SDK
+- Behavior: exposure and lockfile-history windows, a rollback plan held for approval (never auto-applied), a secrets rotation checklist (names only, never values); pre-mortem playbooks across repos
+- Source: `packages/core/src/api/incident/`, `packages/core/src/scanner/lock-graph/`; guide `docs/guides/incident-response.md`
+
+### Lockfile bisect: `autoremediator bisect`
+
+- Trigger: `bisect --good <ref> --command "<cmd>"`, `bisectLockfile` (CLI and SDK only: runs an arbitrary command)
+- Behavior: delta-debugs the lockfile diff in isolated worktrees to the culprit package(s); returns evidence and a pin-back plan (applied only with `--apply`); exits 0 found, 1 otherwise, 130 interrupted
+- Source: `packages/core/src/api/bisect/`; guide `docs/guides/bisect.md`
+
+### Dependency diet: `autoremediator diet [--apply]`
+
+- Trigger: `analyzeDependencies` (MCP, `POST /packages/diet`, SDK, read-only), `diet`, `diet --apply` / `removeUnusedDependencies` (CLI and SDK only; writes)
+- Behavior: unused (certainly/probably/used-indirectly), Node-built-in-replaceable, duplicate versions, 0-100 attack-surface score; `--apply` removes only certainly-unused, verifies, rolls back on failure
+- Source: `packages/core/src/api/diet/`; guide `docs/guides/dependency-diet.md`
+
+### Benchmark: `pnpm bench`
+
+- `bench/` (private workspace package) runs fixture tasks offline against a local registry in `deterministic`, `agent-scripted`, `host-scripted` modes (and a documented real-model mode that has never been run); results in `bench/RESULTS.md`; scripted modes measure the harness, not model quality. See `docs/contributing/benchmark.md`.
+
 ### Mode 2: Scan & Delta Input
 
 - Trigger: `autoremediator <scan-file>`, `autoremediator diff`, `autoremediator triage`, or `remediateFromScan(inputPath, options)`
@@ -52,12 +98,12 @@
 - Trigger: `autoremediator-mcp` (stdio), or `autoremediator-mcp --http` (stateless streamable HTTP on `127.0.0.1`, role-gated; see `docs/integrations/mcp-server.md`)
 - Behavior: exposes every operation in the catalog (`packages/core/src/catalog`) as an MCP tool, generated from one definition shared with the HTTP server
 - Source: `packages/core/src/catalog/`, `packages/core/src/mcp/` (server, resources, prompts, HTTP transport)
-- Exposed MCP tools: `health`, `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `reconcilePatchArtifacts`, `applyPlan`, `verifyRun`, `resumeRun`, `rollbackRun`, `getRun`, `listRuns`, `startAttempt`, `proposePatch`, `verifyAttempt`, `finalizeAttempt`, `abandonAttempt`, `checkReachability`, `evaluatePackage`, `guardPackage`, `scanDelta`, `toVex`, `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob`
+- Exposed MCP tools: `health`, `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `reconcilePatchArtifacts`, `applyPlan`, `resumeRun`, `rollbackRun`, `verifyRun`, `startAttempt`, `proposePatch`, `verifyAttempt`, `finalizeAttempt`, `abandonAttempt`, `getRun`, `listRuns`, `updateOutdated`, `toVex`, `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob`, `checkReachability`, `evaluatePackage`, `guardPackage`, `getAutonomy`, `analyzeDependencies`, `scanDelta`, `listRecipes`, `applyRecipe`, `assessUpgrade`, `findVulnerableSymbols`, `incident`, `premortem`
 
 ### Mode 5: OpenAPI HTTP Server
 
 - Trigger: `node dist/openapi/server.js [--port 3000]`
-- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/remediate-portfolio`, POST `/update-outdated`, POST `/patches/list`, POST `/patches/inspect`, POST `/patches/validate`, POST `/patches/reconcile`, POST `/attempts/start`, POST `/attempts/patch`, POST `/attempts/verify`, POST `/attempts/finalize`, POST `/attempts/abandon`, POST `/runs/apply`, POST `/runs/verify`, POST `/runs/resume`, POST `/runs/rollback`, POST `/runs/get`, POST `/runs/list`, POST `/reachability`, POST `/packages/evaluate`, POST `/packages/guard`, POST `/delta-scan`, POST `/vex`, POST `/jobs/remediate`, POST `/jobs/scan`, POST `/jobs/portfolio`, `GET /jobs/:jobId`, public `GET /.well-known/agent-card.json` (A2A Agent Card), `POST /a2a` (A2A 1.0 JSON-RPC: `SendMessage`, `GetTask`; bearer auth, role per operation; see `docs/integrations/a2a.md`) over HTTP on `127.0.0.1` (auth required unless `AUTOREMEDIATOR_INSECURE_NO_AUTH=1`; see `docs/integrations/http-server.md`)
+- Behavior: POST `/remediate`, POST `/plan-remediation`, POST `/remediate-from-scan`, POST `/remediate-portfolio`, POST `/patches/list`, POST `/patches/inspect`, POST `/patches/validate`, POST `/patches/reconcile`, POST `/runs/apply`, POST `/runs/resume`, POST `/runs/rollback`, POST `/runs/verify`, POST `/attempts/start`, POST `/attempts/patch`, POST `/attempts/verify`, POST `/attempts/finalize`, POST `/attempts/abandon`, POST `/runs/get`, POST `/runs/list`, POST `/update-outdated`, POST `/vex`, POST `/jobs/remediate`, POST `/jobs/scan`, POST `/jobs/portfolio`, GET `/jobs/:jobId`, POST `/reachability`, POST `/packages/evaluate`, POST `/packages/guard`, POST `/autonomy`, POST `/packages/diet`, POST `/delta-scan`, POST `/recipes/list`, POST `/attempts/recipe`, POST `/packages/assess-upgrade`, POST `/packages/vulnerable-symbols`, POST `/incident`, POST `/premortem`, public `GET /.well-known/agent-card.json` (A2A Agent Card), `POST /a2a` (A2A 1.0 JSON-RPC: `SendMessage`, `GetTask`; bearer auth, role per operation; see `docs/integrations/a2a.md`) over HTTP on `127.0.0.1` (auth required unless `AUTOREMEDIATOR_INSECURE_NO_AUTH=1`; see `docs/integrations/http-server.md`)
 - Source: `packages/core/src/openapi/server.ts` (routes and OpenAPI document generated from `packages/core/src/catalog/`); `packages/core/src/a2a/` (Agent Card builder, signing, `/a2a` endpoint). A2A skills are a curated subset of the catalog (`A2A_SKILL_NAMES` in `a2a/agent-card.ts`): adding a catalog operation does not publish it over A2A automatically
 
 ### Mode 6: Governed Multi-Agent Delivery

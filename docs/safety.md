@@ -27,7 +27,8 @@ guarantees it makes, where it trusts input, and what it talks to.
   safe; review the diff.
 - [Reachability](guides/scanners.md#checking-before-you-install) is a static import scan. It cannot see dynamic
   requires or configuration-driven loading, so it prioritizes work and never marks a CVE
-  `not_affected`.
+  `not_affected`. A [runtime trace](guides/runtime-reachability.md) of your tests adds evidence, but a package
+  that no test loads is still not proof that it is unreachable.
 - Version bumps trust the npm registry. Use
   [supply-chain constraints](reference/policy-file.md#constraints) to filter new, script-bearing or
   unattested versions.

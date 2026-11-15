@@ -46,6 +46,13 @@ containmentMode: false
 escalationGraph: { no-safe-version: open-issue }
 ```
 
+## Autonomy and recipes
+
+| Key | Meaning |
+| --- | ------- |
+| `autonomy` | `ceiling` (`L0`..`L4`, required), `minVerifiedRuns` (5), `window` (20), `minSuccessRate` (0.9), `cooldownDays` (7), `requireTestCoverage` (true). Caps how much a repository may do on its own; the earned level comes from its [track record](../guides/earned-autonomy.md). Only the policy file can set it |
+| `recipes.packages` | npm package names whose `recipes/` are trusted as [recipe](../guides/recipes.md) sources for any package |
+
 ## Packages
 
 | Key | Meaning |

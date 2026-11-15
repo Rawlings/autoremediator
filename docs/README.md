@@ -14,6 +14,13 @@ organized by what you are trying to do.
 - [Scanners and inputs](guides/scanners.md): audit output, SARIF, git diffs, portfolios
 - [Automation and CI](guides/automation.md): exit codes, report formats, pull requests and re-runs
 - [Git hooks](guides/git-hooks.md): block a push that makes your dependencies less safe (husky, lefthook, pre-commit, plain git)
+- [Earned autonomy](guides/earned-autonomy.md): a repository's level, from its own verified record
+- [Recipes](guides/recipes.md): keep what an agent repair learned as data
+- [Runtime reachability](guides/runtime-reachability.md): record what your tests load and call
+- [Upgrade impact](guides/upgrade-impact.md): assess an upgrade against your own usage; candidate vulnerable symbols
+- [Incident response](guides/incident-response.md): when a package is compromised, and pre-mortems
+- [Lockfile bisect](guides/bisect.md): find which dependency update broke a command
+- [Dependency diet](guides/dependency-diet.md): unused, replaceable and duplicate dependencies
 - [Guarding new dependencies](guides/guard.md): checking a package before an agent installs it
 - [Plan, apply and roll back](guides/plan-and-apply.md): reviewing a fix first, resuming, undoing
 - [Patch generation](guides/patch-generation.md): letting a model write a patch
@@ -44,5 +51,6 @@ organized by what you are trying to do.
 ## Contributing
 
 - [Contributing guide](../CONTRIBUTING.md)
+- [Benchmark](contributing/benchmark.md): tasks, modes, scoring, adding a task
 - [Architecture](contributing/architecture.md)
 - [Security policy](../.github/SECURITY.md)
