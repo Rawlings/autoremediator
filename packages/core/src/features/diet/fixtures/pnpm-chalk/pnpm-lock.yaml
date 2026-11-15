@@ -11,7 +11,7 @@ importers:
       chalk:
         specifier: ^4.1.2
         version: 4.1.2
-      chalk2:
+      chalk-fixture-two:
         specifier: npm:chalk@^2.4.2
         version: chalk@2.4.2
 

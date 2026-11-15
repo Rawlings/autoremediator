@@ -4,7 +4,25 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { sleep } from "../../shared/time.js";
 import { runProcess, sanitizeOutput } from "./shell.js";
+
+/**
+ * Whether a process has exited, given a moment. Killing a tree is not instant: the kernel still
+ * lists the process for a short while after the signal is delivered, longest on a busy CI runner.
+ */
+async function isGoneSoon(pid: number, withinMs = 3000): Promise<boolean> {
+  const deadline = Date.now() + withinMs;
+  while (Date.now() < deadline) {
+    try {
+      process.kill(pid, 0);
+    } catch {
+      return true;
+    }
+    await sleep(50);
+  }
+  return false;
+}
 
 let dir: string;
 beforeEach(() => {
@@ -44,7 +62,7 @@ describe("runProcess", () => {
     });
     expect(result.timedOut).toBe(true);
     expect(result.durationMs).toBeLessThan(10_000);
-    expect(() => process.kill(Number(readFileSync(pidFile, "utf8")), 0)).toThrow();
+    await expect(isGoneSoon(Number(readFileSync(pidFile, "utf8")))).resolves.toBe(true);
   });
 
   it("stops when aborted", async () => {
