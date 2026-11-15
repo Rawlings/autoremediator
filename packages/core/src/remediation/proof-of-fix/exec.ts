@@ -78,11 +78,9 @@ export async function execProofScript(params: {
   }
 
   if (run.exitCode === 0 && !run.timedOut && !run.outputLimitExceeded) return run;
-  const summary = run.timedOut
-    ? `Command timed out after ${timeoutMs}ms`
-    : run.outputLimitExceeded
-      ? "Command produced too much output"
-      : `Command failed with exit code ${run.exitCode}`;
+  let summary = `Command failed with exit code ${run.exitCode}`;
+  if (run.timedOut) summary = `Command timed out after ${timeoutMs}ms`;
+  else if (run.outputLimitExceeded) summary = "Command produced too much output";
   // Like execa's own message, which the phase logic reads: the summary followed by the output.
   const detail = [run.stderr.trim(), run.stdout.trim()].filter(Boolean).join("\n");
   throw Object.assign(new Error(detail ? `${summary}\n${detail}` : summary), {

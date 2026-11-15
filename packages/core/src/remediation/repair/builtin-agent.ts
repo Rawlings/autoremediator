@@ -54,8 +54,9 @@ function promptFor(task: RepairTask): string {
 
 function describeStep(step: StepResult<ToolSet>, index: number): TranscriptEntry[] {
   const entries: TranscriptEntry[] = [];
-  if (step.text.trim())
+  if (step.text.trim()) {
     entries.push({ step: index, text: redactSecrets(step.text.trim().slice(0, 2000)) });
+  }
   const results = new Map(step.toolResults.map((result) => [result.toolCallId, result.output]));
   for (const call of step.toolCalls) {
     const output = results.get(call.toolCallId);

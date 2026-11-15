@@ -93,6 +93,20 @@ export class SandboxUnavailableError extends Error {
   }
 }
 
+/** The `node` command line: permission flags first, then the preload, then the script. */
+function nodeArguments(options: SandboxOptions, dir: string, preloadDir: string): string[] {
+  return [
+    "--permission",
+    `--allow-fs-read=${dir}`,
+    ...(preloadDir === dir ? [] : [`--allow-fs-read=${preloadDir}`]),
+    `--max-old-space-size=${options.maxHeapMb ?? 256}`,
+    ...(options.nodeArgs ?? []),
+    "--require",
+    join(preloadDir, PRELOAD_NAME),
+    join(dir, options.script),
+  ];
+}
+
 /** Run `script` under the permission model. Resolves with what happened; rejects only if it cannot start. */
 export function runSandboxed(options: SandboxOptions): Promise<SandboxResult> {
   if (process.platform === "win32") {
@@ -102,32 +116,19 @@ export function runSandboxed(options: SandboxOptions): Promise<SandboxResult> {
       ),
     );
   }
-  const { script, timeoutMs, maxOutputBytes, maxHeapMb = 256 } = options;
+  const { timeoutMs, maxOutputBytes } = options;
   const dir = realpathSync(options.dir);
   const preloadDir = options.preloadDir ? realpathSync(options.preloadDir) : dir;
   writeFileSync(join(preloadDir, PRELOAD_NAME), PRELOAD, "utf8");
 
   return new Promise((resolve, reject) => {
     const started = Date.now();
-    const child = spawn(
-      process.execPath,
-      [
-        "--permission",
-        `--allow-fs-read=${dir}`,
-        ...(preloadDir === dir ? [] : [`--allow-fs-read=${preloadDir}`]),
-        `--max-old-space-size=${maxHeapMb}`,
-        ...(options.nodeArgs ?? []),
-        "--require",
-        join(preloadDir, PRELOAD_NAME),
-        join(dir, script),
-      ],
-      {
-        cwd: dir,
-        env: { ...SANDBOX_ENV },
-        stdio: ["ignore", "pipe", "pipe"],
-        detached: true,
-      },
-    );
+    const child = spawn(process.execPath, nodeArguments(options, dir, preloadDir), {
+      cwd: dir,
+      env: { ...SANDBOX_ENV },
+      stdio: ["ignore", "pipe", "pipe"],
+      detached: true,
+    });
 
     const stdout: Buffer[] = [];
     const stderr: Buffer[] = [];
