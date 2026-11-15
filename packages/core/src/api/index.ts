@@ -362,3 +362,18 @@ export {
   type ReadMaintainerVexOptions,
   type ShippedVexSummary,
 } from "./maintainer-vex/index.js";
+export {
+  defaultProveDeps,
+  findEvidence,
+  generateProofOfFix,
+  proofEvidenceRefs,
+  verifyProofEvidence,
+  type ProofEvidence,
+  type ProofEvidenceRef,
+  type ProveDeps,
+  type ProveOptions,
+  type ProveResult,
+  type ReproductionAgent,
+  type SignatureCheck,
+  type TrialSummary,
+} from "./prove/index.js";

@@ -44,6 +44,7 @@ import {
   explainPolicy,
   maintain,
   readMaintainerVex,
+  generateProofOfFix,
 } from "../api/index.js";
 
 /** The SDK functions operations call. Injectable so tests and embedders can substitute them. */
@@ -94,6 +95,7 @@ export interface ApiDeps {
   explainPolicyFn: typeof explainPolicy;
   maintainFn: typeof maintain;
   readMaintainerVexFn: typeof readMaintainerVex;
+  generateProofOfFixFn: typeof generateProofOfFix;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -143,4 +145,5 @@ export const defaultApiDeps: ApiDeps = {
   explainPolicyFn: explainPolicy,
   maintainFn: maintain,
   readMaintainerVexFn: readMaintainerVex,
+  generateProofOfFixFn: generateProofOfFix,
 };

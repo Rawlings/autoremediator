@@ -36,6 +36,11 @@ export const defaultTargetDeps: TargetDeps = {
   lookupGitHub: lookupCveGitHub,
 };
 
+/** OSV ids are case-sensitive: CVE-, OSV- and MAL- ids are upper case, GHSA ids are `GHSA-` followed by lower case. */
+function normalizeAdvisoryId(id: string): string {
+  return /^GHSA-/i.test(id) ? `GHSA-${id.slice(5).toLowerCase()}` : id.toUpperCase();
+}
+
 /** Turn what the user typed into the packages and version ranges that are bad. */
 export async function resolveTarget(
   input: string,
@@ -68,7 +73,7 @@ export async function resolveTarget(
     return { input: typed, kind: "package-range", affected: [{ name: parsed.name, range }] };
   }
 
-  const id = typed.toUpperCase();
+  const id = normalizeAdvisoryId(typed);
   let details: CveDetails | null;
   let source: NonNullable<IncidentTarget["advisory"]>["source"];
   if (options.offline) {

@@ -54,6 +54,7 @@ import {
   validatePatchArtifact,
   verifyRun,
   reconcilePatchArtifacts,
+  proofEvidenceRefs,
 } from "../api/index.js";
 import type { ChangeRequestProvider } from "../platform/types.js";
 import { PACKAGE_VERSION } from "../version.js";
@@ -222,7 +223,7 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
   }
 
   if (opts.outputFormat === "cyclonedx-vex") {
-    logJson(toCycloneDxVex(reportAsScan, { toolVersion: PACKAGE_VERSION }));
+    logJson(toCycloneDxVex(reportAsScan, { toolVersion: PACKAGE_VERSION, proofEvidence: proofEvidenceRefs(opts.cwd, opts.patchesDir) }));
     if (opts.ci) {
       process.exitCode = ciExitCode(toCiSummary(reportAsScan));
     }
@@ -312,7 +313,7 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
   }
 
   if (opts.outputFormat === "cyclonedx-vex") {
-    logJson(toCycloneDxVex(report, { toolVersion: PACKAGE_VERSION }));
+    logJson(toCycloneDxVex(report, { toolVersion: PACKAGE_VERSION, proofEvidence: proofEvidenceRefs(opts.cwd, opts.patchesDir) }));
     if (opts.ci) {
       process.exitCode = ciExitCode(toCiSummary(report));
     }

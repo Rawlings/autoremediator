@@ -373,7 +373,7 @@ describe("incident: advisory ids", () => {
     );
     expect(lookupOsv).not.toHaveBeenCalled();
     expect(report.target.advisory).toMatchObject({
-      id: "GHSA-ABCD-1234-WXYZ",
+      id: "GHSA-abcd-1234-wxyz",
       source: "offline-snapshot",
     });
     expect(report.exposure.exposed).toBe(true);

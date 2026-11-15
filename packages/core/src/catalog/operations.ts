@@ -37,6 +37,7 @@ import { PACKAGE_VERSION } from "../version.js";
 import { INCIDENT_OPERATIONS } from "./incident-operations.js";
 import { POLICY_OPERATIONS } from "./policy-operations.js";
 import { MAINTAINER_VEX_OPERATIONS } from "./maintainer-vex-operations.js";
+import { PROVE_OPERATIONS } from "./prove-operations.js";
 import { RESPONSES } from "./responses.js";
 import { defineOperation, type Operation, type OperationContext } from "./define-operation.js";
 
@@ -771,6 +772,7 @@ export const OPERATIONS: readonly Operation[] = [
   ...INCIDENT_OPERATIONS,
   ...POLICY_OPERATIONS,
   ...MAINTAINER_VEX_OPERATIONS,
+  ...PROVE_OPERATIONS,
 ];
 
 export function getOperation(name: string): Operation | undefined {
