@@ -24,6 +24,7 @@ import {
   pollJob,
   premortem,
   proposePatch,
+  radar,
   reconcilePatchArtifacts,
   remediate,
   remediateFromScan,
@@ -86,6 +87,7 @@ export interface ApiDeps {
   findVulnerableSymbolsFn: typeof findVulnerableSymbols;
   incidentFn: typeof incident;
   premortemFn: typeof premortem;
+  radarFn: typeof radar;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -131,4 +133,5 @@ export const defaultApiDeps: ApiDeps = {
   findVulnerableSymbolsFn: findVulnerableSymbols,
   incidentFn: incident,
   premortemFn: premortem,
+  radarFn: radar,
 };

@@ -328,3 +328,23 @@ export {
   type PremortemTarget,
   type PremortemUsage,
 } from "./premortem/index.js";
+export {
+  createLlmRadarClassifier,
+  radar,
+  radarExitCode,
+  renderRadar,
+  type RadarAdvisory,
+  type RadarCategory,
+  type RadarConfidence,
+  type RadarDeps,
+  type RadarEntry,
+  type RadarFlag,
+  type RadarImpact,
+  type RadarModelPort,
+  type RadarModelRequest,
+  type RadarModelVerdict,
+  type RadarOptions,
+  type RadarReport,
+  type RadarSkipped,
+  type RadarTarget,
+} from "./radar/index.js";

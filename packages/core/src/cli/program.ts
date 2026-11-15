@@ -40,6 +40,7 @@ import { addRecipesCommand } from "./recipes.js";
 import { runBisect, type BisectCliOptions } from "./bisect.js";
 import { runTraceCommand, type TraceRunCommandOptions } from "./trace.js";
 import { registerIncidentCommands } from "./incident-commands.js";
+import { registerRadarCommands } from "./radar-commands.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
 import { validateOutputFormat, validateSharedCommandOptions } from "./validators.js";
@@ -349,6 +350,7 @@ export function createProgram(): Command {
     });
 
   registerIncidentCommands(program);
+  registerRadarCommands(program);
 
   program
     .command("init")
