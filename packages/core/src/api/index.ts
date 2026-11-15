@@ -222,3 +222,15 @@ export {
   type RecipeListing,
   type RecipeSummary,
 } from "./recipes/index.js";
+export {
+  bisectLockfile,
+  type BisectCommandRecord,
+  type BisectedPackage,
+  type BisectOptions,
+  type BisectRemedy,
+  type BisectReport,
+  type BisectSkippedChange,
+  type BisectStatus,
+  type BisectStep,
+  type BisectStepKind,
+} from "./bisect/index.js";

@@ -615,6 +615,67 @@ export const OPERATIONS: readonly Operation[] = [
     http: { method: "POST", path: "/attempts/recipe", positional: ["runId", "attemptId", "recipeId"] },
     handler: (options, context) => context.api.applyRecipeFn(options),
   }),
+  defineOperation({
+    name: "bisectLockfile",
+    title: "Bisect a lockfile change",
+    description:
+      "Find which package update in the lockfile difference between a good and a bad git ref makes a shell command fail (a dependency published a bad release, CI broke with no code change). Installs both refs and subsets of the updates in isolated git worktrees, runs the command in them, narrows down with delta debugging, and returns the culprit (or the smallest set that fails only together) with the evidence and a plan that pins it back. Runs the given shell command with the caller's privileges, and package install scripts unless ignoreScripts is set. Command line and SDK only.",
+    input: z
+      .object({
+        cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional(),
+        good: z
+          .string("good is required (string)")
+          .min(1, "good is required (string)")
+          .max(300)
+          .describe("Git ref (commit, tag or branch) where the command passes."),
+        bad: z
+          .string()
+          .min(1)
+          .max(300)
+          .optional()
+          .describe("Git ref where the command fails. Default HEAD. The committed state is used, not the working tree."),
+        command: z
+          .string("command is required (string)")
+          .min(1, "command is required (string)")
+          .max(4000)
+          .describe("Shell command to run after installing; exit code 0 means pass. It runs in a checkout, never in the project directory."),
+        timeoutSeconds: z
+          .number()
+          .positive()
+          .max(86_400)
+          .optional()
+          .describe("Kill the command after this many seconds and count it as failing. Default 600."),
+        maxSteps: z
+          .number()
+          .int()
+          .min(1)
+          .max(500)
+          .optional()
+          .describe("Evaluate at most this many candidate states, not counting the good and bad refs. Default 30."),
+        packageManager: z
+          .enum(["npm", "pnpm", "yarn"])
+          .optional()
+          .describe("Package manager. Default: from the lockfile at the bad ref."),
+        ignoreScripts: z
+          .boolean()
+          .optional()
+          .describe("Pass --ignore-scripts to every install so package install scripts do not run."),
+        apply: z
+          .boolean()
+          .optional()
+          .describe("Apply the recommended pin to the project through the run machinery. Without it the pin is only planned."),
+      })
+      .strict(),
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+    response: RESPONSES.bisectReport,
+    mcp: false,
+    handler: (options, context) => context.api.bisectLockfileFn(options),
+  }),
 ];
 
 export function getOperation(name: string): Operation | undefined {

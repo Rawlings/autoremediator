@@ -215,7 +215,11 @@ export const applyVersionBumpTool = defineTool({
     // Preserve the range prefix (^, ~, empty) from the existing entry
     const prefixMatch = /^([~^]?)/.exec(currentRange);
     const prefix = prefixMatch?.[1] ?? "";
-    const newRange = `${prefix}${toVersion}`;
+    // A downgrade (pinning a release back) must be exact: the package manager keeps a locked newer
+    // version that the old range still allows, so `^1.0.0` would change nothing.
+    const isDowngrade =
+      semver.valid(fromVersion) && semver.valid(toVersion) && semver.lt(toVersion, fromVersion);
+    const newRange = isDowngrade ? toVersion : `${prefix}${toVersion}`;
 
     const effectiveInstallCommand = resolveInstallCommand(pm, commandConstraints, yarnMajor);
     const effectiveTestCommand = resolveTestCommand(pm, commandConstraints);
