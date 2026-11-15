@@ -45,6 +45,7 @@ Set exactly one of:
 | `model` | none | [Patch fallback](../guides/patch-generation.md). Needs that provider's `@ai-sdk/*` package and API key in the job environment |
 | `summary-file` | none | Write a machine-readable summary |
 | `node-version` | `26` | Node.js version. Must be 26 or later |
+| `package` | empty | What to install instead of the `autoremediator` version that ships with the action: an npm spec or a tarball from `pnpm pack`. For testing unreleased code |
 | `token` | `github.token` | Token used for the pull request |
 
 ## Pull requests
