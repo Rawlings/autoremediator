@@ -1,5 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { rm } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 import semver from "semver";
@@ -7,43 +6,17 @@ import { z } from "zod";
 
 import {
   detectPackageManager,
-  getPnpmMajorVersion,
   getYarnMajorVersion,
   resolveDedupeCommand,
   resolveInstallCommand,
 } from "../../../infra/package-manager/index.js";
 import { isPackageAllowed, loadPolicy } from "../../../infra/policy/policy.js";
-import { withRepoLock } from "../../../infra/repo-lock.js";
-import { errorMessage } from "../../../shared/errors.js";
-import { safeExecaCommand } from "../../../shared/exec/safe-exec-command.js";
-import { LONG_RUNNING_TIMEOUT_MS } from "../../../shared/timeouts.js";
 import { resolveProjectTestCommand } from "../../memory/test-command.js";
 import { defineTool } from "../../remediate/tools/tool-compat.js";
 import type { PatchResult } from "../../remediate/types.js";
-import {
-  assembleProofOfFixVerification,
-  prepareReproductionTestFile,
-  runProofOfFixPhase,
-} from "../../verify/proof-of-fix/runner.js";
-import type { ProofOfFixPhaseResult, ProofOfFixVerification } from "../../verify/types.js";
-import { serializeManifest } from "../manifest-format.js";
-import {
-  collectDependencyTrace,
-  describeOverrideField,
-  getDenoJsonImportValue,
-  restoreDenoJsonImportValue,
-  setDenoJsonImportValue,
-  setOverrideValue,
-  type DenoJson,
-  type RawPackageJson,
-} from "./helpers.js";
-import {
-  PNPM_WORKSPACE_OVERRIDES_FROM,
-  pnpmLockRecordsOverride,
-  readWorkspaceYaml,
-  restoreWorkspaceYaml,
-  setWorkspaceOverride,
-} from "./pnpm-workspace.js";
+import { applyDenoOverride } from "./deno.js";
+import { applyManifestOverride } from "./manifest.js";
+import { unresolvedResult, type OverrideRequest } from "./transaction.js";
 
 export const applyPackageOverrideTool = defineTool({
   description:
@@ -89,553 +62,62 @@ export const applyPackageOverrideTool = defineTool({
       .default("./patches")
       .describe("Directory containing patch/reproduction artifacts"),
   }),
-  execute: async ({
-    cwd,
-    packageManager,
-    packageName,
-    selector,
-    fromVersion,
-    toVersion,
-    dryRun,
-    policy,
-    runTests,
-    installMode,
-    installPreferOffline,
-    enforceFrozenLockfile,
-    workspace,
-    reproductionTest,
-    proofOfFix,
-    requireProofOfFix,
-    patchesDir,
-  }): Promise<PatchResult> => {
-    const pm = packageManager ?? detectPackageManager(cwd);
-    const pkgPath = join(cwd, "package.json");
-    const denoJsonPath = join(cwd, "deno.json");
-    const isDenoNative = pm === "deno" && !existsSync(pkgPath);
-    const loadedPolicy = loadPolicy(cwd, policy);
+  execute: async (input): Promise<PatchResult> => {
+    const { cwd, packageName, fromVersion, toVersion, dryRun } = input;
+    const pm = input.packageManager ?? detectPackageManager(cwd);
+    const isDenoNative = pm === "deno" && !existsSync(join(cwd, "package.json"));
+    const policy = loadPolicy(cwd, input.policy);
     const commandConstraints = {
-      ...loadedPolicy.constraints,
-      installMode: installMode ?? loadedPolicy.constraints?.installMode,
-      installPreferOffline: installPreferOffline ?? loadedPolicy.constraints?.installPreferOffline,
+      ...policy.constraints,
+      installMode: input.installMode ?? policy.constraints?.installMode,
+      installPreferOffline: input.installPreferOffline ?? policy.constraints?.installPreferOffline,
       enforceFrozenLockfile:
-        enforceFrozenLockfile ?? loadedPolicy.constraints?.enforceFrozenLockfile,
-      workspace: workspace ?? loadedPolicy.constraints?.workspace,
+        input.enforceFrozenLockfile ?? policy.constraints?.enforceFrozenLockfile,
+      workspace: input.workspace ?? policy.constraints?.workspace,
     };
-    const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
-    const installCommand = resolveInstallCommand(pm, commandConstraints, yarnMajor);
-    const testCommand = resolveProjectTestCommand(pm, commandConstraints, cwd);
-    const dedupeCommand = resolveDedupeCommand(pm, commandConstraints);
-    const overrideSelector = selector?.trim() || packageName;
+    const request: OverrideRequest = {
+      cwd,
+      pm,
+      packageName,
+      fromVersion,
+      toVersion,
+      dryRun,
+      runTests: input.runTests,
+      commandConstraints,
+      overrideSelector: input.selector?.trim() || packageName,
+      installCommand: resolveInstallCommand(
+        pm,
+        commandConstraints,
+        pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined,
+      ),
+      testCommand: resolveProjectTestCommand(pm, commandConstraints, cwd),
+      dedupeCommand: resolveDedupeCommand(pm, commandConstraints),
+      patchesDir: input.patchesDir,
+      proofOfFix: input.proofOfFix,
+      reproductionTest: input.reproductionTest,
+      requireProofOfFix: input.requireProofOfFix,
+    };
 
-    if (!isPackageAllowed(loadedPolicy, packageName)) {
-      return {
-        packageName,
-        strategy: "none",
-        fromVersion,
-        toVersion,
-        applied: false,
-        dryRun,
-        unresolvedReason: "policy-blocked",
-        message: `Policy blocked changes for package "${packageName}".`,
-      };
+    if (!isPackageAllowed(policy, packageName)) {
+      return unresolvedResult(
+        request,
+        "policy-blocked",
+        `Policy blocked changes for package "${packageName}".`,
+        "none",
+      );
     }
-
     const isMajorBump =
       semver.valid(fromVersion) &&
       semver.valid(toVersion) &&
       semver.major(toVersion) > semver.major(fromVersion);
-
-    if (isMajorBump && !loadedPolicy.allowMajorBumps) {
-      return {
-        packageName,
-        strategy: "none",
-        fromVersion,
-        toVersion,
-        applied: false,
-        dryRun,
-        unresolvedReason: "major-bump-required",
-        message: `Policy blocked major override for "${packageName}" (${fromVersion} -> ${toVersion}).`,
-      };
-    }
-
-    // ---- Deno native path (deno.json import map, no package.json) ----
-    if (isDenoNative) {
-      let denoJson: DenoJson;
-      try {
-        denoJson = JSON.parse(readFileSync(denoJsonPath, "utf8")) as DenoJson;
-      } catch {
-        return {
-          packageName,
-          strategy: "none",
-          fromVersion,
-          toVersion,
-          applied: false,
-          dryRun,
-          unresolvedReason: "package-json-not-found",
-          message: `Could not read deno.json at "${denoJsonPath}".`,
-        };
-      }
-
-      const existingEntry = getDenoJsonImportValue(denoJson, overrideSelector);
-      if (!existingEntry) {
-        return {
-          packageName,
-          strategy: "none",
-          fromVersion,
-          toVersion,
-          applied: false,
-          dryRun,
-          unresolvedReason: "transitive-override-unsupported-deno-native",
-          message: `Cannot apply transitive override for "${overrideSelector}" in a native Deno project (no package.json). Only direct dependencies declared in deno.json imports can be overridden.`,
-        };
-      }
-
-      const dependencyTrace = await collectDependencyTrace(
-        cwd,
-        pm,
-        packageName,
-        commandConstraints,
+    if (isMajorBump && !policy.allowMajorBumps) {
+      return unresolvedResult(
+        request,
+        "major-bump-required",
+        `Policy blocked major override for "${packageName}" (${fromVersion} -> ${toVersion}).`,
+        "none",
       );
-      const dependencyTraceSuffix = dependencyTrace ? ` Dependency trace: ${dependencyTrace}` : "";
-
-      if (dryRun) {
-        return {
-          packageName,
-          strategy: "override",
-          fromVersion,
-          toVersion,
-          applied: false,
-          dryRun: true,
-          message: `[DRY RUN] Would update deno.json imports["${existingEntry.key}"] to "npm:${overrideSelector}@${toVersion}", then run ${installCommand.join(" ")}.${dependencyTraceSuffix}`,
-        };
-      }
-
-      return withRepoLock(cwd, async () => {
-        const prepared = await prepareReproductionTestFile({
-          cwd,
-          packageName,
-          vulnerableVersion: fromVersion,
-          patchesDir,
-          proofOfFix,
-          reproductionTest,
-        });
-        const reproTestPath = prepared.testFilePath;
-        const isProofActive = Boolean(reproTestPath || proofOfFix || requireProofOfFix);
-
-        let negativePhaseResult: ProofOfFixPhaseResult | undefined;
-        if (isProofActive) {
-          if (!reproTestPath) {
-            if (requireProofOfFix) {
-              return {
-                packageName,
-                strategy: "none",
-                fromVersion,
-                toVersion,
-                applied: false,
-                dryRun,
-                unresolvedReason: "policy-blocked",
-                message:
-                  "Proof-of-fix verification required, but no reproduction test or script was supplied.",
-              };
-            }
-          } else {
-            negativePhaseResult = await runProofOfFixPhase({
-              stage: "negative",
-              testFilePath: reproTestPath,
-              cwd,
-            });
-
-            if (!negativePhaseResult.passed) {
-              if (prepared.isCreated && reproTestPath) {
-                await rm(reproTestPath, { force: true }).catch(() => {});
-              }
-              return {
-                packageName,
-                strategy: "override",
-                fromVersion,
-                toVersion,
-                applied: false,
-                dryRun: false,
-                unresolvedReason: requireProofOfFix ? "policy-blocked" : "proof-of-fix-failed",
-                message: `Proof-of-fix negative phase failed: ${negativePhaseResult.error}`,
-              };
-            }
-          }
-        }
-
-        setDenoJsonImportValue(denoJson, overrideSelector, toVersion);
-        writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n", "utf8");
-
-        try {
-          await safeExecaCommand(installCommand, {
-            timeoutMs: LONG_RUNNING_TIMEOUT_MS,
-            cwd,
-            stdio: "pipe",
-          });
-        } catch (err) {
-          restoreDenoJsonImportValue(denoJson, overrideSelector, existingEntry);
-          writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n", "utf8");
-          const message = errorMessage(err);
-          return {
-            packageName,
-            strategy: "override",
-            fromVersion,
-            toVersion,
-            applied: false,
-            dryRun: false,
-            unresolvedReason: "override-apply-failed",
-            message: `${installCommand.join(" ")} failed after updating deno.json imports for "${overrideSelector}" to ${toVersion}. Reverted. Error: ${message}${dependencyTraceSuffix}`,
-          };
-        }
-
-        if (runTests) {
-          try {
-            await safeExecaCommand(testCommand, {
-              timeoutMs: LONG_RUNNING_TIMEOUT_MS,
-              cwd,
-              stdio: "pipe",
-            });
-          } catch (err) {
-            restoreDenoJsonImportValue(denoJson, overrideSelector, existingEntry);
-            writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n", "utf8");
-
-            try {
-              await safeExecaCommand(installCommand, {
-                timeoutMs: LONG_RUNNING_TIMEOUT_MS,
-                cwd,
-                stdio: "pipe",
-              });
-            } catch {
-              // Ignore rollback failure.
-            }
-
-            const message = errorMessage(err);
-            return {
-              packageName,
-              strategy: "override",
-              fromVersion,
-              toVersion,
-              applied: false,
-              dryRun: false,
-              unresolvedReason: "validation-failed",
-              message: `${testCommand.join(" ")} failed after updating deno.json imports for "${overrideSelector}" to ${toVersion}. Reverted. Error: ${message}${dependencyTraceSuffix}`,
-            };
-          }
-        }
-
-        let proofOfFixVerification: ProofOfFixVerification | undefined;
-        if (reproTestPath && negativePhaseResult?.passed) {
-          const positivePhaseResult = await runProofOfFixPhase({
-            stage: "positive",
-            testFilePath: reproTestPath,
-            cwd,
-          });
-
-          if (!positivePhaseResult.passed) {
-            restoreDenoJsonImportValue(denoJson, overrideSelector, existingEntry);
-            writeFileSync(denoJsonPath, JSON.stringify(denoJson, null, 2) + "\n", "utf8");
-
-            try {
-              await safeExecaCommand(installCommand, {
-                timeoutMs: LONG_RUNNING_TIMEOUT_MS,
-                cwd,
-                stdio: "pipe",
-              });
-            } catch {}
-
-            if (prepared.isCreated && reproTestPath) {
-              await rm(reproTestPath, { force: true }).catch(() => {});
-            }
-
-            return {
-              packageName,
-              strategy: "override",
-              fromVersion,
-              toVersion,
-              applied: false,
-              dryRun: false,
-              unresolvedReason: requireProofOfFix ? "policy-blocked" : "proof-of-fix-failed",
-              message: `Proof-of-fix positive phase failed: ${positivePhaseResult.error}`,
-            };
-          }
-
-          proofOfFixVerification = assembleProofOfFixVerification({
-            reproductionTestPath: reproTestPath,
-            negativePhase: negativePhaseResult,
-            positivePhase: positivePhaseResult,
-            regressionPhase: {
-              executed: runTests,
-              passed: true,
-            },
-          });
-        }
-
-        return {
-          packageName,
-          strategy: "override",
-          fromVersion,
-          toVersion,
-          applied: true,
-          dryRun: false,
-          proofOfFix: proofOfFixVerification,
-          message: `Successfully updated deno.json imports["${existingEntry.key}"] for "${overrideSelector}" from ${fromVersion} to ${toVersion}, then ran ${installCommand.join(" ")}${runTests ? ` and passed ${testCommand.join(" ")}` : ""}.${dependencyTraceSuffix}`,
-        };
-      });
     }
-
-    // ---- npm / pnpm / yarn / bun / deno-npm-compat path ----
-    let pkgJson: RawPackageJson;
-    try {
-      pkgJson = JSON.parse(readFileSync(pkgPath, "utf8")) as RawPackageJson;
-    } catch {
-      return {
-        packageName,
-        strategy: "none",
-        fromVersion,
-        toVersion,
-        applied: false,
-        dryRun,
-        unresolvedReason: "package-json-not-found",
-        message: `Could not read package.json at "${pkgPath}".`,
-      };
-    }
-
-    const pnpmMajor = pm === "pnpm" ? await getPnpmMajorVersion(cwd) : undefined;
-    const useWorkspaceYaml = pm === "pnpm" && (pnpmMajor ?? 0) >= PNPM_WORKSPACE_OVERRIDES_FROM;
-    const overrideLabel = useWorkspaceYaml
-      ? "overrides in pnpm-workspace.yaml"
-      : describeOverrideField(pm);
-
-    const dependencyTrace = await collectDependencyTrace(cwd, pm, packageName, commandConstraints);
-    const dependencyTraceSuffix = dependencyTrace ? ` Dependency trace: ${dependencyTrace}` : "";
-
-    if (dryRun) {
-      return {
-        packageName,
-        strategy: "override",
-        fromVersion,
-        toVersion,
-        applied: false,
-        dryRun: true,
-        message: `[DRY RUN] Would set ${overrideLabel}.${overrideSelector} to "${toVersion}", then run ${installCommand.join(" ")}${runTests ? ` and ${testCommand.join(" ")}` : ""}${dedupeCommand.length > 0 ? ` and ${dedupeCommand.join(" ")} (best-effort)` : ""}.${dependencyTraceSuffix}`,
-      };
-    }
-
-    return withRepoLock(cwd, async () => {
-      const prepared = await prepareReproductionTestFile({
-        cwd,
-        packageName,
-        vulnerableVersion: fromVersion,
-        patchesDir,
-        proofOfFix,
-        reproductionTest,
-      });
-      const reproTestPath = prepared.testFilePath;
-      const isProofActive = Boolean(reproTestPath || proofOfFix || requireProofOfFix);
-
-      let negativePhaseResult: ProofOfFixPhaseResult | undefined;
-      if (isProofActive) {
-        if (!reproTestPath) {
-          if (requireProofOfFix) {
-            return {
-              packageName,
-              strategy: "none",
-              fromVersion,
-              toVersion,
-              applied: false,
-              dryRun,
-              unresolvedReason: "policy-blocked",
-              message:
-                "Proof-of-fix verification required, but no reproduction test or script was supplied.",
-            };
-          }
-        } else {
-          negativePhaseResult = await runProofOfFixPhase({
-            stage: "negative",
-            testFilePath: reproTestPath,
-            cwd,
-          });
-
-          if (!negativePhaseResult.passed) {
-            if (prepared.isCreated && reproTestPath) {
-              await rm(reproTestPath, { force: true }).catch(() => {});
-            }
-            return {
-              packageName,
-              strategy: "override",
-              fromVersion,
-              toVersion,
-              applied: false,
-              dryRun: false,
-              unresolvedReason: requireProofOfFix ? "policy-blocked" : "proof-of-fix-failed",
-              message: `Proof-of-fix negative phase failed: ${negativePhaseResult.error}`,
-            };
-          }
-        }
-      }
-
-      const originalManifest = readFileSync(pkgPath, "utf8");
-      const originalWorkspace = useWorkspaceYaml ? readWorkspaceYaml(cwd) : undefined;
-      const restoreOverrideFiles = (): void => {
-        writeFileSync(pkgPath, originalManifest, "utf8");
-        if (useWorkspaceYaml) restoreWorkspaceYaml(cwd, originalWorkspace);
-      };
-      if (useWorkspaceYaml) {
-        setWorkspaceOverride(cwd, overrideSelector, toVersion);
-      } else {
-        setOverrideValue(pkgJson, pm, overrideSelector, toVersion);
-        writeFileSync(pkgPath, serializeManifest(originalManifest, pkgJson), "utf8");
-      }
-
-      try {
-        await safeExecaCommand(installCommand, {
-          timeoutMs: LONG_RUNNING_TIMEOUT_MS,
-          cwd,
-          stdio: "pipe",
-        });
-      } catch (err) {
-        restoreOverrideFiles();
-        const message = errorMessage(err);
-        return {
-          packageName,
-          strategy: "override",
-          fromVersion,
-          toVersion,
-          applied: false,
-          dryRun: false,
-          unresolvedReason: "override-apply-failed",
-          message: `${installCommand.join(" ")} failed after applying ${overrideLabel} for "${overrideSelector}" to ${toVersion}. Reverted. Error: ${message}${dependencyTraceSuffix}`,
-        };
-      }
-
-      // An install can succeed and still ignore the override (the wrong field for this pnpm version).
-      if (pm === "pnpm" && pnpmLockRecordsOverride(cwd, overrideSelector) === false) {
-        restoreOverrideFiles();
-        try {
-          await safeExecaCommand(installCommand, {
-            timeoutMs: LONG_RUNNING_TIMEOUT_MS,
-            cwd,
-            stdio: "pipe",
-          });
-        } catch {
-          // The files are restored; a failed reinstall here is reported by the next run.
-        }
-        return {
-          packageName,
-          strategy: "override",
-          fromVersion,
-          toVersion,
-          applied: false,
-          dryRun: false,
-          unresolvedReason: "override-apply-failed",
-          message: `pnpm did not record the ${overrideLabel} override for "${overrideSelector}" in pnpm-lock.yaml, so it had no effect. Reverted.${dependencyTraceSuffix}`,
-        };
-      }
-
-      if (runTests) {
-        try {
-          await safeExecaCommand(testCommand, {
-            timeoutMs: LONG_RUNNING_TIMEOUT_MS,
-            cwd,
-            stdio: "pipe",
-          });
-        } catch (err) {
-          restoreOverrideFiles();
-
-          try {
-            await safeExecaCommand(installCommand, {
-              timeoutMs: LONG_RUNNING_TIMEOUT_MS,
-              cwd,
-              stdio: "pipe",
-            });
-          } catch {
-            // Ignore rollback install failure and return original test failure context.
-          }
-
-          const message = errorMessage(err);
-          return {
-            packageName,
-            strategy: "override",
-            fromVersion,
-            toVersion,
-            applied: false,
-            dryRun: false,
-            unresolvedReason: "validation-failed",
-            message: `${testCommand.join(" ")} failed after applying ${overrideLabel} for "${overrideSelector}" to ${toVersion}. Reverted. Error: ${message}${dependencyTraceSuffix}`,
-          };
-        }
-      }
-
-      let proofOfFixVerification: ProofOfFixVerification | undefined;
-      if (reproTestPath && negativePhaseResult?.passed) {
-        const positivePhaseResult = await runProofOfFixPhase({
-          stage: "positive",
-          testFilePath: reproTestPath,
-          cwd,
-        });
-
-        if (!positivePhaseResult.passed) {
-          restoreOverrideFiles();
-
-          try {
-            await safeExecaCommand(installCommand, {
-              timeoutMs: LONG_RUNNING_TIMEOUT_MS,
-              cwd,
-              stdio: "pipe",
-            });
-          } catch {}
-
-          if (prepared.isCreated && reproTestPath) {
-            await rm(reproTestPath, { force: true }).catch(() => {});
-          }
-
-          return {
-            packageName,
-            strategy: "override",
-            fromVersion,
-            toVersion,
-            applied: false,
-            dryRun: false,
-            unresolvedReason: requireProofOfFix ? "policy-blocked" : "proof-of-fix-failed",
-            message: `Proof-of-fix positive phase failed: ${positivePhaseResult.error}`,
-          };
-        }
-
-        proofOfFixVerification = assembleProofOfFixVerification({
-          reproductionTestPath: reproTestPath,
-          negativePhase: negativePhaseResult,
-          positivePhase: positivePhaseResult,
-          regressionPhase: {
-            executed: runTests,
-            passed: true,
-          },
-        });
-      }
-
-      let dedupeNote = "";
-      if (dedupeCommand.length > 0) {
-        try {
-          await safeExecaCommand(dedupeCommand, {
-            timeoutMs: LONG_RUNNING_TIMEOUT_MS,
-            cwd,
-            stdio: "pipe",
-          });
-        } catch (err) {
-          const message = errorMessage(err);
-          dedupeNote = ` Dedupe warning: ${dedupeCommand.join(" ")} failed (${message}).`;
-        }
-      }
-
-      return {
-        packageName,
-        strategy: "override",
-        fromVersion,
-        toVersion,
-        applied: true,
-        dryRun: false,
-        proofOfFix: proofOfFixVerification,
-        message: `Successfully applied ${overrideLabel} for "${overrideSelector}" from ${fromVersion} to ${toVersion}, then ran ${installCommand.join(" ")}${runTests ? ` and passed ${testCommand.join(" ")}` : ""}.${dedupeNote}${dependencyTraceSuffix}`,
-      };
-    });
+    return isDenoNative ? applyDenoOverride(request) : applyManifestOverride(request);
   },
 });

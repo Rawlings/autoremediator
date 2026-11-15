@@ -12,10 +12,10 @@ import { describe, expect, it } from "vitest";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "..");
 
 const CAPS: Record<string, number> = {
-  "eslint/max-lines": 30,
-  "eslint/max-lines-per-function": 95,
+  "eslint/max-lines": 29,
+  "eslint/max-lines-per-function": 94,
   "eslint/no-nested-ternary": 69,
-  "eslint/curly": 99,
+  "eslint/curly": 98,
 };
 
 interface Override {
