@@ -53,6 +53,7 @@ import {
   listMemory,
   pruneMemory,
   removeMemory,
+  buildEvidencePack,
 } from "../api/index.js";
 
 /** The SDK functions operations call. Injectable so tests and embedders can substitute them. */
@@ -112,6 +113,7 @@ export interface ApiDeps {
   acceptMemoryFn: typeof acceptMemory;
   removeMemoryFn: typeof removeMemory;
   pruneMemoryFn: typeof pruneMemory;
+  buildEvidencePackFn: typeof buildEvidencePack;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -170,4 +172,5 @@ export const defaultApiDeps: ApiDeps = {
   acceptMemoryFn: acceptMemory,
   removeMemoryFn: removeMemory,
   pruneMemoryFn: pruneMemory,
+  buildEvidencePackFn: buildEvidencePack,
 };

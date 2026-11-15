@@ -35,6 +35,7 @@ import { HOOK_MANAGERS, HOOK_NAMES } from "../api/hooks/types.js";
 import { AGENT_HOSTS } from "../api/init/types.js";
 import { PACKAGE_VERSION } from "../version.js";
 import { FRESHNESS_OPERATIONS } from "./freshness-operations.js";
+import { EVIDENCE_PACK_OPERATIONS } from "./evidence-pack-operations.js";
 import { INCIDENT_OPERATIONS } from "./incident-operations.js";
 import { POLICY_OPERATIONS } from "./policy-operations.js";
 import { MAINTAINER_VEX_OPERATIONS } from "./maintainer-vex-operations.js";
@@ -430,7 +431,7 @@ export const OPERATIONS: readonly Operation[] = [
     name: "toVex",
     title: "Convert a report to VEX",
     description:
-      "Convert a ScanReport or RemediationReport to a CycloneDX 1.5 VEX document. Returns a compliance-ready vulnerability exploitability exchange record binding remediation evidence to SBOM vulnerability entries.",
+      "Convert a ScanReport or RemediationReport to a CycloneDX VEX document (1.5 by default; specVersion 1.6 adds affects by purl and schema-valid justifications). Returns a compliance-ready vulnerability exploitability exchange record binding remediation evidence to SBOM vulnerability entries.",
     input: z
       .object({
         report: z
@@ -442,16 +443,22 @@ export const OPERATIONS: readonly Operation[] = [
           .string()
           .optional()
           .describe("Optional tool version to embed in the VEX document metadata."),
+        specVersion: z
+          .enum(["1.5", "1.6"])
+          .optional()
+          .describe("CycloneDX version to emit. Default 1.5. 1.6 adds affects by purl and uses justifications the CycloneDX schema defines."),
       })
       .strict(),
     annotations: READ_ONLY,
     response: RESPONSES.vexDocument,
     mcp: true,
     http: { method: "POST", path: "/vex", positional: ["report"] },
-    handler: ({ report, toolVersion }, context) =>
+    handler: ({ report, toolVersion, specVersion }, context) =>
       context.api.toVexFn(
         report as unknown as Parameters<typeof context.api.toVexFn>[0],
-        toolVersion ? { toolVersion } : undefined,
+        toolVersion || specVersion
+          ? { ...(toolVersion ? { toolVersion } : {}), ...(specVersion ? { specVersion } : {}) }
+          : undefined,
       ),
   }),
   defineOperation({
@@ -779,6 +786,7 @@ export const OPERATIONS: readonly Operation[] = [
   ...RADAR_OPERATIONS,
   ...FRESHNESS_OPERATIONS,
   ...MEMORY_OPERATIONS,
+  ...EVIDENCE_PACK_OPERATIONS,
 ];
 
 export function getOperation(name: string): Operation | undefined {

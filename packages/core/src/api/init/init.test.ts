@@ -151,7 +151,7 @@ describe("mergeGitignore", () => {
 });
 
 describe("mergeRunStateIgnore", () => {
-  const block = ".autoremediator/*\n!.autoremediator/recipes/\n!.autoremediator/track-record.json\n";
+  const block = ".autoremediator/*\n!.autoremediator/recipes/\n!.autoremediator/track-record.json\n!.autoremediator/memory.md\n";
   it("adds the block to a file without it, and is then stable", () => {
     const once = (mergeRunStateIgnore("dist\n") as { content: string }).content;
     expect(once).toBe(`dist\n${block}`);
@@ -241,7 +241,7 @@ describe("init", () => {
     expect(read(".claude/skills/fix-cve/SKILL.md")).toContain("planRemediation");
     expect(read(".cursor/rules/autoremediator.mdc")).toContain("alwaysApply: false");
     expect(read("AGENTS.md")).toContain("autoremediator:begin");
-    expect(read(".gitignore")).toBe(".autoremediator/*\n!.autoremediator/recipes/\n!.autoremediator/track-record.json\n");
+    expect(read(".gitignore")).toBe(".autoremediator/*\n!.autoremediator/recipes/\n!.autoremediator/track-record.json\n!.autoremediator/memory.md\n");
     expect(read(".github/autoremediator.yml")).toContain("allowMajorBumps: false");
 
     const again = await init({ cwd: dir, hosts: ["claude-code", "cursor", "vscode", "codex", "gemini", "copilot"], yes: true });
@@ -257,7 +257,7 @@ describe("init", () => {
     await init({ cwd: dir, hosts: ["cursor"], yes: true });
     expect(JSON.parse(read(".cursor/mcp.json")).mcpServers.github).toEqual({ url: "https://x" });
     expect(read("AGENTS.md").startsWith("# Team rules\n\nBe kind.\n")).toBe(true);
-    expect(read(".gitignore")).toBe("node_modules/\n.autoremediator/*\n!.autoremediator/recipes/\n!.autoremediator/track-record.json\n");
+    expect(read(".gitignore")).toBe("node_modules/\n.autoremediator/*\n!.autoremediator/recipes/\n!.autoremediator/track-record.json\n!.autoremediator/memory.md\n");
   });
 
   it("leaves a file it cannot merge alone and says so", async () => {

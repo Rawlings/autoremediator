@@ -192,6 +192,7 @@ export const RUN_STATE_IGNORE = [
   ".autoremediator/*",
   "!.autoremediator/recipes/",
   "!.autoremediator/track-record.json",
+  "!.autoremediator/memory.md",
 ] as const;
 
 export function mergeRunStateIgnore(text = ""): MergeResult {

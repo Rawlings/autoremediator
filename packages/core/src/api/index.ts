@@ -442,3 +442,21 @@ export {
   type NewMemoryEntry,
   type ProposeMemoryOptions,
 } from "./memory/index.js";
+export {
+  buildEvidencePack,
+  craDeadlines,
+  EVIDENCE_PACK_DISCLAIMER,
+  INTOTO_PAYLOAD_TYPE,
+  PACK_PREDICATE_TYPE,
+  pae,
+  parseAwareness,
+  RUN_PREDICATE_TYPE,
+  SIGNING_KEY_ENV,
+  verifyEvidencePack,
+  type CraDeadlines,
+  type DsseEnvelope,
+  type EvidencePackFile,
+  type EvidencePackOptions,
+  type EvidencePackResult,
+  type EvidencePackVerification,
+} from "./evidence-pack/index.js";
