@@ -528,6 +528,19 @@ describe("robustness", () => {
     });
   });
 
+  it("falls to L0 when a recorded incident was edited, naming the broken chain", async () => {
+    policy("  ceiling: L3");
+    await seed(2);
+    const path = recordPathOf(dir);
+    const json = JSON.parse(read(".autoremediator/track-record.json")) as { events: Array<Record<string, unknown>> };
+    json.events[0]!["detail"] = "edited by hand";
+    writeFileSync(path, JSON.stringify(json));
+    expect(getAutonomy({ cwd: dir })).toMatchObject({
+      level: "L0",
+      recordError: expect.stringMatching(/hash chain is broken/),
+    });
+  });
+
   it("a committed record that changes after a run does not trip `runs verify`'s scope check", async () => {
     policy("  ceiling: L3");
     await seed(1);

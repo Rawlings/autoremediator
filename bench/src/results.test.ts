@@ -82,6 +82,42 @@ describe("results file format", () => {
     expect(resultFileSchema.safeParse(file([row(), row()])).success).toBe(false);
   });
 
+  it("ties each row's score to its checks: PASS only when every check is ok", () => {
+    // The summary is recomputed from the edited row, so only the row-level rule can catch this.
+    const forged = file([row({ checks: [{ name: "tests", ok: false, detail: "1 failed" }] })]);
+    const parsed = resultFileSchema.safeParse(forged);
+    expect(parsed.success).toBe(false);
+    expect(JSON.stringify(parsed.error?.issues)).toMatch(/PASS needs every check to be ok/);
+
+    // And the reverse: a FAIL whose checks all passed was edited down.
+    const lowered = file([row({ score: "FAIL" })]);
+    expect(resultFileSchema.safeParse(lowered).success).toBe(false);
+  });
+
+  it("does not take a PASS with no checks, or a PASS whose outcome is not the expected one", () => {
+    expect(resultFileSchema.safeParse(file([row({ checks: [] })])).success).toBe(false);
+    expect(resultFileSchema.safeParse(file([row({ outcome: "broken" })])).success).toBe(false);
+    expect(
+      resultFileSchema.safeParse(
+        file([row({ outcome: "error", score: "FAIL", checks: [], error: "x" })]),
+      ).success,
+    ).toBe(true);
+    expect(
+      resultFileSchema.safeParse(file([row({ outcome: "error", score: "PASS", error: "x" })]))
+        .success,
+    ).toBe(false);
+  });
+
+  it("does not take a control marked caught while it passed", () => {
+    const control = row({ id: "ctl", control: true, controlCaught: true, outcome: "false-claim" });
+    expect(resultFileSchema.safeParse(file([control])).success).toBe(false);
+    expect(
+      resultFileSchema.safeParse(
+        file([{ ...control, score: "FAIL", checks: [{ name: "vuln-gone", ok: false }] }]),
+      ).success,
+    ).toBe(true);
+  });
+
   it("rejects fields it does not know", () => {
     const withExtra = { ...file([row()]), invented: 1 };
     expect(resultFileSchema.safeParse(withExtra).success).toBe(false);

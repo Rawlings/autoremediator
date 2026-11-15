@@ -41,13 +41,21 @@ export interface TrackEvent {
   coverage: { tests: boolean; typecheck: boolean };
   /** One short line (no command output, no secrets). */
   detail: string;
+  /**
+   * SHA-256 of the previous event's canonical JSON (all zeros for the first), so an edit, a removal
+   * or a reordering breaks the chain. Absent only in a record written before hashes existed, which is
+   * chained on its next append. Assigned when the event is appended.
+   */
+  prev?: string;
 }
 
-export type NewTrackEvent = Omit<TrackEvent, "seq" | "at"> & { at?: string };
+export type NewTrackEvent = Omit<TrackEvent, "seq" | "at" | "prev"> & { at?: string };
 
 export interface TrackRecord {
   schemaVersion: 1;
   events: TrackEvent[];
+  /** SHA-256 of the last event's canonical JSON: vouches for the final event, which no later one does. */
+  head?: string;
 }
 
 /** The policy's `autonomy` key with every default filled in. */

@@ -11,6 +11,7 @@ autoremediator freshness                  # report; changes nothing
 autoremediator freshness --assess         # also rate the first step of each climb (upgrade impact)
 autoremediator freshness --plan           # record the next step as a plan; apply it with `runs apply`
 autoremediator freshness --apply          # take one step now (the default), verified
+autoremediator freshness --ignore-memory  # plan as if the repository's memory were empty
 autoremediator freshness --apply --max-steps 3 --package chalk,zod --run-tests --typecheck
 autoremediator freshness --apply --create-change-request     # one change request per step
 ```
@@ -49,6 +50,7 @@ For each direct dependency in `dependencies` and `devDependencies` that comes fr
 | `patchesBehind` | Likewise, only on the latest minor |
 | `releasesBehind` | Stable releases newer than the installed version, up to the latest, from the registry's version list |
 | `ageDays` | Days since the installed version was published, from the registry's `time` field |
+| `unknownAge` | Only when the policy has `maxAgeDays`, the package is behind, and `ageDays` could not be found: the reason (see [Unknown age](#unknown-age)) |
 | `penalty` | 0 to 100: 40 per major behind, 5 per minor behind (at most 30), 1 per patch behind (at most 10) |
 
 The installed version and the latest release come from the package manager's own `outdated`
@@ -71,8 +73,18 @@ newest one.
 1. **Catch up on the installed major.** The newest stable release of the major you are on. This is
    the migration path upgrade guides recommend, and the lowest-risk move there is.
 2. **One major per step.** The newest stable release of the next major that has one. Majors the
-   registry has no release for are skipped; prereleases are never a target; a deprecated release is a
-   last resort within its major.
+   registry has no release for are skipped; prereleases are never a target.
+
+Two rules refine that:
+
+- **Below 1.0.0 every `0.minor` is a breaking boundary.** A 0.x minor may break, so `0.2.0 -> 0.9.0`
+  is not one "catch-up" step: it is `0.2.x`, then `0.3.x`, and so on, one `0.minor` per step, and a step
+  that crosses one counts as a major bump for `allowMajorBumps` (held without it).
+- **A climb never lands on a deprecated release while another candidate exists.** Within a major the
+  newest release that is not deprecated is chosen; a major whose newer releases are all deprecated is
+  skipped. If every candidate is deprecated, the step is **held** ("only newer release is deprecated"),
+  never taken. A version that remembered memory has rejected is never a candidate either (see
+  [Memory](#memory)).
 
 Example: `chalk` at 3.0.0, latest 5.3.0, `maxMajorsBehind: 0`: `3.0.0 -> 3.0.1 -> 4.1.2 -> 5.3.0`,
 taken one step per call. With `maxMajorsBehind: 1` the climb ends at `4.1.2`.
@@ -92,10 +104,31 @@ A step is **held**, reported and never applied, when:
 
 - it is rated High and `--allow-high` is not set (High means project code reaches a breaking change,
   or the project's own manifest cannot meet the new requirement);
-- it crosses a major and the policy has `allowMajorBumps: false` (the verifier would reject it too);
+- it crosses a major (or a 0.x minor) and the policy has `allowMajorBumps: false`;
+- the only newer release is deprecated;
 - the policy's `allowPackages` or `denyPackages` excludes the package.
 
 A held climb stays in the report with its reason. The other packages go on.
+
+### Unknown age
+
+`maxAgeDays` needs the publish time of the installed version. When the policy sets it and the package
+is behind but that time is unknown (the registry could not be read, the package is not on it, or it
+lists no time for that version), the package is **not** reported as within policy and is **not** climbed
+blindly: it carries `unknownAge` with the reason, is counted in `counts.unknownAge`, and is listed under
+`unplanned`, so a scheduled run shows it instead of passing it. If the same package is past another limit
+it is still climbed for that limit. While climbing, a landing version whose own publish time is unknown
+is not assumed to satisfy `maxAgeDays`: the climb goes on.
+
+### Memory
+
+The planner reads [remediation memory](memory.md) the way `remediate` does. A **pinned package** is left
+alone: it is listed under `unplanned` with the pin's reason and is never planned or applied. A version
+a **rejected upgrade** entry names is never proposed: the climb lands on the next best release, and a
+package whose every newer release was rejected is listed under `unplanned` with the entries. Only
+`active`, unexpired entries count. `--ignore-memory` (SDK: `ignoreMemory`) plans as if memory were empty,
+and is recorded in the plan so applying it does not consult memory either. It is not accepted over MCP or
+HTTP. `applyPlan` re-checks pins when a plan is applied (see [memory](memory.md#what-reads-it)).
 
 ## Applying: one verified step per run
 
@@ -184,6 +217,7 @@ jobs:
 - **Ranges.** A step writes the target version with the prefix already in `package.json` (`^`, `~`
   or none). A step does not widen a range to cover a version the package manager would not take.
 - **Release timing.** `maxAgeDays` uses the registry's publish time of the installed version. A
-  registry that does not serve `time` gives no ages, and the limit never triggers.
+  registry that does not serve `time` gives no ages: every package that is behind is then reported with
+  `unknownAge` and listed under `unplanned` (the limit cannot be checked), not treated as within policy.
 - **Cost.** `--assess` downloads two tarballs per package with a step due, from the registry your
   `.npmrc` names.

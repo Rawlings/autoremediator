@@ -16,7 +16,8 @@ pnpm bench --report                # regenerate bench/RESULTS.md from bench/resu
 
 The latest numbers are in [`bench/RESULTS.md`](../../bench/RESULTS.md). They are generated from
 `bench/results/<date>-<mode>.json`, and a guard test (`pnpm --filter autoremediator-bench test`)
-fails if a summary was edited by hand, a results file is malformed, a scripted-mode file does not
+fails if a summary was edited by hand, if a row's `score` does not follow from its `checks` (PASS only
+when every check is ok and the outcome is the expected one), a results file is malformed, a scripted-mode file does not
 cover every task, a control was not caught, or `RESULTS.md` is out of date.
 
 ## What a task is
@@ -70,7 +71,10 @@ said about itself, and shares no code with the pipeline it scores.
 - **A fix is correct** when, in a fresh copy installed with `npm ci` from the lockfile: no installed copy
   of the vulnerable package is inside the advisory's range, the install works, the project's type check
   passes and its tests pass; and the change is in scope: only `package.json`, `package-lock.json` and the
-  source files the task allows. Tests, config, policy and CI are never part of a fix.
+  source files the task allows. Tests, config, policy and CI are never part of a fix. Inside
+  `package.json` only the vulnerable package's own dependency and override entries may change: `scripts`,
+  `engines` and every other entry must be as at baseline, so a "fix" that sets `scripts.test` to `true`
+  is scored FAIL on scope.
 - **No safe fix** (unresolved or refused) is correct when the project is byte-for-byte as it was, the
   vulnerable copy is still installed, no canary exists, the plan reported the expected
   `unresolvedReason`, and no fix was claimed. Claiming success here is a failure.

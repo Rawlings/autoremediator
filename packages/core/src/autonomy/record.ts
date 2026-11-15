@@ -6,7 +6,14 @@
  * Events are only ever appended. Concurrent writers (two CI jobs, two terminals) are serialized
  * with a lock directory and the file is replaced atomically, so no reader sees a partial file and
  * no event is lost or numbered twice.
+ *
+ * Each event carries the hash of the one before it and the record carries the hash of the last, so
+ * editing, removing or reordering an event is detected and the level falls to L0. This is
+ * tamper-evidence for accidents and casual edits, not authentication: someone with write access who
+ * rebuilds the whole chain cannot be told apart from a genuine record. Review in version control is
+ * the real control.
  */
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { mkdir, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -26,6 +33,36 @@ const LOCK_DIR = ".autoremediator/locks/track-record.lock";
 
 const MAX_DETAIL = 240;
 
+const HASH = /^[0-9a-f]{64}$/;
+/** The `prev` of the first event in a chain. */
+const GENESIS = "0".repeat(64);
+
+/** JSON with object keys sorted at every level, so the same event always hashes the same. */
+function canonical(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map((entry) => canonical(entry)).join(",")}]`;
+  if (value !== null && typeof value === "object") {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .filter(([, entry]) => entry !== undefined)
+      .toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([key, entry]) => `${JSON.stringify(key)}:${canonical(entry)}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}
+
+/** The hash that the event after `event` carries as its `prev`. */
+const hashOf = (event: TrackEvent): string =>
+  createHash("sha256").update(canonical(event)).digest("hex");
+
+/** Give every event the hash of the one before it. */
+function chained(events: readonly TrackEvent[]): TrackEvent[] {
+  const out: TrackEvent[] = [];
+  for (const event of events) {
+    out.push({ ...event, prev: out.length === 0 ? GENESIS : hashOf(out.at(-1)!) });
+  }
+  return out;
+}
+
 const eventSchema = z
   .object({
     seq: z.number().int().min(1),
@@ -37,6 +74,7 @@ const eventSchema = z
     packages: z.array(z.string()),
     coverage: z.object({ tests: z.boolean(), typecheck: z.boolean() }).strict(),
     detail: z.string().max(MAX_DETAIL),
+    prev: z.string().regex(HASH).optional(),
   })
   .strict();
 
@@ -44,6 +82,7 @@ const recordSchema = z
   .object({
     schemaVersion: z.literal(1),
     events: z.array(eventSchema),
+    head: z.string().regex(HASH).optional(),
   })
   .strict();
 
@@ -79,7 +118,28 @@ function parseRecord(text: string, path: string): TrackRecord {
       );
     }
   }
-  return { schemaVersion: 1, events };
+  const hashed = events.filter((event) => event.prev !== undefined).length;
+  // A record from before hashes existed has none and is accepted as it is; it is chained on the next append.
+  if (hashed === 0 && parsed.data.head === undefined) return { schemaVersion: 1, events };
+  if (hashed !== events.length || (events.length > 0 && parsed.data.head === undefined)) {
+    throw new TrackRecordError(
+      `Track record ${path}: some events carry a hash and some do not (or the head hash is missing); once a record is chained every event must be. Restore the file from version control, or review and remove it deliberately.`,
+    );
+  }
+  for (const [index, event] of events.entries()) {
+    const expected = index === 0 ? GENESIS : hashOf(events[index - 1]!);
+    if (event.prev !== expected) {
+      throw new TrackRecordError(
+        `Track record ${path}: the hash chain is broken at event ${event.seq}: an event before it was edited, removed or reordered. Review the file's history in version control and restore it; the level stays L0 until then.`,
+      );
+    }
+  }
+  if (events.length > 0 && parsed.data.head !== hashOf(events.at(-1)!)) {
+    throw new TrackRecordError(
+      `Track record ${path}: the hash chain is broken at the latest event (${events.at(-1)!.seq}): it was edited, or events were removed after it. Review the file's history in version control and restore it; the level stays L0 until then.`,
+    );
+  }
+  return { schemaVersion: 1, events, ...(parsed.data.head ? { head: parsed.data.head } : {}) };
 }
 
 /** The record, or an empty one when none exists yet. Throws `TrackRecordError` when it is damaged. */
@@ -100,9 +160,11 @@ export function readTrackRecord(cwd: string): TrackRecord {
 /** One event per line, so appending one shows up as one added line in a diff. */
 export function serializeRecord(record: TrackRecord): string {
   const lines = record.events.map((event) => `    ${JSON.stringify(event)}`);
+  const last = record.events.at(-1);
+  const head = last?.prev === undefined ? "" : `,\n  "head": "${record.head ?? hashOf(last)}"`;
   return `{\n  "schemaVersion": ${record.schemaVersion},\n  "events": [${
     lines.length > 0 ? `\n${lines.join(",\n")}\n  ` : ""
-  }]\n}\n`;
+  }]${head}\n}\n`;
 }
 
 const oneLine = (text: string): string => {
@@ -166,18 +228,25 @@ export async function appendTrackEvents(
   try {
     const record = readTrackRecord(cwd);
     const stamp = (options.now ?? (() => new Date()))().toISOString();
-    const added: TrackEvent[] = events.map((event, index) => ({
-      seq: record.events.length + index + 1,
-      at: event.at ?? stamp,
-      type: event.type,
-      runId: event.runId,
-      ...(event.itemId ? { itemId: event.itemId } : {}),
-      cveIds: event.cveIds,
-      packages: event.packages,
-      coverage: event.coverage,
-      detail: oneLine(event.detail),
-    }));
-    const next: TrackRecord = { schemaVersion: 1, events: [...record.events, ...added] };
+    // A record from before hashes existed is chained now, once; every event keeps its content.
+    const existing = chained(record.events);
+    const added: TrackEvent[] = [];
+    for (const [index, event] of events.entries()) {
+      const before = added.at(-1) ?? existing.at(-1);
+      added.push({
+        seq: record.events.length + index + 1,
+        at: event.at ?? stamp,
+        type: event.type,
+        runId: event.runId,
+        ...(event.itemId ? { itemId: event.itemId } : {}),
+        cveIds: event.cveIds,
+        packages: event.packages,
+        coverage: event.coverage,
+        detail: oneLine(event.detail),
+        prev: before ? hashOf(before) : GENESIS,
+      });
+    }
+    const next: TrackRecord = { schemaVersion: 1, events: [...existing, ...added] };
 
     // Validate what is about to be written, so a bad event can never poison the file.
     parseRecord(serializeRecord(next), recordPathOf(cwd));

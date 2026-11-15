@@ -15,6 +15,8 @@ export interface PlanOptions {
   requireProofOfFix?: boolean;
   reproductionTest?: string;
   breakingChangeRefactor?: boolean;
+  /** The plan was made with remediation memory ignored, so applying it does not consult memory either. */
+  ignoreMemory?: boolean;
   constraints?: RemediationConstraints;
 }
 

@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 import { createProjectSnapshot, restoreProjectSnapshot } from "../../platform/rollback.js";
 import { getModelSpec } from "../../platform/config.js";
+import { loadMemoryConstraints, pinnedMessage } from "../../platform/memory/consume.js";
 import {
   DEFAULT_REPAIR_BUDGET,
   type RepairAgent,
@@ -179,6 +180,7 @@ function planOptionsFrom(options: RemediateOptions, cwd: string): PlanOptions {
       ? {}
       : { requireProofOfFix: constraints.requireProofOfFix }),
     ...(options.reproductionTest ? { reproductionTest: options.reproductionTest } : {}),
+    ...(options.ignoreMemory ? { ignoreMemory: true } : {}),
     ...(constraints.enableBreakingChangeRefactor === undefined
       ? {}
       : { breakingChangeRefactor: constraints.enableBreakingChangeRefactor }),
@@ -360,6 +362,22 @@ export async function applyPlan(
   const known = new Set(plan.items.map((item) => item.itemId));
   for (const id of options.itemIds ?? []) {
     if (!known.has(id)) throw new Error(`Plan ${plan.planId} has no item ${id}.`);
+  }
+
+  // A pin recorded after the plan was made still holds: refuse before anything is changed.
+  if (!plan.options.ignoreMemory) {
+    const { pinned } = loadMemoryConstraints(cwd);
+    const wanted = plan.items.filter(
+      (item) => !options.itemIds || options.itemIds.includes(item.itemId),
+    );
+    for (const item of wanted) {
+      const pin = pinned.get(item.packageName);
+      if (pin) {
+        throw new Error(
+          `Run ${runId}: plan item ${item.packageName} ${item.fromVersion} -> ${item.toVersion} is refused. ${pinnedMessage(pin)} Plan again after changing memory.`,
+        );
+      }
+    }
   }
 
   const events = ledger.read();

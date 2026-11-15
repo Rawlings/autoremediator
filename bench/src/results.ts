@@ -1,8 +1,8 @@
 /**
  * The results file format and the numbers derived from it. A results file is the only record of a
  * benchmark run: `bench/RESULTS.md` is generated from these files and nothing else, and the guard
- * test recomputes every summary from the per-task rows, so a number that was not measured cannot be
- * written by hand.
+ * test recomputes every summary from the per-task rows and every row's verdict from its checks, so a
+ * number that was not measured cannot be written by hand.
  */
 import { z } from "zod";
 
@@ -98,6 +98,28 @@ export const resultFileSchema = z
         ctx.addIssue({
           code: "custom",
           message: `${task.id}: scripted modes cannot report tokens`,
+        });
+      }
+      // A row's verdict is not free text: it must follow from its own checks, so editing `score`
+      // alone (the summary is recomputed from it) cannot turn a failure into a pass.
+      if (!task.control) {
+        const allOk = task.checks.length > 0 && task.checks.every((check) => check.ok);
+        if ((task.score === "PASS") !== allOk) {
+          ctx.addIssue({
+            code: "custom",
+            message: `${task.id}: PASS needs every check to be ok (and at least one check), and a row whose checks all passed cannot be FAIL`,
+          });
+        }
+        if (task.score === "PASS" && task.outcome !== task.expected) {
+          ctx.addIssue({
+            code: "custom",
+            message: `${task.id}: a PASS must have the expected outcome (${task.expected}), not ${task.outcome}`,
+          });
+        }
+      } else if (task.controlCaught === true && task.score !== "FAIL") {
+        ctx.addIssue({
+          code: "custom",
+          message: `${task.id}: a control marked caught must have been scored FAIL`,
         });
       }
       if (task.control && task.controlCaught === undefined) {

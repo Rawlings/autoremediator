@@ -22,6 +22,7 @@ export interface FreshnessCliOptions {
   package?: string;
   assess?: boolean;
   allowHigh?: boolean;
+  ignoreMemory?: boolean;
   plan?: boolean;
   apply?: boolean;
   maxSteps?: number;
@@ -92,7 +93,7 @@ export function renderFreshnessReport(report: FreshnessReport): string {
     lines.push("", "Behind:");
     for (const entry of behind) {
       lines.push(
-        `  ${entry.name} ${entry.installed} -> ${entry.latest}: ${distanceText(entry)}${entry.exceeds.length > 0 ? `  PAST POLICY: ${entry.exceeds.join("; ")}` : ""}`,
+        `  ${entry.name} ${entry.installed} -> ${entry.latest}: ${distanceText(entry)}${entry.exceeds.length > 0 ? `  PAST POLICY: ${entry.exceeds.join("; ")}` : ""}${entry.unknownAge ? `  AGE UNKNOWN: ${entry.unknownAge}` : ""}`,
       );
     }
   }
@@ -163,6 +164,7 @@ export async function runFreshness(opts: FreshnessCliOptions): Promise<void> {
     ...(opts.packageManager ? { packageManager: opts.packageManager as "npm" | "pnpm" | "yarn" } : {}),
     ...(packagesOf(opts) ? { packages: packagesOf(opts) } : {}),
     ...(opts.allowHigh ? { allowHigh: true } : {}),
+    ...(opts.ignoreMemory ? { ignoreMemory: true } : {}),
     source: "cli" as const,
   };
   const json = opts.outputFormat === "json";
@@ -228,6 +230,10 @@ export function registerFreshnessCommands(program: Command): void {
     .option("--assess", "Report only: rate the first step of each climb with assessUpgrade and order them safest first")
     .option("--no-assess", "With --plan: do not rate steps (order by step size only)")
     .option("--allow-high", "Take steps assessUpgrade rates High (held otherwise)")
+    .option(
+      "--ignore-memory",
+      "Plan as if the repository's memory were empty: ignore pinned packages and rejected upgrades in .autoremediator/memory.md",
+    )
     .option("--plan", "Record the next step as a plan (never applied); review it with `runs show`, apply it with `runs apply`")
     .option("--apply", "Take steps now: plan, apply and verify each one, rolling back any that does not hold")
     .option(

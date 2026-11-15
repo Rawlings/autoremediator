@@ -29,9 +29,9 @@ export interface Requirement {
 }
 
 export interface WindowStats {
-  /** Outcome events inside the recent window. */
+  /** Outcome events of the runs inside the recent window. */
   outcomes: number;
-  /** Distinct runs those outcomes belong to. */
+  /** Distinct runs in the window: the last `window` runs by their latest outcome. */
   runs: number;
   verifiedRuns: number;
   /** Verified runs in which the project's tests passed as part of the verification. */
@@ -95,10 +95,20 @@ interface RunSummary {
 }
 
 export function windowStats(events: readonly TrackEvent[], config: AutonomyConfig): WindowStats {
-  const outcomes = events
+  const allOutcomes = events
     .filter((event) => OUTCOME_EVENT_TYPES.includes(event.type))
-    .toSorted((a, b) => a.seq - b.seq)
-    .slice(-config.window);
+    .toSorted((a, b) => a.seq - b.seq);
+  // The window counts runs, not events: a run with three items is one run. Runs are ordered by their
+  // latest outcome, the last `window` of them stay, and each keeps every outcome it recorded.
+  const lastSeq = new Map<string, number>();
+  for (const event of allOutcomes) lastSeq.set(event.runId, event.seq);
+  const recentRuns = new Set(
+    [...lastSeq]
+      .toSorted((a, b) => a[1] - b[1])
+      .slice(-config.window)
+      .map(([runId]) => runId),
+  );
+  const outcomes = allOutcomes.filter((event) => recentRuns.has(event.runId));
 
   // Coverage comes from everything the run ever recorded, including a later `verifyRun`.
   const coverage = new Map<string, { tests: boolean; typecheck: boolean }>();
@@ -157,7 +167,7 @@ export function windowStats(events: readonly TrackEvent[], config: AutonomyConfi
 
 function requirementsFor(stats: WindowStats, config: AutonomyConfig): Evaluation["requirements"] {
   const noIncidents = (): Requirement => ({
-    name: `no rollback or verifier failure in the last ${config.window} outcomes`,
+    name: `no rollback or verifier failure in the last ${config.window} runs`,
     required: "0 runs",
     actual: `${stats.incidentRuns} run(s)`,
     met: stats.incidentRuns === 0,
