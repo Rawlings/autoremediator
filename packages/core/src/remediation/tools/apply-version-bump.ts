@@ -214,7 +214,11 @@ export const applyVersionBumpTool = defineTool({
 
     // Preserve the range prefix (^, ~, empty) from the existing entry
     const prefixMatch = /^([~^]?)/.exec(currentRange);
-    const prefix = prefixMatch?.[1] ?? "";
+    // A downgrade (rolling back a compromised release) is pinned exactly: `^1.2.2` would still
+    // accept the bad `1.2.4` the lockfile already holds, and the install would change nothing.
+    const isDowngrade =
+      semver.valid(fromVersion) && semver.valid(toVersion) && semver.lt(toVersion, fromVersion);
+    const prefix = isDowngrade ? "" : (prefixMatch?.[1] ?? "");
     const newRange = `${prefix}${toVersion}`;
 
     const effectiveInstallCommand = resolveInstallCommand(pm, commandConstraints, yarnMajor);

@@ -762,7 +762,7 @@ export async function runRunsShow(runId: string, opts: RunsOptions): Promise<voi
     for (const item of plan.items) {
       const outcome = details.items.find((candidate) => candidate.itemId === item.itemId);
       process.stdout.write(
-        `  ${outcome?.status ?? "pending".padEnd(7)}  ${item.packageName} ${item.fromVersion} -> ${item.toVersion} (${item.strategy}) [${item.itemId}]\n`,
+        `  ${outcome?.status ?? "pending".padEnd(7)}  ${item.packageName} ${item.fromVersion} -> ${item.toVersion} (${item.strategy}${item.rollback ? ", rollback" : ""}) [${item.itemId}]\n`,
       );
     }
     for (const skip of plan.skipped) {

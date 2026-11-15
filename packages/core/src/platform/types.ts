@@ -46,7 +46,7 @@ export interface AffectedPackage {
   /** The first version that is NOT vulnerable (the safe upgrade target) */
   firstPatchedVersion?: string;
   /** Source that provided this entry */
-  source: "osv" | "github-advisory" | "offline-snapshot";
+  source: "osv" | "github-advisory" | "offline-snapshot" | "user-supplied";
 }
 
 /** A package found in the consumer's project */

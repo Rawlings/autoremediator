@@ -8,11 +8,13 @@ import {
   guardPackage,
   init,
   installHooks,
+  incident,
   inspectPatchArtifact,
   listPatchArtifacts,
   listRuns,
   planRemediation,
   pollJob,
+  premortem,
   proposePatch,
   reconcilePatchArtifacts,
   remediate,
@@ -66,6 +68,8 @@ export interface ApiDeps {
   verifyAttemptFn: typeof verifyAttempt;
   finalizeAttemptFn: typeof finalizeAttempt;
   abandonAttemptFn: typeof abandonAttempt;
+  incidentFn: typeof incident;
+  premortemFn: typeof premortem;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -101,4 +105,6 @@ export const defaultApiDeps: ApiDeps = {
   verifyAttemptFn: verifyAttempt,
   finalizeAttemptFn: finalizeAttempt,
   abandonAttemptFn: abandonAttempt,
+  incidentFn: incident,
+  premortemFn: premortem,
 };

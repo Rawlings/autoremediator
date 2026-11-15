@@ -31,6 +31,7 @@ import {
   runRunsVerify,
   type RunsOptions as RunsCliOptions,
 } from "./runners.js";
+import { registerIncidentCommands } from "./incident-commands.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
 import { validateOutputFormat, validateSharedCommandOptions } from "./validators.js";
@@ -317,6 +318,8 @@ export function createProgram(): Command {
       }
       await runGuardHook(opts.host as HookHost);
     });
+
+  registerIncidentCommands(program);
 
   program
     .command("init")
