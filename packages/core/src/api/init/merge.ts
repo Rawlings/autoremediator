@@ -54,21 +54,61 @@ export function mergeJsonMcpConfig(
   return { content: `${JSON.stringify(merged, null, indent)}\n` };
 }
 
+/** Split a TOML key (`a.b."c.d"`) into its parts; undefined when it is not a plain key. */
+function splitTomlKey(text: string): string[] | undefined {
+  const parts: string[] = [];
+  let rest = text.trim();
+  while (rest !== "") {
+    const quoted = /^"((?:[^"\\]|\\.)*)"|^'([^']*)'/.exec(rest);
+    const bare = /^[A-Za-z0-9_-]+/.exec(rest);
+    const token = quoted ?? bare;
+    if (!token) return undefined;
+    parts.push(quoted ? (quoted[1] ?? quoted[2] ?? "") : token[0]);
+    rest = rest.slice(token[0].length).trimStart();
+    if (rest === "") break;
+    if (!rest.startsWith(".")) return undefined;
+    rest = rest.slice(1).trimStart();
+  }
+  return parts.length > 0 ? parts : undefined;
+}
+
 /** Codex keeps MCP servers as `[mcp_servers.<name>]` tables in TOML. */
 export function mergeCodexToml(existing: string | undefined, entry: McpServerEntry): MergeResult {
-  const header = `[mcp_servers.${SERVER_NAME}]`;
+  const crlf = existing?.includes("\r\n") === true;
+  const eol = crlf ? "\r\n" : "\n";
   const block = [
-    header,
+    `[mcp_servers.${SERVER_NAME}]`,
     `command = ${JSON.stringify(entry.command)}`,
     `args = [${entry.args.map((arg) => JSON.stringify(arg)).join(", ")}]`,
     "",
-  ].join("\n");
+  ].join(eol);
   if (existing === undefined || existing.trim() === "") return { content: block };
-  const lines = existing.split("\n");
-  if (lines.some((line) => line.trim() === header || line.trim().startsWith(`[mcp_servers.${SERVER_NAME}.`))) {
-    return { content: existing };
+
+  // Find how (if at all) the autoremediator server is already defined, in any TOML spelling.
+  let table: string[] = [];
+  let hasTable = false;
+  for (const raw of existing.split("\n")) {
+    const line = raw.replace(/\r$/, "").trim();
+    const header = /^\[(?!\[)\s*(.+?)\s*\]\s*(?:#.*)?$/.exec(line);
+    if (header) {
+      table = splitTomlKey(header[1] ?? "") ?? [];
+      if (table[0] === "mcp_servers" && table[1] === SERVER_NAME) hasTable = true;
+      continue;
+    }
+    const assignment = /^([^=#]+?)\s*=/.exec(line);
+    if (!assignment) continue;
+    const key = splitTomlKey(assignment[1] ?? "");
+    if (!key) continue;
+    const path = [...table, ...key];
+    if (path[0] === "mcp_servers" && path.length === 1) {
+      return { conflict: 'defines mcp_servers inline, so it was left alone; add the autoremediator server to it by hand' };
+    }
+    if (path[0] === "mcp_servers" && path[1] === SERVER_NAME && !(table[0] === "mcp_servers" && table[1] === SERVER_NAME)) {
+      return { conflict: "defines the autoremediator server with dotted or inline keys, so it was left alone" };
+    }
   }
-  const separator = existing.endsWith("\n") ? "\n" : "\n\n";
+  if (hasTable) return { content: existing };
+  const separator = existing.endsWith("\n") ? eol : `${eol}${eol}`;
   return { content: `${existing}${separator}${block}` };
 }
 
@@ -77,17 +117,22 @@ const END = "<!-- autoremediator:end -->";
 
 /** Insert or refresh a marked section in a Markdown file. Text outside the markers is never touched. */
 export function mergeMarkedSection(existing: string | undefined, body: string): MergeResult {
-  const section = `${BEGIN}\n${body.trim()}\n${END}\n`;
+  // A file that uses CRLF line endings gets CRLF lines, so it does not end up with mixed endings.
+  const crlf = existing !== undefined && /^[^\n]*\r\n/.test(existing);
+  const eol = crlf ? "\r\n" : "\n";
+  const section = `${[BEGIN, ...body.trim().split("\n"), END].join(eol)}${eol}`;
   if (existing === undefined || existing.trim() === "") return { content: section };
   const start = existing.indexOf(BEGIN);
   const end = existing.indexOf(END);
   if (start !== -1 && end > start) {
-    return { content: existing.slice(0, start) + section + existing.slice(end + END.length).replace(/^\n/, "") };
+    return {
+      content: existing.slice(0, start) + section + existing.slice(end + END.length).replace(/^\r?\n/, ""),
+    };
   }
   if (start !== -1 || end !== -1) {
     return { conflict: "has an unmatched autoremediator marker, so it was left alone" };
   }
-  const separator = existing.endsWith("\n") ? "\n" : "\n\n";
+  const separator = existing.endsWith("\n") ? eol : `${eol}${eol}`;
   return { content: `${existing}${separator}${section}` };
 }
 
@@ -132,8 +177,28 @@ export function mergeClaudeGuardHook(existing: string | undefined, command: stri
   if (pre !== undefined && !Array.isArray(pre)) {
     return { conflict: 'has a "hooks.PreToolUse" that is not a list, so it was left alone' };
   }
-  const groups = [...((pre as HookGroup[] | undefined) ?? [])];
-  const present = groups.some((group) => group.hooks?.some((hook) => hook.command?.includes("guard-hook")));
+  const groups = [...((pre as unknown[] | undefined) ?? [])];
+  let present = false;
+  for (const group of groups) {
+    if (typeof group !== "object" || group === null || Array.isArray(group)) {
+      return { conflict: 'has a "hooks.PreToolUse" entry that is not an object, so it was left alone' };
+    }
+    const inner = (group as HookGroup).hooks;
+    if (inner === undefined) continue;
+    if (!Array.isArray(inner)) {
+      return { conflict: 'has a "hooks.PreToolUse" entry whose "hooks" is not a list, so it was left alone' };
+    }
+    for (const hook of inner as unknown[]) {
+      if (typeof hook !== "object" || hook === null || Array.isArray(hook)) {
+        return { conflict: 'has a hook in "hooks.PreToolUse" that is not an object, so it was left alone' };
+      }
+      const hookCommand = (hook as { command?: unknown }).command;
+      if (hookCommand !== undefined && typeof hookCommand !== "string") {
+        return { conflict: 'has a hook in "hooks.PreToolUse" whose command is not text, so it was left alone' };
+      }
+      if (hookCommand?.includes("guard-hook")) present = true;
+    }
+  }
   if (!present) {
     groups.push({ matcher: "Bash", hooks: [{ type: "command", command }] });
   }
@@ -195,20 +260,40 @@ export const RUN_STATE_IGNORE = [
   "!.autoremediator/memory.md",
 ] as const;
 
-export function mergeRunStateIgnore(text = ""): MergeResult {
-  const lines = text === "" ? [] : text.replace(/\n$/, "").split("\n");
-  const has = (line: string): boolean => lines.some((entry) => entry.trim() === line);
-  const directoryForm = lines.findIndex((entry) => [".autoremediator/", ".autoremediator"].includes(entry.trim()));
+const STAR_ENTRY = RUN_STATE_IGNORE[0];
+const NEGATIONS: readonly string[] = RUN_STATE_IGNORE.slice(1);
+const DIRECTORY_FORMS = new Set([".autoremediator/", ".autoremediator", "/.autoremediator/", "/.autoremediator"]);
+const STAR_FORMS = new Set([".autoremediator/*", "/.autoremediator/*"]);
+const trimmed = (line: string): string => line.trim();
 
-  if (directoryForm !== -1) {
-    lines.splice(directoryForm, 1, ...RUN_STATE_IGNORE);
-  } else if (has(".autoremediator/*")) {
-    const at = lines.findIndex((entry) => entry.trim() === ".autoremediator/*");
-    const missing = RUN_STATE_IGNORE.slice(1).filter((line) => !has(line));
-    lines.splice(at + 1, 0, ...missing);
-  } else {
-    lines.push(...RUN_STATE_IGNORE);
+export function mergeRunStateIgnore(text = ""): MergeResult {
+  const original = text === "" ? [] : text.replace(/\n$/, "").split("\n");
+
+  // Where the star entry goes: where the first star or directory entry is, else the end.
+  const firstEntry = original.findIndex((line) => STAR_FORMS.has(trimmed(line)) || DIRECTORY_FORMS.has(trimmed(line)));
+  const lines: string[] = [];
+  let starAt = -1;
+  for (const [index, line] of original.entries()) {
+    const entry = trimmed(line);
+    if (DIRECTORY_FORMS.has(entry) || STAR_FORMS.has(entry)) {
+      // One star entry only: a directory entry next to it would ignore the whole folder again.
+      if (starAt === -1) {
+        starAt = lines.length;
+        lines.push(DIRECTORY_FORMS.has(entry) ? STAR_ENTRY : line);
+      }
+      continue;
+    }
+    // A negation above the star entry is overridden by it, so it is dropped here and put back below.
+    if (NEGATIONS.includes(entry) && firstEntry !== -1 && index < firstEntry) continue;
+    lines.push(line);
   }
+  if (starAt === -1) {
+    starAt = lines.length;
+    lines.push(STAR_ENTRY);
+  }
+  const present = new Set(lines.slice(starAt + 1).map((line) => trimmed(line)));
+  const missing = NEGATIONS.filter((line) => !present.has(line));
+  lines.splice(starAt + 1, 0, ...missing);
   const content = `${lines.join("\n")}\n`;
   return { content: content === text ? text : content };
 }

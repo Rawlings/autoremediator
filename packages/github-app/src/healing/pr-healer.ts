@@ -9,6 +9,7 @@ import type { Octokit } from "@octokit/rest";
 
 import type { DiagnosticFinding, ParsedDiagnostic } from "../diagnostics/log-parser.js";
 import type { AutoremediatorRepoConfig, ErrorLogger } from "../types.js";
+import { listPullRequestChangedFiles } from "./pr-files.js";
 import { repairBranchFiles } from "./repair-branch.js";
 import type { RepairStrategy } from "./repair-strategy.js";
 
@@ -117,6 +118,12 @@ export function repairFileContent(content: string, findings: DiagnosticFinding[]
     if (suggestionMatch && missingMatch) {
       const oldSymbol = missingMatch[1]!;
       const newSymbol = suggestionMatch[1]!;
+
+      // The suggestion is CI text. It is applied only when that identifier is already in this
+      // file, so the output can pick which existing name is used but never introduce a new one.
+      if (!new RegExp(`(?<![\\w$])${escapeRegex(newSymbol)}(?![\\w$])`).test(repaired)) {
+        continue;
+      }
 
       if (finding.line && finding.line > 0) {
         // Target specifically the line indicated by the compiler diagnostic
@@ -301,12 +308,31 @@ export async function healPullRequest(options: HealPrOptions): Promise<HealPrRes
     };
   }
 
+  // CI output names the files, and anything running in the job can print it, so only files this
+  // pull request itself changed may be repaired.
+  let allowedFiles = new Set<string>();
+  try {
+    allowedFiles = await listPullRequestChangedFiles(octokit, { owner, repo, pullNumber });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    void options.logger?.({
+      timestamp: new Date().toISOString(),
+      source: "github-app",
+      level: "warn",
+      context: "pr-healer.listFiles",
+      message: `Failed to list the files of PR #${pullNumber}: ${message}`,
+      error: message,
+      details: { owner, repo, pullNumber },
+    });
+  }
+
   const { healedFiles } = await repairBranchFiles({
     octokit,
     owner,
     repo,
     branchName,
     findingsByFile: fileFindingsMap,
+    allowedFiles,
     strategy: options.strategy ?? regexRepairStrategy,
     commitMessage: `fix(autoremediator): auto-heal ${checkRunName} diagnostics [attempt ${nextAttempt}]`,
     logger: options.logger,

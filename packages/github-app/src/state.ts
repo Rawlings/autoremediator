@@ -25,6 +25,7 @@ interface StateData {
   installations: Record<string, "active" | "inactive">;
   doctor?: Record<string, DoctorRecord>;
   modes?: Record<string, RemediationMode>;
+  notices?: string[];
 }
 
 /** Counters and modes are kept for the most recent pull requests and advisories only. */
@@ -44,6 +45,12 @@ export interface AppStateStore {
   /** Remember how an advisory was last run in a repository, so `retry` can run it the same way. */
   recordRemediationMode(key: string, mode: RemediationMode): void;
   getRemediationMode(key: string): RemediationMode | undefined;
+  /**
+   * Take the right to post a one-off notice (for example "you need write access" on a thread).
+   * Returns true the first time a key is claimed and false afterwards, for as long as the store
+   * remembers it, so a notice is not repeated for every comment.
+   */
+  claimNotice(key: string): boolean;
 }
 
 function remember<T>(map: Map<string, T>, key: string, value: T): void {
@@ -63,6 +70,7 @@ export class InMemoryAppStateStore implements AppStateStore {
   protected readonly installations = new Map<number, "active" | "inactive">();
   protected readonly doctor = new Map<string, DoctorRecord>();
   protected readonly modes = new Map<string, RemediationMode>();
+  protected readonly notices = new Map<string, true>();
 
   private readonly maxTrackedDeliveries: number;
 
@@ -136,8 +144,14 @@ export class InMemoryAppStateStore implements AppStateStore {
     return this.modes.get(key);
   }
 
+  public claimNotice(key: string): boolean {
+    if (this.notices.has(key)) return false;
+    remember(this.notices, key, true);
+    return true;
+  }
+
   /** Restore saved records without changing their order or applying the cap logic again. */
-  public restore(data: Pick<StateData, "doctor" | "modes">): void {
+  public restore(data: Pick<StateData, "doctor" | "modes" | "notices">): void {
     for (const [key, record] of Object.entries(data.doctor ?? {})) {
       if (
         record &&
@@ -156,6 +170,9 @@ export class InMemoryAppStateStore implements AppStateStore {
     for (const [key, mode] of Object.entries(data.modes ?? {})) {
       if (mode === "plan" || mode === "fix") remember(this.modes, key, mode);
     }
+    for (const key of data.notices ?? []) {
+      if (typeof key === "string") remember(this.notices, key, true);
+    }
   }
 
   public snapshot(): StateData {
@@ -170,6 +187,7 @@ export class InMemoryAppStateStore implements AppStateStore {
       installations,
       ...(this.doctor.size > 0 ? { doctor: Object.fromEntries(this.doctor) } : {}),
       ...(this.modes.size > 0 ? { modes: Object.fromEntries(this.modes) } : {}),
+      ...(this.notices.size > 0 ? { notices: [...this.notices.keys()] } : {}),
     };
   }
 }
@@ -227,6 +245,12 @@ export class FileAppStateStore implements AppStateStore {
     return this.inMemory.getRemediationMode(key);
   }
 
+  public claimNotice(key: string): boolean {
+    const claimed = this.inMemory.claimNotice(key);
+    if (claimed) this.persist();
+    return claimed;
+  }
+
   private hydrateFromDisk(): void {
     if (!existsSync(this.stateFilePath)) {
       return;
@@ -259,6 +283,7 @@ export class FileAppStateStore implements AppStateStore {
         parsed.modes && typeof parsed.modes === "object" && !Array.isArray(parsed.modes)
           ? parsed.modes
           : undefined,
+      notices: Array.isArray(parsed.notices) ? parsed.notices : undefined,
     });
 
     const installations =

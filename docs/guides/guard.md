@@ -73,8 +73,9 @@ named package (`0`, `3`, `4`), and `--output-format json` prints `{ baseRef, che
 - **Cursor hook.** `autoremediator guard-hook --host cursor` answers a `beforeShellExecution` hook with
   Cursor's `{ "permission": "allow" | "deny" | "ask", "user_message", "agent_message" }`.
   `init --guard` adds it to `.cursor/hooks.json` (keeping your hooks), with a `matcher` so that only
-  commands that mention `npm`, `pnpm`, `yarn` or `bun` start it. Format:
-  [Cursor hooks](https://cursor.com/docs/agent/hooks).
+  commands that mention `npm`, `pnpm`, `yarn` or `bun` start it. The command ends with
+  `|| echo '{"permission":"allow"}'`, so when the guard cannot run (no network for `npx`) the command
+  goes through. Format: [Cursor hooks](https://cursor.com/docs/agent/hooks).
 - **GitHub Copilot hook** (Copilot CLI, the Copilot cloud agent, and the Copilot harness in VS Code).
   `autoremediator guard-hook --host copilot` answers a `preToolUse` hook with
   `{ "permissionDecision": "deny" | "ask", "permissionDecisionReason" }`, and prints nothing to allow,
@@ -105,7 +106,9 @@ How far each of these has been run:
 
 - **The hook is a guard rail, not a security boundary.** It understands plain install commands
   (`npm install a b@1`, `pnpm add -D x`). A command built from variables, a subshell or a script is
-  not parsed. If the hook itself fails, the command goes through.
+  not parsed. If the hook itself fails (for example `npx` cannot download the package offline), the
+  command goes through: Claude Code and Copilot treat a failing hook as no answer, and the Cursor
+  command prints an allow of its own.
 - The look-alike check uses a fixed list of popular names and edit distance. It has no download
   counts, so a legitimate small package with a name near a popular one gets a warning.
 - Release age is the larger of `--min-age-hours` (default 72) and the cooldown your package manager
@@ -116,7 +119,8 @@ How far each of these has been run:
   not defined in the reference, so the hook reads both that and the `PreToolUse` alias form
   (`tool_input`). Copilot also reads a repository's `.claude/settings.json`; if you install the Claude
   Code hook and the Copilot one, Copilot may run both. Cursor treats output that is not valid JSON as a
-  block, so this hook always prints JSON, including `{ "permission": "allow" }`; whether Cursor treats
+  block, so this hook always prints JSON, including `{ "permission": "allow" }` (also from the
+  `|| echo` fallback when the guard cannot start); whether Cursor treats
   that `allow` as skipping its own command approval is not documented.
 - **pnpm.** pnpm loads the pnpmfile in separate processes for separate hooks, so the check lives
   entirely in `readPackage`. It covers the project at the lockfile's root, not other workspace

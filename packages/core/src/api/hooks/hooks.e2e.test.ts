@@ -244,6 +244,58 @@ describe("pre-push (plain git hook)", () => {
     expect(push.exitCode).toBe(0);
     expect(calls()).toEqual([`diff --ci --base ${base}`]);
   });
+
+  describe("judges what is being pushed, not the checked-out branch", () => {
+    const degraded = { STUB_EXIT: "1", STUB_OUT: DEGRADED };
+
+    it("does not block deleting a remote branch while the checked-out branch is degraded", async () => {
+      await git(["branch", "other"]);
+      await git(["push", "-q", "origin", "other"]);
+      await commit("package.json", '{"name":"x","dependencies":{"bad":"1.0.0"}}\n');
+      const push = await git(["push", "origin", "--delete", "other"], { env: degraded });
+      expect(push.exitCode).toBe(0);
+      expect(calls()).toEqual([]);
+    });
+
+    it("does not block pushing a tag", async () => {
+      await commit("package.json", '{"name":"x","dependencies":{"bad":"1.0.0"}}\n');
+      await git(["tag", "v1"]);
+      const push = await git(["push", "origin", "v1"], { env: degraded });
+      expect(push.exitCode).toBe(0);
+      expect(calls()).toEqual([]);
+    });
+
+    it("does not judge another branch by the checked-out one", async () => {
+      await git(["branch", "other"]);
+      await commit("package.json", '{"name":"x","dependencies":{"bad":"1.0.0"}}\n');
+      const push = await git(["push", "origin", "other"], { env: degraded });
+      expect(push.exitCode).toBe(0);
+      expect(calls()).toEqual([]);
+      expect(push.stderr).toContain("not the checked-out commit");
+    });
+
+    it("compares the pushed commit with what the remote already has, not with the upstream", async () => {
+      const remoteTip = (await git(["rev-parse", "origin/main"])).stdout;
+      await commit("README.md", "one\n");
+      await git(["push", "-q", "origin", "main"]);
+      await commit("package-lock.json", '{"lockfileVersion":3,"x":8}\n');
+      // The remote-tracking ref is stale on purpose: git passes the remote's real tip on stdin.
+      await git(["update-ref", "refs/remotes/origin/main", remoteTip]);
+      const pushed = (await git(["rev-parse", "HEAD~1"])).stdout;
+      const push = await git(["push", "origin", "main"], { env: { STUB_OUT: "Summary: ok" } });
+      expect(push.exitCode).toBe(0);
+      expect(calls()).toEqual([`diff --ci --base ${pushed}`]);
+    });
+
+    it("still blocks a degraded push of the checked-out branch", async () => {
+      await commit("package.json", '{"name":"x","dependencies":{"bad":"1.0.0"}}\n');
+      const push = await git(["push", "origin", "main"], {
+        env: { ...degraded, EXPECT_FAILURE: "1" },
+      });
+      expect(push.exitCode).not.toBe(0);
+      expect(push.stderr).toContain("push blocked");
+    });
+  });
 });
 
 describe("post-merge (plain git hook)", () => {

@@ -102,7 +102,14 @@ describe("comment events for the new commands", () => {
 
 function setup(
   permission = "write",
-  extra: { body?: string | null; commits?: string[]; pullRequest?: boolean } = {},
+  extra: {
+    body?: string | null;
+    /** Who wrote the pull request (default: the app). */
+    author?: string;
+    commits?: string[];
+    commitAuthor?: string;
+    pullRequest?: boolean;
+  } = {},
 ) {
   const comments: string[] = [];
   const octokit = {
@@ -112,11 +119,16 @@ function setup(
         comments.push(body);
         return {};
       }),
-      get: vi.fn(async () => ({ data: { body: extra.body ?? null } })),
+      get: vi.fn(async () => ({
+        data: { body: extra.body ?? null, user: { login: extra.author ?? "autoremediator[bot]" } },
+      })),
     },
     pulls: {
       listCommits: vi.fn(async () => ({
-        data: (extra.commits ?? []).map((message) => ({ commit: { message } })),
+        data: (extra.commits ?? []).map((message) => ({
+          commit: { message },
+          author: { login: extra.commitAuthor ?? "autoremediator[bot]" },
+        })),
       })),
     },
   };
@@ -168,7 +180,7 @@ describe("retry", () => {
   it("a fix that failed can be retried, because the request is recorded before it runs", async () => {
     const { send, comments } = setup();
     remediateFromScanMock.mockRejectedValueOnce(new Error("network"));
-    await expect(send("/autoremediator fix CVE-2021-23337")).rejects.toThrow();
+    await expect(send("/autoremediator fix CVE-2021-23337")).resolves.toMatchObject({ status: "partial" });
     remediateFromScanMock.mockClear();
     await send("/autoremediator retry CVE-2021-23337");
     expect(remediateFromScanMock).toHaveBeenCalledTimes(1);
@@ -290,12 +302,53 @@ describe("rollback", () => {
     expect(octokit.pulls.listCommits).not.toHaveBeenCalled();
   });
 
+  it.each(["mallory", "dependabot[bot]", "renovate[bot]"])(
+    "does not echo a run id from a description written by %s",
+    async (author) => {
+      const { send, comments } = setup("write", { body: `Autoremediator-Run: ${RUN}`, author });
+      await send("/autoremediator rollback");
+      expect(comments).toHaveLength(1);
+      expect(comments[0]).not.toContain(RUN);
+      expect(comments[0]).toContain("no recorded run to roll back");
+    },
+  );
+
+  it("does not echo a run id from commits a person wrote", async () => {
+    const { send, comments } = setup("write", {
+      body: "No trailer here",
+      commits: [`fix\n\nAutoremediator-Run: ${RUN}`],
+      commitAuthor: "mallory",
+    });
+    await send("/autoremediator rollback");
+    expect(comments[0]).not.toContain(RUN);
+  });
+
   it("needs write access, and reads nothing for someone without it", async () => {
     const { send, comments, octokit } = setup("read", { body: `Autoremediator-Run: ${RUN}` });
     await send("/autoremediator rollback");
     expect(comments[0]).toContain("write access");
     expect(octokit.issues.get).not.toHaveBeenCalled();
     expect(comments[0]).not.toContain(RUN);
+  });
+
+  it("answers someone without write access once per thread, then stays silent", async () => {
+    const { send, comments } = setup("read");
+    await send("/autoremediator rollback");
+    await send("/autoremediator fix CVE-2021-23337");
+    await send("/autoremediator plan CVE-2021-23337");
+    expect(comments).toHaveLength(1);
+    expect(comments[0]).toContain("write access");
+    expect(remediateFromScanMock).not.toHaveBeenCalled();
+  });
+
+  it("without a state store to remember it in, someone without write access gets no reply", async () => {
+    const { octokit, send } = setup("read");
+    const bare = createDefaultRemediationHandler({
+      octokitFactory: vi.fn(async () => octokit as never),
+      repoConfigProvider: vi.fn(async () => ({ ...DEFAULT_REPO_CONFIG })),
+    });
+    await send("/autoremediator rollback", bare);
+    expect(octokit.issues.createComment).not.toHaveBeenCalled();
   });
 
   it("does not leak an API error", async () => {

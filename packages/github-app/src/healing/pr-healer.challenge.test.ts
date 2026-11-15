@@ -190,7 +190,7 @@ describe("Milestone 5 Challenge: PR Auto-Healer Adversarial Verification (Featur
     });
 
     it("handles out-of-range, negative, and invalid line numbers safely", () => {
-      const code = `import { rimraf } from "rimraf";\nrimraf.sync("/tmp");\n`;
+      const code = `import { rimraf, rimrafSync } from "rimraf";\nrimraf.sync("/tmp");\n`;
       const findings: DiagnosticFinding[] = [
         {
           filePath: "src/clean.ts",

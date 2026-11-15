@@ -19,11 +19,18 @@ function hookCommand(range: string, host: "cursor" | "copilot"): string {
 
 /**
  * Cursor `.cursor/hooks.json` entry for `beforeShellExecution`. Cursor matches `matcher` against the
- * full command string, so only install-looking commands start the hook at all.
+ * full command string, so only install-looking commands start the hook at all. Cursor treats output
+ * that is not valid JSON as a block, so when the guard cannot run (no network for npx) the command
+ * falls back to printing an allow: the install goes through, as it does for Claude Code and Copilot.
+ * The guard itself always exits 0, so the fallback never replaces a real decision.
  * Source: https://cursor.com/docs/agent/hooks
  */
 export function cursorGuardHookEntry(range: string = `^${PACKAGE_VERSION}`): Record<string, unknown> {
-  return { command: hookCommand(range, "cursor"), matcher: "npm|pnpm|yarn|bun", timeout: 60 };
+  return {
+    command: `${hookCommand(range, "cursor")} || echo '{"permission":"allow"}'`,
+    matcher: "npm|pnpm|yarn|bun",
+    timeout: 60,
+  };
 }
 
 /**

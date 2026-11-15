@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createDefaultRemediationHandler } from "./remediation-handler.js";
+import { createInMemoryAppStateStore } from "./state.js";
 import { DEFAULT_REPO_CONFIG, type AutoremediatorRepoConfig } from "./types.js";
 
 const { remediateFromScanMock } = vi.hoisted(() => ({
@@ -48,6 +49,7 @@ function setup(permission: string, config: Partial<AutoremediatorRepoConfig> = {
     octokitFactory: vi.fn(async () => octokit as never),
     repoConfigProvider: vi.fn(async () => ({ ...DEFAULT_REPO_CONFIG, ...config })),
     checkoutProvider: vi.fn(async () => ({ cwd: "/tmp/checkout", cleanup: async () => {} })),
+    stateStore: createInMemoryAppStateStore(),
   });
   const send = (body: string) =>
     handler({
@@ -71,6 +73,13 @@ describe("comment commands in the handler", () => {
     expect(remediateFromScanMock).not.toHaveBeenCalled();
     expect(comments).toHaveLength(1);
     expect(comments[0]).toContain("write access");
+  });
+
+  it("does not repeat that refusal on the same thread", async () => {
+    const { send, comments } = setup("read");
+    await send("/autoremediator fix CVE-2021-23337");
+    await send("/autoremediator help");
+    expect(comments).toHaveLength(1);
   });
 
   it("answers help without a checkout or a scan", async () => {
@@ -113,12 +122,123 @@ describe("comment commands in the handler", () => {
     expect(options.audit).toBe(false);
   });
 
-  it("tells the issue the request failed without leaking the error", async () => {
+  it("tells the issue the request failed without leaking the error, and is not retried", async () => {
     remediateFromScanMock.mockRejectedValueOnce(new Error("clone https://x-access-token:SECRET@github.com failed"));
     const { send, comments } = setup("write");
-    await expect(send("/autoremediator fix CVE-2021-23337")).rejects.toThrow();
+    const result = await send("/autoremediator fix CVE-2021-23337");
+    // A thrown error would be re-queued and the reply posted again, up to three times.
+    expect(result).toMatchObject({ status: "partial" });
+    expect(comments).toHaveLength(1);
     expect(comments[0]).toContain("could not finish");
     expect(comments[0]).not.toContain("SECRET");
+    expect(JSON.stringify(result)).not.toContain("SECRET");
+  });
+
+  it("does not ask the queue to retry a report that failed, because the summary is already posted", async () => {
+    remediateFromScanMock.mockResolvedValueOnce({
+      schemaVersion: "1.0",
+      status: "failed",
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      cveIds: ["CVE-2021-23337"],
+      reports: [],
+      successCount: 0,
+      failedCount: 1,
+      errors: [{ cveId: "CVE-2021-23337", message: "no safe version" }],
+      patchCount: 0,
+    } as never);
+    const { send, comments } = setup("write");
+    const result = await send("/autoremediator fix CVE-2021-23337");
+    expect(result).toMatchObject({ status: "partial", reason: expect.stringContaining("failed") });
+    expect(comments).toHaveLength(1);
+  });
+
+  it("answers with the generic failure comment when the checkout fails, and is not retried", async () => {
+    const comments: string[] = [];
+    const octokit = {
+      repos: { getCollaboratorPermissionLevel: vi.fn(async () => ({ data: { permission: "write" } })) },
+      issues: {
+        createComment: vi.fn(async ({ body }: { body: string }) => {
+          comments.push(body);
+          return {};
+        }),
+      },
+    };
+    const handler = createDefaultRemediationHandler({
+      octokitFactory: vi.fn(async () => octokit as never),
+      repoConfigProvider: vi.fn(async () => ({ ...DEFAULT_REPO_CONFIG })),
+      checkoutProvider: vi.fn(async () => {
+        throw new Error("clone https://x-access-token:SECRET@github.com/o/r.git failed");
+      }),
+    });
+    const result = await handler({
+      eventName: "issue_comment",
+      installationId: 1,
+      payload: {
+        comment: { body: "/autoremediator fix CVE-2021-23337", user: { login: "alice", type: "User" } },
+        issue: { number: 7 },
+        repository: { name: "r", owner: { login: "o" } },
+      },
+    });
+    expect(result).toMatchObject({ status: "partial" });
+    expect(comments).toHaveLength(1);
+    expect(comments[0]).toContain("could not finish");
+    expect(comments[0]).not.toContain("SECRET");
+    expect(JSON.stringify(result)).not.toContain("SECRET");
+  });
+
+  it("answers with the generic failure comment when the clone fails, and is not retried", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("PATH", "/nonexistent");
+    try {
+      const comments: string[] = [];
+      const octokit = {
+        repos: { getCollaboratorPermissionLevel: vi.fn(async () => ({ data: { permission: "write" } })) },
+        issues: {
+          createComment: vi.fn(async ({ body }: { body: string }) => {
+            comments.push(body);
+            return {};
+          }),
+        },
+      };
+      const handler = createDefaultRemediationHandler({
+        octokitFactory: vi.fn(async () => octokit as never),
+        repoConfigProvider: vi.fn(async () => ({ ...DEFAULT_REPO_CONFIG })),
+      });
+      const result = await handler({
+        eventName: "issue_comment",
+        installationId: 1,
+        installationToken: "ghs_SECRET",
+        payload: {
+          comment: { body: "/autoremediator plan CVE-2021-23337", user: { login: "alice", type: "User" } },
+          issue: { number: 7 },
+          repository: { name: "r", owner: { login: "o" } },
+        },
+      });
+      expect(result).toMatchObject({ status: "partial" });
+      expect(comments).toHaveLength(1);
+      expect(comments[0]).toContain("could not finish");
+      expect(comments[0]).not.toContain("ghs_SECRET");
+      expect(JSON.stringify(result)).not.toContain("ghs_SECRET");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("says so when a fix opened a pull request in a repository that defaults to dry runs", async () => {
+    const { send, comments } = setup("admin", { dryRun: true });
+    await send("/autoremediator fix CVE-2021-23337");
+    expect(comments[0]).toContain(
+      "This repository defaults to dry runs; this request opened a pull request anyway because you asked for it",
+    );
+  });
+
+  it("does not add that sentence for a plan, or when the repository is not set to dry runs", async () => {
+    const dry = setup("admin", { dryRun: true });
+    await dry.send("/autoremediator plan CVE-2021-23337");
+    expect(dry.comments[0]).not.toContain("defaults to dry runs");
+    const live = setup("admin", { dryRun: false });
+    await live.send("/autoremediator fix CVE-2021-23337");
+    expect(live.comments[0]).not.toContain("defaults to dry runs");
   });
 });
 

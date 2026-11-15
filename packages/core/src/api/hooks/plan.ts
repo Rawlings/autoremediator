@@ -1,7 +1,7 @@
 import { existsSync, lstatSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import type { GitContext, ManagerChoice } from "./detect.js";
+import { isInsideRepository, type GitContext, type ManagerChoice } from "./detect.js";
 import {
   lefthookState,
   mergeLefthook,
@@ -28,6 +28,7 @@ interface PlanInput {
   choice: ManagerChoice;
   hooks: HookName[];
   uninstall: boolean;
+  allowSharedHooksPath?: boolean;
 }
 
 interface FileRead {
@@ -161,6 +162,16 @@ function planScriptFiles(input: PlanInput, directory: string, strictExec: boolea
 
     const state = shellBlockState(file.content, block);
     const notExecutable = strictExec && file.mode !== undefined && (file.mode & 0o111) === 0;
+    // A hook the user switched off by clearing the execute bit must stay off: making it executable
+    // would run its old logic again. Only a file that holds nothing but our block is ours to fix.
+    const userLogic =
+      notExecutable && file.content !== undefined && !("remove" in removeShellBlock(file.content));
+    if (userLogic && !uninstall) {
+      const reason = `${path} exists but is not executable, so git ignores it; making it executable would switch its old contents back on. Make it executable yourself, or delete the file and run this again`;
+      changes.push({ path, absolutePath, action: "conflict", reason, before: file.content, after: file.content ?? "" });
+      statuses.push({ hook, state: "conflict", path, detail: "exists but is not executable" });
+      continue;
+    }
     const huskyV8 = !strictExec && existsSync(join(directory, "_", "husky.sh"));
     const merged = uninstall
       ? removeShellBlock(file.content)
@@ -176,7 +187,8 @@ function planScriptFiles(input: PlanInput, directory: string, strictExec: boolea
       before: file.content,
       merged,
       uninstall,
-      executable: true,
+      // Removing our block never changes a file's permissions.
+      executable: !uninstall,
       needsChmod: !uninstall && notExecutable && state === "installed",
     });
     changes.push(change);
@@ -256,14 +268,44 @@ function planConfigFile(
   return { changes: [change], statuses, nextSteps: [] };
 }
 
+/**
+ * A hooks folder outside the repository (a global `core.hooksPath`) is shared by every repository
+ * that uses it, so writing there changes them all. Unless that is asked for, each change that would
+ * write there becomes a conflict.
+ */
+function guardSharedDirectory(input: PlanInput, directory: string, plan: HooksPlan): HooksPlan {
+  // Without core.hooksPath the folder is the repository's own (also from a linked worktree).
+  if (!input.context.hooksPath || input.allowSharedHooksPath) return plan;
+  if (isInsideRepository(input.context, directory)) return plan;
+  const changes = plan.changes.map((change): HookFileChange => {
+    if (change.action === "unchanged" || change.action === "conflict") return change;
+    return {
+      ...change,
+      action: "conflict",
+      reason: `${directory} is outside this repository (core.hooksPath points at a folder shared with other repositories), so ${change.path} was left alone. Pass --allow-shared-hooks-path to write there anyway`,
+      after: change.before ?? "",
+    };
+  });
+  const conflicted = new Set(
+    changes.filter((change) => change.action === "conflict").map((change) => change.path),
+  );
+  const statuses = plan.statuses.map((status): HookStatus =>
+    conflicted.has(status.path) && status.state !== "conflict"
+      ? { ...status, state: "conflict", detail: "is in a hooks folder shared with other repositories" }
+      : status,
+  );
+  return { ...plan, changes, statuses, nextSteps: [] };
+}
+
 /** Everything `hook install` (or `uninstall`) would write, in a stable order. Reads; writes nothing. */
 export function planHooks(input: PlanInput): HooksPlan {
   const { context, choice, hooks, uninstall } = input;
   const pending = (plan: HooksPlan): boolean =>
     plan.changes.some((change) => change.action === "create" || change.action === "update");
   if (choice.manager === "husky") {
-    const plan = planScriptFiles(input, join(context.root, ".husky"), false);
-    if (!uninstall && pending(plan) && !/\.husky/.test(context.hooksPath ?? "")) {
+    const huskyDir = choice.huskyDir ?? join(context.root, ".husky");
+    const plan = guardSharedDirectory(input, huskyDir, planScriptFiles(input, huskyDir, false));
+    if (!uninstall && pending(plan) && !/(^|\/)\.husky(\/|$)/.test(context.hooksPath ?? "")) {
       plan.nextSteps.push(
         'Husky is not active yet: run "husky" (or "npx husky init") so git uses .husky/.',
       );
@@ -299,5 +341,9 @@ export function planHooks(input: PlanInput): HooksPlan {
     }
     return plan;
   }
-  return planScriptFiles(input, context.hooksDir, true);
+  return guardSharedDirectory(
+    input,
+    context.hooksDir,
+    planScriptFiles(input, context.hooksDir, true),
+  );
 }

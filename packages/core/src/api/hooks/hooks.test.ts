@@ -13,7 +13,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import { execa } from "execa";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { parse as parseYaml } from "yaml";
 
 import { getOperation } from "../../catalog/index.js";
@@ -415,6 +415,32 @@ describe("installHooks: plain git hooks", () => {
     expect(statSync(join(dir, ".git/hooks/pre-push")).mode & 0o111).not.toBe(0);
   });
 
+  it("does not switch a disabled hook of the user's back on by making it executable", async () => {
+    const original = '#!/bin/sh\necho "old logic"\n';
+    put(".git/hooks/pre-push", original);
+    chmodSync(join(dir, ".git/hooks/pre-push"), 0o644);
+    const result = await installHooks({ cwd: dir, yes: true });
+    expect(result.conflicts).toEqual([".git/hooks/pre-push"]);
+    expect(result.changes.find((change) => change.path === ".git/hooks/pre-push")?.reason).toContain(
+      "not executable",
+    );
+    expect(read(".git/hooks/pre-push")).toBe(original);
+    expect(statSync(join(dir, ".git/hooks/pre-push")).mode & 0o111).toBe(0);
+    // The other hook is unaffected.
+    expect(existsSync(join(dir, ".git/hooks/post-merge"))).toBe(true);
+  });
+
+  it("uninstall leaves a non-executable hook non-executable", async () => {
+    const original = '#!/bin/sh\necho "old logic"\n';
+    put(".git/hooks/pre-push", original);
+    chmodSync(join(dir, ".git/hooks/pre-push"), 0o755);
+    await installHooks({ cwd: dir, yes: true });
+    chmodSync(join(dir, ".git/hooks/pre-push"), 0o644);
+    await installHooks({ cwd: dir, yes: true, uninstall: true });
+    expect(read(".git/hooks/pre-push")).toBe(original);
+    expect(statSync(join(dir, ".git/hooks/pre-push")).mode & 0o111).toBe(0);
+  });
+
   it("reports an edited block as modified and refreshes it", async () => {
     await installHooks({ cwd: dir, yes: true });
     put(
@@ -455,6 +481,48 @@ describe("installHooks: plain git hooks", () => {
     expect(result.managerReason).toContain("core.hooksPath");
     expect(existsSync(join(dir, ".githooks/pre-push"))).toBe(true);
     expect(existsSync(join(dir, ".git/hooks/pre-push"))).toBe(false);
+  });
+
+  describe("a hooks folder shared with other repositories", () => {
+    let home: string;
+    beforeEach(() => {
+      home = mkdtempSync(join(tmpdir(), "hooks-home-"));
+      mkdirSync(join(home, "shared-hooks"));
+      writeFileSync(
+        join(home, ".gitconfig"),
+        `[core]\n\thooksPath = ${join(home, "shared-hooks")}\n`,
+      );
+      vi.stubEnv("HOME", home);
+      vi.stubEnv("GIT_CONFIG_GLOBAL", join(home, ".gitconfig"));
+    });
+    afterEach(() => {
+      vi.unstubAllEnvs();
+      rmSync(home, { recursive: true, force: true });
+    });
+
+    it("is a conflict, and nothing is written there, unless asked for", async () => {
+      const result = await installHooks({ cwd: dir, yes: true });
+      expect(result.applied).toBe(false);
+      expect(result.conflicts).toHaveLength(2);
+      expect(result.changes[0]?.reason).toContain("outside this repository");
+      expect(result.changes[0]?.reason).toContain("--allow-shared-hooks-path");
+      expect(existsSync(join(home, "shared-hooks/pre-push"))).toBe(false);
+      expect(existsSync(join(home, "shared-hooks/post-merge"))).toBe(false);
+    });
+
+    it("is written with allowSharedHooksPath", async () => {
+      const result = await installHooks({ cwd: dir, yes: true, allowSharedHooksPath: true });
+      expect(result.applied).toBe(true);
+      expect(result.conflicts).toEqual([]);
+      expect(existsSync(join(home, "shared-hooks/pre-push"))).toBe(true);
+    });
+
+    it("a hooks folder inside the repository is not shared", async () => {
+      await git(["config", "--local", "core.hooksPath", ".githooks"]);
+      const result = await installHooks({ cwd: dir, yes: true });
+      expect(result.applied).toBe(true);
+      expect(existsSync(join(dir, ".githooks/pre-push"))).toBe(true);
+    });
   });
 
   it("finds the shared hooks folder from a worktree whose .git is a file", async () => {
@@ -507,6 +575,47 @@ describe("installHooks: hook managers", () => {
     expect(result.manager).toBe("husky");
     expect(read(".husky/pre-push")).toContain('_/husky.sh"');
     expect(result.nextSteps).toEqual([]);
+  });
+
+  describe("husky in a subfolder", () => {
+    const STUB = `#!/usr/bin/env sh\n. "\${0%/*}/h"\n`;
+
+    it("husky 9: writes .husky/<hook> next to the generated _ folder, never into it", async () => {
+      await git(["config", "core.hooksPath", "packages/app/.husky/_"]);
+      put("packages/app/.husky/_/pre-push", STUB);
+      put("packages/app/.husky/_/h", "# generated\n");
+      const result = await installHooks({ cwd: dir, yes: true });
+      expect(result.manager).toBe("husky");
+      expect(result.changes.map((change) => change.path)).toEqual([
+        "packages/app/.husky/pre-push",
+        "packages/app/.husky/post-merge",
+      ]);
+      expect(read("packages/app/.husky/pre-push")).toContain(BLOCK_BEGIN);
+      expect(read("packages/app/.husky/_/pre-push")).toBe(STUB);
+      expect(existsSync(join(dir, "packages/app/.husky/_/post-merge"))).toBe(false);
+      expect(existsSync(join(dir, ".husky"))).toBe(false);
+    });
+
+    it("husky 8: sources husky.sh from the subfolder's own _ folder", async () => {
+      await git(["config", "core.hooksPath", "packages/app/.husky"]);
+      put("packages/app/.husky/_/husky.sh", "# husky\n");
+      const result = await installHooks({ cwd: dir, yes: true });
+      expect(result.manager).toBe("husky");
+      expect(read("packages/app/.husky/pre-push")).toContain('_/husky.sh"');
+    });
+
+    it("an absolute core.hooksPath into a .husky folder is found too", async () => {
+      await git(["config", "core.hooksPath", join(dir, "packages/app/.husky/_")]);
+      put("packages/app/.husky/_/h", "# generated\n");
+      const result = await installHooks({ cwd: dir, yes: true });
+      expect(result.manager).toBe("husky");
+      expect(existsSync(join(dir, "packages/app/.husky/pre-push"))).toBe(true);
+    });
+
+    it("a folder that merely contains the letters is not husky", async () => {
+      await git(["config", "core.hooksPath", "my.husky-hooks"]);
+      expect((await installHooks({ cwd: dir })).manager).toBe("git");
+    });
   });
 
   it("lefthook: merges into lefthook.yml and says to run lefthook install", async () => {

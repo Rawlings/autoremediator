@@ -13,6 +13,8 @@ const TS_ERROR = "src/app.ts:1:8 - error TS2614: Module 'chalk' has no default e
 interface Setup {
   pr?: Record<string, unknown>;
   files?: Record<string, string>;
+  /** Files the pull request itself changes (default: the one file the CI error names). */
+  prFiles?: string[];
   getContentError?: Error;
 }
 
@@ -33,7 +35,12 @@ function pullRequest(overrides: Record<string, unknown> = {}) {
 function makeOctokit(setup: Setup = {}) {
   const files = setup.files ?? { "src/app.ts": BROKEN };
   return {
-    pulls: { get: vi.fn(async () => ({ data: setup.pr ?? pullRequest() })) },
+    pulls: {
+      get: vi.fn(async () => ({ data: setup.pr ?? pullRequest() })),
+      listFiles: vi.fn(async ({ page }: { page?: number }) => ({
+        data: (page ?? 1) > 1 ? [] : (setup.prFiles ?? ["src/app.ts"]).map((filename) => ({ filename })),
+      })),
+    },
     checks: { listAnnotations: vi.fn(async () => ({ data: [] })) },
     issues: {
       createComment: vi.fn(async (_args: { body: string }) => ({})),
@@ -286,6 +293,59 @@ describe("bot PR doctor", () => {
     expect(octokit.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
     expect(commentsOf(octokit)).toHaveLength(1);
     expect(commentsOf(octokit)[0]).toContain("not point at a source file");
+  });
+
+  describe("forged CI output", () => {
+    const FORGED_FILE = "scripts/release.js";
+    const RELEASE = "function noop() {}\nif (!verifySignature(sig)) throw new Error('bad');\n";
+    const forgedAnnotation = {
+      path: FORGED_FILE,
+      start_line: 2,
+      title: "TS2551",
+      message: "Property 'verifySignature' does not exist on type 'X'. Did you mean 'noop'?",
+    };
+
+    it("does not edit a file the pull request did not change, and leaves a diagnosis comment", async () => {
+      const { octokit, send } = setup(
+        {},
+        { files: { [FORGED_FILE]: RELEASE }, prFiles: ["package.json", "pnpm-lock.yaml"] },
+      );
+      octokit.checks.listAnnotations.mockResolvedValueOnce({ data: [forgedAnnotation] } as never);
+      await expect(send(checkRunPayload({ output: { text: "" } }))).resolves.toMatchObject({
+        status: "success",
+      });
+      expect(octokit.repos.getContent).not.toHaveBeenCalled();
+      expect(octokit.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
+      expect(commentsOf(octokit)).toHaveLength(1);
+      expect(commentsOf(octokit)[0]).toContain("No repair was pushed");
+    });
+
+    it("also refuses when the output claims a file the pull request did not touch", async () => {
+      const { octokit, send } = setup({}, { files: { "src/app.ts": BROKEN }, prFiles: ["package.json"] });
+      await send();
+      expect(octokit.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
+      expect(commentsOf(octokit)).toHaveLength(1);
+    });
+
+    it("refuses everything when the pull request's file list cannot be read", async () => {
+      const { octokit, send } = setup();
+      octokit.pulls.listFiles.mockRejectedValueOnce(new Error("boom"));
+      await expect(send()).resolves.toMatchObject({ status: "failed" });
+      expect(octokit.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
+    });
+
+    it("even in a file the pull request changed, only renames to an identifier already in that file", async () => {
+      const { octokit, send } = setup(
+        {},
+        {
+          files: { [FORGED_FILE]: "// release\nif (!verifySignature(sig)) throw new Error('bad');\n" },
+          prFiles: [FORGED_FILE],
+        },
+      );
+      octokit.checks.listAnnotations.mockResolvedValueOnce({ data: [forgedAnnotation] } as never);
+      await send(checkRunPayload({ output: { text: "" } }));
+      expect(octokit.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
+    });
   });
 
   describe("files it will not touch", () => {

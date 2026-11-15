@@ -164,6 +164,12 @@ export const OPERATIONS: readonly Operation[] = [
         uninstall: z.boolean().optional().describe("Remove the hooks Autoremediator installed."),
         yes: z.boolean().optional().describe("Write the changes. Without it, only report them."),
         check: z.boolean().optional().describe("Report drift only; never write."),
+        allowSharedHooksPath: z
+          .boolean()
+          .optional()
+          .describe(
+            "Write into a hooks folder outside the repository (a global core.hooksPath shared with other repositories). Default: report it as a conflict.",
+          ),
       })
       .strict(),
     annotations: {
