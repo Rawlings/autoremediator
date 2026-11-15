@@ -85,6 +85,15 @@ describe("loadPolicy", () => {
     expect(loadPolicy(tmpDir)).toEqual(DEFAULT_POLICY);
   });
 
+  it("reads the default policy file when the path is empty", () => {
+    // The remediation pipeline hands its tools `policy: ""` when no path was given.
+    mkdirSync(join(tmpDir, ".github"), { recursive: true });
+    writeFileSync(join(tmpDir, ".github", "autoremediator.yml"), "allowMajorBumps: true", "utf8");
+
+    expect(loadPolicy(tmpDir, "").allowMajorBumps).toBe(true);
+    expect(loadPolicy(tmpDir, "  ").allowMajorBumps).toBe(true);
+  });
+
   it("uses explicitPath when provided, ignoring the default .github/autoremediator.yml", () => {
     // Write a file at the explicit path
     const explicitPath = join(tmpDir, "custom-policy.yml");

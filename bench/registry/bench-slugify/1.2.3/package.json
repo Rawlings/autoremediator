@@ -1,0 +1,14 @@
+{
+  "name": "bench-slugify",
+  "version": "1.2.3",
+  "description": "Synthetic package for the autoremediator benchmark",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  }
+}

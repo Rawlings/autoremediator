@@ -1,0 +1,13 @@
+{
+  "name": "bench-app-02-transitive-override",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "node \"$BENCH_TSC\" -p tsconfig.json",
+    "test": "node --test test/*.test.ts"
+  },
+  "dependencies": {
+    "bench-http-client": "1.0.0"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "CVE-2099-10003": {
+    "packageName": "bench-money",
+    "vulnerableRange": "<1.5.0",
+    "firstPatchedVersion": "1.5.0",
+    "severity": "HIGH",
+    "summary": "Synthetic advisory for the autoremediator benchmark (03-minor-breaks-test). Not a real vulnerability."
+  }
+}

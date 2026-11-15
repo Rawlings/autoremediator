@@ -1,0 +1,9 @@
+{
+  "CVE-2099-10004": {
+    "packageName": "bench-config",
+    "vulnerableRange": "<1.2.0",
+    "firstPatchedVersion": "1.2.0",
+    "severity": "HIGH",
+    "summary": "Synthetic advisory for the autoremediator benchmark (04-minor-breaks-types). Not a real vulnerability."
+  }
+}

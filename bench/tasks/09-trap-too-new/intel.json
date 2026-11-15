@@ -1,0 +1,9 @@
+{
+  "CVE-2099-10009": {
+    "packageName": "bench-tmpl",
+    "vulnerableRange": "<2.3.2",
+    "firstPatchedVersion": "2.3.2",
+    "severity": "HIGH",
+    "summary": "Synthetic advisory for the autoremediator benchmark (09-trap-too-new). Not a real vulnerability."
+  }
+}

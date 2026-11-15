@@ -1,0 +1,9 @@
+{
+  "CVE-2099-10001": {
+    "packageName": "bench-slugify",
+    "vulnerableRange": "<1.2.3",
+    "firstPatchedVersion": "1.2.3",
+    "severity": "HIGH",
+    "summary": "Synthetic advisory for the autoremediator benchmark (01-patch-bump). Not a real vulnerability."
+  }
+}

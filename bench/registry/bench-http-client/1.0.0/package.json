@@ -1,0 +1,17 @@
+{
+  "name": "bench-http-client",
+  "version": "1.0.0",
+  "description": "Synthetic package for the autoremediator benchmark",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  },
+  "dependencies": {
+    "bench-cookie": "2.0.0"
+  }
+}
