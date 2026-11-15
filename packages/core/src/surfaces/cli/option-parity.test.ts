@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { z } from "zod";
 
 import type { remediateOptionsSchema } from "../../features/remediate/option-schemas.js";
+import { toRemediateOptions } from "./commands/remediate.js";
 import { createProgram } from "./program.js";
-import { toRemediateOptions } from "./runners.js";
 import type { CommandOptions } from "./types.js";
 
 type WireOption = keyof z.input<typeof remediateOptionsSchema>;

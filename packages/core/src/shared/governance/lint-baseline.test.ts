@@ -12,10 +12,10 @@ import { describe, expect, it } from "vitest";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "..");
 
 const CAPS: Record<string, number> = {
-  "eslint/max-lines": 33,
-  "eslint/max-lines-per-function": 97,
-  "eslint/no-nested-ternary": 71,
-  "eslint/curly": 100,
+  "eslint/max-lines": 30,
+  "eslint/max-lines-per-function": 95,
+  "eslint/no-nested-ternary": 69,
+  "eslint/curly": 99,
 };
 
 interface Override {
@@ -28,9 +28,10 @@ function baselines(): Map<string, string[]> {
   const { overrides } = JSON.parse(text) as { overrides: Override[] };
   const found = new Map<string, string[]>();
   for (const override of overrides) {
-    const [rule] = Object.keys(override.rules);
-    const isBaseline = rule !== undefined && rule in CAPS && override.files.length > 5;
-    if (isBaseline) found.set(rule, override.files);
+    const rules = Object.keys(override.rules);
+    const [rule] = rules;
+    // A baseline block switches off exactly one ratcheted rule for a list of files.
+    if (rules.length === 1 && rule !== undefined && rule in CAPS) found.set(rule, override.files);
   }
   return found;
 }

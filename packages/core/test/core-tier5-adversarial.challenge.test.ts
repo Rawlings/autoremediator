@@ -45,7 +45,7 @@ import {
   findSuppression,
 } from "../src/infra/policy/policy.js";
 import { recordFileTouch, withAtomicRollback } from "../src/infra/rollback/rollback.js";
-import { runInteractiveTriage } from "../src/surfaces/cli/triage.js";
+import { runInteractiveTriage } from "../src/surfaces/cli/commands/triage.js";
 import { handleToolCall, TOOLS } from "../src/surfaces/mcp/server.js";
 // 5. OpenAPI, MCP, and CLI Triage
 import { createOpenApiServer } from "../src/surfaces/openapi/server.js";

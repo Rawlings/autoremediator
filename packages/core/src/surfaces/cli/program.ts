@@ -5,48 +5,48 @@ import { Command } from "commander";
 import { OPTION_DESCRIPTIONS } from "../../api/index.js";
 import { HOOK_HOSTS, type HookHost } from "../../features/guard/hook.js";
 import { PACKAGE_VERSION } from "../../shared/version.js";
-import { type AutonomyCliOptions, runAutonomy } from "./autonomy.js";
-import { runBisect, type BisectCliOptions } from "./bisect.js";
-import { registerEvidencePackCommands } from "./evidence-pack-commands.js";
-import { registerFreshnessCommands } from "./freshness-commands.js";
-import { registerIncidentCommands } from "./incident-commands.js";
-import { registerMaintainCommands } from "./maintain-commands.js";
-import { registerMemoryCommands } from "./memory-commands.js";
-import { registerPolicyCommands } from "./policy-commands.js";
-import { registerProveCommands } from "./prove-commands.js";
-import { registerRadarCommands } from "./radar-commands.js";
-import { addRecipesCommand } from "./recipes.js";
+import { runDiffAudit, runEvaluate, runReachability } from "./commands/analysis.js";
+import { runAssess, runSymbols } from "./commands/assess.js";
+import { type AutonomyCliOptions, runAutonomy } from "./commands/autonomy.js";
+import { runBisect, type BisectCliOptions } from "./commands/bisect.js";
+import { runDiet } from "./commands/diet.js";
+import type { DietCliOptions } from "./commands/diet.js";
+import { registerEvidencePackCommands } from "./commands/evidence-pack.js";
+import { registerFreshnessCommands } from "./commands/freshness.js";
+import { runGuard, runGuardHook } from "./commands/guard.js";
+import { runHook } from "./commands/hooks.js";
+import { registerIncidentCommands } from "./commands/incident.js";
+import { runInit } from "./commands/init.js";
+import { registerMaintainCommands } from "./commands/maintain.js";
+import { registerMemoryCommands } from "./commands/memory.js";
 import {
-  runAssess,
-  runDiffAudit,
-  runEvaluate,
-  runSymbols,
   runInspectPatch,
   runListPatches,
+  runValidatePatch,
+  runReconcilePatches,
+} from "./commands/patches.js";
+import { registerPolicyCommands } from "./commands/policy.js";
+import { registerProveCommands } from "./commands/prove.js";
+import { registerRadarCommands } from "./commands/radar.js";
+import { addRecipesCommand } from "./commands/recipes.js";
+import {
   runPortfolio,
-  runReachability,
   runScanInput,
   runSingleCve,
   runUpdateOutdated,
-  runValidatePatch,
-  runReconcilePatches,
-  runInteractiveTriage,
-  runInit,
-  runHook,
-  runGuard,
-  runGuardHook,
-  runDiet,
-  type DietCliOptions,
   runPlan,
+} from "./commands/remediate.js";
+import {
   runRunsApply,
   runRunsList,
   runRunsResume,
   runRunsRollback,
   runRunsShow,
   runRunsVerify,
-  type RunsOptions as RunsCliOptions,
-} from "./runners.js";
-import { runTraceCommand, type TraceRunCommandOptions } from "./trace.js";
+} from "./commands/runs.js";
+import type { RunsOptions as RunsCliOptions } from "./commands/runs.js";
+import { runTraceCommand, type TraceRunCommandOptions } from "./commands/trace.js";
+import { runInteractiveTriage } from "./commands/triage.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
 import { validateOutputFormat, validateSharedCommandOptions } from "./validators.js";

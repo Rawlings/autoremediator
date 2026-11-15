@@ -22,8 +22,20 @@ const ALLOWED: Record<string, string[]> = {
   surfaces: ["shared", "infra", "features", "api", "surfaces"],
 };
 
-/** Imports of another feature's internals (not its index.ts). Lower this as features get barrels. */
-const CROSS_FEATURE_DEEP_IMPORTS = 390;
+/**
+ * Imports of another feature's internals (not its `index.ts` or `types.ts`). Lower this as the
+ * features get barrels. Barrels cannot all be added yet: see FEATURE_CYCLE_SIZE.
+ */
+const CROSS_FEATURE_DEEP_IMPORTS = 180;
+
+/**
+ * Features that depend on each other in a loop (remediate, runs, patch, repair, verify, upgrade and
+ * their neighbours). A barrel in a loop makes modules load before their imports have run, so the
+ * loop has to be broken first: types and helpers the lower features need move down out of
+ * `remediate/`, so only orchestrators (remediate, runs, change-request, incident) import the engine
+ * (patch, upgrade, verify, repair), never the other way. This may only shrink.
+ */
+const FEATURE_CYCLE_SIZE = 14;
 
 interface Import {
   from: string;
@@ -47,6 +59,45 @@ function importsIn(file: string): Import[] {
     found.push({ from: relative(SRC, file), to: relative(SRC, target) });
   }
   return found;
+}
+
+/** The members of the largest strongly connected component (Tarjan). */
+function largestCycle(graph: Map<string, Set<string>>): string[] {
+  const index = new Map<string, number>();
+  const low = new Map<string, number>();
+  const stack: string[] = [];
+  const onStack = new Set<string>();
+  let largest: string[] = [];
+  let counter = 0;
+  const visit = (node: string): void => {
+    index.set(node, counter);
+    low.set(node, counter);
+    counter += 1;
+    stack.push(node);
+    onStack.add(node);
+    for (const next of graph.get(node) ?? []) {
+      if (!index.has(next)) {
+        visit(next);
+        low.set(node, Math.min(low.get(node) ?? 0, low.get(next) ?? 0));
+      } else if (onStack.has(next)) {
+        low.set(node, Math.min(low.get(node) ?? 0, index.get(next) ?? 0));
+      }
+    }
+    if (low.get(node) !== index.get(node)) return;
+    const component: string[] = [];
+    let member: string | undefined;
+    do {
+      member = stack.pop();
+      if (member === undefined) break;
+      onStack.delete(member);
+      component.push(member);
+    } while (member !== node);
+    if (component.length > largest.length) largest = component;
+  };
+  for (const node of graph.keys()) {
+    if (!index.has(node)) visit(node);
+  }
+  return largest.length > 1 ? largest : [];
 }
 
 const imports = sourceFiles(SRC).flatMap((file) => importsIn(file));
@@ -79,8 +130,20 @@ describe("module boundaries (see docs/contributing/architecture.md)", () => {
       const owner = featureOf(from);
       const target = featureOf(to);
       if (!owner || !target || owner === target) return false;
-      return to.split(sep).length > 3 || !/(^|\/)index$/.test(to);
+      const file = to.split(sep).slice(2).join("/");
+      return file !== "" && file !== "index" && file !== "types";
     });
     expect(deep.length).toBeLessThanOrEqual(CROSS_FEATURE_DEEP_IMPORTS);
+  });
+
+  it("keeps the loop between features from growing", () => {
+    const graph = new Map<string, Set<string>>();
+    for (const { from, to } of imports) {
+      const owner = featureOf(from);
+      const target = featureOf(to);
+      if (!owner || !target || owner === target) continue;
+      graph.set(owner, (graph.get(owner) ?? new Set()).add(target));
+    }
+    expect(largestCycle(graph).length).toBeLessThanOrEqual(FEATURE_CYCLE_SIZE);
   });
 });
