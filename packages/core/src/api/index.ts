@@ -328,3 +328,18 @@ export {
   type PremortemTarget,
   type PremortemUsage,
 } from "./premortem/index.js";
+export {
+  compilePolicy,
+  explainPolicy,
+  findLoosenings,
+  isLoosening,
+  PolicyRequestError,
+  writePolicyProposal,
+  type CompilePolicyOptions,
+  type ExplainPolicyOptions,
+  type ExplainPolicyResult,
+  type Loosening,
+  type PolicyCompileResult,
+  type PolicyProposer,
+  type PolicyRule,
+} from "./policy-nl/index.js";
