@@ -1,9 +1,11 @@
 import {
   abandonAttempt,
   applyPlan,
+  assessUpgrade,
   checkReachability,
   evaluatePackage,
   finalizeAttempt,
+  findVulnerableSymbols,
   getRun,
   guardPackage,
   init,
@@ -66,6 +68,8 @@ export interface ApiDeps {
   verifyAttemptFn: typeof verifyAttempt;
   finalizeAttemptFn: typeof finalizeAttempt;
   abandonAttemptFn: typeof abandonAttempt;
+  assessUpgradeFn: typeof assessUpgrade;
+  findVulnerableSymbolsFn: typeof findVulnerableSymbols;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -101,4 +105,6 @@ export const defaultApiDeps: ApiDeps = {
   verifyAttemptFn: verifyAttempt,
   finalizeAttemptFn: finalizeAttempt,
   abandonAttemptFn: abandonAttempt,
+  assessUpgradeFn: assessUpgrade,
+  findVulnerableSymbolsFn: findVulnerableSymbols,
 };

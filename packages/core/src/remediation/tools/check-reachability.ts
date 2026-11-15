@@ -85,7 +85,7 @@ export function resolveAliasedPath(
   return undefined;
 }
 
-function* walkSourceFiles(dir: string): Generator<string> {
+export function* walkSourceFiles(dir: string): Generator<string> {
   let entries: string[];
   try {
     entries = readdirSync(dir);
@@ -400,19 +400,24 @@ export function traceSymbolInvocations(
   };
 }
 
-export function assessPackageReachability(
-  cwd: string,
-  packageName: string,
-  targetSymbol?: string,
-): ReachabilityAssessment {
-  const tsconfig = loadTsconfigPaths(cwd);
-  const evidence: ReachabilityEvidence[] = [];
-  let scanned = 0;
-  let hasReExport = false;
-  let totalInvocations = 0;
-  let hasPackageImport = false;
+interface ScannedFile {
+  filePath: string;
+  content: string;
+  refs: ExtractedReference[];
+}
 
+interface PackageScan {
+  scanned: number;
+  files: ScannedFile[];
+  importedDirectPackages: Set<string>;
+}
+
+/** Read every project source file once and keep the ones that reference the package. */
+function scanForPackage(cwd: string, packageName: string): PackageScan {
+  const tsconfig = loadTsconfigPaths(cwd);
   const importedDirectPackages = new Set<string>();
+  const files: ScannedFile[] = [];
+  let scanned = 0;
 
   for (const filePath of walkSourceFiles(cwd)) {
     scanned++;
@@ -422,7 +427,6 @@ export function assessPackageReachability(
     } catch {
       continue;
     }
-
     const refs = extractPackageReferences(
       filePath,
       content,
@@ -430,10 +434,23 @@ export function assessPackageReachability(
       tsconfig,
       importedDirectPackages,
     );
-    if (refs.length > 0) {
-      hasPackageImport = true;
-    }
+    if (refs.length > 0) files.push({ filePath, content, refs });
+  }
+  return { scanned, files, importedDirectPackages };
+}
 
+function evaluateScan(
+  scan: PackageScan,
+  cwd: string,
+  packageName: string,
+  targetSymbol?: string,
+): ReachabilityAssessment {
+  const evidence: ReachabilityEvidence[] = [];
+  let hasReExport = false;
+  let totalInvocations = 0;
+  const hasPackageImport = scan.files.length > 0;
+
+  for (const { filePath, content, refs } of scan.files) {
     for (const ref of refs) {
       if (ref.isReExported) {
         hasReExport = true;
@@ -473,7 +490,7 @@ export function assessPackageReachability(
     }
   }
 
-  if (scanned === 0) {
+  if (scan.scanned === 0) {
     return {
       packageName,
       status: "unknown",
@@ -483,7 +500,11 @@ export function assessPackageReachability(
   }
 
   if (!hasPackageImport) {
-    const transitivePath = findTransitiveDependencyPath(cwd, packageName, importedDirectPackages);
+    const transitivePath = findTransitiveDependencyPath(
+      cwd,
+      packageName,
+      scan.importedDirectPackages,
+    );
     if (transitivePath) {
       return {
         packageName,
@@ -536,6 +557,29 @@ export function assessPackageReachability(
     reachabilityBasis: "import-present",
     evidence,
   };
+}
+
+export function assessPackageReachability(
+  cwd: string,
+  packageName: string,
+  targetSymbol?: string,
+): ReachabilityAssessment {
+  return evaluateScan(scanForPackage(cwd, packageName), cwd, packageName, targetSymbol);
+}
+
+/**
+ * Reachability of several symbols of one package. The project is read once and each symbol is
+ * judged exactly as `assessPackageReachability` would judge it alone.
+ */
+export function assessSymbolsReachability(
+  cwd: string,
+  packageName: string,
+  symbols: readonly string[],
+): Map<string, ReachabilityAssessment> {
+  const scan = scanForPackage(cwd, packageName);
+  const results = new Map<string, ReachabilityAssessment>();
+  for (const symbol of symbols) results.set(symbol, evaluateScan(scan, cwd, packageName, symbol));
+  return results;
 }
 
 export const checkReachabilityTool = defineTool({
