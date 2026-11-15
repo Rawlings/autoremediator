@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { execa } from "execa";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
@@ -33,7 +34,24 @@ describe("hook entries", () => {
   it("builds the Cursor entry from documented fields only", () => {
     const entry = cursorGuardHookEntry("^1.2.3");
     expect(Object.keys(entry).toSorted()).toEqual(["command", "matcher", "timeout"]);
-    expect(entry.command).toBe("npx -y -p autoremediator@^1.2.3 autoremediator guard-hook --host cursor");
+    expect(entry.command).toBe(
+      `npx -y -p autoremediator@^1.2.3 autoremediator guard-hook --host cursor || echo '{"permission":"allow"}'`,
+    );
+  });
+
+  it("lets the command through, with JSON, when the guard cannot run (no npx, no network)", async () => {
+    const empty = mkdtempSync(join(tmpdir(), "no-npx-"));
+    try {
+      const result = await execa("/bin/sh", ["-c", String(cursorGuardHookEntry().command)], {
+        env: { PATH: empty },
+        extendEnv: false,
+        reject: false,
+      });
+      expect(result.exitCode).toBe(0);
+      expect(JSON.parse(result.stdout)).toEqual({ permission: "allow" });
+    } finally {
+      rmSync(empty, { recursive: true, force: true });
+    }
   });
 
   it("builds the Copilot entry so that a failing guard cannot deny every command", () => {

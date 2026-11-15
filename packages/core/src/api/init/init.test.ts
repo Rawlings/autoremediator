@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { parse as parseYaml } from "yaml";
 
 import { getOperation, OPERATIONS } from "../../catalog/index.js";
 import { loadPolicy } from "../../platform/policy.js";
@@ -10,6 +11,7 @@ import {
   AGENTS_MD_SECTION,
   copilotAgentContent,
   cursorRuleContent,
+  GENERATED_MARKER,
   INSTRUCTED_TOOLS,
   policyFileContent,
   renderSkill,
@@ -18,6 +20,7 @@ import {
 import { chooseHosts, detectProject, gitHostFromRemote } from "./detect.js";
 import { renderDiff } from "./diff.js";
 import { init } from "./index.js";
+import { claudeCodePluginFiles } from "./plugin-files.js";
 import {
   mergeClaudeGuardHook,
   mergeCodexToml,
@@ -97,6 +100,46 @@ describe("mergeCodexToml", () => {
   });
 });
 
+describe("mergeCodexToml with unusual spellings of the table", () => {
+  const tableOf = (text: string): number => text.split("\n").filter((line) => /^\[mcp_servers\b/.test(line.trim())).length;
+
+  it("treats a quoted table name as the existing entry", () => {
+    for (const existing of [
+      '[mcp_servers."autoremediator"]\ncommand = "custom"\n',
+      "[mcp_servers.'autoremediator']\ncommand = \"custom\"\n",
+      '[ mcp_servers . autoremediator ]\ncommand = "custom"\n',
+      '[mcp_servers."autoremediator".env]\nX = "1"\n',
+    ]) {
+      expect(mergeCodexToml(existing, ENTRY)).toEqual({ content: existing });
+    }
+  });
+
+  it("refuses a dotted key or an inline table that already defines it, instead of appending a duplicate", () => {
+    for (const existing of [
+      'mcp_servers.autoremediator.command = "custom"\n',
+      '[mcp_servers]\nautoremediator.command = "custom"\n',
+      '[mcp_servers]\nautoremediator = { command = "custom" }\n',
+      '[mcp_servers]\n"autoremediator" = { command = "custom" }\n',
+      'mcp_servers = { autoremediator = { command = "custom" } }\n',
+      'mcp_servers = { other = { command = "x" } }\n',
+    ]) {
+      expect(mergeCodexToml(existing, ENTRY)).toHaveProperty("conflict");
+    }
+  });
+
+  it("still appends next to other servers, however they are written", () => {
+    for (const existing of [
+      '[mcp_servers.other]\ncommand = "x"\n',
+      '[mcp_servers]\nother = { command = "x" }\n',
+      'mcp_servers.other.command = "x"\n',
+    ]) {
+      const merged = mergeCodexToml(existing, ENTRY) as { content: string };
+      expect(merged.content.startsWith(existing)).toBe(true);
+      expect(tableOf(merged.content)).toBeGreaterThan(tableOf(existing));
+    }
+  });
+});
+
 describe("mergeMarkedSection", () => {
   it("appends after existing text", () => {
     const merged = mergeMarkedSection("# Guide\n", "body") as { content: string };
@@ -117,6 +160,21 @@ describe("mergeMarkedSection", () => {
     expect(mergeMarkedSection(once, "body")).toEqual({ content: once });
   });
 
+  it("keeps CRLF line endings in a CRLF file", () => {
+    const first = (mergeMarkedSection("# Guide\r\nline\r\n", "one\ntwo") as { content: string }).content;
+    expect(first.replaceAll("\r\n", "")).not.toContain("\n");
+    expect(first.startsWith("# Guide\r\nline\r\n\r\n<!-- autoremediator:begin -->\r\n")).toBe(true);
+    const second = (mergeMarkedSection(first, "three") as { content: string }).content;
+    expect(second.replaceAll("\r\n", "")).not.toContain("\n");
+    expect(second).toContain("three");
+    expect(second).not.toContain("one");
+    expect(mergeMarkedSection(second, "three")).toEqual({ content: second });
+  });
+
+  it("keeps LF in an LF file", () => {
+    expect((mergeMarkedSection("# Guide\n", "one") as { content: string }).content).not.toContain("\r");
+  });
+
   it("refuses an unmatched marker", () => {
     expect(mergeMarkedSection("<!-- autoremediator:begin -->\nx", "body")).toHaveProperty("conflict");
   });
@@ -131,6 +189,22 @@ describe("mergeClaudeGuardHook", () => {
     expect(mergeClaudeGuardHook("{bad", "x")).toHaveProperty("conflict");
     expect(mergeClaudeGuardHook('{"hooks":[]}', "x")).toHaveProperty("conflict");
     expect(mergeClaudeGuardHook('{"hooks":{"PreToolUse":{}}}', "x")).toHaveProperty("conflict");
+  });
+  it("refuses, rather than throws on, entries that are not shaped like hook groups", () => {
+    for (const settings of [
+      '{"hooks":{"PreToolUse":[null]}}',
+      '{"hooks":{"PreToolUse":["x"]}}',
+      '{"hooks":{"PreToolUse":[{"hooks":"x"}]}}',
+      '{"hooks":{"PreToolUse":[{"hooks":[null]}]}}',
+      '{"hooks":{"PreToolUse":[{"hooks":[{"type":"command","command":5}]}]}}',
+    ]) {
+      expect(() => mergeClaudeGuardHook(settings, "x guard-hook")).not.toThrow();
+      expect(mergeClaudeGuardHook(settings, "x guard-hook")).toHaveProperty("conflict");
+    }
+  });
+  it("accepts a group without hooks, and keeps the user's groups", () => {
+    const merged = mergeClaudeGuardHook('{"hooks":{"PreToolUse":[{"matcher":"Edit"}]}}', "x guard-hook") as { content: string };
+    expect(JSON.parse(merged.content).hooks.PreToolUse).toHaveLength(2);
   });
 });
 
@@ -165,6 +239,26 @@ describe("mergeRunStateIgnore", () => {
 
   it("completes a partial block", () => {
     expect((mergeRunStateIgnore(".autoremediator/*\n") as { content: string }).content).toBe(block);
+  });
+
+  it("replaces the rooted spellings of the directory entry too", () => {
+    expect((mergeRunStateIgnore("a\n/.autoremediator/\nb\n") as { content: string }).content).toBe(`a\n${block}b\n`);
+    expect((mergeRunStateIgnore("/.autoremediator\n") as { content: string }).content).toBe(block);
+  });
+
+  it("drops a directory entry that sits next to the star entry, which would undo the negations", () => {
+    expect((mergeRunStateIgnore(".autoremediator/\n.autoremediator/*\n") as { content: string }).content).toBe(block);
+  });
+
+  it("moves negations that come before the star line, where git would ignore them", () => {
+    const merged = (mergeRunStateIgnore("!.autoremediator/memory.md\ndist\n.autoremediator/*\n") as { content: string }).content;
+    expect(merged).toBe(`dist\n${block}`);
+    expect(mergeRunStateIgnore(merged)).toEqual({ content: merged });
+  });
+
+  it("leaves negations that already follow the star line where they are", () => {
+    const text = `.autoremediator/*\n# keep\n!.autoremediator/recipes/\n!.autoremediator/track-record.json\n!.autoremediator/memory.md\n`;
+    expect(mergeRunStateIgnore(text)).toEqual({ content: text });
   });
 });
 
@@ -322,6 +416,44 @@ describe("init", () => {
   });
 });
 
+describe("files init does not own", () => {
+  const ours = [
+    ".claude/skills/fix-cve/SKILL.md",
+    ".cursor/rules/autoremediator.mdc",
+    ".github/agents/autoremediator.agent.md",
+  ];
+  const hostFor = (path: string) => (path.startsWith(".claude") ? "claude-code" : path.startsWith(".cursor") ? "cursor" : "copilot");
+
+  it.each(ours)("leaves a file of the user's at %s alone and says why", async (path) => {
+    put(path, "---\nname: mine\n---\n\nMy own instructions.\n");
+    const result = await init({ cwd: dir, hosts: [hostFor(path)], yes: true });
+    expect(read(path)).toBe("---\nname: mine\n---\n\nMy own instructions.\n");
+    expect(result.conflicts).toContain(path);
+    const change = result.changes.find((entry) => entry.path === path);
+    expect(change?.action).toBe("conflict");
+    expect(change?.reason).toContain("not written by autoremediator init");
+    expect(change?.reason).toContain("delete the file and run init again");
+  });
+
+  it.each(ours)("marks %s as generated, and refreshes it from then on", async (path) => {
+    await init({ cwd: dir, hosts: [hostFor(path)], yes: true });
+    expect(read(path)).toContain(GENERATED_MARKER);
+    put(path, read(path).replace(/\n$/, "\nan old line\n"));
+    const refreshed = await init({ cwd: dir, hosts: [hostFor(path)], yes: true });
+    expect(refreshed.conflicts).toEqual([]);
+    expect(read(path)).not.toContain("an old line");
+    expect(read(path)).toContain(GENERATED_MARKER);
+    expect((await init({ cwd: dir, hosts: [hostFor(path)], yes: true })).drift).toBe(false);
+  });
+
+  it("puts the marker after the front matter, as an HTML comment", () => {
+    for (const text of [renderSkill(SKILLS[0]!), copilotAgentContent(), cursorRuleContent()]) {
+      expect(GENERATED_MARKER).toBe("<!-- generated by autoremediator init: safe to regenerate -->");
+      expect(text).toMatch(new RegExp(`^---\\n[\\s\\S]*?\\n---\\n\\n${GENERATED_MARKER}\\n`));
+    }
+  });
+});
+
 describe("agent instructions", () => {
   it("only name operations that exist in the catalog", () => {
     for (const tool of INSTRUCTED_TOOLS) {
@@ -362,6 +494,27 @@ describe("agent instructions", () => {
     }
     expect(copilotAgentContent()).toMatch(/^---\nname: autoremediator\ndescription: .+\n---\n/);
     expect(cursorRuleContent()).toContain(AGENTS_MD_SECTION);
+  });
+
+  it("writes front matter a strict YAML parser accepts, and the text it was given", () => {
+    const generated: Array<[string, string]> = [
+      ...SKILLS.map((skill): [string, string] => [`skill ${skill.name}`, renderSkill(skill)]),
+      ["copilot agent", copilotAgentContent()],
+      ["cursor rule", cursorRuleContent()],
+      ...Object.entries(claudeCodePluginFiles())
+        .filter(([path]) => path.endsWith(".md"))
+        .map(([path, text]): [string, string] => [path, text]),
+    ];
+    for (const [, text] of generated) {
+      const match = /^---\n([\s\S]*?)\n---\n/.exec(text);
+      expect(match).not.toBeNull();
+      const data = parseYaml(match![1]!, { strict: true }) as Record<string, unknown>;
+      expect(typeof data.description).toBe("string");
+    }
+    for (const skill of SKILLS) {
+      const data = parseYaml(/^---\n([\s\S]*?)\n---\n/.exec(renderSkill(skill))![1]!, { strict: true }) as Record<string, unknown>;
+      expect(data).toEqual({ name: skill.name, description: skill.description });
+    }
   });
 
   it("describes the CLI commands that exist", () => {

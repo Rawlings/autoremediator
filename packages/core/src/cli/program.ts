@@ -206,6 +206,10 @@ const hookOptions = (command: Command): Command =>
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
     .option("--hooks <list>", "Hooks to handle, comma-separated: pre-push,post-merge (default both)")
     .option("--manager <name>", "Hook manager to write for: husky|lefthook|pre-commit|git (default: detected)")
+    .option(
+      "--allow-shared-hooks-path",
+      "Write into a hooks folder outside the repository (a global core.hooksPath shared with other repositories)",
+    )
     .option("--output-format <format>", "Output format: text|json", "text");
 const hookAction =
   (mode: "install" | "uninstall" | "status") =>

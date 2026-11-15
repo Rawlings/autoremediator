@@ -103,3 +103,16 @@ describe("doctor attempts and remediation modes", () => {
     expect(store.reserveDoctorAttempt("o/r#0", "a", 1)).toEqual({ outcome: "granted", attempt: 1 });
   });
 });
+
+describe("one-off notices", () => {
+  it("hands out each notice once, and remembers that across a restart", async () => {
+    const dir = await tempDir();
+    const first = createFileAppStateStore(dir);
+    expect(first.claimNotice("no-write-access:o/r#1")).toBe(true);
+    expect(first.claimNotice("no-write-access:o/r#1")).toBe(false);
+    expect(first.claimNotice("no-write-access:o/r#2")).toBe(true);
+
+    const second = createFileAppStateStore(dir);
+    expect(second.claimNotice("no-write-access:o/r#1")).toBe(false);
+  });
+});

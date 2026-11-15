@@ -1,6 +1,6 @@
 import { existsSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import { safeExeca } from "../../platform/safe-exec.js";
 import type { HookManager } from "./types.js";
@@ -33,6 +33,39 @@ export interface ManagerChoice {
   reason: string;
   /** Existing configuration file (relative to `root`) for managers that keep one. */
   configFile?: string;
+  /** For husky: the folder that holds the hook scripts (`.husky`, possibly in a subfolder). */
+  huskyDir?: string;
+}
+
+const HUSKY_PATH = /(^|\/)\.husky(\/|$)/;
+
+/** The `.husky` folder a hooks path points into (or at its generated `_` folder), absolute. */
+function huskyDirFromHooksPath(context: GitContext): string | undefined {
+  if (!context.hooksPath) return undefined;
+  const normalized = context.hooksPath.split("\\").join("/");
+  if (!HUSKY_PATH.test(normalized)) return undefined;
+  const absolute = context.hooksDir.split(sep).join("/");
+  const match = /^(.*\/\.husky)(?:\/|$)/.exec(absolute);
+  return match?.[1] ? resolve(match[1]) : undefined;
+}
+
+/** `realpath` of the nearest existing parent, with the missing rest appended: for paths not created yet. */
+function realpathLoose(path: string): string {
+  const missing: string[] = [];
+  let current = resolve(path);
+  while (!existsSync(current)) {
+    const parent = dirname(current);
+    if (parent === current) return resolve(path);
+    missing.unshift(current.slice(parent.length + 1));
+    current = parent;
+  }
+  return join(realpathSync(current), ...missing);
+}
+
+/** True when `directory` is inside the repository's working tree. */
+export function isInsideRepository(context: GitContext, directory: string): boolean {
+  const rel = relative(context.root, realpathLoose(directory));
+  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
 }
 
 async function git(cwd: string, args: string[]): Promise<string | undefined> {
@@ -70,7 +103,8 @@ export function detectManager(context: GitContext, requested?: HookManager): Man
   const { root, hooksPath } = context;
   const lefthook = LEFTHOOK_FILES.find((file) => existsSync(join(root, file)));
   const preCommit = existsSync(join(root, PRE_COMMIT_FILE)) ? PRE_COMMIT_FILE : undefined;
-  const husky = existsSync(join(root, ".husky")) || /^\.?\/?\.husky(\/|$)/.test(hooksPath ?? "");
+  const huskyFromPath = huskyDirFromHooksPath(context);
+  const husky = huskyFromPath !== undefined || existsSync(join(root, ".husky"));
 
   if (requested) {
     const configFile =
@@ -83,14 +117,14 @@ export function detectManager(context: GitContext, requested?: HookManager): Man
       manager: requested,
       reason: "chosen with --manager",
       ...(configFile ? { configFile } : {}),
+      ...(requested === "husky" ? { huskyDir: huskyFromPath ?? join(root, ".husky") } : {}),
     };
   }
   if (husky) {
     return {
       manager: "husky",
-      reason: hooksPath?.includes(".husky")
-        ? `core.hooksPath is ${hooksPath}`
-        : "found a .husky folder",
+      reason: huskyFromPath ? `core.hooksPath is ${hooksPath}` : "found a .husky folder",
+      huskyDir: huskyFromPath ?? join(root, ".husky"),
     };
   }
   if (lefthook) return { manager: "lefthook", reason: `found ${lefthook}`, configFile: lefthook };

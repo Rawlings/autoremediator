@@ -14,6 +14,7 @@ import {
   workflowContent,
   copilotAgentContent,
   cursorRuleContent,
+  GENERATED_MARKER,
   guardHookCommand,
 } from "./assets.js";
 import {
@@ -56,8 +57,21 @@ function createOnly(path: string, reason: string, before: string | undefined, co
   return { path, action: "unchanged", reason, before, after: before };
 }
 
-/** Write a file we own: create it, or refresh it when it differs from what we would write. */
+/**
+ * Write a file we generate: create it, or refresh it when it differs from what we would write. A file
+ * that is already there is ours only if it carries the generated marker; otherwise it is a person's
+ * own file (or one an older release wrote, which had no marker) and is left alone.
+ */
 function owned(path: string, reason: string, before: string | undefined, content: string): FileChange {
+  if (before !== undefined && !before.includes(GENERATED_MARKER)) {
+    return {
+      path,
+      action: "conflict",
+      reason: `${path} exists and was not written by autoremediator init (it has no "${GENERATED_MARKER}" line), so it was left alone; to let init manage it, delete the file and run init again`,
+      before,
+      after: before,
+    };
+  }
   const action = before === undefined ? "create" : before === content ? "unchanged" : "update";
   return { path, action, reason, ...(before === undefined ? {} : { before }), after: content };
 }

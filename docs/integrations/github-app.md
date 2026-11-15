@@ -50,9 +50,12 @@ On an issue or pull request, a comment line that starts with `/autoremediator`:
 | `/autoremediator help` | Lists the commands |
 
 Give one or more CVE or GHSA ids (up to ten). Only people with **write or admin access** to the
-repository can use them; anyone else gets a one-line refusal and nothing runs. `fix` is an explicit
+repository can use them; anyone else gets a one-line refusal, once per issue or pull request (and none
+at all when the app has no state store to remember it in), and nothing runs. `fix` is an explicit
 request from someone who could push anyway, so it goes ahead and opens a pull request even when
-`dryRun` is on; it never merges. Quoted lines, fenced code and mid-line mentions are ignored, comments
+`dryRun` is on, and its reply says so when the repository defaults to dry runs; it never merges.
+A command gets one reply: if the run fails after the reply is posted, the job ends as `partial` and
+is not queued again, so the reply is not repeated. Quoted lines, fenced code and mid-line mentions are ignored, comments
 written by bots (including the app's own replies) are never acted on, and nothing from a comment is
 used except the command word and ids that match a strict pattern.
 
@@ -63,7 +66,10 @@ runs. A request is recorded before it runs, so a run that failed can be retried.
 
 `rollback` never rolls anything back. It reads the `Autoremediator-Run:` trailers in the pull request
 description (or, if there are none, in the pull request's commit messages), and replies with
-`autoremediator runs rollback <runId>` for each run id that matches the run id format exactly. A run
+`autoremediator runs rollback <runId>` for each run id that matches the run id format exactly. Only
+text written by a bot account other than Dependabot and Renovate is believed (the pull request's
+author, or a commit's author, must be a `[bot]` login), so a description or commit a person wrote
+cannot put a run id in the reply. A run
 is recorded in the `.autoremediator/runs` folder of the checkout that made it, so the command works
 where that folder exists. A pull request the app opened from its own temporary checkout has no such
 record; revert its commits instead.
@@ -130,9 +136,14 @@ What it will and will not do:
 - **Fast-forward commits only.** Repairs are commits on top of the branch tip, written through the
   GitHub contents API against the file version it read. It never force-pushes or rewrites history, and
   if the branch or file changed in the meantime GitHub refuses the write.
-- **Source files only.** It never writes lockfiles, `package.json`, anything under `.github/`
-  (workflows, `autoremediator.yml`), autoremediator policy files, or paths that leave the repository.
-  File paths come from CI logs, so each is checked before it is read. At most five files per attempt.
+- **Source files the pull request changed only.** It never writes lockfiles, `package.json`, anything
+  under `.github/` (workflows, `autoremediator.yml`), autoremediator policy files, or paths that
+  leave the repository. File paths come from CI logs, which any process in the job can forge, so each
+  path is checked before it is read, and it must be a file the pull request itself changes (the
+  doctor lists them with the pull request files API). A Dependabot or Renovate pull request changes
+  manifests and lockfiles, so in practice it never edits source: it leaves the diagnosis comment. A
+  "did you mean" rename is applied only when the suggested name is already in that file. At most five
+  files per attempt.
 - **Open, same-repository pull requests only.** Pull requests from forks are ignored, and so is a
   failure from a commit the branch has already moved past.
 - **Capped.** Attempts per pull request are counted in the app state store, once per head commit (so
@@ -160,8 +171,9 @@ you would rather the bots keep control of their branches.
 
 A repair is produced by a `RepairStrategy` (`{ name, repair({ filePath, content, findings }) }`),
 which only returns new file content. The doctor and pull request healing use the pattern-based
-strategy, which fixes default-import mismatches, compiler "did you mean" suggestions and unused
-imports, and does nothing for other errors. A different strategy can be passed to
+strategy, which fixes default-import mismatches, compiler "did you mean" suggestions (to a name already
+in the file) and unused imports, and does nothing for other errors. Pull request healing applies it
+only to files the pull request itself changed, as the doctor does. A different strategy can be passed to
 `createDefaultRemediationHandler({ repairStrategy })`; the paths, attempt cap and commit rules above
 apply to whatever it returns. There is no built-in agent-backed strategy yet.
 

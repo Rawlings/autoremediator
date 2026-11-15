@@ -23,7 +23,7 @@ describe("PR Auto-Healer", () => {
     });
 
     it("replaces missing symbol using compiler Did you mean suggestion", () => {
-      const code = `import { rimraf } from "rimraf";\nrimraf.sync("/tmp/test");\n`;
+      const code = `import { rimraf, rimrafSync } from "rimraf";\nrimraf.sync("/tmp/test");\n`;
       const findings = [
         {
           filePath: "src/clean.ts",
@@ -33,7 +33,21 @@ describe("PR Auto-Healer", () => {
         },
       ];
       const repaired = repairFileContent(code, findings);
-      expect(repaired).toContain("rimrafSync");
+      expect(repaired).toContain('rimrafSync("/tmp/test")');
+    });
+
+    it("does not rename to an identifier that is not already in the file", () => {
+      const code = `if (!verifySignature(sig)) throw new Error("bad");\n`;
+      const findings = [
+        {
+          filePath: "scripts/release.js",
+          line: 1,
+          message:
+            "Property 'verifySignature' does not exist on type 'X'. Did you mean 'noop'?",
+          category: "typescript" as const,
+        },
+      ];
+      expect(repairFileContent(code, findings)).toBe(code);
     });
 
     it("removes unused imports flagged by linter", () => {
@@ -83,12 +97,14 @@ describe("PR Auto-Healer", () => {
         },
       });
       const createOrUpdateFileContents = vi.fn().mockResolvedValue({});
+      const listFiles = vi.fn().mockResolvedValue({ data: [{ filename: "src/app.ts" }] });
 
       const octokit = {
         issues: {
           createComment,
           addLabels,
         },
+        pulls: { listFiles },
         repos: {
           getContent,
           createOrUpdateFileContents,
@@ -283,6 +299,54 @@ describe("PR Auto-Healer", () => {
         issue_number: 42,
         labels: ["autoremediator/needs-human-review"],
       });
+    });
+  });
+
+  describe("files the pull request did not change", () => {
+    it("never edits a file CI names unless the pull request itself changed it", async () => {
+      const createComment = vi.fn().mockResolvedValue({});
+      const addLabels = vi.fn().mockResolvedValue({});
+      const getContent = vi.fn().mockResolvedValue({
+        data: {
+          type: "file",
+          content: Buffer.from(`if (!verifySignature(sig)) {}\nfunction noop() {}\n`).toString("base64"),
+          sha: "blob-1",
+          size: 40,
+        },
+      });
+      const createOrUpdateFileContents = vi.fn();
+      const octokit = {
+        issues: { createComment, addLabels },
+        pulls: { listFiles: vi.fn().mockResolvedValue({ data: [{ filename: "pnpm-lock.yaml" }] }) },
+        repos: { getContent, createOrUpdateFileContents },
+      } as any;
+
+      const result = await healPullRequest({
+        octokit,
+        owner: "test-owner",
+        repo: "test-repo",
+        pullNumber: 42,
+        branchName: "autoremediator/cve-2026-1234",
+        checkRunName: "build",
+        diagnostic: {
+          findings: [
+            {
+              filePath: "scripts/release.js",
+              line: 1,
+              message: "Property 'verifySignature' does not exist on type 'X'. Did you mean 'noop'?",
+              category: "typescript",
+            },
+          ],
+          summary: "forged",
+          rawSnippet: "forged",
+        },
+        repoConfig: { ...DEFAULT_REPO_CONFIG, enablePrAutoHealing: true, maxHealingAttempts: 3 },
+      });
+
+      expect(result.healed).toBe(false);
+      expect(getContent).not.toHaveBeenCalled();
+      expect(createOrUpdateFileContents).not.toHaveBeenCalled();
+      expect(createComment).toHaveBeenCalledTimes(1);
     });
   });
 });

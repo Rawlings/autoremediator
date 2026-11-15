@@ -53,7 +53,13 @@ export async function installHooks(options: HooksOptions = {}): Promise<HooksRes
       ? HOOK_NAMES.filter((hook) => options.hooks?.includes(hook))
       : [...HOOK_NAMES];
   const uninstall = options.uninstall === true;
-  const plan = planHooks({ context, choice, hooks, uninstall });
+  const plan = planHooks({
+    context,
+    choice,
+    hooks,
+    uninstall,
+    allowSharedHooksPath: options.allowSharedHooksPath === true,
+  });
 
   const pending = plan.changes.filter(
     (change) =>

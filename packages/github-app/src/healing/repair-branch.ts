@@ -14,6 +14,11 @@ export interface RepairBranchOptions {
   repo: string;
   branchName: string;
   findingsByFile: ReadonlyMap<string, DiagnosticFinding[]>;
+  /**
+   * The files the pull request itself changed (see `listPullRequestChangedFiles`). CI output can
+   * be forged by anything running in the job, so a path outside this set is never edited.
+   */
+  allowedFiles: ReadonlySet<string>;
   strategy: RepairStrategy;
   commitMessage: string;
   logger?: ErrorLogger;
@@ -32,7 +37,7 @@ export interface RepairBranchResult {
  * Commit the strategy's repairs to the pull request branch, one file per commit through the
  * contents API. Each commit lands on top of the branch tip and names the blob it replaces, so a
  * branch that moved or a file that changed since it was read makes GitHub refuse the write. Nothing
- * here can force-push, rewrite history, or touch a path `repairPathProblem` rejects.
+ * here can force-push, rewrite history, or touch a path `repairPathProblem` rejects or the pull request did not change itself.
  */
 export async function repairBranchFiles(options: RepairBranchOptions): Promise<RepairBranchResult> {
   const { octokit, owner, repo, branchName, strategy } = options;
@@ -43,6 +48,10 @@ export async function repairBranchFiles(options: RepairBranchOptions): Promise<R
     const problem = repairPathProblem(filePath);
     if (problem) {
       skipped.push({ filePath, reason: problem });
+      continue;
+    }
+    if (!options.allowedFiles.has(filePath)) {
+      skipped.push({ filePath, reason: "not changed by this pull request" });
       continue;
     }
     if (healedFiles.length >= MAX_REPAIRED_FILES) {

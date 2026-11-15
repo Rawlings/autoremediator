@@ -8,8 +8,11 @@
  *   only when the failing check ran against the branch's current head commit;
  * - attempts are counted per pull request in the app state store, once per head commit, and stop at
  *   the repository's cap, after which it says so once and goes quiet;
- * - the check output is parsed as data. File paths found in it are accepted only if
- *   `repairPathProblem` allows them (no lockfiles, workflows, policy files or manifests);
+ * - the check output is parsed as data, and anything running in the CI job can forge it. File
+ *   paths found in it are accepted only if `repairPathProblem` allows them (no lockfiles,
+ *   workflows, policy files or manifests) AND the pull request itself changed that file. A
+ *   Dependabot or Renovate pull request changes manifests and lockfiles, so in practice source
+ *   edits are refused and the doctor leaves a diagnosis comment;
  * - changes are commits on top of the branch tip through the contents API: never a force-push.
  */
 import type { Octokit } from "@octokit/rest";
@@ -21,6 +24,7 @@ import {
   type ParsedDiagnostic,
 } from "../diagnostics/log-parser.js";
 import { fenced, oneLine } from "../diagnostics/sanitize.js";
+import { listPullRequestChangedFiles } from "../healing/pr-files.js";
 import { repairBranchFiles } from "../healing/repair-branch.js";
 import type { RepairStrategy } from "../healing/repair-strategy.js";
 import { repairPathProblem } from "../healing/safe-paths.js";
@@ -170,9 +174,11 @@ export async function runBotPrDoctor(params: BotPrDoctorParams): Promise<Remedia
     const logs = await collectCheckRunLogs(octokit, { owner, repo }, checkRun, params.logger);
     const diagnostic = parseCheckRunLogs(logs);
 
+    const changedFiles = await listPullRequestChangedFiles(octokit, { owner, repo, pullNumber });
     const findingsByFile = new Map<string, DiagnosticFinding[]>();
     for (const finding of diagnostic.findings) {
       if (!finding.filePath || repairPathProblem(finding.filePath)) continue;
+      if (!changedFiles.has(finding.filePath)) continue;
       const existing = findingsByFile.get(finding.filePath) ?? [];
       existing.push(finding);
       findingsByFile.set(finding.filePath, existing);
@@ -192,7 +198,7 @@ export async function runBotPrDoctor(params: BotPrDoctorParams): Promise<Remedia
       await comment(
         params,
         report(
-          "No repair was pushed: the output does not point at a source file that is safe to change.",
+          "No repair was pushed: the output does not point at a source file this pull request changed and that is safe to edit.",
         ),
         "bot-pr-doctor.unlocalized",
       );
@@ -205,6 +211,7 @@ export async function runBotPrDoctor(params: BotPrDoctorParams): Promise<Remedia
       repo,
       branchName: headRef,
       findingsByFile,
+      allowedFiles: changedFiles,
       strategy: params.strategy,
       commitMessage: `fix: repair ${oneLine(checkName, 60)} after dependency update (autoremediator bot PR doctor, attempt ${attempt}/${doctor.maxAttempts})`,
       logger: params.logger,

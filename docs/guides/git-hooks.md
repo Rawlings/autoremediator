@@ -35,7 +35,13 @@ The push is blocked **only** when the report says `Net Risk Verdict: DEGRADED`. 
 CLI missing, no network, a crash, a timeout) prints a note and lets the push through, so the hook can
 not lock you out of your own repository.
 
-The base is the first of: `PRE_COMMIT_FROM_REF` (set by the pre-commit framework), the branch's
+The hook reads what is being pushed (the `local_ref local_sha remote_ref remote_sha` lines that git
+writes to its standard input) and judges each pushed branch against the commit the remote already has;
+for a new branch, against where it left the default branch (`origin/HEAD`, `origin/main`,
+`origin/master`). Branch deletions and tag pushes are not checked. The delta scan reads the working
+tree, so a branch that is not the checked-out commit is skipped with a note rather than judged by the
+wrong files. Without those lines (the hook run by hand, or by a manager that does not forward them),
+and under the pre-commit framework, the base is the first of `PRE_COMMIT_FROM_REF`, the branch's
 upstream (`@{upstream}`), `origin/HEAD`, `origin/main`, `origin/master`. With none of those the check
 is skipped with a note.
 
@@ -45,7 +51,7 @@ is skipped with a note.
 
 | Manager | Found by | What is written |
 | ------- | -------- | --------------- |
-| husky | a `.husky/` folder, or `core.hooksPath` pointing into `.husky` | `.husky/pre-push` and `.husky/post-merge`; an existing script gets the block appended |
+| husky | a `.husky/` folder, or a `core.hooksPath` that points into a `.husky` folder anywhere in the repository (also `packages/app/.husky/_`) | `<that .husky folder>/pre-push` and `post-merge`; an existing script gets the block appended. Husky's generated `_` folder is never written to |
 | lefthook | `lefthook.yml`, `.lefthook.yml` (or `.yaml`, or under `.config/`) | a command named `autoremediator` under `pre-push` and `post-merge` (a job, when that hook uses the `jobs:` syntax). Run `lefthook install` afterwards |
 | pre-commit framework | `.pre-commit-config.yaml` | `repo: local` hooks `autoremediator-pre-push` and `autoremediator-post-merge` with `stages: [pre-push]` / `[post-merge]`. Run `pre-commit install --hook-type pre-push --hook-type post-merge` afterwards |
 | plain git | none of the above | executable `pre-push` and `post-merge` files in the real hooks folder: `core.hooksPath` when set, else the repository's `hooks` folder (also correct inside a worktree, where `.git` is a file) |
@@ -64,6 +70,12 @@ is skipped with a note.
   that Autoremediator did not write. Add the hook by hand in those cases.
 - It never writes without `--yes`. Without a terminal and without `--yes` it prints a diff and exits
   `3` (waiting for approval), like `init`.
+- A hooks folder **outside the repository** (a `core.hooksPath` set in `~/.gitconfig`, shared by every
+  repository that uses it) is reported as a conflict and nothing is written there. Pass
+  `--allow-shared-hooks-path` (SDK: `allowSharedHooksPath: true`) to write into it anyway.
+- A hook file that exists but is **not executable** is one you switched off: it is reported as a
+  conflict instead of being made executable, which would run its old contents again. `uninstall`
+  never changes a file's permissions.
 - Running it again changes nothing; a stale or edited block is refreshed in place.
 
 `hook uninstall` removes exactly those blocks and entries. A hook file that held nothing else is

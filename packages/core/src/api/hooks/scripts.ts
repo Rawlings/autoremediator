@@ -71,33 +71,26 @@ function changedCheck(from: string, to: string): string {
   fi`;
 }
 
-const PRE_PUSH = (dir: string, range: string): string => `autoremediator_pre_push() {
-  [ "\${AUTOREMEDIATOR_SKIP_HOOKS:-}" = "1" ] && return 0
-  ar_limit="\${AUTOREMEDIATOR_HOOK_TIMEOUT:-60}"
-  ar_dir=${shellQuote(dir)}
-  ar_base="\${PRE_COMMIT_FROM_REF:-}"
-  case "$ar_base" in *[!0]*) ;; *) ar_base="" ;; esac
-  if [ -z "$ar_base" ]; then
-    ar_base="$(git rev-parse --verify -q "@{upstream}" 2>/dev/null || true)"
-  fi
-  for ar_ref in refs/remotes/origin/HEAD origin/main origin/master; do
-    [ -n "$ar_base" ] && break
-    ar_base="$(git rev-parse --verify -q "$ar_ref^{commit}" 2>/dev/null || true)"
-  done
-  if [ -z "$ar_base" ]; then
-    echo "autoremediator: no upstream to compare with, skipping the dependency check" >&2
-    return 0
-  fi
+/**
+ * The pre-push hook judges what is being pushed. Git feeds one line per ref on stdin
+ * (`local_ref local_sha remote_ref remote_sha`): deletions and tags are not checked, a branch that
+ * is not the checked-out commit is skipped (the delta scan reads the working tree), and the base is
+ * the commit the remote already has (or, for a new branch, where it left the default branch).
+ * Without those lines (run by hand, or by a manager that does not forward them) it falls back to
+ * the checked-out branch against its upstream.
+ */
+const PRE_PUSH = (dir: string, range: string): string => `autoremediator_pre_push_check() {
+  ar_base="$1"
+  ar_head="$2"
   if ! git rev-parse --verify -q "$ar_base^{commit}" >/dev/null 2>&1; then
     echo "autoremediator: $ar_base is not known locally, skipping the dependency check" >&2
     return 0
   fi
-  ar_head="\${PRE_COMMIT_TO_REF:-HEAD}"
 ${changedCheck("$ar_base", "$ar_head")}
 ${resolveCli(range)}
   ar_out="$(mktemp "\${TMPDIR:-/tmp}/autoremediator-hook.XXXXXX" 2>/dev/null)" || ar_out="\${TMPDIR:-/tmp}/autoremediator-hook.$$"
   ar_rc=0
-  ( cd "$ar_dir" && autoremediator_exec "$ar_limit" "$@" diff --ci --base "$ar_base" ) >"$ar_out" 2>&1 || ar_rc=$?
+  ( cd "$ar_dir" && autoremediator_exec "$ar_limit" "$@" diff --ci --base "$ar_base" ) >"$ar_out" 2>&1 </dev/null || ar_rc=$?
   case "$ar_rc" in
     0)
       sed -n 's/^Summary: /autoremediator: /p' "$ar_out" | head -n 1 >&2
@@ -122,6 +115,54 @@ ${resolveCli(range)}
   esac
   rm -f "$ar_out"
   return 0
+}
+autoremediator_pre_push() {
+  [ "\${AUTOREMEDIATOR_SKIP_HOOKS:-}" = "1" ] && return 0
+  ar_limit="\${AUTOREMEDIATOR_HOOK_TIMEOUT:-60}"
+  ar_dir=${shellQuote(dir)}
+  ar_from="\${PRE_COMMIT_FROM_REF:-}"
+  case "$ar_from" in *[!0]*) ;; *) ar_from="" ;; esac
+  ar_seen=0
+  if [ -z "$ar_from" ] && [ ! -t 0 ]; then
+    ar_cur="$(git rev-parse --verify -q HEAD 2>/dev/null || true)"
+    while read -r ar_lref ar_lsha ar_rref ar_rsha; do
+      [ -n "$ar_lref" ] || continue
+      ar_seen=1
+      case "$ar_lsha" in *[!0]*) ;; *) continue ;; esac
+      case "$ar_lref" in refs/heads/*) ;; *) continue ;; esac
+      if [ "$ar_lsha" != "$ar_cur" ]; then
+        echo "autoremediator: $ar_lref is not the checked-out commit, skipping the dependency check for it" >&2
+        continue
+      fi
+      ar_base=""
+      case "$ar_rsha" in *[!0]*) ar_base="$ar_rsha" ;; esac
+      for ar_ref in refs/remotes/origin/HEAD origin/main origin/master; do
+        [ -n "$ar_base" ] && break
+        ar_def="$(git rev-parse --verify -q "$ar_ref^{commit}" 2>/dev/null || true)"
+        [ -n "$ar_def" ] || continue
+        ar_base="$(git merge-base "$ar_def" "$ar_lsha" 2>/dev/null || true)"
+      done
+      if [ -z "$ar_base" ]; then
+        echo "autoremediator: nothing to compare $ar_lref with, skipping the dependency check" >&2
+        continue
+      fi
+      autoremediator_pre_push_check "$ar_base" "$ar_lsha" || return 1
+    done
+  fi
+  [ "$ar_seen" = "1" ] && return 0
+  ar_base="$ar_from"
+  if [ -z "$ar_base" ]; then
+    ar_base="$(git rev-parse --verify -q "@{upstream}" 2>/dev/null || true)"
+  fi
+  for ar_ref in refs/remotes/origin/HEAD origin/main origin/master; do
+    [ -n "$ar_base" ] && break
+    ar_base="$(git rev-parse --verify -q "$ar_ref^{commit}" 2>/dev/null || true)"
+  done
+  if [ -z "$ar_base" ]; then
+    echo "autoremediator: no upstream to compare with, skipping the dependency check" >&2
+    return 0
+  fi
+  autoremediator_pre_push_check "$ar_base" "\${PRE_COMMIT_TO_REF:-HEAD}"
 }
 autoremediator_pre_push "$@" || exit $?`;
 

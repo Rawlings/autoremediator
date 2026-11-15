@@ -8,7 +8,7 @@ import { remediateFromScan, type CveSeverity, type ScanReport } from "autoremedi
 import { codeScanningAlertTarget, dependabotAlertTarget } from "./alerts.js";
 import { HELP_TEXT, parseComment } from "./commands.js";
 import { summarizeScanReport } from "./summary.js";
-import { botKindOfBranch, isForkPullRequest } from "./doctor/bot-pr.js";
+import { botKindOfBranch, botKindOfLogin, isForkPullRequest } from "./doctor/bot-pr.js";
 import { runBotPrDoctor } from "./doctor/bot-pr-doctor.js";
 import { collectCheckRunLogs } from "./diagnostics/check-run-logs.js";
 import { parseCheckRunLogs } from "./diagnostics/log-parser.js";
@@ -198,13 +198,46 @@ export function createDefaultRemediationHandler(
     let isolatedWorkspaceDir: string | undefined;
     let cleanupCheckout: (() => Promise<void>) | undefined;
 
-    if (options.checkoutProvider) {
-      const checkout = await options.checkoutProvider({
-        owner: repoRef?.owner ?? "unknown",
-        repo: repoRef?.repo ?? "unknown",
-        ref: targetRef,
-        token: context.installationToken,
+    // A comment command gets exactly one reply. Once it has been given, failing the job would
+    // make the queue run the command again and post again, so the failure is answered here and
+    // the job ends as `partial` (never retried). The reply and the result carry no error text:
+    // it can hold clone URLs with tokens, so it goes to the log, redacted.
+    const answerFailedCommand = async (error: unknown): Promise<RemediationJobResult> => {
+      const message = redactTokens(error instanceof Error ? error.message : String(error));
+      void options.onError?.({
+        timestamp: new Date().toISOString(),
+        source: "github-app",
+        level: "error",
+        context: "remediation-handler.commentCommand",
+        message: `Comment command failed: ${message}`,
+        error: message,
       });
+      if (targeted?.reply && repoRef) {
+        await postComment(
+          octokit,
+          repoRef,
+          targeted.reply.issueNumber,
+          "**Autoremediator** could not finish this request. See the app logs for details.",
+          options,
+        );
+      }
+      return { status: "partial", reason: "The request failed and was answered; it is not retried" };
+    };
+    const answersCommand = Boolean(targeted?.reply && repoRef);
+
+    if (options.checkoutProvider) {
+      let checkout: Awaited<ReturnType<NonNullable<typeof options.checkoutProvider>>>;
+      try {
+        checkout = await options.checkoutProvider({
+          owner: repoRef?.owner ?? "unknown",
+          repo: repoRef?.repo ?? "unknown",
+          ref: targetRef,
+          token: context.installationToken,
+        });
+      } catch (error) {
+        if (answersCommand) return answerFailedCommand(error);
+        throw error;
+      }
       isolatedWorkspaceDir = checkout.cwd;
       cleanupCheckout = checkout.cleanup;
     } else if (repoRef) {
@@ -249,6 +282,7 @@ export function createDefaultRemediationHandler(
           if (cleanupCheckout) {
             await cleanupCheckout();
           }
+          if (answersCommand) return answerFailedCommand(cloneError);
           throw cloneError;
         }
       }
@@ -261,9 +295,14 @@ export function createDefaultRemediationHandler(
       cwd = resolvePath(isolatedWorkspaceDir, repoConfig.cwd);
       const escaped = relative(isolatedWorkspaceDir, cwd);
       if (escaped.startsWith("..") || isAbsolute(escaped)) {
-        throw new Error(
+        const error = new Error(
           `Configured cwd "${repoConfig.cwd}" resolves outside the repository checkout.`,
         );
+        if (answersCommand) {
+          await cleanupCheckout?.();
+          return answerFailedCommand(error);
+        }
+        throw error;
       }
     }
 
@@ -349,16 +388,29 @@ export function createDefaultRemediationHandler(
           ...policyOptions,
         });
 
+        const result = toRemediationJobResult(report);
         if (targeted?.reply && repoRef) {
+          const dryRunDefaulted = targeted.reply.mode === "fix" && repoConfig.dryRun;
           await postComment(
             octokit,
             repoRef,
             targeted.reply.issueNumber,
-            summarizeScanReport(report, targeted.reply.mode),
+            [
+              summarizeScanReport(report, targeted.reply.mode),
+              ...(dryRunDefaulted
+                ? [
+                    "",
+                    "This repository defaults to dry runs; this request opened a pull request anyway because you asked for it.",
+                  ]
+                : []),
+            ].join("\n"),
             options,
           );
+          // The summary is posted. A `failed` result would make the queue run the command again
+          // and post it again, so it is reported as `partial` instead.
+          if (result.status === "failed") return { ...result, status: "partial" };
         }
-        return toRemediationJobResult(report);
+        return result;
       } finally {
         try {
           await rm(tempDir, { recursive: true, force: true });
@@ -375,16 +427,8 @@ export function createDefaultRemediationHandler(
         }
       }
     } catch (error) {
-      if (targeted?.reply && repoRef) {
-        // The error text can contain clone URLs, so it stays in the logs and out of the comment.
-        await postComment(
-          octokit,
-          repoRef,
-          targeted.reply.issueNumber,
-          "**Autoremediator** could not finish this request. See the app logs for details.",
-          options,
-        );
-      }
+      // The error text can contain clone URLs, so it stays in the logs and out of the comment.
+      if (answersCommand) return await answerFailedCommand(error);
       throw error;
     } finally {
       if (cleanupCheckout) {
@@ -414,6 +458,11 @@ interface TargetedRun {
 }
 
 type RepoRef = { owner: string; repo: string };
+
+/** Hide the credential part of any `https://user:secret@host` URL in text bound for a log. */
+function redactTokens(text: string): string {
+  return text.replaceAll(/(https?:\/\/[^:/\s@]+:)[^@\s]+@/g, "$1***@");
+}
 type Octokit = Awaited<ReturnType<DefaultRemediationHandlerOptions["octokitFactory"]>>;
 
 async function postComment(
@@ -468,13 +517,18 @@ async function prepareCommentRun(
   }
 
   if (!(await hasWriteAccess(octokit, repo, login))) {
-    await postComment(
-      octokit,
-      repo,
-      issueNumber,
-      "Autoremediator commands need write access to this repository.",
-      options,
-    );
+    // Anyone can comment, so this is answered once per thread, and not at all when there is no
+    // state store to remember it in: otherwise every comment of a stranger would get a reply.
+    const noticeKey = `no-write-access:${repo.owner}/${repo.repo}#${issueNumber}`.toLowerCase();
+    if (options.stateStore?.claimNotice(noticeKey)) {
+      await postComment(
+        octokit,
+        repo,
+        issueNumber,
+        "Autoremediator commands need write access to this repository.",
+        options,
+      );
+    }
     return { done: { status: "success", reason: "Commenter lacks write access" } };
   }
 
@@ -547,6 +601,12 @@ async function prepareCommentRun(
   };
 }
 
+/** A bot account that is not one of the dependency bots, whose text copies third-party content. */
+function isAppAuthor(login: string | null | undefined): boolean {
+  if (!login?.toLowerCase().endsWith("[bot]")) return false;
+  return botKindOfLogin(login) === undefined;
+}
+
 const RUN_TRAILER = /^Autoremediator-Run:[ \t]*(run_[0-9a-z]{20})[ \t]*$/gm;
 const MAX_ROLLBACK_RUNS = 5;
 
@@ -572,7 +632,11 @@ async function rollbackReply(
       repo: repo.repo,
       issue_number: issueNumber,
     });
-    for (const id of runIdsIn(data.body)) runIds.add(id);
+    // Anyone can write a pull request description, and so can a package's changelog that
+    // Dependabot copies into one, so only text the app itself wrote is believed.
+    if (isAppAuthor(data.user?.login)) {
+      for (const id of runIdsIn(data.body)) runIds.add(id);
+    }
 
     if (runIds.size === 0 && isPullRequest) {
       const { data: commits } = await octokit.pulls.listCommits({
@@ -582,6 +646,7 @@ async function rollbackReply(
         per_page: 100,
       });
       for (const commit of commits) {
+        if (!isAppAuthor(commit.author?.login)) continue;
         for (const id of runIdsIn(commit.commit.message)) runIds.add(id);
       }
     }

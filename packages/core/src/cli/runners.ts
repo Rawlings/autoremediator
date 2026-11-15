@@ -949,6 +949,7 @@ export interface HookCliOptions {
   hooks?: string;
   manager?: string;
   yes?: boolean;
+  allowSharedHooksPath?: boolean;
 }
 
 function parseHookNames(value: string | undefined): HookName[] | undefined {
@@ -987,6 +988,7 @@ export async function runHook(mode: "install" | "uninstall" | "status", opts: Ho
     hooks: parseHookNames(opts.hooks),
     manager: parseHookManager(opts.manager),
     uninstall: mode === "uninstall",
+    allowSharedHooksPath: opts.allowSharedHooksPath === true,
   };
   const check = mode === "status";
   let result = await installHooks({ ...base, check, yes: check ? false : opts.yes });

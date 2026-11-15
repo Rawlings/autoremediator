@@ -64,6 +64,11 @@ export interface HooksOptions {
   yes?: boolean;
   /** Report drift only; never writes. */
   check?: boolean;
+  /**
+   * Write into a hooks folder outside the repository (a global `core.hooksPath`, shared by every
+   * repository that uses it). Without it such a folder is reported as a conflict.
+   */
+  allowSharedHooksPath?: boolean;
 }
 
 export interface HooksResult {
