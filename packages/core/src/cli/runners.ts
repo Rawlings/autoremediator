@@ -557,12 +557,14 @@ export async function runReachability(opts: {
   cwd?: string;
   package: string;
   symbol?: string;
+  traceFile?: string;
   outputFormat?: string;
 }): Promise<void> {
   const result = await checkReachability({
     cwd: opts.cwd,
     packageName: opts.package,
     symbol: opts.symbol,
+    traceFile: opts.traceFile,
   });
 
   if (opts.outputFormat === "json") {
@@ -573,6 +575,10 @@ export async function runReachability(opts: {
   process.stdout.write(`Package: ${result.packageName}\n`);
   process.stdout.write(`Status: ${result.status}\n`);
   process.stdout.write(`Reason: ${result.reason}\n`);
+  if (result.runtime) {
+    process.stdout.write(`Runtime: ${result.runtime.verdict}\n`);
+    process.stdout.write(`Note: ${result.runtime.caveat}\n`);
+  }
   if (result.evidence && result.evidence.length > 0) {
     process.stdout.write(`Evidence files (${result.evidence.length}):\n`);
     for (const ev of result.evidence) {

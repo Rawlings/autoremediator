@@ -78,6 +78,11 @@
     "./openapi": {
       "import": "./dist/openapi/server.js"
     },
+    "./trace": {
+      "types": "./dist/trace/register.d.ts",
+      "import": "./dist/trace/register.js",
+      "require": "./dist/trace/register.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {

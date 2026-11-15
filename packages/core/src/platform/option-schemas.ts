@@ -146,6 +146,8 @@ export const OPTION_DESCRIPTIONS = {
   exploitSignalEpssMandatory: "Treat CVEs above the EPSS threshold as mandatory",
   exploitSignalEpssThreshold: "EPSS probability (0..1) above which a CVE is mandatory",
   reproductionTest: "Reproduction test script content or file path used by proof-of-fix",
+  traceFile:
+    "Path to a trace written by 'autoremediator trace run' (or the autoremediator/trace hook). Adds runtime evidence: whether the traced command loaded the package and, if calls were counted, called the symbol. A package that did not load is not proof that it is unreachable.",
   patchConfidenceThresholds: "Per-risk minimum confidence required to accept a generated patch",
   constraints: "Orchestration constraints that limit how remediation may change the project",
   changeRequest: "Native pull request / merge request creation controls",

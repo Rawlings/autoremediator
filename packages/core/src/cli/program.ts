@@ -34,6 +34,7 @@ import {
 } from "./runners.js";
 import { addRecipesCommand } from "./recipes.js";
 import { runBisect, type BisectCliOptions } from "./bisect.js";
+import { runTraceCommand, type TraceRunCommandOptions } from "./trace.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
 import { validateOutputFormat, validateSharedCommandOptions } from "./validators.js";
@@ -536,10 +537,17 @@ export function createProgram(): Command {
     .description("Perform AST call-graph reachability analysis for a package or vulnerable symbol")
     .requiredOption("--package <name>", "Target package name to search")
     .option("--symbol <name>", "Optional specific vulnerable function or export symbol to check")
+    .option("--trace-file <path>", OPTION_DESCRIPTIONS.traceFile)
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
     .option("--output-format <format>", "Output format: text|json", "text")
     .action(
-      async (opts: { cwd?: string; package: string; symbol?: string; outputFormat?: string }) => {
+      async (opts: {
+        cwd?: string;
+        package: string;
+        symbol?: string;
+        traceFile?: string;
+        outputFormat?: string;
+      }) => {
         validateOutputFormat(
           (opts.outputFormat ?? "text") as "text" | "json",
           ["text", "json"],
@@ -548,6 +556,30 @@ export function createProgram(): Command {
         await runReachability(opts);
       },
     );
+
+  const trace = program
+    .command("trace")
+    .description("Record which dependencies a command, usually your tests, loads and calls")
+    .enablePositionalOptions();
+  trace
+    .command("run")
+    .description(
+      "Run a command with the trace hook in every Node.js process it starts, then write the trace (use -- before the command)",
+    )
+    .argument("<command...>", "The command to run, for example: node --test")
+    .passThroughOptions()
+    .option("--packages <list>", "Packages to watch, comma-separated (required with --calls)")
+    .option("--calls", "Count calls to the exported functions of --packages (adds overhead)")
+    .option("--out <path>", "Where to write the trace (default: .autoremediator/trace.json)")
+    .option("--timeout <seconds>", "Stop the command after this many seconds", (value: string) =>
+      Number.parseInt(value, 10),
+    )
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(async (command: string[], opts: TraceRunCommandOptions) => {
+      validateOutputFormat((opts.outputFormat ?? "text") as "text" | "json", ["text", "json"], "trace run");
+      await runTraceCommand(command, opts);
+    });
 
   program
     .command("evaluate <package>")
