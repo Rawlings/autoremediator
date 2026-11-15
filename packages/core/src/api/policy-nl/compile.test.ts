@@ -157,6 +157,32 @@ describe("compilePolicy: valid rules", () => {
     expect(read()).toContain("left-pad");
   });
 
+  it("keeps the file's line endings: a CRLF policy stays CRLF, an LF one stays LF", async () => {
+    const crlf = BASE.replaceAll("\n", "\r\n");
+    write(crlf);
+    const applied = await compile(RULES, answering(GOOD_ANSWER), { apply: true });
+    expect(applied.status).toBe("applied");
+    const onDisk = read();
+    expect(onDisk).toBe(applied.proposed);
+    expect(onDisk).toContain("- left-pad");
+    expect(onDisk).toContain("# Payments security policy: edit with care\r\n");
+    // Every line break is CRLF: no bare LF was introduced.
+    expect(onDisk.replaceAll("\r\n", "")).not.toContain("\n");
+    expect(onDisk.replaceAll("\r\n", "")).not.toContain("\r");
+    // The diff shows only the real changes, not every line.
+    expect(applied.diff).not.toContain("\r");
+    expect(
+      applied.diff.split("\n").filter((line) => line.startsWith("-") && !line.startsWith("---")),
+    ).toEqual([]);
+    // A second run over the written file changes nothing.
+    expect((await compile(RULES, answering(GOOD_ANSWER))).status).toBe("unchanged");
+
+    write(BASE);
+    const lf = await compile(RULES, answering(GOOD_ANSWER), { apply: true });
+    expect(lf.status).toBe("applied");
+    expect(read()).not.toContain("\r");
+  });
+
   it("writes a proposal exactly as shown, and refuses once the file has moved on", async () => {
     write(BASE);
     const proposal = await compile(RULES, answering(GOOD_ANSWER));
@@ -420,6 +446,240 @@ describe("compilePolicy: loosening", () => {
       { allowLoosening: true },
     );
     expect(unrelated.status).toBe("rejected");
+  });
+});
+
+describe("compilePolicy: loosening needs the request's own words", () => {
+  const STRICT = `${BASE}  requireProofOfFix: true
+sla:
+  critical: 24
+containmentMode: true
+`;
+  const one = (phrase: string, keys: string[], patch: Record<string, unknown>) =>
+    answering({ patch, explanations: [{ phrase, keys }], unsupported: [] });
+
+  it("rejects a loosening in a request that only names a package, even though 'package' contains 'age' and 'allow' contains 'low'", async () => {
+    write(STRICT);
+    const request = "Never touch the left-pad package. Allow nothing else.";
+    const result = await compile(
+      request,
+      answering({
+        patch: {
+          constraints: { typecheck: false, requireProofOfFix: false },
+          sla: { critical: 720 },
+          denyPackages: { add: ["left-pad"] },
+        },
+        explanations: [
+          { phrase: "Never touch the left-pad package", keys: ["denyPackages"] },
+          {
+            phrase: "Allow nothing else",
+            keys: ["constraints.typecheck", "constraints.requireProofOfFix", "sla.critical"],
+          },
+        ],
+        unsupported: [],
+      }),
+      { allowLoosening: true },
+    );
+    expect(result.status).toBe("rejected");
+    expect(result.proposed).toBeDefined();
+    expect(result.rejections.join("\n")).toContain("does not ask for it");
+    expect(result.loosenings.map((entry) => entry.key).toSorted()).toEqual([
+      "constraints.requireProofOfFix",
+      "constraints.typecheck",
+      "sla.critical",
+    ]);
+    expect(read()).toBe(STRICT);
+  });
+
+  it.each([
+    [
+      "the word package",
+      "Do not change the package",
+      "constraints.supplyChainPolicy.minPublishAgeHours",
+      { constraints: { supplyChainPolicy: { minPublishAgeHours: 1 } } },
+    ],
+    ["the word allow", "Allow the team to review", "sla.critical", { sla: { critical: 720 } }],
+    [
+      "the word highlighted",
+      "Use a highlighted report",
+      "dispositionPolicy.minConfidenceForAutoApply",
+      { dispositionPolicy: { minConfidenceForAutoApply: 0.1 } },
+    ],
+  ])("%s does not justify a loosening it is not about", async (_name, request, key, patch) => {
+    write(`constraints:
+  typecheck: true
+  supplyChainPolicy:
+    minPublishAgeHours: 72
+sla:
+  critical: 24
+dispositionPolicy:
+  minConfidenceForAutoApply: 0.9
+`);
+    const result = await compile(request, one(request, [key], patch), { allowLoosening: true });
+    expect(result.status).toBe("rejected");
+  });
+
+  it("accepts the same loosening when the request says it in the key's own words", async () => {
+    write(STRICT);
+    const result = await compile(
+      "Give critical vulnerabilities 30 days instead of 24 hours",
+      one("Give critical vulnerabilities 30 days", ["sla.critical"], { sla: { critical: 720 } }),
+      { allowLoosening: true },
+    );
+    expect(result.status).toBe("proposed");
+    expect(result.loosenings.map((entry) => entry.key)).toEqual(["sla.critical"]);
+  });
+
+  it("rejects a loosening when the quoted words are about another key", async () => {
+    write(STRICT);
+    const result = await compile(
+      "Allow major upgrades; critical fixes may take 30 days",
+      one("Allow major upgrades", ["sla.critical"], { sla: { critical: 720 } }),
+      { allowLoosening: true },
+    );
+    expect(result.status).toBe("rejected");
+    expect(result.warnings.join("\n")).toContain("say nothing about");
+  });
+
+  it("rejects a loosening that the request negates, however the phrase is quoted", async () => {
+    write(BASE);
+    for (const [request, phrase] of [
+      ["Never allow major bumps", "allow major bumps"],
+      ["Never allow major bumps", "Never allow major bumps"],
+      ["Please do not allow major version upgrades", "allow major version upgrades"],
+      ["We don't allow major upgrades here", "allow major upgrades"],
+      ["Ship fixes without major bumps", "major bumps"],
+      ["No major bumps", "major bumps"],
+    ] as const) {
+      const result = await compile(
+        request,
+        one(phrase, ["allowMajorBumps"], { allowMajorBumps: true }),
+        { allowLoosening: true },
+      );
+      expect([request, phrase, result.status]).toEqual([request, phrase, "rejected"]);
+      expect(result.rejections.join("\n")).toContain("opposite");
+    }
+    expect(read()).toBe(BASE);
+  });
+
+  it("a negation in another rule, or 'no longer', does not block a loosening that is asked for", async () => {
+    write(BASE);
+    const major = await compile(
+      "Never touch left-pad; allow major bumps",
+      one("allow major bumps", ["allowMajorBumps"], { allowMajorBumps: true }),
+      { allowLoosening: true },
+    );
+    expect(major.status).toBe("proposed");
+
+    const unblock = await compile(
+      "lodash is no longer blocked",
+      one("lodash is no longer blocked", ["denyPackages"], {
+        denyPackages: { remove: ["lodash"] },
+      }),
+      { allowLoosening: true },
+    );
+    expect(unblock.status).toBe("proposed");
+  });
+});
+
+describe("compilePolicy: quoted phrases are bound to the keys they explain", () => {
+  const one = (phrase: string, keys: string[], patch: Record<string, unknown>) =>
+    answering({ patch, explanations: [{ phrase, keys }], unsupported: [] });
+
+  it("does not accept 'the weather' as the reason for containmentMode or sla", async () => {
+    write(BASE);
+    const result = await compile(
+      "Don't touch left-pad. The weather is nice today",
+      answering({
+        patch: {
+          denyPackages: { add: ["left-pad"] },
+          containmentMode: true,
+          sla: { critical: 24 },
+        },
+        explanations: [
+          { phrase: "Don't touch left-pad", keys: ["denyPackages"] },
+          { phrase: "The weather", keys: ["containmentMode", "sla"] },
+        ],
+        unsupported: [],
+      }),
+    );
+    expect(result.status).toBe("rejected");
+    expect(result.rejections.join("\n")).toContain("containmentMode, sla without quoting");
+    expect(result.warnings.join("\n")).toContain("say nothing about");
+  });
+
+  it("keeps the keys a phrase is about and drops only the others", async () => {
+    write(BASE);
+    const result = await compile(
+      "Roll back held changes",
+      answering({
+        patch: { containmentMode: true },
+        explanations: [
+          { phrase: "Roll back held changes", keys: ["containmentMode", "allowMajorBumps"] },
+        ],
+        unsupported: [],
+      }),
+    );
+    expect(result.status).toBe("proposed");
+    expect(result.explanations).toEqual([
+      { phrase: "Roll back held changes", keys: ["containmentMode"], effect: "changes" },
+    ]);
+  });
+
+  it("requires the words in order and unbroken, not just present somewhere", async () => {
+    write(BASE);
+    for (const phrase of [
+      "left-pad touch",
+      "touch don't left-pad",
+      "touch left-pad now",
+      "don't left-pad",
+    ]) {
+      const result = await compile(
+        "don't touch left-pad",
+        one(phrase, ["denyPackages"], { denyPackages: { add: ["left-pad"] } }),
+      );
+      expect([phrase, result.status]).toEqual([phrase, "rejected"]);
+      expect(result.warnings.join("\n")).toContain(phrase);
+    }
+  });
+
+  it("requires an unsupported phrase to be a quote as well", async () => {
+    write(BASE);
+    const result = await compile(
+      "don't touch left-pad",
+      answering({
+        patch: { denyPackages: { add: ["left-pad"] } },
+        explanations: [{ phrase: "don't touch left-pad", keys: ["denyPackages"] }],
+        unsupported: [{ phrase: "left-pad touch", reason: "words out of order" }],
+      }),
+    );
+    expect(result.unsupported.map((entry) => entry.phrase)).toEqual([]);
+  });
+
+  it("refuses a suppression for an advisory the request does not name", async () => {
+    write(BASE);
+    const suppressing = (cveId: string) =>
+      answering({
+        patch: {
+          suppressions: [{ cveId, justification: "not_affected", expiresAt: "2027-03-01" }],
+        },
+        explanations: [{ phrase: "suppress CVE-2021-23337", keys: ["suppressions"] }],
+        unsupported: [],
+      });
+    const request = "suppress CVE-2021-23337 until spring";
+
+    const other = await compile(request, suppressing("CVE-2020-0001"), { allowLoosening: true });
+    expect(other.status).toBe("rejected");
+    expect(other.rejections.join("\n")).toContain("CVE-2020-0001");
+    expect(other.rejections.join("\n")).toContain("does not name");
+
+    // A longer id that merely starts like the named one is another advisory.
+    const longer = await compile(request, suppressing("CVE-2021-233370"), { allowLoosening: true });
+    expect(longer.status).toBe("rejected");
+
+    const named = await compile(request, suppressing("cve-2021-23337"), { allowLoosening: true });
+    expect(named.status).toBe("proposed");
+    expect(read()).toBe(BASE);
   });
 });
 

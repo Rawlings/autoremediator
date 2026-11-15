@@ -45,10 +45,13 @@ derived from the real policy schema) over a fixed set of keys, and deterministic
    Package lists take only package names and `*` patterns; advisory ids must be CVE or GHSA ids.
 2. **Applied to the YAML with its comments.** The patch is applied through the YAML Document API, so
    comments, key order and untouched lines stay. Applying it a second time changes nothing, and a
-   request the policy already satisfies reports `unchanged`.
+   request the policy already satisfies reports `unchanged`. A file with CRLF line endings stays CRLF.
 3. **Validated.** The result must load with the same validation as any policy file.
 4. **Every change must be explained.** For each change the model must quote the words of your request
-   that ask for it. A change it cannot trace to your words is refused.
+   that ask for it. The quote must be a run of your words, in order and unbroken (not words picked
+   from anywhere in the request), and it must be about the keys it explains: "the weather" cannot be
+   the reason for `containmentMode`. A change it cannot trace to your words is refused. A suppression
+   is only accepted for a CVE or GHSA id that your request spells out.
 5. **Nothing is dropped silently.** A clause of your request that the model neither expressed nor
    reported is listed under "could not be expressed".
 6. **No loosening you did not ask for.** See below.
@@ -84,15 +87,21 @@ every way the new one is less safe: allowing major bumps, removing a deny entry 
 allowlist, switching off `directDependenciesOnly`, `preferVersionBump`, `typecheck`,
 `requireProofOfFix`, a frozen lockfile or a supply-chain protection (or shortening the publish age),
 turning off KEV or EPSS mandates or raising the EPSS threshold, adding or extending a suppression,
-lengthening or removing an SLA deadline, skipping unreachable code, lowering the auto-apply
+lengthening or removing an SLA deadline, skipping unreachable code, trusting maintainer VEX statements,
+lowering a patch confidence threshold, loosening a freshness limit or ignoring more packages in it,
+lowering the auto-apply
 confidence, no longer holding transitive changes or escalating KEV or SLA breaches, turning off
 containment, silencing an escalation, raising the autonomy ceiling or weakening how autonomy is
-earned, and trusting a new recipe source. With no `autonomy` key the ceiling counts as `L2`.
+earned (including a smaller `autonomy.window`), and trusting a new recipe source. With no `autonomy` key the ceiling counts as `L2`.
 Tightening is never reported.
 
-- A loosening the request does not ask for (no word in it that could mean it) is **always refused**,
-  even with `--allow-loosening`. This is a second lock against a model that was talked into it by
-  text inside your request, and it is a keyword check, not an understanding of intent.
+- A loosening the request does not ask for is **always refused**, even with `--allow-loosening`. The
+  model must quote words of your request that are about that very key and say it in loosening terms
+  (for example, `typecheck` needs words such as "type check"; an SLA needs "deadline", "hours" or
+  "days"), matched as whole words, so "package" is not "age" and "allow" is not "low". A phrase your
+  request negates ("Never allow major bumps", "don't", "without", "no") does not count as asking for
+  it. This is a second lock against a model that was talked into it by text inside your request, and
+  it is a keyword check, not an understanding of intent: read the diff.
 - A loosening the request does ask for is refused unless you pass `--allow-loosening`; with it, each
   one is listed under "LESS SAFE than before".
 - A suppression needs a justification and an expiry that is in the future and within 366 days.

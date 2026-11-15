@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { AUTONOMY_DEFAULTS } from "../autonomy/types.js";
 import { computeDisposition } from "../remediation/local/disposition.js";
-import { findLoosenings, isLoosening } from "./policy-loosening.js";
-import { loadPolicy } from "./policy.js";
+import { DEFAULT_CONFIDENCE_THRESHOLDS } from "../remediation/patch/generate.js";
+import { UNRESOLVED_REASON_VALUES } from "./option-schemas.js";
+import { findLoosenings, isLoosening, POLICY_KEY_COVERAGE } from "./policy-loosening.js";
+import { loadPolicy, policyFileSchema } from "./policy.js";
 
 const policy = (yaml: string) => loadPolicy(process.cwd(), `---\n${yaml}`);
 const keys = (before: string, after: string) =>
@@ -165,5 +167,313 @@ describe("findLoosenings / isLoosening", () => {
       "hold-for-approval",
     );
     expect(computeDisposition({ applied: true, confidence: 0.7 }).disposition).toBe("auto-apply");
+  });
+});
+
+describe("findLoosenings: keys that used to be missed", () => {
+  const cases: { name: string; before: string; after: string; keys: string[] }[] = [
+    {
+      name: "trusting maintainer VEX",
+      before: "{}",
+      after: "trustMaintainerVex: true",
+      keys: ["trustMaintainerVex"],
+    },
+    {
+      name: "no longer trusting maintainer VEX is tighter",
+      before: "trustMaintainerVex: true",
+      after: "{}",
+      keys: [],
+    },
+    {
+      name: "a lower high-risk confidence threshold",
+      before: "patchConfidenceThresholds: { high: 0.9 }",
+      after: "patchConfidenceThresholds: { high: 0.5 }",
+      keys: ["patchConfidenceThresholds.high"],
+    },
+    {
+      name: "a threshold below the built-in default",
+      before: "{}",
+      after: "patchConfidenceThresholds: { low: 0.1 }",
+      keys: ["patchConfidenceThresholds.low"],
+    },
+    {
+      name: "a removed threshold that was above the default",
+      before: "patchConfidenceThresholds: { medium: 0.95 }",
+      after: "{}",
+      keys: ["patchConfidenceThresholds.medium"],
+    },
+    {
+      name: "a threshold raised above the default is tighter",
+      before: "{}",
+      after: "patchConfidenceThresholds: { high: 0.95 }",
+      keys: [],
+    },
+    {
+      name: "a threshold set to the default changes nothing",
+      before: "{}",
+      after: `patchConfidenceThresholds: { low: ${DEFAULT_CONFIDENCE_THRESHOLDS.low} }`,
+      keys: [],
+    },
+    {
+      name: "a smaller autonomy window",
+      before: "autonomy: { ceiling: L3, window: 40 }",
+      after: "autonomy: { ceiling: L3, window: 20 }",
+      keys: ["autonomy.window"],
+    },
+    {
+      name: "a window below the default",
+      before: "autonomy: { ceiling: L3 }",
+      after: "autonomy: { ceiling: L3, window: 12 }",
+      keys: ["autonomy.window"],
+    },
+    {
+      name: "a larger autonomy window is tighter",
+      before: "autonomy: { ceiling: L3 }",
+      after: "autonomy: { ceiling: L3, window: 60 }",
+      keys: [],
+    },
+    {
+      name: "more majors behind allowed",
+      before: "freshness: { maxMajorsBehind: 1 }",
+      after: "freshness: { maxMajorsBehind: 3 }",
+      keys: ["freshness.maxMajorsBehind"],
+    },
+    {
+      name: "more minors behind allowed",
+      before: "freshness: { maxMinorsBehind: 2 }",
+      after: "freshness: { maxMinorsBehind: 9 }",
+      keys: ["freshness.maxMinorsBehind"],
+    },
+    {
+      name: "older versions allowed",
+      before: "freshness: { maxAgeDays: 90 }",
+      after: "freshness: { maxAgeDays: 400 }",
+      keys: ["freshness.maxAgeDays"],
+    },
+    {
+      name: "a removed freshness limit",
+      before: "freshness: { maxMajorsBehind: 1, maxAgeDays: 90 }",
+      after: "freshness: { maxMajorsBehind: 1 }",
+      keys: ["freshness.maxAgeDays"],
+    },
+    {
+      name: "freshness removed altogether",
+      before: "freshness: { maxMinorsBehind: 4 }",
+      after: "{}",
+      keys: ["freshness.maxMinorsBehind"],
+    },
+    {
+      name: "a larger freshness ignore list",
+      before: "freshness: { maxAgeDays: 90, ignore: [a] }",
+      after: "freshness: { maxAgeDays: 90, ignore: [a, b] }",
+      keys: ["freshness.ignore"],
+    },
+    {
+      name: "an ignore list started",
+      before: "freshness: { maxAgeDays: 90 }",
+      after: "freshness: { maxAgeDays: 90, ignore: ['@x/*'] }",
+      keys: ["freshness.ignore"],
+    },
+    {
+      name: "tighter freshness limits",
+      before: "freshness: { maxMajorsBehind: 3, maxAgeDays: 400, ignore: [a, b] }",
+      after: "freshness: { maxMajorsBehind: 1, maxAgeDays: 90, ignore: [a] }",
+      keys: [],
+    },
+    {
+      name: "freshness added where there was none",
+      before: "{}",
+      after: "freshness: { maxMajorsBehind: 1 }",
+      keys: [],
+    },
+    {
+      name: "a new limit next to an old one",
+      before: "freshness: { maxMajorsBehind: 1 }",
+      after: "freshness: { maxMajorsBehind: 1, maxAgeDays: 30 }",
+      keys: [],
+    },
+  ];
+  it.each(cases)("$name", ({ before, after, keys: expected }) => {
+    expect(keys(before, after)).toEqual(expected);
+    expect(isLoosening(policy(before), policy(after))).toBe(expected.length > 0);
+  });
+
+  it("pins the confidence defaults it mirrors to their source", () => {
+    expect(DEFAULT_CONFIDENCE_THRESHOLDS).toEqual({ low: 0.65, medium: 0.7, high: 0.8 });
+  });
+});
+
+/** Every leaf path of a zod object schema, looking through optional and default wrappers (arrays are leaves). */
+function leafPaths(schema: unknown, prefix = ""): string[] {
+  let current = schema as {
+    shape?: Record<string, unknown>;
+    unwrap?: () => unknown;
+    def?: { type?: string };
+  };
+  while (
+    current.shape === undefined &&
+    (current.def?.type === "optional" || current.def?.type === "default") &&
+    typeof current.unwrap === "function"
+  ) {
+    current = current.unwrap() as typeof current;
+  }
+  if (current.shape === undefined) return [prefix];
+  return Object.entries(current.shape).flatMap(([name, child]) =>
+    leafPaths(child, prefix === "" ? name : `${prefix}.${name}`),
+  );
+}
+
+describe("POLICY_KEY_COVERAGE", () => {
+  const leaves = leafPaths(policyFileSchema);
+  const entryFor = (path: string) =>
+    Object.keys(POLICY_KEY_COVERAGE).find((key) =>
+      key.endsWith(".*") ? path.startsWith(key.slice(0, -1)) : key === path,
+    );
+
+  it("classifies every key of the policy file schema, so a new key cannot skip the check", () => {
+    expect(leaves.length).toBeGreaterThan(40);
+    expect(leaves.filter((path) => entryFor(path) === undefined)).toEqual([]);
+  });
+
+  it("has no entry for a key the schema no longer has", () => {
+    const stale = Object.keys(POLICY_KEY_COVERAGE).filter(
+      (key) => !leaves.some((path) => entryFor(path) === key),
+    );
+    expect(stale).toEqual([]);
+  });
+
+  it("covers every escalation reason", () => {
+    for (const reason of UNRESOLVED_REASON_VALUES) {
+      expect(leaves).toContain(`escalationGraph.${reason}`);
+    }
+  });
+
+  // One loosening per key classified as one: the classification cannot claim a check that does not exist.
+  const EXAMPLES: Record<string, [before: string, after: string]> = {
+    allowMajorBumps: ["{}", "allowMajorBumps: true"],
+    denyPackages: ["denyPackages: [a]", "{}"],
+    allowPackages: ["allowPackages: [a]", "{}"],
+    "constraints.directDependenciesOnly": ["constraints: { directDependenciesOnly: true }", "{}"],
+    "constraints.preferVersionBump": ["constraints: { preferVersionBump: true }", "{}"],
+    "constraints.enforceFrozenLockfile": ["constraints: { enforceFrozenLockfile: true }", "{}"],
+    "constraints.typecheck": ["constraints: { typecheck: true }", "{}"],
+    "constraints.requireProofOfFix": ["constraints: { requireProofOfFix: true }", "{}"],
+    "constraints.enableBreakingChangeRefactor": [
+      "{}",
+      "constraints: { enableBreakingChangeRefactor: true }",
+    ],
+    "constraints.supplyChainPolicy.minPublishAgeHours": [
+      "constraints: { supplyChainPolicy: { minPublishAgeHours: 72 } }",
+      "{}",
+    ],
+    "constraints.supplyChainPolicy.blockInstallScripts": [
+      "constraints: { supplyChainPolicy: { blockInstallScripts: true } }",
+      "{}",
+    ],
+    "constraints.supplyChainPolicy.requireProvenance": [
+      "constraints: { supplyChainPolicy: { requireProvenance: true } }",
+      "{}",
+    ],
+    "patchConfidenceThresholds.low": ["{}", "patchConfidenceThresholds: { low: 0.1 }"],
+    "patchConfidenceThresholds.medium": ["{}", "patchConfidenceThresholds: { medium: 0.1 }"],
+    "patchConfidenceThresholds.high": ["{}", "patchConfidenceThresholds: { high: 0.1 }"],
+    "exploitSignalOverride.kev.mandatory": [
+      "exploitSignalOverride: { kev: { mandatory: true } }",
+      "{}",
+    ],
+    "exploitSignalOverride.epss.mandatory": [
+      "exploitSignalOverride: { epss: { mandatory: true, threshold: 0.3 } }",
+      "{}",
+    ],
+    "exploitSignalOverride.epss.threshold": [
+      "exploitSignalOverride: { epss: { mandatory: false, threshold: 0.2 } }",
+      "exploitSignalOverride: { epss: { mandatory: false, threshold: 0.9 } }",
+    ],
+    suppressions: [
+      "{}",
+      "suppressions: [{ cveId: CVE-2024-1, justification: fixed, expiresAt: '2027-01-01' }]",
+    ],
+    "sla.critical": ["sla: { critical: 24 }", "{}"],
+    "sla.high": ["sla: { high: 24 }", "{}"],
+    "sla.medium": ["sla: { medium: 24 }", "{}"],
+    "sla.low": ["sla: { low: 24 }", "{}"],
+    skipUnreachable: ["{}", "skipUnreachable: true"],
+    trustMaintainerVex: ["{}", "trustMaintainerVex: true"],
+    "dispositionPolicy.minConfidenceForAutoApply": [
+      "{}",
+      "dispositionPolicy: { minConfidenceForAutoApply: 0.1 }",
+    ],
+    "dispositionPolicy.holdForTransitive": ["dispositionPolicy: { holdForTransitive: true }", "{}"],
+    "dispositionPolicy.escalateOnKev": ["{}", "dispositionPolicy: { escalateOnKev: false }"],
+    "dispositionPolicy.escalateOnSlaBreachSeverities": [
+      "{}",
+      "dispositionPolicy: { escalateOnSlaBreachSeverities: [] }",
+    ],
+    containmentMode: ["containmentMode: true", "{}"],
+    "escalationGraph.*": ["{}", "escalationGraph: { no-safe-version: none }"],
+    "recipes.packages": ["{}", "recipes: { packages: [x] }"],
+    "autonomy.ceiling": ["autonomy: { ceiling: L1 }", "autonomy: { ceiling: L4 }"],
+    "autonomy.minVerifiedRuns": [
+      "autonomy: { ceiling: L3, minVerifiedRuns: 9 }",
+      "autonomy: { ceiling: L3, minVerifiedRuns: 3 }",
+    ],
+    "autonomy.window": [
+      "autonomy: { ceiling: L3, window: 40 }",
+      "autonomy: { ceiling: L3, window: 12 }",
+    ],
+    "autonomy.minSuccessRate": [
+      "autonomy: { ceiling: L3, minSuccessRate: 0.95 }",
+      "autonomy: { ceiling: L3, minSuccessRate: 0.5 }",
+    ],
+    "autonomy.cooldownDays": [
+      "autonomy: { ceiling: L3, cooldownDays: 14 }",
+      "autonomy: { ceiling: L3, cooldownDays: 1 }",
+    ],
+    "autonomy.requireTestCoverage": [
+      "autonomy: { ceiling: L3, requireTestCoverage: true }",
+      "autonomy: { ceiling: L3, requireTestCoverage: false }",
+    ],
+    "freshness.maxMajorsBehind": [
+      "freshness: { maxMajorsBehind: 1 }",
+      "freshness: { maxMajorsBehind: 5 }",
+    ],
+    "freshness.maxMinorsBehind": [
+      "freshness: { maxMinorsBehind: 1 }",
+      "freshness: { maxMinorsBehind: 5 }",
+    ],
+    "freshness.maxAgeDays": ["freshness: { maxAgeDays: 30 }", "freshness: { maxAgeDays: 300 }"],
+    "freshness.ignore": [
+      "freshness: { maxAgeDays: 30 }",
+      "freshness: { maxAgeDays: 30, ignore: [a] }",
+    ],
+  };
+
+  it("has a loosening example for every key classified as one, and that example is reported", () => {
+    const classified = Object.entries(POLICY_KEY_COVERAGE).filter(
+      ([, entry]) => entry.kind === "loosening",
+    );
+    expect(Object.keys(EXAMPLES).toSorted()).toEqual(classified.map(([key]) => key).toSorted());
+    const missed = Object.entries(EXAMPLES)
+      .filter(([key, [before, after]]) => {
+        const prefix = key.endsWith(".*") ? key.slice(0, -2) : key;
+        return !keys(before, after).some(
+          (entry) => `${entry}.`.startsWith(`${prefix}.`) || `${prefix}.`.startsWith(`${entry}.`),
+        );
+      })
+      .map(([key]) => key);
+    expect(missed).toEqual([]);
+  });
+
+  it("explains why a key that is not a loosening is not one", () => {
+    const reasons = Object.values(POLICY_KEY_COVERAGE).flatMap((entry) =>
+      entry.kind === "not-a-loosening" ? [entry.reason] : [],
+    );
+    expect(reasons).toHaveLength(3);
+    expect(reasons.every((reason) => reason.length > 10)).toBe(true);
+  });
+
+  it("does not report a change to a key classified as not a loosening", () => {
+    expect(keys("{}", "constraints: { installMode: standard }")).toEqual([]);
+    expect(keys("{}", "constraints: { installPreferOffline: true, workspace: web }")).toEqual([]);
   });
 });
