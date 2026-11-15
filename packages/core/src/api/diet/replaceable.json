@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "about": "Packages whose job a Node built-in or platform API now does. Each row names the API, the Node versions that have it (nodeRange, checked against nodejs.org API history and MDN browser-compat-data), and a one-line migration. Add a row only when the replacement is certain; say what differs in caveat. Rows with fit check-usage change behaviour for some calls and need a read before migrating.",
+  "replacements": [
+    {
+      "package": "left-pad",
+      "replacement": "String.prototype.padStart",
+      "nodeRange": ">=8.0.0",
+      "migration": "leftPad(str, len, ch)  ->  String(str).padStart(len, ch)",
+      "fit": "drop-in",
+      "caveat": "left-pad accepts non-strings and numbers; wrap the first argument in String(). Identical for a one-character fill; with a multi-character fill left-pad repeats the whole fill per missing character (leftPad('x', 5, 'ab') is 'ababababx'), where padStart cuts it to length ('ababx').",
+      "example": { "after": "String(5).padStart(3, '0')", "result": "005" },
+      "source": "https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/padStart"
+    },
+    {
+      "package": "is-number",
+      "replacement": "Number.isFinite",
+      "nodeRange": ">=0.10.0",
+      "migration": "isNumber(x)  ->  Number.isFinite(x)  (numbers only)",
+      "fit": "check-usage",
+      "caveat": "is-number also returns true for numeric strings such as '5'. If callers pass strings, use typeof x === 'string' && x.trim() !== '' && Number.isFinite(Number(x)) as well.",
+      "example": {
+        "after": "String([Number.isFinite(5), Number.isFinite(NaN), Number.isFinite(Infinity)])",
+        "result": "true,false,false"
+      },
+      "source": "https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number/isFinite"
+    },
+    {
+      "package": "isarray",
+      "replacement": "Array.isArray",
+      "nodeRange": ">=0.10.0",
+      "migration": "isArray(x)  ->  Array.isArray(x)",
+      "fit": "drop-in",
+      "example": {
+        "after": "String([Array.isArray([]), Array.isArray({})])",
+        "result": "true,false"
+      },
+      "source": "https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray"
+    },
+    {
+      "package": "array-flatten",
+      "replacement": "Array.prototype.flat",
+      "nodeRange": ">=11.0.0",
+      "migration": "flatten(arr)  ->  arr.flat(Infinity);  flatten(arr, depth) (v1, v2)  ->  arr.flat(depth)",
+      "fit": "check-usage",
+      "caveat": "flat() exists on arrays only: array-like input such as arguments needs Array.from() first. flat() also drops holes in sparse arrays.",
+      "example": {
+        "after": "JSON.stringify([1, [2, [3, [4]]]].flat(Infinity))",
+        "result": "[1,2,3,4]"
+      },
+      "source": "https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array/flat"
+    },
+    {
+      "package": "object-assign",
+      "replacement": "Object.assign",
+      "nodeRange": ">=4.0.0",
+      "migration": "objectAssign(target, ...sources)  ->  Object.assign(target, ...sources)",
+      "fit": "drop-in",
+      "example": {
+        "after": "JSON.stringify(Object.assign({ a: 1 }, { b: 2 }))",
+        "result": "{\"a\":1,\"b\":2}"
+      },
+      "source": "https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/assign"
+    },
+    {
+      "package": "globalthis",
+      "replacement": "globalThis",
+      "nodeRange": ">=12.0.0",
+      "migration": "require('globalthis')()  ->  globalThis",
+      "fit": "drop-in",
+      "example": { "after": "String(globalThis === global)", "result": "true" },
+      "source": "https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/globalThis"
+    },
+    {
+      "package": "has",
+      "replacement": "Object.hasOwn",
+      "nodeRange": ">=16.9.0",
+      "migration": "has(obj, key)  ->  Object.hasOwn(obj, key)",
+      "fit": "drop-in",
+      "example": {
+        "after": "String([Object.hasOwn({ a: 1 }, 'a'), Object.hasOwn({ a: 1 }, 'toString')])",
+        "result": "true,false"
+      },
+      "source": "https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object/hasOwn"
+    },
+    {
+      "package": "rimraf",
+      "replacement": "fs.rm",
+      "nodeRange": ">=14.14.0",
+      "migration": "rimraf(path)  ->  fs.promises.rm(path, { recursive: true, force: true });  rimraf.sync(path)  ->  fs.rmSync(path, { recursive: true, force: true });  CLI: rimraf dist  ->  node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+      "fit": "check-usage",
+      "caveat": "rimraf v4+ also expands glob patterns and retries on Windows locks; fs.rm does neither. Check the call sites for globs.",
+      "example": { "after": "typeof require('node:fs').rmSync", "result": "function" },
+      "source": "https://nodejs.org/api/fs.html#fsrmpath-options-callback"
+    },
+    {
+      "package": "mkdirp",
+      "replacement": "fs.mkdir with { recursive: true }",
+      "nodeRange": ">=10.12.0",
+      "migration": "mkdirp(dir)  ->  fs.promises.mkdir(dir, { recursive: true });  mkdirp.sync(dir)  ->  fs.mkdirSync(dir, { recursive: true })",
+      "fit": "drop-in",
+      "example": { "after": "typeof require('node:fs').mkdirSync", "result": "function" },
+      "source": "https://nodejs.org/api/fs.html#fsmkdirpath-options-callback"
+    },
+    {
+      "package": "make-dir",
+      "replacement": "fs.mkdir with { recursive: true }",
+      "nodeRange": ">=10.12.0",
+      "migration": "makeDir(dir)  ->  fs.promises.mkdir(dir, { recursive: true })",
+      "fit": "check-usage",
+      "caveat": "make-dir resolves to the directory path; fs.promises.mkdir resolves to the first directory it created (or undefined). Check whether callers use the result.",
+      "example": { "after": "typeof require('node:fs').promises.mkdir", "result": "function" },
+      "source": "https://nodejs.org/api/fs.html#fspromisesmkdirpath-options"
+    },
+    {
+      "package": "uuid",
+      "replacement": "crypto.randomUUID",
+      "nodeRange": ">=14.17.0 <15.0.0 || >=15.6.0",
+      "migration": "import { v4 as uuidv4 } from 'uuid'; uuidv4()  ->  import { randomUUID } from 'node:crypto'; randomUUID()",
+      "fit": "drop-in",
+      "coveredSymbols": ["v4"],
+      "caveat": "Only version 4 UUIDs. uuid's v1, v3, v5, v6, v7 and validate/parse have no Node equivalent, so the package is reported as replaceable only when v4 is the only export the source imports.",
+      "example": {
+        "after": "String(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(require('node:crypto').randomUUID()))",
+        "result": "true"
+      },
+      "source": "https://nodejs.org/api/crypto.html#cryptorandomuuidoptions"
+    },
+    {
+      "package": "node-fetch",
+      "replacement": "global fetch",
+      "nodeRange": ">=21.0.0",
+      "migration": "import fetch from 'node-fetch'; await fetch(url)  ->  await fetch(url)",
+      "fit": "check-usage",
+      "caveat": "fetch is available without a flag from Node 18.0.0 but is stable (no ExperimentalWarning) from 21.0.0, which is the floor used here. The response body is a web ReadableStream, not a Node stream, and node-fetch's agent option and response.buffer() do not exist.",
+      "example": { "after": "typeof fetch", "result": "function" },
+      "source": "https://nodejs.org/api/globals.html#fetch"
+    },
+    {
+      "package": "abort-controller",
+      "replacement": "global AbortController",
+      "nodeRange": ">=15.4.0",
+      "migration": "import AbortController from 'abort-controller'  ->  remove the import; use the global AbortController",
+      "fit": "drop-in",
+      "example": { "after": "typeof AbortController", "result": "function" },
+      "source": "https://nodejs.org/api/globals.html#class-abortcontroller"
+    },
+    {
+      "package": "pify",
+      "replacement": "util.promisify",
+      "nodeRange": ">=8.0.0",
+      "migration": "pify(fn)  ->  util.promisify(fn)",
+      "fit": "check-usage",
+      "caveat": "pify also wraps every method of an object and supports multiArgs and includeSync options; util.promisify wraps one function. Check the call sites for those.",
+      "example": { "after": "typeof require('node:util').promisify", "result": "function" },
+      "source": "https://nodejs.org/api/util.html#utilpromisifyoriginal"
+    },
+    {
+      "package": "os-homedir",
+      "replacement": "os.homedir",
+      "nodeRange": ">=2.3.0",
+      "migration": "osHomedir()  ->  os.homedir()",
+      "fit": "drop-in",
+      "example": { "after": "typeof require('node:os').homedir()", "result": "string" },
+      "source": "https://nodejs.org/api/os.html#oshomedir"
+    }
+  ]
+}

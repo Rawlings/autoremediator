@@ -208,3 +208,23 @@ export {
   type AsyncRemediationJob,
   type TypedAsyncRemediationJob,
 } from "./jobs/index.js";
+export {
+  analyzeDependencies,
+  removeUnusedDependencies,
+  type AnalyzeDependenciesOptions,
+  type AttackSurface,
+  type DependencyDietReport,
+  type DietApplyResult,
+  type DietApplyStatus,
+  type DietPackageReport,
+  type DuplicatePackage,
+  type DuplicatesReport,
+  type DuplicateVerdict,
+  type RemovedDependency,
+  type RemoveUnusedDependenciesOptions,
+  type ReplaceableDependency,
+  type ReplaceableStatus,
+  type SurfaceComponent,
+  type UnusedClassification,
+  type UnusedDependency,
+} from "./diet/index.js";

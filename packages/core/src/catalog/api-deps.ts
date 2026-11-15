@@ -1,5 +1,7 @@
 import {
   abandonAttempt,
+  analyzeDependencies,
+  removeUnusedDependencies,
   applyPlan,
   checkReachability,
   evaluatePackage,
@@ -66,6 +68,8 @@ export interface ApiDeps {
   verifyAttemptFn: typeof verifyAttempt;
   finalizeAttemptFn: typeof finalizeAttempt;
   abandonAttemptFn: typeof abandonAttempt;
+  analyzeDependenciesFn: typeof analyzeDependencies;
+  removeUnusedDependenciesFn: typeof removeUnusedDependencies;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -101,4 +105,6 @@ export const defaultApiDeps: ApiDeps = {
   verifyAttemptFn: verifyAttempt,
   finalizeAttemptFn: finalizeAttempt,
   abandonAttemptFn: abandonAttempt,
+  analyzeDependenciesFn: analyzeDependencies,
+  removeUnusedDependenciesFn: removeUnusedDependencies,
 };
