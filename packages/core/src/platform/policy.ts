@@ -118,7 +118,10 @@ function describePolicyIssues(error: z.ZodError): string {
  * means "no policy". An explicit path that does not exist, unreadable files, invalid YAML and
  * schema violations all throw, so a broken policy can never silently degrade to defaults.
  */
-export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPolicy {
+export function loadPolicy(cwd: string, explicitPathOrEmpty?: string): AutoremediatorPolicy {
+  // An empty path means "none given", as the remediation pipeline passes `policy: ""` down to its
+  // tools. Treating it as a path would silently skip the project's own policy file.
+  const explicitPath = explicitPathOrEmpty?.trim() ? explicitPathOrEmpty : undefined;
   const isInline =
     explicitPath !== undefined &&
     (explicitPath.trim().startsWith("{") || explicitPath.trim().startsWith("---"));

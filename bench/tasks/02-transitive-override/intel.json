@@ -1,0 +1,9 @@
+{
+  "CVE-2099-10002": {
+    "packageName": "bench-cookie",
+    "vulnerableRange": "<2.0.3",
+    "firstPatchedVersion": "2.0.3",
+    "severity": "HIGH",
+    "summary": "Synthetic advisory for the autoremediator benchmark (02-transitive-override). Not a real vulnerability."
+  }
+}

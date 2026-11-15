@@ -1,0 +1,9 @@
+{
+  "CVE-2099-10006": {
+    "packageName": "bench-retry",
+    "vulnerableRange": "<2.0.0",
+    "firstPatchedVersion": "2.0.0",
+    "severity": "HIGH",
+    "summary": "Synthetic advisory for the autoremediator benchmark (06-major-removed-arg). Not a real vulnerability."
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "CVE-2099-10005": {
+    "packageName": "bench-validate",
+    "vulnerableRange": "<2.0.0",
+    "firstPatchedVersion": "2.0.0",
+    "severity": "HIGH",
+    "summary": "Synthetic advisory for the autoremediator benchmark (05-major-renamed-export). Not a real vulnerability."
+  }
+}

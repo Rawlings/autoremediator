@@ -1,7 +1,15 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc", "node", "import", "promise", "vitest"],
-  "ignorePatterns": [".agents/**", "e2e/**", "**/dist/**", "**/coverage/**"],
+  "ignorePatterns": [
+    ".agents/**",
+    "e2e/**",
+    "bench/tasks/**",
+    "bench/registry/**",
+    "bench/.work/**",
+    "**/dist/**",
+    "**/coverage/**"
+  ],
   "env": {
     "builtin": true,
     "node": true
