@@ -4,7 +4,7 @@
  * recorded plan is the approval step, and the verifier, not this module, decides whether it holds.
  */
 import type { RemediationReport } from "../../platform/types.js";
-import { assertAutonomyAllows, summarizeAutonomy } from "../autonomy/index.js";
+import { assertAutonomyAllows, AutonomyRefusedError, summarizeAutonomy } from "../autonomy/index.js";
 import { createChangeRequestsForReports } from "../change-request/index.js";
 import { applyPlan, persistPlan, rollbackRun, type RunDeps } from "../runs/index.js";
 import { defaultRunDeps } from "../runs/deps.js";
@@ -234,11 +234,15 @@ export async function applyFreshness(
         ...(options.signal ? { signal: options.signal } : {}),
       },
       runDeps,
-    ).catch((error: unknown) => ({
+    ).catch((error: unknown) => {
+      // A refusal is not a failed step: stop here instead of recording every remaining package as failed.
+      if (error instanceof AutonomyRefusedError) throw error;
+      return {
       status: "failed" as const,
       message: error instanceof Error ? error.message : String(error),
       items: [],
-    }));
+    };
+    });
     const runSummary = { status: run.status, message: run.message };
 
     if (run.status === "applied") {

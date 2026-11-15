@@ -64,6 +64,16 @@ describe("extractInstallSpecs", () => {
     expect(extractInstallSpecs("cd app; bun add 'zod'")).toEqual(["zod"]);
   });
 
+  it("understands options before the verb and skips option values", () => {
+    expect(extractInstallSpecs("npm -g install evil")).toEqual(["evil"]);
+    expect(extractInstallSpecs("pnpm -w add -D evil other")).toEqual(["evil", "other"]);
+    expect(extractInstallSpecs("pnpm --filter app add evil")).toEqual(["evil"]);
+    expect(extractInstallSpecs("yarn workspace app add evil")).toEqual(["evil"]);
+    expect(extractInstallSpecs("npm i --registry https://r.example evil")).toEqual(["evil"]);
+    expect(extractInstallSpecs("npm i --registry=https://r.example evil")).toEqual(["evil"]);
+    expect(extractInstallSpecs("bun add --cwd app evil")).toEqual(["evil"]);
+  });
+
   it("ignores installs with no package and unrelated commands", () => {
     expect(extractInstallSpecs("npm install")).toEqual([]);
     expect(extractInstallSpecs("npm run build && ls")).toEqual([]);

@@ -171,6 +171,41 @@ describe("reading what installed packages ship", () => {
     expect(findMaintainerVex(readInstalledMaintainerVex(cwd), CVE, vulnerable).evidence).toEqual([]);
   });
 
+  it("ignores a helper bundled inside the vulnerable package, whose claim is not independent", () => {
+    installFake(cwd, { name: "bad-dep", version: "1.0.0" });
+    installFake(cwd, {
+      name: "helper",
+      version: "1.0.0",
+      dependencies: { "bad-dep": "*" },
+      vex: true,
+      at: join(cwd, "node_modules", "bad-dep", "node_modules", "helper"),
+      files: { "vex.openvex.json": vexDocument({ name: "helper", version: "1.0.0" }, [{ vulnerability: CVE, justification: "vulnerable_code_not_present" }]) },
+    });
+    const match = findMaintainerVex(readInstalledMaintainerVex(cwd), CVE, vulnerable);
+    expect(match.evidence).toEqual([]);
+    expect(match.ignored[0]?.reason).toContain("inside bad-dep itself");
+  });
+
+  it("acts on nothing when one installed maintainer says not_affected and another says affected", () => {
+    installFake(cwd, { name: "bad-dep", version: "1.0.0" });
+    for (const [name, status] of [["lib-a", "not_affected"], ["lib-b", "affected"]] as const) {
+      installFake(cwd, {
+        name,
+        version: "1.0.0",
+        dependencies: { "bad-dep": "^1.0.0" },
+        vex: true,
+        files: {
+          "vex.openvex.json": vexDocument({ name, version: "1.0.0" }, [
+            { vulnerability: CVE, status, ...(status === "not_affected" ? { justification: "vulnerable_code_not_present" } : {}) },
+          ]),
+        },
+      });
+    }
+    const match = findMaintainerVex(readInstalledMaintainerVex(cwd), CVE, vulnerable);
+    expect(match.evidence).toEqual([]);
+    expect(match.ignored.some((entry) => entry.reason.includes("neither is acted on"))).toBe(true);
+  });
+
   it("ignores a package that does not depend on the vulnerable one", () => {
     installFake(cwd, { name: "bad-dep", version: "1.0.0" });
     installFake(cwd, {

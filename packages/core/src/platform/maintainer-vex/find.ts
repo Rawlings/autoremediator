@@ -52,6 +52,15 @@ export function findMaintainerVex(
     if (candidates.length === 0) continue;
     const skip = (reason: string) => ignored.push({ maintainer, reason });
 
+    // A package nested inside the vulnerable one's own tree is part of it: it can bundle a helper that
+    // "depends on" its host and vouches for it, so its claim is no more independent than the host's.
+    const inside = `/node_modules/${vulnerable.name}/`;
+    if (shipped.dir.replaceAll("\\", "/").includes(inside)) {
+      skip(
+        `${maintainer.name}@${maintainer.version} is shipped inside ${vulnerable.name} itself, so it is not an independent maintainer`,
+      );
+      continue;
+    }
     if (maintainer.name === vulnerable.name) {
       skip(
         `${maintainer.name}@${maintainer.version} declares itself not affected by an advisory about ${vulnerable.name}; a package's own claim about itself is never accepted`,
@@ -114,6 +123,17 @@ export function findMaintainerVex(
       timestamp: statement.timestamp ?? shipped.document.timestamp,
       subcomponent: latest.subcomponents !== undefined,
     });
+  }
+  // One maintainer saying the advisory affects the package outweighs another saying it does not:
+  // acting on "not affected" needs nobody installed to disagree.
+  const disagreement = ignored.find((entry) => /says (affected|under_investigation|fixed)\b/.test(entry.reason));
+  if (disagreement && evidence.length > 0) {
+    for (const claim of evidence.splice(0)) {
+      ignored.push({
+        maintainer: claim.maintainer,
+        reason: `${claim.maintainer.name}@${claim.maintainer.version} says not_affected, but ${disagreement.maintainer.name}@${disagreement.maintainer.version} says otherwise, so neither is acted on`,
+      });
+    }
   }
   return { evidence, ignored };
 }

@@ -100,8 +100,18 @@ interface State {
 }
 
 /** The autonomy settings from the policy and the record they apply to; undefined when not opted in. */
+const ceilingOf = (entry: { ceiling: string }): number => Number(entry.ceiling.slice(1));
+
 function stateOf(cwd: string, policy: string | undefined): State | undefined {
-  const autonomy = loadPolicy(cwd, policy).autonomy;
+  // The repository's own policy file always counts, and its thresholds are the ones used. A `policy`
+  // passed by a caller (it can be inline YAML, over MCP or HTTP too) may only lower the ceiling: it
+  // can never lift it, remove it, or relax the evidence rules (runs, success rate, cooldown, coverage).
+  const repoAutonomy = loadPolicy(cwd).autonomy;
+  const callerAutonomy = policy === undefined ? undefined : loadPolicy(cwd, policy).autonomy;
+  const autonomy =
+    repoAutonomy && callerAutonomy && ceilingOf(callerAutonomy) < ceilingOf(repoAutonomy)
+      ? { ...repoAutonomy, ceiling: callerAutonomy.ceiling }
+      : (repoAutonomy ?? callerAutonomy);
   if (!autonomy) return undefined;
   const config = resolveAutonomyConfig(autonomy);
   try {

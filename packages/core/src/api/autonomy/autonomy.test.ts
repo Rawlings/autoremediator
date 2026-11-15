@@ -177,6 +177,39 @@ describe("without an autonomy key in the policy", () => {
   });
 });
 
+describe("a caller-supplied policy cannot lift the repository's ceiling", () => {
+  it("inline policy that has no autonomy key still leaves the repo's L1 in force", () => {
+    policy("  ceiling: L1");
+    for (const inline of ["{}", "---\nallowMajorBumps: true\n", '{"autonomy":{"ceiling":"L4"}}']) {
+      expect(() => assertAutonomyAllows(dir, inline, "apply", "anything")).toThrow(AutonomyRefusedError);
+    }
+  });
+
+  it("an explicit policy may make it stricter", () => {
+    policy("  ceiling: L3");
+    expect(() => assertAutonomyAllows(dir, undefined, "apply", "anything")).not.toThrow();
+    expect(() => assertAutonomyAllows(dir, '{"autonomy":{"ceiling":"L1"}}', "apply", "anything")).toThrow(
+      AutonomyRefusedError,
+    );
+  });
+
+  it("a caller policy cannot relax the evidence rules while lowering the ceiling", () => {
+    policy("  ceiling: L4");
+    const relaxed =
+      "{autonomy:{ceiling: L3, minVerifiedRuns: 1, window: 2, minSuccessRate: 0, cooldownDays: 0, requireTestCoverage: false}}";
+    const status = getAutonomy({ cwd: dir, policy: relaxed });
+    expect(status.ceiling).toBe("L3");
+    const { ceiling: _lowered, ...applied } = status.settings!;
+    const { ceiling: _repo, ...repo } = getAutonomy({ cwd: dir }).settings!;
+    expect(applied).toEqual(repo);
+  });
+
+  it("getAutonomy reports the repo's ceiling whatever policy is passed", () => {
+    policy("  ceiling: L2");
+    expect(getAutonomy({ cwd: dir, policy: "{}" }).ceiling).toBe("L2");
+  });
+});
+
 describe("gating by level", () => {
   it("L1 (ceiling) refuses applyPlan, says why, and changes nothing", async () => {
     policy("  ceiling: L1");

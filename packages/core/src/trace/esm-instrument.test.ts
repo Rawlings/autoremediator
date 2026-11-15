@@ -7,19 +7,27 @@ const instrument = (source: string, visible?: Parameters<typeof instrumentEsModu
   instrumentEsModule("/p/node_modules/pkg/index.js", source, visible, "reg", "/p/node_modules/pkg");
 
 describe("instrumentEsModule", () => {
+  it("wraps an export whose local binding is named `r` (common in minified code)", () => {
+    const result = instrument("function r(){return 1}\nexport {r as x};");
+    expect(result.wrapped).toContain("x");
+    // The generated code must not assign to the registry binding it declares.
+    expect(result.source).not.toMatch(/\br=r\.wrap/);
+    expect(result.source).toContain("r=__ar_trace_registry.wrap(r,");
+  });
+
   it("wraps exported function, class and let/var bindings after the module body", () => {
     const source = `export function f() {}\nexport let l = () => 1;\nexport var v = () => 2;\nexport class K {}\n`;
     const result = instrument(source);
     expect(result.wrapped.toSorted()).toEqual(["K", "f", "l", "v"]);
     expect(result.source?.startsWith(source)).toBe(true);
-    expect(result.source).toContain('r.wrap(f,["f"]');
-    expect(result.source).toContain('r.wrap(l,["l"]');
+    expect(result.source).toContain('__ar_trace_registry.wrap(f,["f"]');
+    expect(result.source).toContain('__ar_trace_registry.wrap(l,["l"]');
   });
 
   it("wraps a named default export under the name default", () => {
     const result = instrument("export default function named() {}");
     expect(result.wrapped).toEqual(["default"]);
-    expect(result.source).toContain('r.wrap(named,["default"]');
+    expect(result.source).toContain('__ar_trace_registry.wrap(named,["default"]');
   });
 
   it("wraps through `export { local as alias }` under the alias", () => {
@@ -71,7 +79,7 @@ describe("instrumentEsModule", () => {
       ]),
     });
     expect(result.wrapped).toEqual(["a", "b", "c"]);
-    expect(result.source).toContain('r.wrap(a,["a","b"]');
+    expect(result.source).toContain('__ar_trace_registry.wrap(a,["a","b"]');
     expect(result.source?.slice(source.length)).not.toContain("hidden");
   });
 

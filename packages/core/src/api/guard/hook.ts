@@ -29,7 +29,9 @@ export async function decideForCommand(
   command: string,
   check: (specs: string[]) => Promise<GuardReport[]> = (specs) => guardPackages(specs),
 ): Promise<HookDecision> {
-  const specs = extractInstallSpecs(command).slice(0, MAX_SPECS);
+  const all = extractInstallSpecs(command);
+  const specs = all.slice(0, MAX_SPECS);
+  const unchecked = all.length - specs.length;
   if (specs.length === 0) return { decision: "allow", reason: "no packages are being installed" };
 
   const reports = await check(specs);
@@ -45,6 +47,13 @@ export async function decideForCommand(
     return {
       decision: "ask",
       reason: `Autoremediator found something to check before installing:\n${warned.map((entry) => describe(entry)).join("\n")}`,
+    };
+  }
+  if (unchecked > 0) {
+    // Never wave through what was not looked at.
+    return {
+      decision: "ask",
+      reason: `Autoremediator checked the first ${specs.length} packages in this command and found no problems, but ${unchecked} more were not checked. Install them in smaller commands, or check them with \`autoremediator guard\`.`,
     };
   }
   return { decision: "allow", reason: "no problems found" };

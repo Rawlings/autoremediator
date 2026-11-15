@@ -7,8 +7,8 @@
  * dependencies, if it has any, are resolved by npm from the same registry with lifecycle scripts
  * disabled; npm checks those against the registry's metadata, we do not check them again.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+import { join, relative, sep } from "node:path";
 
 import semver from "semver";
 
@@ -90,6 +90,7 @@ export async function installFetchedPackage(
   const home = join(dir, ".npm-home");
   mkdirSync(home, { recursive: true });
 
+  assertRegistryOnlyDependencies(fetched.source.manifest, `${fetched.name}@${fetched.version}`);
   const dependencies = fetched.source.manifest["dependencies"];
   const hasDependencies =
     typeof dependencies === "object" && dependencies !== null && Object.keys(dependencies).length > 0;
@@ -124,4 +125,55 @@ export async function installFetchedPackage(
       },
     },
   );
+  assertNoEscapingLinks(dir);
+}
+
+/** What a dependency spec may be: a registry range or tag, never a path, URL, git or workspace reference. */
+const NON_REGISTRY_SPEC = /^(?:file|link|portal|workspace|git|git\+[a-z]+|https?|ssh|github|gitlab|bitbucket|gist):|^[./~\\]|^[^@:\s]+\/[^@:\s]+$/i;
+
+/**
+ * The package is attacker-chosen, so its manifest is too. A `file:` or `link:` dependency makes npm
+ * create a symlink to a path of the attacker's choosing, and the sandbox's read permission follows
+ * symlinks. Registry specs only.
+ */
+export function assertRegistryOnlyDependencies(manifest: Record<string, unknown>, label: string): void {
+  for (const field of ["dependencies", "peerDependencies", "optionalDependencies"]) {
+    const entries = manifest[field];
+    if (typeof entries !== "object" || entries === null) continue;
+    for (const [name, spec] of Object.entries(entries as Record<string, unknown>)) {
+      if (typeof spec !== "string" || NON_REGISTRY_SPEC.test(spec.trim())) {
+        throw new Error(`${label} declares ${field}.${name} as "${String(spec).slice(0, 60)}", which is not a registry version; refusing to install it for a proof run.`);
+      }
+    }
+  }
+}
+
+/**
+ * After the install, no symlink may leave the directory (only `node_modules/.bin` links that stay
+ * inside are normal). The sandbox may read everything under `dir`, and a link out of it would let a
+ * script read anything the user can. This also catches links created by transitive dependencies.
+ */
+export function assertNoEscapingLinks(dir: string): void {
+  const root = realpathSync(dir);
+  const visit = (current: string): void => {
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      const full = join(current, entry.name);
+      if (entry.isSymbolicLink()) {
+        const inBin = relative(root, current).split(sep).slice(-2).join("/") === "node_modules/.bin";
+        let target: string | undefined;
+        try {
+          target = realpathSync(full);
+        } catch {
+          target = undefined;
+        }
+        const inside = target !== undefined && (target === root || target.startsWith(root + sep));
+        if (!inBin || !inside) {
+          throw new Error(`The installed package tree contains a symbolic link (${relative(root, full)}); refusing to run a proof inside it.`);
+        }
+      } else if (entry.isDirectory()) {
+        visit(full);
+      }
+    }
+  };
+  visit(root);
 }

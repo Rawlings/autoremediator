@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { assertPathsConfined, PathNotAllowedError, type PathGuardSchema } from "./path-guard.js";
+import { assertPathsConfined, confinePaths, PathNotAllowedError, type PathGuardSchema } from "./path-guard.js";
 
 const path = { type: "string", "x-path": true } as const;
 const schema: PathGuardSchema = {
@@ -17,6 +17,9 @@ const schema: PathGuardSchema = {
     policy: path,
     patchFilePath: path,
     reproductionTest: path,
+    outDir: path,
+    signingKeyPath: path,
+    traceFile: path,
     note: { type: "string" },
     cveId: { type: "string" },
     targets: { items: { properties: { cwd: path, inputPath: path } } },
@@ -102,10 +105,52 @@ describe("assertPathsConfined", () => {
 
   it("treats a multi-line value as inline content, not a path", () => {
     expect(() => check({ cwd: root, reproductionTest: "const a = 1;\nprocess.exit(a);" })()).not.toThrow();
+    expect(() => check({ cwd: root, policy: "---\nallowMajorBumps: false\n" })()).not.toThrow();
+    expect(() => check({ cwd: root, policy: "{\n\"allowMajorBumps\": false\n}" })()).not.toThrow();
     expect(check({ cwd: root, reproductionTest: join(outside, "test.js") })).toThrow(forbidden);
   });
 
   it("names the offending field", () => {
     expect(check({ patchesDir: outside })).toThrow(/"patchesDir"/);
   });
+
+  it("refuses a newline in any other path field, since it hides `..` from the check", () => {
+    const hostile = "x\n/../../../../../../../../../tmp/pwned";
+    for (const field of ["cwd", "outDir", "signingKeyPath", "traceFile", "inputPath"]) {
+      expect(() => check({ cwd: root, [field]: hostile })()).toThrow(PathNotAllowedError);
+    }
+    // `policy` only gets the exemption when the value reads as inline YAML or JSON.
+    expect(() => check({ cwd: root, policy: hostile })()).toThrow(PathNotAllowedError);
+  });
 });
+
+describe("confinePaths", () => {
+  let root: string;
+  beforeEach(() => {
+    root = realpathSync(mkdtempSync(join(tmpdir(), "confine-")));
+    mkdirSync(join(root, "a", "b"), { recursive: true });
+  });
+  afterEach(() => rmSync(root, { recursive: true, force: true }));
+
+  it("hands handlers the absolute path that was checked, so no handler resolves it differently", () => {
+    const cwd = join(root, "a", "b");
+    const out = confinePaths(schema, { cwd, inputPath: "../scan.json", targets: [{ cwd: "../../a" }] }, [root], root);
+    expect(out.cwd).toBe(cwd);
+    expect(out.inputPath).toBe(join(root, "a", "scan.json"));
+    expect(out.targets[0]?.cwd).toBe(join(root, "a"));
+  });
+
+  it("leaves inline content untouched and does not mutate its input", () => {
+    const input = { cwd: root, policy: "---\nallowMajorBumps: false\n", reproductionTest: "process.exit(1)" };
+    const copy = structuredClone(input);
+    const out = confinePaths(schema, input, [root], root);
+    expect(out.policy).toBe(input.policy);
+    expect(out.reproductionTest).toBe("process.exit(1)");
+    expect(input).toEqual(copy);
+  });
+
+  it("still refuses what assertPathsConfined refuses", () => {
+    expect(() => confinePaths(schema, { cwd: root, inputPath: "../../../etc/passwd" }, [root], root)).toThrow(PathNotAllowedError);
+  });
+});
+

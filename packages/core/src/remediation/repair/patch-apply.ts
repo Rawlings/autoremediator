@@ -16,6 +16,9 @@ const FORBIDDEN_PATCH = [
   [/^(old|new) mode /m, "file mode changes"],
   [/^(rename|copy) (from|to) /m, "renames and copies"],
   [/^new file mode 120000/m, "symbolic links"],
+  // An existing link changed in place has no `new file mode` line, only the mode on its index line.
+  [/^index \S+ 120000/m, "symbolic links"],
+  [/^(deleted file mode|old mode|new mode) 120000/m, "symbolic links"],
 ] as const;
 
 export interface AppliedPatch {

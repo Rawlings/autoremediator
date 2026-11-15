@@ -264,6 +264,7 @@ describe("removeCommand", () => {
       "--ignore-scripts",
       "--no-audit",
       "--no-fund",
+      "--",
       "a",
       "b",
     ]);
@@ -275,12 +276,14 @@ describe("removeCommand", () => {
       "--no-fund",
       "--workspace",
       "packages/x",
+      "--",
       "a",
     ]);
     expect(removeCommand("pnpm", ".", ["a"], false)).toEqual([
       "pnpm",
       "remove",
       "--ignore-scripts",
+      "--",
       "a",
     ]);
     expect(removeCommand("pnpm", ".", ["a"], true)).toEqual([
@@ -288,6 +291,7 @@ describe("removeCommand", () => {
       "remove",
       "--workspace-root",
       "--ignore-scripts",
+      "--",
       "a",
     ]);
     expect(removeCommand("pnpm", "packages/x", ["a"], true)).toEqual([
@@ -296,8 +300,15 @@ describe("removeCommand", () => {
       "./packages/x",
       "remove",
       "--ignore-scripts",
+      "--",
       "a",
     ]);
+  });
+
+  it("refuses a name that is not a package name, so it can never be read as an option", () => {
+    for (const name of ["--prefix=/x", "-g", "a b", "../x"]) {
+      expect(() => removeCommand("npm", ".", [name], false)).toThrow(/not a valid package name/);
+    }
   });
 });
 

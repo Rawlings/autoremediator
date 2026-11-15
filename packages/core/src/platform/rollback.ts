@@ -29,6 +29,7 @@ const MANIFEST_PATTERNS = [
   /deno\.jsonc?$/,
   /\.patch$/,
   /\.autoremediator\.ya?ml$/,
+  /^pnpm-workspace\.ya?ml$/,
   /tsconfig.*\.json$/,
 ];
 
@@ -150,6 +151,9 @@ function resolveGitStatusPath(snapshot: ProjectSnapshot, filePath: string): stri
   // Remediation memory is history too.
   const normalized = rel.replaceAll("\\", "/");
   if (normalized === TRACK_RECORD_PATH || normalized === MEMORY_PATH) return null;
+  // Everything else the tool keeps under `.autoremediator/` (other runs, recipes, evidence, locks) is
+  // its own bookkeeping or committed knowledge, not project state, whether or not it is gitignored.
+  if (normalized.startsWith(".autoremediator/")) return null;
   return join(snapshot.cwd, rel);
 }
 

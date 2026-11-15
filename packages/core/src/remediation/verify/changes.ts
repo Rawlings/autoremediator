@@ -65,7 +65,22 @@ export async function changedFilesSince(
     // Porcelain paths are relative to the repository root; report them relative to `cwd`.
     paths.push(root && parsed.filePath.startsWith(root) ? parsed.filePath.slice(root.length) : parsed.filePath);
   }
-  return paths.filter((path) => !ignore.includes(path)).toSorted();
+  return paths.filter((path) => !ignore.includes(path) && !isRunState(path)).toSorted();
+}
+
+/**
+ * Files the tool itself writes while it works. Whether or not the project ignores `.autoremediator/`
+ * (only `init` adds the entry), these are not changes to the project.
+ */
+const RUN_STATE_PREFIXES = [
+  ".autoremediator/runs/",
+  ".autoremediator/locks/",
+  ".autoremediator/evidence/",
+  ".autoremediator/state/",
+];
+export function isRunState(path: string): boolean {
+  const normal = path.replaceAll("\\", "/");
+  return RUN_STATE_PREFIXES.some((prefix) => normal.startsWith(prefix));
 }
 
 // ---------------------------------------------------------------------------

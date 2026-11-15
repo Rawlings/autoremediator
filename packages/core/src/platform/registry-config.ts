@@ -33,7 +33,31 @@ function expandEnv(value: string, env: NodeJS.ProcessEnv): string | undefined {
   return missing ? undefined : expanded;
 }
 
-export function parseNpmrc(content: string, env: NodeJS.ProcessEnv = process.env): NpmrcValues {
+/**
+ * Hosts whose registry credentials a project `.npmrc` may fill from any environment variable
+ * (`//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}` is the normal way to use them).
+ */
+const KNOWN_REGISTRY_HOSTS = new Set(["registry.npmjs.org", "npm.pkg.github.com", "registry.yarnpkg.com"]);
+const NPM_SPECIFIC_ENV = /^(?:NPM|NODE_AUTH|YARN|PNPM|BUN)|NPM_(?:TOKEN|AUTH)|REGISTRY/i;
+
+/**
+ * Whether a project-level `.npmrc` may put `${name}` into the credential `key`. A repository controls
+ * that file, so a pull request could name its own registry and a credential that expands to an
+ * ambient secret (`GITHUB_TOKEN`) to have it sent there. Variables made for npm, and the public
+ * registry hosts, are fine; anything else is dropped.
+ */
+export function projectEnvCredentialAllowed(key: string, name: string): boolean {
+  const credential = /^\/\/([^/]+)\/.*:(?:_authToken|_auth|_password|username)$/.exec(key);
+  if (!credential) return true; // not a credential key: nothing secret is being attached
+  if (NPM_SPECIFIC_ENV.test(name)) return true;
+  return KNOWN_REGISTRY_HOSTS.has(credential[1] ?? "");
+}
+
+export function parseNpmrc(
+  content: string,
+  env: NodeJS.ProcessEnv = process.env,
+  options: { allowEnv?: (key: string, name: string) => boolean } = {},
+): NpmrcValues {
   const values: NpmrcValues = new Map();
   for (const rawLine of content.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -49,16 +73,22 @@ export function parseNpmrc(content: string, env: NodeJS.ProcessEnv = process.env
     ) {
       value = value.slice(1, -1);
     }
-    // An entry referencing an unset ${VAR} is dropped rather than used half-expanded.
+    // An entry referencing an unset ${VAR} (or one this file may not read) is dropped, not half-expanded.
+    const referenced = [...value.matchAll(/\$\{([^}]+)}/g)].map((match) => match[1] ?? "");
+    if (options.allowEnv && referenced.some((name) => !options.allowEnv?.(key, name))) continue;
     const expanded = expandEnv(value, env);
     if (expanded !== undefined) values.set(key, expanded);
   }
   return values;
 }
 
-function readNpmrc(path: string, env: NodeJS.ProcessEnv): NpmrcValues {
+function readNpmrc(path: string, env: NodeJS.ProcessEnv, projectLevel = false): NpmrcValues {
   try {
-    return parseNpmrc(readFileSync(path, "utf8"), env);
+    return parseNpmrc(
+      readFileSync(path, "utf8"),
+      env,
+      projectLevel ? { allowEnv: projectEnvCredentialAllowed } : {},
+    );
   } catch {
     return new Map();
   }
@@ -143,7 +173,7 @@ export function readNpmrcChain(cwd?: string, env: NodeJS.ProcessEnv = process.en
   const userConfigPath = env["NPM_CONFIG_USERCONFIG"] ?? join(homedir(), ".npmrc");
   const merged: NpmrcValues = new Map(readNpmrc(userConfigPath, env));
   if (cwd) {
-    for (const [key, value] of readNpmrc(join(cwd, ".npmrc"), env)) merged.set(key, value);
+    for (const [key, value] of readNpmrc(join(cwd, ".npmrc"), env, true)) merged.set(key, value);
   }
   return merged;
 }

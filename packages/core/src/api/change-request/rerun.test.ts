@@ -115,6 +115,20 @@ describe("re-running a change request for the same findings", () => {
     expect(message).toMatch(/Verified-By: autoremediator \(install\)/);
   });
 
+  it("updates a freshness branch on a re-run instead of calling its own commit foreign", async () => {
+    stubGitHub();
+    const freshness: RemediationReport = { ...report, cveId: "FRESHNESS-2.0.0", runId: undefined };
+    writeFileSync(join(dir, "file.txt"), "two\n");
+    const [first] = await createChangeRequestsForReports({ cwd: dir, options, reports: [freshness] });
+    expect(first?.created).toBe(true);
+    writeFileSync(join(dir, "file.txt"), "three\n");
+    const [second] = await createChangeRequestsForReports({ cwd: dir, options, reports: [freshness] });
+    expect(second?.error).toBeUndefined();
+    expect(second?.created).toBe(true);
+    expect(second?.updated).toBe(true);
+    expect(git(remote, `show refs/heads/${first?.branchName}:file.txt`)).toBe("three");
+  });
+
   it("refuses to overwrite a branch a person has added commits to", async () => {
     stubGitHub();
     writeFileSync(join(dir, "file.txt"), "two\n");
@@ -154,3 +168,33 @@ describe("isExistingRequestError", () => {
     expect(isExistingRequestError("401 Unauthorized")).toBe(false);
   });
 });
+
+describe("a failed push", () => {
+  it("never puts the token, or its base64, in the reported error", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "cr-leak-"));
+    try {
+      execSync("git init -b main", { cwd: dir, stdio: "ignore" });
+      git(dir, "config user.name human");
+      git(dir, "config user.email human@example.com");
+      writeFileSync(join(dir, "package.json"), '{"name":"app"}\n');
+      git(dir, "add .");
+      git(dir, "commit -m initial");
+      git(dir, "remote add origin https://127.0.0.1:1/nope.git");
+      writeFileSync(join(dir, "package.json"), '{"name":"app","version":"2.0.0"}\n');
+      const token = "ghp_SUPERSECRETTOKEN";
+      const [result] = await createChangeRequestsForReports({
+        cwd: dir,
+        options: { ...options, token },
+        reports: [report],
+      });
+      expect(result?.created).toBe(false);
+      expect(result?.error).toBeTruthy();
+      const basic = Buffer.from(`x-access-token:${token}`).toString("base64");
+      expect(result?.error).not.toContain(token);
+      expect(result?.error).not.toContain(basic);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+

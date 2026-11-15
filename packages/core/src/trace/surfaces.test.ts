@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+
 import { describe, expect, it, vi } from "vitest";
 
 import { callMcpOperation, getOperation, inputJsonSchema, OPERATIONS } from "../catalog/index.js";
@@ -38,7 +40,7 @@ describe("trace surfaces", () => {
       packageName: "lodash",
       symbol: "template",
       cwd: undefined,
-      traceFile: "t.json",
+      traceFile: resolve("t.json"),
     });
   });
 

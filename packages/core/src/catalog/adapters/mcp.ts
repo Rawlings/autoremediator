@@ -1,6 +1,6 @@
 import type { z } from "zod";
 
-import { assertPathsConfined, getAllowedRoots, PathNotAllowedError } from "../../platform/path-guard.js";
+import { confinePaths, getAllowedRoots, PathNotAllowedError } from "../../platform/path-guard.js";
 import { type ApiDeps, defaultApiDeps } from "../api-deps.js";
 import type { Operation } from "../define-operation.js";
 import { OPERATIONS } from "../operations.js";
@@ -119,8 +119,9 @@ export async function callMcpOperation(
   const parsed = operation.input.safeParse(args);
   if (!parsed.success) return errorResult(JSON.stringify({ error: describeIssues(parsed.error) }));
 
+  let input: typeof parsed.data;
   try {
-    assertPathsConfined(
+    input = confinePaths(
       inputJsonSchema(operation),
       parsed.data,
       getAllowedRoots(options.env, options.clientRoots),
@@ -133,7 +134,7 @@ export async function callMcpOperation(
   if (options.confirm && changesProject(operation)) {
     let approved: boolean;
     try {
-      approved = await options.confirm(operation, parsed.data);
+      approved = await options.confirm(operation, input);
     } catch (err) {
       return errorResult(err instanceof Error ? err.message : String(err));
     }
@@ -141,7 +142,7 @@ export async function callMcpOperation(
   }
 
   try {
-    const result = await operation.handler(parsed.data, {
+    const result = await operation.handler(input, {
       api: deps,
       source: "mcp",
       operationNames: operations.map((candidate) => candidate.name),

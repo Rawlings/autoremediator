@@ -22,7 +22,7 @@ export async function runOperation(
   input: Record<string, unknown>,
   deps: OpenApiServerDeps,
   res: http.ServerResponse,
-  guard: { confine(input: unknown): void; isPathError(error: unknown): boolean },
+  guard: { confine<T>(input: T): T; isPathError(error: unknown): boolean },
 ): Promise<void> {
   const parsed = operation.input.safeParse(input);
   if (!parsed.success) {
@@ -30,8 +30,9 @@ export async function runOperation(
     return;
   }
 
+  let confined: typeof parsed.data;
   try {
-    guard.confine(parsed.data);
+    confined = guard.confine(parsed.data);
   } catch (error) {
     if (guard.isPathError(error)) {
       sendJson(res, 403, { error: (error as Error).message });
@@ -41,7 +42,7 @@ export async function runOperation(
   }
 
   try {
-    const result = await operation.handler(parsed.data, {
+    const result = await operation.handler(confined, {
       api: { ...defaultApiDeps, ...deps },
       source: "openapi",
       operationNames: httpOperations.map((candidate) => candidate.name),

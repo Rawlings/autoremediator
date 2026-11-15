@@ -418,11 +418,12 @@ describe("mcp tool contracts", () => {
     expect(deps.listPatchArtifactsFn).toHaveBeenCalledWith(
       expect.objectContaining({ cwd: "/tmp/project" }),
     );
+    // Paths reach the handler as the absolute paths the guard checked.
     expect(deps.inspectPatchArtifactFn).toHaveBeenCalledWith(
-      "./patches/foo.patch",
-      expect.objectContaining({ patchesDir: "./custom-patches" }),
+      resolve("./patches/foo.patch"),
+      expect.objectContaining({ patchesDir: resolve("./custom-patches") }),
     );
-    expect(deps.validatePatchArtifactFn).toHaveBeenCalledWith("./patches/foo.patch", {});
+    expect(deps.validatePatchArtifactFn).toHaveBeenCalledWith(resolve("./patches/foo.patch"), {});
     expect(list.content[0]?.text).toContain("foo.patch");
     expect(inspect.content[0]?.text).toContain("exists");
     expect(validate.content[0]?.text).toContain("diffValid");

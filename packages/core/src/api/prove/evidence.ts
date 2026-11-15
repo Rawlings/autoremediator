@@ -161,6 +161,9 @@ export function verifyRecordSignature(
   } catch {
     return { valid: false, reason: "the signature file is not JSON" };
   }
+  if (typeof signature !== "object" || signature === null) {
+    return { valid: false, reason: "the signature file is not an autoremediator proof-of-fix signature" };
+  }
   if (
     signature.payloadType !== PAYLOAD_TYPE ||
     signature.algorithm !== "ed25519" ||
@@ -205,6 +208,10 @@ const isEvidence = (value: unknown): value is ProofEvidence => {
     candidate.schemaVersion === "1.0" &&
     typeof candidate.advisoryId === "string" &&
     typeof candidate.package === "string" &&
+    typeof candidate.vulnerableVersion === "string" &&
+    typeof candidate.fixedVersion === "string" &&
+    (candidate.aliases === undefined ||
+      (Array.isArray(candidate.aliases) && candidate.aliases.every((alias) => typeof alias === "string"))) &&
     typeof candidate.script?.path === "string" &&
     typeof candidate.script.sha256 === "string"
   );

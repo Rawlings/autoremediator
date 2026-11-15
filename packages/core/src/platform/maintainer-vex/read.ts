@@ -24,6 +24,8 @@ export interface ShippedVexDocument {
   package: { name: string; version: string };
   /** Path inside the package, as declared and validated. */
   file: string;
+  /** Directory of the package that ships it (where it sits under `node_modules`). */
+  dir: string;
   document: OpenVexDocument;
   /** Statements whose product is exactly this package at this version. The rest are dropped. */
   statements: ShippedStatement[];
@@ -283,6 +285,7 @@ export function readInstalledMaintainerVex(cwd: string): MaintainerVexIndex {
     index.documents.push({
       package: { name, version },
       file: field.path,
+      dir,
       document: parsed.document,
       statements,
     });

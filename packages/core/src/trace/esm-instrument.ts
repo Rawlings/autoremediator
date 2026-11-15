@@ -175,7 +175,7 @@ export function instrumentEsModule(
         result.unwrapped[exportName] = "binding-is-not-a-top-level-declaration";
       } else {
         statements.push(
-          `try{${local}=r.wrap(${local},${JSON.stringify(names)},${JSON.stringify(packageKey)})}catch{}`,
+          `try{${local}=__ar_trace_registry.wrap(${local},${JSON.stringify(names)},${JSON.stringify(packageKey)})}catch{}`,
         );
         result.wrapped.push(...names);
       }
@@ -183,7 +183,7 @@ export function instrumentEsModule(
   }
 
   if (statements.length > 0) {
-    result.source = `${source}\n;{const r=globalThis[Symbol.for(${JSON.stringify(registry)})];if(r){${statements.join(";")}}}\n`;
+    result.source = `${source}\n;{const __ar_trace_registry=globalThis[Symbol.for(${JSON.stringify(registry)})];if(__ar_trace_registry){${statements.join(";")}}}\n`;
   }
   return result;
 }

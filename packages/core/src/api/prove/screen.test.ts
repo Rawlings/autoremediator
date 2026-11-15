@@ -46,6 +46,33 @@ describe("screenScript", () => {
     expect(result.violations.length).toBeGreaterThan(0);
   });
 
+  it.each([
+    ["a concatenated module name", `require("lodash"); require("child_"+"process");`],
+    ["a template-built module name", ["require(\"lodash\"); require(`child_", "$", "{\"process\"}`);"].join("")],
+    ["destructuring the environment", `require("lodash"); const { env } = process;`],
+    ["a computed process member", `require("lodash"); process["env"];`],
+    ["an indirect eval", `require("lodash"); (0, eval)("1");`],
+    ["process aliased", `require("lodash"); const p = process; p.binding("fs");`],
+    ["a computed manifest path", `require("lodash"); require("lodash/package" + ".json");`],
+    ["the script's own location", `require("lodash"); if (__dirname.endsWith("vulnerable")) process.exit(1);`],
+    ["the working directory", `require("lodash"); if (process.cwd().includes("fixed")) process.exit(1);`],
+    ["a bare require used as a value", `const r = require; r("lodash"); r("child_process");`],
+    ["require.resolve", `require("lodash"); require.resolve("lodash");`],
+    ["the module object", `require("lodash"); module.require("child_process");`],
+    ["globalThis", `require("lodash"); globalThis["pro" + "cess"];`],
+    ["import.meta", `import _ from "lodash"; console.log(import.meta.url);`],
+    ["a script that does not parse", `require("lodash"); const = ;`],
+  ])("refuses %s (bypasses of the old text patterns)", (_name, body) => {
+    expect(screen(body).ok).toBe(false);
+  });
+
+  it("does not mistake property names for references", () => {
+    const body = `const assert = require("node:assert");\nconst _ = require("lodash");\nconst o = { process: 1, env: 2, version: 3 };\nassert.ok(o.env === 2);\nprocess.stdout.write("EXPLOIT_REPRODUCED");\nprocess.exitCode = 1;`;
+    const result = screen(body);
+    // `version` as a plain key is still refused (the script must not look at versions); the rest is fine.
+    expect(result.violations.every((violation) => violation.includes("version"))).toBe(true);
+  });
+
   it("refuses a script that is too long", () => {
     const result = screen(`require("lodash");\n${"// x\n".repeat(MAX_SCRIPT_CHARS)}`);
     expect(result.violations.join(" ")).toContain("longer than");

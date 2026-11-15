@@ -1,3 +1,4 @@
+import { assertAutonomyAllows } from "../autonomy/index.js";
 import {
   detectPackageManager,
   resolveInstallCommand,
@@ -35,17 +36,23 @@ export interface DietDeps {
 const SUPPORTED = new Set<PackageManager>(["npm", "pnpm"]);
 
 /** The command that removes `names` from the package at `dir` (`.` for the workspace root or a single project). */
+const PACKAGE_NAME = /^(?:@[a-z0-9~][a-z0-9._~-]*\/)?[a-z0-9~][a-z0-9._~-]*$/;
+
 export function removeCommand(
   packageManager: PackageManager,
   dir: string,
   names: readonly string[],
   workspace: boolean,
 ): string[] {
+  // Names come from package.json keys; one that looks like an option must never reach the package manager.
+  for (const name of names) {
+    if (!PACKAGE_NAME.test(name)) throw new Error(`Refusing to remove "${name.slice(0, 60)}": not a valid package name.`);
+  }
   if (packageManager === "pnpm") {
     // `--ignore-scripts`: removing a package must not run anyone's lifecycle scripts.
     return dir === "."
-      ? ["pnpm", "remove", ...(workspace ? ["--workspace-root"] : []), "--ignore-scripts", ...names]
-      : ["pnpm", "--filter", `./${dir}`, "remove", "--ignore-scripts", ...names];
+      ? ["pnpm", "remove", ...(workspace ? ["--workspace-root"] : []), "--ignore-scripts", "--", ...names]
+      : ["pnpm", "--filter", `./${dir}`, "remove", "--ignore-scripts", "--", ...names];
   }
   return [
     "npm",
@@ -54,6 +61,7 @@ export function removeCommand(
     "--no-audit",
     "--no-fund",
     ...(dir === "." ? [] : ["--workspace", dir]),
+    "--",
     ...names,
   ];
 }
@@ -112,6 +120,8 @@ export async function removeUnusedDependenciesWith(
   options: RemoveUnusedDependenciesOptions,
   deps: DietDeps,
 ): Promise<DietApplyResult> {
+  // Earned autonomy: removing dependencies changes the project, so it is gated like any other apply.
+  assertAutonomyAllows(options.cwd ?? process.cwd(), options.policy, "apply", "removeUnusedDependencies");
   const report = await analyzeDependencies({ cwd: options.cwd });
   const { removals, byDirectory } = certainRemovals(report.packages);
   if (removals.length === 0) {

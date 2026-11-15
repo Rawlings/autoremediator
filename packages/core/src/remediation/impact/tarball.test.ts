@@ -95,6 +95,32 @@ describe("readPackageTarball", () => {
     expect(() => readPackageTarball(new Uint8Array([1, 2, 3]))).toThrow(/not a valid gzip/);
   });
 
+  it("honours a pax size, so it sees the same entries npm's extractor does", () => {
+    // `decoy.js` declares 1024 bytes in its header but a pax record says 0; those 1024 bytes are a
+    // forged header and body for `evil.js`. An extractor that honours pax reads evil.js as an entry.
+    const forged = tar([{ path: "package/evil.js", content: "evil()" }]).subarray(0, 1024);
+    const bytes = gzipSync(
+      tar([
+        { path: "package/package.json", content: JSON.stringify(manifest) },
+        { path: "package/PaxHeader", type: "x", content: "9 size=0\n" },
+        { path: "package/decoy.js", content: forged },
+      ]),
+    );
+    const result = readPackageTarball(bytes);
+    expect(result.files.get("evil.js")).toBe("evil()");
+    expect(result.files.has("decoy.js")).toBe(true);
+  });
+
+  it("refuses an invalid pax size", () => {
+    const bytes = gzipSync(
+      tar([
+        { path: "package/PaxHeader", type: "x", content: "10 size=-1\n" },
+        { path: "package/a.js", content: "x" },
+      ]),
+    );
+    expect(() => readPackageTarball(bytes)).toThrow(/invalid pax size/);
+  });
+
   it("honours a pax long path", () => {
     const longName = `package/${"d/".repeat(60)}deep.js`;
     const record = ` path=${longName}\n`;

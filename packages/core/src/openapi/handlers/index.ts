@@ -15,7 +15,7 @@ import {
 } from "../../catalog/index.js";
 import { isHostAllowed } from "../../platform/http-security.js";
 import {
-  assertPathsConfined,
+  confinePaths,
   getAllowedRoots,
   PathNotAllowedError,
 } from "../../platform/path-guard.js";
@@ -80,7 +80,7 @@ export async function handleOpenApiRequest(
   }
 
   await runOperation(operation, mapping.input, deps, res, {
-    confine: (input) => assertPathsConfined(inputJsonSchema(operation), input, getAllowedRoots()),
+    confine: (input) => confinePaths(inputJsonSchema(operation), input, getAllowedRoots()),
     isPathError: (error) => error instanceof PathNotAllowedError,
   });
   return true;

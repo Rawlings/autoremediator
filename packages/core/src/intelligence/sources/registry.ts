@@ -296,11 +296,26 @@ export function verifyTarballIntegrity(
   return { ok: true, verified: false };
 }
 
+/** A tarball URL comes from registry metadata, so it is checked before it is fetched: HTTPS only (HTTP for localhost). */
+export function assertTarballUrlAllowed(url: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error(`Refusing to download tarball: "${url.slice(0, 80)}" is not a URL`);
+  }
+  const local = ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname);
+  if (parsed.protocol !== "https:" && !(parsed.protocol === "http:" && local)) {
+    throw new Error(`Refusing to download tarball over ${parsed.protocol.replace(":", "")}: ${parsed.host}`);
+  }
+}
+
 /** Download a tarball, sending registry credentials only if configured for that exact URL. */
 export async function downloadTarball(
   info: TarballInfo,
   registry: RegistryConfig = defaultRegistryConfig,
 ): Promise<Uint8Array> {
+  assertTarballUrlAllowed(info.url);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TARBALL_TIMEOUT_MS);
   try {
@@ -315,9 +330,26 @@ export async function downloadTarball(
     if (declared > MAX_TARBALL_BYTES) {
       throw new Error(`Tarball too large (${declared} bytes)`);
     }
-    const bytes = new Uint8Array(await res.arrayBuffer());
-    if (bytes.byteLength > MAX_TARBALL_BYTES) {
-      throw new Error(`Tarball too large (${bytes.byteLength} bytes)`);
+    // Read in chunks so a response without a declared length cannot fill memory before the cap.
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error(`No body downloading ${info.url}`);
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_TARBALL_BYTES) {
+        await reader.cancel().catch(() => {});
+        throw new Error(`Tarball too large (more than ${MAX_TARBALL_BYTES} bytes)`);
+      }
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
     }
     return bytes;
   } finally {

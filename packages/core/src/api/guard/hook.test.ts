@@ -35,6 +35,13 @@ describe("decideForCommand", () => {
     expect((await decideForCommand("npm i a", async () => [report("allow")])).decision).toBe("allow");
   });
 
+  it("asks, rather than allows, when some packages were left unchecked", async () => {
+    const many = Array.from({ length: 12 }, (_, i) => `p${i}`).join(" ");
+    const decision = await decideForCommand(`npm i ${many}`, async (specs) => specs.map((s) => report("allow", s)));
+    expect(decision.decision).toBe("ask");
+    expect(decision.reason).toContain("2 more were not checked");
+  });
+
   it("checks at most ten packages", async () => {
     let seen = 0;
     await decideForCommand(`npm i ${Array.from({ length: 25 }, (_, i) => `p${i}`).join(" ")}`, async (specs) => {

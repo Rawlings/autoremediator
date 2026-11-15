@@ -167,8 +167,16 @@ export function readPackageTarball(
     if (header.every((byte) => byte === 0)) break;
     verifyChecksum(header);
 
-    const size = readOctal(header, 124, 12, "size");
+    let size = readOctal(header, 124, 12, "size");
     const type = String.fromCodePoint(header[156] || 0x30);
+    // A pax `size` record overrides the header's for the entry it describes, as it does for npm's own
+    // extractor. Ignoring it would make this reader and npm disagree about where entries start, so a
+    // package could hide a file from the radar and the agent's view.
+    if (!["x", "g", "K", "L"].includes(type) && paxNext["size"] !== undefined) {
+      const declared = Number(paxNext["size"]);
+      if (!Number.isSafeInteger(declared) || declared < 0) throw new TarballError("Tarball has an invalid pax size");
+      size = declared;
+    }
     const dataStart = offset + BLOCK;
     const dataEnd = dataStart + size;
     if (dataEnd > archive.length) throw new TarballError("Tarball is truncated");

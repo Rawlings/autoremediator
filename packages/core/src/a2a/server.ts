@@ -20,7 +20,7 @@ import {
 import { authorizeRole, type Role } from "../platform/http-auth.js";
 import { HttpError, readBody, sendJson } from "../platform/http-security.js";
 import {
-  assertPathsConfined,
+  confinePaths,
   getAllowedRoots,
   PathNotAllowedError,
 } from "../platform/path-guard.js";
@@ -268,8 +268,9 @@ async function sendMessage(
   const role = roleFor(operation);
   if (!authorize(req, res, role, `A2A SendMessage ${operation.name}`)) return;
 
+  let confined: typeof parsed.data;
   try {
-    assertPathsConfined(inputJsonSchema(operation), parsed.data, getAllowedRoots());
+    confined = confinePaths(inputJsonSchema(operation), parsed.data, getAllowedRoots());
   } catch (error) {
     if (error instanceof PathNotAllowedError) {
       sendJson(res, 403, { error: error.message });
@@ -287,7 +288,7 @@ async function sendMessage(
   const timestamp = new Date().toISOString();
   let task: A2aTask;
   try {
-    const result = await operation.handler(parsed.data, {
+    const result = await operation.handler(confined, {
       api: { ...defaultApiDeps, ...deps },
       source: "openapi",
       operationNames: [...operations.keys()],

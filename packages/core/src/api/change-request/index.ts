@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 
+import { redactSecrets } from "../../platform/redact.js";
 import { safeExeca } from "../../platform/safe-exec.js";
 import { commitMessage, deterministicBranchName } from "./branch.js";
 import { trimChar } from "../../platform/trim.js";
@@ -411,7 +412,7 @@ function withAuth(provider: ChangeRequestProvider, token: string | undefined, ar
 
 /**
  * Commits on `ref` that are not in HEAD and were not made by a previous change-request run
- * (our bot identity plus a `Fixes-CVE:` trailer). Any such commit is somebody's work.
+ * (our bot identity plus a `Fixes-CVE:` or `Autoremediator-Change:` trailer). Any such commit is somebody's work.
  */
 async function foreignCommits(cwd: string, ref: string, provider: ChangeRequestProvider): Promise<number> {
   const result = await safeExeca(
@@ -424,7 +425,9 @@ async function foreignCommits(cwd: string, ref: string, provider: ChangeRequestP
     const text = entry.trim();
     if (!text) continue;
     const [email = "", message = ""] = text.split("\u001f");
-    if (email.trim() !== commitIdentity(provider).email || !/^Fixes-CVE: /m.test(message)) foreign += 1;
+    if (email.trim() !== commitIdentity(provider).email || !/^(?:Fixes-CVE|Autoremediator-Change): /m.test(message)) {
+      foreign += 1;
+    }
   }
   return foreign;
 }
@@ -733,7 +736,7 @@ export async function createChangeRequestsForReports(params: {
         draft: options.draft,
         cveIds: plan.cveIds,
         packageNames: plan.packageNames,
-        error: error instanceof Error ? error.message : String(error),
+        error: redactSecrets(error instanceof Error ? error.message : String(error)),
       });
     } finally {
       if (branchCreated) {

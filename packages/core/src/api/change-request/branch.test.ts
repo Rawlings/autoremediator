@@ -115,3 +115,12 @@ describe("commitMessage", () => {
     expect(commitMessage("title", [report("CVE-1")])).toBe("title\n\nFixes-CVE: CVE-1");
   });
 });
+
+describe("freshness steps", () => {
+  it("carry a trailer of their own instead of Fixes-CVE, so a re-run recognises its commit", () => {
+    const trailers = commitTrailers([report("FRESHNESS-4.1.2")]);
+    expect(trailers).toContain("Autoremediator-Change: FRESHNESS-4.1.2");
+    expect(trailers.some((line) => line.startsWith("Fixes-CVE:"))).toBe(false);
+  });
+});
+
