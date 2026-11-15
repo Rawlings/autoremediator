@@ -3,7 +3,7 @@ import { applyPlan, getRun, readAttemptArtifact } from "autoremediator";
 
 // The built-in agent is internal to the package (not part of its public API). The benchmark lives
 // in the same repository and scores that loop on purpose, so it imports the built file directly.
-import { createBuiltinRepairAgent } from "../../../packages/core/dist/remediation/repair/builtin-agent.js";
+import { createBuiltinRepairAgent } from "../../../packages/core/dist/features/repair/builtin-agent.js";
 import { MODE_DESCRIPTIONS } from "../mode-info.ts";
 import { scriptFor } from "../script.ts";
 import { describeRun, planTask } from "./plan.ts";

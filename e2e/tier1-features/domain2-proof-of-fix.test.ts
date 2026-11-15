@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   assembleProofOfFixVerification,
   runProofOfFixPhase,
-} from "../../packages/core/src/remediation/proof-of-fix/runner.js";
+} from "../../packages/core/src/features/verify/proof-of-fix/runner.js";
 import { cleanupTempDir, createTempDir } from "../fixtures/temp-repo.js";
 
 describe("Tier 1 - Domain 2: Dual-Stage Proof-of-Fix Verification", () => {
@@ -31,7 +31,6 @@ describe("Tier 1 - Domain 2: Dual-Stage Proof-of-Fix Verification", () => {
     writeFileSync(
       testFile,
       `import assert from "node:assert";
-import { sanitize } from "./target.js";
 // Expect sanitized string; vulnerable implementation returns raw input, triggering AssertionError
 assert.strictEqual(sanitize("<script>"), "&lt;script&gt;");
 `,
@@ -62,7 +61,6 @@ assert.strictEqual(sanitize("<script>"), "&lt;script&gt;");
     writeFileSync(
       testFile,
       `import assert from "node:assert";
-import { sanitize } from "./target.js";
 assert.strictEqual(sanitize("<script>"), "&lt;script&gt;");
 `,
       "utf8",
@@ -112,7 +110,6 @@ const broken = ;
     writeFileSync(
       testFile,
       `import assert from "node:assert";
-import { sanitize } from "./target.js";
 assert.strictEqual(sanitize("<script>"), "&lt;script&gt;");
 console.log("Remediation verified");
 `,

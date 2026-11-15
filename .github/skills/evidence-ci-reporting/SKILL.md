@@ -18,7 +18,7 @@ user-invocable: true
 
 ## When to Use
 
-- Updating `packages/core/src/platform/evidence.ts` structures.
+- Updating `packages/core/src/features/evidence/log.ts` structures.
 - Updating `ScanReport`/`CiSummary` contracts in `packages/core/src/api/index.ts`.
 - Changing CI exit code semantics.
 

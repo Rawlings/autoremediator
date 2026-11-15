@@ -39,6 +39,7 @@ organized by what you are trying to do.
 - [SDK](reference/sdk.md): functions, options, reports
 - [Policy file](reference/policy-file.md): `.github/autoremediator.yml`
 - [Environment variables](reference/environment.md)
+- [Modes and runtime behaviour](reference/modes.md): every way the tool runs, option precedence, fallback policy (contributor reference)
 
 ## Integrations
 
@@ -58,6 +59,8 @@ organized by what you are trying to do.
 ## Contributing
 
 - [Contributing guide](../CONTRIBUTING.md)
+- [Code quality audit](contributing/code-quality-audit.md): measured baseline of structure, style and duplication (draft)
+- [Target structure](contributing/target-structure.md): proposed feature-folder layout for `packages/core` (draft)
 - [Benchmark](contributing/benchmark.md): tasks, modes, scoring, adding a task
 - [Architecture](contributing/architecture.md)
 - [Security policy](../.github/SECURITY.md)

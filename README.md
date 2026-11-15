@@ -1,93 +1,126 @@
 <h1 align="center">Autoremediator</h1>
 
-<p align="center"><strong>Your scanner finds vulnerabilities. Autoremediator fixes them.</strong></p>
+<p align="center"><strong>Agentic remediation for Node.js dependencies.</strong><br>From vulnerability alert to a verified fix, without the manual work in between.</p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/autoremediator"><img alt="npm version" src="https://img.shields.io/npm/v/autoremediator?color=cb3837&logo=npm"></a>
-  <a href="https://www.npmjs.com/package/autoremediator"><img alt="npm downloads" src="https://img.shields.io/npm/dm/autoremediator?logo=npm"></a>
   <a href="https://github.com/Rawlings/autoremediator/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Rawlings/autoremediator/ci.yml?branch=master&logo=github&label=CI"></a>
   <a href="https://www.npmjs.com/package/autoremediator"><img alt="node" src="https://img.shields.io/node/v/autoremediator?logo=nodedotjs&logoColor=white"></a>
-  <a href="https://www.npmjs.com/package/autoremediator"><img alt="types" src="https://img.shields.io/npm/types/autoremediator?logo=typescript&logoColor=white"></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/npm/l/autoremediator"></a>
-  <a href="https://github.com/Rawlings/autoremediator/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/Rawlings/autoremediator?style=flat&logo=github"></a>
 </p>
 
 <p align="center">
+  <a href="#try-it-on-your-project">Try it</a> ·
   <a href="docs/getting-started.md">Getting started</a> ·
   <a href="docs/how-it-works.md">How it works</a> ·
   <a href="docs/integrations/github-action.md">GitHub Action</a> ·
   <a href="docs/README.md">Docs</a>
 </p>
 
-Hand it a CVE or GHSA id, or your scanner's report (package manager audit or SARIF). It works out
-the safest fix, applies it, runs your tests, and rolls back if anything breaks. What it cannot fix,
-it tells you, with the reason.
+Scanners tell you what is vulnerable. Update bots open a pull request for a version bump. The work
+in between is still yours: which version really fixes it, whether the package is buried three levels
+deep, and what to do when the upgrade breaks your build or no fix exists.
+
+Autoremediator closes that gap. It plans the smallest safe fix, applies it, and checks the result
+against your own tests. When an upgrade breaks your code, an agent repairs the code, and an
+independent verifier decides whether the change is kept. Anything that can't be fixed safely is left
+alone and explained.
+
+## How agentic remediation works
+
+1. **Plan.** It reads your audit, a CVE or GHSA id, or a SARIF report, weighs exploit signals and
+   your deadlines, and works out the smallest change that actually fixes each package.
+2. **Fix.** It applies the change the way your package manager expects: an upgrade, or a pinned
+   override when the vulnerable package is buried in the tree.
+3. **Repair.** If the fix breaks your build or tests, an agent works in an isolated copy of your
+   project and adjusts your source to match the new version. Your working tree isn't touched.
+4. **Verify.** Install, tests, type check and an optional proof of fix run independently of the
+   agent. Only a change that passes is kept. Everything else is rolled back.
+
+When there is no fixed version at all, it can draft a patch for review. That, and the repair step,
+need a model you choose and pay for. Everything else works without one.
+
+## Try it on your project
+
+You need Node.js 26 or later and a project with a `package.json`. There is nothing to install.
 
 ```bash
-npx autoremediator --audit --run-tests
+npx autoremediator --audit --dry-run     # see the plan, change nothing
+npx autoremediator --audit --run-tests   # apply it, test it, roll back failures
 ```
 
-## The problem
+You get one line per package showing what was fixed and what wasn't, plus an evidence file recording
+what was checked and decided. Already have a specific advisory in mind? Pass its CVE or GHSA id
+instead of `--audit`.
 
-Scanners and update bots tell you what is wrong, or open a pull request for one bump at a time.
-Turning findings into a safe change is still manual work: which version is actually fixed, is the
-vulnerable package buried three levels deep, will the upgrade break the build, and what do you do
-when no fixed version exists? Findings pile up, and the one being exploited in the wild waits in the
-same queue as the rest.
+## What happens to each vulnerable package
 
-## What it does for each vulnerable package
+| Situation                       | What Autoremediator does                                              |
+| ------------------------------- | --------------------------------------------------------------------- |
+| A fixed version exists          | Upgrades to the smallest safe version, so the change stays small      |
+| The package is a transitive dep | Pins the fix with your package manager's own override mechanism       |
+| The upgrade breaks your code    | Has an agent repair your source in isolation, then verifies the result |
+| No fixed version exists         | Drafts a reviewable patch file, if you have configured a model        |
+| It can't be fixed safely        | Changes nothing and reports the exact reason                          |
 
-| Situation | What Autoremediator does |
-| --------- | ------------------------ |
-| A fixed version exists | Bumps to the **lowest** safe version, keeping the change small |
-| The package is transitive | Pins the fix with your package manager's own `overrides` or `resolutions` |
-| No fixed version exists | Generates a reviewable `.patch` file, if you configure a model |
-| It cannot be fixed safely | Leaves your code alone and reports exactly why |
+Works with npm, pnpm, Yarn, Bun and Deno projects, detected from your lockfile.
 
-Every change is installed, tested if you ask, and **rolled back on failure**. Nothing is reported as
-fixed that was not verified.
+## An agent you can give the keys to
 
-## Why you can rely on it
+Autonomy is only useful if you can trust where it stops.
 
-- **Verified, not hopeful.** Install, tests, type check and an optional proof-of-fix run before a
-  change is kept.
-- **Honest reports.** Unfixed findings carry a machine-readable reason, never a silent skip.
+- **Isolated, then verified.** The agent works in a separate checkout with a short list of tools. It
+  can't touch your lockfile, CI config, policy or credentials, and its own opinion that it
+  succeeded counts for nothing.
+- **You set the limits.** A [policy file](docs/reference/policy-file.md) decides what may change,
+  what needs approval, and what escalates. A repository earns more freedom from its own verified
+  track record.
 - **Exploit-aware.** CISA KEV and EPSS signals and your SLA windows decide what is urgent.
-- **You set the autonomy.** A [policy file](docs/reference/policy-file.md) controls what may change.
-  Each result is applied, held for approval or escalated.
-- **The model is optional and boxed in.** It is used only to draft patches when no fix exists. Its
-  output is syntax-checked and confidence-gated, and its tests are never run.
-- **Deterministic everywhere else.** The same input gives the same plan, and `--offline` runs from a
-  local advisory snapshot.
+- **No silent skips.** Every unfixed finding comes back with a reason a machine can read.
+- **Your models, your infrastructure.** It runs on your machine or CI with your own keys. The code
+  is MIT licensed, and `--offline` works from a local advisory snapshot.
+- **A paper trail.** Each run records what was checked, what changed and why.
 
-## Run it where you work
+## Bring it to where you work
 
-| | |
-| --- | --- |
-| **CLI and [SDK](docs/reference/sdk.md)** | Local runs, scripts, pipelines |
-| **[GitHub Action](docs/integrations/github-action.md)** | A nightly pull request that fixes what audit finds |
-| **[GitHub App](docs/integrations/github-app.md)** | Remediation across every repository you install it on |
-| **[Coding agents](docs/integrations/coding-agents.md)** | `npx autoremediator init` sets up Claude Code, Cursor, VS Code, Copilot, Codex and Gemini CLI; a Claude Code plugin is included |
-| **[Other CI](docs/integrations/other-ci.md)** | GitLab, Bitbucket Pipelines, Azure DevOps, Docker and Dagger |
-| **[A2A](docs/integrations/a2a.md)** | An Agent2Agent card and endpoint so other agents can delegate to it |
-| **[MCP server](docs/integrations/mcp-server.md)** | Give your editor or agent a safe way to fix dependencies |
-| **[HTTP server](docs/integrations/http-server.md)** | Call it from internal services |
-| **[VS Code](packages/vscode-extension/README.md)** | Findings and one-click fixes in `package.json` |
+Start with the command line, then move it where it earns its keep.
 
-Beyond fixing a CVE: assemble a [CRA evidence pack](docs/guides/evidence-pack.md), have a model write and prove an [exploit reproduction](docs/guides/proof-of-fix-generation.md), spot [silent security fixes](docs/guides/silent-fix-radar.md), keep dependencies [fresh](docs/guides/freshness.md) in small verified steps, and compile rules into a [policy](docs/guides/policy-in-plain-language.md). Also: [guard](docs/guides/guard.md) packages before an agent installs them, [diet](docs/guides/dependency-diet.md) what you depend on, [bisect](docs/guides/bisect.md) a broken lockfile, respond to a [compromised package](docs/guides/incident-response.md), and let a repository [earn autonomy](docs/guides/earned-autonomy.md).
+|                                                                       | Good for                                                                       |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **[Coding agents](docs/integrations/coding-agents.md)**               | Let Claude Code, Cursor, Copilot, Codex or Gemini CLI do the repair with Autoremediator's tools and verifier |
+| **[GitHub Action](docs/integrations/github-action.md)**               | A nightly pull request that fixes what audit finds                             |
+| **[GitHub App](docs/integrations/github-app.md)**                     | Every repository you install it on                                             |
+| **[VS Code](packages/vscode-extension/README.md)**                    | Findings and one-click fixes inside your manifest                              |
+| **[Other CI](docs/integrations/other-ci.md)**                         | GitLab, Bitbucket Pipelines, Azure DevOps, Docker, Dagger                      |
+| **[SDK](docs/reference/sdk.md), [MCP](docs/integrations/mcp-server.md), [HTTP](docs/integrations/http-server.md), [A2A](docs/integrations/a2a.md)** | Call it from your own code, agents or internal services |
 
-Works with npm, pnpm, Yarn, Bun and Deno projects. Requires Node.js 26 or later.
+<details>
+<summary><strong>More than fixing a CVE</strong></summary>
 
-> [!WARNING]
-> Automated dependency changes carry operational and supply-chain risk. Start with `--dry-run`, keep
-> CI and branch protection in place, and set a policy. See [Safety](docs/safety.md).
+<br>
+
+- [**Guard**](docs/guides/guard.md): check a package before you or an agent installs it
+- [**Upgrade impact**](docs/guides/upgrade-impact.md): see what an upgrade would break in your own code before you make it
+- [**Runtime reachability**](docs/guides/runtime-reachability.md): record which dependencies your tests actually load and call
+- [**Incident response**](docs/guides/incident-response.md): find your exposure when a package is compromised
+- [**Evidence pack**](docs/guides/evidence-pack.md): SBOM, VEX and CRA report drafts from local data
+- [**Dependency diet**](docs/guides/dependency-diet.md): unused, replaceable and duplicate dependencies
+- [**Freshness**](docs/guides/freshness.md): keep dependencies current in small verified steps
+- [**Silent-fix radar**](docs/guides/silent-fix-radar.md): spot security fixes that have no advisory yet
+- [**Exploit-proof evidence**](docs/guides/proof-of-fix-generation.md): a model writes a reproduction, the harness proves it
+- [**Lockfile bisect**](docs/guides/bisect.md): find which update broke a command
+- [**Policy in plain language**](docs/guides/policy-in-plain-language.md): compile rules into a reviewable policy diff
+
+</details>
+
+> [!NOTE]
+> Autoremediator is pre-1.0 and changes your dependency files. Start with a dry run, keep CI and
+> branch protection in place, and read [Safety](docs/safety.md) before pointing it at a shared
+> repository. Rough edges are expected; [issues](https://github.com/Rawlings/autoremediator/issues)
+> are welcome.
 
 ## Learn more
 
 [Getting started](docs/getting-started.md) · [How it works](docs/how-it-works.md) ·
 [CLI](docs/reference/cli.md) · [All documentation](docs/README.md) ·
-[Contributing](CONTRIBUTING.md)
-
-## License
-
-[MIT](LICENSE)
+[Contributing](CONTRIBUTING.md) · [MIT license](LICENSE)

@@ -1,8 +1,8 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { checkSlaBreach } from "../../packages/core/src/platform/policy.js";
-import { runProofOfFixPhase } from "../../packages/core/src/remediation/proof-of-fix/runner.js";
+import { checkSlaBreach } from "../../packages/core/src/features/remediate/sla.js";
+import { runProofOfFixPhase } from "../../packages/core/src/features/verify/proof-of-fix/runner.js";
 import { generateUnifiedDiff } from "../../packages/core/src/remediation/tools/generate-patch/helpers.js";
 import { cleanupTempDir, createTempDir } from "../fixtures/temp-repo.js";
 

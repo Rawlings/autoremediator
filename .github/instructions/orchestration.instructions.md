@@ -1,6 +1,6 @@
 ---
 description: Deterministic remediation orchestration sequence and fallback behavior.
-applyTo: packages/core/src/remediation/**/*.ts
+applyTo: packages/core/src/features/{remediate,patch,upgrade,verify,repair,refactor,impact,intelligence,reachability}/**/*.ts
 ---
 
 # Orchestration Instructions

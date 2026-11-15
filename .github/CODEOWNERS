@@ -1,0 +1,13 @@
+# Changes to what runs in CI, what ships to users and what handles secrets need the owner's review.
+# Turn on "Require review from Code Owners" in the branch protection rule for this to be enforced.
+/.github/                         @Rawlings
+/action.yml                       @Rawlings
+/templates/                       @Rawlings
+/plugins/                         @Rawlings
+/Dockerfile                       @Rawlings
+/Dockerfile.github-app            @Rawlings
+/packages/core/src/platform/      @Rawlings
+/packages/core/src/catalog/       @Rawlings
+/packages/github-app/src/         @Rawlings
+/pnpm-workspace.yaml             @Rawlings
+/pnpm-lock.yaml                   @Rawlings

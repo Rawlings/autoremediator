@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createChangeRequestsForReports } from "../../packages/core/src/api/change-request/index.js";
-import type { RemediationReport } from "../../packages/core/src/platform/types.js";
+import { createChangeRequestsForReports } from "../../packages/core/src/features/change-request/index.js";
+import type { RemediationReport } from "../../packages/core/src/features/remediate/types.js";
 import { repairFileContent } from "../../packages/github-app/src/healing/pr-healer.js";
 import { createInMemoryJobQueue } from "../../packages/github-app/src/queue.js";
 import { startJobWorker } from "../../packages/github-app/src/worker.js";

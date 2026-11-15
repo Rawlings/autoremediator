@@ -52,6 +52,7 @@ escalationGraph: { no-safe-version: open-issue }
 | --- | ------- |
 | `autonomy` | `ceiling` (`L0`..`L4`, required), `minVerifiedRuns` (5), `window` (20), `minSuccessRate` (0.9), `cooldownDays` (7), `requireTestCoverage` (true). Caps how much a repository may do on its own; the earned level comes from its [track record](../guides/earned-autonomy.md). Only the policy file can set it |
 | `trustMaintainerVex` | `true` lets a `not_affected` [VEX statement shipped by an installed package](../guides/maintainer-vex.md) suppress remediation of the dependency it covers (`suppressedBy.source: maintainer-vex`). Default `false`: shown as evidence only. Policy file only |
+| `installScripts` | `none` (default) or `all`. Installs this tool starts skip dependency lifecycle scripts (`--ignore-scripts`; `YARN_ENABLE_SCRIPTS=0` for Yarn Berry), because the version it just picked is the least trusted code on the machine. `all` runs them again; Yarn Berry also needs `YARN_ENABLE_SCRIPTS=1` in the environment. Policy file only |
 | `freshness` | `maxMajorsBehind`, `maxMinorsBehind` (on the latest major), `maxAgeDays`, `ignore` (name, `@scope/*`, `prefix*`). At least one limit is required. Drives [freshness](../guides/freshness.md); without the key nothing is planned |
 | `recipes.packages` | npm package names whose `recipes/` are trusted as [recipe](../guides/recipes.md) sources for any package |
 

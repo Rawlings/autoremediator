@@ -3,22 +3,32 @@ name: Publish Docker image
 on:
   push:
     branches:
-      - main
       - master
     tags:
       - "v*"
   workflow_dispatch:
 
 permissions:
-  packages: write
   contents: read
 
 jobs:
+  # Never publish an image of code that has not passed lint, typecheck, build and tests.
+  verify:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
   build-and-push:
+    needs: verify
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
@@ -36,7 +46,6 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=edge,branch=main
             type=edge,branch=master
             type=sha,prefix=sha-
 
@@ -47,3 +56,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          provenance: mode=max
+          sbom: true

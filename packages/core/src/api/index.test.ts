@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { buildResultSimulation, buildSlaBreachSummary } from "./reporting.js";
+import { buildResultSimulation, buildSlaBreachSummary } from "../features/remediate/reporting.js";
 
 const mocked = vi.hoisted(() => ({
   runRemediationPipeline: vi.fn(),
@@ -19,25 +19,25 @@ const mocked = vi.hoisted(() => ({
   assessPackageReachability: vi.fn(),
 }));
 
-vi.mock("../scanner/index.js", () => ({
+vi.mock("../features/scan/index.js", () => ({
   parseScanInput: mocked.parseScanInput,
   parseScanInputFromAudit: mocked.parseScanInputFromAudit,
   uniqueCveIds: mocked.uniqueCveIds,
 }));
 
-vi.mock("../platform/policy.js", () => ({
+vi.mock("../infra/policy/policy.js", () => ({
   loadPolicy: mocked.loadPolicy,
   isPackageAllowed: mocked.isPackageAllowed,
 }));
 
-vi.mock("../platform/evidence.js", () => ({
+vi.mock("../features/evidence/log.js", () => ({
   createEvidenceLog: mocked.createEvidenceLog,
   addEvidenceStep: mocked.addEvidenceStep,
   finalizeEvidence: mocked.finalizeEvidence,
   writeEvidenceLog: mocked.writeEvidenceLog,
 }));
 
-vi.mock("../platform/idempotency.js", () => ({
+vi.mock("../features/jobs/idempotency.js", () => ({
   readIdempotentReport: mocked.readIdempotentReport,
   storeIdempotentReport: mocked.storeIdempotentReport,
 }));
@@ -46,7 +46,7 @@ vi.mock("../intelligence/index.js", () => ({
   findAlternativePackages: mocked.findAlternativePackages,
 }));
 
-vi.mock("../remediation/local/index.js", () => ({
+vi.mock("../features/remediate/local/index.js", () => ({
   runLocalRemediationPipeline: mocked.runRemediationPipeline,
 }));
 

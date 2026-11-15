@@ -58,13 +58,13 @@ When CLI commands, options or output change:
 
 When orchestration, strategy order or fallback behavior changes:
 
-- Update `AGENTS.md`, `docs/how-it-works.md` and `docs/reference/policy-file.md`.
+- Update `docs/reference/modes.md`, `docs/how-it-works.md` and `docs/reference/policy-file.md`.
 - Update matching instruction and skill files.
 
 When the MCP or OpenAPI surfaces change:
 
 - Update `docs/integrations/mcp-server.md` and `docs/integrations/http-server.md`.
-- Update `AGENTS.md` mode descriptions if exposed operations changed.
+- Update the Mode 4 and Mode 5 entries in `docs/reference/modes.md` if exposed operations changed.
 
 When GitHub Action or reusable workflow inputs change:
 
@@ -74,7 +74,7 @@ When GitHub Action or reusable workflow inputs change:
 When GitHub App runtime or config behavior changes:
 
 - Update `docs/integrations/github-app.md`.
-- Update `AGENTS.md` mode behavior when trigger or delivery semantics changed.
+- Update `docs/reference/modes.md` when trigger or delivery semantics changed.
 
 When scanner or intelligence behavior changes:
 

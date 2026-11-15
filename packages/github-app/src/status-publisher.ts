@@ -1,5 +1,6 @@
 import { Octokit } from "@octokit/rest";
 
+import { errorMessage } from "./errors.js";
 import type { QueueJob } from "./types.js";
 
 type CheckStatus = "queued" | "in_progress" | "completed";
@@ -196,7 +197,7 @@ export function createJobStatusPublisher(
     try {
       await publish();
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       options.onTrace?.(
         `Status publish failed (${phase}): ${message} (${buildTracePrefix(context.job)})`,
       );

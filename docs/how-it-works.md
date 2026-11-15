@@ -51,7 +51,7 @@ just changed; set `enforceFrozenLockfile` to freeze them anyway. Optional steps:
 - `--typecheck` runs the type checker.
 - `--proof-of-fix` runs a Node script you provide before the change (it must fail, showing the
   vulnerability) and after it (it must pass). Put it at `patches/<package>+<version>.test.cjs`, or
-  pass `reproductionTest` through the [SDK](reference/sdk.md). `--require-proof-of-fix` rolls back
+  pass `reproductionTest` through the [SDK](reference/sdk.md). The script runs in a sandbox (no network, no writes, no child processes, empty environment). `--require-proof-of-fix` rolls back
   a change whose proof fails.
 - `autoremediator prove` can write the reproduction script for you: a model proposes it and a sandboxed harness keeps it only if it fails on the vulnerable version and passes on the fixed one ([details](guides/proof-of-fix-generation.md)).
 - `--breaking-change-refactor` (experimental) repairs call sites broken by a major upgrade, using

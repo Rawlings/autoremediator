@@ -1,8 +1,9 @@
 name: Autoremediator
 description: >
-  CVE remediation for Node.js dependencies. Applies version bumps and overrides
-  for scanner output or a single CVE ID, with an optional model-generated patch
-  fallback when no safe version exists.
+  Agentic remediation for Node.js dependencies. Fixes what your audit, a scanner
+  report or a single CVE ID finds with the smallest safe change, tests it, and
+  rolls back what fails. Optionally repairs code an upgrade breaks and drafts a
+  patch when no fixed version exists.
 author: rawlings
 
 branding:
@@ -207,7 +208,9 @@ runs:
       env:
         INPUT_PACKAGE: ${{ inputs.package }}
         BUNDLED_VERSION: ${{ steps.autoremediator-version.outputs.version }}
-      run: npm install -g "${INPUT_PACKAGE:-autoremediator@$BUNDLED_VERSION}"
+      # No lifecycle scripts: neither this package nor its dependencies need one, and a hijacked
+      # dependency release would otherwise run here with the job's token in the environment.
+      run: npm install -g --ignore-scripts "${INPUT_PACKAGE:-autoremediator@$BUNDLED_VERSION}"
 
     - name: Remediate single CVE
       if: ${{ inputs.cve-id != '' }}

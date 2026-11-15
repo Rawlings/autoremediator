@@ -230,7 +230,7 @@ the authority; the readings below came from secondary renderings and should be c
   <https://www.springlex.eu/en/packages/cra/cra-regulation/article-71/> and
   <https://www.cyberresilienceact.eu/annexes.html>; EUR-Lex itself could not be fetched here.
 - CycloneDX 1.6 JSON reference, <https://cyclonedx.org/docs/1.6/json/>, and the 1.6 JSON schema
-  (vendored for the tests, see `packages/core/src/api/evidence-pack/fixtures/schemas/README.md`).
+  (vendored for the tests, see `packages/core/src/features/evidence/pack/fixtures/schemas/README.md`).
 - OpenVEX specification v0.2.0, <https://github.com/openvex/spec/blob/main/OPENVEX-SPEC.md>, and its
   JSON schema.
 - DSSE protocol, <https://github.com/secure-systems-lab/dsse/blob/master/protocol.md> (the PAE and the

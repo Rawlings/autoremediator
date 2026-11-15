@@ -1,0 +1,519 @@
+import { describe, expect, it, vi } from "vitest";
+
+import type { ApiDeps } from "./api-deps.js";
+import {
+  callMcpOperation,
+  httpOperations,
+  mapRequestToInput,
+  matchHttpRoute,
+  OPERATIONS,
+  roleFor,
+  routeKey,
+  toMcpTools,
+  toOpenApiPaths,
+} from "./index.js";
+
+function fakeDeps(overrides: Partial<ApiDeps> = {}): ApiDeps {
+  return {
+    remediateFn: vi.fn(async () => ({ summary: "ok" })),
+    planRemediationFn: vi.fn(async () => ({ summary: "planned" })),
+    ...overrides,
+  } as unknown as ApiDeps;
+}
+
+describe("operation catalog", () => {
+  it("has unique, described operations with annotations", () => {
+    const names = OPERATIONS.map((operation) => operation.name);
+    expect(new Set(names).size).toBe(names.length);
+    for (const operation of OPERATIONS) {
+      expect(operation.description.length).toBeGreaterThan(20);
+      expect(operation.title).toBeTruthy();
+      expect(operation.annotations).toBeDefined();
+    }
+  });
+
+  it("annotates read-only and mutating operations accurately", () => {
+    const byName = new Map(OPERATIONS.map((operation) => [operation.name, operation.annotations]));
+    for (const name of ["listPatchArtifacts", "checkReachability", "toVex", "pollJob", "health"]) {
+      expect(byName.get(name)).toMatchObject({ readOnlyHint: true, destructiveHint: false });
+    }
+    for (const name of ["remediate", "remediateFromScan", "updateOutdated", "submitRemediateJob"]) {
+      expect(byName.get(name)).toMatchObject({ readOnlyHint: false, destructiveHint: true });
+    }
+    // A preview only writes its own evidence record: not read-only, but not destructive either.
+    expect(byName.get("planRemediation")).toMatchObject({
+      readOnlyHint: false,
+      destructiveHint: false,
+    });
+  });
+});
+
+describe("MCP tools generated from the catalog", () => {
+  const tools = toMcpTools();
+  const properties = (name: string) =>
+    tools.find((tool) => tool.name === name)!.inputSchema.properties;
+
+  it("exposes every MCP operation with annotations and a required list", () => {
+    expect(tools.map((tool) => tool.name)).toEqual(
+      OPERATIONS.filter((operation) => operation.mcp).map((operation) => operation.name),
+    );
+    expect(tools.find((tool) => tool.name === "remediate")?.inputSchema.required).toEqual([
+      "cveId",
+    ]);
+    expect(tools.find((tool) => tool.name === "remediate")?.annotations.destructiveHint).toBe(true);
+  });
+
+  it("advertises the options the SDK really honours, and none it ignores", () => {
+    const remediate = properties("remediate");
+    for (const real of [
+      "exploitSignalOverride",
+      "typecheck",
+      "supplyChainPolicy",
+      "reproductionTest",
+      "dispositionPolicy",
+    ]) {
+      expect(remediate).toHaveProperty(real);
+    }
+    // These were advertised over MCP/HTTP but only the CLI ever mapped them.
+    expect(remediate).not.toHaveProperty("kevMandatory");
+    expect(remediate).not.toHaveProperty("epssThreshold");
+  });
+
+  it("keeps plan options free of dryRun/preview and updateOutdated free of simulationMode", () => {
+    expect(properties("planRemediation")).not.toHaveProperty("dryRun");
+    expect(properties("planRemediation")).not.toHaveProperty("preview");
+    expect(properties("updateOutdated")).not.toHaveProperty("simulationMode");
+    expect(properties("updateOutdated")).toHaveProperty("includeTransitive");
+  });
+
+  it("lets agents drive the options that used to be missing from portfolio targets", () => {
+    const targets = properties("remediatePortfolio")["targets"] as {
+      items: { properties: Record<string, unknown> };
+    };
+    expect(Object.keys(targets.items.properties)).toEqual(
+      expect.arrayContaining(["cwd", "cveId", "inputPath", "format", "audit", "riskHint"]),
+    );
+  });
+});
+
+describe("calling operations over MCP", () => {
+  it("passes validated input to the SDK with mcp provenance", async () => {
+    const deps = fakeDeps();
+    const result = await callMcpOperation(
+      "remediate",
+      { cveId: "CVE-2021-23337", dryRun: true },
+      deps,
+    );
+
+    expect(result.isError).toBeUndefined();
+    expect(deps.remediateFn).toHaveBeenCalledWith("CVE-2021-23337", {
+      dryRun: true,
+      source: "mcp",
+    });
+  });
+
+  it("keeps a caller-supplied provenance source", async () => {
+    const deps = fakeDeps();
+    await callMcpOperation("planRemediation", { cveId: "CVE-2021-23337", source: "sdk" }, deps);
+    expect(deps.planRemediationFn).toHaveBeenCalledWith("CVE-2021-23337", { source: "sdk" });
+  });
+
+  it("rejects unknown options instead of silently ignoring them", async () => {
+    const deps = fakeDeps();
+    const result = await callMcpOperation(
+      "remediate",
+      { cveId: "CVE-2021-23337", kevMandatory: true },
+      deps,
+    );
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toContain("kevMandatory");
+    expect(deps.remediateFn).not.toHaveBeenCalled();
+  });
+
+  it("rejects wrong types and unknown nested fields with the field path", async () => {
+    const deps = fakeDeps();
+    const badType = await callMcpOperation(
+      "remediate",
+      { cveId: "CVE-2021-23337", dryRun: "yes" },
+      deps,
+    );
+    expect(badType.isError).toBe(true);
+    expect(badType.content[0]?.text).toContain("dryRun");
+
+    const badNested = await callMcpOperation(
+      "remediate",
+      { cveId: "CVE-2021-23337", constraints: { installMode: "turbo" } },
+      deps,
+    );
+    expect(badNested.isError).toBe(true);
+    expect(badNested.content[0]?.text).toContain("constraints.installMode");
+  });
+
+  it("refuses caller-supplied change-request credentials rather than passing them through", async () => {
+    const deps = fakeDeps();
+    for (const secret of [
+      { tokenEnvVar: "GITHUB_TOKEN" },
+      { token: "ghp_x" },
+      { githubApiUrl: "https://evil.test" },
+    ]) {
+      const result = await callMcpOperation(
+        "remediate",
+        { cveId: "CVE-2021-23337", changeRequest: { provider: "github", ...secret } },
+        deps,
+      );
+      expect(result.isError).toBe(true);
+    }
+    expect(deps.remediateFn).not.toHaveBeenCalled();
+  });
+
+  it("reports missing required arguments with a readable message", async () => {
+    const missing = await callMcpOperation("remediate", {}, fakeDeps());
+    expect(missing.isError).toBe(true);
+    expect(missing.content[0]?.text).toContain("cveId is required");
+  });
+
+  it("reports unknown tools and handler failures as error results", async () => {
+    expect((await callMcpOperation("nope", {}, fakeDeps())).content[0]?.text).toContain(
+      "Unknown tool: nope",
+    );
+
+    const failing = fakeDeps({
+      remediateFn: vi.fn(async () => {
+        throw new Error("boom");
+      }) as unknown as ApiDeps["remediateFn"],
+    });
+    const result = await callMcpOperation("remediate", { cveId: "CVE-2021-23337" }, failing);
+    expect(result).toMatchObject({ isError: true, content: [{ text: "boom" }] });
+  });
+});
+
+describe("HTTP adapter", () => {
+  const op = (name: string) => OPERATIONS.find((operation) => operation.name === name)!;
+
+  it("gives every HTTP operation a unique route", () => {
+    const keys = httpOperations.map(
+      (operation) => `${operation.http!.method} ${operation.http!.path}`,
+    );
+    expect(new Set(keys).size).toBe(keys.length);
+    // The unauthenticated probe and spec endpoints are not operations.
+    expect(keys).not.toContain("GET /health");
+  });
+
+  it("matches static and parametric routes", () => {
+    expect(matchHttpRoute("POST", "/remediate")?.operation.name).toBe("remediate");
+    expect(matchHttpRoute("POST", "/patches/reconcile")?.operation.name).toBe(
+      "reconcilePatchArtifacts",
+    );
+    expect(matchHttpRoute("GET", "/jobs/abc%20d")).toMatchObject({
+      operation: { name: "pollJob" },
+      params: { jobId: "abc d" },
+    });
+    expect(matchHttpRoute("GET", "/jobs/")).toBeUndefined();
+    expect(matchHttpRoute("GET", "/jobs/a/b")).toBeUndefined();
+    expect(matchHttpRoute("GET", "/remediate")).toBeUndefined();
+    expect(matchHttpRoute("POST", "/nope")).toBeUndefined();
+  });
+
+  it("lifts positional fields and flattens options", () => {
+    expect(
+      mapRequestToInput(op("remediate"), { cveId: "CVE-1", options: { dryRun: true } }),
+    ).toEqual({ ok: true, input: { cveId: "CVE-1", dryRun: true } });
+    expect(mapRequestToInput(op("listPatchArtifacts"), {})).toEqual({ ok: true, input: {} });
+    expect(
+      mapRequestToInput(op("toVex"), { report: { a: 1 }, options: { toolVersion: "1" } }),
+    ).toEqual({
+      ok: true,
+      input: { toolVersion: "1", report: { a: 1 } },
+    });
+    expect(mapRequestToInput(op("pollJob"), undefined, { jobId: "j1" })).toEqual({
+      ok: true,
+      input: { jobId: "j1" },
+    });
+  });
+
+  it("rejects stray top-level fields, bad options and fields in both places", () => {
+    expect(mapRequestToInput(op("remediate"), { cveId: "CVE-1", dryRun: true })).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('"dryRun"'),
+    });
+    expect(mapRequestToInput(op("remediate"), { cveId: "x", options: "no" })).toMatchObject({
+      ok: false,
+    });
+    expect(
+      mapRequestToInput(op("remediate"), { cveId: "x", options: { cveId: "y" } }),
+    ).toMatchObject({ ok: false, error: expect.stringContaining('"cveId"') });
+    expect(mapRequestToInput(op("remediate"), [])).toMatchObject({ ok: false });
+  });
+
+  it("derives roles from annotations", () => {
+    expect(roleFor(op("toVex"))).toBe("reader");
+    expect(roleFor(op("checkReachability"))).toBe("reader");
+    expect(roleFor(op("planRemediation"))).toBe("operator");
+    expect(roleFor(op("remediate"))).toBe("admin");
+    expect(roleFor(op("submitScanJob"))).toBe("admin");
+    expect(roleFor(op("reconcilePatchArtifacts"))).toBe("admin");
+    expect(routeKey(op("pollJob"))).toBe("GET /jobs");
+  });
+});
+
+describe("generated OpenAPI paths", () => {
+  const paths = toOpenApiPaths() as Record<string, any>;
+
+  it("describes every HTTP operation plus the probe and spec endpoints", () => {
+    for (const operation of httpOperations) {
+      const path = operation.http!.path.replaceAll(/:([^/]+)/g, "{$1}");
+      expect(paths[path]?.[operation.http!.method.toLowerCase()]?.operationId).toBe(operation.name);
+    }
+    expect(paths["/health"]).toBeDefined();
+    expect(paths["/openapi.json"]).toBeDefined();
+  });
+
+  it("nests option fields under options and keeps positional fields at the top", () => {
+    const body = paths["/remediate"].post.requestBody.content["application/json"].schema;
+    expect(body.required).toEqual(["cveId"]);
+    expect(body.properties.cveId).toBeDefined();
+    expect(body.properties.options.properties.dryRun).toBeDefined();
+    expect(body.properties.options.properties.cveId).toBeUndefined();
+    expect(body.additionalProperties).toBe(false);
+  });
+
+  it("marks path arguments so clients can see them", () => {
+    const options =
+      paths["/remediate"].post.requestBody.content["application/json"].schema.properties.options
+        .properties;
+    expect(options.cwd["x-path"]).toBe(true);
+    expect(options.patchesDir["x-path"]).toBe(true);
+    expect(options.dryRun["x-path"]).toBeUndefined();
+  });
+
+  it("uses the declared success status and documents errors", () => {
+    expect(paths["/jobs/remediate"].post.responses["202"]).toBeDefined();
+    expect(paths["/remediate"].post.responses["200"]).toBeDefined();
+    expect(paths["/remediate"].post.responses["403"]).toBeDefined();
+    expect(paths["/jobs/{jobId}"].get.parameters[0]).toMatchObject({ name: "jobId", in: "path" });
+    expect(paths["/jobs/{jobId}"].get.responses["404"]).toBeDefined();
+  });
+
+  it("exposes the operations that previously had no HTTP route", () => {
+    for (const path of [
+      "/reachability",
+      "/packages/evaluate",
+      "/delta-scan",
+      "/patches/reconcile",
+    ]) {
+      expect(paths[path]?.post).toBeDefined();
+    }
+  });
+});
+
+describe("run operations", () => {
+  const byName = (name: string) => OPERATIONS.find((operation) => operation.name === name)!;
+  const tools = toMcpTools();
+
+  it("are exposed as MCP tools and HTTP routes", () => {
+    for (const name of [
+      "applyPlan",
+      "verifyRun",
+      "resumeRun",
+      "rollbackRun",
+      "getRun",
+      "listRuns",
+    ]) {
+      expect(tools.map((tool) => tool.name)).toContain(name);
+      expect(byName(name).http).toBeDefined();
+    }
+  });
+
+  it("need the right role: reading a run is a read, changing the project is admin", () => {
+    expect(roleFor(byName("getRun"))).toBe("reader");
+    expect(roleFor(byName("listRuns"))).toBe("reader");
+    // Verifying installs and runs the project's tests, which see every secret the server holds.
+    expect(roleFor(byName("verifyRun"))).toBe("admin");
+    for (const name of ["applyPlan", "resumeRun", "rollbackRun"]) {
+      expect(roleFor(byName(name))).toBe("admin");
+    }
+  });
+
+  it("passes the repair options to applyPlan, mapping the round limit into a budget", async () => {
+    const applyPlanFn = vi.fn();
+    const deps = fakeDeps({ applyPlanFn: applyPlanFn as unknown as ApiDeps["applyPlanFn"] });
+    const runId = "run_" + "a".repeat(20);
+
+    await callMcpOperation(
+      "applyPlan",
+      { runId, repair: true, model: "anthropic:claude-sonnet-5-5", maxRepairRounds: 2 },
+      deps,
+    );
+    expect(applyPlanFn).toHaveBeenCalledWith({
+      runId,
+      repair: true,
+      model: "anthropic:claude-sonnet-5-5",
+      repairBudget: { maxRepairRounds: 2 },
+    });
+
+    const bad = await callMcpOperation("applyPlan", { runId, maxRepairRounds: 0 }, deps);
+    expect(bad.isError).toBe(true);
+    // The SDK-only knobs are not part of the wire schema.
+    const smuggled = await callMcpOperation("applyPlan", { runId, repairAgent: {} }, deps);
+    expect(smuggled.isError).toBe(true);
+  });
+
+  it("accepts only real check names when verifying", async () => {
+    const deps = fakeDeps({ verifyRunFn: vi.fn() as unknown as ApiDeps["verifyRunFn"] });
+    const runId = "run_" + "a".repeat(20);
+    const bad = await callMcpOperation("verifyRun", { runId, checks: ["scope", "nonsense"] }, deps);
+    expect(bad.isError).toBe(true);
+    expect(deps.verifyRunFn).not.toHaveBeenCalled();
+    const good = await callMcpOperation(
+      "verifyRun",
+      { runId, checks: ["scope", "vuln-gone"] },
+      deps,
+    );
+    expect(good.isError).toBeUndefined();
+    expect(deps.verifyRunFn).toHaveBeenCalledWith({ runId, checks: ["scope", "vuln-gone"] });
+  });
+
+  it("validate run and plan ids before they reach the filesystem", async () => {
+    const deps = fakeDeps({ getRunFn: vi.fn() as unknown as ApiDeps["getRunFn"] });
+    for (const runId of ["../../etc", "run_short", "RUN_" + "a".repeat(20)]) {
+      const result = await callMcpOperation("getRun", { runId }, deps);
+      expect(result.isError).toBe(true);
+      expect(result.content[0]?.text).toContain("runId");
+    }
+    expect(deps.getRunFn).not.toHaveBeenCalled();
+
+    const bad = await callMcpOperation("applyPlan", { planId: "plan_nothex" }, deps);
+    expect(bad.isError).toBe(true);
+    expect(bad.content[0]?.text).toContain("planId");
+  });
+
+  it("pass a valid id through and confine the project path", async () => {
+    const getRunFn = vi.fn(() => ({ run: {} }));
+    const deps = fakeDeps({ getRunFn: getRunFn as unknown as ApiDeps["getRunFn"] });
+    const runId = "run_" + "a".repeat(20);
+
+    const ok = await callMcpOperation("getRun", { runId }, deps);
+    expect(ok.isError).toBeUndefined();
+    expect(getRunFn).toHaveBeenCalledWith({ runId });
+
+    const outside = await callMcpOperation("getRun", { runId, cwd: "/etc" }, deps);
+    expect(outside.isError).toBe(true);
+    expect(outside.content[0]?.text).toContain("Path not allowed");
+  });
+});
+
+describe("attempt operations for host agents", () => {
+  const byName = (name: string) => OPERATIONS.find((operation) => operation.name === name)!;
+  const runId = "run_" + "a".repeat(20);
+  const attemptId = "attempt_" + "a".repeat(12);
+  const itemId = "item_" + "a".repeat(12);
+
+  it("are on every surface, with roles that follow what they can do", () => {
+    for (const name of [
+      "startAttempt",
+      "proposePatch",
+      "verifyAttempt",
+      "finalizeAttempt",
+      "abandonAttempt",
+    ]) {
+      expect(toMcpTools().map((tool) => tool.name)).toContain(name);
+      expect(byName(name).http).toBeDefined();
+    }
+    // Anything that installs, runs the project's code or edits files that get run needs admin.
+    for (const name of ["startAttempt", "proposePatch", "verifyAttempt"]) {
+      expect(roleFor(byName(name))).toBe("admin");
+    }
+    // Abandoning only discards a checkout.
+    expect(roleFor(byName("abandonAttempt"))).toBe("operator");
+    expect(roleFor(byName("finalizeAttempt"))).toBe("admin");
+  });
+
+  it("validate every id before it can reach a path", async () => {
+    const deps = fakeDeps({
+      startAttemptFn: vi.fn() as unknown as ApiDeps["startAttemptFn"],
+      finalizeAttemptFn: vi.fn() as unknown as ApiDeps["finalizeAttemptFn"],
+    });
+    for (const args of [
+      { runId: "../x", itemId },
+      { runId, itemId: "item_../../x" },
+      { runId, itemId: "nope" },
+    ]) {
+      expect((await callMcpOperation("startAttempt", args, deps)).isError).toBe(true);
+    }
+    for (const bad of ["../../etc", "attempt_short", "attempt_" + "A".repeat(12)]) {
+      expect(
+        (await callMcpOperation("finalizeAttempt", { runId, attemptId: bad }, deps)).isError,
+      ).toBe(true);
+    }
+    expect(deps.startAttemptFn).not.toHaveBeenCalled();
+    expect(deps.finalizeAttemptFn).not.toHaveBeenCalled();
+
+    const ok = await callMcpOperation("finalizeAttempt", { runId, attemptId }, deps);
+    expect(ok.isError).toBeUndefined();
+    expect(deps.finalizeAttemptFn).toHaveBeenCalledWith({ runId, attemptId });
+  });
+
+  it("require a diff to propose", async () => {
+    const deps = fakeDeps({ proposePatchFn: vi.fn() as unknown as ApiDeps["proposePatchFn"] });
+    expect((await callMcpOperation("proposePatch", { runId, attemptId }, deps)).isError).toBe(true);
+    expect(
+      (await callMcpOperation("proposePatch", { runId, attemptId, diff: "" }, deps)).isError,
+    ).toBe(true);
+    expect(deps.proposePatchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe("recipe operations", () => {
+  const byName = (name: string) => OPERATIONS.find((operation) => operation.name === name)!;
+  const runId = "run_" + "a".repeat(20);
+  const attemptId = "attempt_" + "a".repeat(12);
+
+  it("expose reading and attempt-scoped applying, and no operation that writes outside a checkout", () => {
+    const tools = toMcpTools().map((tool) => tool.name);
+    expect(tools).toEqual(expect.arrayContaining(["listRecipes", "applyRecipe"]));
+    expect(tools).not.toContain("captureRecipe");
+    expect(tools).not.toContain("exportRecipes");
+    expect(byName("listRecipes").http).toMatchObject({ path: "/recipes/list" });
+    expect(byName("applyRecipe").http).toMatchObject({ path: "/attempts/recipe" });
+    expect(roleFor(byName("listRecipes"))).toBe("reader");
+    // Like proposePatch: it edits a checkout and verifies it, which runs the project's code.
+    expect(roleFor(byName("applyRecipe"))).toBe("admin");
+  });
+
+  it("validate ids and require a recipe id before anything runs", async () => {
+    const deps = fakeDeps({
+      applyRecipeFn: vi.fn() as unknown as ApiDeps["applyRecipeFn"],
+      listRecipesFn: vi.fn(() => ({
+        recipes: [],
+        problems: [],
+      })) as unknown as ApiDeps["listRecipesFn"],
+    });
+    for (const args of [
+      { runId, attemptId },
+      { runId, attemptId, recipeId: "" },
+      { runId: "../x", attemptId, recipeId: "dep#abc" },
+      { runId, attemptId: "../../x", recipeId: "dep#abc" },
+    ]) {
+      expect((await callMcpOperation("applyRecipe", args, deps)).isError).toBe(true);
+    }
+    expect(deps.applyRecipeFn).not.toHaveBeenCalled();
+    expect(
+      (
+        await callMcpOperation(
+          "applyRecipe",
+          { runId, attemptId, recipeId: "dep#0123456789" },
+          deps,
+        )
+      ).isError,
+    ).toBeUndefined();
+    expect(deps.applyRecipeFn).toHaveBeenCalledWith({
+      runId,
+      attemptId,
+      recipeId: "dep#0123456789",
+    });
+    expect(
+      (await callMcpOperation("listRecipes", { packageName: "dep" }, deps)).isError,
+    ).toBeUndefined();
+  });
+});

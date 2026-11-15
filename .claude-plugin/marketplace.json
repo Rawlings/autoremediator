@@ -5,13 +5,13 @@
     "url": "https://github.com/Rawlings"
   },
   "metadata": {
-    "description": "Fix vulnerable npm dependencies safely: plan, apply with verification, repair upgrades that break the project, roll back."
+    "description": "Agentic remediation for vulnerable npm dependencies: plan, apply with verification, repair upgrades that break the project, roll back."
   },
   "plugins": [
     {
       "name": "autoremediator",
       "source": "./plugins/claude-code",
-      "description": "Fix vulnerable npm dependencies safely: plan, apply with verification, repair upgrades that break the project, roll back.",
+      "description": "Agentic remediation for vulnerable npm dependencies: plan, apply with verification, repair upgrades that break the project, roll back.",
       "category": "security"
     }
   ]

@@ -2,7 +2,7 @@
   "name": "autoremediator-monorepo",
   "version": "0.1.0",
   "private": true,
-  "description": "Autoremediator monorepo (core package, GitHub App, VS Code extension)",
+  "description": "Autoremediator monorepo: agentic remediation for Node.js dependencies (core package, GitHub App, VS Code extension)",
   "keywords": [
     "agentic",
     "ai",
@@ -63,7 +63,7 @@
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
     "changeset": "changeset",
-    "version-packages": "changeset version",
+    "version-packages": "changeset version && node scripts/sync-cli-version.mjs && UPDATE_PLUGINS=1 pnpm --filter autoremediator exec vitest run plugin-files",
     "release": "changeset publish"
   },
   "devDependencies": {

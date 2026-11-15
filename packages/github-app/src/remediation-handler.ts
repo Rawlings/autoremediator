@@ -6,11 +6,13 @@ import { isAbsolute, join, relative, resolve as resolvePath } from "node:path";
 import { remediateFromScan, type CveSeverity, type ScanReport } from "autoremediator";
 
 import { codeScanningAlertTarget, dependabotAlertTarget } from "./alerts.js";
+import { childEnvironment, gitAuthEnvironment } from "./child-env.js";
 import { HELP_TEXT, parseComment } from "./commands.js";
 import { collectCheckRunLogs } from "./diagnostics/check-run-logs.js";
 import { parseCheckRunLogs } from "./diagnostics/log-parser.js";
 import { runBotPrDoctor } from "./doctor/bot-pr-doctor.js";
 import { botKindOfBranch, botKindOfLogin, isForkPullRequest } from "./doctor/bot-pr.js";
+import { errorMessage } from "./errors.js";
 import { healPullRequest, regexRepairStrategy } from "./healing/pr-healer.js";
 import { fetchRepoConfig } from "./repo-config.js";
 import { summarizeScanReport } from "./summary.js";
@@ -207,7 +209,7 @@ export function createDefaultRemediationHandler(
     // the job ends as `partial` (never retried). The reply and the result carry no error text:
     // it can hold clone URLs with tokens, so it goes to the log, redacted.
     const answerFailedCommand = async (error: unknown): Promise<RemediationJobResult> => {
-      const message = redactTokens(error instanceof Error ? error.message : String(error));
+      const message = redactTokens(errorMessage(error));
       void options.onError?.({
         timestamp: new Date().toISOString(),
         source: "github-app",
@@ -254,9 +256,9 @@ export function createDefaultRemediationHandler(
       };
 
       const token = context.installationToken;
-      const cloneUrl = token
-        ? `https://x-access-token:${token}@github.com/${repoRef.owner}/${repoRef.repo}.git`
-        : `https://github.com/${repoRef.owner}/${repoRef.repo}.git`;
+      // No token in the URL: it would be in the process list and in the clone's .git/config, which
+      // the repository's own install scripts and tests can read.
+      const cloneUrl = `https://github.com/${repoRef.owner}/${repoRef.repo}.git`;
       const cloneArgs = ["clone", "--depth", "1"];
       if (targetRef) {
         cloneArgs.push("--branch", targetRef);
@@ -264,7 +266,12 @@ export function createDefaultRemediationHandler(
       cloneArgs.push(cloneUrl, tempRepoDir);
 
       try {
-        const cloneRes = await runCommand("git", cloneArgs, tempRepoDir);
+        const cloneRes = await runCommand(
+          "git",
+          cloneArgs,
+          tempRepoDir,
+          token ? gitAuthEnvironment(token) : {},
+        );
         if (cloneRes.exitCode !== 0) {
           throw new Error(`git clone failed (code ${cloneRes.exitCode}): ${cloneRes.output}`);
         }
@@ -423,7 +430,7 @@ export function createDefaultRemediationHandler(
         try {
           await rm(tempDir, { recursive: true, force: true });
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
+          const message = errorMessage(error);
           void options.onError?.({
             timestamp: new Date().toISOString(),
             source: "github-app",
@@ -443,7 +450,7 @@ export function createDefaultRemediationHandler(
         try {
           await cleanupCheckout();
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
+          const message = errorMessage(error);
           void options.onError?.({
             timestamp: new Date().toISOString(),
             source: "github-app",
@@ -488,7 +495,7 @@ async function postComment(
       body,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = errorMessage(error);
     void options.onError?.({
       timestamp: new Date().toISOString(),
       source: "github-app",
@@ -854,10 +861,12 @@ async function runCommand(
   command: string,
   args: string[],
   cwd: string,
+  extraEnv: Record<string, string> = {},
 ): Promise<{ output: string; exitCode: number }> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd,
+      env: childEnvironment(extraEnv),
       stdio: ["ignore", "pipe", "pipe"],
       shell: false,
     });
@@ -905,7 +914,7 @@ async function collectAuditFindings(cwd: string): Promise<ParsedAuditFinding[]> 
     try {
       result = await runCommand(command, args, cwd);
     } catch (error) {
-      lastError = error instanceof Error ? error.message : String(error);
+      lastError = errorMessage(error);
       continue;
     }
 

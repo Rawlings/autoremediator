@@ -1,9 +1,9 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { isPackageAllowed, loadPolicy } from "../../packages/core/src/platform/policy.js";
-import { withAtomicRollback } from "../../packages/core/src/platform/rollback.js";
-import { applyDispositionAndContainment } from "../../packages/core/src/remediation/local/disposition.js";
+import { isPackageAllowed, loadPolicy } from "../../packages/core/src/infra/policy/policy.js";
+import { withAtomicRollback } from "../../packages/core/src/infra/rollback/rollback.js";
+import { applyDispositionAndContainment } from "../../packages/core/src/features/remediate/local/disposition.js";
 import { cleanupTempDir, createTempRepo, writeRepoFile } from "../fixtures/temp-repo.js";
 
 describe("Tier 4 - Scenario 2: Containment Mode Policy Escalation & Clean Rollback", () => {

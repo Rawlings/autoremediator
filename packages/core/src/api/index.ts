@@ -7,24 +7,63 @@
  */
 export type {
   CorrelationContext,
-  CveSeverity,
   LlmUsageMetrics,
-  RemediationConstraints,
   ProvenanceContext,
   RemediateOptions,
   RemediationReport,
   ResultSimulation,
-  CveDetails,
-  AffectedPackage,
-  InventoryPackage,
-  VulnerablePackage,
   PatchResult,
-  MaintainerVexEvidence,
-  MaintainerVexIgnored,
+  EscalationCounts,
+  Disposition,
+  DispositionSignals,
+  DispositionCounts,
+  SlaBreach,
+  SlaBreachEntry,
+  SlaBreachSummary,
+  SbomEntry,
+  SbomStatus,
+  SimulationMutation,
+  SimulationMutationTarget,
+  SimulationRebuttalCode,
+  SimulationRebuttalFinding,
+  SimulationSummary,
+} from "../features/remediate/types.js";
+export type {
+  CveSeverity,
   PatchStrategy,
   PatchStrategyCounts,
   DependencyScope,
   DependencyScopeCounts,
+  PatchMode,
+  UnresolvedReason,
+  UnresolvedReasonCounts,
+} from "../shared/types.js";
+export type {
+  DispositionPolicy,
+  EscalationAction,
+  EscalationGraph,
+  ExploitSignalOverridePolicy,
+  PatchConfidenceThresholds,
+  PatchRiskLevel,
+  RemediationConstraints,
+  SlaPolicy,
+  VexJustification,
+  VexSuppression,
+} from "../infra/policy/types.js";
+export type {
+  CveDetails,
+  AffectedPackage,
+  InventoryPackage,
+  VulnerablePackage,
+  EvaluatePackageOptions,
+  PackageEvaluationReport,
+  VulnerabilityEvaluationEntry,
+} from "../features/intelligence/types.js";
+export type {
+  MaintainerVexEvidence,
+  MaintainerVexIgnored,
+} from "../features/maintainer-vex/types.js";
+export type {
   PatchArtifact,
   PatchArtifactInspection,
   PatchArtifactQueryOptions,
@@ -33,53 +72,34 @@ export type {
   PatchReconcileOptions,
   PatchReconcileResult,
   PatchReconcileReport,
-  PatchMode,
-  PatchRiskLevel,
-  PatchConfidenceThresholds,
-  UnresolvedReason,
-  UnresolvedReasonCounts,
-  EscalationAction,
-  EscalationGraph,
-  EscalationCounts,
-  Disposition,
-  DispositionPolicy,
-  DispositionSignals,
-  DispositionCounts,
-  PatchValidationPhase,
-  PatchValidationPhaseName,
+} from "../features/patch/types.js";
+export type { PatchValidationPhase, PatchValidationPhaseName } from "../features/verify/types.js";
+export type {
   PortfolioReport,
   PortfolioTarget,
   PortfolioTargetResult,
+} from "../features/remediate/portfolio/types.js";
+export type {
   OutdatedPackage,
   UpdateOutdatedOptions,
   UpdateOutdatedReport,
-  ExploitSignalOverridePolicy,
-  VexJustification,
-  VexSuppression,
-  SlaPolicy,
-  SlaBreach,
-  SlaBreachEntry,
-  SlaBreachSummary,
+} from "../features/freshness/update-outdated/types.js";
+export type {
+  CheckReachabilityOptions,
   ReachabilityAssessment,
   ReachabilityEvidence,
-  SbomEntry,
-  SbomStatus,
-  SimulationMutation,
-  SimulationMutationTarget,
-  SimulationRebuttalCode,
-  SimulationRebuttalFinding,
-  SimulationSummary,
-  CheckReachabilityOptions,
-  EvaluatePackageOptions,
-  PackageEvaluationReport,
-  VulnerabilityEvaluationEntry,
+  ReachabilityEvidenceKind,
+  RuntimeReachability,
+  RuntimeReachabilityVerdict,
+} from "../features/reachability/types.js";
+export type {
   DeltaDependencyChange,
   DeltaFinding,
   DeltaScanOptions,
   DeltaScanReport,
-} from "../platform/types.js";
-export type { ScanInputFormat } from "../scanner/index.js";
-export type { ScanOptions, ScanReport, CiSummary } from "./contracts.js";
+} from "../features/scan/types.js";
+export type { ScanInputFormat } from "../features/scan/index.js";
+export type { ScanOptions, ScanReport, CiSummary } from "../features/remediate/contracts.js";
 
 export {
   PACKAGE_MANAGER_VALUES,
@@ -90,7 +110,7 @@ export {
   createScanOptionSchemaProperties,
   createScanReportSchemaProperties,
   createUpdateOutdatedOptionSchemaProperties,
-} from "./options-schema.js";
+} from "../features/remediate/options-schema.js";
 
 export {
   toCiSummary,
@@ -99,31 +119,31 @@ export {
   buildSlaBreachSummary,
   buildStrategyCounts,
   buildDependencyScopeCounts,
-} from "./reporting.js";
-export { toSarifOutput, type SarifOutput } from "./sarif.js";
+} from "../features/remediate/reporting.js";
+export { toSarifOutput, type SarifOutput } from "../features/remediate/sarif.js";
 export {
   toCycloneDxVex,
   type CycloneDxVexDocument,
   type CycloneDxVexVulnerability,
   type CycloneDxVexVulnerabilityAnalysis,
   type ToCycloneDxVexOptions,
-} from "./vex/index.js";
+} from "../features/vex/index.js";
 export {
   inspectPatchArtifact,
   listPatchArtifacts,
   validatePatchArtifact,
   reconcilePatchArtifacts,
-} from "./patches/index.js";
+} from "../features/patch/artifacts/index.js";
 export type {
   PatchGenerator,
   PatchGeneratorUsage,
   PatchProposal,
   PatchRequest,
-} from "../platform/patch-generator.js";
-export { createLlmPatchGenerator } from "../remediation/patch/llm-generator.js";
-export { resolveLanguageModel } from "../remediation/patch/model.js";
-export { remediatePortfolio } from "./portfolio/index.js";
-export { remediate, planRemediation } from "./remediate/index.js";
+} from "../features/patch/patch-generator.js";
+export { createLlmPatchGenerator } from "../features/patch/llm-generator.js";
+export { resolveLanguageModel } from "../features/patch/model.js";
+export { remediatePortfolio } from "../features/remediate/portfolio/index.js";
+export { remediate, planRemediation } from "../features/remediate/index.js";
 export {
   applyPlan,
   getRun,
@@ -151,7 +171,7 @@ export {
   type CheckName,
   type CheckResult,
   type VerificationResult,
-} from "./runs/index.js";
+} from "../features/runs/index.js";
 export {
   abandonAttempt,
   finalizeAttempt,
@@ -163,19 +183,14 @@ export {
   type ProposePatchOptions,
   type StartAttemptOptions,
   type VerifyAttemptOptions,
-} from "./runs/attempts.js";
-export { remediateFromScan } from "./remediate-from-scan/index.js";
-export { updateOutdated } from "./update-outdated/index.js";
-export { checkReachability } from "./reachability/index.js";
-export { traceRun } from "./trace/index.js";
-export type { TraceRunOptions, TraceRunResult } from "./trace/index.js";
-export type { TracePackage, TraceReport } from "../trace/types.js";
-export type {
-  ReachabilityEvidenceKind,
-  RuntimeReachability,
-  RuntimeReachabilityVerdict,
-} from "../platform/types.js";
-export { evaluatePackage } from "./evaluate/index.js";
+} from "../features/runs/attempts.js";
+export { remediateFromScan } from "../features/remediate/scan/index.js";
+export { updateOutdated } from "../features/freshness/update-outdated/index.js";
+export { checkReachability } from "../features/reachability/index.js";
+export { traceRun } from "../features/trace/index.js";
+export type { TraceRunOptions, TraceRunResult } from "../features/trace/index.js";
+export type { TracePackage, TraceReport } from "../features/trace/types.js";
+export { evaluatePackage } from "../features/intelligence/evaluate/index.js";
 export {
   assessUpgrade,
   findVulnerableSymbols,
@@ -191,10 +206,10 @@ export {
   type ImpactFinding,
   type VulnerableSymbolCandidate,
   type VulnerableSymbolsResult,
-} from "./assess/index.js";
-export { scanDelta } from "./delta-scan/index.js";
-export { init, AGENT_HOSTS } from "./init/index.js";
-export { installHooks, HOOK_MANAGERS, HOOK_NAMES } from "./hooks/index.js";
+} from "../features/impact/index.js";
+export { scanDelta } from "../features/scan/delta/index.js";
+export { init, AGENT_HOSTS } from "../features/init/index.js";
+export { installHooks, HOOK_MANAGERS, HOOK_NAMES } from "../features/hooks/index.js";
 export type {
   HookChangeSummary,
   HookManager,
@@ -203,7 +218,7 @@ export type {
   HooksResult,
   HookState,
   HookStatus,
-} from "./hooks/index.js";
+} from "../features/hooks/index.js";
 export {
   guardPackage,
   guardPackages,
@@ -211,7 +226,7 @@ export {
   type GuardOptions,
   type GuardReport,
   type GuardVerdict,
-} from "./guard/index.js";
+} from "../features/guard/index.js";
 export {
   copilotHookOutput,
   cursorHookOutput,
@@ -222,9 +237,13 @@ export {
   runHostHook,
   HOOK_HOSTS,
   type HookHost,
-} from "./guard/hook.js";
-export { guardGitDiff, type GuardDiffOptions, type GuardDiffResult } from "./guard/diff.js";
-export type { AgentHost, InitOptions, InitResult, ProjectFacts } from "./init/index.js";
+} from "../features/guard/hook.js";
+export {
+  guardGitDiff,
+  type GuardDiffOptions,
+  type GuardDiffResult,
+} from "../features/guard/diff.js";
+export type { AgentHost, InitOptions, InitResult, ProjectFacts } from "../features/init/index.js";
 export {
   submitRemediateJob,
   submitScanJob,
@@ -233,7 +252,7 @@ export {
   type JobHandle,
   type AsyncRemediationJob,
   type TypedAsyncRemediationJob,
-} from "./jobs/index.js";
+} from "../features/jobs/index.js";
 export {
   applyRecipe,
   captureRecipe,
@@ -247,7 +266,7 @@ export {
   type ListRecipesOptions,
   type RecipeListing,
   type RecipeSummary,
-} from "./recipes/index.js";
+} from "../features/recipes/index.js";
 export {
   bisectLockfile,
   type BisectCommandRecord,
@@ -259,7 +278,7 @@ export {
   type BisectStatus,
   type BisectStep,
   type BisectStepKind,
-} from "./bisect/index.js";
+} from "../features/bisect/index.js";
 export {
   getAutonomy,
   AutonomyRefusedError,
@@ -273,7 +292,7 @@ export {
   type TrackEvent,
   type Transition as AutonomyTransition,
   type WindowStats as AutonomyWindowStats,
-} from "./autonomy/index.js";
+} from "../features/autonomy/index.js";
 export {
   analyzeDependencies,
   removeUnusedDependencies,
@@ -293,7 +312,7 @@ export {
   type SurfaceComponent,
   type UnusedClassification,
   type UnusedDependency,
-} from "./diet/index.js";
+} from "../features/diet/index.js";
 export {
   incident,
   incidentExitCode,
@@ -318,7 +337,7 @@ export {
   type RollbackProposal,
   type SecretsChecklist,
   type VersionWindow,
-} from "./incident/index.js";
+} from "../features/incident/index.js";
 export {
   discoverRepos,
   premortem,
@@ -329,7 +348,7 @@ export {
   type PremortemRepo,
   type PremortemTarget,
   type PremortemUsage,
-} from "./premortem/index.js";
+} from "../features/incident/premortem/index.js";
 export {
   compilePolicy,
   explainPolicy,
@@ -344,7 +363,7 @@ export {
   type PolicyCompileResult,
   type PolicyProposer,
   type PolicyRule,
-} from "./policy-nl/index.js";
+} from "../features/policy-nl/index.js";
 export {
   maintain,
   type MaintainAdvisory,
@@ -353,7 +372,7 @@ export {
   type MaintainPackageFinding,
   type MaintainPlanSummary,
   type MaintainResult,
-} from "./maintain/index.js";
+} from "../features/maintainer-vex/maintain/index.js";
 export {
   readMaintainerVex,
   type MaintainerVexReport,
@@ -361,7 +380,7 @@ export {
   type OwnVexSummary,
   type ReadMaintainerVexOptions,
   type ShippedVexSummary,
-} from "./maintainer-vex/index.js";
+} from "../features/maintainer-vex/api.js";
 export {
   defaultProveDeps,
   findEvidence,
@@ -376,7 +395,7 @@ export {
   type ReproductionAgent,
   type SignatureCheck,
   type TrialSummary,
-} from "./prove/index.js";
+} from "../features/prove/index.js";
 export {
   createLlmRadarClassifier,
   radar,
@@ -396,7 +415,7 @@ export {
   type RadarReport,
   type RadarSkipped,
   type RadarTarget,
-} from "./radar/index.js";
+} from "../features/radar/index.js";
 export {
   applyFreshness,
   freshnessReport,
@@ -417,7 +436,7 @@ export {
   type PlanFreshnessStepOptions,
   type PlannedFreshnessStep,
   type StepAssessment,
-} from "./freshness/index.js";
+} from "../features/freshness/index.js";
 export {
   acceptMemory,
   addMemory,
@@ -441,7 +460,7 @@ export {
   type MemoryQuery,
   type NewMemoryEntry,
   type ProposeMemoryOptions,
-} from "./memory/index.js";
+} from "../features/memory/api.js";
 export {
   buildEvidencePack,
   craDeadlines,
@@ -459,4 +478,4 @@ export {
   type EvidencePackOptions,
   type EvidencePackResult,
   type EvidencePackVerification,
-} from "./evidence-pack/index.js";
+} from "../features/evidence/pack/index.js";

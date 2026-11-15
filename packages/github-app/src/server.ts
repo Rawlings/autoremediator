@@ -3,6 +3,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { join } from "node:path";
 
 import { createInstallationTokenProvider } from "./auth.js";
+import { errorMessage } from "./errors.js";
 import { dispatchGitHubEvent } from "./events.js";
 import { createFileBackedJobQueue, createInMemoryJobQueue } from "./queue.js";
 import { createDefaultRemediationHandler } from "./remediation-handler.js";
@@ -712,7 +713,7 @@ export function createGitHubAppServer(options: ServerOptions): Server {
         target: statusTarget,
       });
     })().catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       void normalizedOptions.onStatusTrace?.(`Status publish failed (queued): ${message}`);
     });
   };
@@ -774,8 +775,8 @@ export function createGitHubAppServer(options: ServerOptions): Server {
                 source: "github-app",
                 level: "warn",
                 context: "server.publishCompleted",
-                message: `Failed to publish completed status: ${err instanceof Error ? err.message : String(err)}`,
-                error: err instanceof Error ? err.message : String(err),
+                message: `Failed to publish completed status: ${errorMessage(err)}`,
+                error: errorMessage(err),
               });
             });
         }
@@ -798,8 +799,8 @@ export function createGitHubAppServer(options: ServerOptions): Server {
               source: "github-app",
               level: "warn",
               context: "server.publishCompleted",
-              message: `Failed to publish completed status: ${err instanceof Error ? err.message : String(err)}`,
-              error: err instanceof Error ? err.message : String(err),
+              message: `Failed to publish completed status: ${errorMessage(err)}`,
+              error: errorMessage(err),
             });
           });
       }
@@ -844,8 +845,8 @@ export function createGitHubAppServer(options: ServerOptions): Server {
                 source: "github-app",
                 level: "error",
                 context: "server.onJobFailed.publishCompleted",
-                message: `Failed to publish terminal failed status: ${err instanceof Error ? err.message : String(err)}`,
-                error: err instanceof Error ? err.message : String(err),
+                message: `Failed to publish terminal failed status: ${errorMessage(err)}`,
+                error: errorMessage(err),
               });
             }
           })();

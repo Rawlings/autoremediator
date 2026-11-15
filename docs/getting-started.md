@@ -1,8 +1,9 @@
 # Getting started
 
-Autoremediator fixes known vulnerabilities in the npm dependencies of a Node.js project. You give
-it an advisory id or scanner output; it changes the project, verifies the result, and reports what
-it did and what it could not fix.
+Autoremediator does agentic remediation for the npm dependencies of a Node.js project. You give it
+an advisory id or scanner output; it plans the smallest safe fix, applies it, repairs the code an
+upgrade breaks (when you configure a model), verifies the result, and reports what it did and what
+it could not fix.
 
 ## Install
 
@@ -22,8 +23,8 @@ Pass a CVE or GHSA id. `--dry-run` plans the change and writes nothing.
 autoremediator CVE-2021-23337 --dry-run
 ```
 
-The report lists each affected package, the strategy that would fix it, and any package that cannot
-be fixed together with the reason.
+The report lists each affected package on one line (`✔` fixed, `○` would fix in a dry run, `✘` not
+fixed, with the reason), followed by counters and the path of the evidence file.
 
 ## Apply it
 

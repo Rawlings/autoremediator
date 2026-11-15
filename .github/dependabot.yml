@@ -1,0 +1,21 @@
+version: 2
+updates:
+  # Keeps the commit-pinned actions current; a pin that never moves is a pin that goes stale.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    # A release has to be a week old before it is proposed, which is how most hijacked
+    # releases get noticed and pulled.
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5

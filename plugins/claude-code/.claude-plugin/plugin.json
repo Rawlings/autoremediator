@@ -1,6 +1,6 @@
 {
   "name": "autoremediator",
-  "description": "Fix vulnerable npm dependencies safely: plan, apply with verification, repair upgrades that break the project, roll back.",
+  "description": "Agentic remediation for vulnerable npm dependencies: plan, apply with verification, repair upgrades that break the project, roll back.",
   "author": {
     "name": "Rawlings"
   },

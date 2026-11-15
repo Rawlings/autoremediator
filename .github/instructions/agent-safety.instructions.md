@@ -1,6 +1,6 @@
 ---
 description: Safety guardrails for remediation decisions, mutation behavior, validation, and failure handling.
-applyTo: packages/core/src/{remediation,platform}/**/*.ts
+applyTo: packages/core/src/{features,infra,shared}/**/*.ts
 ---
 
 # Agent Safety Instructions

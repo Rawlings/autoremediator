@@ -6,6 +6,11 @@ allowBuilds:
   "@vscode/vsce-sign": false
   esbuild: true
 
+# @vscode/vsce pins minimatch 10.2.6, which has a denial-of-service in glob pre-processing
+# (GHSA for minimatch < 11.0.1). It is a packaging tool only; the override moves it to the fix.
+overrides:
+  minimatch: ^11.0.1
+
 catalog:
   "@types/node": ^26.6.6
   "@types/semver": ^7.8.0

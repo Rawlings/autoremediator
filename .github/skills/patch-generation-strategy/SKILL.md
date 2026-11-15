@@ -18,8 +18,8 @@ user-invocable: true
 
 ## When to Use
 
-- Updating `packages/core/src/remediation/tools/generate-patch.ts` prompt/response handling.
-- Changing diff generation logic in `packages/core/src/remediation/strategies/patch-utils.ts`.
+- Updating `packages/core/src/features/patch/generate.ts` prompt/response handling.
+- Changing diff generation logic in `packages/core/src/features/patch/patch-utils.ts`.
 - Adjusting confidence thresholds.
 
 ## Inputs

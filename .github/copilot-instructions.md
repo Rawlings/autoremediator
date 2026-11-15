@@ -5,9 +5,9 @@ This repository uses a skills-first governance model for agentic behavior.
 ## Core Rules
 
 - Prefer deterministic workflows over ad hoc prompt decisions.
-- Use project skills in .github/skills for scoped task execution.
+- Use project skills in .github/skills for scoped task execution (mirrored to .claude/skills for Claude Code). The wanted state for how code is written is in `AGENTS.md` and the `code-structure`, `code-style` and `boundaries-and-errors` skills.
 - Follow global guardrails in .github/instructions before editing runtime logic.
-- Respect policy defaults from packages/core/src/platform/policy.ts and never bypass them in generated changes.
+- Respect policy defaults from packages/core/src/infra/policy/policy.ts and never bypass them in generated changes.
 - Preserve CLI/API compatibility when updating remediation behavior.
 
 ## Agent Autopilot Contract
@@ -62,7 +62,7 @@ Every planner handoff packet must include:
 
 For any user-visible behavior or contract change, planner and developer phases must both verify touchpoints across all relevant delivery surfaces before completion:
 
-- Runtime + shared contracts (`packages/core/src/platform`, `packages/core/src/api/contracts.ts`, option schema)
+- Runtime + shared contracts (`packages/core/src/shared`, `packages/core/src/features/remediate/contracts.ts`, option schema)
 - SDK exports and public types
 - CLI options, validation, and JSON output parity
 - MCP tool schemas and dispatch wiring
@@ -105,9 +105,10 @@ Use these when **building or extending the tool** — adding files, changing pub
 
 | Skill                      | When to reach for it                                                               |
 | -------------------------- | ---------------------------------------------------------------------------------- |
-| `architecture-conventions` | File placement, module layout, import graph rules                                  |
-| `api-surface`              | SDK functions, exported types, OpenAPI/HTTP routes                                 |
-| `public-api-governance`    | Canonical naming, schema consistency, and scalable public API evolution            |
+| `code-structure`           | Feature-folder layout, file placement, dependency direction, size limits, imports  |
+| `code-style`               | How a file reads, function style, naming verbs, shared idioms                      |
+| `boundaries-and-errors`    | Parsing untrusted data, typed errors, expected failures, file I/O                  |
+| `public-api-governance`    | Canonical naming, SDK/CLI/MCP/HTTP parity, exports, compatibility                  |
 | `mcp-tool-registration`    | MCP tool schemas, names, result shapes                                             |
 | `evidence-ci-reporting`    | Evidence log fields, CI summary schema, exit codes                                 |
 | `changeset-writing`        | Semver bump choice and public-impact-first changelog/changeset writing             |
@@ -119,7 +120,7 @@ Use these when **building or extending the tool** — adding files, changing pub
 
 For feature requests, default to this flow unless explicitly told otherwise:
 
-1. Planner phase: run preflight with `architecture-conventions` and `documentation-governance.instructions.md` (consolidation-first decision), then produce task packet.
+1. Planner phase: run preflight with `code-structure` and `documentation-governance.instructions.md` (consolidation-first decision), then produce task packet.
 2. Planner phase: include explicit architectural thinking in the packet so module/documentation boundaries are decided before execution.
 3. Developer phase: apply `feature-implementation` and `test-governance` while staying within the approved packet.
 4. Planner phase: review the completion report against the original architecture intent, then run `feature-completeness-gate.instructions.md` and governance validation before completion.
@@ -131,4 +132,4 @@ Use `.github/instructions/orchestration.instructions.md` for runtime sequencing 
 
 ## Evidence Requirement
 
-Any change affecting agent flow, patching strategy, or safety checks must preserve evidence output in packages/core/src/platform/evidence.ts.
+Any change affecting agent flow, patching strategy, or safety checks must preserve evidence output in packages/core/src/features/evidence/log.ts.

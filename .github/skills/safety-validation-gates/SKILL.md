@@ -18,7 +18,7 @@ user-invocable: true
 
 ## When to Use
 
-- Updating test execution behavior in `packages/core/src/remediation/tools/apply-version-bump.ts`.
+- Updating test execution behavior in `packages/core/src/features/upgrade/apply-version-bump.ts`.
 - Changing patch or bump validation gates.
 - Modifying rollback behavior.
 

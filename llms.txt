@@ -1,6 +1,6 @@
 # autoremediator
 
-> Fixes vulnerable npm dependencies from a CVE/GHSA id or scanner output: version bump, package-manager override, or an optional model-generated patch. Verifies every change, rolls back failures, and reports what it could not fix. Runs as a CLI, SDK, GitHub Action, GitHub App, MCP server or HTTP server. Requires Node.js 26+.
+> Agentic remediation for Node.js dependencies. Fixes vulnerable npm dependencies from a CVE/GHSA id or scanner output: version bump, package-manager override, or an optional model-generated patch. Verifies every change, rolls back failures, and reports what it could not fix. Runs as a CLI, SDK, GitHub Action, GitHub App, MCP server or HTTP server. Requires Node.js 26+.
 
 ## Behavior
 
