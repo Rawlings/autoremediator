@@ -1,3 +1,5 @@
+import semver from "semver";
+
 import type { RemediationConstraints, RemediationReport } from "../platform/types.js";
 import type { RepoFingerprint } from "./fingerprint.js";
 import { canonicalJson, sha256 } from "./hash.js";
@@ -25,6 +27,8 @@ export interface PlanItem {
   toVersion: string;
   strategy: "version-bump" | "override";
   dependencyScope?: "direct" | "transitive";
+  /** The change goes back to an older version (an incident rollback), pinned exactly. Review it as such. */
+  rollback?: true;
   /** What the pipeline's disposition policy said when previewing; shown to whoever reviews the plan. */
   disposition?: string;
   dispositionReason?: string;
@@ -52,6 +56,9 @@ export interface RemediationPlan {
   items: PlanItem[];
   skipped: PlanSkip[];
 }
+
+const isRollback = (from: string, to: string): boolean =>
+  semver.valid(from) !== null && semver.valid(to) !== null && semver.lt(to, from);
 
 const itemIdOf = (item: Omit<PlanItem, "itemId">): string =>
   `item_${sha256(canonicalJson([item.cveId, item.packageName, item.fromVersion, item.toVersion, item.strategy])).slice(0, 12)}`;
@@ -87,6 +94,7 @@ export function buildPlan(input: {
         toVersion: result.toVersion!,
         strategy: result.strategy as "version-bump" | "override",
         ...(result.dependencyScope ? { dependencyScope: result.dependencyScope } : {}),
+        ...(isRollback(result.fromVersion, result.toVersion!) ? { rollback: true as const } : {}),
         ...(result.disposition ? { disposition: result.disposition } : {}),
         ...(result.dispositionReason ? { dispositionReason: result.dispositionReason } : {}),
       };

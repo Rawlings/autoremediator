@@ -76,6 +76,24 @@ describe("applyVersionBumpTool authentic on-disk verification", () => {
     expect(updatedPkg.dependencies.lodash).toBe("^4.17.21");
   });
 
+  it("pins a rollback exactly, so a caret range cannot keep the version being rolled back from", async () => {
+    const pkgPath = join(tempDir, "package.json");
+    writeFileSync(pkgPath, JSON.stringify({ name: "demo", dependencies: { lodash: "^4.17.21" } }, null, 2));
+
+    const result = await (applyVersionBumpTool as any).execute({
+      cwd: tempDir,
+      packageManager: "npm",
+      packageName: "lodash",
+      fromVersion: "4.17.21",
+      toVersion: "4.17.20",
+      dryRun: false,
+      runTests: false,
+    });
+
+    expect(result.applied).toBe(true);
+    expect(JSON.parse(readFileSync(pkgPath, "utf8")).dependencies.lodash).toBe("4.17.20");
+  });
+
   it("reverts package.json on disk when post-bump typecheck fails", async () => {
     const pkgPath = join(tempDir, "package.json");
     const initialContent = JSON.stringify(

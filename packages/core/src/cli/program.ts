@@ -39,6 +39,7 @@ import {
 import { addRecipesCommand } from "./recipes.js";
 import { runBisect, type BisectCliOptions } from "./bisect.js";
 import { runTraceCommand, type TraceRunCommandOptions } from "./trace.js";
+import { registerIncidentCommands } from "./incident-commands.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
 import { validateOutputFormat, validateSharedCommandOptions } from "./validators.js";
@@ -346,6 +347,8 @@ export function createProgram(): Command {
       }
       await runGuardHook(opts.host as HookHost);
     });
+
+  registerIncidentCommands(program);
 
   program
     .command("init")

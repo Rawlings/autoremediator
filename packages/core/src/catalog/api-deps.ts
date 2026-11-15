@@ -15,12 +15,14 @@ import {
   guardPackage,
   init,
   installHooks,
+  incident,
   inspectPatchArtifact,
   listPatchArtifacts,
   listRecipes,
   listRuns,
   planRemediation,
   pollJob,
+  premortem,
   proposePatch,
   reconcilePatchArtifacts,
   remediate,
@@ -82,6 +84,8 @@ export interface ApiDeps {
   removeUnusedDependenciesFn: typeof removeUnusedDependencies;
   assessUpgradeFn: typeof assessUpgrade;
   findVulnerableSymbolsFn: typeof findVulnerableSymbols;
+  incidentFn: typeof incident;
+  premortemFn: typeof premortem;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -125,4 +129,6 @@ export const defaultApiDeps: ApiDeps = {
   removeUnusedDependenciesFn: removeUnusedDependencies,
   assessUpgradeFn: assessUpgrade,
   findVulnerableSymbolsFn: findVulnerableSymbols,
+  incidentFn: incident,
+  premortemFn: premortem,
 };

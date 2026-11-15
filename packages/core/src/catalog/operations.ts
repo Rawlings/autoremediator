@@ -34,6 +34,7 @@ import {
 import { HOOK_MANAGERS, HOOK_NAMES } from "../api/hooks/types.js";
 import { AGENT_HOSTS } from "../api/init/types.js";
 import { PACKAGE_VERSION } from "../version.js";
+import { INCIDENT_OPERATIONS } from "./incident-operations.js";
 import { RESPONSES } from "./responses.js";
 import { defineOperation, type Operation, type OperationContext } from "./define-operation.js";
 
@@ -765,6 +766,7 @@ export const OPERATIONS: readonly Operation[] = [
     http: { method: "POST", path: "/packages/vulnerable-symbols", positional: ["packageName", "from", "to"] },
     handler: (input, context) => context.api.findVulnerableSymbolsFn(input),
   }),
+  ...INCIDENT_OPERATIONS,
 ];
 
 export function getOperation(name: string): Operation | undefined {
