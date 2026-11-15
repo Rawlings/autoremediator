@@ -43,6 +43,7 @@ describe("freshnessReport", () => {
       notInstalled: 1,
       unreadable: 0,
       exceeding: 1,
+      unknownAge: 0,
     });
     expect(report.packages.map((entry) => `${entry.name}:${entry.status}`)).toEqual([
       "old:behind",
@@ -98,6 +99,51 @@ describe("freshnessReport", () => {
     expect(report.unplanned).toEqual([
       { packageName: "old", reason: expect.stringMatching(/registry could not be read for old: registry exploded/) },
     ]);
+  });
+
+  describe("a package whose age is unknown under maxAgeDays", () => {
+    const aged = {
+      known: {
+        installed: "1.0.0",
+        latest: "1.1.0",
+        versions: ["1.0.0", "1.1.0"],
+        published: { "1.0.0": "2025-12-01T00:00:00Z" },
+      },
+      unknown: { installed: "1.0.0", latest: "1.1.0", versions: ["1.0.0", "1.1.0"] },
+    };
+    const AGE_POLICY = "freshness:\n  maxAgeDays: 300\n";
+
+    it("is reported as unknown-age and left unplanned, not passed as within policy", async () => {
+      const cwd = project(AGE_POLICY, {});
+      const report = await freshnessReport({ cwd }, fakeDeps(aged));
+      const unknown = report.packages.find((entry) => entry.name === "unknown")!;
+      expect(unknown.unknownAge).toMatch(/no publish time for unknown 1\.0\.0/);
+      expect(unknown.exceeds).toEqual([]);
+      expect(report.packages.find((entry) => entry.name === "known")!.unknownAge).toBeUndefined();
+      expect(report.counts.unknownAge).toBe(1);
+      expect(report.climbs.map((climb) => climb.packageName)).toEqual([]);
+      expect(report.unplanned).toEqual([
+        { packageName: "unknown", reason: expect.stringMatching(/age of unknown 1\.0\.0 is unknown.*maxAgeDays/) },
+      ]);
+    });
+
+    it("also covers a registry that could not be read", async () => {
+      const cwd = project(AGE_POLICY, {});
+      const report = await freshnessReport({ cwd }, fakeDeps(aged, { timelineFails: ["unknown"] }));
+      expect(report.packages.find((entry) => entry.name === "unknown")!.unknownAge).toMatch(
+        /registry could not be read.*registry exploded/,
+      );
+      expect(report.counts.unknownAge).toBe(1);
+      expect(report.unplanned.map((entry) => entry.packageName)).toEqual(["unknown"]);
+    });
+
+    it("is not flagged without a maxAgeDays limit, or when the package is not behind", async () => {
+      const without = project("freshness:\n  maxMajorsBehind: 5\n", {});
+      expect((await freshnessReport({ cwd: without }, fakeDeps(aged))).counts.unknownAge).toBe(0);
+      const cwd = project(AGE_POLICY, {});
+      const current = { installed: "1.0.0", latest: "1.0.0", versions: ["1.0.0"], current: true };
+      expect((await freshnessReport({ cwd }, fakeDeps({ current }))).counts.unknownAge).toBe(0);
+    });
   });
 
   it("does not assess unless asked, and assesses once per package when asked", async () => {
@@ -209,6 +255,38 @@ describe("holds", () => {
     const risky = report.climbs.find((entry) => entry.packageName === "risky")!;
     expect(risky.held?.reason).toBe("major-bump-not-allowed");
     expect(risky.held?.message).toMatch(/allowMajorBumps is off/);
+  });
+
+  it("holds a step that crosses a 0.x minor while allowMajorBumps is off", async () => {
+    const cwd = project("freshness:\n  maxMinorsBehind: 0\n", {});
+    const report = await freshnessReport(
+      { cwd },
+      fakeDeps({ zero: { installed: "0.2.0", latest: "0.9.0", versions: ["0.2.0", "0.9.0"] } }),
+    );
+    expect(report.climbs[0]!.held?.reason).toBe("major-bump-not-allowed");
+    const allowed = project("allowMajorBumps: true\nfreshness:\n  maxMinorsBehind: 0\n", {});
+    const free = await freshnessReport(
+      { cwd: allowed },
+      fakeDeps({ zero: { installed: "0.2.0", latest: "0.9.0", versions: ["0.2.0", "0.9.0"] } }),
+    );
+    expect(free.climbs[0]!.held).toBeUndefined();
+  });
+
+  it("holds a step whose only newer release is deprecated", async () => {
+    const cwd = project("freshness:\n  maxMinorsBehind: 0\n", {});
+    const base = fakeDeps({ dep: { installed: "3.4.0", latest: "3.5.0", versions: ["3.4.0", "3.5.0"] } });
+    const deps = {
+      ...base,
+      async fetchTimeline(name: string, dir: string) {
+        const timeline = await base.fetchTimeline(name, dir);
+        return timeline && { ...timeline, deprecated: new Set(["3.5.0"]) };
+      },
+    };
+    const report = await freshnessReport({ cwd }, deps);
+    expect(report.climbs[0]!.held).toEqual({
+      reason: "only-newer-release-deprecated",
+      message: expect.stringMatching(/only newer release is deprecated/),
+    });
   });
 
   it("holds a package the policy denies", async () => {

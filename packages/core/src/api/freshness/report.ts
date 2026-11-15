@@ -4,7 +4,15 @@
  * changes nothing.
  */
 import type { NpmRegistryPackageInfo, PackageTimeline } from "../../intelligence/sources/registry.js";
+import semver from "semver";
+
 import { isIgnoredPackage, type FreshnessPolicy } from "../../platform/freshness-policy.js";
+import {
+  loadMemoryConstraints,
+  pinnedMessage,
+  rejectedMessage,
+  type MemoryConstraints,
+} from "../../platform/memory/consume.js";
 import { detectPackageManager } from "../../platform/package-manager/index.js";
 import { isPackageAllowed, loadPolicy, type AutoremediatorPolicy } from "../../platform/policy.js";
 import { defaultFreshnessDeps, mapLimit, type DirectDependency, type FreshnessDeps } from "./deps.js";
@@ -13,6 +21,7 @@ import { climbSteps } from "./path.js";
 import type {
   FreshnessClimb,
   FreshnessCounts,
+  FreshnessDistance,
   FreshnessOptions,
   FreshnessPackage,
   FreshnessReport,
@@ -27,7 +36,8 @@ const rankOf = (climb: FreshnessClimb): number[] => {
   return [
     climb.held ? 1 : 0,
     climb.assessment ? BREAKABILITY_RANK[climb.assessment.breakability] : 0,
-    first ? LEVEL_RANK[first.level] : 0,
+    // A step across a breaking boundary (a major, or a 0.x minor) ranks as a major.
+    first ? (first.kind === "major" ? LEVEL_RANK.major : LEVEL_RANK[first.level]) : 0,
     climb.steps.length,
   ];
 };
@@ -63,10 +73,17 @@ export function holdFor(
       message: `${climb.packageName} is excluded by allowPackages/denyPackages in the policy.`,
     };
   }
-  if (first.level === "major" && !policy.allowMajorBumps) {
+  if (first.deprecated) {
+    return {
+      reason: "only-newer-release-deprecated",
+      message: `The only newer release is deprecated (${first.toVersion}), so ${climb.packageName} is left where it is.`,
+    };
+  }
+  if ((first.kind === "major" || first.level === "major") && !policy.allowMajorBumps) {
+    const zeroX = first.level !== "major";
     return {
       reason: "major-bump-not-allowed",
-      message: `${first.fromVersion} -> ${first.toVersion} crosses a major, and allowMajorBumps is off in the policy.`,
+      message: `${first.fromVersion} -> ${first.toVersion} crosses ${zeroX ? "a 0.x minor, which counts as a major," : "a major,"} and allowMajorBumps is off in the policy.`,
     };
   }
   if (climb.assessment?.breakability === "High" && !allowHigh) {
@@ -86,6 +103,8 @@ export interface Gathered {
   timelines: Map<string, PackageTimeline | undefined>;
   failures: Map<string, string>;
   notes: string[];
+  /** What remediation memory says: pinned packages and rejected upgrades. Absent with `ignoreMemory`. */
+  memory?: MemoryConstraints;
   now: number;
 }
 
@@ -94,8 +113,26 @@ interface DescribeContext {
   deps: FreshnessDeps;
   outdated: Map<string, NpmRegistryPackageInfo>;
   timelines: Map<string, PackageTimeline | undefined>;
+  failures: Map<string, string>;
   policy: FreshnessPolicy | undefined;
   now: number;
+}
+
+/** Why the installed version's age is not known, when it is not and `maxAgeDays` needs it. */
+function unknownAgeReason(
+  name: string,
+  version: string,
+  distance: FreshnessDistance,
+  context: DescribeContext,
+): string | undefined {
+  if (context.policy?.maxAgeDays === undefined || distance.ageDays !== undefined) return undefined;
+  const failure = context.failures.get(name);
+  if (failure) {
+    return `the registry could not be read for ${name} (${failure.split("\n")[0]}), so the publish time of ${name} ${version} is unknown`;
+  }
+  return context.timelines.get(name)
+    ? `the registry lists no publish time for ${name} ${version}`
+    : `${name} is not on the registry, so the publish time of ${name} ${version} is unknown`;
 }
 
 function describePackage(dependency: DirectDependency, context: DescribeContext): FreshnessPackage {
@@ -123,6 +160,9 @@ function describePackage(dependency: DirectDependency, context: DescribeContext)
   const where = { installed: info.currentVersion, latest: info.latestVersion };
   if (!distance) return { ...base, ...where, status: "unreadable", exceeds: [] };
   const behind = isBehind(info.currentVersion, info.latestVersion);
+  const unknownAge = behind
+    ? unknownAgeReason(dependency.name, info.currentVersion, distance, context)
+    : undefined;
   return {
     ...base,
     ...where,
@@ -130,6 +170,7 @@ function describePackage(dependency: DirectDependency, context: DescribeContext)
     ...distance,
     penalty: penaltyOf(distance),
     exceeds: exceedsPolicy(distance, behind, policy),
+    ...(unknownAge ? { unknownAge } : {}),
   };
 }
 
@@ -153,6 +194,9 @@ export async function gatherFreshness(
       }
     }
   }
+
+  // Pins and rejected upgrades a person or an earlier run recorded; a file that cannot be read safely stops the run.
+  const memory = options.ignoreMemory ? undefined : loadMemoryConstraints(cwd, new Date(now));
 
   const outdated = await deps.queryOutdated(cwd, { packageManager });
 
@@ -179,12 +223,23 @@ export async function gatherFreshness(
       deps,
       outdated,
       timelines,
+      failures,
       policy: policy.freshness,
       now,
     }),
   );
 
-  return { cwd, packageManager, policy, packages, timelines, failures, notes, now };
+  return {
+    cwd,
+    packageManager,
+    policy,
+    packages,
+    timelines,
+    failures,
+    notes,
+    ...(memory ? { memory } : {}),
+    now,
+  };
 }
 
 /** One climb per package past the policy, plus the ones for which none could be made. */
@@ -196,7 +251,21 @@ export function buildClimbs(gathered: Gathered): {
   const unplanned: FreshnessReport["unplanned"] = [];
   const policy = gathered.policy.freshness;
   for (const entry of gathered.packages) {
+    // An age limit that cannot be checked is not "within policy": list it, with why, and climb nothing.
+    if (entry.unknownAge && entry.exceeds.length === 0) {
+      unplanned.push({
+        packageName: entry.name,
+        reason: `the age of ${entry.name} ${entry.installed} is unknown, so maxAgeDays cannot be checked: ${entry.unknownAge}`,
+      });
+      continue;
+    }
     if (entry.status !== "behind" || entry.exceeds.length === 0 || !entry.installed || !entry.latest) {
+      continue;
+    }
+    // A person's pin comes first: the package is left alone, whatever else says.
+    const pinned = gathered.memory?.pinned.get(entry.name);
+    if (pinned) {
+      unplanned.push({ packageName: entry.name, reason: pinnedMessage(pinned) });
       continue;
     }
     const failure = gathered.failures.get(entry.name);
@@ -210,6 +279,7 @@ export function buildClimbs(gathered: Gathered): {
       });
       continue;
     }
+    const rejected = gathered.memory?.rejected.get(entry.name) ?? new Map();
     const steps = climbSteps({
       packageName: entry.name,
       field: entry.field,
@@ -219,12 +289,23 @@ export function buildClimbs(gathered: Gathered): {
       deprecated: timeline.deprecated,
       published: timeline.published,
       policy,
+      rejected: new Set(rejected.keys()),
       now: gathered.now,
     });
     if (steps.length === 0) {
+      // Every release in between was rejected earlier: say so, with the entries, rather than "none exists".
+      const inRange = [...rejected].filter(
+        ([version]) =>
+          semver.valid(version) !== null &&
+          semver.gt(version, entry.installed!) &&
+          semver.lte(version, entry.latest!),
+      );
       unplanned.push({
         packageName: entry.name,
-        reason: `no published version lies between ${entry.installed} and ${entry.latest}`,
+        reason:
+          inRange.length > 0
+            ? `every newer release of ${entry.name} was rejected earlier: ${inRange.map(([, rejection]) => rejectedMessage(rejection)).join("; ")}`
+            : `no published version lies between ${entry.installed} and ${entry.latest}`,
       });
       continue;
     }
@@ -276,6 +357,7 @@ function countsOf(packages: readonly FreshnessPackage[]): FreshnessCounts {
     notInstalled: count("not-installed"),
     unreadable: count("unreadable"),
     exceeding: packages.filter((entry) => entry.exceeds.length > 0).length,
+    unknownAge: packages.filter((entry) => entry.unknownAge !== undefined).length,
   };
 }
 

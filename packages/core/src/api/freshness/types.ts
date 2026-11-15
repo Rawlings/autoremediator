@@ -40,6 +40,12 @@ export interface FreshnessPackage extends Partial<FreshnessDistance> {
   penalty?: number;
   /** The policy limits this package is past, in words. Empty when it is within them or there is no policy. */
   exceeds: string[];
+  /**
+   * Set when the policy has `maxAgeDays`, the package is behind, and the installed version's publish
+   * time is unknown (the registry could not be read or does not list the version): the age limit
+   * cannot be checked, so the package is neither within policy nor climbed. The value says why.
+   */
+  unknownAge?: string;
 }
 
 /** What `assessUpgrade` said about a step, or that it could not say. */
@@ -56,8 +62,13 @@ export interface FreshnessStep {
   fromVersion: string;
   toVersion: string;
   level: "patch" | "minor" | "major";
-  /** `catch-up` stays on the installed major; `major` crosses into the next one. */
+  /**
+   * `catch-up` stays inside the installed breaking boundary; `major` crosses into the next one. A
+   * boundary is a major, or, for a 0.x version, a 0.minor (0.x minors may break).
+   */
   kind: "catch-up" | "major";
+  /** The release this step lands on is deprecated, and no other candidate exists: the step is held. */
+  deprecated?: true;
   /** 1-based position in this package's climb, and how many steps the climb has. */
   index: number;
   of: number;
@@ -66,6 +77,7 @@ export interface FreshnessStep {
 export type HeldReason =
   | "high-breakability"
   | "major-bump-not-allowed"
+  | "only-newer-release-deprecated"
   | "package-not-allowed";
 
 export interface FreshnessClimb {
@@ -91,6 +103,8 @@ export interface FreshnessCounts {
   unreadable: number;
   /** Behind and past a policy limit. */
   exceeding: number;
+  /** Behind, with `maxAgeDays` set, and an unknown publish time: the age limit could not be checked. */
+  unknownAge: number;
 }
 
 export interface FreshnessReport {
@@ -107,7 +121,7 @@ export interface FreshnessReport {
   packages: FreshnessPackage[];
   /** One climb per package past the policy, in the order the steps would be taken. */
   climbs: FreshnessClimb[];
-  /** Packages past the policy for which no climb could be made, with why. */
+  /** Packages past the policy, or whose age could not be checked, for which no climb could be made, with why. */
   unplanned: Array<{ packageName: string; reason: string }>;
   notes: string[];
 }
@@ -124,6 +138,11 @@ export interface FreshnessOptions {
   assess?: boolean;
   /** Take steps `assessUpgrade` rates High. They are held otherwise. */
   allowHigh?: boolean;
+  /**
+   * Plan as if the repository's memory were empty: pinned packages and rejected upgrades in
+   * `.autoremediator/memory.md` are not consulted. SDK and CLI only, never over MCP or HTTP.
+   */
+  ignoreMemory?: boolean;
 }
 
 export interface PlanFreshnessStepOptions extends Omit<FreshnessOptions, "assess"> {

@@ -7,6 +7,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 import type { FreshnessReport } from "../api/index.js";
 import { FreshnessRegistry } from "../api/freshness/tests/registry.js";
+import { addMemory } from "../platform/memory/index.js";
 import { renderFreshnessReport } from "./freshness-commands.js";
 import { createProgram } from "./program.js";
 
@@ -90,6 +91,18 @@ describe("autoremediator freshness", () => {
     expect(process.exitCode).toBe(0);
   }, 120_000);
 
+  it("leaves a package pinned in memory alone, and --ignore-memory plans it anyway", async () => {
+    policy("freshness:\n  maxMajorsBehind: 0\n");
+    await addMemory(cwd, { kind: "pinned-package", package: "lib", reason: "stay on 1.x" });
+    await run("--cwd", cwd, "--policy", join(cwd, "policy.yml"));
+    expect(stdout).toContain('Not planned: lib: Memory pins "lib": stay on 1.x');
+    expect(stdout).not.toContain("Climb, safest first");
+
+    stdout = "";
+    await run("--cwd", cwd, "--policy", join(cwd, "policy.yml"), "--ignore-memory");
+    expect(stdout).toContain("lib: 1.0.0 -> 1.3.0 -> 2.0.0");
+  }, 60_000);
+
   it("explains that there is no limit to climb towards when the policy has no freshness key", async () => {
     await run("--cwd", cwd, "--apply");
     expect(stdout).toContain("no `freshness` key");
@@ -116,7 +129,7 @@ describe("renderFreshnessReport", () => {
     packageManager: "npm",
     policy: { maxMajorsBehind: 1, ignore: ["a"] },
     score: 90,
-    counts: { direct: 2, current: 1, behind: 1, ignored: 0, notInstalled: 0, unreadable: 0, exceeding: 0 },
+    counts: { direct: 2, current: 1, behind: 1, ignored: 0, notInstalled: 0, unreadable: 0, exceeding: 0, unknownAge: 0 },
     packages: [
       { name: "b", field: "dependencies", range: "^1.0.0", installed: "1.0.0", latest: "1.2.0", status: "behind", majorsBehind: 0, minorsBehind: 2, patchesBehind: 0, exceeds: [] },
     ],
@@ -124,6 +137,14 @@ describe("renderFreshnessReport", () => {
     unplanned: [{ packageName: "z", reason: "not on the registry" }],
     notes: ["a note"],
   };
+
+  it("shows a package whose age limit could not be checked", () => {
+    const text = renderFreshnessReport({
+      ...report,
+      packages: [{ ...report.packages[0]!, unknownAge: "the registry lists no publish time for b 1.0.0" }],
+    });
+    expect(text).toContain("AGE UNKNOWN: the registry lists no publish time for b 1.0.0");
+  });
 
   it("lists the limits, the distances, what could not be planned and the notes", () => {
     const text = renderFreshnessReport(report);

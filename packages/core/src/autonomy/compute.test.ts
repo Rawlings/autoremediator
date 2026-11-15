@@ -238,6 +238,59 @@ describe("earned level", () => {
     });
   });
 
+  it("applies the window to distinct runs, so runs with several items can still reach L4", () => {
+    // Ten verified runs of three items each: thirty events, but only ten runs.
+    const specs = Array.from({ length: 10 }, (_, run) =>
+      Array.from({ length: 3 }, () => ({
+        type: "applied-verified" as const,
+        run: run + 1,
+        tests: true,
+        typecheck: true,
+      })),
+    ).flat();
+    const events = record(specs);
+    const evaluation = evaluate(events, config({ window: 20 }), at(1));
+    expect(evaluation.stats).toMatchObject({ runs: 10, verifiedRuns: 10, outcomes: 30 });
+    expect(evaluation.earned).toBe("L4");
+  });
+
+  it("keeps only the last N runs, however many events each has, and drops older ones whole", () => {
+    // Run 1 failed (one event); runs 2-4 verified with two events each. A window of 3 runs ends at run 2.
+    const events = record([
+      { type: "apply-failed", run: 1 },
+      ...[2, 3, 4].flatMap((run) => [
+        { type: "applied-verified" as const, run, tests: true },
+        { type: "applied-verified" as const, run, tests: true },
+      ]),
+    ]);
+    expect(evaluate(events, config({ window: 3, minVerifiedRuns: 1 }), at(1)).stats).toMatchObject({
+      runs: 3,
+      outcomes: 6,
+      verifiedRuns: 3,
+      failedRuns: 0,
+    });
+    expect(evaluate(events, config({ window: 4, minVerifiedRuns: 1 }), at(1)).stats).toMatchObject({
+      runs: 4,
+      failedRuns: 1,
+    });
+  });
+
+  it("counts a run as verified when it has a verified change and no incident or failed apply", () => {
+    const events = record([
+      { type: "applied-verified", run: 1 },
+      { type: "applied-unverified", run: 1 },
+      { type: "applied-verified", run: 2 },
+      { type: "rollback", run: 2 },
+      { type: "applied-verified", run: 3 },
+      { type: "apply-failed", run: 3 },
+    ]);
+    expect(evaluate(events, config(), at(1)).stats).toMatchObject({
+      verifiedRuns: 1,
+      incidentRuns: 1,
+      failedRuns: 1,
+    });
+  });
+
   it("counts coverage per verified run, not per event", () => {
     const events = record([
       { type: "applied-verified", run: 1, tests: true, typecheck: true },

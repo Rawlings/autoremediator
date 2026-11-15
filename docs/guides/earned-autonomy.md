@@ -13,7 +13,7 @@ reports carry no autonomy field.
 autonomy:
   ceiling: L2 # required: the highest level this repository may ever act at
   minVerifiedRuns: 5 # verified runs needed for L3 (twice as many for L4). Default 5
-  window: 20 # how many of the latest outcomes count as recent. Default 20
+  window: 20 # how many of the latest runs count as recent. Default 20
   minSuccessRate: 0.9 # share of recent runs that must have been verified. Default 0.9
   cooldownDays: 7 # how long a rollback or verifier failure caps the level. Default 7
   requireTestCoverage: true # L3 and L4 need runs whose tests (and type check) passed. Default true
@@ -44,22 +44,25 @@ The record starts empty and the repository starts at `L2`: changes arrive as pul
 person reviews, so there is nothing yet to trust or distrust. Everything above `L2` has to be earned
 and everything below it is a consequence of something that went wrong.
 
-**Promotion** is computed from the last `window` outcomes:
+**Promotion** is computed from the last `window` **runs** (a run is one `runs apply` or one
+`finalizeAttempt`; a run with three items is one run, not three, so the window is the same number of
+runs however many changes each made; runs are ordered by their latest outcome):
 
 | To   | Needs, all of                                                                                                                              |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `L3` | no rollback or verifier failure in the window; at least `minVerifiedRuns` verified runs; a success rate of at least `minSuccessRate`; with `requireTestCoverage`, at least `minVerifiedRuns` of those runs had the project's tests pass |
 | `L4` | the same with twice `minVerifiedRuns` verified runs and tests-covered runs, and at least `minVerifiedRuns` runs whose type check passed       |
 
-A run counts as verified when every change in it was accepted by the [verifier](plan-and-apply.md#verify)
-and it was not later rolled back or failed `runs verify`. A change applied with `--no-verify` is
-recorded but counts for nothing. "Tests passed" means `runTests` was requested (or `runs verify` ran
+A run counts as verified when it has at least one change the [verifier](plan-and-apply.md#verify)
+accepted and no rollback, verifier failure, `runs verify` failure or failed apply anywhere in it; one
+incident or failed apply makes the whole run count as an incident or a failure, never as verified. A
+change applied with `--no-verify` is recorded but counts for nothing. "Tests passed" means `runTests` was requested (or `runs verify` ran
 the `tests` check and it passed); a skipped check is not coverage.
 
 **Demotion is immediate.** A rollback of a run that had changed the project, a change the verifier
 rejected, or a failing `runs verify` on an applied run caps the level at `L1` for `cooldownDays`; two
 different runs with such an incident inside the cooldown cap it at `L0`. The incident also stays in
-the window, so `L3` and `L4` stay out of reach until enough newer outcomes push it out. Several
+the window, so `L3` and `L4` stay out of reach until enough newer runs push it out. Several
 incidents on one run count once. After the cooldown the cap lifts and the level returns to what the
 window supports.
 
@@ -112,6 +115,14 @@ per outcome, in order, one per line so that a new event is one added line in a d
 }
 ```
 
+Each event also carries `prev`, the SHA-256 of the previous event's canonical JSON (all zeros for the
+first), and the file carries a top-level `head`, the hash of the last event. Editing an event, removing
+one, reordering them, or appending one by hand without the right hash breaks the chain: the record is
+then unreadable, **the level is `L0`** and changes are refused until a person restores the file (the
+message names the event where the chain broke). A record written before hashes existed is accepted once;
+the next append chains every event in it (so that commit changes every line), and from then on a
+record that has some hashes but not all is refused.
+
 Event types are `applied-verified`, `applied-unverified`, `apply-failed`, `verifier-failure`,
 `rollback` and `verify-passed`. Each cites the run id, whose own ledger under `.autoremediator/runs/`
 holds the detail. There is no command output and no secret in it; `detail` is one short line.
@@ -136,8 +147,12 @@ and in a pull request, like any other change; treat it as you would a change to 
 
 ### Limits
 
-- The record is trusted as committed. It is not signed and has no hash chain, so anyone who can commit
-  can edit it. The policy ceiling is the hard limit, and the policy file cannot be changed by a run.
+- The record is **not authenticated**. The hash chain turns accidents and casual edits (a date moved
+  into the past to end a cooldown, an event deleted, a made-up run added) into a refusal, but anyone with
+  write access who rebuilds the whole chain, or strips every hash from a record to look like a pre-hash
+  one, cannot be told from a genuine record. Code review of the committed file in version control is
+  the real protection, together with the policy ceiling, which is the hard limit and which a run cannot
+  change.
 - It only counts what went through the run operations. A direct `remediate` call applies changes (when
   the level allows) but adds nothing to the record; use `plan` then `runs apply` to build a record.
 - The record grows by about 300 bytes per outcome and is never pruned.

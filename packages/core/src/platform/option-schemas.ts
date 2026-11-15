@@ -157,7 +157,7 @@ export const OPTION_DESCRIPTIONS = {
   autonomyCeiling: "Highest autonomy level this repository may ever act at (L0 to L4)",
   autonomyMinVerifiedRuns:
     "Verified runs in the recent window needed for L3 (twice as many for L4). Default 5",
-  autonomyWindow: "How many of the most recent outcomes count as recent. Default 20",
+  autonomyWindow: "How many of the most recent runs count as recent (a run with several changes is one run). Default 20",
   autonomyMinSuccessRate:
     "Share of recent runs that must be verified successes (0..1) for L3 and L4. Default 0.9",
   autonomyCooldownDays:

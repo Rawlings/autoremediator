@@ -122,6 +122,7 @@ async function record(
       ...(options.packageManager ? { packageManager: options.packageManager } : {}),
       ...(options.runTests === undefined ? {} : { runTests: options.runTests }),
       ...(options.typecheck === undefined ? {} : { typecheck: options.typecheck }),
+      ...(options.ignoreMemory ? { ignoreMemory: true } : {}),
       source: options.source ?? "sdk",
     },
     cwd,

@@ -137,6 +137,119 @@ describe("damaged records are refused, never replaced", () => {
   });
 });
 
+describe("the hash chain", () => {
+  const readJson = (): { schemaVersion: number; head?: string; events: Array<Record<string, unknown>> } =>
+    JSON.parse(readFileSync(recordPathOf(dir), "utf8")) as ReturnType<typeof readJson>;
+  const writeJson = (value: unknown) => write(JSON.stringify(value));
+  const fixed = () => new Date("2026-03-04T05:06:07.000Z");
+  const chain = /hash chain is broken/;
+
+  it("links every event to the one before it and records the head", async () => {
+    await appendTrackEvents(dir, [event(1), event(2, { type: "rollback" })], { now: fixed });
+    await appendTrackEvents(dir, [event(3)], { now: fixed });
+    const json = readJson();
+    expect(json.events[0]!["prev"]).toMatch(/^0{64}$/);
+    expect(new Set(json.events.map((e) => e["prev"])).size).toBe(3);
+    expect(json.head).toMatch(/^[0-9a-f]{64}$/);
+    expect(readTrackRecord(dir).events).toHaveLength(3);
+  });
+
+  it("refuses an incident whose date was moved into the past (the cooldown cannot be dodged)", async () => {
+    await appendTrackEvents(dir, [event(1), event(2, { type: "rollback" })], { now: fixed });
+    await appendTrackEvents(dir, [event(3)], { now: fixed });
+    const json = readJson();
+    json.events[1]!["at"] = "2020-01-01T00:00:00.000Z";
+    writeJson(json);
+    expect(() => readTrackRecord(dir)).toThrow(TrackRecordError);
+    expect(() => readTrackRecord(dir)).toThrow(chain);
+  });
+
+  it("refuses an edit to the latest event, which no later event vouches for", async () => {
+    await appendTrackEvents(dir, [event(1), event(2, { type: "rollback" })], { now: fixed });
+    const json = readJson();
+    json.events[1]!["at"] = "2020-01-01T00:00:00.000Z";
+    writeJson(json);
+    expect(() => readTrackRecord(dir)).toThrow(chain);
+  });
+
+  it("refuses events reordered, even when the sequence numbers are renumbered", async () => {
+    await appendTrackEvents(dir, [event(1), event(2, { type: "rollback" }), event(3)], { now: fixed });
+    const json = readJson();
+    json.events = [json.events[1]!, json.events[0]!, json.events[2]!].map((e, index) => Object.assign(e, { seq: index + 1 }));
+    writeJson(json);
+    expect(() => readTrackRecord(dir)).toThrow(chain);
+  });
+
+  it("refuses fabricated events that carry no hash, or a made-up one, and leaves the file alone", async () => {
+    await appendTrackEvents(dir, [event(1)], { now: fixed });
+    const fake = {
+      seq: 2,
+      at: "2026-03-04T05:06:07.000Z",
+      type: "applied-verified",
+      runId: runId(99),
+      cveIds: [],
+      packages: [],
+      coverage: { tests: true, typecheck: true },
+      detail: "fabricated",
+    };
+    const json = readJson();
+    writeJson({ ...json, events: [...json.events, fake] });
+    expect(() => readTrackRecord(dir)).toThrow(/some events carry a hash and some do not/);
+
+    writeJson({ ...json, events: [...json.events, { ...fake, prev: "a".repeat(64) }] });
+    expect(() => readTrackRecord(dir)).toThrow(chain);
+    const text = readFileSync(recordPathOf(dir), "utf8");
+    await expect(appendTrackEvents(dir, [event(3)])).rejects.toThrow(chain);
+    expect(readFileSync(recordPathOf(dir), "utf8")).toBe(text);
+  });
+
+  it("explains how to recover in the message", async () => {
+    await appendTrackEvents(dir, [event(1), event(2)], { now: fixed });
+    const json = readJson();
+    json.events[0]!["detail"] = "edited";
+    writeJson(json);
+    expect(() => readTrackRecord(dir)).toThrow(/broken at event 2.*version control/s);
+  });
+
+  describe("a record written before hashes existed", () => {
+    const legacy = (count: number) => ({
+      schemaVersion: 1,
+      events: Array.from({ length: count }, (_, index) => ({
+        seq: index + 1,
+        at: "2026-01-01T00:00:00.000Z",
+        type: "applied-verified",
+        runId: runId(index + 1),
+        cveIds: ["CVE-2021-23337"],
+        packages: ["lodash"],
+        coverage: { tests: true, typecheck: false },
+        detail: "lodash: applied",
+      })),
+    });
+
+    it("is accepted as it is", () => {
+      writeJson(legacy(3));
+      expect(readTrackRecord(dir).events.map((e) => e.seq)).toEqual([1, 2, 3]);
+    });
+
+    it("is upgraded on the next append: every event is chained and nothing else changes", async () => {
+      writeJson(legacy(3));
+      await appendTrackEvents(dir, [event(4)], { now: fixed });
+
+      const record = readTrackRecord(dir);
+      expect(record.events.map((e) => e.seq)).toEqual([1, 2, 3, 4]);
+      expect(record.events.every((e) => typeof e.prev === "string")).toBe(true);
+      // The old events keep their content.
+      const upgraded = readJson().events.slice(0, 3).map(({ prev: _prev, ...rest }) => rest);
+      expect(upgraded).toEqual(legacy(3).events);
+      // And from then on the chain is enforced: stripping a hash is refused.
+      const json = readJson();
+      delete json.events[1]!["prev"];
+      writeJson(json);
+      expect(() => readTrackRecord(dir)).toThrow(/some events carry a hash and some do not/);
+    });
+  });
+});
+
 describe("concurrent appends", () => {
   it("loses no event and numbers none twice when many writers race", async () => {
     const writers = 40;

@@ -93,8 +93,14 @@ of a run.
 - Only `active`, unexpired entries count. `--ignore-memory` (SDK: `ignoreMemory`) plans as if memory
   were empty. It is not accepted over MCP or HTTP, so an agent cannot lift a person's constraint.
 
-A plan that was already made is not re-checked against memory when it is applied; plan again after
-changing memory. A memory file that cannot be read safely (a symbolic link, a directory, or over 1 MiB)
+**Freshness** reads memory too: `freshness` leaves a pinned package alone and never proposes a version a
+rejected upgrade names (see [dependency freshness](freshness.md#memory)).
+
+**Plans are re-checked at apply time for pins.** `applyPlan` (`runs apply`, and `freshness --apply`)
+refuses, before changing anything, a plan that has an item for a package pinned in memory since the plan
+was made, with a message naming the entry. Rejected upgrades are not re-checked at apply time (a plan
+already names the version it will land on); plan again after changing memory. A plan made with
+`--ignore-memory` is applied without consulting memory. A memory file that cannot be read safely (a symbolic link, a directory, or over 1 MiB)
 stops the run with an error rather than being skipped; fix it, or pass `--ignore-memory`.
 
 **The test command.** The test command is the package manager's own (`npm test`, `pnpm test`, ...).
