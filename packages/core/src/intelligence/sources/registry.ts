@@ -515,3 +515,45 @@ export async function queryOutdatedPackages(
 
   return result;
 }
+
+// ---------------------------------------------------------------------------
+// Release timeline (freshness)
+// ---------------------------------------------------------------------------
+
+export interface PackageTimeline {
+  /** Every published version, in the registry's order. */
+  versions: string[];
+  /** Versions the maintainers have marked deprecated. */
+  deprecated: Set<string>;
+  /** Publish time of each version (ISO date), where the registry gives one. */
+  published: Map<string, string>;
+}
+
+/**
+ * The published versions of a package with when each was published, from its packument's `time`.
+ * Returns undefined when the package is not on the registry. Throws on a registry error, so a
+ * caller can tell "does not exist" from "could not be read".
+ */
+export async function fetchPackageTimeline(
+  packageName: string,
+  registry: RegistryConfig = defaultRegistryConfig,
+): Promise<PackageTimeline | undefined> {
+  const url = packumentUrl(registry, packageName);
+  const res = await httpClient({ url, headers: registry.headersFor(url) });
+  if (res.status === 404) return undefined;
+  if (!res.ok) {
+    throw new Error(`npm registry error ${res.status} for "${packageName}": ${res.text}`);
+  }
+  const data = res.data as Partial<NpmPackument>;
+  const versions = Object.keys(data.versions ?? {});
+  const published = new Map<string, string>();
+  for (const version of versions) {
+    const at = data.time?.[version];
+    if (typeof at === "string" && !Number.isNaN(Date.parse(at))) published.set(version, at);
+  }
+  return {
+    versions,
+    deprecated: new Set(versions.filter((version) => Boolean(data.versions?.[version]?.deprecated))),
+    published,
+  };
+}

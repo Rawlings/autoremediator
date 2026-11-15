@@ -40,6 +40,8 @@ import {
   validatePatchArtifact,
   verifyAttempt,
   verifyRun,
+  freshnessReport,
+  planFreshnessStep,
 } from "../api/index.js";
 
 /** The SDK functions operations call. Injectable so tests and embedders can substitute them. */
@@ -86,6 +88,8 @@ export interface ApiDeps {
   findVulnerableSymbolsFn: typeof findVulnerableSymbols;
   incidentFn: typeof incident;
   premortemFn: typeof premortem;
+  freshnessReportFn: typeof freshnessReport;
+  planFreshnessStepFn: typeof planFreshnessStep;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -131,4 +135,6 @@ export const defaultApiDeps: ApiDeps = {
   findVulnerableSymbolsFn: findVulnerableSymbols,
   incidentFn: incident,
   premortemFn: premortem,
+  freshnessReportFn: freshnessReport,
+  planFreshnessStepFn: planFreshnessStep,
 };
