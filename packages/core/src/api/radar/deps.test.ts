@@ -243,7 +243,7 @@ describe("GitHub release notes", () => {
     expect(first.note).toMatch(/rate limit reached \(resets 2030-/);
     const second = await deps.fetchGithubReleases({ owner: "acme", repo: "pkg" });
     expect(second.note).toBe(first.note);
-    expect(calls.filter((url) => url.includes("api.github.com"))).toHaveLength(1);
+    expect(calls.filter((url) => new URL(url).hostname === "api.github.com")).toHaveLength(1);
   });
 
   it("warns when the remaining quota is nearly spent", async () => {
@@ -309,6 +309,6 @@ describe("radar over a stubbed network, end to end", () => {
       expect.arrayContaining(["prototype-guard-added", "changelog:redos"]),
     );
     expect(report.bytesDownloaded).toBeGreaterThan(0);
-    expect(calls.some((url) => url.includes("api.github.com"))).toBe(false);
+    expect(calls.some((url) => new URL(url).hostname === "api.github.com")).toBe(false);
   });
 });

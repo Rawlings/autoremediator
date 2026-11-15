@@ -113,7 +113,7 @@ function expandPattern(
     if (!file.startsWith(before) || !file.endsWith(after) || file.endsWith(".d.ts")) continue;
     const middle = file.slice(before.length, file.length - after.length);
     if (middle === "") continue;
-    result.push({ subpath: subpath.replace("*", middle), file });
+    result.push({ subpath: subpath.replaceAll("*", middle), file });
   }
   return result.toSorted((a, b) => a.subpath.localeCompare(b.subpath)).slice(0, 500);
 }

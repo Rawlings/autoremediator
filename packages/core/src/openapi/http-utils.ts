@@ -1,4 +1,4 @@
-export { HttpError, readBody, sendJson } from "../platform/http-security.js";
+export { HttpError, publicErrorMessage, readBody, sendJson } from "../platform/http-security.js";
 
 const DEFAULT_PORT = 3000;
 

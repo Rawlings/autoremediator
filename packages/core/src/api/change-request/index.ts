@@ -467,13 +467,13 @@ async function inspectExistingBranch(
     foreign = (await foreignCommits(cwd, `refs/heads/${branch}`, provider)) > 0;
   }
 
-  const listed = await safeExeca("git", withAuth(provider, token, ["ls-remote", "--heads", remote, `refs/heads/${branch}`]), {
+  const listed = await safeExeca("git", withAuth(provider, token, ["ls-remote", "--heads", "--", remote, `refs/heads/${branch}`]), {
     cwd,
     stdio: "pipe",
   }).catch(() => undefined);
   const remoteSha = /^([0-9a-f]{40})\s/.exec((listed?.stdout ?? "").trim())?.[1];
   if (remoteSha) {
-    const fetched = await safeExeca("git", withAuth(provider, token, ["fetch", remote, `refs/heads/${branch}`]), {
+    const fetched = await safeExeca("git", withAuth(provider, token, ["fetch", "--", remote, `refs/heads/${branch}`]), {
       cwd,
       stdio: "pipe",
     }).then(
@@ -606,7 +606,7 @@ export async function createChangeRequestsForReports(params: {
   const baseBranch = options.baseBranch ?? (await detectCurrentBranch(cwd).catch(() => "main"));
   const branchPrefix = options.branchPrefix ?? "autoremediator";
   const pushRemote = options.pushRemote ?? "origin";
-  if (options.pushRemote && !/^[a-zA-Z0-9._-]+$/.test(options.pushRemote)) {
+  if (options.pushRemote && !/^[a-zA-Z0-9._][a-zA-Z0-9._-]*$/.test(options.pushRemote)) {
     throw new Error(`Invalid pushRemote value: ${options.pushRemote}`);
   }
 
@@ -749,8 +749,8 @@ export async function createChangeRequestsForReports(params: {
         provider,
         pushToken,
         existing.remoteSha
-          ? ["push", `--force-with-lease=refs/heads/${branchName}:${existing.remoteSha}`, "-u", pushRemote, branchName]
-          : ["push", "-u", pushRemote, branchName],
+          ? ["push", `--force-with-lease=refs/heads/${branchName}:${existing.remoteSha}`, "-u", "--", pushRemote, branchName]
+          : ["push", "-u", "--", pushRemote, branchName],
       );
       await safeExeca("git", pushArgs, { cwd, stdio: "pipe" });
 

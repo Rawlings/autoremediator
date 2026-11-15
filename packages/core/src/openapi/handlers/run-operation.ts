@@ -1,7 +1,7 @@
 import type http from "node:http";
 
 import { defaultApiDeps, httpOperations, type Operation } from "../../catalog/index.js";
-import { sendJson } from "../http-utils.js";
+import { publicErrorMessage, sendJson } from "../http-utils.js";
 import type { OpenApiServerDeps } from "../server.js";
 
 function describeIssues(error: { issues: Array<{ path: PropertyKey[]; message: string; code: string; keys?: string[] }> }): string {
@@ -35,7 +35,7 @@ export async function runOperation(
     confined = guard.confine(parsed.data);
   } catch (error) {
     if (guard.isPathError(error)) {
-      sendJson(res, 403, { error: (error as Error).message });
+      sendJson(res, 403, { error: publicErrorMessage(error) });
       return;
     }
     throw error;
@@ -49,7 +49,7 @@ export async function runOperation(
     });
     sendJson(res, operation.http?.status ?? 200, result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = publicErrorMessage(error);
     // A lookup by id that finds nothing is a 404; any other failure is a rejected request.
     sendJson(res, operation.http?.pathParam ? 404 : 400, { error: message });
   }

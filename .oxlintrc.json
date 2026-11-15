@@ -7,6 +7,8 @@
     "bench/tasks/**",
     "bench/registry/**",
     "bench/.work/**",
+    // Needs the SDK that `dagger develop` generates into dagger/sdk, so it cannot be type-checked here.
+    "dagger/**",
     "**/dist/**",
     "**/coverage/**"
   ],

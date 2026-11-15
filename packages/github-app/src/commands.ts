@@ -19,6 +19,14 @@ export interface ParsedCommand {
 
 const ADVISORY_ID = /^(CVE-\d{4}-\d{4,7}|GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4})$/i;
 const MAX_IDS = 10;
+const PREFIX = "/autoremediator";
+
+/** Drop trailing commas and semicolons with a scan, not a `[,;]+$` pattern (quadratic on long runs). */
+function stripTrailingSeparators(word: string): string {
+  let end = word.length;
+  while (end > 0 && (word[end - 1] === "," || word[end - 1] === ";")) end -= 1;
+  return word.slice(0, end);
+}
 
 /**
  * Find the first command in a comment. Quoted lines (`>`) and fenced code are skipped, so quoting
@@ -33,10 +41,12 @@ export function parseComment(body: string): ParsedCommand | undefined {
       continue;
     }
     if (inFence) continue;
-    const match = /^\/autoremediator(?:\s+(.*))?$/i.exec(line);
-    if (!match) continue;
+    // Not a regex over the whole line: `\s+(.*)` backtracks on long runs of spaces.
+    if (!line.toLowerCase().startsWith(PREFIX)) continue;
+    const afterPrefix = line.slice(PREFIX.length);
+    if (afterPrefix !== "" && !/^\s/.test(afterPrefix)) continue;
 
-    const words = (match[1] ?? "").split(/\s+/).filter(Boolean);
+    const words = afterPrefix.split(/\s+/).filter(Boolean);
     const first = words[0]?.toLowerCase();
     const name = COMMAND_NAMES.find((candidate) => candidate === first) ?? "help";
     const rest = first && name === first ? words.slice(1) : words;
@@ -44,7 +54,7 @@ export function parseComment(body: string): ParsedCommand | undefined {
     const ids = new Set<string>();
     const ignored: string[] = [];
     for (const word of rest) {
-      const cleaned = word.replace(/[,;]+$/, "");
+      const cleaned = stripTrailingSeparators(word);
       if (ADVISORY_ID.test(cleaned) && ids.size < MAX_IDS) ids.add(cleaned.toUpperCase());
       else ignored.push(cleaned.slice(0, 40));
     }

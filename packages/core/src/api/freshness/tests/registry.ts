@@ -16,6 +16,18 @@ export interface FreshnessFixtureVersion {
   deprecated?: string;
 }
 
+/** Split `/<name>/-/<basename>-<version>.tgz` without a backtracking pattern. */
+function parseTarballPath(path: string): { name: string; version: string } | undefined {
+  const sep = path.indexOf("/-/");
+  if (!path.startsWith("/") || sep < 2 || !path.endsWith(".tgz")) return undefined;
+  const name = path.slice(1, sep);
+  const file = path.slice(sep + 3, -".tgz".length);
+  const base = name.slice(name.lastIndexOf("/") + 1);
+  if (file.includes("/") || !file.startsWith(`${base}-`)) return undefined;
+  const version = file.slice(base.length + 1);
+  return /^\d+\.\d+\.\d+/.test(version) ? { name, version } : undefined;
+}
+
 interface Stored {
   manifest: Record<string, unknown>;
   tarball: Buffer;
@@ -38,9 +50,9 @@ export class FreshnessRegistry {
     this.workDir = mkdtempSync(join(tmpdir(), "freshness-registry-"));
     this.server = createServer((request, response) => {
       const path = decodeURIComponent((request.url ?? "/").split("?")[0] ?? "/");
-      const tarball = /^\/(.+)\/-\/([^/]+)-(\d+\.\d+\.\d+[^/]*)\.tgz$/.exec(path);
+      const tarball = parseTarballPath(path);
       if (tarball) {
-        const stored = this.packages.get(tarball[1] ?? "")?.get(tarball[3] ?? "");
+        const stored = this.packages.get(tarball.name)?.get(tarball.version);
         if (!stored) {
           response.writeHead(404).end();
           return;

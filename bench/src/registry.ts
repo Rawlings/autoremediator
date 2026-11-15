@@ -47,6 +47,18 @@ interface FixturePackage {
   versions: FixtureVersion[];
 }
 
+/** Split `/<name>/-/<basename>-<version>.tgz` without a backtracking pattern. */
+function parseTarballPath(path: string): { name: string; version: string } | undefined {
+  const sep = path.indexOf("/-/");
+  if (!path.startsWith("/") || sep < 2 || !path.endsWith(".tgz")) return undefined;
+  const name = path.slice(1, sep);
+  const file = path.slice(sep + 3, -".tgz".length);
+  const base = name.slice(name.lastIndexOf("/") + 1);
+  if (file.includes("/") || !file.startsWith(`${base}-`)) return undefined;
+  const version = file.slice(base.length + 1);
+  return /^\d+\.\d+\.\d+/.test(version) ? { name, version } : undefined;
+}
+
 export interface Registry {
   /** Base URL without a trailing slash, e.g. `http://127.0.0.1:41233`. */
   url: string;
@@ -164,9 +176,9 @@ export async function startRegistry(
 
     if (request.method !== "GET") return send(405, "{}", "application/json");
 
-    const tarball = /^\/(.+)\/-\/.+-(\d+\.\d+\.\d+[^/]*)\.tgz$/.exec(path);
+    const tarball = parseTarballPath(path);
     if (tarball) {
-      const entry = packages.get(tarball[1] ?? "")?.versions.find((v) => v.version === tarball[2]);
+      const entry = packages.get(tarball.name)?.versions.find((v) => v.version === tarball.version);
       return entry ? send(200, entry.tarball.data, "application/octet-stream") : notFound();
     }
 

@@ -167,6 +167,12 @@ jobs:
           ref: ${{ steps.workflow-source.outputs.ref }}
           path: .autoremediator-action
 
+      # Keep the action source out of `git status` without deleting it: the runner re-reads a local
+      # action's action.yml for its post-job steps, and fails the job if the directory is gone.
+      - name: Exclude action source from change detection
+        shell: bash
+        run: echo "/.autoremediator-action/" >> "$(git rev-parse --git-path info/exclude)"
+
       - name: Resolve workflow paths
         id: paths
         shell: bash
@@ -202,11 +208,6 @@ jobs:
           include-transitive: ${{ inputs.include-transitive && 'true' || 'false' }}
           containment-mode: ${{ inputs.containment-mode && 'true' || 'false' }}
           simulation-mode: ${{ inputs.simulation-mode && 'true' || 'false' }}
-
-      - name: Remove checked out action source
-        if: ${{ always() }}
-        shell: bash
-        run: rm -rf .autoremediator-action
 
       - name: Detect repository changes
         id: changes

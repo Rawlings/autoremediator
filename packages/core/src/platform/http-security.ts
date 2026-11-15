@@ -68,6 +68,17 @@ export function readBody(req: http.IncomingMessage): Promise<unknown> {
   });
 }
 
+/**
+ * The text of an error that is safe to hand to an HTTP caller: the first line of its message,
+ * capped in length. Never a stack trace, never the object's own string form (which can carry one).
+ */
+export function publicErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : typeof error === "string" ? error : "Request failed";
+  const [firstLine = ""] = message.split(/\r?\n/, 1);
+  const trimmed = firstLine.trim().slice(0, 500);
+  return trimmed === "" ? "Request failed" : trimmed;
+}
+
 export function sendJson(res: http.ServerResponse, status: number, body: unknown): void {
   if (res.headersSent) return;
   const payload = JSON.stringify(body);

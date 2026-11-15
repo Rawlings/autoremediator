@@ -194,5 +194,5 @@ export const defaultRegistryConfig: RegistryConfig = createRegistryConfig(new Ma
 export function packumentUrl(config: RegistryConfig, packageName: string): string {
   // The name becomes a path segment of an authenticated request: only a real package name may.
   assertValidPackageName(packageName);
-  return `${config.registryUrlFor(packageName)}/${packageName.replace("/", "%2F")}`;
+  return `${config.registryUrlFor(packageName)}/${packageName.replaceAll("/", "%2F")}`;
 }

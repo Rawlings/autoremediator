@@ -34,13 +34,30 @@ const MODEL_ENV_NAMES = [
   "AUTOREMEDIATOR_MODEL",
 ];
 
+/** Host name of a git remote (`https://h/..`, `ssh://u@h:22/..`, `u@h:path`), lower-cased. */
+function remoteHostname(remote: string): string {
+  let rest = remote.trim().toLowerCase();
+  const scheme = rest.indexOf("://");
+  const hasScheme = scheme !== -1;
+  if (hasScheme) rest = rest.slice(scheme + 3);
+  // `scp`-style remotes end the host at the first `:`; URLs end the authority at the first `/`.
+  const stops = (hasScheme ? ["/"] : ["/", ":"]).map((stop) => rest.indexOf(stop)).filter((index) => index !== -1);
+  const authority = rest.slice(0, stops.length > 0 ? Math.min(...stops) : rest.length);
+  const host = authority.slice(authority.lastIndexOf("@") + 1);
+  const port = hasScheme ? host.indexOf(":") : -1;
+  return port === -1 ? host : host.slice(0, port);
+}
+
 export function gitHostFromRemote(remote: string | undefined): GitHost {
   if (!remote) return "none";
-  const text = remote.toLowerCase();
-  if (text.includes("github.")) return "github";
-  if (text.includes("gitlab.")) return "gitlab";
-  if (text.includes("bitbucket.")) return "bitbucket";
-  if (text.includes("dev.azure.com") || text.includes("visualstudio.com")) return "azure-devops";
+  const host = remoteHostname(remote);
+  const labels = host.split(".");
+  const isDomain = (domain: string): boolean => host === domain || host.endsWith(`.${domain}`);
+  // Self-hosted instances (`github.example.com`, `gitlab.corp`) name the product in a label.
+  if (labels.includes("github")) return "github";
+  if (labels.includes("gitlab")) return "gitlab";
+  if (labels.includes("bitbucket")) return "bitbucket";
+  if (isDomain("dev.azure.com") || isDomain("visualstudio.com")) return "azure-devops";
   return "other";
 }
 
