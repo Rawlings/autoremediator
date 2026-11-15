@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   assembleProofOfFixVerification,
   runProofOfFixPhase,
-} from "../../packages/core/src/remediation/proof-of-fix/runner.js";
+} from "../../packages/core/src/features/verify/proof-of-fix/runner.js";
 import {
   generateUnifiedDiff,
   validatePatchedCodeSyntax,

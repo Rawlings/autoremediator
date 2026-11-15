@@ -1,6 +1,6 @@
 ---
 description: Public API stability and cross-surface contract rules for SDK, CLI, MCP, and OpenAPI.
-applyTo: packages/core/src/{api,cli,mcp,openapi,catalog,a2a,platform}/**/*.ts
+applyTo: packages/core/src/{api,surfaces}/**/*.ts
 ---
 
 # API Surface Instructions

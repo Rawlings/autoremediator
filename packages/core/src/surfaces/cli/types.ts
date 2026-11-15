@@ -1,0 +1,75 @@
+import type { ChangeRequestProvider } from "../../features/change-request/types.js";
+import type { PackageManager } from "../../shared/types.js";
+
+export type ScanFormat = "auto" | "npm-audit" | "yarn-audit" | "sarif";
+export type OutputFormat = "text" | "json" | "sarif" | "cyclonedx-vex";
+
+export interface CommandOptions {
+  cwd: string;
+  packageManager?: PackageManager;
+  patchesDir?: string;
+  dryRun: boolean;
+  preview: boolean;
+  simulationMode: boolean;
+  runTests: boolean;
+  typecheck?: boolean;
+  interactive?: boolean;
+  outputFormat: OutputFormat;
+
+  model?: string;
+  patchConfidenceLow?: number;
+  patchConfidenceMedium?: number;
+  patchConfidenceHigh?: number;
+  requestId?: string;
+  sessionId?: string;
+  parentRunId?: string;
+  idempotencyKey?: string;
+  resume: boolean;
+  actor?: string;
+  source?: "cli" | "sdk" | "mcp" | "openapi" | "unknown";
+  directDependenciesOnly: boolean;
+  preferVersionBump: boolean;
+  installMode?: "standard" | "prefer-offline" | "deterministic";
+  installPreferOffline?: boolean;
+  enforceFrozenLockfile?: boolean;
+  workspace?: string;
+  input?: string;
+  audit: boolean;
+  format: ScanFormat;
+  policy?: string;
+  evidence: boolean;
+  ci: boolean;
+  summaryFile?: string;
+  targetsFile?: string;
+  includeTransitive?: boolean;
+  kevMandatory?: boolean;
+  epssThreshold?: number;
+  suppressionsFile?: string;
+  slaCheck?: boolean;
+  skipUnreachable?: boolean;
+  createChangeRequest?: boolean;
+  changeRequestProvider?: ChangeRequestProvider;
+  changeRequestGrouping?: "all" | "per-cve" | "per-package";
+  changeRequestRepository?: string;
+  changeRequestBaseBranch?: string;
+  changeRequestBranchPrefix?: string;
+  changeRequestTitlePrefix?: string;
+  minConfidenceForAutoApply?: number;
+  holdForTransitive?: boolean;
+  escalateOnKev?: boolean;
+  containmentMode?: boolean;
+  campaignMode?: boolean;
+  offline: boolean;
+  intelligenceSnapshot?: string;
+  proofOfFix?: boolean;
+  requireProofOfFix?: boolean;
+  reproductionTest?: string;
+  breakingChangeRefactor?: boolean;
+  ignoreMemory?: boolean;
+}
+
+export function isCveId(value: string): boolean {
+  return (
+    /^CVE-\d{4}-\d{1,7}$/i.test(value) || /^GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/i.test(value)
+  );
+}

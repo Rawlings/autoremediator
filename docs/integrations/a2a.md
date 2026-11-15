@@ -39,7 +39,7 @@ The URL in the card is `AUTOREMEDIATOR_A2A_BASE_URL` when set; otherwise `http:/
 a TLS proxy, set `AUTOREMEDIATOR_A2A_BASE_URL` to the public `https://` address so the card points
 there.
 
-The card is built by `buildAgentCard({ baseUrl, version, skills })` in `packages/core/src/a2a/`, a
+The card is built by `buildAgentCard({ baseUrl, version, skills })` in `packages/core/src/surfaces/a2a/`, a
 pure function exported with the rest of that module.
 
 ## Delegating a task
@@ -94,7 +94,7 @@ Set `AUTOREMEDIATOR_A2A_SIGNING_KEY` to the path of a PEM private key and the ca
 
 ```bash
 openssl genpkey -algorithm ed25519 -out a2a-card.pem
-AUTOREMEDIATOR_A2A_SIGNING_KEY=./a2a-card.pem node dist/openapi/server.js
+AUTOREMEDIATOR_A2A_SIGNING_KEY=./a2a-card.pem node dist/surfaces/openapi/server.js
 ```
 
 Supported keys: EC P-256, P-384 or P-521 (`ES256`, `ES384`, `ES512`) and Ed25519 (`EdDSA`). The

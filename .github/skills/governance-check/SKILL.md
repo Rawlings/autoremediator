@@ -27,7 +27,7 @@ user-invocable: true
 ## Inputs
 
 - The full `.github/` directory tree.
-- `packages/core/src/remediation/pipeline.ts` (tool map source of truth).
+- `packages/core/src/features/remediate/local/run.ts` (tool map source of truth).
 - `.github/instructions/tool-contracts.instructions.md` (canonical tool list).
 - `.github/instructions/orchestration.instructions.md` (prompt placeholder list).
 
@@ -94,9 +94,9 @@ action.yml
 When governance changes involve public behavior/contracts, verify there is explicit coverage or rationale for all applicable touchpoints:
 
 - SDK (`packages/core/src/api/**`)
-- CLI (`packages/core/src/cli/**`)
-- MCP (`packages/core/src/mcp/**`)
-- OpenAPI (`packages/core/src/openapi/**`)
+- CLI (`packages/core/src/surfaces/cli/**`)
+- MCP (`packages/core/src/surfaces/mcp/**`)
+- OpenAPI (`packages/core/src/surfaces/openapi/**`)
 - GitHub Action/workflows (`action.yml`, `.github/workflows/**`)
 - GitHub App bridge (`packages/github-app/src/**`)
 - Docs/readmes/AGENTS/llms/changelog
@@ -146,7 +146,7 @@ For every directory under `.github/skills/`, a `SKILL.md` must exist and must sa
 
 ## Tool Contract Rules
 
-`packages/core/src/remediation/pipeline.ts` defines the runtime tool map via entries of the form `"tool-name": someTool`. Every tool name found there must:
+`packages/core/src/features/remediate/local/run.ts` defines the runtime tool map via entries of the form `"tool-name": someTool`. Every tool name found there must:
 
 1. Appear in `.github/instructions/tool-contracts.instructions.md` as a list entry (`- tool-name`).
 2. Be present in the canonical tool order below.

@@ -1,10 +1,10 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { reconcilePatchArtifacts } from "../../packages/core/src/api/patches/reconcile.js";
+import { reconcilePatchArtifacts } from "../../packages/core/src/features/patch/artifacts/reconcile.js";
 import { createRuntimeToolsForRun } from "../../packages/core/src/remediation/pipeline-runtime/tool-wrappers.js";
 import { refactorConsumerCallSites } from "../../packages/core/src/remediation/refactor/refactor-agent.js";
-import { fetchPackageSourceTool } from "../../packages/core/src/remediation/tools/fetch-package-source.js";
+import { fetchPackageSourceTool } from "../../packages/core/src/features/patch/fetch-package-source.js";
 import {
   generateUnifiedDiff,
   validatePatchedCodeSyntax,

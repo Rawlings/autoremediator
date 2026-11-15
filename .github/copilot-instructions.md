@@ -7,7 +7,7 @@ This repository uses a skills-first governance model for agentic behavior.
 - Prefer deterministic workflows over ad hoc prompt decisions.
 - Use project skills in .github/skills for scoped task execution (mirrored to .claude/skills for Claude Code). The wanted state for how code is written is in `AGENTS.md` and the `code-structure`, `code-style` and `boundaries-and-errors` skills.
 - Follow global guardrails in .github/instructions before editing runtime logic.
-- Respect policy defaults from packages/core/src/platform/policy.ts and never bypass them in generated changes.
+- Respect policy defaults from packages/core/src/infra/policy/policy.ts and never bypass them in generated changes.
 - Preserve CLI/API compatibility when updating remediation behavior.
 
 ## Agent Autopilot Contract
@@ -62,7 +62,7 @@ Every planner handoff packet must include:
 
 For any user-visible behavior or contract change, planner and developer phases must both verify touchpoints across all relevant delivery surfaces before completion:
 
-- Runtime + shared contracts (`packages/core/src/platform`, `packages/core/src/api/contracts.ts`, option schema)
+- Runtime + shared contracts (`packages/core/src/shared`, `packages/core/src/features/remediate/contracts.ts`, option schema)
 - SDK exports and public types
 - CLI options, validation, and JSON output parity
 - MCP tool schemas and dispatch wiring
@@ -132,4 +132,4 @@ Use `.github/instructions/orchestration.instructions.md` for runtime sequencing 
 
 ## Evidence Requirement
 
-Any change affecting agent flow, patching strategy, or safety checks must preserve evidence output in packages/core/src/platform/evidence.ts.
+Any change affecting agent flow, patching strategy, or safety checks must preserve evidence output in packages/core/src/features/evidence/log.ts.

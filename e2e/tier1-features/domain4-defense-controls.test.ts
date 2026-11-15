@@ -2,10 +2,10 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import http from "node:http";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { jobRegistry } from "../../packages/core/src/platform/jobs.js";
-import { isPackageAllowed, loadPolicy } from "../../packages/core/src/platform/policy.js";
-import { withAtomicRollback } from "../../packages/core/src/platform/rollback.js";
-import { applyDispositionAndContainment } from "../../packages/core/src/remediation/local/disposition.js";
+import { jobRegistry } from "../../packages/core/src/infra/jobs/jobs.js";
+import { isPackageAllowed, loadPolicy } from "../../packages/core/src/infra/policy/policy.js";
+import { withAtomicRollback } from "../../packages/core/src/infra/rollback/rollback.js";
+import { applyDispositionAndContainment } from "../../packages/core/src/features/remediate/local/disposition.js";
 import { cleanupTempDir, createTempDir } from "../fixtures/temp-repo.js";
 
 describe("Tier 1 - Domain 4: Autonomous Defense Controls & Surface Integrity", () => {
@@ -106,10 +106,10 @@ describe("Tier 1 - Domain 4: Autonomous Defense Controls & Surface Integrity", (
 
   it("F19: real HTTP route handler processes request and returns valid JSON response", async () => {
     const { handleOpenApiRequest } = await import(
-      "../../packages/core/src/openapi/handlers/index.js"
+      "../../packages/core/src/surfaces/openapi/handlers/index.js"
     );
     const { OPENAPI_SPEC } = await import(
-      "../../packages/core/src/openapi/spec/index.js"
+      "../../packages/core/src/surfaces/openapi/spec/index.js"
     );
 
     const { PassThrough } = await import("node:stream");

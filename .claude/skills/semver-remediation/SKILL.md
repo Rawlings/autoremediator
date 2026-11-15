@@ -18,9 +18,9 @@ user-invocable: true
 
 ## When to Use
 
-- Updating semver checks in `packages/core/src/remediation/tools/check-version-match.ts`.
-- Modifying fixed version resolution in `packages/core/src/intelligence/sources/registry.ts`.
-- Adjusting bump application behavior in `packages/core/src/remediation/tools/apply-version-bump.ts`.
+- Updating semver checks in `packages/core/src/features/intelligence/sources/registry.ts`.
+- Modifying fixed version resolution in `packages/core/src/features/intelligence/sources/registry.ts`.
+- Adjusting bump application behavior in `packages/core/src/features/upgrade/apply-version-bump.ts`.
 
 ## Inputs
 

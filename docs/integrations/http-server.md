@@ -5,7 +5,7 @@ document at `GET /openapi.json`.
 
 ```bash
 AUTOREMEDIATOR_API_TOKENS="admin:s3cret" \
-  node node_modules/autoremediator/dist/openapi/server.js --port 3000
+  node node_modules/autoremediator/dist/surfaces/openapi/server.js --port 3000
 ```
 
 It listens on `127.0.0.1` over plain HTTP. If you expose it, terminate TLS in a reverse proxy.

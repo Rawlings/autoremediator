@@ -75,7 +75,6 @@ export function createReproductionScript(
       // Fails assertion on unpatched code (exit 1)
       content = `
 import assert from "node:assert";
-import { vulnerableFunction } from "./target.js";
 assert.strictEqual(vulnerableFunction("test"), "sanitized", "Exploit reproduced: unsanitized input");
 `;
       break;

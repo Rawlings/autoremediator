@@ -49,18 +49,20 @@ idiom again.
 |---|---|
 | Message from a caught value | `errorMessage(error)`, not `error instanceof Error ? ...` |
 | "Is this a plain object" | `isRecord(value)` |
-| Read and write JSON | `readJsonFile(path, schema)` / `writeJsonFile` |
-| Hash, sleep, posix path, plural | the `shared/` helper, never a local copy |
-| Optional property in an object literal | one agreed form (see below) |
+| Read and write JSON | `readJsonFile(path, schema)` / `writeJsonFileSync` (`shared/json.ts`) |
+| Hash, sleep, posix path, pluralise | `sha256`, `sleep`, `toPosix`, `pluralize` from `shared/`, never a local copy |
+| Optional property in an object literal | a conditional spread, written one way (see below) |
 | Print a result and set the exit code | `emitReport(...)` in the CLI surface |
 | Read an env variable | the typed env reader, not `process.env` in feature code |
 
-**Helpers named here** (`errorMessage`, `isRecord`, `readJsonFile`, `defined`, `emitReport`, ...)
-are the first things the refactor adds to `shared/` and the CLI surface. Until one exists, create
-it there once and use it; do not write a local copy.
+**Helpers named here** live in `packages/core/src/shared/`. `emitReport` is added with the CLI
+surface split. If a helper you need does not exist yet, create it there once and use it; do not
+write a local copy.
 
-**Optional properties.** Build the object with a helper that drops `undefined` (`defined({ a, b })`)
-instead of `...(x ? { x } : {})`. Write one form; never mix forms in a file.
+**Optional properties.** Leave a property out with a conditional spread, and write it one way in a
+file. Test against `undefined` explicitly (`...(x === undefined ? {} : { x })`) when `0`, `""` or
+`false` are valid values; a plain truthiness test (`...(x ? { x } : {})`) silently drops them. A
+`defined()` helper replaces the spreads once the `exactOptionalPropertyTypes` question is settled.
 
 ## Naming
 

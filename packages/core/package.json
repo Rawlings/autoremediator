@@ -75,8 +75,8 @@
     "url": "https://github.com/Rawlings"
   },
   "bin": {
-    "autoremediator": "./dist/cli/index.js",
-    "autoremediator-mcp": "./dist/mcp/server.js"
+    "autoremediator": "./dist/surfaces/cli/index.js",
+    "autoremediator-mcp": "./dist/surfaces/mcp/server.js"
   },
   "files": [
     "dist",
@@ -92,18 +92,18 @@
       "import": "./dist/api/index.js"
     },
     "./cli": {
-      "import": "./dist/cli/index.js"
+      "import": "./dist/surfaces/cli/index.js"
     },
     "./mcp": {
-      "import": "./dist/mcp/server.js"
+      "import": "./dist/surfaces/mcp/server.js"
     },
     "./openapi": {
-      "import": "./dist/openapi/server.js"
+      "import": "./dist/surfaces/openapi/server.js"
     },
     "./trace": {
-      "types": "./dist/trace/register.d.ts",
-      "import": "./dist/trace/register.js",
-      "require": "./dist/trace/register.js"
+      "types": "./dist/features/trace/register.d.ts",
+      "import": "./dist/features/trace/register.js",
+      "require": "./dist/features/trace/register.js"
     },
     "./package.json": "./package.json"
   },

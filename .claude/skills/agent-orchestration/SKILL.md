@@ -18,13 +18,13 @@ user-invocable: true
 
 ## When to Use
 
-- Editing `packages/core/src/remediation/pipeline.ts` prompt or tools map.
+- Editing `packages/core/src/features/remediate/local/run.ts` prompt or tools map.
 - Reordering tools.
 - Changing fallback branching logic.
 
 ## Inputs
 
-- Tool map in `packages/core/src/remediation/pipeline.ts`.
+- Tool map in `packages/core/src/features/remediate/local/run.ts`.
 - Orchestration instructions in `.github/instructions/orchestration.instructions.md`.
 
 ## Outputs

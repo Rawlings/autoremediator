@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   assembleProofOfFixVerification,
   runProofOfFixPhase,
-} from "../../packages/core/src/remediation/proof-of-fix/runner.js";
+} from "../../packages/core/src/features/verify/proof-of-fix/runner.js";
 import { refactorConsumerCallSites } from "../../packages/core/src/remediation/refactor/refactor-agent.js";
 import { cleanupTempDir, createTempRepo } from "../fixtures/temp-repo.js";
 
@@ -32,7 +32,6 @@ export function generateSessionId() {
 }
 `,
         "test/reproduce-cve.js": `import assert from "node:assert";
-import { generateSessionId } from "../src/tokens.js";
 const id = generateSessionId();
 // Expect UUID v4 format
 assert.match(id, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
@@ -55,7 +54,6 @@ assert.match(id, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
     writeFileSync(
       exploitTestFile,
       `import assert from "node:assert";
-import { generateSessionId } from "../src/tokens.js";
 // Exploit reproduction assertion: vulnerable uuid generates collision or lacks secure randomness check
 assert.strictEqual(generateSessionId().length, 36);
 // Pre-mutation assertion proving vulnerability existence (fails on unpatched code)

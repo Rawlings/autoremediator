@@ -19,7 +19,7 @@ user-invocable: true
 ## When to Use
 
 - Adding/changing scan format parsing.
-- Updating normalization logic in `packages/core/src/scanner/adapters/`.
+- Updating normalization logic in `packages/core/src/features/scan/adapters/`.
 - Handling malformed scanner output.
 - Adding or updating yarn-audit parsing.
 

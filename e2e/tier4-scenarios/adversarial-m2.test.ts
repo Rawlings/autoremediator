@@ -3,10 +3,10 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   runProofOfFixPhase,
-} from "../../packages/core/src/remediation/proof-of-fix/runner.js";
-import { applyPatchFileTool } from "../../packages/core/src/remediation/tools/apply-patch-file/index.js";
-import { applyVersionBumpTool } from "../../packages/core/src/remediation/tools/apply-version-bump.js";
-import { applyPackageOverrideTool } from "../../packages/core/src/remediation/tools/apply-package-override/index.js";
+} from "../../packages/core/src/features/verify/proof-of-fix/runner.js";
+import { applyPatchFileTool } from "../../packages/core/src/features/patch/apply-file/index.js";
+import { applyVersionBumpTool } from "../../packages/core/src/features/upgrade/apply-version-bump.js";
+import { applyPackageOverrideTool } from "../../packages/core/src/features/upgrade/apply-package-override/index.js";
 import { cleanupTempDir, createTempDir, createTempRepo } from "../fixtures/temp-repo.js";
 
 describe("Milestone 2 Iteration 2 Adversarial Stress Suite", () => {
@@ -455,7 +455,6 @@ process.exit(1);
         // Test asserts val === 2 (fails in negative phase on val = 1 -> reproduced)
         // Patch will set val = 99 -> in positive phase, val === 2 still fails!
         "test/repro.js": `import assert from "node:assert";
-import { val } from "../src/app.js";
 assert.strictEqual(val, 2, "EXPLOIT_REPRODUCED: val is not 2");
 `,
       });
@@ -789,7 +788,6 @@ assert.strictEqual(val, 2, "EXPLOIT_REPRODUCED: val is not 2");
           // Override sets overrides.minimist = "1.0.1"
           // Positive phase: overrides?.minimist is "1.0.1" !== "9.9.9" -> STILL fails!
           "test/repro.js": `import assert from "node:assert";
-import { readFileSync } from "node:fs";
 const pkg = JSON.parse(readFileSync("package.json", "utf8"));
 assert.strictEqual(pkg.overrides?.minimist, "9.9.9", "EXPLOIT_REPRODUCED: not override 9.9.9");
 `,
@@ -825,7 +823,6 @@ assert.strictEqual(pkg.overrides?.minimist, "9.9.9", "EXPLOIT_REPRODUCED: not ov
         name: "override-test-app",
         files: {
           "test/repro.js": `import assert from "node:assert";
-import { readFileSync } from "node:fs";
 const pkg = JSON.parse(readFileSync("package.json", "utf8"));
 assert.strictEqual(pkg.overrides?.minimist, "9.9.9", "EXPLOIT_REPRODUCED: not override 9.9.9");
 `,
@@ -863,7 +860,6 @@ assert.strictEqual(pkg.overrides?.minimist, "9.9.9", "EXPLOIT_REPRODUCED: not ov
           // Override sets overrides.minimist = "1.0.1"
           // Positive phase: overrides?.minimist is "1.0.1" === "1.0.1" -> passes cleanly!
           "test/repro.js": `import assert from "node:assert";
-import { readFileSync } from "node:fs";
 const pkg = JSON.parse(readFileSync("package.json", "utf8"));
 assert.strictEqual(pkg.overrides?.minimist, "1.0.1", "EXPLOIT_REPRODUCED: not overridden yet");
 `,

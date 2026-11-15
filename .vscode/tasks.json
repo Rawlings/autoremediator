@@ -28,7 +28,7 @@
       "command": "sh",
       "args": [
         "-lc",
-        "pnpm build && pnpm audit --json > /tmp/autoremediator-audit.json || true && node dist/cli/index.js /tmp/autoremediator-audit.json --cwd . --llm-provider local --dry-run --run-tests"
+        "pnpm build && pnpm audit --json > /tmp/autoremediator-audit.json || true && node dist/surfaces/cli/index.js /tmp/autoremediator-audit.json --cwd . --llm-provider local --dry-run --run-tests"
       ],
       "isBackground": false
     },
@@ -37,7 +37,7 @@
       "type": "shell",
       "command": "node",
       "args": [
-        "dist/cli/index.js",
+        "dist/surfaces/cli/index.js",
         "/tmp/autoremediator-audit.json",
         "--cwd",
         ".",
@@ -54,7 +54,7 @@
       "command": "sh",
       "args": [
         "-lc",
-        "pnpm build && node dist/cli/index.js /tmp/autoremediator-audit.json --cwd . --llm-provider local --dry-run --run-tests"
+        "pnpm build && node dist/surfaces/cli/index.js /tmp/autoremediator-audit.json --cwd . --llm-provider local --dry-run --run-tests"
       ],
       "isBackground": false
     },
@@ -64,7 +64,7 @@
       "command": "sh",
       "args": [
         "-lc",
-        "mkdir -p demo-vuln-app && cat > demo-vuln-app/package.json <<'JSON'\n{\n  \"name\": \"demo-vuln-app\",\n  \"private\": true,\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"lodash\": \"4.17.20\"\n  }\n}\nJSON\npnpm --dir demo-vuln-app install >/dev/null 2>&1\nnode dist/cli/index.js CVE-2021-23337 --cwd ./demo-vuln-app --llm-provider local --dry-run --run-tests"
+        "mkdir -p demo-vuln-app && cat > demo-vuln-app/package.json <<'JSON'\n{\n  \"name\": \"demo-vuln-app\",\n  \"private\": true,\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"lodash\": \"4.17.20\"\n  }\n}\nJSON\npnpm --dir demo-vuln-app install >/dev/null 2>&1\nnode dist/surfaces/cli/index.js CVE-2021-23337 --cwd ./demo-vuln-app --llm-provider local --dry-run --run-tests"
       ],
       "isBackground": false
     },
@@ -81,7 +81,7 @@
       "command": "sh",
       "args": [
         "-lc",
-        "pnpm build && node dist/cli/index.js CVE-2021-23337 --cwd ./demo-vuln-app --llm-provider local --dry-run --run-tests"
+        "pnpm build && node dist/surfaces/cli/index.js CVE-2021-23337 --cwd ./demo-vuln-app --llm-provider local --dry-run --run-tests"
       ],
       "isBackground": false
     },
@@ -91,7 +91,7 @@
       "command": "sh",
       "args": [
         "-lc",
-        "pnpm build && node dist/cli/index.js CVE-2021-23337 --cwd ./demo-vuln-app --llm-provider local --dry-run --run-tests"
+        "pnpm build && node dist/surfaces/cli/index.js CVE-2021-23337 --cwd ./demo-vuln-app --llm-provider local --dry-run --run-tests"
       ],
       "isBackground": false
     },
@@ -172,7 +172,7 @@
       "command": "sh",
       "args": [
         "-lc",
-        "pnpm build && node dist/cli/index.js CVE-2026-4258 --cwd ./demo-vuln-app --run-tests"
+        "pnpm build && node dist/surfaces/cli/index.js CVE-2026-4258 --cwd ./demo-vuln-app --run-tests"
       ]
     },
     {
@@ -180,7 +180,7 @@
       "type": "shell",
       "command": "node",
       "args": [
-        "dist/cli/index.js",
+        "dist/surfaces/cli/index.js",
         "CVE-2026-4258",
         "--cwd",
         "./demo-vuln-app",
@@ -258,22 +258,22 @@
       "command": "rm",
       "args": [
         "-f",
-        "packages/core/src/api/enrichment.ts",
-        "packages/core/src/api/change-requests.ts",
-        "packages/core/src/api/change-requests.git.ts",
-        "packages/core/src/api/change-requests.remote.ts",
-        "packages/core/src/api/change-requests.grouping.ts",
-        "packages/core/src/api/change-requests.grouping.test.ts",
-        "packages/core/src/api/change-requests.current-repo.ts",
-        "packages/core/src/api/change-requests.grouped.ts",
-        "packages/core/src/api/change-requests.test.ts",
-        "packages/core/src/api/remediate.change-request.ts",
-        "packages/core/src/api/remediate.change-request.test.ts",
-        "packages/core/src/api/remediate-from-scan.change-request.ts",
-        "packages/core/src/api/remediate-from-scan.change-request.test.ts",
-        "packages/core/src/api/portfolio.ts",
-        "packages/core/src/intelligence/sources/alternative-packages.ts",
-        "packages/core/src/remediation/tools/check-reachability.ts"
+        "packages/core/src/features/enrichment.ts",
+        "packages/core/src/features/change-requests.ts",
+        "packages/core/src/features/change-requests.git.ts",
+        "packages/core/src/features/change-requests.remote.ts",
+        "packages/core/src/features/change-requests.grouping.ts",
+        "packages/core/src/features/change-requests.grouping.test.ts",
+        "packages/core/src/features/change-requests.current-repo.ts",
+        "packages/core/src/features/change-requests.grouped.ts",
+        "packages/core/src/features/change-requests.test.ts",
+        "packages/core/src/features/remediate.change-request.ts",
+        "packages/core/src/features/remediate.change-request.test.ts",
+        "packages/core/src/features/remediate-from-scan.change-request.ts",
+        "packages/core/src/features/remediate-from-scan.change-request.test.ts",
+        "packages/core/src/features/portfolio.ts",
+        "packages/core/src/features/intelligence/sources/alternative-packages.ts",
+        "packages/core/src/features/reachability/check-reachability.ts"
       ]
     },
     {

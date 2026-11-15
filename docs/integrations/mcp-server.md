@@ -36,7 +36,7 @@ Use the job tools for long runs: submit, then poll with the returned `jobId`.
 A host agent that should review before changing anything calls `planRemediation`, shows the plan,
 then `applyPlan` with the returned `runId`; `rollbackRun` undoes it.
 
-Tools are generated from one operation catalog (`packages/core/src/catalog`), so their schemas are the
+Tools are generated from one operation catalog (`packages/core/src/surfaces/catalog`), so their schemas are the
 same ones that validate input. Each tool carries MCP annotations: `readOnlyHint` for tools that change
 nothing, `destructiveHint` for tools that edit the project unless `dryRun` is set, and `openWorldHint`
 for tools that call external services. Arguments are validated strictly: an unknown field or a value

@@ -34,9 +34,9 @@ Dependencies point one way: `surfaces -> features -> infra -> shared`.
 - The rules are enforced by `boundaries.test.ts` and the `import/no-cycle` lint rule. Do not
   add an exception; change the design.
 
-**Migration in progress.** Features move from the old layer folders (`api/`, `platform/`,
-`remediation/`, ...) one at a time. For a feature that has not moved yet, follow its current
-folder. New shared helpers go in `shared/`; new features go under `features/`.
+The layout is described in `docs/contributing/architecture.md`. New shared helpers go in
+`shared/`; new capabilities go under `features/`; anything a surface needs from a feature goes
+through that feature's `index.ts` (add one when a feature lacks it).
 
 ## A feature folder
 

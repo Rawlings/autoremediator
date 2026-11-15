@@ -1,6 +1,10 @@
 # Target structure for `packages/core/src`
 
-**Status: draft for review (Phase 1 of the code quality turnaround).** Nothing has been moved yet.
+**Status: applied (Phase 3 steps 1-4 of the code quality turnaround).** The layer folders were
+moved into `shared/`, `infra/`, `features/` and `surfaces/`, and `types.ts` was split by owner. The
+tree below is the plan; `architecture.md` describes the result. Still open: `api/index.ts` is not
+yet the root `index.ts`, feature barrels (`index.ts`) are missing for a few features, and the
+function-size, error-handling and validation work (steps 5-8) is not done.
 The audit that motivates this is in [code-quality-audit.md](code-quality-audit.md); the numbers come
 from `node scripts/quality-metrics.ts`.
 

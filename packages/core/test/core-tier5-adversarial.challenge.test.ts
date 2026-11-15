@@ -9,26 +9,23 @@ import { PassThrough } from "node:stream";
 /// <reference types="node" />
 import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from "vitest";
 
-import { reconcilePatchArtifacts } from "../src/api/patches/reconcile.js";
-import { runInteractiveTriage } from "../src/cli/triage.js";
-import { handleToolCall, TOOLS } from "../src/mcp/server.js";
-// 5. OpenAPI, MCP, and CLI Triage
-import { createOpenApiServer } from "../src/openapi/server.js";
-import { BoundedJobRegistry, type AsyncRemediationJob } from "../src/platform/jobs.js";
-// 4. Platform Controls (Policy, Rollback, Jobs)
-import {
-  DEFAULT_POLICY,
-  loadPolicy,
-  isPackageAllowed,
-  checkSlaBreach,
-  isActiveSuppression,
-  saveSuppressionToPolicy,
-  findSuppression,
-} from "../src/platform/policy.js";
-import { recordFileTouch, withAtomicRollback } from "../src/platform/rollback.js";
+import { applyPatchFileTool } from "../src/features/patch/apply-file/index.js";
+import { reconcilePatchArtifacts } from "../src/features/patch/artifacts/reconcile.js";
 // 3. Remediation Tools
-import { generateUnifiedDiff } from "../src/remediation/patch/diff.js";
-import { validatePatchedCodeSyntax } from "../src/remediation/patch/syntax.js";
+import { generateUnifiedDiff } from "../src/features/patch/diff.js";
+import { fetchPackageSourceTool } from "../src/features/patch/fetch-package-source.js";
+import { validatePatchedCodeSyntax } from "../src/features/patch/syntax.js";
+import { findPackageCallSites } from "../src/features/refactor/call-site-finder.js";
+// 2. Refactor Agent & AST Engine
+import {
+  parseCompilerDiagnostics,
+  transformCallArguments,
+  refactorConsumerCallSites,
+  revertRefactorSnapshots,
+} from "../src/features/refactor/codemods.js";
+import { checkSlaBreach } from "../src/features/remediate/sla.js";
+import { resolveInventoryVersion } from "../src/features/remediate/tools/check-inventory.js";
+import { applyVersionBumpTool } from "../src/features/upgrade/apply-version-bump.js";
 // 1. Proof-of-Fix Runner & Process Isolation
 import {
   runProofOfFixPhase,
@@ -36,19 +33,22 @@ import {
   isAssertionFailure,
   sanitizePathLeakage,
   stripStackTraceFrames,
-} from "../src/remediation/proof-of-fix/runner.js";
-import { findPackageCallSites } from "../src/remediation/refactor/call-site-finder.js";
-// 2. Refactor Agent & AST Engine
+} from "../src/features/verify/proof-of-fix/runner.js";
+import { BoundedJobRegistry, type AsyncRemediationJob } from "../src/infra/jobs/jobs.js";
+// 4. Platform Controls (Policy, Rollback, Jobs)
 import {
-  parseCompilerDiagnostics,
-  transformCallArguments,
-  refactorConsumerCallSites,
-  revertRefactorSnapshots,
-} from "../src/remediation/refactor/codemods.js";
-import { applyPatchFileTool } from "../src/remediation/tools/apply-patch-file/index.js";
-import { applyVersionBumpTool } from "../src/remediation/tools/apply-version-bump.js";
-import { resolveInventoryVersion } from "../src/remediation/tools/check-inventory.js";
-import { fetchPackageSourceTool } from "../src/remediation/tools/fetch-package-source.js";
+  DEFAULT_POLICY,
+  loadPolicy,
+  isPackageAllowed,
+  isActiveSuppression,
+  saveSuppressionToPolicy,
+  findSuppression,
+} from "../src/infra/policy/policy.js";
+import { recordFileTouch, withAtomicRollback } from "../src/infra/rollback/rollback.js";
+import { runInteractiveTriage } from "../src/surfaces/cli/triage.js";
+import { handleToolCall, TOOLS } from "../src/surfaces/mcp/server.js";
+// 5. OpenAPI, MCP, and CLI Triage
+import { createOpenApiServer } from "../src/surfaces/openapi/server.js";
 
 // This suite exercises the HTTP routes themselves, so it opts out of the auth requirement explicitly.
 beforeAll(() => {

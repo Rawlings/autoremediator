@@ -1,6 +1,6 @@
 ---
 description: Canonical runtime tool order and input/output contract requirements.
-applyTo: packages/core/src/{remediation,api,cli,mcp,openapi}/**/*.ts
+applyTo: packages/core/src/{features,api,surfaces}/**/*.ts
 ---
 
 # Tool Contracts
@@ -75,7 +75,7 @@ Patch lifecycle operations (post-remediation artifact management):
 When adding or renaming tools:
 
 - Update this file.
-- Update packages/core/src/remediation/pipeline.ts tool map.
+- Update packages/core/src/features/remediate/local/run.ts tool map.
 - Update .github/skills/agent-orchestration/SKILL.md.
 - Update MCP/OpenAPI contracts if exposed tool operations changed.
 - Run the `governance-check` skill checklist.

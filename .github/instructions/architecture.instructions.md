@@ -9,7 +9,7 @@ The rules live in one place each; this file only points to them so they cannot d
 
 - **Layout, dependency direction, module shape, size limits, imports, external services:** the
   `code-structure` skill. The module map and boundary rules are in
-  `docs/contributing/architecture.md`, and `packages/core/src/platform/boundaries.test.ts` enforces
+  `docs/contributing/architecture.md`, and `packages/core/src/shared/governance/boundaries.test.ts` enforces
   them. The target layout and the migration mapping are in `docs/contributing/target-structure.md`.
 - **How a file and a function should read, naming, shared idioms:** the `code-style` skill.
 - **Untrusted data, errors, expected failures, file and process I/O:** the `boundaries-and-errors`

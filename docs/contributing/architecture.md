@@ -4,38 +4,26 @@ For contributors. Read [AGENTS.md](../../AGENTS.md) for the wanted state and the
 [Modes and runtime behaviour](../reference/modes.md) for fallback rules and precedence, and
 [CONTRIBUTING.md](../../CONTRIBUTING.md) for the workflow.
 
-This page describes the layout as it is today. The code is moving to a feature-folder layout; the
-plan and the mapping are in [Target structure](target-structure.md). Update this page in each
-change that moves a folder. The behavior these modules
+Update this page in each change that adds or moves a folder. How the layout was reached is in
+[Target structure](target-structure.md). The behavior these modules
 implement is described in [How it works](../how-it-works.md).
 
 ## Layout (`packages/core/src`)
 
-| Directory               | Responsibility                                                                         |
-| ----------------------- | -------------------------------------------------------------------------------------- |
-| `api/`                  | The public SDK and report helpers. Everything else is reachable only through it.        |
-| `catalog/`              | Every capability defined once as an operation (zod input, annotations, handler). MCP tools are generated from it; HTTP routes and CLI commands are next. |
-| `api/init/`             | `init`: a planner that turns detected facts into reviewable file changes (safe JSON/TOML/Markdown merges, never overwrites an existing entry), plus the text shared by the generated agent files and the Claude Code plugin under `plugins/`. CLI and SDK only. |
-| `platform/memory/`      | Remediation memory: entries, tolerant parser/serializer, locked store, what planner and agents read. Leaf (platform only). |
-| `remediation/radar/`    | Silent-fix radar signals (changelog vocabulary, code diff, metadata, scoring, optional model port, sanitizer); `api/radar/` orchestrates and owns network and disk. |
-| `cli/`, `mcp/`, `openapi/` | Thin entry points: parse input, call `api/` or `catalog/`, format output. No remediation logic. |
-| `platform/maintainer-vex/` and `api/maintain/` | The VEX-in-the-package convention: `platform/maintainer-vex/` reads, validates (OpenVEX v0.2.0, strict, size and depth capped) and matches the documents installed packages ship, for the pipeline and `readMaintainerVex`; `api/maintain/` is the author-side planner behind `maintain` (OpenVEX file, `package.json` and changeset merges shown as a diff). See `docs/guides/maintainer-vex.md`. |
-| `remediation/local/`    | The pipeline (`run.ts`) and its stages: strategies, fallback, disposition, SBOM.        |
-| `remediation/tools/`    | Single-purpose operations (version bump, override, patch apply, inventory, …).          |
-| `remediation/patch/`    | Patch generation behind the `PatchGenerator` port; diff and syntax validation.          |
-| `remediation/proof-of-fix/`, `remediation/refactor/` | Optional verification and codemods.                     |
-| `remediation/repair/`   | Agent repair: the scoped tools and guard, the built-in agent loop, and the attempt (checkout, upgrade, verify, feedback rounds). |
-| `recipes/`              | Recipes as data: the schema, exact-context matching that turns a recipe into a diff, discovery (project, policy packages, installed packages), capture from a repair diff, and export. Imports `platform/` only; never touches a checkout. `remediation/repair/recipe-attempt.ts` applies one through the same patch validation as an agent's. |
-| `remediation/verify/`   | The verifier: independent checks (scope, policy, supply chain, install, advisories, tests) that judge a changed project, whoever changed it. |
-| `intelligence/sources/` | One module per advisory or signal source (OSV, GitHub, NVD, KEV, EPSS, npm registry).   |
-| `scanner/`              | Scanner-output adapters and the git-aware delta scan.                                   |
-| `runs/`                 | Run records on disk: hash-chained ledger, project fingerprints, persisted snapshots, plans, git worktrees. Imports `platform/` only. `api/runs` drives it. |
-| `platform/`             | Shared kernel: types, policy, option schemas (`option-schemas.ts`, the one zod definition of every option), rollback, safe subprocess execution, evidence, jobs. |
+Four layers and one public barrel. Dependencies point one way: `surfaces -> features -> infra ->
+shared`. `api/` (today just `index.ts`, the SDK export list) sits beside `surfaces/`.
 
-`platform/` must not import from the other directories, `catalog/` may use only `api/` and `platform/`,
-and the CLI, MCP and HTTP surfaces must go through `api/` rather than into `remediation/` or
-`intelligence/`. `platform/boundaries.test.ts`
-enforces both.
+| Directory | Responsibility |
+| --- | --- |
+| `shared/` | The kernel, importing nothing else in the package: typed errors and `errorMessage`, `isRecord`, JSON read and parse with a schema (`json.ts`), `sha256`, `sleep`, `toPosix`, `pluralize`, path guard, redaction, safe subprocess execution (`exec/`), the few types three or more features share (`types.ts`), the committed state-file paths (`state-paths.ts`), the package version. `governance/` holds the repository's own rule tests (boundaries, lint baseline, skill mirror). |
+| `infra/` | Machinery every feature uses: the policy file and its schemas (`policy/`), HTTP auth, client and security (`http/`), job registry (`jobs/`), package-manager detection and commands plus cooldown and workspace discovery (`package-manager/`), the rollback transaction (`rollback/`), the repo lock, environment config. |
+| `features/<name>/` | One folder per capability. `remediate/` is the pipeline (`local/`, `scan/`, `portfolio/`) and the report types; `runs/` is run records and the plan/apply/verify flow; `patch/`, `upgrade/`, `verify/`, `repair/`, `refactor/`, `impact/`, `reachability/` are what the pipeline calls; `intelligence/` (sources, evaluate), `scan/` (scanner adapters, lock graph, delta scan), `guard/`, `diet/`, `freshness/`, `incident/`, `radar/`, `bisect/`, `prove/`, `evidence/` (log and pack), `vex/`, `maintainer-vex/`, `memory/`, `recipes/`, `autonomy/`, `change-request/`, `policy-nl/`, `trace/`, `hooks/`, `init/`, `jobs/`. A feature owns its types in `types.ts` and keeps test helpers in `testing/`. |
+| `surfaces/` | Thin entry points that parse input, call a feature and format output: `cli/`, `mcp/`, `openapi/`, `a2a/`, and `catalog/`, where every capability is defined once as an operation (zod input, annotations, handler) and MCP tools, HTTP routes and A2A skills are generated from it. |
+| `api/` | `index.ts`, the public SDK export list. |
+
+`shared/governance/boundaries.test.ts` enforces the direction. Inside `features/`, one feature should
+reach another through its `index.ts`; the imports that still reach into another feature's files are
+counted by that test and may only shrink.
 
 ## The pipeline
 
@@ -55,11 +43,11 @@ There is no agent loop; the flow is deterministic. The only model call is
 
 ## Extension points
 
-- **Patch source**: implement `PatchGenerator` (`platform/patch-generator.ts`) and pass it as
+- **Patch source**: implement `PatchGenerator` (`features/patch/patch-generator.ts`) and pass it as
   `patchGenerator`, or use `createLlmPatchGenerator` with any AI SDK model.
-- **Scanner format**: add an adapter under `scanner/adapters/` returning normalized findings and
-  register it in `scanner/parse-input.ts`.
-- **Intelligence source**: add a module under `intelligence/sources/` that returns or enriches
+- **Scanner format**: add an adapter under `features/scan/adapters/` returning normalized findings and
+  register it in `features/scan/parse-input.ts`.
+- **Intelligence source**: add a module under `features/intelligence/sources/` that returns or enriches
   `CveDetails`, and call it from the lookup stage.
 
 ## Conventions

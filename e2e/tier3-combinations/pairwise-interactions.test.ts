@@ -1,11 +1,12 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createChangeRequestsForReports } from "../../packages/core/src/api/change-request/index.js";
-import { checkSlaBreach, isPackageAllowed, loadPolicy } from "../../packages/core/src/platform/policy.js";
-import { withAtomicRollback } from "../../packages/core/src/platform/rollback.js";
-import type { RemediationReport } from "../../packages/core/src/platform/types.js";
-import { applyDispositionAndContainment, computeDisposition } from "../../packages/core/src/remediation/local/disposition.js";
+import { createChangeRequestsForReports } from "../../packages/core/src/features/change-request/index.js";
+import { checkSlaBreach } from "../../packages/core/src/features/remediate/sla.js";
+import { isPackageAllowed, loadPolicy } from "../../packages/core/src/infra/policy/policy.js";
+import { withAtomicRollback } from "../../packages/core/src/infra/rollback/rollback.js";
+import type { RemediationReport } from "../../packages/core/src/features/remediate/types.js";
+import { applyDispositionAndContainment, computeDisposition } from "../../packages/core/src/features/remediate/local/disposition.js";
 import { refactorConsumerCallSites } from "../../packages/core/src/remediation/refactor/refactor-agent.js";
 import { generateUnifiedDiff, validatePatchedCodeSyntax } from "../../packages/core/src/remediation/tools/generate-patch/helpers.js";
 import { repairFileContent } from "../../packages/github-app/src/healing/pr-healer.js";

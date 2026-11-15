@@ -40,12 +40,11 @@ packages/core/src/
 ```
 
 Dependencies point one way: `surfaces -> features -> infra -> shared`, and features reach each other
-only through each other's `index.ts`. The code is being moved to this layout feature by feature; the
-plan and the mapping from today's folders are in
-[docs/contributing/target-structure.md](docs/contributing/target-structure.md), and the measured
-starting point is [docs/contributing/code-quality-audit.md](docs/contributing/code-quality-audit.md).
-Until a feature has moved, follow its current folder, but put new shared helpers in `shared/` and
-new features under `features/`.
+through each other's `index.ts`. `shared/governance/boundaries.test.ts` enforces the direction. The
+layout is described in [docs/contributing/architecture.md](docs/contributing/architecture.md); how it
+was reached, and what is still open, is in
+[docs/contributing/target-structure.md](docs/contributing/target-structure.md) and the measured
+starting point in [docs/contributing/code-quality-audit.md](docs/contributing/code-quality-audit.md).
 
 ## Commands
 

@@ -1,7 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { jobRegistry } from "../../packages/core/src/platform/jobs.js";
+import { jobRegistry } from "../../packages/core/src/infra/jobs/jobs.js";
 import { createRuntimeToolsForRun } from "../../packages/core/src/remediation/pipeline-runtime/tool-wrappers.js";
 import { cleanupTempDir, createTempDir, createTempRepo } from "../fixtures/temp-repo.js";
 

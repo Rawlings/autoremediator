@@ -40,7 +40,7 @@ back.
 
 ## 2. Replaceable micro-packages
 
-`packages/core/src/api/diet/replaceable.json` is a curated table. Each row names the Node built-in
+`packages/core/src/features/diet/replaceable.json` is a curated table. Each row names the Node built-in
 or platform API, the Node versions that have it (`nodeRange`, checked against nodejs.org's API
 history and MDN compatibility data), a one-line migration, what differs (`caveat`), and a `source`.
 Rows today: `left-pad`, `is-number`, `isarray`, `array-flatten`, `object-assign`, `globalthis`,

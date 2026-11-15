@@ -32,6 +32,7 @@ const SKIPPED_DIRS = new Set([
   "coverage",
   "__tests__",
   "tests",
+  "testing",
   "test",
   "fixtures",
   ".vite",
