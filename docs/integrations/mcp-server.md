@@ -25,6 +25,8 @@ options. Tools that return a report return it as JSON.
 | Attempts | `startAttempt`, `proposePatch`, `verifyAttempt`, `finalizeAttempt`, `abandonAttempt` (see [Letting your agent do the repair](../guides/plan-and-apply.md#letting-your-own-agent-do-the-repair)) |
 | Inspect | `checkReachability`, `evaluatePackage`, `guardPackage` ([details](../guides/guard.md)), `assessUpgrade`, `findVulnerableSymbols` ([details](../guides/upgrade-impact.md)), `analyzeDependencies` ([details](../guides/dependency-diet.md)), `incident`, `premortem` ([details](../guides/incident-response.md)), `getAutonomy` ([details](../guides/earned-autonomy.md)), `scanDelta`, `toVex` |
 | Recipes | `listRecipes`, `applyRecipe` ([details](../guides/recipes.md)) |
+| Evidence | `buildEvidencePack` ([details](../guides/evidence-pack.md)), `generateProofOfFix` ([details](../guides/proof-of-fix-generation.md)), `readMaintainerVex` ([details](../guides/maintainer-vex.md)) |
+| Advice | `radar` ([details](../guides/silent-fix-radar.md)), `freshnessReport`, `planFreshnessStep` ([details](../guides/freshness.md)), `listMemory` ([details](../guides/memory.md)), `compilePolicy`, `explainPolicy` ([details](../guides/policy-in-plain-language.md)) |
 | Patches | `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `reconcilePatchArtifacts` |
 | Jobs | `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob` |
 | Server | `health` |

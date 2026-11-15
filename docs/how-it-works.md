@@ -53,6 +53,7 @@ just changed; set `enforceFrozenLockfile` to freeze them anyway. Optional steps:
   vulnerability) and after it (it must pass). Put it at `patches/<package>+<version>.test.cjs`, or
   pass `reproductionTest` through the [SDK](reference/sdk.md). `--require-proof-of-fix` rolls back
   a change whose proof fails.
+- `autoremediator prove` can write the reproduction script for you: a model proposes it and a sandboxed harness keeps it only if it fails on the vulnerable version and passes on the fixed one ([details](guides/proof-of-fix-generation.md)).
 - `--breaking-change-refactor` (experimental) repairs call sites broken by a major upgrade, using
   built-in codemods for `rimraf` and `uuid` only.
 

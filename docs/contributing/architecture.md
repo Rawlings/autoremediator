@@ -11,6 +11,8 @@ implement is described in [How it works](../how-it-works.md).
 | `api/`                  | The public SDK and report helpers. Everything else is reachable only through it.        |
 | `catalog/`              | Every capability defined once as an operation (zod input, annotations, handler). MCP tools are generated from it; HTTP routes and CLI commands are next. |
 | `api/init/`             | `init`: a planner that turns detected facts into reviewable file changes (safe JSON/TOML/Markdown merges, never overwrites an existing entry), plus the text shared by the generated agent files and the Claude Code plugin under `plugins/`. CLI and SDK only. |
+| `platform/memory/`      | Remediation memory: entries, tolerant parser/serializer, locked store, what planner and agents read. Leaf (platform only). |
+| `remediation/radar/`    | Silent-fix radar signals (changelog vocabulary, code diff, metadata, scoring, optional model port, sanitizer); `api/radar/` orchestrates and owns network and disk. |
 | `cli/`, `mcp/`, `openapi/` | Thin entry points: parse input, call `api/` or `catalog/`, format output. No remediation logic. |
 | `platform/maintainer-vex/` and `api/maintain/` | The VEX-in-the-package convention: `platform/maintainer-vex/` reads, validates (OpenVEX v0.2.0, strict, size and depth capped) and matches the documents installed packages ship, for the pipeline and `readMaintainerVex`; `api/maintain/` is the author-side planner behind `maintain` (OpenVEX file, `package.json` and changeset merges shown as a diff). See `docs/guides/maintainer-vex.md`. |
 | `remediation/local/`    | The pipeline (`run.ts`) and its stages: strategies, fallback, disposition, SBOM.        |

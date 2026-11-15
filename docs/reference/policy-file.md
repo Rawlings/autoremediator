@@ -51,6 +51,8 @@ escalationGraph: { no-safe-version: open-issue }
 | Key | Meaning |
 | --- | ------- |
 | `autonomy` | `ceiling` (`L0`..`L4`, required), `minVerifiedRuns` (5), `window` (20), `minSuccessRate` (0.9), `cooldownDays` (7), `requireTestCoverage` (true). Caps how much a repository may do on its own; the earned level comes from its [track record](../guides/earned-autonomy.md). Only the policy file can set it |
+| `trustMaintainerVex` | `true` lets a `not_affected` [VEX statement shipped by an installed package](../guides/maintainer-vex.md) suppress remediation of the dependency it covers (`suppressedBy.source: maintainer-vex`). Default `false`: shown as evidence only. Policy file only |
+| `freshness` | `maxMajorsBehind`, `maxMinorsBehind` (on the latest major), `maxAgeDays`, `ignore` (name, `@scope/*`, `prefix*`). At least one limit is required. Drives [freshness](../guides/freshness.md); without the key nothing is planned |
 | `recipes.packages` | npm package names whose `recipes/` are trusted as [recipe](../guides/recipes.md) sources for any package |
 
 ## Packages

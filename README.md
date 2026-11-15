@@ -74,7 +74,7 @@ fixed that was not verified.
 | **[HTTP server](docs/integrations/http-server.md)** | Call it from internal services |
 | **[VS Code](packages/vscode-extension/README.md)** | Findings and one-click fixes in `package.json` |
 
-Beyond fixing a CVE: [guard](docs/guides/guard.md) packages before an agent installs them, [diet](docs/guides/dependency-diet.md) what you depend on, [bisect](docs/guides/bisect.md) a broken lockfile, respond to a [compromised package](docs/guides/incident-response.md), and let a repository [earn autonomy](docs/guides/earned-autonomy.md).
+Beyond fixing a CVE: assemble a [CRA evidence pack](docs/guides/evidence-pack.md), have a model write and prove an [exploit reproduction](docs/guides/proof-of-fix-generation.md), spot [silent security fixes](docs/guides/silent-fix-radar.md), keep dependencies [fresh](docs/guides/freshness.md) in small verified steps, and compile rules into a [policy](docs/guides/policy-in-plain-language.md). Also: [guard](docs/guides/guard.md) packages before an agent installs them, [diet](docs/guides/dependency-diet.md) what you depend on, [bisect](docs/guides/bisect.md) a broken lockfile, respond to a [compromised package](docs/guides/incident-response.md), and let a repository [earn autonomy](docs/guides/earned-autonomy.md).
 
 Works with npm, pnpm, Yarn, Bun and Deno projects. Requires Node.js 26 or later.
 

@@ -35,6 +35,13 @@ Every function returns a promise unless noted. Option names are identical to the
 | `incident(target, options)`, `incidentExitCode(report)`, `renderIncidentMarkdown(report)`, `premortem(options)` | `IncidentReport`, premortem report ([details](../guides/incident-response.md)) |
 | `bisectLockfile({ cwd?, good, bad?, command, ... })` | `BisectReport`. SDK and CLI only |
 | `analyzeDependencies({ cwd? })`, `removeUnusedDependencies(options)` | `DependencyDietReport`; `DietApplyResult` (writes; SDK and CLI only) |
+| `buildEvidencePack(options)`, `verifyEvidencePack(dir, { publicKeyPath? })`, `craDeadlines`, `parseAwareness`, `pae` | [CRA evidence pack](../guides/evidence-pack.md). `toCycloneDxVex(report, { specVersion: "1.6" })` emits 1.6 |
+| `generateProofOfFix(cveId, options, deps?)`, `verifyProofEvidence`, `findEvidence` | [Exploit-proof evidence](../guides/proof-of-fix-generation.md) |
+| `radar(options, deps?)`, `renderRadar`, `radarExitCode`, `createLlmRadarClassifier` | [Silent-fix radar](../guides/silent-fix-radar.md) |
+| `readMaintainerVex({ cwd, advisory, packageName })`, `maintain(options)` | [Maintainer VEX](../guides/maintainer-vex.md); results gain `maintainerVex` and `suppressedBy.source` |
+| `freshnessReport(options)`, `planFreshnessStep(options)`, `applyFreshness(options)` | [Freshness](../guides/freshness.md) |
+| `listMemory`, `addMemory`, `acceptMemory`, `removeMemory`, `pruneMemory`, `proposeMemory`, `memoryForHost` | [Memory](../guides/memory.md). Options take `ignoreMemory` (SDK and CLI only) |
+| `compilePolicy`, `writePolicyProposal`, `explainPolicy`, `findLoosenings`, `isLoosening` | [Policy in plain language](../guides/policy-in-plain-language.md) |
 | `installHooks({ cwd?, hooks?, manager?, uninstall?, yes?, check? })` | `HooksResult`: detected manager, per-hook state (`installed`, `missing`, `modified`, `conflict`), changes with diffs, `drift`, `applied`. Writes only with `yes`. See [Git hooks](../guides/git-hooks.md) |
 | `guardPackage(spec, { cwd?, minPublishAgeHours?, offline? })`, `guardPackages(specs, options?)` | `GuardReport`: `verdict` (`allow`, `warn`, `block`), `findings[]`, `resolvedVersion`, `alternative`. [Guarding new dependencies](../guides/guard.md) |
 | `scanDelta({ cwd?, baseRef?, includeUnstaged?, packageManager? })` | `DeltaScanReport` |

@@ -21,6 +21,13 @@ organized by what you are trying to do.
 - [Incident response](guides/incident-response.md): when a package is compromised, and pre-mortems
 - [Lockfile bisect](guides/bisect.md): find which dependency update broke a command
 - [Dependency diet](guides/dependency-diet.md): unused, replaceable and duplicate dependencies
+- [Evidence pack](guides/evidence-pack.md): CRA-oriented SBOM, VEX, report drafts and signed attestations
+- [Exploit-proof evidence](guides/proof-of-fix-generation.md): reproductions an agent writes and the harness proves
+- [Silent-fix radar](guides/silent-fix-radar.md): security-relevant releases before an advisory exists
+- [Maintainer VEX](guides/maintainer-vex.md): verdicts shipped inside packages
+- [Freshness](guides/freshness.md): small verified steps toward the latest versions
+- [Memory](guides/memory.md): what a repository remembers between runs
+- [Policy in plain language](guides/policy-in-plain-language.md): compile rules into a reviewable policy diff
 - [Guarding new dependencies](guides/guard.md): checking a package before an agent installs it
 - [Plan, apply and roll back](guides/plan-and-apply.md): reviewing a fix first, resuming, undoing
 - [Patch generation](guides/patch-generation.md): letting a model write a patch

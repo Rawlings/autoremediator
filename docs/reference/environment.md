@@ -11,6 +11,7 @@
 | `GH_TOKEN` | Fallback for opening pull requests |
 | `AUTOREMEDIATOR_EPSS_API` | Alternative EPSS endpoint |
 | `AUTOREMEDIATOR_TRACE_FILE`, `AUTOREMEDIATOR_TRACE_PACKAGES`, `AUTOREMEDIATOR_TRACE_CALLS` | Used by the [trace hook](../guides/runtime-reachability.md): JSONL output path (the hook does nothing without it), packages to count calls for, `1` to count calls |
+| `AUTOREMEDIATOR_EVIDENCE_SIGNING_KEY` | Path to a PEM key used to sign [evidence pack](../guides/evidence-pack.md) attestations (CLI and SDK only, never over MCP or HTTP) |
 | `AUTOREMEDIATOR_SKIP_HOOKS` | `1` makes the [git hooks](../guides/git-hooks.md) do nothing |
 | `AUTOREMEDIATOR_HOOK_TIMEOUT` | Seconds a git hook may run (default 60 for pre-push, 30 for post-merge) |
 
