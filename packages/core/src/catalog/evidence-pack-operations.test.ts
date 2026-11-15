@@ -33,14 +33,14 @@ describe("buildEvidencePack on every surface", () => {
     expect(toMcpTools().map((tool) => tool.name)).toContain("buildEvidencePack");
     expect(matchHttpRoute("POST", "/evidence-pack")?.operation.name).toBe("buildEvidencePack");
     expect(Object.keys(toOpenApiPaths())).toContain("/evidence-pack");
-    // It writes files (under outDir only) and never touches the network or the dependencies.
+    // It writes files (under outDir only), replacing an earlier pack there, and never touches the network or the dependencies.
     expect(operation.annotations).toEqual({
       readOnlyHint: false,
-      destructiveHint: false,
+      destructiveHint: true,
       idempotentHint: true,
       openWorldHint: false,
     });
-    expect(roleFor(operation)).toBe("operator");
+    expect(roleFor(operation)).toBe("admin");
   });
 
   it("nests every option under options over HTTP and rejects unknown or key-material fields", async () => {

@@ -1,4 +1,5 @@
 import { collectDependencyChanges } from "../../scanner/delta-scan.js";
+import { resolveGitCommit } from "../../platform/git-ref.js";
 import { safeExeca } from "../../platform/safe-exec.js";
 import type { DeltaDependencyChange } from "../../platform/types.js";
 import { guardPackage, type GuardDeps, defaultGuardDeps } from "./index.js";
@@ -52,14 +53,11 @@ export function specForChange(change: DeltaDependencyChange): { spec: string } |
 }
 
 async function resolveBase(cwd: string, ref: string): Promise<string> {
-  const exists = await safeExeca("git", ["rev-parse", "--verify", "--quiet", `${ref}^{commit}`], { cwd, reject: false });
-  if (exists.exitCode !== 0) {
-    throw new Error(`"${ref}" is not a commit in this repository (is ${cwd} a git checkout, and does the ref exist?)`);
-  }
+  const commit = await resolveGitCommit(cwd, "baseRef", ref);
   // Compare with where this branch left the base, so work that landed on the base since does not show up as ours.
-  const base = await safeExeca("git", ["merge-base", ref, "HEAD"], { cwd, reject: false });
+  const base = await safeExeca("git", ["merge-base", commit, "HEAD"], { cwd, reject: false });
   const sha = base.exitCode === 0 ? base.stdout.trim() : "";
-  return sha || ref;
+  return sha || commit;
 }
 
 async function mapLimit<T, R>(items: readonly T[], limit: number, run: (item: T) => Promise<R>): Promise<R[]> {

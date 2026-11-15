@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { OPTION_DESCRIPTIONS, pathField } from "../platform/option-schemas.js";
+import { OPTION_DESCRIPTIONS, pathField, registryPackageName } from "../platform/option-schemas.js";
 import { defineOperation, type Operation } from "./define-operation.js";
 
 const proveInput = z
@@ -12,10 +12,7 @@ const proveInput = z
       .describe(
         "The advisory to reproduce: a CVE, GHSA or OSV id. With advisoryText it may be any label.",
       ),
-    package: z
-      .string()
-      .min(1)
-      .max(214)
+    package: registryPackageName()
       .optional()
       .describe(
         "The npm package to prove against. Optional when the advisory affects exactly one package.",

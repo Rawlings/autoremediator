@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 
+import { assertSafeGitRef } from "../../platform/git-ref.js";
 import { redactSecrets } from "../../platform/redact.js";
 import { safeExeca } from "../../platform/safe-exec.js";
 import { commitMessage, deterministicBranchName } from "./branch.js";
@@ -15,6 +16,7 @@ import {
 } from "../../platform/types.js";
 import {
   buildPushAuthHeader,
+  checkTokenDestination,
   commitIdentity,
   createAzureDevOpsPullRequest,
   createBitbucketPullRequest,
@@ -221,6 +223,15 @@ async function readOriginUrl(cwd: string): Promise<string> {
     stdio: "pipe",
   }).catch(() => ({ stdout: "" }));
   return result.stdout.trim();
+}
+
+/** The URL a named remote pushes to, as configured (before any `insteadOf` rewriting). */
+async function readRemoteUrl(cwd: string, remote: string): Promise<string> {
+  for (const key of [`remote.${remote}.pushurl`, `remote.${remote}.url`]) {
+    const result = await safeExeca("git", ["config", "--get", key], { cwd, stdio: "pipe" }).catch(() => ({ stdout: "" }));
+    if (result.stdout.trim()) return result.stdout.trim();
+  }
+  return "";
 }
 
 async function detectRepoFromRemote(cwd: string): Promise<string | undefined> {
@@ -590,12 +601,41 @@ export async function createChangeRequestsForReports(params: {
   const results: ChangeRequestResult[] = [];
   const token = resolveChangeRequestToken(provider, options);
 
+  // A caller-supplied branch reaches `git checkout`: it must not read as an option (git itself never names a branch "-...").
+  if (options.baseBranch !== undefined) assertSafeGitRef("baseBranch", options.baseBranch);
   const baseBranch = options.baseBranch ?? (await detectCurrentBranch(cwd).catch(() => "main"));
   const branchPrefix = options.branchPrefix ?? "autoremediator";
   const pushRemote = options.pushRemote ?? "origin";
   if (options.pushRemote && !/^[a-zA-Z0-9._-]+$/.test(options.pushRemote)) {
     throw new Error(`Invalid pushRemote value: ${options.pushRemote}`);
   }
+
+  // The token goes to the push remote (and, off GitHub, to the API host the origin names): check both before using it.
+  let destination: { pushToken: string | undefined; refusal: string | undefined } | undefined;
+  const tokenDestination = async (): Promise<{ pushToken: string | undefined; refusal: string | undefined }> => {
+    if (destination) return destination;
+    if (!token) {
+      destination = { pushToken: undefined, refusal: undefined };
+      return destination;
+    }
+    const explicitToken = Boolean(options.token || (options.tokenEnvVar && process.env[options.tokenEnvVar]));
+    const pushCheck = checkTokenDestination({
+      provider,
+      remoteUrl: await readRemoteUrl(cwd, pushRemote),
+      explicitToken,
+      githubApiUrl: options.githubApiUrl,
+      forPush: true,
+    });
+    const apiCheck =
+      provider === "github"
+        ? undefined
+        : checkTokenDestination({ provider, remoteUrl: await readOriginUrl(cwd), explicitToken });
+    destination = {
+      pushToken: pushCheck.send ? token : undefined,
+      refusal: pushCheck.refusal ?? apiCheck?.refusal,
+    };
+    return destination;
+  };
   if (options.repository && !isValidRepositoryForProvider(provider, options.repository)) {
     throw new Error(`Invalid repository format: ${options.repository}`);
   }
@@ -624,10 +664,27 @@ export async function createChangeRequestsForReports(params: {
       continue;
     }
 
+    const { pushToken, refusal: tokenRefusal } = await tokenDestination();
+    if (tokenRefusal) {
+      results.push({
+        provider,
+        grouping,
+        repository: options.repository,
+        branchName: "",
+        title,
+        body,
+        created: false,
+        cveIds: plan.cveIds,
+        packageNames: plan.packageNames,
+        error: tokenRefusal,
+      });
+      continue;
+    }
+
     const branchName = deterministicBranchName(branchPrefix, plan.cveIds, plan.packageNames);
     let branchCreated = false;
 
-    const existing = await inspectExistingBranch(provider, cwd, pushRemote, branchName, token);
+    const existing = await inspectExistingBranch(provider, cwd, pushRemote, branchName, pushToken);
     if (existing.foreign) {
       results.push({
         provider,
@@ -690,7 +747,7 @@ export async function createChangeRequestsForReports(params: {
       // A re-run replaces only the commit a previous run pushed, and only if nobody moved the branch since.
       const pushArgs = withAuth(
         provider,
-        token,
+        pushToken,
         existing.remoteSha
           ? ["push", `--force-with-lease=refs/heads/${branchName}:${existing.remoteSha}`, "-u", pushRemote, branchName]
           : ["push", "-u", pushRemote, branchName],

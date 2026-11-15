@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { defaultApiDeps, OPERATIONS, roleFor, type ApiDeps } from "../catalog/index.js";
 import { createOpenApiServer } from "../openapi/server.js";
+import { createSignedJwt } from "../platform/http-auth.js";
 import {
   A2A_ENDPOINT_PATH,
   A2A_PROTOCOL_VERSION,
@@ -510,6 +511,54 @@ describe("HTTP server", () => {
 
       const missing = await json(await rpc("GetTask", { id: "nope" }, asReader));
       expect(missing.error.code).toBe(-32_001);
+    });
+
+    it("does not show one caller's task to another caller who holds the same role", async () => {
+      vi.stubEnv("AUTOREMEDIATOR_API_TOKENS", "admin:adm-SECRET,reader:rdr-SECRET,reader:rdr-OTHER");
+      const sent = await json(
+        await rpc("SendMessage", invoke("guardPackage", { spec: "left-pad" }), asReader),
+      );
+      const id = sent.result.task.id as string;
+
+      const other = await json(await rpc("GetTask", { id }, { Authorization: "Bearer rdr-OTHER" }));
+      expect(other.error.code).toBe(-32_001);
+      expect(other.result).toBeUndefined();
+
+      const same = await json(await rpc("GetTask", { id }, asReader));
+      expect(same.result.id).toBe(id);
+    });
+
+    it("tells callers apart by the subject of their JWT, not by the token text", async () => {
+      const secret = "jwt-SECRET-value";
+      const jwt = (sub: string, exp: number) =>
+        ({ Authorization: `Bearer ${createSignedJwt({ sub, role: "reader", exp }, secret)}` });
+      const future = Math.floor(Date.now() / 1000) + 3600;
+      const sent = await json(
+        await rpc("SendMessage", invoke("guardPackage", { spec: "left-pad" }), jwt("alice", future)),
+      );
+      const id = sent.result.task.id as string;
+
+      // A refreshed token for the same subject reads it; another subject with the same role does not.
+      expect((await json(await rpc("GetTask", { id }, jwt("alice", future + 60)))).result.id).toBe(id);
+      expect((await json(await rpc("GetTask", { id }, jwt("mallory", future)))).error.code).toBe(-32_001);
+    });
+
+    it("keeps only a short copy of the caller's message, but answers with the whole thing", async () => {
+      const big = "x".repeat(400_000);
+      const message = invoke("guardPackage", { spec: "left-pad" });
+      message.message.parts.push({ text: big } as never);
+      const sent = await json(await rpc("SendMessage", message, asReader));
+      expect(JSON.stringify(sent.result.task.history)).toContain(big);
+      const id = sent.result.task.id as string;
+
+      const got = await json(await rpc("GetTask", { id }, asReader));
+      expect(got.result.history).toHaveLength(1);
+      const kept = JSON.stringify(got.result.history);
+      expect(kept.length).toBeLessThan(4096);
+      expect(kept).not.toContain(big);
+      // What the caller asked for is still recognisable.
+      expect(got.result.history[0].messageId).toBe("m1");
+      expect(got.result.history[0].parts[0].data.operation).toBe("guardPackage");
     });
   });
 });

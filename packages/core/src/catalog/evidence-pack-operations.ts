@@ -73,9 +73,10 @@ export const EVIDENCE_PACK_OPERATIONS: readonly Operation[] = [
     description:
       "Assemble a reviewable evidence bundle from local data, for a manufacturer to hand to an auditor. Writes, under outDir only: a CycloneDX 1.6 SBOM of the lockfile (purls, hashes, licenses, dependency graph); VEX as CycloneDX 1.6 (with affects) and OpenVEX 0.2.0, from policy suppressions and recorded runs read against the lockfile; DRAFT Article 14 early-warning, notification and final-report texts for advisories recorded as CISA-KEV-listed and affecting the product, with deadlines computed from awarenessAt; DSSE/in-toto attestations of each recorded run's hash-chained ledger, signed only when signingKeyPath is given (otherwise signed: false); and a manifest of sha256 digests. This is evidence assembly, not legal advice or a compliance claim, and nothing is submitted anywhere. Reads the project and run records; no network. Changes nothing outside outDir.",
     input: buildEvidencePackInput,
+    // Replaces an earlier pack in outDir (only the files that pack listed, and only if unchanged).
     annotations: {
       readOnlyHint: false,
-      destructiveHint: false,
+      destructiveHint: true,
       idempotentHint: true,
       openWorldHint: false,
     },

@@ -32,15 +32,15 @@ afterEach(() => {
 });
 
 describe("compilePolicy and explainPolicy on every surface", () => {
-  it("are MCP tools, HTTP routes and OpenAPI paths, both read-only", () => {
+  it("are MCP tools, HTTP routes and OpenAPI paths; explain is a read, compile spends model tokens so it needs operator", () => {
     for (const name of ["compilePolicy", "explainPolicy"]) {
       expect(toMcpTools().map((tool) => tool.name)).toContain(name);
-      expect(byName(name).annotations).toMatchObject({
-        readOnlyHint: true,
-        destructiveHint: false,
-      });
-      expect(roleFor(byName(name))).toBe("reader");
     }
+    expect(byName("explainPolicy").annotations).toMatchObject({ readOnlyHint: true, destructiveHint: false });
+    expect(roleFor(byName("explainPolicy"))).toBe("reader");
+    // It writes nothing, but it sends the policy and the request to a model provider the caller chooses.
+    expect(byName("compilePolicy").annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false });
+    expect(roleFor(byName("compilePolicy"))).toBe("operator");
     expect(matchHttpRoute("POST", "/policy/compile")?.operation.name).toBe("compilePolicy");
     expect(matchHttpRoute("POST", "/policy/explain")?.operation.name).toBe("explainPolicy");
     expect(Object.keys(toOpenApiPaths())).toEqual(

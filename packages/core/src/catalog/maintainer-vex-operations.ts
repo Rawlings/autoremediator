@@ -4,6 +4,7 @@ import {
   OPTION_DESCRIPTIONS,
   PACKAGE_MANAGER_VALUES,
   pathField,
+  registryPackageName,
 } from "../platform/option-schemas.js";
 import { defineOperation, type Operation } from "./define-operation.js";
 
@@ -21,10 +22,7 @@ const readMaintainerVexInput = z
       .max(100)
       .optional()
       .describe("Only statements that name this advisory (a CVE or GHSA id, or an alias of it)."),
-    packageName: z
-      .string()
-      .min(1)
-      .max(214)
+    packageName: registryPackageName()
       .optional()
       .describe("Only the document shipped by this installed package."),
   })

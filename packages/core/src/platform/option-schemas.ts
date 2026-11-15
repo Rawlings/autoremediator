@@ -8,6 +8,7 @@
  */
 import { z } from "zod";
 
+import { PACKAGE_NAME_MAX_LENGTH, PACKAGE_NAME_PATTERN } from "./package-name.js";
 import type { RemediateOptions, UnresolvedReason } from "./types.js";
 
 export const PACKAGE_MANAGER_VALUES = ["npm", "pnpm", "yarn", "bun", "deno"] as const;
@@ -412,10 +413,15 @@ export const getAutonomyOptionsSchema = z
   .partial()
   .strict();
 
-export const packageNameSchema = z
-  .string(required("packageName"))
-  .min(1, required("packageName"))
-  .describe("Package name");
+/** A name that is safe in a registry path and under `node_modules/`; see `isValidPackageName`. */
+export const registryPackageName = (): z.ZodString =>
+  z
+    .string(required("packageName"))
+    .min(1, required("packageName"))
+    .max(PACKAGE_NAME_MAX_LENGTH)
+    .regex(PACKAGE_NAME_PATTERN, "Not a valid npm package name");
+
+export const packageNameSchema = registryPackageName().describe("Package name");
 
 const RUN_ID_PATTERN = /^run_[0-9a-z]{20}$/;
 const PLAN_ID_PATTERN = /^plan_[0-9a-f]{16}$/;

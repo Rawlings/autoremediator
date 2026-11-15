@@ -61,8 +61,9 @@ export const RADAR_OPERATIONS: readonly Operation[] = [
     description:
       "Find security-relevant changes that have no published advisory. For each direct (optionally transitive) dependency, compares the installed version with the latest (or the newest minor or patch) and flags releases in between that look like security fixes: changelog text with a fixed security vocabulary (negation understood), code differences between the published tarballs (added guards, containment checks, length limits, sanitizers; ReDoS-prone regular expressions removed; dangerous sinks removed), and registry metadata (a predecessor deprecated for security). Returns a ranked list with a transparent score, a confidence label (likely, possible, weak), the upgrade distance, quoted evidence for every flag, an OSV cross-check (an entry is marked now-advisory with the id when one exists) and, for direct dependencies, the upgrade impact on this project. Never states that a vulnerability exists: it reports a security-relevant change without a published advisory. Heuristic; evidence is untrusted text from packages. Downloads package metadata and tarballs within a byte and time budget; changes nothing.",
     input: radarInput,
+    // Changes nothing, but can spend model tokens, call GitHub and download up to a 256 MB tarball budget: not a reader's call.
     annotations: {
-      readOnlyHint: true,
+      readOnlyHint: false,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: true,

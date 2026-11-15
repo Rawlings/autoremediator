@@ -123,6 +123,25 @@ describe("packumentUrl", () => {
     const config = createRegistryConfig(new Map(), {});
     expect(packumentUrl(config, "lodash")).toBe("https://registry.npmjs.org/lodash");
     expect(packumentUrl(config, "@scope/name")).toBe("https://registry.npmjs.org/@scope%2Fname");
+    // Old registry packages have upper-case names.
+    expect(packumentUrl(config, "JSONStream")).toBe("https://registry.npmjs.org/JSONStream");
+  });
+
+  it("refuses a name that would steer the request to another registry path", () => {
+    const config = createRegistryConfig(new Map(), {});
+    for (const name of [
+      "a/../../-/npm/v1/tokens",
+      "../x",
+      "@scope/../../-/whoami",
+      "@scope/a/b",
+      "a%2Fb",
+      "a?x=1",
+      "a#frag",
+      "",
+      ".hidden",
+    ]) {
+      expect(() => packumentUrl(config, name)).toThrow(/not a valid npm package name/);
+    }
   });
 });
 

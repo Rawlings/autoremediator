@@ -54,6 +54,104 @@ export function buildPushAuthHeader(provider: ChangeRequestProvider, token: stri
   return isJwtLike(token) ? `AUTHORIZATION: bearer ${token}` : basic("");
 }
 
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+
+const PROVIDER_HOSTS: Record<ChangeRequestProvider, RegExp> = {
+  github: /^(?:ssh\.)?github\.com$|\.ghe\.com$/,
+  gitlab: /^gitlab\.com$/,
+  bitbucket: /^bitbucket\.org$/,
+  "azure-devops": /^(?:(?:vs-)?ssh\.)?dev\.azure\.com$|\.visualstudio\.com$/,
+};
+
+function hostnameOf(host: string): string {
+  const withoutPort = host.startsWith("[") ? host.replace(/\]:\d+$/, "]") : host.replace(/:\d+$/, "");
+  return withoutPort.toLowerCase();
+}
+
+function hostFromUrlOrHost(value: string | undefined): string | undefined {
+  const text = value?.trim();
+  if (!text) return undefined;
+  try {
+    return hostnameOf(new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `https://${text}`).host);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Hosts the user has named for GitHub: the API URL option and the variables Actions and `gh` set. */
+function namedGitHubHosts(githubApiUrl: string | undefined, env: NodeJS.ProcessEnv): Set<string> {
+  const hosts = new Set<string>();
+  for (const value of [githubApiUrl, env.GITHUB_API_URL, env.GITHUB_SERVER_URL, env.GH_HOST]) {
+    const host = hostFromUrlOrHost(value);
+    if (!host) continue;
+    hosts.add(host);
+    if (host.startsWith("api.")) hosts.add(host.slice(4));
+  }
+  return hosts;
+}
+
+export interface TokenDestinationCheck {
+  provider: ChangeRequestProvider;
+  /** The remote's URL as the repository has it configured. */
+  remoteUrl: string | undefined;
+  /** The caller passed the token (or the name of the variable that holds it) rather than leaving it to the environment. */
+  explicitToken: boolean;
+  githubApiUrl?: string;
+  /** True for the push/fetch header, which only an http(s) remote ever sees. */
+  forPush?: boolean;
+  env?: NodeJS.ProcessEnv;
+}
+
+export interface TokenDestinationDecision {
+  send: boolean;
+  /** Why the token must not go there; set only when a remote that would receive it was rejected. */
+  refusal?: string;
+}
+
+/**
+ * Whether the change-request token may be sent to the host a remote points at. The provider
+ * defaults to GitHub, so a GitLab or Bitbucket remote with `GITHUB_TOKEN` set would otherwise be
+ * handed the GitHub token; an `http://` remote would receive it in cleartext. Loopback hosts are
+ * always allowed (local test servers). A GitHub token goes only to github.com, `*.ghe.com`, or a
+ * host the caller named (`githubApiUrl`, `GITHUB_SERVER_URL`, `GITHUB_API_URL`, `GH_HOST`), unless
+ * the caller passed the token explicitly.
+ */
+export function checkTokenDestination(check: TokenDestinationCheck): TokenDestinationDecision {
+  const url = check.remoteUrl?.trim() ?? "";
+  if (check.forPush && !/^https?:\/\//i.test(url)) return { send: false };
+  const remote = parseRemoteUrl(url);
+  if (!remote) return { send: false };
+  const host = hostnameOf(remote.host);
+  if (LOOPBACK_HOSTS.has(host)) return { send: true };
+
+  const label = `the ${check.provider} token`;
+  if (remote.scheme === "http") {
+    return {
+      send: false,
+      refusal: `Not sending ${label} to ${host}: the remote uses http://, which would send it in cleartext. Use an https remote.`,
+    };
+  }
+  for (const [other, pattern] of Object.entries(PROVIDER_HOSTS)) {
+    if (other !== check.provider && pattern.test(host)) {
+      return {
+        send: false,
+        refusal: `Not sending ${label} to ${host}: that host belongs to ${other}. Set changeRequest.provider to ${other} (--change-request-provider ${other}).`,
+      };
+    }
+  }
+  if (check.provider === "github") {
+    const env = check.env ?? process.env;
+    if (PROVIDER_HOSTS.github.test(host) || namedGitHubHosts(check.githubApiUrl, env).has(host) || check.explicitToken) {
+      return { send: true };
+    }
+    return {
+      send: false,
+      refusal: `Not sending ${label} to ${host}: it is not github.com or a host you named. Set changeRequest.provider to match the host, name a GitHub Enterprise host with githubApiUrl or GITHUB_SERVER_URL, or pass the token explicitly.`,
+    };
+  }
+  return { send: true };
+}
+
 /** Git identity used for the remediation commit. GitHub keeps its historical bot identity. */
 export function commitIdentity(provider: ChangeRequestProvider): { name: string; email: string } {
   return provider === "github"
