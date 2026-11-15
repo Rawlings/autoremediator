@@ -165,6 +165,14 @@ export {
 export { remediateFromScan } from "./remediate-from-scan/index.js";
 export { updateOutdated } from "./update-outdated/index.js";
 export { checkReachability } from "./reachability/index.js";
+export { traceRun } from "./trace/index.js";
+export type { TraceRunOptions, TraceRunResult } from "./trace/index.js";
+export type { TracePackage, TraceReport } from "../trace/types.js";
+export type {
+  ReachabilityEvidenceKind,
+  RuntimeReachability,
+  RuntimeReachabilityVerdict,
+} from "../platform/types.js";
 export { evaluatePackage } from "./evaluate/index.js";
 export { scanDelta } from "./delta-scan/index.js";
 export { init, AGENT_HOSTS } from "./init/index.js";

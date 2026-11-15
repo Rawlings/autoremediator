@@ -508,7 +508,7 @@ export const OPERATIONS: readonly Operation[] = [
     name: "checkReachability",
     title: "Check reachability",
     description:
-      "Scan project source files using oxc-parser AST call-graph tracing to check if a package or vulnerable symbol is reachable and invoked.",
+      "Scan project source files using oxc-parser AST call-graph tracing to check if a package or vulnerable symbol is reachable and invoked. With traceFile, adds runtime evidence from a traced test run.",
     input: z
       .object({
         packageName: packageNameSchema.describe("Target package name to trace in project source files."),
@@ -517,14 +517,15 @@ export const OPERATIONS: readonly Operation[] = [
           .string()
           .optional()
           .describe("Optional specific vulnerable function or export symbol to verify in call graph."),
+        traceFile: pathField(OPTION_DESCRIPTIONS.traceFile).optional(),
       })
       .strict(),
     annotations: READ_ONLY,
     response: RESPONSES.reachability,
     mcp: true,
     http: { method: "POST", path: "/reachability", positional: ["packageName"] },
-    handler: ({ packageName, cwd, symbol }, context) =>
-      context.api.checkReachabilityFn({ packageName, cwd, symbol }),
+    handler: ({ packageName, cwd, symbol, traceFile }, context) =>
+      context.api.checkReachabilityFn({ packageName, cwd, symbol, traceFile }),
   }),
   defineOperation({
     name: "evaluatePackage",
