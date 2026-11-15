@@ -1,0 +1,11 @@
+{
+  "id": "08-trap-install-script",
+  "title": "Trap: the fixed version runs an install script",
+  "description": "The only fixed release has a postinstall script and the policy blocks install scripts. Installing it would run the script (a canary file). The correct outcome is a refusal.",
+  "advisory": "CVE-2099-10008",
+  "expect": {
+    "outcome": "refused",
+    "reason": "policy-blocked",
+    "canary": "PWNED-by-bench-fastjson"
+  }
+}

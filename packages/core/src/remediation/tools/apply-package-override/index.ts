@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import {
   detectPackageManager,
+  getPnpmMajorVersion,
   getYarnMajorVersion,
   resolveDedupeCommand,
   resolveInstallCommand,
@@ -26,19 +27,25 @@ import {
   prepareReproductionTestFile,
   runProofOfFixPhase,
 } from "../../proof-of-fix/runner.js";
+import { serializeManifest } from "../manifest-format.js";
 import { defineTool } from "../tool-compat.js";
 import {
   collectDependencyTrace,
   describeOverrideField,
   getDenoJsonImportValue,
-  getOverrideValue,
   restoreDenoJsonImportValue,
-  restoreOverrideValue,
   setDenoJsonImportValue,
   setOverrideValue,
   type DenoJson,
   type RawPackageJson,
 } from "./helpers.js";
+import {
+  PNPM_WORKSPACE_OVERRIDES_FROM,
+  pnpmLockRecordsOverride,
+  readWorkspaceYaml,
+  restoreWorkspaceYaml,
+  setWorkspaceOverride,
+} from "./pnpm-workspace.js";
 
 export const applyPackageOverrideTool = defineTool({
   description:
@@ -118,7 +125,7 @@ export const applyPackageOverrideTool = defineTool({
     };
     const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
     const installCommand = resolveInstallCommand(pm, commandConstraints, yarnMajor);
-    const testCommand = resolveTestCommand(pm, commandConstraints);
+    const testCommand = resolveTestCommand(pm, commandConstraints, cwd);
     const dedupeCommand = resolveDedupeCommand(pm, commandConstraints);
     const overrideSelector = selector?.trim() || packageName;
 
@@ -395,8 +402,11 @@ export const applyPackageOverrideTool = defineTool({
       };
     }
 
-    const overrideLabel = describeOverrideField(pm);
-    const previousValue = getOverrideValue(pkgJson, pm, overrideSelector);
+    const pnpmMajor = pm === "pnpm" ? await getPnpmMajorVersion(cwd) : undefined;
+    const useWorkspaceYaml = pm === "pnpm" && (pnpmMajor ?? 0) >= PNPM_WORKSPACE_OVERRIDES_FROM;
+    const overrideLabel = useWorkspaceYaml
+      ? "overrides in pnpm-workspace.yaml"
+      : describeOverrideField(pm);
 
     const dependencyTrace = await collectDependencyTrace(cwd, pm, packageName, commandConstraints);
     const dependencyTraceSuffix = dependencyTrace ? ` Dependency trace: ${dependencyTrace}` : "";
@@ -466,8 +476,18 @@ export const applyPackageOverrideTool = defineTool({
         }
       }
 
-      setOverrideValue(pkgJson, pm, overrideSelector, toVersion);
-      writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+      const originalManifest = readFileSync(pkgPath, "utf8");
+      const originalWorkspace = useWorkspaceYaml ? readWorkspaceYaml(cwd) : undefined;
+      const restoreOverrideFiles = (): void => {
+        writeFileSync(pkgPath, originalManifest, "utf8");
+        if (useWorkspaceYaml) restoreWorkspaceYaml(cwd, originalWorkspace);
+      };
+      if (useWorkspaceYaml) {
+        setWorkspaceOverride(cwd, overrideSelector, toVersion);
+      } else {
+        setOverrideValue(pkgJson, pm, overrideSelector, toVersion);
+        writeFileSync(pkgPath, serializeManifest(originalManifest, pkgJson), "utf8");
+      }
 
       try {
         await safeExecaCommand(installCommand, {
@@ -476,8 +496,7 @@ export const applyPackageOverrideTool = defineTool({
           stdio: "pipe",
         });
       } catch (err) {
-        restoreOverrideValue(pkgJson, pm, overrideSelector, previousValue);
-        writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+        restoreOverrideFiles();
         const message = err instanceof Error ? err.message : String(err);
         return {
           packageName,
@@ -491,6 +510,30 @@ export const applyPackageOverrideTool = defineTool({
         };
       }
 
+      // An install can succeed and still ignore the override (the wrong field for this pnpm version).
+      if (pm === "pnpm" && pnpmLockRecordsOverride(cwd, overrideSelector) === false) {
+        restoreOverrideFiles();
+        try {
+          await safeExecaCommand(installCommand, {
+            timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+            cwd,
+            stdio: "pipe",
+          });
+        } catch {
+          // The files are restored; a failed reinstall here is reported by the next run.
+        }
+        return {
+          packageName,
+          strategy: "override",
+          fromVersion,
+          toVersion,
+          applied: false,
+          dryRun: false,
+          unresolvedReason: "override-apply-failed",
+          message: `pnpm did not record the ${overrideLabel} override for "${overrideSelector}" in pnpm-lock.yaml, so it had no effect. Reverted.${dependencyTraceSuffix}`,
+        };
+      }
+
       if (runTests) {
         try {
           await safeExecaCommand(testCommand, {
@@ -499,8 +542,7 @@ export const applyPackageOverrideTool = defineTool({
             stdio: "pipe",
           });
         } catch (err) {
-          restoreOverrideValue(pkgJson, pm, overrideSelector, previousValue);
-          writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+          restoreOverrideFiles();
 
           try {
             await safeExecaCommand(installCommand, {
@@ -535,8 +577,7 @@ export const applyPackageOverrideTool = defineTool({
         });
 
         if (!positivePhaseResult.passed) {
-          restoreOverrideValue(pkgJson, pm, overrideSelector, previousValue);
-          writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+          restoreOverrideFiles();
 
           try {
             await safeExecaCommand(installCommand, {

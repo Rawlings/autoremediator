@@ -20,7 +20,8 @@ as `requires-llm-fallback`.
 
 ## What happens
 
-1. The published source of the vulnerable package version is fetched from the registry.
+1. The published source of the vulnerable package version is fetched from your configured registry
+   and checked against its integrity digest.
 2. The model receives the advisory summary and that source, and returns the new contents of the files
    that must change.
 3. The result is turned into a diff, syntax-checked, and given a confidence score.

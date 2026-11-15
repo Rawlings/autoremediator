@@ -9,17 +9,27 @@ implement is described in [How it works](../how-it-works.md).
 | Directory               | Responsibility                                                                         |
 | ----------------------- | -------------------------------------------------------------------------------------- |
 | `api/`                  | The public SDK and report helpers. Everything else is reachable only through it.        |
-| `cli/`, `mcp/`, `openapi/` | Thin entry points: parse input, call `api/`, format output. No remediation logic.    |
+| `catalog/`              | Every capability defined once as an operation (zod input, annotations, handler). MCP tools are generated from it; HTTP routes and CLI commands are next. |
+| `api/init/`             | `init`: a planner that turns detected facts into reviewable file changes (safe JSON/TOML/Markdown merges, never overwrites an existing entry), plus the text shared by the generated agent files and the Claude Code plugin under `plugins/`. CLI and SDK only. |
+| `platform/memory/`      | Remediation memory: entries, tolerant parser/serializer, locked store, what planner and agents read. Leaf (platform only). |
+| `remediation/radar/`    | Silent-fix radar signals (changelog vocabulary, code diff, metadata, scoring, optional model port, sanitizer); `api/radar/` orchestrates and owns network and disk. |
+| `cli/`, `mcp/`, `openapi/` | Thin entry points: parse input, call `api/` or `catalog/`, format output. No remediation logic. |
+| `platform/maintainer-vex/` and `api/maintain/` | The VEX-in-the-package convention: `platform/maintainer-vex/` reads, validates (OpenVEX v0.2.0, strict, size and depth capped) and matches the documents installed packages ship, for the pipeline and `readMaintainerVex`; `api/maintain/` is the author-side planner behind `maintain` (OpenVEX file, `package.json` and changeset merges shown as a diff). See `docs/guides/maintainer-vex.md`. |
 | `remediation/local/`    | The pipeline (`run.ts`) and its stages: strategies, fallback, disposition, SBOM.        |
 | `remediation/tools/`    | Single-purpose operations (version bump, override, patch apply, inventory, …).          |
 | `remediation/patch/`    | Patch generation behind the `PatchGenerator` port; diff and syntax validation.          |
 | `remediation/proof-of-fix/`, `remediation/refactor/` | Optional verification and codemods.                     |
+| `remediation/repair/`   | Agent repair: the scoped tools and guard, the built-in agent loop, and the attempt (checkout, upgrade, verify, feedback rounds). |
+| `recipes/`              | Recipes as data: the schema, exact-context matching that turns a recipe into a diff, discovery (project, policy packages, installed packages), capture from a repair diff, and export. Imports `platform/` only; never touches a checkout. `remediation/repair/recipe-attempt.ts` applies one through the same patch validation as an agent's. |
+| `remediation/verify/`   | The verifier: independent checks (scope, policy, supply chain, install, advisories, tests) that judge a changed project, whoever changed it. |
 | `intelligence/sources/` | One module per advisory or signal source (OSV, GitHub, NVD, KEV, EPSS, npm registry).   |
 | `scanner/`              | Scanner-output adapters and the git-aware delta scan.                                   |
-| `platform/`             | Shared kernel: types, policy, rollback, safe subprocess execution, evidence, jobs.      |
+| `runs/`                 | Run records on disk: hash-chained ledger, project fingerprints, persisted snapshots, plans, git worktrees. Imports `platform/` only. `api/runs` drives it. |
+| `platform/`             | Shared kernel: types, policy, option schemas (`option-schemas.ts`, the one zod definition of every option), rollback, safe subprocess execution, evidence, jobs. |
 
-`platform/` must not import from the other directories, and the CLI, MCP and HTTP surfaces must go
-through `api/` rather than into `remediation/` or `intelligence/`. `platform/boundaries.test.ts`
+`platform/` must not import from the other directories, `catalog/` may use only `api/` and `platform/`,
+and the CLI, MCP and HTTP surfaces must go through `api/` rather than into `remediation/` or
+`intelligence/`. `platform/boundaries.test.ts`
 enforces both.
 
 ## The pipeline

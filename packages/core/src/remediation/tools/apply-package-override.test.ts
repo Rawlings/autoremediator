@@ -10,6 +10,7 @@ const mocked = vi.hoisted(() => ({
   detectPackageManager: vi.fn(),
   getPackageManagerCommands: vi.fn(),
   getYarnMajorVersion: vi.fn(),
+  getPnpmMajorVersion: vi.fn(),
   resolveDedupeCommand: vi.fn(),
   resolveInstallCommand: vi.fn(),
   resolveTestCommand: vi.fn(),
@@ -25,6 +26,7 @@ vi.mock("node:fs", () => ({
   existsSync: mocked.existsSync,
   readFileSync: mocked.readFileSync,
   writeFileSync: mocked.writeFileSync,
+  rmSync: vi.fn(),
 }));
 
 vi.mock("execa", () => ({
@@ -44,6 +46,7 @@ vi.mock("../../platform/package-manager/index.js", () => ({
   detectPackageManager: mocked.detectPackageManager,
   getPackageManagerCommands: mocked.getPackageManagerCommands,
   getYarnMajorVersion: mocked.getYarnMajorVersion,
+  getPnpmMajorVersion: mocked.getPnpmMajorVersion,
   resolveDedupeCommand: mocked.resolveDedupeCommand,
   resolveInstallCommand: mocked.resolveInstallCommand,
   resolveTestCommand: mocked.resolveTestCommand,
@@ -78,6 +81,7 @@ describe("apply-package-override", () => {
     mocked.resolveTestCommand.mockReturnValue(["npm", "test"]);
     mocked.resolveWhyCommand.mockReturnValue(["npm", "explain", "minimist"]);
     mocked.getYarnMajorVersion.mockResolvedValue(1);
+    mocked.getPnpmMajorVersion.mockResolvedValue(10);
     mocked.execa.mockResolvedValue({ stdout: "ok", exitCode: 0 });
     mocked.withRepoLock.mockImplementation(async (_cwd: string, fn: () => Promise<unknown>) =>
       fn(),
@@ -105,7 +109,60 @@ describe("apply-package-override", () => {
     expect(result.applied).toBe(true);
   });
 
+  const pnpmLock = (withOverride: boolean) => (path: string) =>
+    path.endsWith("pnpm-lock.yaml")
+      ? `lockfileVersion: '9.0'\n${withOverride ? "overrides:\n  minimist: 1.2.8\n" : ""}`
+      : path.endsWith("pnpm-workspace.yaml")
+        ? "packages:\n  - '.' # keep me\n"
+        : JSON.stringify({ name: "demo-app" });
+
+  it("on pnpm 11 and later writes overrides to pnpm-workspace.yaml, which that pnpm reads, and leaves package.json alone", async () => {
+    mocked.getPnpmMajorVersion.mockResolvedValue(12);
+    mocked.readFileSync.mockImplementation(pnpmLock(true));
+    const result = await (applyPackageOverrideTool as any).execute({
+      cwd: "/tmp/project",
+      packageManager: "pnpm",
+      packageName: "minimist",
+      fromVersion: "1.2.0",
+      toVersion: "1.2.8",
+      dryRun: false,
+      runTests: false,
+    });
+
+    const written = mocked.writeFileSync.mock.calls.map((call) => String(call[0]));
+    expect(written).toContain("/tmp/project/pnpm-workspace.yaml");
+    expect(written).not.toContain("/tmp/project/package.json");
+    const workspaceText = mocked.writeFileSync.mock.calls.find((call) =>
+      String(call[0]).endsWith("pnpm-workspace.yaml"),
+    )?.[1] as string;
+    expect(workspaceText).toContain("minimist: 1.2.8");
+    expect(workspaceText).toContain("# keep me");
+    expect(result.applied).toBe(true);
+  });
+
+  it("does not claim success when pnpm's lockfile does not record the override, and puts the files back", async () => {
+    mocked.getPnpmMajorVersion.mockResolvedValue(12);
+    mocked.readFileSync.mockImplementation(pnpmLock(false));
+    const result = await (applyPackageOverrideTool as any).execute({
+      cwd: "/tmp/project",
+      packageManager: "pnpm",
+      packageName: "minimist",
+      fromVersion: "1.2.0",
+      toVersion: "1.2.8",
+      dryRun: false,
+      runTests: false,
+    });
+
+    expect(result.applied).toBe(false);
+    expect(result.unresolvedReason).toBe("override-apply-failed");
+    expect(result.message).toContain("did not record");
+    const restored = mocked.writeFileSync.mock.calls.at(-1);
+    expect(String(restored?.[0])).toBe("/tmp/project/pnpm-workspace.yaml");
+    expect(restored?.[1]).toBe("packages:\n  - '.' # keep me\n");
+  });
+
   it("writes pnpm overrides under pnpm.overrides", async () => {
+    mocked.readFileSync.mockImplementation(pnpmLock(true));
     await (applyPackageOverrideTool as any).execute({
       cwd: "/tmp/project",
       packageManager: "pnpm",

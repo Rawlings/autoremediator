@@ -5,9 +5,15 @@ import { isAbsolute, join, relative, resolve as resolvePath } from "node:path";
 
 import { remediateFromScan, type CveSeverity, type ScanReport } from "autoremediator";
 
+import { codeScanningAlertTarget, dependabotAlertTarget } from "./alerts.js";
+import { HELP_TEXT, parseComment } from "./commands.js";
+import { collectCheckRunLogs } from "./diagnostics/check-run-logs.js";
 import { parseCheckRunLogs } from "./diagnostics/log-parser.js";
-import { healPullRequest } from "./healing/pr-healer.js";
+import { runBotPrDoctor } from "./doctor/bot-pr-doctor.js";
+import { botKindOfBranch, botKindOfLogin, isForkPullRequest } from "./doctor/bot-pr.js";
+import { healPullRequest, regexRepairStrategy } from "./healing/pr-healer.js";
 import { fetchRepoConfig } from "./repo-config.js";
+import { summarizeScanReport } from "./summary.js";
 import type {
   AutoremediatorRepoConfig,
   DefaultRemediationHandlerOptions,
@@ -30,6 +36,11 @@ const SEVERITY_RANK: Record<CveSeverity, number> = {
   HIGH: 3,
   CRITICAL: 4,
 };
+
+function headRefOf(pullRequest: Record<string, unknown>): string {
+  const head = pullRequest.head as Record<string, unknown> | undefined;
+  return typeof head?.ref === "string" ? head.ref : "";
+}
 
 export type RemediationHandler = (
   context: RemediationTriggerContext,
@@ -61,7 +72,10 @@ export function createDefaultRemediationHandler(
       context.eventName !== "check_suite" &&
       context.eventName !== "workflow_dispatch" &&
       context.eventName !== "push" &&
-      context.eventName !== "check_run"
+      context.eventName !== "check_run" &&
+      context.eventName !== "issue_comment" &&
+      context.eventName !== "dependabot_alert" &&
+      context.eventName !== "code_scanning_alert"
     ) {
       return;
     }
@@ -87,9 +101,29 @@ export function createDefaultRemediationHandler(
       const checkRun = context.payload.check_run as Record<string, unknown> | undefined;
       const pullRequests =
         (checkRun?.pull_requests as Array<Record<string, unknown>> | undefined) ?? [];
+      // Bot branches are the doctor's, even when a dependency name puts "autoremediator" in them.
+      const botPr = pullRequests.find((p) => botKindOfBranch(headRefOf(p)) !== undefined);
+      if (botPr) {
+        if (typeof botPr.number !== "number" || !repoRef || !checkRun) return;
+        // The webhook shows the head repository; the doctor checks again against the live pull request.
+        if (isForkPullRequest(botPr))
+          return { status: "success", reason: "Pull request comes from a fork" };
+        return runBotPrDoctor({
+          octokit,
+          owner: repoRef.owner,
+          repo: repoRef.repo,
+          pullNumber: botPr.number,
+          checkRun,
+          repoConfig,
+          stateStore: options.stateStore,
+          strategy: options.repairStrategy ?? regexRepairStrategy,
+          selfAppId: options.selfAppId,
+          logger: options.onError,
+        });
+      }
+
       const pr = pullRequests.find((p) => {
-        const head = p.head as Record<string, unknown> | undefined;
-        const ref = typeof head?.ref === "string" ? head.ref : "";
+        const ref = headRefOf(p);
         return ref.startsWith("autoremediator/") || ref.includes("autoremediator");
       });
 
@@ -101,41 +135,7 @@ export function createDefaultRemediationHandler(
         return { status: "success", reason: "PR auto-healing disabled in repo config" };
       }
 
-      let rawLogs = [
-        (checkRun?.output as Record<string, unknown> | undefined)?.title,
-        (checkRun?.output as Record<string, unknown> | undefined)?.summary,
-        (checkRun?.output as Record<string, unknown> | undefined)?.text,
-      ]
-        .filter(Boolean)
-        .join("\n");
-
-      if (typeof checkRun?.id === "number") {
-        try {
-          const annRes = await octokit.checks.listAnnotations({
-            owner: repoRef.owner,
-            repo: repoRef.repo,
-            check_run_id: checkRun.id,
-          });
-          if (Array.isArray(annRes?.data)) {
-            const annLines = annRes.data.map(
-              (ann) =>
-                `${ann.path}:${ann.start_line || 1}:1 - error ${ann.title || "check"}: ${ann.message || ""}`,
-            );
-            rawLogs += "\n" + annLines.join("\n");
-          }
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          void options.onError?.({
-            timestamp: new Date().toISOString(),
-            source: "github-app",
-            level: "warn",
-            context: "remediation-handler.listAnnotations",
-            message: `Failed to fetch check run annotations: ${message}`,
-            error: message,
-            details: { owner: repoRef.owner, repo: repoRef.repo, checkRunId: checkRun.id },
-          });
-        }
-      }
+      const rawLogs = await collectCheckRunLogs(octokit, repoRef, checkRun, options.onError);
 
       const diagnostic = parseCheckRunLogs(rawLogs);
       const head = pr.head as Record<string, unknown> | undefined;
@@ -160,6 +160,31 @@ export function createDefaultRemediationHandler(
     }
 
     const payload = context.payload ?? {};
+
+    // Work that names its advisories (a comment command or an alert) instead of scanning for them.
+    let targeted: TargetedRun | undefined;
+    if (context.eventName === "issue_comment") {
+      const outcome = await prepareCommentRun(octokit, repoRef, payload, options);
+      if ("done" in outcome) return outcome.done;
+      targeted = outcome.run;
+    } else if (
+      context.eventName === "dependabot_alert" ||
+      context.eventName === "code_scanning_alert"
+    ) {
+      const target =
+        context.eventName === "dependabot_alert"
+          ? dependabotAlertTarget(payload)
+          : codeScanningAlertTarget(payload);
+      if (!target) return;
+      if (
+        SEVERITY_RANK[normalizeSeverity(target.severity)] <
+        SEVERITY_RANK[repoConfig.minimumSeverity]
+      ) {
+        return { status: "success", reason: "Alert is below the configured minimum severity" };
+      }
+      targeted = { cveIds: target.advisoryIds };
+    }
+
     const headSha =
       typeof (payload.check_suite as Record<string, unknown> | undefined)?.head_sha === "string"
         ? ((payload.check_suite as Record<string, unknown>).head_sha as string)
@@ -177,13 +202,49 @@ export function createDefaultRemediationHandler(
     let isolatedWorkspaceDir: string | undefined;
     let cleanupCheckout: (() => Promise<void>) | undefined;
 
-    if (options.checkoutProvider) {
-      const checkout = await options.checkoutProvider({
-        owner: repoRef?.owner ?? "unknown",
-        repo: repoRef?.repo ?? "unknown",
-        ref: targetRef,
-        token: context.installationToken,
+    // A comment command gets exactly one reply. Once it has been given, failing the job would
+    // make the queue run the command again and post again, so the failure is answered here and
+    // the job ends as `partial` (never retried). The reply and the result carry no error text:
+    // it can hold clone URLs with tokens, so it goes to the log, redacted.
+    const answerFailedCommand = async (error: unknown): Promise<RemediationJobResult> => {
+      const message = redactTokens(error instanceof Error ? error.message : String(error));
+      void options.onError?.({
+        timestamp: new Date().toISOString(),
+        source: "github-app",
+        level: "error",
+        context: "remediation-handler.commentCommand",
+        message: `Comment command failed: ${message}`,
+        error: message,
       });
+      if (targeted?.reply && repoRef) {
+        await postComment(
+          octokit,
+          repoRef,
+          targeted.reply.issueNumber,
+          "**Autoremediator** could not finish this request. See the app logs for details.",
+          options,
+        );
+      }
+      return {
+        status: "partial",
+        reason: "The request failed and was answered; it is not retried",
+      };
+    };
+    const answersCommand = Boolean(targeted?.reply && repoRef);
+
+    if (options.checkoutProvider) {
+      let checkout: Awaited<ReturnType<NonNullable<typeof options.checkoutProvider>>>;
+      try {
+        checkout = await options.checkoutProvider({
+          owner: repoRef?.owner ?? "unknown",
+          repo: repoRef?.repo ?? "unknown",
+          ref: targetRef,
+          token: context.installationToken,
+        });
+      } catch (error) {
+        if (answersCommand) return answerFailedCommand(error);
+        throw error;
+      }
       isolatedWorkspaceDir = checkout.cwd;
       cleanupCheckout = checkout.cleanup;
     } else if (repoRef) {
@@ -228,6 +289,7 @@ export function createDefaultRemediationHandler(
           if (cleanupCheckout) {
             await cleanupCheckout();
           }
+          if (answersCommand) return answerFailedCommand(cloneError);
           throw cloneError;
         }
       }
@@ -240,31 +302,40 @@ export function createDefaultRemediationHandler(
       cwd = resolvePath(isolatedWorkspaceDir, repoConfig.cwd);
       const escaped = relative(isolatedWorkspaceDir, cwd);
       if (escaped.startsWith("..") || isAbsolute(escaped)) {
-        throw new Error(
+        const error = new Error(
           `Configured cwd "${repoConfig.cwd}" resolves outside the repository checkout.`,
         );
+        if (answersCommand) {
+          await cleanupCheckout?.();
+          return answerFailedCommand(error);
+        }
+        throw error;
       }
     }
 
-    const dryRun = repoConfig.dryRun;
+    const dryRun = targeted?.forceDryRun ?? repoConfig.dryRun;
     const runTests = repoConfig.runTests;
     const minimumSeverity = repoConfig.minimumSeverity;
 
-    const changeRequest: ScanChangeRequestOptions | undefined = repoConfig.pullRequest?.enabled
+    const pullRequest = repoConfig.pullRequest ?? {};
+    // A plan never changes anything; a fix asked for in a comment always ends in a reviewable pull request.
+    const wantsPullRequest = targeted?.forceDryRun
+      ? false
+      : Boolean(pullRequest.enabled || targeted?.forcePullRequest);
+    const changeRequest: ScanChangeRequestOptions | undefined = wantsPullRequest
       ? {
           enabled: true,
           provider: "github",
-          grouping: repoConfig.pullRequest.grouping,
+          grouping: pullRequest.grouping,
           repository:
-            repoConfig.pullRequest.repository ??
-            (repoRef ? `${repoRef.owner}/${repoRef.repo}` : undefined),
-          baseBranch: repoConfig.pullRequest.baseBranch,
-          branchPrefix: repoConfig.pullRequest.branchPrefix,
-          titlePrefix: repoConfig.pullRequest.titlePrefix,
-          bodyFooter: repoConfig.pullRequest.bodyFooter,
-          draft: repoConfig.pullRequest.draft,
-          pushRemote: repoConfig.pullRequest.pushRemote,
-          tokenEnvVar: repoConfig.pullRequest.tokenEnvVar,
+            pullRequest.repository ?? (repoRef ? `${repoRef.owner}/${repoRef.repo}` : undefined),
+          baseBranch: pullRequest.baseBranch,
+          branchPrefix: pullRequest.branchPrefix,
+          titlePrefix: pullRequest.titlePrefix,
+          bodyFooter: pullRequest.bodyFooter,
+          draft: pullRequest.draft,
+          pushRemote: pullRequest.pushRemote,
+          tokenEnvVar: pullRequest.tokenEnvVar,
           token: context.installationToken,
         }
       : undefined;
@@ -281,7 +352,7 @@ export function createDefaultRemediationHandler(
     };
 
     try {
-      if (minimumSeverity === "UNKNOWN") {
+      if (!targeted && minimumSeverity === "UNKNOWN") {
         const report = await remediateFromScan("", {
           cwd,
           audit: true,
@@ -293,11 +364,14 @@ export function createDefaultRemediationHandler(
         return toRemediationJobResult(report);
       }
 
-      const findings = options.auditFindingProvider
-        ? await options.auditFindingProvider(cwd)
-        : await collectAuditFindings(cwd);
-
-      const cveIds = selectCvesByMinimumSeverity(findings, minimumSeverity);
+      const cveIds =
+        targeted?.cveIds ??
+        selectCvesByMinimumSeverity(
+          options.auditFindingProvider
+            ? await options.auditFindingProvider(cwd)
+            : await collectAuditFindings(cwd),
+          minimumSeverity,
+        );
       if (cveIds.length === 0) {
         return { status: "success", reason: "No CVEs matched minimum severity filter" };
       }
@@ -322,7 +396,29 @@ export function createDefaultRemediationHandler(
           ...policyOptions,
         });
 
-        return toRemediationJobResult(report);
+        const result = toRemediationJobResult(report);
+        if (targeted?.reply && repoRef) {
+          const dryRunDefaulted = targeted.reply.mode === "fix" && repoConfig.dryRun;
+          await postComment(
+            octokit,
+            repoRef,
+            targeted.reply.issueNumber,
+            [
+              summarizeScanReport(report, targeted.reply.mode),
+              ...(dryRunDefaulted
+                ? [
+                    "",
+                    "This repository defaults to dry runs; this request opened a pull request anyway because you asked for it.",
+                  ]
+                : []),
+            ].join("\n"),
+            options,
+          );
+          // The summary is posted. A `failed` result would make the queue run the command again
+          // and post it again, so it is reported as `partial` instead.
+          if (result.status === "failed") return { ...result, status: "partial" };
+        }
+        return result;
       } finally {
         try {
           await rm(tempDir, { recursive: true, force: true });
@@ -338,6 +434,10 @@ export function createDefaultRemediationHandler(
           });
         }
       }
+    } catch (error) {
+      // The error text can contain clone URLs, so it stays in the logs and out of the comment.
+      if (answersCommand) return await answerFailedCommand(error);
+      throw error;
     } finally {
       if (cleanupCheckout) {
         try {
@@ -356,6 +456,239 @@ export function createDefaultRemediationHandler(
       }
     }
   };
+}
+
+interface TargetedRun {
+  cveIds: string[];
+  forceDryRun?: boolean;
+  forcePullRequest?: boolean;
+  reply?: { issueNumber: number; mode: "plan" | "fix" };
+}
+
+type RepoRef = { owner: string; repo: string };
+
+/** Hide the credential part of any `https://user:secret@host` URL in text bound for a log. */
+function redactTokens(text: string): string {
+  return text.replaceAll(/(https?:\/\/[^:/\s@]+:)[^@\s]+@/g, "$1***@");
+}
+type Octokit = Awaited<ReturnType<DefaultRemediationHandlerOptions["octokitFactory"]>>;
+
+async function postComment(
+  octokit: Octokit,
+  repo: RepoRef,
+  issueNumber: number,
+  body: string,
+  options: DefaultRemediationHandlerOptions,
+): Promise<void> {
+  try {
+    await octokit.issues.createComment({
+      owner: repo.owner,
+      repo: repo.repo,
+      issue_number: issueNumber,
+      body,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    void options.onError?.({
+      timestamp: new Date().toISOString(),
+      source: "github-app",
+      level: "warn",
+      context: "remediation-handler.postComment",
+      message: `Failed to post comment: ${message}`,
+      error: message,
+    });
+  }
+}
+
+/** Only people who can already push may ask the app to change the repository. */
+async function hasWriteAccess(octokit: Octokit, repo: RepoRef, login: string): Promise<boolean> {
+  try {
+    const { data } = await octokit.repos.getCollaboratorPermissionLevel({
+      owner: repo.owner,
+      repo: repo.repo,
+      username: login,
+    });
+    return data.permission === "admin" || data.permission === "write";
+  } catch {
+    return false;
+  }
+}
+
+async function prepareCommentRun(
+  octokit: Octokit,
+  repo: RepoRef | undefined,
+  payload: Record<string, unknown>,
+  options: DefaultRemediationHandlerOptions,
+): Promise<{ done: RemediationJobResult | undefined } | { run: TargetedRun }> {
+  const comment = payload.comment as Record<string, unknown> | undefined;
+  const issue = payload.issue as Record<string, unknown> | undefined;
+  const issueNumber = issue?.number;
+  const login = (comment?.user as Record<string, unknown> | undefined)?.login;
+  const command = parseComment(typeof comment?.body === "string" ? comment.body : "");
+  if (!command || !repo || typeof issueNumber !== "number" || typeof login !== "string") {
+    return { done: undefined };
+  }
+
+  if (!(await hasWriteAccess(octokit, repo, login))) {
+    // Anyone can comment, so this is answered once per thread, and not at all when there is no
+    // state store to remember it in: otherwise every comment of a stranger would get a reply.
+    const noticeKey = `no-write-access:${repo.owner}/${repo.repo}#${issueNumber}`.toLowerCase();
+    if (options.stateStore?.claimNotice(noticeKey)) {
+      await postComment(
+        octokit,
+        repo,
+        issueNumber,
+        "Autoremediator commands need write access to this repository.",
+        options,
+      );
+    }
+    return { done: { status: "success", reason: "Commenter lacks write access" } };
+  }
+
+  if (command.name === "rollback") {
+    await postComment(
+      octokit,
+      repo,
+      issueNumber,
+      await rollbackReply(octokit, repo, issueNumber, Boolean(issue?.pull_request)),
+      options,
+    );
+    return { done: { status: "success" } };
+  }
+
+  if (command.name === "help" || command.advisoryIds.length === 0) {
+    const note =
+      command.name !== "help" && command.advisoryIds.length === 0
+        ? "That command needs at least one CVE or GHSA id.\n\n"
+        : "";
+    await postComment(octokit, repo, issueNumber, `${note}${HELP_TEXT}`, options);
+    return { done: { status: "success" } };
+  }
+
+  const modeKey = (id: string) => `${repo.owner}/${repo.repo}:${id}`.toLowerCase();
+  let mode: "plan" | "fix";
+  if (command.name === "retry") {
+    // Retry runs each advisory the way it was last run in this repository. That history lives in
+    // the state store, so without one there is nothing to repeat.
+    const known = command.advisoryIds.map((id) => ({
+      id,
+      mode: options.stateStore?.getRemediationMode(modeKey(id)),
+    }));
+    const unknown = known.filter((entry) => entry.mode === undefined).map((entry) => entry.id);
+    if (unknown.length > 0) {
+      await postComment(
+        octokit,
+        repo,
+        issueNumber,
+        `Nothing to retry for ${unknown.join(", ")}: no earlier \`plan\` or \`fix\` of it was recorded for this repository. Use \`/autoremediator plan\` or \`/autoremediator fix\` first.`,
+        options,
+      );
+      return { done: { status: "success", reason: "Nothing to retry" } };
+    }
+    const modes = new Set(known.map((entry) => entry.mode));
+    if (modes.size > 1) {
+      await postComment(
+        octokit,
+        repo,
+        issueNumber,
+        "Those advisories were last run in different modes (plan and fix). Retry them in separate comments.",
+        options,
+      );
+      return { done: { status: "success", reason: "Mixed retry modes" } };
+    }
+    mode = known[0]?.mode === "fix" ? "fix" : "plan";
+  } else {
+    mode = command.name === "fix" ? "fix" : "plan";
+  }
+
+  // Remember the request before running it, so a run that fails can still be retried.
+  for (const id of command.advisoryIds)
+    options.stateStore?.recordRemediationMode(modeKey(id), mode);
+
+  return {
+    run: {
+      cveIds: command.advisoryIds,
+      forceDryRun: mode === "plan",
+      forcePullRequest: mode === "fix",
+      reply: { issueNumber, mode },
+    },
+  };
+}
+
+/** A bot account that is not one of the dependency bots, whose text copies third-party content. */
+function isAppAuthor(login: string | null | undefined): boolean {
+  if (!login?.toLowerCase().endsWith("[bot]")) return false;
+  return botKindOfLogin(login) === undefined;
+}
+
+const RUN_TRAILER = /^Autoremediator-Run:[ \t]*(run_[0-9a-z]{20})[ \t]*$/gm;
+const MAX_ROLLBACK_RUNS = 5;
+
+function runIdsIn(text: string | null | undefined): string[] {
+  return [...(text ?? "").matchAll(RUN_TRAILER)].map((match) => match[1] ?? "").filter(Boolean);
+}
+
+/**
+ * The comment for `/autoremediator rollback`: the exact command that undoes a recorded run. The
+ * app never rolls back itself. Run ids are read from `Autoremediator-Run:` trailers and echoed
+ * only if they match the run id format exactly.
+ */
+async function rollbackReply(
+  octokit: Octokit,
+  repo: RepoRef,
+  issueNumber: number,
+  isPullRequest: boolean,
+): Promise<string> {
+  const runIds = new Set<string>();
+  try {
+    const { data } = await octokit.issues.get({
+      owner: repo.owner,
+      repo: repo.repo,
+      issue_number: issueNumber,
+    });
+    // Anyone can write a pull request description, and so can a package's changelog that
+    // Dependabot copies into one, so only text the app itself wrote is believed.
+    if (isAppAuthor(data.user?.login)) {
+      for (const id of runIdsIn(data.body)) runIds.add(id);
+    }
+
+    if (runIds.size === 0 && isPullRequest) {
+      const { data: commits } = await octokit.pulls.listCommits({
+        owner: repo.owner,
+        repo: repo.repo,
+        pull_number: issueNumber,
+        per_page: 100,
+      });
+      for (const commit of commits) {
+        if (!isAppAuthor(commit.author?.login)) continue;
+        for (const id of runIdsIn(commit.commit.message)) runIds.add(id);
+      }
+    }
+  } catch {
+    return "**Autoremediator** could not read this pull request to look for a recorded run. Try again, or revert its commits.";
+  }
+
+  const ids = [...runIds].slice(0, MAX_ROLLBACK_RUNS);
+  if (ids.length === 0) {
+    return [
+      "**Autoremediator rollback**",
+      "",
+      "No `Autoremediator-Run:` trailer was found in this description or its commits, so there is no recorded run to roll back.",
+      "To undo the change, revert its commits or close the pull request.",
+    ].join("\n");
+  }
+
+  return [
+    "**Autoremediator rollback**",
+    "",
+    "Autoremediator does not roll anything back from a comment. This records the following run(s); to undo one, run this in the checkout that made it:",
+    "",
+    "```sh",
+    ...ids.map((id) => `autoremediator runs rollback ${id}`),
+    "```",
+    "",
+    "It restores the files the run changed and reinstalls. A run is recorded in the `.autoremediator/runs` folder of the checkout where it ran: if this pull request was opened by the app from a temporary checkout, that record is gone, and reverting the pull request's commits is the way back.",
+  ].join("\n");
 }
 
 function toRemediationJobResult(report: ScanReport): RemediationJobResult {
@@ -618,7 +951,7 @@ function createSarifFromCves(cveIds: string[]): Record<string, unknown> {
           ruleId: cveId,
           level: "warning",
           message: {
-            text: `${cveId} matched configured minimum severity filter`,
+            text: `${cveId} was selected for remediation`,
           },
         })),
       },

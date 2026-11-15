@@ -1,9 +1,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { memoryTestCommand } from "../memory/consume.js";
 import { safeExeca } from "../safe-exec.js";
 import type { PackageManager, RemediationConstraints } from "../types.js";
-import { parsePackageManagerListOutput } from "./list-parser.js";
+import { type InstalledVersions, parsePackageManagerListOutput } from "./list-parser.js";
 
 export type { PackageManager };
 
@@ -27,6 +28,17 @@ export async function getYarnMajorVersion(cwd: string): Promise<number> {
     return Number.isNaN(major) ? 1 : major;
   } catch {
     return 1;
+  }
+}
+
+/** The installed pnpm major version, or undefined when it cannot be determined. */
+export async function getPnpmMajorVersion(cwd: string): Promise<number | undefined> {
+  try {
+    const result = await safeExeca("pnpm", ["--version"], { cwd, stdio: "pipe" });
+    const major = Number.parseInt(result.stdout.trim().split(".")[0] ?? "", 10);
+    return Number.isNaN(major) ? undefined : major;
+  } catch {
+    return undefined;
   }
 }
 
@@ -127,10 +139,21 @@ export function resolveListCommand(
   return withWorkspace(base, pm, constraints?.workspace);
 }
 
+/**
+ * The command that runs a project's tests. With `cwd`, a project whose `package.json` has no test
+ * script gets the test command its memory holds, if any (see `memoryTestCommand`); a script the
+ * project defines is never overridden, and a workspace selection leaves the choice to the package
+ * manager.
+ */
 export function resolveTestCommand(
   pm: PackageManager,
   constraints?: RemediationConstraints,
+  cwd?: string,
 ): string[] {
+  if (cwd !== undefined && !constraints?.workspace && pm !== "deno") {
+    const remembered = memoryTestCommand(cwd, pm);
+    if (remembered) return remembered;
+  }
   const base =
     pm === "pnpm"
       ? ["pnpm", "test"]
@@ -268,6 +291,6 @@ export function getPackageManagerCommands(pm: PackageManager): PackageManagerCom
   };
 }
 
-export function parseListOutput(pm: PackageManager, stdout: string): Map<string, string> {
+export function parseListOutput(pm: PackageManager, stdout: string): InstalledVersions {
   return parsePackageManagerListOutput(pm, stdout);
 }

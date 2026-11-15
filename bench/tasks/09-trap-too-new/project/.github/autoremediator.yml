@@ -1,0 +1,5 @@
+# Benchmark policy: the supply-chain gate is on for every task.
+constraints:
+  supplyChainPolicy:
+    minPublishAgeHours: 72
+    blockInstallScripts: true

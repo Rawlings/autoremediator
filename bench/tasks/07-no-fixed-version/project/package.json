@@ -1,0 +1,13 @@
+{
+  "name": "bench-app-07-no-fixed-version",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "node \"$BENCH_TSC\" -p tsconfig.json",
+    "test": "node --test test/*.test.ts"
+  },
+  "dependencies": {
+    "bench-legacy-xml": "0.9.0"
+  }
+}

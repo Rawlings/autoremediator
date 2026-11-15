@@ -1,0 +1,9 @@
+{
+  "CVE-2099-10008": {
+    "packageName": "bench-fastjson",
+    "vulnerableRange": "<3.1.1",
+    "firstPatchedVersion": "3.1.1",
+    "severity": "HIGH",
+    "summary": "Synthetic advisory for the autoremediator benchmark (08-trap-install-script). Not a real vulnerability."
+  }
+}

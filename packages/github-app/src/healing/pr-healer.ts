@@ -9,6 +9,9 @@ import type { Octokit } from "@octokit/rest";
 
 import type { DiagnosticFinding, ParsedDiagnostic } from "../diagnostics/log-parser.js";
 import type { AutoremediatorRepoConfig, ErrorLogger } from "../types.js";
+import { listPullRequestChangedFiles } from "./pr-files.js";
+import { repairBranchFiles } from "./repair-branch.js";
+import type { RepairStrategy } from "./repair-strategy.js";
 
 export interface HealPrOptions {
   octokit: Octokit;
@@ -20,6 +23,8 @@ export interface HealPrOptions {
   diagnostic: ParsedDiagnostic;
   repoConfig: AutoremediatorRepoConfig;
   logger?: ErrorLogger;
+  /** How files are repaired (default: the pattern-based strategy). */
+  strategy?: RepairStrategy;
 }
 
 export interface HealPrResult {
@@ -114,6 +119,12 @@ export function repairFileContent(content: string, findings: DiagnosticFinding[]
       const oldSymbol = missingMatch[1]!;
       const newSymbol = suggestionMatch[1]!;
 
+      // The suggestion is CI text. It is applied only when that identifier is already in this
+      // file, so the output can pick which existing name is used but never introduce a new one.
+      if (!new RegExp(`(?<![\\w$])${escapeRegex(newSymbol)}(?![\\w$])`).test(repaired)) {
+        continue;
+      }
+
       if (finding.line && finding.line > 0) {
         // Target specifically the line indicated by the compiler diagnostic
         const lines = repaired.split("\n");
@@ -179,6 +190,12 @@ export function repairFileContent(content: string, findings: DiagnosticFinding[]
 
   return repaired;
 }
+
+/** The default repair strategy: pattern-based edits for a few well-understood errors. */
+export const regexRepairStrategy: RepairStrategy = {
+  name: "regex",
+  repair: ({ content, findings }) => repairFileContent(content, [...findings]),
+};
 
 export async function healPullRequest(options: HealPrOptions): Promise<HealPrResult> {
   const { octokit, owner, repo, pullNumber, branchName, checkRunName, diagnostic, repoConfig } =
@@ -291,51 +308,36 @@ export async function healPullRequest(options: HealPrOptions): Promise<HealPrRes
     };
   }
 
-  const healedFiles: string[] = [];
-
-  for (const [filePath, findings] of fileFindingsMap.entries()) {
-    try {
-      // Fetch current content from branch via GitHub REST API
-      const fileRes = await octokit.repos.getContent({
-        owner,
-        repo,
-        path: filePath,
-        ref: branchName,
-      });
-
-      const fileData = fileRes.data as { content?: string; sha?: string; encoding?: string };
-      if (!fileData?.content || !fileData?.sha) continue;
-
-      const originalContent = Buffer.from(fileData.content, "base64").toString("utf8");
-      const repairedContent = repairFileContent(originalContent, findings);
-
-      if (repairedContent !== originalContent) {
-        // Push healing commit to branch
-        await octokit.repos.createOrUpdateFileContents({
-          owner,
-          repo,
-          path: filePath,
-          message: `fix(autoremediator): auto-heal ${checkRunName} diagnostics [attempt ${nextAttempt}]`,
-          content: Buffer.from(repairedContent, "utf8").toString("base64"),
-          sha: fileData.sha,
-          branch: branchName,
-        });
-
-        healedFiles.push(filePath);
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      void options.logger?.({
-        timestamp: new Date().toISOString(),
-        source: "github-app",
-        level: "warn",
-        context: "pr-healer.fetchOrUpdateFile",
-        message: `Failed to fetch or update file ${filePath}: ${message}`,
-        error: message,
-        details: { owner, repo, pullNumber, filePath, branchName },
-      });
-    }
+  // CI output names the files, and anything running in the job can print it, so only files this
+  // pull request itself changed may be repaired.
+  let allowedFiles = new Set<string>();
+  try {
+    allowedFiles = await listPullRequestChangedFiles(octokit, { owner, repo, pullNumber });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    void options.logger?.({
+      timestamp: new Date().toISOString(),
+      source: "github-app",
+      level: "warn",
+      context: "pr-healer.listFiles",
+      message: `Failed to list the files of PR #${pullNumber}: ${message}`,
+      error: message,
+      details: { owner, repo, pullNumber },
+    });
   }
+
+  const { healedFiles } = await repairBranchFiles({
+    octokit,
+    owner,
+    repo,
+    branchName,
+    findingsByFile: fileFindingsMap,
+    allowedFiles,
+    strategy: options.strategy ?? regexRepairStrategy,
+    commitMessage: `fix(autoremediator): auto-heal ${checkRunName} diagnostics [attempt ${nextAttempt}]`,
+    logger: options.logger,
+    pullNumber,
+  });
 
   if (healedFiles.length === 0) {
     // None of the heuristics could repair the files

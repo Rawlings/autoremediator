@@ -1,0 +1,99 @@
+# Autoremediator for GitLab CI/CD.
+#
+# Include it with `inputs:` (GitLab 16.11+; works with `include: remote`, `project` or `component`):
+#
+#   include:
+#     - remote: https://raw.githubusercontent.com/rawlings/autoremediator/v0.22.0/templates/gitlab/autoremediator.yml
+#       inputs:
+#         version: "^0.22.0"
+#
+# Required CI/CD variable: GITLAB_TOKEN (masked). A project access token with the Developer role
+# and the `api` and `write_repository` scopes is enough. See docs/integrations/other-ci.md.
+spec:
+  inputs:
+    job_name:
+      default: autoremediator
+      description: Name of the job.
+    stage:
+      default: test
+      description: Pipeline stage the job runs in.
+    image:
+      default: node:26
+      description: Node.js 26+ image with git (node:26-slim works; git is installed when missing).
+    version:
+      default: "^0.22.0"
+      description: npm version range of autoremediator that npx runs.
+    cwd:
+      default: "."
+      description: Project directory, relative to the repository root.
+    base_branch:
+      default: "$CI_DEFAULT_BRANCH"
+      description: Branch the merge request targets.
+    run_tests:
+      type: boolean
+      default: false
+      description: Run the project's tests after each change.
+    create_merge_request:
+      type: boolean
+      default: true
+      description: Push a branch and open a merge request. When false the job only reports.
+    policy:
+      default: ""
+      description: Optional policy file path. The default is .github/autoremediator.yml.
+    extra_args:
+      default: ""
+      description: Extra autoremediator CLI flags, separated by spaces.
+    allow_failure:
+      type: boolean
+      default: false
+      description: Let the pipeline pass when remediation fails (`--ci` exits non-zero on failures).
+    rules:
+      type: array
+      default:
+        - if: '$CI_PIPELINE_SOURCE == "schedule"'
+        - if: '$CI_PIPELINE_SOURCE == "web"'
+      description: GitLab CI rules. The default runs on pipeline schedules and manual web runs.
+---
+$[[ inputs.job_name ]]:
+  stage: $[[ inputs.stage ]]
+  image: $[[ inputs.image ]]
+  # The default rules keep branch pipelines of the generated autoremediator/* branches from recursing.
+  rules: $[[ inputs.rules ]]
+  allow_failure: $[[ inputs.allow_failure ]]
+  variables:
+    GIT_DEPTH: "0"
+    AUTOREMEDIATOR_REPORT: autoremediator-report.json
+  before_script:
+    - |
+      if ! command -v git >/dev/null 2>&1; then
+        apt-get update -qq && apt-get install -y -qq --no-install-recommends git ca-certificates
+      fi
+    - git config --global --add safe.directory "$CI_PROJECT_DIR"
+    # The runner clones with an embedded job token. Replace it with a clean URL so the push uses
+    # the GITLAB_TOKEN header and the project path is detected for the merge request.
+    - git remote set-url origin "${CI_PROJECT_URL}.git"
+  script:
+    - |
+      if [ -z "${GITLAB_TOKEN:-}" ] && [ "$[[ inputs.create_merge_request ]]" = "true" ]; then
+        echo "GITLAB_TOKEN is not set; add a masked CI/CD variable (see docs/integrations/other-ci.md)." >&2
+        exit 1
+      fi
+      set -- --audit --ci --output-format json --cwd "$[[ inputs.cwd ]]"
+      if [ "$[[ inputs.run_tests ]]" = "true" ]; then set -- "$@" --run-tests; fi
+      if [ -n "$[[ inputs.policy ]]" ]; then set -- "$@" --policy "$[[ inputs.policy ]]"; fi
+      if [ "$[[ inputs.create_merge_request ]]" = "true" ]; then
+        set -- "$@" --create-change-request --change-request-provider gitlab \
+          --change-request-repository "$CI_PROJECT_PATH" \
+          --change-request-base-branch "$[[ inputs.base_branch ]]"
+      fi
+      status=0
+      # shellcheck disable=SC2086
+      npx -y "autoremediator@$[[ inputs.version ]]" "$@" $[[ inputs.extra_args ]] > "$AUTOREMEDIATOR_REPORT" || status=$?
+      cat "$AUTOREMEDIATOR_REPORT"
+      exit "$status"
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - autoremediator-report.json
+      - .autoremediator/evidence/

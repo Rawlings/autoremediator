@@ -5,562 +5,155 @@
  * Exposes all autoremediator tools via the Model Context Protocol so LLM hosts
  * and compatible agent hosts can invoke them directly.
  *
- * Start: autoremediator-mcp   (stdio transport)
+ * Start: autoremediator-mcp            (stdio)
+ *        autoremediator-mcp --http     (stateless streamable HTTP on 127.0.0.1; see mcp/http.ts)
  */
+import { fileURLToPath } from "node:url";
+
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
-
-import { stripUntrustedChangeRequestFields } from "../api/change-request/index.js";
 import {
-  checkReachability,
-  createRemediateOptionSchemaProperties,
-  createScanOptionSchemaProperties,
-  createUpdateOutdatedOptionSchemaProperties,
-  evaluatePackage,
-  inspectPatchArtifact,
-  listPatchArtifacts,
-  OPTION_DESCRIPTIONS,
-  planRemediation,
-  pollJob,
-  remediate,
-  remediatePortfolio,
-  remediateFromScan,
-  scanDelta,
-  submitPortfolioJob,
-  submitRemediateJob,
-  submitScanJob,
-  toCycloneDxVex,
-  updateOutdated,
-  validatePatchArtifact,
-} from "../api/index.js";
+  CallToolRequestSchema,
+  GetPromptRequestSchema,
+  ListPromptsRequestSchema,
+  ListResourcesRequestSchema,
+  ListResourceTemplatesRequestSchema,
+  ListToolsRequestSchema,
+  ReadResourceRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
+
+import {
+  type ApiDeps,
+  type CallOptions,
+  callMcpOperation,
+  defaultApiDeps,
+  type McpToolResult,
+  type Operation,
+  toMcpTools,
+} from "../catalog/index.js";
 import { isEntrypoint } from "../platform/entrypoint.js";
 import { PACKAGE_VERSION } from "../version.js";
+import { getPrompt, listPrompts } from "./prompts.js";
+import { listResources, readResource, RESOURCE_TEMPLATES } from "./resources.js";
 
-const PATCH_ARTIFACT_SCHEMA_PROPERTIES = {
-  cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
-  patchesDir: { type: "string", description: OPTION_DESCRIPTIONS.patchesDir },
-  packageManager: {
-    type: "string",
-    enum: ["npm", "pnpm", "yarn", "bun", "deno"],
-    description: OPTION_DESCRIPTIONS.packageManager,
-  },
-} as const;
+/** The SDK functions the tools call; replaceable in tests. */
+export type McpApiDeps = ApiDeps;
 
-interface McpApiDeps {
-  remediateFn: typeof remediate;
-  planRemediationFn: typeof planRemediation;
-  remediateFromScanFn: typeof remediateFromScan;
-  remediatePortfolioFn: typeof remediatePortfolio;
-  updateOutdatedFn: typeof updateOutdated;
-  checkReachabilityFn: typeof checkReachability;
-  evaluatePackageFn: typeof evaluatePackage;
-  scanDeltaFn: typeof scanDelta;
-  healthFn: () => Promise<{ status: "ok" }>;
-  listPatchArtifactsFn: typeof listPatchArtifacts;
-  inspectPatchArtifactFn: typeof inspectPatchArtifact;
-  validatePatchArtifactFn: typeof validatePatchArtifact;
-  toVexFn: typeof toCycloneDxVex;
-  submitRemediateJobFn: typeof submitRemediateJob;
-  submitScanJobFn: typeof submitScanJob;
-  submitPortfolioJobFn: typeof submitPortfolioJob;
-  pollJobFn: typeof pollJob;
-}
-
-const defaultDeps: McpApiDeps = {
-  remediateFn: remediate,
-  planRemediationFn: planRemediation,
-  remediateFromScanFn: remediateFromScan,
-  remediatePortfolioFn: remediatePortfolio,
-  updateOutdatedFn: updateOutdated,
-  checkReachabilityFn: checkReachability,
-  evaluatePackageFn: evaluatePackage,
-  scanDeltaFn: scanDelta,
-  healthFn: async () => ({ status: "ok" }),
-  listPatchArtifactsFn: listPatchArtifacts,
-  inspectPatchArtifactFn: inspectPatchArtifact,
-  validatePatchArtifactFn: validatePatchArtifact,
-  toVexFn: toCycloneDxVex,
-  submitRemediateJobFn: submitRemediateJob,
-  submitScanJobFn: submitScanJob,
-  submitPortfolioJobFn: submitPortfolioJob,
-  pollJobFn: pollJob,
-};
-
-function createBaseServer(): Server {
-  return new Server(
-    { name: "autoremediator", version: PACKAGE_VERSION },
-    { capabilities: { tools: {} } },
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Tool definitions
-// ---------------------------------------------------------------------------
-
-export const TOOLS = [
-  {
-    name: "health",
-    description:
-      "Health check tool that returns server readiness status, version, registered tool count, and the list of available capability names.",
-    inputSchema: {
-      type: "object",
-      properties: {},
-    },
-  },
-  {
-    name: "remediate",
-    description:
-      "Remediate a single CVE in a Node.js project. Looks up the CVE, scans the project inventory, and applies a version bump or generates a patch file. Returns a RemediationReport.",
-    inputSchema: {
-      type: "object",
-      required: ["cveId"],
-      properties: {
-        cveId: { type: "string", description: OPTION_DESCRIPTIONS.cveId },
-        ...createRemediateOptionSchemaProperties(),
-      },
-    },
-  },
-  {
-    name: "planRemediation",
-    description:
-      "Generate a non-mutating remediation preview for a single CVE in a Node.js project. Returns a RemediationReport with planned results.",
-    inputSchema: {
-      type: "object",
-      required: ["cveId"],
-      properties: {
-        cveId: { type: "string", description: OPTION_DESCRIPTIONS.cveId },
-        ...createRemediateOptionSchemaProperties({
-          includeDryRun: false,
-          includePreview: false,
-          includeEvidence: true,
-        }),
-      },
-    },
-  },
-  {
-    name: "remediateFromScan",
-    description:
-      "Parse an npm/pnpm/yarn/bun audit JSON or SARIF scan file, extract all CVE IDs, and remediate each one. Returns a ScanReport.",
-    inputSchema: {
-      type: "object",
-      required: ["inputPath"],
-      properties: {
-        inputPath: { type: "string", description: OPTION_DESCRIPTIONS.inputPath },
-        ...createScanOptionSchemaProperties(),
-      },
-    },
-  },
-  {
-    name: "remediatePortfolio",
-    description:
-      "Run CVE or scan remediation across multiple targets and return an aggregated PortfolioReport.",
-    inputSchema: {
-      type: "object",
-      required: ["targets"],
-      properties: {
-        targets: {
-          type: "array",
-          items: {
-            type: "object",
-            required: ["cwd"],
-            properties: {
-              cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
-              label: { type: "string" },
-              cveId: { type: "string", description: OPTION_DESCRIPTIONS.cveId },
-              inputPath: { type: "string", description: OPTION_DESCRIPTIONS.inputPath },
-              format: { type: "string", enum: ["auto", "npm-audit", "yarn-audit", "sarif"] },
-              audit: { type: "boolean", description: OPTION_DESCRIPTIONS.audit },
-            },
-          },
-        },
-        ...createRemediateOptionSchemaProperties(),
-      },
-    },
-  },
-  {
-    name: "listPatchArtifacts",
-    description:
-      "List stored patch artifacts in the configured patches directory. Returns patch summaries with manifest metadata when available.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        ...PATCH_ARTIFACT_SCHEMA_PROPERTIES,
-      },
-    },
-  },
-  {
-    name: "inspectPatchArtifact",
-    description: "Inspect a stored .patch file and its optional manifest metadata.",
-    inputSchema: {
-      type: "object",
-      required: ["patchFilePath"],
-      properties: {
-        patchFilePath: { type: "string", description: "Path to the .patch file" },
-        ...PATCH_ARTIFACT_SCHEMA_PROPERTIES,
-      },
-    },
-  },
-  {
-    name: "validatePatchArtifact",
-    description:
-      "Validate a stored patch artifact against its manifest and the current dependency inventory.",
-    inputSchema: {
-      type: "object",
-      required: ["patchFilePath"],
-      properties: {
-        patchFilePath: { type: "string", description: "Path to the .patch file" },
-        ...PATCH_ARTIFACT_SCHEMA_PROPERTIES,
-      },
-    },
-  },
-  {
-    name: "updateOutdated",
-    description:
-      "Bump all outdated npm packages to their latest versions without requiring a CVE ID. Respects policy (allowMajorBumps) and supports dry-run. Returns an UpdateOutdatedReport.",
-    inputSchema: {
-      type: "object",
-      properties: createUpdateOutdatedOptionSchemaProperties(),
-    },
-  },
-  {
-    name: "toVex",
-    description:
-      "Convert a ScanReport or RemediationReport to a CycloneDX 1.5 VEX document. Returns a compliance-ready vulnerability exploitability exchange record binding remediation evidence to SBOM vulnerability entries.",
-    inputSchema: {
-      type: "object",
-      required: ["report"],
-      properties: {
-        report: {
-          type: "object",
-          description:
-            "A ScanReport or RemediationReport object returned by remediate, planRemediation, or remediateFromScan.",
-        },
-        toolVersion: {
-          type: "string",
-          description: "Optional tool version to embed in the VEX document metadata.",
-        },
-      },
-    },
-  },
-  {
-    name: "submitRemediateJob",
-    description:
-      "Submit a single-CVE remediation as a background async job. Returns a JobHandle immediately with a jobId. Use pollJob to check status and retrieve the result.",
-    inputSchema: {
-      type: "object",
-      required: ["cveId"],
-      properties: {
-        cveId: { type: "string", description: OPTION_DESCRIPTIONS.cveId },
-        ...createRemediateOptionSchemaProperties(),
-      },
-    },
-  },
-  {
-    name: "submitScanJob",
-    description:
-      "Submit a scan-file remediation as a background async job. Returns a JobHandle immediately. Use pollJob to check status.",
-    inputSchema: {
-      type: "object",
-      required: ["inputPath"],
-      properties: {
-        inputPath: { type: "string", description: OPTION_DESCRIPTIONS.inputPath },
-        ...createScanOptionSchemaProperties(),
-      },
-    },
-  },
-  {
-    name: "submitPortfolioJob",
-    description:
-      "Submit a portfolio remediation as a background async job. Returns a JobHandle immediately. Use pollJob to check status.",
-    inputSchema: {
-      type: "object",
-      required: ["targets"],
-      properties: {
-        targets: {
-          type: "array",
-          items: {
-            type: "object",
-            required: ["cwd"],
-            properties: {
-              cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
-              label: { type: "string" },
-              cveId: { type: "string", description: OPTION_DESCRIPTIONS.cveId },
-              inputPath: { type: "string", description: OPTION_DESCRIPTIONS.inputPath },
-            },
-          },
-        },
-        ...createRemediateOptionSchemaProperties(),
-      },
-    },
-  },
-  {
-    name: "pollJob",
-    description:
-      "Poll the status of a submitted background job. Returns the full AsyncRemediationJob including result when status is 'done' or error when 'failed'.",
-    inputSchema: {
-      type: "object",
-      required: ["jobId"],
-      properties: {
-        jobId: {
-          type: "string",
-          description:
-            "Job ID returned by submitRemediateJob, submitScanJob, or submitPortfolioJob.",
-        },
-      },
-    },
-  },
-  {
-    name: "checkReachability",
-    description:
-      "Scan project source files using oxc-parser AST call-graph tracing to check if a package or vulnerable symbol is reachable and invoked.",
-    inputSchema: {
-      type: "object",
-      required: ["packageName"],
-      properties: {
-        packageName: {
-          type: "string",
-          description: "Target package name to trace in project source files.",
-        },
-        cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
-        symbol: {
-          type: "string",
-          description:
-            "Optional specific vulnerable function or export symbol to verify in call graph.",
-        },
-      },
-    },
-  },
-  {
-    name: "evaluatePackage",
-    description:
-      "Pre-flight security evaluator for npm packages. Queries OSV, CISA KEV, and FIRST EPSS telemetry before installation.",
-    inputSchema: {
-      type: "object",
-      required: ["packageName"],
-      properties: {
-        packageName: { type: "string", description: "Package name to evaluate." },
-        version: { type: "string", description: "Optional specific package version." },
-        packageManager: {
-          type: "string",
-          enum: ["npm", "pnpm", "yarn", "bun", "deno"],
-          description: OPTION_DESCRIPTIONS.packageManager,
-        },
-        enrichIntelligence: {
-          type: "boolean",
-          description: "Enrich with live CISA KEV and EPSS intelligence feeds.",
-        },
-      },
-    },
-  },
-  {
-    name: "scanDelta",
-    description:
-      "Git-aware delta vulnerability scanner. Identifies new CVEs introduced by uncommitted edits (vs HEAD) or branch differences (vs base branch).",
-    inputSchema: {
-      type: "object",
-      properties: {
-        cwd: { type: "string", description: OPTION_DESCRIPTIONS.cwd },
-        baseRef: {
-          type: "string",
-          description:
-            "Git base reference to compare against (e.g. 'HEAD', 'origin/main'). Defaults to 'HEAD'.",
-        },
-        packageManager: {
-          type: "string",
-          enum: ["npm", "pnpm", "yarn", "bun", "deno"],
-          description: OPTION_DESCRIPTIONS.packageManager,
-        },
-      },
-    },
-  },
-];
-
-function withMcpSource(options: Record<string, unknown>): Record<string, unknown> {
-  return {
-    ...stripUntrustedChangeRequestFields(options),
-    source: typeof options.source === "string" ? options.source : "mcp",
-  };
-}
+/** Tool definitions, generated from the operation catalog. */
+export const TOOLS = toMcpTools();
 
 export async function handleToolCall(
   name: string,
   args: Record<string, unknown> = {},
-  deps: McpApiDeps = defaultDeps,
-): Promise<{ content: Array<{ type: "text"; text: string }>; isError?: boolean }> {
+  deps: McpApiDeps = defaultApiDeps,
+  options?: CallOptions,
+): Promise<McpToolResult> {
+  return callMcpOperation(name, args, deps, options);
+}
+
+/** Roots the connected client declared, as filesystem paths; empty when it declared none. */
+async function clientRootPaths(server: Server): Promise<string[]> {
+  if (!server.getClientCapabilities()?.roots) return [];
   try {
-    if (name === "health") {
-      const healthStatus = await deps.healthFn();
-      const report = {
-        ...healthStatus,
-        version: PACKAGE_VERSION,
-        toolCount: TOOLS.length,
-        capabilities: TOOLS.map((t) => t.name),
-      };
-      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
-    }
-
-    if (name === "remediate") {
-      const { cveId, ...options } = args as { cveId: string; [key: string]: unknown };
-      const report = await deps.remediateFn(cveId, withMcpSource(options));
-      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
-    }
-
-    if (name === "planRemediation") {
-      const { cveId, ...options } = args as { cveId: string; [key: string]: unknown };
-      const report = await deps.planRemediationFn(cveId, withMcpSource(options));
-      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
-    }
-
-    if (name === "remediateFromScan") {
-      const { inputPath, ...options } = args as { inputPath: string; [key: string]: unknown };
-      const report = await deps.remediateFromScanFn(inputPath, withMcpSource(options));
-      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
-    }
-
-    if (name === "remediatePortfolio") {
-      const { targets, ...options } = args as { targets: unknown[]; [key: string]: unknown };
-      const report = await deps.remediatePortfolioFn(
-        targets as Parameters<typeof remediatePortfolio>[0],
-        withMcpSource(options),
-      );
-      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
-    }
-
-    if (name === "updateOutdated") {
-      const report = await deps.updateOutdatedFn(withMcpSource(args));
-      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
-    }
-
-    if (name === "listPatchArtifacts") {
-      const report = await deps.listPatchArtifactsFn(args);
-      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
-    }
-
-    if (name === "inspectPatchArtifact") {
-      const { patchFilePath, ...options } = args as {
-        patchFilePath: string;
-        [key: string]: unknown;
-      };
-      const report = await deps.inspectPatchArtifactFn(patchFilePath, options);
-      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
-    }
-
-    if (name === "validatePatchArtifact") {
-      const { patchFilePath, ...options } = args as {
-        patchFilePath: string;
-        [key: string]: unknown;
-      };
-      const report = await deps.validatePatchArtifactFn(patchFilePath, options);
-      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
-    }
-
-    if (name === "submitRemediateJob") {
-      const { cveId, ...options } = args as { cveId: string; [key: string]: unknown };
-      const handle = deps.submitRemediateJobFn(cveId, withMcpSource(options));
-      return { content: [{ type: "text", text: JSON.stringify(handle, null, 2) }] };
-    }
-
-    if (name === "submitScanJob") {
-      const { inputPath, ...options } = args as { inputPath: string; [key: string]: unknown };
-      const handle = deps.submitScanJobFn(inputPath, withMcpSource(options));
-      return { content: [{ type: "text", text: JSON.stringify(handle, null, 2) }] };
-    }
-
-    if (name === "submitPortfolioJob") {
-      const { targets, ...options } = args as { targets: unknown[]; [key: string]: unknown };
-      const handle = deps.submitPortfolioJobFn(
-        targets as Parameters<typeof submitPortfolioJob>[0],
-        withMcpSource(options),
-      );
-      return { content: [{ type: "text", text: JSON.stringify(handle, null, 2) }] };
-    }
-
-    if (name === "pollJob") {
-      const { jobId } = args as { jobId: string };
-      const job = deps.pollJobFn(jobId);
-      return { content: [{ type: "text", text: JSON.stringify(job, null, 2) }] };
-    }
-
-    if (name === "checkReachability") {
-      const { packageName, cwd, symbol } = args as {
-        packageName: string;
-        cwd?: string;
-        symbol?: string;
-      };
-      if (!packageName || typeof packageName !== "string") {
-        return {
-          content: [
-            { type: "text", text: JSON.stringify({ error: "packageName is required (string)" }) },
-          ],
-          isError: true,
-        };
+    const { roots } = await server.listRoots();
+    return roots.flatMap((root) => {
+      try {
+        return root.uri.startsWith("file:") ? [fileURLToPath(root.uri)] : [];
+      } catch {
+        return [];
       }
-      const assessment = await deps.checkReachabilityFn({ packageName, cwd, symbol });
-      return { content: [{ type: "text", text: JSON.stringify(assessment, null, 2) }] };
-    }
-
-    if (name === "evaluatePackage") {
-      const { packageName, ...options } = args as {
-        packageName: string;
-        [key: string]: unknown;
-      };
-      if (!packageName || typeof packageName !== "string") {
-        return {
-          content: [
-            { type: "text", text: JSON.stringify({ error: "packageName is required (string)" }) },
-          ],
-          isError: true,
-        };
-      }
-      const report = await deps.evaluatePackageFn(packageName, options);
-      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
-    }
-
-    if (name === "scanDelta") {
-      const options = args as Parameters<typeof scanDelta>[0];
-      const report = await deps.scanDeltaFn(options);
-      return { content: [{ type: "text", text: JSON.stringify(report, null, 2) }] };
-    }
-
-    if (name === "toVex") {
-      const { report, toolVersion } = args as { report: unknown; toolVersion?: string };
-      if (!report || typeof report !== "object") {
-        return {
-          content: [
-            { type: "text", text: JSON.stringify({ error: "report is required (object)" }) },
-          ],
-          isError: true,
-        };
-      }
-      const vex = deps.toVexFn(
-        report as Parameters<typeof toCycloneDxVex>[0],
-        toolVersion ? { toolVersion } : undefined,
-      );
-      return { content: [{ type: "text", text: JSON.stringify(vex, null, 2) }] };
-    }
-
-    return {
-      content: [{ type: "text", text: `Unknown tool: ${name}` }],
-      isError: true,
-    };
-  } catch (err) {
-    return {
-      content: [{ type: "text", text: err instanceof Error ? err.message : String(err) }],
-      isError: true,
-    };
+    });
+  } catch {
+    return [];
   }
 }
 
-export function createMcpServer(): Server {
-  const server = createBaseServer();
+export interface McpServerOptions {
+  /** The SDK functions the tools call (default: the real ones). */
+  deps?: ApiDeps;
+  /**
+   * `mutating`: before a tool that changes the project runs, ask the user to confirm through the
+   * client (MCP elicitation). A client that cannot ask is refused rather than trusted, so only set
+   * this for clients that support it. Default: `AUTOREMEDIATOR_MCP_CONFIRM`, else `off` (hosts
+   * already ask about tools annotated as destructive).
+   */
+  confirm?: "off" | "mutating";
+  /** The project whose runs resources expose (default: the client's first root, else the working directory). */
+  projectDir?: string;
+}
+
+/** The identifying part of a call, for a confirmation prompt. */
+function describeCall(input: Record<string, unknown>): string {
+  const parts = ["cveId", "runId", "itemId", "attemptId", "inputPath", "cwd"]
+    .filter((key) => typeof input[key] === "string")
+    .map((key) => `${key} ${String(input[key])}`);
+  return parts.length > 0 ? ` (${parts.join(", ")})` : "";
+}
+
+async function confirmWithUser(
+  server: Server,
+  operation: Operation,
+  input: Record<string, unknown>,
+): Promise<boolean> {
+  if (!server.getClientCapabilities()?.elicitation) {
+    throw new Error(
+      "This server is set to confirm changes with the user, but the client cannot ask (no elicitation support). Set AUTOREMEDIATOR_MCP_CONFIRM=off, or use a client that supports it.",
+    );
+  }
+  const answer = await server.elicitInput({
+    message: `${operation.title}${describeCall(input)}. This can change files in the project. Proceed?`,
+    requestedSchema: {
+      type: "object",
+      properties: { proceed: { type: "boolean", title: "Proceed" } },
+      required: ["proceed"],
+    },
+  });
+  return answer.action === "accept" && answer.content?.["proceed"] === true;
+}
+
+export function createMcpServer(options: McpServerOptions = {}): Server {
+  const deps = options.deps ?? defaultApiDeps;
+  const confirm =
+    options.confirm ??
+    (process.env["AUTOREMEDIATOR_MCP_CONFIRM"] === "mutating" ? "mutating" : "off");
+
+  const server = new Server(
+    { name: "autoremediator", version: PACKAGE_VERSION },
+    { capabilities: { tools: {}, resources: {}, prompts: {} } },
+  );
+
+  const projectDir = async (): Promise<string> =>
+    options.projectDir ?? (await clientRootPaths(server))[0] ?? process.cwd();
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
-    return handleToolCall(name, args ?? {});
+    return handleToolCall(name, args ?? {}, deps, {
+      clientRoots: await clientRootPaths(server),
+      ...(confirm === "mutating"
+        ? {
+            confirm: (operation: Operation, input: Record<string, unknown>) =>
+              confirmWithUser(server, operation, input),
+          }
+        : {}),
+    });
   });
+
+  server.setRequestHandler(ListResourcesRequestSchema, async () =>
+    listResources({ projectDir: await projectDir() }),
+  );
+  server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => ({
+    resourceTemplates: [...RESOURCE_TEMPLATES],
+  }));
+  server.setRequestHandler(ReadResourceRequestSchema, async (request) =>
+    readResource(request.params.uri, { projectDir: await projectDir() }),
+  );
+
+  server.setRequestHandler(ListPromptsRequestSchema, async () => listPrompts());
+  server.setRequestHandler(GetPromptRequestSchema, async (request) =>
+    getPrompt(request.params.name, request.params.arguments ?? {}),
+  );
 
   return server;
 }
@@ -570,6 +163,12 @@ export function createMcpServer(): Server {
 // ---------------------------------------------------------------------------
 
 async function startMcpServer(): Promise<void> {
+  if (process.argv.includes("--http")) {
+    // Not awaited: `http.js` imports this module, so waiting for it here while this module is still
+    // evaluating would deadlock. The listening server keeps the process alive.
+    void import("./http.js").then(({ startMcpHttpServer }) => startMcpHttpServer());
+    return;
+  }
   const transport = new StdioServerTransport();
   const server = createMcpServer();
   await server.connect(transport);

@@ -46,7 +46,7 @@ export interface AffectedPackage {
   /** The first version that is NOT vulnerable (the safe upgrade target) */
   firstPatchedVersion?: string;
   /** Source that provided this entry */
-  source: "osv" | "github-advisory" | "offline-snapshot";
+  source: "osv" | "github-advisory" | "offline-snapshot" | "user-supplied";
 }
 
 /** A package found in the consumer's project */
@@ -388,10 +388,46 @@ export interface ReachabilityAssessment {
     | "call-path-found"
     | "call-graph-uninvoked"
     | "transitive-path-found"
+    | "runtime-call-observed"
+    | "runtime-load-observed"
     | "unknown";
 
   justification?: "code_not_in_execute_path" | "code_not_reachable" | (string & {});
   evidence?: ReachabilityEvidence[];
+  /** Where the verdict came from: the static source scan, a runtime trace, or both. */
+  evidenceKind?: ReachabilityEvidenceKind;
+  /** The static scan's status, kept when runtime evidence changed `status`. */
+  staticStatus?: "reachable" | "not-reachable" | "unknown";
+  /** What a runtime trace (`traceFile`) showed. Present only when a trace was supplied. */
+  runtime?: RuntimeReachability;
+}
+
+export type ReachabilityEvidenceKind = "static" | "runtime" | "both";
+
+/**
+ * What a traced run showed about one package. `not-loaded-in-tests` is not proof that the package
+ * is unreachable: it only says the traced command never loaded it.
+ */
+export type RuntimeReachabilityVerdict =
+  | "not-loaded-in-tests"
+  | "loaded-in-tests"
+  | "loaded-not-called-in-tests"
+  | "called-in-tests"
+  | "no-trace-data";
+
+export interface RuntimeReachability {
+  verdict: RuntimeReachabilityVerdict;
+  reason: string;
+  /** What the verdict does and does not establish. */
+  caveat: string;
+  /** Versions of the package the trace saw loaded. */
+  versions?: string[];
+  /** What loaded it: packages, or `(app)` for the project's own code. */
+  loadedBy?: string[];
+  /** Calls counted for the requested symbol (or for any export when no symbol was asked for). */
+  calls?: { symbol?: string; count: number };
+  /** The traced command's exit code, when the trace records it. */
+  exitCode?: number | null;
 }
 
 export interface AlternativePackageSuggestion {
@@ -411,7 +447,14 @@ export interface FixExplanation {
   recommendedAction?: string;
 }
 
-export type ChangeRequestProvider = "github" | "gitlab";
+export const CHANGE_REQUEST_PROVIDER_VALUES = [
+  "github",
+  "gitlab",
+  "bitbucket",
+  "azure-devops",
+] as const;
+
+export type ChangeRequestProvider = (typeof CHANGE_REQUEST_PROVIDER_VALUES)[number];
 
 export type ChangeRequestGrouping = "all" | "per-cve" | "per-package" | "by-severity";
 
@@ -439,6 +482,8 @@ export interface ChangeRequestResult {
   title: string;
   body: string;
   created: boolean;
+  /** The branch already existed from an earlier run for the same findings and was updated. */
+  updated?: boolean;
   draft?: boolean;
   url?: string;
   cveIds: string[];
@@ -493,6 +538,29 @@ export interface ScanReportLike {
   failedCount: number;
 }
 
+/** One accepted maintainer `not_affected` statement that applies to a vulnerable installed package. */
+export interface MaintainerVexEvidence {
+  /** The installed package that shipped the document and made the statement. */
+  maintainer: { name: string; version: string };
+  /** The document's path inside that package. */
+  file: string;
+  documentId: string;
+  author: string;
+  statementId?: string;
+  status: "not_affected";
+  justification: string;
+  impactStatement?: string;
+  statusNotes?: string;
+  timestamp: string;
+  /** The statement names the vulnerable package as a subcomponent (otherwise it is about the maintainer's own package). */
+  subcomponent: boolean;
+}
+
+export interface MaintainerVexIgnored {
+  maintainer: { name: string; version: string };
+  reason: string;
+}
+
 export interface PatchResult {
   packageName: string;
   strategy: PatchStrategy;
@@ -512,7 +580,16 @@ export interface PatchResult {
   reachability?: ReachabilityAssessment;
   alternativeSuggestions?: AlternativePackageSuggestion[];
   fixExplanation?: FixExplanation;
-  suppressedBy?: { justification: VexJustification; notes?: string };
+  suppressedBy?: {
+    justification: VexJustification;
+    notes?: string;
+    /** Who the suppression comes from: the project's policy (default) or a maintainer's shipped VEX, trusted by `trustMaintainerVex`. */
+    source?: "policy" | "maintainer-vex";
+  };
+  /** `not_affected` verdicts that installed packages ship for this advisory (OpenVEX in the tarball). Evidence only unless the policy sets `trustMaintainerVex`. */
+  maintainerVex?: MaintainerVexEvidence[];
+  /** Maintainer VEX statements that were read but not accepted for this result, with the reason. */
+  maintainerVexIgnored?: MaintainerVexIgnored[];
   validation?: {
     passed: boolean;
     error?: string;
@@ -538,6 +615,8 @@ export interface CorrelationContext {
 export interface SupplyChainPolicy {
   /** Minimum age of package version release in hours (e.g. 48 or 72) */
   minPublishAgeHours?: number;
+  /** Where `minPublishAgeHours` came from when it is not the policy file (e.g. the package manager's own setting). */
+  minPublishAgeSource?: string;
   /** Block versions that define preinstall or postinstall scripts */
   blockInstallScripts?: boolean;
   /** Require cryptographic provenance attestation (Sigstore / GitHub Actions build attestations) */
@@ -558,7 +637,7 @@ export interface RemediationConstraints {
 }
 
 export interface LlmUsageMetrics {
-  purpose: "patch-generation";
+  purpose: "patch-generation" | "upgrade-repair";
   model: string;
   latencyMs?: number;
   inputTokens?: number;
@@ -645,6 +724,11 @@ export interface RemediateOptions extends CorrelationContext {
   reproductionTest?: string;
   /** If true, attempt agentic call-site refactoring when major version upgrades introduce breaking API changes. */
   breakingChangeRefactor?: boolean;
+  /**
+   * SDK and CLI only (not accepted over MCP or HTTP, so an agent cannot lift a person's constraint):
+   * plan as if the repository's memory were empty, ignoring pinned packages and rejected upgrades.
+   */
+  ignoreMemory?: boolean;
 }
 
 export type SbomStatus = "patched" | "unpatched" | "skipped" | "suppressed";
@@ -671,6 +755,10 @@ export interface RemediationReport {
   provenance?: ProvenanceContext;
   constraints?: RemediationConstraints;
   resumedFromCache?: boolean;
+  /** `planRemediation` only: the run holding this preview as an applicable plan. */
+  runId?: string;
+  /** `planRemediation` only: content id of that plan. */
+  planId?: string;
   llmUsage?: LlmUsageMetrics[];
   changeRequests?: ChangeRequestResult[];
   exploitSignalTriggered?: boolean;
@@ -682,6 +770,22 @@ export interface RemediationReport {
   /** Counts of intended escalation actions across all results in this report. */
   escalationCounts?: EscalationCounts;
   simulationSummary?: SimulationSummary;
+  /** Set when the policy configures earned autonomy: the level in force and what it says about this result. */
+  autonomy?: AutonomySummary;
+}
+
+/** What a report says about the autonomy level its project was at (policy `autonomy` key). */
+export interface AutonomySummary {
+  /** The level in force: the lower of the policy ceiling and the level the track record earned. */
+  level: "L0" | "L1" | "L2" | "L3" | "L4";
+  ceiling: "L0" | "L1" | "L2" | "L3" | "L4";
+  earned: "L0" | "L1" | "L2" | "L3" | "L4";
+  name: string;
+  /** A merge rule may trust this result without a person looking (L3 and L4 only; Autoremediator never merges). */
+  autoMergeEligible: boolean;
+  /** A person should look at this result (L4 only). */
+  escalate: boolean;
+  note: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -731,6 +835,8 @@ export interface CheckReachabilityOptions {
   cwd?: string;
   packageName: string;
   symbol?: string;
+  /** A trace from `traceRun` / `autoremediator trace run` (folded JSON or raw JSONL); adds runtime evidence. */
+  traceFile?: string;
 }
 
 /** Options for evaluatePackage() */

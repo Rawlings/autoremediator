@@ -1,5 +1,5 @@
-import { resolveSafeUpgradeVersion } from "../../intelligence/sources/registry.js";
-import { verifyPackageTrust } from "../../platform/supply-chain.js";
+import { readCooldown, withCooldown } from "../../platform/cooldown.js";
+import { loadRegistryConfig } from "../../platform/registry-config.js";
 import type {
   PackageManager,
   PatchResult,
@@ -8,6 +8,26 @@ import type {
 } from "../../platform/types.js";
 import { applyPackageOverrideTool } from "../tools/apply-package-override/index.js";
 import { applyVersionBumpTool } from "../tools/apply-version-bump.js";
+import { describeSkipped, selectUpgradeTarget } from "./select-target.js";
+
+/** Every fixed version was rejected in an earlier run: nothing to propose until a person says otherwise. */
+function memoryBlocked(
+  pkg: VulnerablePackage["installed"],
+  target: { version: string; reason: string },
+  dryRun: boolean,
+  vulnerable: VulnerablePackage,
+): PatchResult {
+  return {
+    packageName: pkg.name,
+    strategy: "none",
+    fromVersion: pkg.version,
+    applied: false,
+    dryRun,
+    unresolvedReason: "constraint-blocked",
+    vulnerableRange: vulnerable.affected.vulnerableRange,
+    message: `Remediation memory blocks every fixed version of "${pkg.name}": ${target.reason}. Remove the entry with \`autoremediator memory remove\`, or pass --ignore-memory.`,
+  };
+}
 
 export async function resolvePrimaryResult(params: {
   vulnerable: VulnerablePackage;
@@ -21,6 +41,10 @@ export async function resolvePrimaryResult(params: {
   requireProofOfFix?: boolean;
   reproductionTest?: string;
   patchesDir?: string;
+  /** Offline intelligence runs skip the advisory lookup on candidate versions. */
+  offlineIntelligence?: boolean;
+  /** Versions of this package remediation memory says were rejected, with why. */
+  rejectedVersions?: ReadonlyMap<string, string>;
 }): Promise<{ result: PatchResult }> {
   const {
     vulnerable,
@@ -34,9 +58,13 @@ export async function resolvePrimaryResult(params: {
     requireProofOfFix = constraints.requireProofOfFix,
     reproductionTest,
     patchesDir,
+    offlineIntelligence,
+    rejectedVersions,
   } = params;
   const pkg = vulnerable.installed;
   const firstPatchedVersion = vulnerable.affected.firstPatchedVersion;
+  const registry = loadRegistryConfig(cwd);
+  const cooldown = readCooldown(cwd, packageManager);
 
   if (pkg.type === "transitive") {
     if (constraints.directDependenciesOnly) {
@@ -82,14 +110,21 @@ export async function resolvePrimaryResult(params: {
       };
     }
 
-    const safeUpgrade = await resolveSafeUpgradeVersion(
-      pkg.name,
-      pkg.version,
+    const target = await selectUpgradeTarget({
+      packageName: pkg.name,
+      installedVersion: pkg.version,
       firstPatchedVersion,
-      vulnerable.affected.vulnerableRange,
-    );
+      vulnerableRange: vulnerable.affected.vulnerableRange,
+      registry,
+      supplyChainPolicy: withCooldown(constraints.supplyChainPolicy, cooldown, pkg.name),
+      offline: offlineIntelligence,
+      rejected: rejectedVersions,
+    });
 
-    if (!safeUpgrade.safeVersion) {
+    if (target.status === "memory-blocked")
+      return { result: memoryBlocked(pkg, target, dryRun, vulnerable) };
+
+    if (target.status === "no-safe-version") {
       return {
         result: {
           packageName: pkg.name,
@@ -104,12 +139,7 @@ export async function resolvePrimaryResult(params: {
       };
     }
 
-    const trust = await verifyPackageTrust(
-      pkg.name,
-      safeUpgrade.safeVersion,
-      constraints.supplyChainPolicy,
-    );
-    if (!trust.trusted) {
+    if (target.status === "trust-blocked") {
       return {
         result: {
           packageName: pkg.name,
@@ -119,7 +149,7 @@ export async function resolvePrimaryResult(params: {
           dryRun,
           unresolvedReason: "policy-blocked",
           vulnerableRange: vulnerable.affected.vulnerableRange,
-          message: `Supply chain trust gate blocked "${pkg.name}@${safeUpgrade.safeVersion}": ${trust.reason}`,
+          message: `Supply chain trust gate blocked "${pkg.name}@${target.version}": ${target.reason}`,
         },
       };
     }
@@ -129,7 +159,7 @@ export async function resolvePrimaryResult(params: {
       packageManager,
       packageName: pkg.name,
       fromVersion: pkg.version,
-      toVersion: safeUpgrade.safeVersion,
+      toVersion: target.version,
       dryRun,
       policy,
       runTests,
@@ -144,7 +174,11 @@ export async function resolvePrimaryResult(params: {
     });
 
     return {
-      result: { ...overrideResult, vulnerableRange: vulnerable.affected.vulnerableRange },
+      result: {
+        ...overrideResult,
+        vulnerableRange: vulnerable.affected.vulnerableRange,
+        message: `${overrideResult.message}${describeSkipped(target.skipped)}`,
+      },
     };
   }
 
@@ -163,14 +197,21 @@ export async function resolvePrimaryResult(params: {
     };
   }
 
-  const safeUpgrade = await resolveSafeUpgradeVersion(
-    pkg.name,
-    pkg.version,
+  const target = await selectUpgradeTarget({
+    packageName: pkg.name,
+    installedVersion: pkg.version,
     firstPatchedVersion,
-    vulnerable.affected.vulnerableRange,
-  );
+    vulnerableRange: vulnerable.affected.vulnerableRange,
+    registry,
+    supplyChainPolicy: withCooldown(constraints.supplyChainPolicy, cooldown, pkg.name),
+    offline: offlineIntelligence,
+    rejected: rejectedVersions,
+  });
 
-  if (!safeUpgrade.safeVersion) {
+  if (target.status === "memory-blocked")
+    return { result: memoryBlocked(pkg, target, dryRun, vulnerable) };
+
+  if (target.status === "no-safe-version") {
     return {
       result: {
         packageName: pkg.name,
@@ -185,12 +226,7 @@ export async function resolvePrimaryResult(params: {
     };
   }
 
-  const trust = await verifyPackageTrust(
-    pkg.name,
-    safeUpgrade.safeVersion,
-    constraints.supplyChainPolicy,
-  );
-  if (!trust.trusted) {
+  if (target.status === "trust-blocked") {
     return {
       result: {
         packageName: pkg.name,
@@ -200,7 +236,7 @@ export async function resolvePrimaryResult(params: {
         dryRun,
         unresolvedReason: "policy-blocked",
         vulnerableRange: vulnerable.affected.vulnerableRange,
-        message: `Supply chain trust gate blocked "${pkg.name}@${safeUpgrade.safeVersion}": ${trust.reason}`,
+        message: `Supply chain trust gate blocked "${pkg.name}@${target.version}": ${target.reason}`,
       },
     };
   }
@@ -210,7 +246,7 @@ export async function resolvePrimaryResult(params: {
     packageManager,
     packageName: pkg.name,
     fromVersion: pkg.version,
-    toVersion: safeUpgrade.safeVersion,
+    toVersion: target.version,
     dryRun,
     policy,
     runTests,
@@ -227,6 +263,10 @@ export async function resolvePrimaryResult(params: {
   });
 
   return {
-    result: { ...applyResult, vulnerableRange: vulnerable.affected.vulnerableRange },
+    result: {
+      ...applyResult,
+      vulnerableRange: vulnerable.affected.vulnerableRange,
+      message: `${applyResult.message}${describeSkipped(target.skipped)}`,
+    },
   };
 }

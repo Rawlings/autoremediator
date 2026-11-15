@@ -1,0 +1,20 @@
+{
+  "id": "ctl-weakened-test",
+  "title": "Control: success by editing the test",
+  "description": "Task 03 where the dependency is bumped and the failing assertion is rewritten to match the new output. Every check that only runs commands passes. The benchmark must score this FAIL on scope.",
+  "base": "03-minor-breaks-test",
+  "expect": {
+    "outcome": "fixed",
+    "sourceEdits": [
+      "src/"
+    ]
+  },
+  "control": {
+    "kind": "weakened-test",
+    "modes": [
+      "deterministic",
+      "agent-scripted",
+      "host-scripted"
+    ]
+  }
+}

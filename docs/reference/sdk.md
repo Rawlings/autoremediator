@@ -15,10 +15,35 @@ Every function returns a promise unless noted. Option names are identical to the
 | Function | Returns |
 | -------- | ------- |
 | `remediate(cveId, options?)` | `RemediationReport` |
-| `planRemediation(cveId, options?)` | `RemediationReport`. Always a dry run; do not pass `dryRun` or `preview` |
+| `planRemediation(cveId, options?)` | `RemediationReport` with `runId` and `planId`. Always a dry run; do not pass `dryRun` or `preview`. Records the [plan](../guides/plan-and-apply.md) unless `evidence` is `false` |
+| `applyPlan({ runId \| planId, itemIds?, verify?, repair?, model?, repairAgent?, repairBudget?, cwd? })` | `RunReport`: each item's outcome (with `repair` when an agent was asked), the status, what is pending. `repairAgent` plugs in your own [`RepairAgent`](../guides/plan-and-apply.md#repair-with-an-agent) |
+| `resumeRun({ runId, cwd? })` | `RunReport` |
+| `rollbackRun({ runId, force?, reinstall?, cwd? })` | `RollbackReport` |
+| `verifyRun({ runId, checks?, offline?, cwd? })` | `VerificationResult` (plus `runId`): each check's status and details, and the first that failed |
+| `getRun({ runId, cwd? })` | `RunDetails`: record, plan, item outcomes, ledger and whether it is intact |
+| `listRuns({ status?, limit?, cwd? })` | `RunRecord[]`, newest first |
+| `startAttempt({ runId, itemId, cwd? })`, `proposePatch({ runId, attemptId, diff })`, `verifyAttempt({ runId, attemptId, checks? })`, `finalizeAttempt({ runId, attemptId })`, `abandonAttempt({ runId, attemptId })` | `AttemptView`: where to edit, the verifier's findings, whether it was finalized. For [your own agent](../guides/plan-and-apply.md#letting-your-own-agent-do-the-repair) |
 | `remediateFromScan(inputPath, options?)` | `ScanReport`. `options.audit` runs the package manager's audit instead |
 | `remediatePortfolio(targets, options?)` | `PortfolioReport` |
 | `updateOutdated(options?)` | `UpdateOutdatedReport` |
+| `init({ cwd?, hosts?, ci?, policy?, agentsMd?, yes?, check? })` | `InitResult`: what was detected, each file's action and diff, `drift`, `applied`, `conflicts`. Writes only with `yes`. See [Coding agents](../integrations/coding-agents.md) |
+| `guardGitDiff({ cwd?, baseRef?, includeTransitive?, ... })` | `{ schemaVersion, baseRef, checked, skipped, verdict, reports }`: guards the dependencies a change added or upgraded |
+| `getAutonomy({ cwd?, policy? })` | `AutonomyStatus`: level, ceiling, earned level, evidence, history, next promotion. Run and plan reports gain an `autonomy` summary |
+| `listRecipes(options)`, `applyRecipe({ runId, attemptId, recipeId })`, `captureRecipe(options)`, `exportRecipes(options)` | [Recipes](../guides/recipes.md); `captureRecipe` and `exportRecipes` write files |
+| `traceRun({ command, cwd?, packages?, calls?, out?, timeoutMs? })` | `{ exitCode, traceFile, report }`. SDK and CLI only. `checkReachability` gains `traceFile` and returns `evidenceKind`, `runtime` |
+| `assessUpgrade({ packageName, from, to, cwd? })`, `findVulnerableSymbols({ packageName, from, to, advisoryText?, cwes?, ... })` | `AssessUpgradeResult`, `VulnerableSymbolsResult` ([details](../guides/upgrade-impact.md)) |
+| `incident(target, options)`, `incidentExitCode(report)`, `renderIncidentMarkdown(report)`, `premortem(options)` | `IncidentReport`, premortem report ([details](../guides/incident-response.md)) |
+| `bisectLockfile({ cwd?, good, bad?, command, ... })` | `BisectReport`. SDK and CLI only |
+| `analyzeDependencies({ cwd? })`, `removeUnusedDependencies(options)` | `DependencyDietReport`; `DietApplyResult` (writes; SDK and CLI only) |
+| `buildEvidencePack(options)`, `verifyEvidencePack(dir, { publicKeyPath? })`, `craDeadlines`, `parseAwareness`, `pae` | [CRA evidence pack](../guides/evidence-pack.md). `toCycloneDxVex(report, { specVersion: "1.6" })` emits 1.6 |
+| `generateProofOfFix(cveId, options, deps?)`, `verifyProofEvidence`, `findEvidence` | [Exploit-proof evidence](../guides/proof-of-fix-generation.md) |
+| `radar(options, deps?)`, `renderRadar`, `radarExitCode`, `createLlmRadarClassifier` | [Silent-fix radar](../guides/silent-fix-radar.md) |
+| `readMaintainerVex({ cwd, advisory, packageName })`, `maintain(options)` | [Maintainer VEX](../guides/maintainer-vex.md); results gain `maintainerVex` and `suppressedBy.source` |
+| `freshnessReport(options)`, `planFreshnessStep(options)`, `applyFreshness(options)` | [Freshness](../guides/freshness.md) |
+| `listMemory`, `addMemory`, `acceptMemory`, `removeMemory`, `pruneMemory`, `proposeMemory`, `memoryForHost` | [Memory](../guides/memory.md). Options take `ignoreMemory` (SDK and CLI only) |
+| `compilePolicy`, `writePolicyProposal`, `explainPolicy`, `findLoosenings`, `isLoosening` | [Policy in plain language](../guides/policy-in-plain-language.md) |
+| `installHooks({ cwd?, hooks?, manager?, uninstall?, yes?, check? })` | `HooksResult`: detected manager, per-hook state (`installed`, `missing`, `modified`, `conflict`), changes with diffs, `drift`, `applied`. Writes only with `yes`. See [Git hooks](../guides/git-hooks.md) |
+| `guardPackage(spec, { cwd?, minPublishAgeHours?, offline? })`, `guardPackages(specs, options?)` | `GuardReport`: `verdict` (`allow`, `warn`, `block`), `findings[]`, `resolvedVersion`, `alternative`. [Guarding new dependencies](../guides/guard.md) |
 | `scanDelta({ cwd?, baseRef?, includeUnstaged?, packageManager? })` | `DeltaScanReport` |
 | `checkReachability({ packageName, symbol?, cwd? })` | `ReachabilityAssessment` |
 | `evaluatePackage(name, { version?, packageManager?, cwd? })` | `PackageEvaluationReport` |
@@ -26,7 +51,7 @@ Every function returns a promise unless noted. Option names are identical to the
 | `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob` (sync) | `{ jobId, status, submittedAt }` |
 | `pollJob(jobId)` (sync) | The job: its `status`, and its report as `result` once finished |
 
-Report helpers: `toCiSummary`, `ciExitCode`, `toSarifOutput`, `toCycloneDxVex`.
+Report helpers: `toCiSummary`, `ciExitCode` (returns one of `EXIT_CODES`: `ok` 0, `failed` 1, `partial` 2, `needsApproval` 3, `policyBlocked` 4), `toSarifOutput`, `toCycloneDxVex`.
 
 Jobs run in the same process and are kept in memory only.
 
@@ -65,7 +90,7 @@ The full type definitions ship with the package. Invalid options throw.
 | `exploitSignalTriggered`, `slaBreaches` | Prioritization signals |
 | `dispositionCounts`, `escalationCounts` | Aggregates over `results` |
 | `llmUsage[]` | Model, tokens and latency for patch generation |
-| `changeRequests[]` | Pull or merge requests created |
+| `changeRequests[]` | Pull or merge requests created; `updated` is set when a re-run reused the branch of an earlier one |
 | `evidenceFile` | Path of the evidence file |
 
 ### `PatchResult`

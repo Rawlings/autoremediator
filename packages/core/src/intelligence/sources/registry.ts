@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 /**
  * npm registry API client
  *
@@ -16,9 +17,15 @@ import semver from "semver";
 
 import { httpClient } from "../../platform/http-client.js";
 import { type PackageManager, detectPackageManager } from "../../platform/package-manager/index.js";
+import {
+  type RegistryConfig,
+  defaultRegistryConfig,
+  packumentUrl,
+} from "../../platform/registry-config.js";
 import { safeExeca } from "../../platform/safe-exec.js";
 
-const NPM_REGISTRY = "https://registry.npmjs.org";
+const MAX_TARBALL_BYTES = 100 * 1024 * 1024;
+const TARBALL_TIMEOUT_MS = 60_000;
 
 export type SafeUpgradeLevel = "patch" | "minor" | "major";
 
@@ -27,6 +34,11 @@ export interface SafeUpgradeResolution {
   upgradeLevel?: SafeUpgradeLevel;
   candidates: Partial<Record<SafeUpgradeLevel, string>>;
   majorOnlyFixAvailable: boolean;
+  /**
+   * Every acceptable fixed version, best first: smallest upgrade level, then lowest version,
+   * with deprecated releases last. Callers that reject `safeVersion` can try the next one.
+   */
+  ordered: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -35,7 +47,7 @@ export interface SafeUpgradeResolution {
 
 interface NpmPackument {
   name: string;
-  versions: Record<string, { version: string; dist: { tarball: string } }>;
+  versions: Record<string, { version: string; deprecated?: string; dist: { tarball: string } }>;
   "dist-tags": Record<string, string>;
   time: Record<string, string>;
 }
@@ -44,30 +56,54 @@ interface NpmPackument {
 // Public API
 // ---------------------------------------------------------------------------
 
+export interface PackageVersionInfo {
+  versions: string[];
+  /** Versions the maintainers have marked deprecated. */
+  deprecated: Set<string>;
+}
+
 /**
- * Fetch all published versions for an npm package.
- * Returns an empty array if the package is not found.
+ * Fetch all published versions for an npm package, noting which are deprecated.
+ * Returns empty info if the package is not found or the registry is unreachable.
  */
-export async function fetchPackageVersions(packageName: string): Promise<string[]> {
-  const url = `${NPM_REGISTRY}/${encodeURIComponent(packageName)}`;
+export async function fetchPackageVersionInfo(
+  packageName: string,
+  registry: RegistryConfig = defaultRegistryConfig,
+): Promise<PackageVersionInfo> {
+  const url = packumentUrl(registry, packageName);
 
   try {
-    const res = await httpClient({ url });
+    const res = await httpClient({ url, headers: registry.headersFor(url) });
 
-    if (res.status === 404) return [];
+    if (res.status === 404) return { versions: [], deprecated: new Set() };
     if (!res.ok) {
       throw new Error(`npm registry error ${res.status} for "${packageName}": ${res.text}`);
     }
 
     const data = res.data as NpmPackument;
-    return Object.keys(data.versions);
+    const versions = Object.keys(data.versions);
+    const deprecated = new Set(
+      versions.filter((version) => Boolean(data.versions[version]?.deprecated)),
+    );
+    return { versions, deprecated };
   } catch (err) {
     // If httpClient throws (timeout, network error), treat as not found
     if (err instanceof Error && err.message.includes("registry error")) {
       throw err;
     }
-    return [];
+    return { versions: [], deprecated: new Set() };
   }
+}
+
+/**
+ * Fetch all published versions for an npm package.
+ * Returns an empty array if the package is not found.
+ */
+export async function fetchPackageVersions(
+  packageName: string,
+  registry: RegistryConfig = defaultRegistryConfig,
+): Promise<string[]> {
+  return (await fetchPackageVersionInfo(packageName, registry)).versions;
 }
 
 /**
@@ -85,12 +121,14 @@ export async function findSafeUpgradeVersion(
   installedVersion: string,
   firstPatchedVersion: string,
   vulnerableRange?: string,
+  registry?: RegistryConfig,
 ): Promise<string | undefined> {
   const resolution = await resolveSafeUpgradeVersion(
     packageName,
     installedVersion,
     firstPatchedVersion,
     vulnerableRange,
+    registry,
   );
 
   return resolution.safeVersion;
@@ -101,20 +139,24 @@ export async function resolveSafeUpgradeVersion(
   installedVersion: string,
   firstPatchedVersion: string,
   vulnerableRange?: string,
+  registry?: RegistryConfig,
 ): Promise<SafeUpgradeResolution> {
-  const versions = await fetchPackageVersions(packageName);
-  if (!versions.length) {
-    return {
-      candidates: {},
-      majorOnlyFixAvailable: false,
-    };
-  }
+  const { versions, deprecated } = await fetchPackageVersionInfo(packageName, registry);
+  const none: SafeUpgradeResolution = {
+    candidates: {},
+    majorOnlyFixAvailable: false,
+    ordered: [],
+  };
+  if (!versions.length) return none;
 
-  const installed = semver.parse(installedVersion);
+  // Prereleases are only acceptable when the project is already on one or the advisory's fix is one.
+  const allowPrerelease =
+    Boolean(semver.prerelease(installedVersion)) || Boolean(semver.prerelease(firstPatchedVersion));
 
-  // All versions >= firstPatchedVersion, sorted ascending
-  const candidates = versions
+  // All fixed versions >= firstPatchedVersion that are not themselves in the vulnerable range
+  const fixed = versions
     .filter((v) => semver.valid(v) && semver.gte(v, firstPatchedVersion))
+    .filter((v) => allowPrerelease || !semver.prerelease(v))
     .filter((v) => {
       if (!vulnerableRange) return true;
       try {
@@ -126,53 +168,46 @@ export async function resolveSafeUpgradeVersion(
     })
     .toSorted(semver.compare);
 
-  if (!candidates.length) {
-    return {
-      candidates: {},
-      majorOnlyFixAvailable: false,
-    };
-  }
+  if (!fixed.length) return none;
+
+  // Deprecated releases are a last resort: they often still carry the fix, but maintainers
+  // advise against them.
+  const preferred = fixed.filter((v) => !deprecated.has(v));
+  const pool = preferred.length > 0 ? preferred : fixed;
 
   const categorizedCandidates: SafeUpgradeResolution["candidates"] = {};
+  const levelRank: Record<SafeUpgradeLevel, number> = { patch: 0, minor: 1, major: 2 };
+  const ranked: Array<{ version: string; rank: number }> = [];
 
-  for (const candidate of candidates) {
+  for (const candidate of pool) {
     const level = classifyUpgradeLevel(installedVersion, candidate);
     if (!level) continue;
+    ranked.push({ version: candidate, rank: levelRank[level] });
     if (!categorizedCandidates[level]) {
       categorizedCandidates[level] = candidate;
     }
   }
 
-  const safeVersion =
-    categorizedCandidates.patch ?? categorizedCandidates.minor ?? categorizedCandidates.major;
+  // `pool` is ascending by version, and the sort is stable, so equal ranks stay ascending.
+  const ordered = [
+    ...ranked.toSorted((a, b) => a.rank - b.rank).map((entry) => entry.version),
+    ...(pool === fixed ? [] : fixed.filter((v) => deprecated.has(v))),
+  ];
 
+  const safeVersion = ordered[0];
   if (!safeVersion) {
-    return {
-      candidates: categorizedCandidates,
-      majorOnlyFixAvailable: false,
-    };
-  }
-
-  const upgradeLevel = classifyUpgradeLevel(installedVersion, safeVersion);
-  const majorOnlyFixAvailable =
-    !categorizedCandidates.patch &&
-    !categorizedCandidates.minor &&
-    Boolean(categorizedCandidates.major);
-
-  if (!installed || !upgradeLevel) {
-    return {
-      safeVersion,
-      upgradeLevel,
-      candidates: categorizedCandidates,
-      majorOnlyFixAvailable,
-    };
+    return { candidates: categorizedCandidates, majorOnlyFixAvailable: false, ordered };
   }
 
   return {
     safeVersion,
-    upgradeLevel,
+    upgradeLevel: classifyUpgradeLevel(installedVersion, safeVersion),
     candidates: categorizedCandidates,
-    majorOnlyFixAvailable,
+    majorOnlyFixAvailable:
+      !categorizedCandidates.patch &&
+      !categorizedCandidates.minor &&
+      Boolean(categorizedCandidates.major),
+    ordered,
   };
 }
 
@@ -199,27 +234,127 @@ export function classifyUpgradeLevel(
   return undefined;
 }
 
+export interface TarballInfo {
+  url: string;
+  /** Subresource-integrity string, e.g. `sha512-<base64>`. */
+  integrity?: string;
+  /** Legacy hex SHA-1, present on older packages without `integrity`. */
+  shasum?: string;
+}
+
 /**
- * Get the tarball URL for a specific package version.
- * Used by the patch generation fallback path.
+ * Look up where a version's tarball lives and how to verify it.
+ * Returns undefined when the registry has no such package/version; throws on network failure.
  */
-export async function getTarballUrl(
+export async function getTarballInfo(
   packageName: string,
   version: string,
-): Promise<string | undefined> {
-  const url = `${NPM_REGISTRY}/${encodeURIComponent(packageName)}/${encodeURIComponent(version)}`;
+  registry: RegistryConfig = defaultRegistryConfig,
+): Promise<TarballInfo | undefined> {
+  const url = `${packumentUrl(registry, packageName)}/${encodeURIComponent(version)}`;
+  const res = await httpClient({ url, headers: registry.headersFor(url) });
 
+  if (res.status === 404) return undefined;
+  if (!res.ok) {
+    throw new Error(`npm registry error ${res.status} for "${packageName}@${version}"`);
+  }
+
+  const dist = (res.data as { dist?: { tarball?: string; integrity?: string; shasum?: string } })
+    .dist;
+  if (!dist?.tarball) return undefined;
+  return { url: dist.tarball, integrity: dist.integrity, shasum: dist.shasum };
+}
+
+/** Check tarball bytes against the registry-advertised digest. Missing digests cannot be checked. */
+export function verifyTarballIntegrity(
+  bytes: Uint8Array,
+  info: Pick<TarballInfo, "integrity" | "shasum">,
+): { ok: true; verified: boolean } | { ok: false; reason: string } {
+  if (info.integrity) {
+    // An SRI string may list several digests; any one matching is enough.
+    const entries: Array<{ algorithm: string; digest: string }> = [];
+    for (const entry of info.integrity.split(/\s+/)) {
+      const dash = entry.indexOf("-");
+      if (dash <= 0) continue;
+      const algorithm = entry.slice(0, dash);
+      if (["sha512", "sha384", "sha256"].includes(algorithm)) {
+        entries.push({ algorithm, digest: entry.slice(dash + 1) });
+      }
+    }
+    if (entries.length > 0) {
+      const matches = entries.some(
+        ({ algorithm, digest }) => createHash(algorithm).update(bytes).digest("base64") === digest,
+      );
+      return matches ? { ok: true, verified: true } : { ok: false, reason: "integrity mismatch" };
+    }
+  }
+  if (info.shasum) {
+    const matches = createHash("sha1").update(bytes).digest("hex") === info.shasum.toLowerCase();
+    return matches ? { ok: true, verified: true } : { ok: false, reason: "shasum mismatch" };
+  }
+  return { ok: true, verified: false };
+}
+
+/** A tarball URL comes from registry metadata, so it is checked before it is fetched: HTTPS only (HTTP for localhost). */
+export function assertTarballUrlAllowed(url: string): void {
+  let parsed: URL;
   try {
-    const res = await httpClient({ url });
-
-    if (!res.ok) return undefined;
-
-    const data = res.data as {
-      dist?: { tarball?: string };
-    };
-    return data.dist?.tarball;
+    parsed = new URL(url);
   } catch {
-    return undefined;
+    throw new Error(`Refusing to download tarball: "${url.slice(0, 80)}" is not a URL`);
+  }
+  const local = ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname);
+  if (parsed.protocol !== "https:" && !(parsed.protocol === "http:" && local)) {
+    throw new Error(
+      `Refusing to download tarball over ${parsed.protocol.replace(":", "")}: ${parsed.host}`,
+    );
+  }
+}
+
+/** Download a tarball, sending registry credentials only if configured for that exact URL. */
+export async function downloadTarball(
+  info: TarballInfo,
+  registry: RegistryConfig = defaultRegistryConfig,
+): Promise<Uint8Array> {
+  assertTarballUrlAllowed(info.url);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TARBALL_TIMEOUT_MS);
+  try {
+    const res = await fetch(info.url, {
+      headers: registry.headersFor(info.url),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} downloading ${info.url}`);
+    }
+    const declared = Number.parseInt(res.headers.get("content-length") ?? "", 10);
+    if (declared > MAX_TARBALL_BYTES) {
+      throw new Error(`Tarball too large (${declared} bytes)`);
+    }
+    // Read in chunks so a response without a declared length cannot fill memory before the cap.
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error(`No body downloading ${info.url}`);
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_TARBALL_BYTES) {
+        await reader.cancel().catch(() => {});
+        throw new Error(`Tarball too large (more than ${MAX_TARBALL_BYTES} bytes)`);
+      }
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return bytes;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -412,4 +547,48 @@ export async function queryOutdatedPackages(
   }
 
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// Release timeline (freshness)
+// ---------------------------------------------------------------------------
+
+export interface PackageTimeline {
+  /** Every published version, in the registry's order. */
+  versions: string[];
+  /** Versions the maintainers have marked deprecated. */
+  deprecated: Set<string>;
+  /** Publish time of each version (ISO date), where the registry gives one. */
+  published: Map<string, string>;
+}
+
+/**
+ * The published versions of a package with when each was published, from its packument's `time`.
+ * Returns undefined when the package is not on the registry. Throws on a registry error, so a
+ * caller can tell "does not exist" from "could not be read".
+ */
+export async function fetchPackageTimeline(
+  packageName: string,
+  registry: RegistryConfig = defaultRegistryConfig,
+): Promise<PackageTimeline | undefined> {
+  const url = packumentUrl(registry, packageName);
+  const res = await httpClient({ url, headers: registry.headersFor(url) });
+  if (res.status === 404) return undefined;
+  if (!res.ok) {
+    throw new Error(`npm registry error ${res.status} for "${packageName}": ${res.text}`);
+  }
+  const data = res.data as Partial<NpmPackument>;
+  const versions = Object.keys(data.versions ?? {});
+  const published = new Map<string, string>();
+  for (const version of versions) {
+    const at = data.time?.[version];
+    if (typeof at === "string" && !Number.isNaN(Date.parse(at))) published.set(version, at);
+  }
+  return {
+    versions,
+    deprecated: new Set(
+      versions.filter((version) => Boolean(data.versions?.[version]?.deprecated)),
+    ),
+    published,
+  };
 }

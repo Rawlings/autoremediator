@@ -649,6 +649,38 @@ describe("cli preview and correlation option forwarding", () => {
     ).rejects.toThrow("change-request override flags require --create-change-request.");
   });
 
+  it("accepts every supported change-request provider and rejects unknown ones", async () => {
+    for (const provider of ["gitlab", "bitbucket", "azure-devops"]) {
+      const program = createProgram();
+      await program.parseAsync([
+        "node",
+        "autoremediator",
+        "CVE-2021-23337",
+        "--create-change-request",
+        "--change-request-provider",
+        provider,
+      ]);
+      expect(mocked.remediate).toHaveBeenLastCalledWith(
+        "CVE-2021-23337",
+        expect.objectContaining({
+          changeRequest: expect.objectContaining({ enabled: true, provider }),
+        }),
+      );
+    }
+
+    const program = createProgram();
+    await expect(
+      program.parseAsync([
+        "node",
+        "autoremediator",
+        "CVE-2021-23337",
+        "--create-change-request",
+        "--change-request-provider",
+        "svn",
+      ]),
+    ).rejects.toThrow("--change-request-provider must be one of");
+  });
+
   it("forwards dispositionPolicy options in top-level CVE mode", async () => {
     const program = createProgram();
     await program.parseAsync([

@@ -19,6 +19,11 @@ const mocked = vi.hoisted(() => ({
   readFileSync: vi.fn(),
   writeFileSync: vi.fn(),
   execa: vi.fn(),
+  loadMemoryConstraints: vi.fn(),
+}));
+
+vi.mock("../../platform/memory/consume.js", () => ({
+  loadMemoryConstraints: mocked.loadMemoryConstraints,
 }));
 
 vi.mock("../../intelligence/sources/registry.js", () => ({
@@ -123,6 +128,7 @@ beforeEach(() => {
   mocked.resolveTestCommand.mockReturnValue(["npm", "test"]);
   mocked.readFileSync.mockReturnValue(makePkgJson());
   mocked.execa.mockResolvedValue({ exitCode: 0 });
+  mocked.loadMemoryConstraints.mockReturnValue({ pinned: new Map(), rejected: new Map() });
   mocked.withRepoLock.mockImplementation((_cwd: string, fn: () => Promise<unknown>) => fn());
 });
 
@@ -145,6 +151,42 @@ describe("updateOutdated", () => {
     expect(report.errors).toHaveLength(0);
     expect(report.patchCount).toBe(0);
     expect(report.evidenceFile).toBeDefined();
+  });
+
+  it("leaves a package that memory pins alone, unless memory is ignored", async () => {
+    mocked.queryOutdatedPackages.mockResolvedValue(baseOutdatedMap);
+    mocked.loadMemoryConstraints.mockReturnValue({
+      pinned: new Map([
+        [
+          "lodash",
+          {
+            kind: "pinned-package",
+            id: "mem_0123456789",
+            package: "lodash",
+            reason: "v5 drops a method we use",
+          },
+        ],
+      ]),
+      rejected: new Map(),
+    });
+
+    const report = await updateOutdated({ cwd, dryRun: true });
+    expect(report.successCount).toBe(1);
+    expect(report.skippedCount).toBe(1);
+    expect(mocked.addEvidenceStep).toHaveBeenCalledWith(
+      expect.anything(),
+      "update-outdated.skip",
+      expect.objectContaining({
+        packageName: "lodash",
+        reason: "pinned-by-memory",
+        entry: "mem_0123456789",
+      }),
+      {},
+    );
+
+    const ignored = await updateOutdated({ cwd, dryRun: true, ignoreMemory: true });
+    expect(ignored.successCount).toBe(2);
+    expect(ignored.skippedCount).toBe(0);
   });
 
   it("respects dryRun: does not mutate files when dryRun is true", async () => {

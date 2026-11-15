@@ -5,9 +5,17 @@ import { fileURLToPath } from "node:url";
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TOOLS, createMcpServer, handleToolCall } from "./server.js";
+
+// The path guard is on for every call; these tests use fake project paths under /tmp.
+beforeEach(() => {
+  vi.stubEnv("AUTOREMEDIATOR_ALLOWED_ROOTS", `${process.cwd()},/tmp`);
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe("mcp tool contracts", () => {
   it("includes planRemediation in exposed tools", () => {
@@ -410,11 +418,12 @@ describe("mcp tool contracts", () => {
     expect(deps.listPatchArtifactsFn).toHaveBeenCalledWith(
       expect.objectContaining({ cwd: "/tmp/project" }),
     );
+    // Paths reach the handler as the absolute paths the guard checked.
     expect(deps.inspectPatchArtifactFn).toHaveBeenCalledWith(
-      "./patches/foo.patch",
-      expect.objectContaining({ patchesDir: "./custom-patches" }),
+      resolve("./patches/foo.patch"),
+      expect.objectContaining({ patchesDir: resolve("./custom-patches") }),
     );
-    expect(deps.validatePatchArtifactFn).toHaveBeenCalledWith("./patches/foo.patch", {});
+    expect(deps.validatePatchArtifactFn).toHaveBeenCalledWith(resolve("./patches/foo.patch"), {});
     expect(list.content[0]?.text).toContain("foo.patch");
     expect(inspect.content[0]?.text).toContain("exists");
     expect(validate.content[0]?.text).toContain("diffValid");

@@ -1,22 +1,26 @@
 import type http from "node:http";
 
+import {
+  A2A_ENDPOINT_PATH,
+  AGENT_CARD_PATH,
+  handleA2aRequest,
+  handleAgentCardRequest,
+} from "../../a2a/index.js";
+import {
+  httpOperations,
+  inputJsonSchema,
+  mapRequestToInput,
+  matchHttpRoute,
+  routeKey,
+} from "../../catalog/index.js";
+import { isHostAllowed } from "../../platform/http-security.js";
+import { confinePaths, getAllowedRoots, PathNotAllowedError } from "../../platform/path-guard.js";
 import { sendJson } from "../http-utils.js";
 import { checkRbacAuthorization } from "../rbac.js";
 import type { OpenApiServerDeps } from "../server.js";
-import { createOpenApiRouteHandlers } from "./routes.js";
-
-function isHostAllowed(req: http.IncomingMessage): boolean {
-  const configured = process.env.AUTOREMEDIATOR_ALLOWED_HOSTS?.split(",")
-    .map((h) => h.trim().toLowerCase())
-    .filter(Boolean);
-  const allowed =
-    configured && configured.length > 0 ? configured : ["127.0.0.1", "localhost", "[::1]"];
-  const host = (req.headers.host ?? "").toLowerCase();
-  const name = host.startsWith("[")
-    ? host.slice(0, host.indexOf("]") + 1)
-    : (host.split(":")[0] ?? "");
-  return allowed.includes(name);
-}
+import { OPENAPI_SPEC } from "../spec/index.js";
+import { runOperation } from "./run-operation.js";
+import { readJsonBody } from "./validators.js";
 
 export async function handleOpenApiRequest(
   req: http.IncomingMessage,
@@ -31,37 +35,49 @@ export async function handleOpenApiRequest(
 
   const url = new URL(req.url ?? "/", "http://localhost");
   const method = req.method?.toUpperCase() ?? "GET";
-  const key = `${method} ${url.pathname}`;
 
-  const routes = createOpenApiRouteHandlers(deps);
-  const handler = routes.get(key);
-
-  // Parametric route: GET /jobs/:jobId
-  if (!handler && method === "GET" && url.pathname.startsWith("/jobs/")) {
-    if (!checkRbacAuthorization(req, res, "GET /jobs")) {
-      return true;
-    }
-    const jobId = url.pathname.slice("/jobs/".length);
-    if (jobId && !jobId.includes("/")) {
-      try {
-        const job = deps.pollJobFn(jobId);
-        sendJson(res, 200, job);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        sendJson(res, 404, { error: message });
-      }
-      return true;
-    }
+  // Public probe and spec endpoints are not operations.
+  if (method === "GET" && url.pathname === "/health") {
+    sendJson(res, 200, { status: "ok" });
+    return true;
   }
-
-  if (!handler) {
-    return false;
-  }
-
-  if (!checkRbacAuthorization(req, res, key)) {
+  if (method === "GET" && url.pathname === "/openapi.json") {
+    sendJson(res, 200, OPENAPI_SPEC);
     return true;
   }
 
-  await handler(req, res);
+  // The A2A Agent Card is public, like the OpenAPI document; the A2A endpoint authenticates itself
+  // because the role it needs depends on the operation the message asks for.
+  if (method === "GET" && url.pathname === AGENT_CARD_PATH) {
+    handleAgentCardRequest(req, res);
+    return true;
+  }
+  if (method === "POST" && url.pathname === A2A_ENDPOINT_PATH) {
+    await handleA2aRequest(req, res, deps);
+    return true;
+  }
+
+  const match = matchHttpRoute(method, url.pathname, httpOperations);
+  if (!match) return false;
+  const { operation, params } = match;
+
+  if (!checkRbacAuthorization(req, res, routeKey(operation))) return true;
+
+  let body: unknown;
+  if (operation.http!.method === "POST") {
+    body = await readJsonBody(req, res);
+    if (body === undefined) return true;
+  }
+
+  const mapping = mapRequestToInput(operation, body, params);
+  if (!mapping.ok) {
+    sendJson(res, 400, { error: mapping.error });
+    return true;
+  }
+
+  await runOperation(operation, mapping.input, deps, res, {
+    confine: (input) => confinePaths(inputJsonSchema(operation), input, getAllowedRoots()),
+    isPathError: (error) => error instanceof PathNotAllowedError,
+  });
   return true;
 }

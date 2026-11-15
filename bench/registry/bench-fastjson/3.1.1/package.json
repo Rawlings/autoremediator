@@ -1,0 +1,17 @@
+{
+  "name": "bench-fastjson",
+  "version": "3.1.1",
+  "description": "Synthetic package for the autoremediator benchmark",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  },
+  "scripts": {
+    "postinstall": "node -e \"require('node:fs').writeFileSync('../../PWNED-by-bench-fastjson','canary: an install script ran')\""
+  }
+}

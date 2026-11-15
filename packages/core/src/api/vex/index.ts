@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 
 import type { PatchResult, RemediationReport, VexSuppression } from "../../platform/types.js";
 import type { ScanReport } from "../contracts.js";
+import { npmPurl, splitName } from "../evidence-pack/components.js";
 
 export interface CycloneDxVexVulnerabilityAnalysis {
   state: "resolved" | "not_affected" | "in_triage";
@@ -15,22 +16,57 @@ export interface CycloneDxVexVulnerabilityAnalysis {
 export interface CycloneDxVexVulnerability {
   id: string;
   analysis: CycloneDxVexVulnerabilityAnalysis;
+  /** CycloneDX properties: `autoremediator:maintainer-vex` when an installed package ships a verdict, and `autoremediator:proof-of-fix:*` when exploit-proof evidence exists. */
+  properties?: Array<{ name: string; value: string }>;
+  /** 1.6 output only: the components the advisory matched, by purl. */
+  affects?: Array<{ ref: string; versions: Array<{ version: string; status: "affected" }> }>;
 }
 
 export interface CycloneDxVexDocument {
   bomFormat: "CycloneDX";
-  specVersion: "1.5";
+  specVersion: "1.5" | "1.6";
   version: number;
   serialNumber: string;
   metadata: {
     timestamp: string;
     tools: Array<{ name: string; version: string }>;
   };
+  /** 1.6 output only: the components `affects` refers to. */
+  components?: Array<{
+    type: "library";
+    "bom-ref": string;
+    group?: string;
+    name: string;
+    version: string;
+    purl: string;
+  }>;
   vulnerabilities: CycloneDxVexVulnerability[];
+}
+
+/** A reproduction script kept by `generateProofOfFix`, as the VEX output refers to it. */
+export interface ProofEvidenceRef {
+  /** Advisory ids the evidence answers to (the id it was made for and its aliases). */
+  advisoryIds: string[];
+  packageName: string;
+  vulnerableVersion: string;
+  fixedVersion: string;
+  /** Path of the evidence record, relative to the project. */
+  evidencePath: string;
+  scriptSha256: string;
+  signed: boolean;
 }
 
 export interface ToCycloneDxVexOptions {
   toolVersion?: string;
+  /** Evidence to cite. Without it the output is unchanged. */
+  proofEvidence?: readonly ProofEvidenceRef[];
+  /**
+   * CycloneDX version to emit (default `1.5`, unchanged). `1.6` additionally gives each
+   * vulnerability an `affects` list of purls, and maps policy justifications to values the
+   * CycloneDX schema accepts (`mitigated` becomes `protected_by_mitigating_control`; `fixed`
+   * becomes state `resolved`; `under_investigation` becomes `in_triage`).
+   */
+  specVersion?: "1.5" | "1.6";
 }
 
 const isResolved = (result: PatchResult): boolean => result.applied && !result.unresolvedReason;
@@ -45,11 +81,53 @@ const isSuppressed = (result: PatchResult): boolean => result.suppressedBy != nu
  * triage evidence and never promoted to `not_affected`.
  */
 function mapReportToVulnerability(report: RemediationReport): CycloneDxVexVulnerability {
+  const vulnerability = mapOutcome(report);
+  // Maintainer verdicts are always reported, whether or not policy trusts them. They are what an
+  // installed package says about itself, so they are listed as a property and never decide state.
+  const claims = report.results.flatMap((result) =>
+    (result.maintainerVex ?? []).map(
+      (claim) =>
+        `${claim.maintainer.name}@${claim.maintainer.version}: not_affected (${claim.justification}) for ${result.packageName}@${result.fromVersion}`,
+    ),
+  );
+  return claims.length > 0
+    ? {
+        ...vulnerability,
+        properties: [...new Set(claims)].map((value) => ({
+          name: "autoremediator:maintainer-vex",
+          value,
+        })),
+      }
+    : vulnerability;
+}
+
+/** CycloneDX analysis justifications that match an OpenVEX one without stretching its meaning. */
+const CYCLONEDX_JUSTIFICATION: Record<string, string> = {
+  component_not_present: "code_not_present",
+  vulnerable_code_not_present: "code_not_present",
+  vulnerable_code_not_in_execute_path: "code_not_reachable",
+  inline_mitigations_already_exist: "protected_by_mitigating_control",
+};
+
+function mapOutcome(report: RemediationReport): CycloneDxVexVulnerability {
   const { results } = report;
   const resolved = results.filter((result) => isResolved(result));
 
   if (results.length > 0 && results.every((r) => isSuppressed(r))) {
-    const suppression = results[0]!.suppressedBy!;
+    const first = results[0]!;
+    const suppression = first.suppressedBy!;
+    if (suppression.source === "maintainer-vex") {
+      const openVex = first.maintainerVex?.[0]?.justification;
+      const mapped = openVex ? CYCLONEDX_JUSTIFICATION[openVex] : undefined;
+      return {
+        id: report.cveId,
+        analysis: {
+          state: "not_affected",
+          ...(mapped ? { justification: mapped } : {}),
+          detail: `Maintainer VEX, trusted by policy: ${suppression.notes ?? suppression.justification}`,
+        },
+      };
+    }
     return {
       id: report.cveId,
       analysis: {
@@ -95,10 +173,93 @@ function mapReportToVulnerability(report: RemediationReport): CycloneDxVexVulner
   };
 }
 
+/**
+ * Cite exploit-proof evidence for a vulnerability: a reproduction that failed on the vulnerable
+ * version and passed on the fixed one. Adds properties and a sentence of detail, and changes
+ * nothing else; with no evidence the entry is returned as it was.
+ */
+function withProofEvidence(
+  vulnerability: CycloneDxVexVulnerability,
+  report: RemediationReport,
+  evidence: readonly ProofEvidenceRef[],
+): CycloneDxVexVulnerability {
+  const id = report.cveId.toUpperCase();
+  const packages = new Set(report.results.map((result) => result.packageName));
+  const cited = evidence.filter(
+    (ref) =>
+      ref.advisoryIds.some((advisoryId) => advisoryId.toUpperCase() === id) &&
+      packages.has(ref.packageName),
+  );
+  if (cited.length === 0) return vulnerability;
+
+  const sentence = cited
+    .map(
+      (ref) =>
+        `exploit-proof evidence ${ref.evidencePath}: a reproduction script fails on ${ref.packageName}@${ref.vulnerableVersion} and passes on ${ref.packageName}@${ref.fixedVersion}${ref.signed ? " (signed)" : ""}`,
+    )
+    .join("; ");
+  const detail = vulnerability.analysis.detail;
+  return {
+    ...vulnerability,
+    analysis: { ...vulnerability.analysis, detail: detail ? `${detail}; ${sentence}` : sentence },
+    properties: cited.flatMap((ref) => [
+      { name: "autoremediator:proof-of-fix:evidence", value: ref.evidencePath },
+      { name: "autoremediator:proof-of-fix:script-sha256", value: ref.scriptSha256 },
+    ]),
+  };
+}
+
+/** The 1.6 form of one vulnerability: schema-valid analysis values, and `affects` by purl. */
+function upgradeToSpec16(
+  vulnerability: CycloneDxVexVulnerability,
+  report: RemediationReport,
+): CycloneDxVexVulnerability {
+  const { analysis } = vulnerability;
+  const suppressed =
+    report.results.length > 0 && report.results.every((result) => isSuppressed(result))
+      ? report.results[0]!.suppressedBy
+      : undefined;
+  let next: CycloneDxVexVulnerabilityAnalysis = analysis;
+  if (suppressed) {
+    const detail = analysis.detail ?? suppressed.justification;
+    switch (suppressed.justification) {
+      case "not_affected": {
+        next = { state: "not_affected", detail };
+        break;
+      }
+      case "mitigated": {
+        next = { state: "not_affected", justification: "protected_by_mitigating_control", detail };
+        break;
+      }
+      case "fixed": {
+        next = { state: "resolved", detail };
+        break;
+      }
+      case "under_investigation": {
+        next = { state: "in_triage", detail };
+        break;
+      }
+    }
+  } else if (analysis.justification === "code_not_in_execute_path") {
+    // Not a CycloneDX value; reachability is never asserted as not_affected here anyway.
+    next = { ...analysis, justification: undefined };
+  }
+  const seen = new Set<string>();
+  const affects: NonNullable<CycloneDxVexVulnerability["affects"]> = [];
+  for (const result of report.results) {
+    const ref = npmPurl(result.packageName, result.fromVersion);
+    if (seen.has(ref)) continue;
+    seen.add(ref);
+    affects.push({ ref, versions: [{ version: result.fromVersion, status: "affected" }] });
+  }
+  return { ...vulnerability, analysis: next, ...(affects.length > 0 ? { affects } : {}) };
+}
+
 export function toCycloneDxVex(
   report: ScanReport | RemediationReport,
   options: ToCycloneDxVexOptions = {},
 ): CycloneDxVexDocument {
+  const specVersion = options.specVersion ?? "1.5";
   const toolVersion = options.toolVersion ?? "unknown";
   const timestamp = new Date().toISOString();
   const serialNumber = `urn:uuid:${randomUUID()}`;
@@ -112,19 +273,44 @@ export function toCycloneDxVex(
     remediationReports = [report as RemediationReport];
   }
 
-  const vulnerabilities = remediationReports.map((remediationReport) =>
-    mapReportToVulnerability(remediationReport),
-  );
+  const vulnerabilities = remediationReports.map((remediationReport) => {
+    const mapped = withProofEvidence(
+      mapReportToVulnerability(remediationReport),
+      remediationReport,
+      options.proofEvidence ?? [],
+    );
+    return specVersion === "1.6" ? upgradeToSpec16(mapped, remediationReport) : mapped;
+  });
+
+  const components: NonNullable<CycloneDxVexDocument["components"]> = [];
+  if (specVersion === "1.6") {
+    const seen = new Set<string>();
+    for (const remediationReport of remediationReports) {
+      for (const result of remediationReport.results) {
+        const purl = npmPurl(result.packageName, result.fromVersion);
+        if (seen.has(purl)) continue;
+        seen.add(purl);
+        components.push({
+          type: "library",
+          "bom-ref": purl,
+          ...splitName(result.packageName),
+          version: result.fromVersion,
+          purl,
+        });
+      }
+    }
+  }
 
   return {
     bomFormat: "CycloneDX",
-    specVersion: "1.5",
+    specVersion,
     version: 1,
     serialNumber,
     metadata: {
       timestamp,
       tools: [{ name: "autoremediator", version: toolVersion }],
     },
+    ...(specVersion === "1.6" ? { components } : {}),
     vulnerabilities,
   };
 }

@@ -4,6 +4,16 @@ import { dirname, join } from "node:path";
 import { parse as yamlParse, stringify as yamlStringify } from "yaml";
 import { z } from "zod";
 
+import { freshnessPolicySchema, type FreshnessPolicy } from "./freshness-policy.js";
+import {
+  autonomyPolicySchema,
+  type AutonomyPolicy,
+  constraintsSchema,
+  dispositionPolicySchema,
+  escalationGraphSchema,
+  exploitSignalOverrideSchema,
+  patchConfidenceThresholdsSchema,
+} from "./option-schemas.js";
 import type {
   CveSeverity,
   DispositionPolicy,
@@ -26,9 +36,17 @@ export interface AutoremediatorPolicy {
   suppressions?: VexSuppression[];
   sla?: SlaPolicy;
   skipUnreachable?: boolean;
+  /** Treat a maintainer's shipped `not_affected` VEX statement as a suppression. Default false: it is shown as evidence only. */
+  trustMaintainerVex?: boolean;
   dispositionPolicy?: DispositionPolicy;
   containmentMode?: boolean;
   escalationGraph?: EscalationGraph;
+  /** Packages whose `recipes/` are trusted as recipe sources (see docs/guides/recipes.md). */
+  recipes?: { packages: string[] };
+  /** Earned autonomy. Absent means the feature is off and behaviour is unchanged. */
+  autonomy?: AutonomyPolicy;
+  /** How far behind the latest release direct dependencies may fall (see docs/guides/freshness.md). */
+  freshness?: FreshnessPolicy;
 }
 
 export const DEFAULT_POLICY: AutoremediatorPolicy = {
@@ -48,41 +66,15 @@ export const DEFAULT_POLICY: AutoremediatorPolicy = {
   suppressions: [],
   sla: undefined,
   skipUnreachable: false,
+  trustMaintainerVex: false,
   dispositionPolicy: undefined,
   containmentMode: false,
   escalationGraph: undefined,
 };
 
-const severitySchema = z.enum(["UNKNOWN", "LOW", "MEDIUM", "HIGH", "CRITICAL"]);
-const unitInterval = z.number().min(0).max(1);
 const packagePattern = z.string().trim().min(1);
 
-const supplyChainPolicySchema = z
-  .object({
-    minPublishAgeHours: z.number().nonnegative(),
-    blockInstallScripts: z.boolean(),
-    requireProvenance: z.boolean(),
-  })
-  .partial()
-  .strict();
-
-const constraintsSchema = z
-  .object({
-    directDependenciesOnly: z.boolean(),
-    preferVersionBump: z.boolean(),
-    installMode: z.enum(["standard", "prefer-offline", "deterministic"]),
-    installPreferOffline: z.boolean(),
-    enforceFrozenLockfile: z.boolean(),
-    workspace: z.string().min(1),
-    typecheck: z.boolean(),
-    requireProofOfFix: z.boolean(),
-    enableBreakingChangeRefactor: z.boolean(),
-    supplyChainPolicy: supplyChainPolicySchema,
-  })
-  .partial()
-  .strict();
-
-const suppressionSchema = z
+export const suppressionSchema = z
   .object({
     cveId: z.string().min(1),
     justification: z.enum(["not_affected", "fixed", "mitigated", "under_investigation"]),
@@ -92,25 +84,14 @@ const suppressionSchema = z
   .strict();
 
 /** Shape of the policy YAML. Unknown keys are rejected so typos and removed options are caught. */
-const policyFileSchema = z
+export const policyFileSchema = z
   .object({
     allowMajorBumps: z.boolean().default(false),
     denyPackages: z.array(packagePattern).default([]),
     allowPackages: z.array(packagePattern).default([]),
     constraints: constraintsSchema.optional(),
-    patchConfidenceThresholds: z
-      .object({ low: unitInterval, medium: unitInterval, high: unitInterval })
-      .partial()
-      .strict()
-      .optional(),
-    exploitSignalOverride: z
-      .object({
-        kev: z.object({ mandatory: z.boolean() }).strict(),
-        epss: z.object({ mandatory: z.boolean(), threshold: unitInterval }).strict(),
-      })
-      .partial()
-      .strict()
-      .optional(),
+    patchConfidenceThresholds: patchConfidenceThresholdsSchema.optional(),
+    exploitSignalOverride: exploitSignalOverrideSchema.optional(),
     suppressions: z.array(suppressionSchema).default([]),
     sla: z
       .object({
@@ -123,23 +104,27 @@ const policyFileSchema = z
       .strict()
       .optional(),
     skipUnreachable: z.boolean().default(false),
-    dispositionPolicy: z
+    trustMaintainerVex: z.boolean().default(false),
+    dispositionPolicy: dispositionPolicySchema.optional(),
+    containmentMode: z.boolean().default(false),
+    escalationGraph: escalationGraphSchema.optional(),
+    recipes: z
       .object({
-        minConfidenceForAutoApply: unitInterval,
-        holdForTransitive: z.boolean(),
-        escalateOnKev: z.boolean(),
-        escalateOnSlaBreachSeverities: z.array(severitySchema),
+        packages: z
+          .array(
+            z
+              .string()
+              .regex(
+                /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/,
+                "must be an npm package name",
+              ),
+          )
+          .default([]),
       })
-      .partial()
       .strict()
       .optional(),
-    containmentMode: z.boolean().default(false),
-    escalationGraph: z
-      .record(
-        z.string(),
-        z.enum(["open-issue", "notify-channel", "create-draft-pr", "hold-branch", "none"]),
-      )
-      .optional(),
+    autonomy: autonomyPolicySchema.optional(),
+    freshness: freshnessPolicySchema.optional(),
   })
   .strict();
 
@@ -163,7 +148,10 @@ function describePolicyIssues(error: z.ZodError): string {
  * means "no policy". An explicit path that does not exist, unreadable files, invalid YAML and
  * schema violations all throw, so a broken policy can never silently degrade to defaults.
  */
-export function loadPolicy(cwd: string, explicitPath?: string): AutoremediatorPolicy {
+export function loadPolicy(cwd: string, explicitPathOrEmpty?: string): AutoremediatorPolicy {
+  // An empty path means "none given", as the remediation pipeline passes `policy: ""` down to its
+  // tools. Treating it as a path would silently skip the project's own policy file.
+  const explicitPath = explicitPathOrEmpty?.trim() ? explicitPathOrEmpty : undefined;
   const isInline =
     explicitPath !== undefined &&
     (explicitPath.trim().startsWith("{") || explicitPath.trim().startsWith("---"));

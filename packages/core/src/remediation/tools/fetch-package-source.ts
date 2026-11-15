@@ -1,15 +1,21 @@
-import { mkdir, mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { z } from "zod";
 
+import {
+  downloadTarball,
+  getTarballInfo,
+  verifyTarballIntegrity,
+} from "../../intelligence/sources/registry.js";
+import { loadRegistryConfig } from "../../platform/registry-config.js";
 import { safeExeca } from "../../platform/safe-exec.js";
 /**
  * Tool: fetch-package-source
  *
- * Downloads a package tarball from npm registry and extracts source files for CVE analysis.
- * Uses curl with -f -s -S -L to download and execa to extract tar archives.
+ * Downloads a package tarball from the configured npm registry (`.npmrc` aware), verifies it against
+ * the registry's integrity digest, and extracts source files for CVE analysis.
  */
 import { defineTool } from "./tool-compat.js";
 
@@ -23,10 +29,17 @@ interface FetchPackageSourceResult {
   error?: string;
 }
 
+const notFoundMessage = (packageName: string, version: string): string =>
+  `Package ${packageName}@${version} not found on npm registry. It may not exist or the version may be incorrect.`;
+
 export const fetchPackageSourceTool = defineTool({
   description:
     "Download package tarball from npm and extract source files for CVE analysis. Supports custom file patterns (default: *.js, *.ts).",
   inputSchema: z.object({
+    cwd: z
+      .string()
+      .optional()
+      .describe("Project directory whose .npmrc selects the registry and credentials"),
     packageName: z
       .string()
       .min(1)
@@ -41,7 +54,12 @@ export const fetchPackageSourceTool = defineTool({
       .default(["*.js", "*.ts"])
       .describe("File patterns to extract (glob patterns, default: *.js, *.ts)"),
   }),
-  execute: async ({ packageName, version, filePatterns }): Promise<FetchPackageSourceResult> => {
+  execute: async ({
+    cwd,
+    packageName,
+    version,
+    filePatterns,
+  }): Promise<FetchPackageSourceResult> => {
     // Validate package name against npm spec before using in URL
     if (!/^(@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/i.test(packageName)) {
       return { success: false, error: `Invalid package name: ${packageName}` };
@@ -59,16 +77,24 @@ export const fetchPackageSourceTool = defineTool({
     const extractDir = join(tempBaseDir, "out");
 
     try {
-      // Step 1: Construct npm registry URL and download tarball
-      const scopedName = packageName.split("/").pop()!;
-      const npmUrl = `https://registry.npmjs.org/${packageName}/-/${scopedName}-${version}.tgz`;
+      // Step 1: Resolve the tarball through the configured registry, download and verify it
+      const registry = loadRegistryConfig(cwd);
+      const info = await getTarballInfo(packageName, version, registry);
+      if (!info) {
+        return { success: false, error: notFoundMessage(packageName, version) };
+      }
 
-      // Create temp directory
       await mkdir(tempBaseDir, { recursive: true });
-
-      // Download tarball using curl with fail-on-error flag (-f -s -S -L)
       const tarballPath = join(tempBaseDir, "package.tgz");
-      await safeExeca("curl", ["-f", "-s", "-S", "-L", "-o", tarballPath, npmUrl]);
+      const bytes = await downloadTarball(info, registry);
+      const integrity = verifyTarballIntegrity(bytes, info);
+      if (!integrity.ok) {
+        return {
+          success: false,
+          error: `Refusing ${packageName}@${version}: tarball failed verification (${integrity.reason}).`,
+        };
+      }
+      await writeFile(tarballPath, bytes);
 
       // Step 2: Extract tar.gz
       await mkdir(extractDir, { recursive: true });
@@ -135,22 +161,9 @@ export const fetchPackageSourceTool = defineTool({
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      const exitCode =
-        typeof (err as { exitCode?: number }).exitCode === "number"
-          ? (err as { exitCode?: number }).exitCode
-          : undefined;
-
-      // Check if it's a 404 from npm registry (curl exit code 22 with -f or error 404)
-      if (
-        exitCode === 22 ||
-        message.includes("404") ||
-        message.includes("not found") ||
-        message.includes("returned error: 404")
-      ) {
-        return {
-          success: false,
-          error: `Package ${packageName}@${version} not found on npm registry. It may not exist or the version may be incorrect.`,
-        };
+      // A 404 from the registry or tarball host means the version does not exist.
+      if (/\b404\b/.test(message)) {
+        return { success: false, error: notFoundMessage(packageName, version) };
       }
 
       return {

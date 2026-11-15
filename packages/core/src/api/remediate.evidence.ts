@@ -83,6 +83,9 @@ export function addRemediateResultSteps(
         reachability: result.reachability?.status,
         hasAlternatives: Boolean(result.alternativeSuggestions?.length),
         suppressedBy: result.suppressedBy?.justification,
+        maintainerVex: result.maintainerVex?.map(
+          (claim) => `${claim.maintainer.name}@${claim.maintainer.version}`,
+        ),
         simulationWouldMutate: result.simulation?.wouldMutate,
         simulationRebuttalCount: result.simulation?.rebuttalFindings.length,
       },

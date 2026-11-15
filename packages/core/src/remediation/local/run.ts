@@ -11,6 +11,16 @@ import {
   lookupSnapshotCve,
 } from "../../intelligence/sources/snapshot.js";
 import { computeEscalationAction } from "../../platform/escalation.js";
+import {
+  findMaintainerVex,
+  readInstalledMaintainerVex,
+  type MaintainerVexIndex,
+} from "../../platform/maintainer-vex/index.js";
+import {
+  loadMemoryConstraints,
+  pinnedMessage,
+  rejectedMessage,
+} from "../../platform/memory/consume.js";
 import type { PatchGenerator } from "../../platform/patch-generator.js";
 import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
 import { createProjectSnapshot } from "../../platform/rollback.js";
@@ -29,7 +39,7 @@ import { applyDispositionAndContainment } from "./disposition.js";
 import { shouldAttemptPatchFallback, tryPatchFallback } from "./fallback.js";
 import { resolveLocalRunOptions } from "./options.js";
 import { resolvePrimaryResult } from "./primary-strategy.js";
-import { buildSbom } from "./sbom.js";
+import { buildSbom, sbomKey } from "./sbom.js";
 import { runSecOpsPreflight } from "./secops-preflight.js";
 import { buildLocalSummary } from "./summary.js";
 import { findVulnerablePackages } from "./vulnerability-match.js";
@@ -111,12 +121,46 @@ export async function runLocalRemediationPipeline(
   const preflight = await runSecOpsPreflight(normalizedId, cveDetails, resolved);
 
   if (preflight.suppressed) {
+    // Nothing is modified for a suppressed CVE, but the report still names the installed copies it
+    // covers so VEX can assert not_affected and the SBOM can mark them suppressed.
+    const suppressedInventory =
+      cveDetails.affectedPackages.length > 0
+        ? await checkInventoryTool.execute({
+            cwd,
+            packageManager,
+            policy: options.policy,
+            workspace: constraints.workspace,
+          })
+        : { packages: [] };
+    const suppressedInstalled = suppressedInventory.error ? [] : suppressedInventory.packages;
+    const suppressedPackages = findVulnerablePackages(cveDetails, suppressedInstalled);
+    const suppressedBy = {
+      justification: preflight.suppression.justification,
+      ...(preflight.suppression.notes ? { notes: preflight.suppression.notes } : {}),
+    };
+
+    const suppressedResults: PatchResult[] = suppressedPackages.map((vulnerable) => ({
+      packageName: vulnerable.installed.name,
+      fromVersion: vulnerable.installed.version,
+      strategy: "none",
+      applied: false,
+      dryRun,
+      dependencyScope: vulnerable.installed.type === "direct" ? "direct" : "transitive",
+      suppressedBy,
+      message: preflight.summary,
+    }));
+
     return {
       cveId,
       cveDetails,
-      vulnerablePackages: [],
-      results: [],
+      vulnerablePackages: suppressedPackages,
+      results: suppressedResults,
       summary: preflight.summary,
+      sbom: buildSbom(
+        suppressedInstalled,
+        new Set(suppressedPackages.map((v) => sbomKey(v.installed.name, v.installed.version))),
+        suppressedResults,
+      ),
       correlation,
     };
   }
@@ -167,9 +211,22 @@ export async function runLocalRemediationPipeline(
   const effectivePolicy = loadPolicy(cwd, options.policy);
   const containmentMode = options.containmentMode ?? effectivePolicy.containmentMode ?? false;
   const dispositionPolicy = options.dispositionPolicy ?? effectivePolicy.dispositionPolicy;
+  // What earlier runs and people recorded: pinned packages and upgrades that were tried and rejected.
+  const memory = resolved.ignoreMemory ? undefined : loadMemoryConstraints(cwd);
+
+  // Read the VEX documents installed packages ship once, and only when something is vulnerable.
+  let shippedVex: MaintainerVexIndex | undefined;
 
   for (const vulnerable of vulnerablePackages) {
     const snapshot = await createProjectSnapshot(cwd);
+
+    shippedVex ??= readInstalledMaintainerVex(cwd);
+    const maintainerVex = findMaintainerVex(shippedVex, normalizedId, vulnerable.installed);
+    const withMaintainerVex = (result: PatchResult): PatchResult => ({
+      ...result,
+      ...(maintainerVex.evidence.length > 0 ? { maintainerVex: maintainerVex.evidence } : {}),
+      ...(maintainerVex.ignored.length > 0 ? { maintainerVexIgnored: maintainerVex.ignored } : {}),
+    });
 
     const finalizePatchResult = (result: PatchResult): PatchResult => {
       const withDisposition = applyDispositionAndContainment(result, {
@@ -187,7 +244,7 @@ export async function runLocalRemediationPipeline(
           resolved.escalationGraph,
         );
       }
-      return withDisposition;
+      return withMaintainerVex(withDisposition);
     };
 
     if (!isPackageAllowed(effectivePolicy, vulnerable.installed.name)) {
@@ -200,6 +257,46 @@ export async function runLocalRemediationPipeline(
           dryRun,
           unresolvedReason: "policy-blocked",
           message: `Policy denyPackages blocked changes for package "${vulnerable.installed.name}".`,
+        }),
+      );
+      continue;
+    }
+
+    // A person's pin comes first: the package is left alone whatever else says.
+    const pinned = memory?.pinned.get(vulnerable.installed.name);
+    if (pinned) {
+      collectedResults.push(
+        finalizePatchResult({
+          packageName: vulnerable.installed.name,
+          fromVersion: vulnerable.installed.version,
+          strategy: "none",
+          applied: false,
+          dryRun,
+          unresolvedReason: "constraint-blocked",
+          message: pinnedMessage(pinned),
+        }),
+      );
+      continue;
+    }
+
+    // Opt-in only: by default the maintainer's verdict is evidence and remediation goes ahead.
+    const maintainerClaim = maintainerVex.evidence[0];
+    if (resolved.trustMaintainerVex && maintainerClaim) {
+      const { maintainer } = maintainerClaim;
+      collectedResults.push(
+        withMaintainerVex({
+          packageName: vulnerable.installed.name,
+          fromVersion: vulnerable.installed.version,
+          strategy: "none",
+          applied: false,
+          dryRun,
+          dependencyScope: vulnerable.installed.type === "direct" ? "direct" : "transitive",
+          suppressedBy: {
+            justification: "not_affected",
+            source: "maintainer-vex",
+            notes: `${maintainer.name}@${maintainer.version} (${maintainerClaim.author}): ${maintainerClaim.justification}${maintainerClaim.impactStatement ? `. ${maintainerClaim.impactStatement}` : ""}`,
+          },
+          message: `Suppressed by maintainer VEX: ${maintainer.name}@${maintainer.version} (author ${maintainerClaim.author}) declares not_affected (${maintainerClaim.justification}) for ${normalizedId}.`,
         }),
       );
       continue;
@@ -234,6 +331,13 @@ export async function runLocalRemediationPipeline(
       requireProofOfFix: resolved.requireProofOfFix,
       reproductionTest: options.reproductionTest,
       patchesDir: resolved.patchesDir,
+      offlineIntelligence: resolved.offlineIntelligence,
+      rejectedVersions: new Map(
+        [...(memory?.rejected.get(vulnerable.installed.name) ?? [])].map(([version, entry]) => [
+          version,
+          rejectedMessage(entry),
+        ]),
+      ),
     });
 
     if (shouldAttemptPatchFallback(primary.result, constraints.preferVersionBump ?? false)) {
@@ -274,8 +378,10 @@ export async function runLocalRemediationPipeline(
     collectedResults.push(finalizePatchResult(primaryResult));
   }
 
-  const vulnerableNames = new Set(vulnerablePackages.map((v) => v.installed.name));
-  const sbom = buildSbom(installedPackages, vulnerableNames, collectedResults);
+  const vulnerableKeys = new Set(
+    vulnerablePackages.map((v) => sbomKey(v.installed.name, v.installed.version)),
+  );
+  const sbom = buildSbom(installedPackages, vulnerableKeys, collectedResults);
 
   return {
     cveId,

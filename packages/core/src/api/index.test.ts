@@ -115,6 +115,7 @@ describe("api preview and correlation behavior", () => {
     });
 
     await planRemediation("CVE-2021-23337", {
+      evidence: false,
       simulationMode: true,
       requestId: "req-123",
       sessionId: "session-abc",

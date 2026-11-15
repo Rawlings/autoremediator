@@ -1,7 +1,17 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc", "node", "import", "promise", "vitest"],
-  "ignorePatterns": [".agents/**", "e2e/**", "**/dist/**", "**/coverage/**"],
+  "ignorePatterns": [
+    ".agents/**",
+    "e2e/**",
+    "bench/tasks/**",
+    "bench/registry/**",
+    "bench/.work/**",
+    // Needs the SDK that `dagger develop` generates into dagger/sdk, so it cannot be type-checked here.
+    "dagger/**",
+    "**/dist/**",
+    "**/coverage/**"
+  ],
   "env": {
     "builtin": true,
     "node": true

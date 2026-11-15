@@ -13,9 +13,9 @@ Changes are installed, optionally tested/type-checked, and rolled back on failur
 
 ## Entry points
 
-- CLI: `autoremediator <CVE|GHSA|scan-file> [--dry-run] [--run-tests] [--ci]`, plus `scan`, `update-outdated`, `portfolio`, `diff`, `triage`, `patches`, `reachability`, `evaluate`
-- SDK: `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `scanDelta`, `checkReachability`, `evaluatePackage`, patch-artifact functions, job functions (`submit*Job`, `pollJob`), `toCiSummary`, `toSarifOutput`, `toCycloneDxVex`, `createLlmPatchGenerator`
-- MCP (stdio, `autoremediator-mcp`): `health`, `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `checkReachability`, `evaluatePackage`, `scanDelta`, `toVex`, `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob`
+- CLI: `autoremediator <CVE|GHSA|scan-file> [--dry-run] [--run-tests] [--ci]`, plus `evidence-pack`, `prove`, `radar`, `maintain`, `vex show`, `freshness`, `memory`, `policy compile|explain`, `autonomy status|explain`, `recipes ...`, `trace run`, `assess`, `symbols`, `incident`, `premortem`, `bisect`, `diet`, `hook install|uninstall|status` (git hooks that run `diff` on push/merge; docs/guides/git-hooks.md), `init` (sets up the project and coding-agent configuration), `guard <packages>` or `guard --git-diff` (judge packages before install: exit 0 clear, 3 check first, 4 blocked), `guard-hook --host claude-code|cursor|copilot` (agent pre-command hook), `plan`, `runs`, `scan`, `update-outdated`, `portfolio`, `diff`, `triage`, `patches`, `reachability`, `evaluate`. With `--ci`, exit codes: 0 fixed or nothing to do, 1 failed, 2 partly fixed, 3 waiting for approval, 4 blocked by policy
+- SDK: `init`, `remediate`, `planRemediation`, `applyPlan`, `verifyRun`, `rollbackRun`, `getRun`, `listRuns`, attempt functions, `remediateFromScan`, `remediatePortfolio`, `updateOutdated`, `scanDelta`, `checkReachability`, `evaluatePackage`, `guardPackage`, patch-artifact functions, job functions (`submit*Job`, `pollJob`), `toCiSummary`, `toSarifOutput`, `toCycloneDxVex`, `createLlmPatchGenerator`
+- MCP (stdio, `autoremediator-mcp`): `health`, `remediate`, `planRemediation`, `remediateFromScan`, `remediatePortfolio`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `reconcilePatchArtifacts`, `applyPlan`, `resumeRun`, `rollbackRun`, `verifyRun`, `startAttempt`, `proposePatch`, `verifyAttempt`, `finalizeAttempt`, `abandonAttempt`, `getRun`, `listRuns`, `updateOutdated`, `toVex`, `submitRemediateJob`, `submitScanJob`, `submitPortfolioJob`, `pollJob`, `checkReachability`, `evaluatePackage`, `guardPackage`, `getAutonomy`, `analyzeDependencies`, `scanDelta`, `listRecipes`, `applyRecipe`, `assessUpgrade`, `findVulnerableSymbols`, `incident`, `premortem`, `compilePolicy`, `explainPolicy`, `readMaintainerVex`, `generateProofOfFix`, `radar`, `freshnessReport`, `planFreshnessStep`, `listMemory`, `buildEvidencePack`
 - HTTP: `POST /remediate`, `/plan-remediation`, `/remediate-from-scan`, `/remediate-portfolio`, `/update-outdated`, `/patches/{list,inspect,validate}`, `/vex`, `/jobs/{remediate,scan,portfolio}`, `GET /jobs/:id`, `GET /health`, `GET /openapi.json`. Authentication is required (`AUTOREMEDIATOR_API_TOKENS` or `AUTOREMEDIATOR_JWT_SECRET`).
 
 ## Key options
@@ -41,3 +41,21 @@ Precedence: explicit options, then the policy file (`.github/autoremediator.yml`
 - SDK reference: https://github.com/Rawlings/autoremediator/blob/master/docs/reference/sdk.md
 - Policy file: https://github.com/Rawlings/autoremediator/blob/master/docs/reference/policy-file.md
 - Integrations: https://github.com/Rawlings/autoremediator/tree/master/docs/integrations
+- Other CI (GitLab, Bitbucket Pipelines, Azure DevOps, Docker, Dagger; `changeRequest.provider` is `github|gitlab|bitbucket|azure-devops`): https://github.com/Rawlings/autoremediator/blob/master/docs/integrations/other-ci.md
+- A2A: `GET /.well-known/agent-card.json` (signed with `AUTOREMEDIATOR_A2A_SIGNING_KEY`) and `POST /a2a` (`SendMessage`, `GetTask`) on the HTTP server: https://github.com/Rawlings/autoremediator/blob/master/docs/integrations/a2a.md
+- Coding agents (init, Claude Code plugin): https://github.com/Rawlings/autoremediator/blob/master/docs/integrations/coding-agents.md
+- Earned autonomy: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/earned-autonomy.md
+- Recipes: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/recipes.md
+- Runtime reachability: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/runtime-reachability.md
+- Upgrade impact: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/upgrade-impact.md
+- Incident response: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/incident-response.md
+- Lockfile bisect: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/bisect.md
+- Dependency diet: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/dependency-diet.md
+- Benchmark: https://github.com/Rawlings/autoremediator/blob/master/docs/contributing/benchmark.md
+- Evidence pack (CRA): https://github.com/Rawlings/autoremediator/blob/master/docs/guides/evidence-pack.md
+- Exploit-proof evidence: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/proof-of-fix-generation.md
+- Silent-fix radar: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/silent-fix-radar.md
+- Maintainer VEX: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/maintainer-vex.md
+- Freshness: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/freshness.md
+- Memory: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/memory.md
+- Policy in plain language: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/policy-in-plain-language.md

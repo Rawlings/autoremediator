@@ -49,4 +49,13 @@ AssertionError: expected 4 to equal 5
     expect(parsed.findings.length).toBeGreaterThanOrEqual(1);
     expect(parsed.findings.some((f) => f.category === "test")).toBe(true);
   });
+
+  it("parses very long dot-free lines in bounded time and still finds later findings", () => {
+    const long = "a".repeat(65_000);
+    const raw = `${long}\nsrc/index.ts:15:3 - error TS2305: boom\n${long}`;
+    const started = performance.now();
+    const parsed = parseCheckRunLogs(raw);
+    expect(performance.now() - started).toBeLessThan(200);
+    expect(parsed.findings.map((finding) => finding.ruleId)).toEqual(["TS2305"]);
+  });
 });

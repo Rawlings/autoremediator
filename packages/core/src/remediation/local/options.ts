@@ -29,12 +29,15 @@ export interface LocalRunOptions {
   slaCheck: boolean;
   slaPolicy?: SlaPolicy;
   skipUnreachable: boolean;
+  /** Policy only: a maintainer's shipped `not_affected` VEX statement suppresses remediation. */
+  trustMaintainerVex: boolean;
   escalationGraph?: EscalationGraph;
   offlineIntelligence: boolean;
   intelligenceSnapshotPath?: string;
   proofOfFix?: boolean | string;
   requireProofOfFix?: boolean;
   breakingChangeRefactor?: boolean;
+  ignoreMemory: boolean;
 }
 
 export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptions {
@@ -84,6 +87,7 @@ export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptio
     slaCheck: options.slaCheck ?? false,
     slaPolicy: loadedPolicy.sla,
     skipUnreachable: options.skipUnreachable ?? loadedPolicy.skipUnreachable ?? false,
+    trustMaintainerVex: loadedPolicy.trustMaintainerVex ?? false,
     escalationGraph: options.escalationGraph ?? loadedPolicy.escalationGraph,
     offlineIntelligence: options.offlineIntelligence ?? false,
     intelligenceSnapshotPath: options.intelligenceSnapshotPath,
@@ -91,5 +95,6 @@ export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptio
     requireProofOfFix: options.requireProofOfFix ?? constraints.requireProofOfFix,
     breakingChangeRefactor:
       options.breakingChangeRefactor ?? constraints.enableBreakingChangeRefactor,
+    ignoreMemory: options.ignoreMemory ?? false,
   };
 }

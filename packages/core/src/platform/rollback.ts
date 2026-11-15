@@ -10,7 +10,9 @@ import {
 } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 
+import { MEMORY_PATH } from "./memory/path.js";
 import { safeExeca } from "./safe-exec.js";
+import { TRACK_RECORD_PATH } from "./track-record-path.js";
 
 export interface ProjectSnapshot {
   cwd: string;
@@ -27,6 +29,7 @@ const MANIFEST_PATTERNS = [
   /deno\.jsonc?$/,
   /\.patch$/,
   /\.autoremediator\.ya?ml$/,
+  /^pnpm-workspace\.ya?ml$/,
   /tsconfig.*\.json$/,
 ];
 
@@ -144,6 +147,13 @@ function resolveGitStatusPath(snapshot: ProjectSnapshot, filePath: string): stri
   }
   const rel = relative(realCwd, full);
   if (rel === "" || rel.startsWith("..") || isAbsolute(rel)) return null;
+  // The autonomy track record is history, not project state: a rollback must not rewind it.
+  // Remediation memory is history too.
+  const normalized = rel.replaceAll("\\", "/");
+  if (normalized === TRACK_RECORD_PATH || normalized === MEMORY_PATH) return null;
+  // Everything else the tool keeps under `.autoremediator/` (other runs, recipes, evidence, locks) is
+  // its own bookkeeping or committed knowledge, not project state, whether or not it is gitignored.
+  if (normalized.startsWith(".autoremediator/")) return null;
   return join(snapshot.cwd, rel);
 }
 

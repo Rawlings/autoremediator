@@ -30,6 +30,8 @@ import {
 } from "../proof-of-fix/runner.js";
 import { findPackageCallSites } from "../refactor/call-site-finder.js";
 import { refactorConsumerCallSites, revertRefactorSnapshots } from "../refactor/codemods.js";
+import { runCommandCheck } from "../verify/command-check.js";
+import { serializeManifest } from "./manifest-format.js";
 /**
  * Tool: apply-version-bump
  *
@@ -213,10 +215,14 @@ export const applyVersionBumpTool = defineTool({
     // Preserve the range prefix (^, ~, empty) from the existing entry
     const prefixMatch = /^([~^]?)/.exec(currentRange);
     const prefix = prefixMatch?.[1] ?? "";
-    const newRange = `${prefix}${toVersion}`;
+    // A downgrade (pinning a release back) must be exact: the package manager keeps a locked newer
+    // version that the old range still allows, so `^1.0.0` would change nothing.
+    const isDowngrade =
+      semver.valid(fromVersion) && semver.valid(toVersion) && semver.lt(toVersion, fromVersion);
+    const newRange = isDowngrade ? toVersion : `${prefix}${toVersion}`;
 
     const effectiveInstallCommand = resolveInstallCommand(pm, commandConstraints, yarnMajor);
-    const effectiveTestCommand = resolveTestCommand(pm, commandConstraints);
+    const effectiveTestCommand = resolveTestCommand(pm, commandConstraints, cwd);
     const effectiveTypecheckCommand = resolveTypecheckCommand(pm, commandConstraints, cwd);
     const effectiveDedupeCommand = resolveDedupeCommand(pm, commandConstraints);
     const shouldTypecheck = typecheck || Boolean(commandConstraints.typecheck);
@@ -288,9 +294,11 @@ export const applyVersionBumpTool = defineTool({
         }
       }
 
-      // Write updated package.json
+      // Write updated package.json, keeping the file's own formatting; a failed upgrade puts the
+      // original bytes back, so nothing about it shows up in a diff.
+      const originalManifest = readFileSync(pkgPath, "utf8");
       pkgJson[depField]![packageName] = newRange;
-      writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+      writeFileSync(pkgPath, serializeManifest(originalManifest, pkgJson), "utf8");
 
       // Run package-manager install
       try {
@@ -301,8 +309,7 @@ export const applyVersionBumpTool = defineTool({
         });
       } catch (err) {
         // Revert the package.json change on install failure
-        pkgJson[depField]![packageName] = currentRange;
-        writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+        writeFileSync(pkgPath, originalManifest, "utf8");
 
         const message = err instanceof Error ? err.message : String(err);
         return {
@@ -327,41 +334,12 @@ export const applyVersionBumpTool = defineTool({
         isTypecheck?: boolean;
       }> {
         if (runTests) {
-          try {
-            await safeExecaCommand(effectiveTestCommand, {
-              timeoutMs: LONG_RUNNING_TIMEOUT_MS,
-              cwd,
-              stdio: "pipe",
-            });
-          } catch (err) {
-            const execErr = err as { stdout?: string; stderr?: string; message?: string };
-            const fullOutput = [execErr.stdout, execErr.stderr, execErr.message]
-              .filter(Boolean)
-              .join("\n");
-            return {
-              passed: false,
-              error: fullOutput || (err instanceof Error ? err.message : String(err)),
-            };
-          }
+          const outcome = await runCommandCheck(effectiveTestCommand, cwd);
+          if (!outcome.passed) return { passed: false, error: outcome.output };
         }
         if (shouldTypecheck && effectiveTypecheckCommand.length > 0) {
-          try {
-            await safeExecaCommand(effectiveTypecheckCommand, {
-              timeoutMs: LONG_RUNNING_TIMEOUT_MS,
-              cwd,
-              stdio: "pipe",
-            });
-          } catch (err) {
-            const execErr = err as { stdout?: string; stderr?: string; message?: string };
-            const fullOutput = [execErr.stdout, execErr.stderr, execErr.message]
-              .filter(Boolean)
-              .join("\n");
-            return {
-              passed: false,
-              isTypecheck: true,
-              error: fullOutput || (err instanceof Error ? err.message : String(err)),
-            };
-          }
+          const outcome = await runCommandCheck(effectiveTypecheckCommand, cwd);
+          if (!outcome.passed) return { passed: false, isTypecheck: true, error: outcome.output };
         }
         return { passed: true };
       }
@@ -394,8 +372,7 @@ export const applyVersionBumpTool = defineTool({
       }
 
       if (!validationResult.passed) {
-        pkgJson[depField]![packageName] = currentRange;
-        writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+        writeFileSync(pkgPath, originalManifest, "utf8");
 
         try {
           await safeExecaCommand(effectiveInstallCommand, {
@@ -433,8 +410,7 @@ export const applyVersionBumpTool = defineTool({
         });
 
         if (!positivePhaseResult.passed) {
-          pkgJson[depField]![packageName] = currentRange;
-          writeFileSync(pkgPath, JSON.stringify(pkgJson, null, 2) + "\n", "utf8");
+          writeFileSync(pkgPath, originalManifest, "utf8");
 
           try {
             await safeExecaCommand(effectiveInstallCommand, {

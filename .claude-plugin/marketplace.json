@@ -1,0 +1,18 @@
+{
+  "name": "autoremediator",
+  "owner": {
+    "name": "Rawlings",
+    "url": "https://github.com/Rawlings"
+  },
+  "metadata": {
+    "description": "Fix vulnerable npm dependencies safely: plan, apply with verification, repair upgrades that break the project, roll back."
+  },
+  "plugins": [
+    {
+      "name": "autoremediator",
+      "source": "./plugins/claude-code",
+      "description": "Fix vulnerable npm dependencies safely: plan, apply with verification, repair upgrades that break the project, roll back.",
+      "category": "security"
+    }
+  ]
+}

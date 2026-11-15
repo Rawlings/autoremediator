@@ -1,8 +1,10 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { execa } from "execa";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 
 import { fetchPackageSourceTool } from "./fetch-package-source.js";
 
@@ -10,15 +12,63 @@ vi.mock("execa", () => ({
   execa: vi.fn(),
 }));
 
+interface RegistryStubCall {
+  url: string;
+  headers: Record<string, string>;
+}
+
+/** Stub global fetch: version metadata answers at `.../<version>`, any other URL serves the tarball. */
+function stubRegistry(options: {
+  metadataStatus?: number;
+  tarballUrl?: string;
+  integrity?: string;
+  tarballBytes?: Uint8Array;
+  failWith?: Error;
+}): RegistryStubCall[] {
+  const calls: RegistryStubCall[] = [];
+  const tarballUrl = options.tarballUrl ?? "https://registry.npmjs.org/pkg/-/pkg-1.0.0.tgz";
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string | URL, init?: RequestInit) => {
+      const target = String(url);
+      calls.push({ url: target, headers: { ...(init?.headers as Record<string, string>) } });
+      if (options.failWith) throw options.failWith;
+      if (target === tarballUrl) {
+        return new Response(options.tarballBytes ?? new Uint8Array([1, 2, 3]), { status: 200 });
+      }
+      if ((options.metadataStatus ?? 200) !== 200) {
+        return new Response("not found", { status: options.metadataStatus });
+      }
+      return new Response(
+        JSON.stringify({ dist: { tarball: tarballUrl, integrity: options.integrity } }),
+        { status: 200 },
+      );
+    }),
+  );
+  return calls;
+}
+
 describe("Feature 12: Adversarial Package Fetcher (Co-located Challenge Suite)", () => {
   beforeEach(() => {
     vi.mocked(execa).mockReset();
   });
 
-  it("returns truthful 404 error when curl fails with exit code 22 without running tar", async () => {
-    const error = new Error("curl: (22) The requested URL returned error: 404");
-    (error as unknown as { exitCode: number }).exitCode = 22;
-    vi.mocked(execa).mockRejectedValueOnce(error);
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const extractIndexJs = () =>
+    vi.mocked(execa).mockImplementation((async (cmd: any, args: any) => {
+      if (cmd === "tar") {
+        const extractDir = args[3] as string;
+        mkdirSync(join(extractDir, "package"), { recursive: true });
+        writeFileSync(join(extractDir, "package", "index.js"), "module.exports = {};", "utf8");
+      }
+      return { stdout: "", stderr: "", exitCode: 0 } as any;
+    }) as any);
+
+  it("returns truthful 404 error when the registry has no such version, without running tar", async () => {
+    stubRegistry({ metadataStatus: 404 });
 
     const res = await fetchPackageSourceTool.execute({
       packageName: "package-that-does-not-exist-404",
@@ -29,14 +79,11 @@ describe("Feature 12: Adversarial Package Fetcher (Co-located Challenge Suite)",
     expect(res.error).toBe(
       "Package package-that-does-not-exist-404@1.0.0 not found on npm registry. It may not exist or the version may be incorrect.",
     );
-    expect(vi.mocked(execa)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(execa).mock.calls[0]![0]).toBe("curl");
+    expect(vi.mocked(execa)).not.toHaveBeenCalled();
   });
 
   it("differentiates network failure (non-404) from missing package", async () => {
-    const networkError = new Error("curl: (7) Failed to connect to host: Connection refused");
-    (networkError as unknown as { exitCode: number }).exitCode = 7;
-    vi.mocked(execa).mockRejectedValueOnce(networkError);
+    stubRegistry({ failWith: new Error("connect ECONNREFUSED 127.0.0.1:443") });
 
     const res = await fetchPackageSourceTool.execute({
       packageName: "lodash",
@@ -49,6 +96,7 @@ describe("Feature 12: Adversarial Package Fetcher (Co-located Challenge Suite)",
   });
 
   it("extracts source files when all code lives under dist/, dist/esm/, or build/ directories", async () => {
+    stubRegistry({});
     vi.mocked(execa).mockImplementation((async (cmd: any, args: any) => {
       if (cmd === "tar") {
         const extractDir = args[3] as string;
@@ -86,6 +134,7 @@ describe("Feature 12: Adversarial Package Fetcher (Co-located Challenge Suite)",
   });
 
   it("handles package tarballs that extract directly into root without package/ subfolder", async () => {
+    stubRegistry({});
     vi.mocked(execa).mockImplementation((async (cmd: any, args: any) => {
       if (cmd === "tar") {
         const extractDir = args[3] as string;
@@ -104,20 +153,11 @@ describe("Feature 12: Adversarial Package Fetcher (Co-located Challenge Suite)",
     expect(res.sourceFiles!["dist/flat.js"]).toBe("const flat = true;");
   });
 
-  it("correctly constructs npm registry URL for scoped packages (@scope/name)", async () => {
-    let requestedUrl = "";
-    vi.mocked(execa).mockImplementation((async (cmd: any, args: any) => {
-      if (cmd === "curl") {
-        requestedUrl = args[6] as string;
-        const tarballPath = args[5] as string;
-        writeFileSync(tarballPath, "fake tarball");
-      } else if (cmd === "tar") {
-        const extractDir = args[3] as string;
-        mkdirSync(join(extractDir, "package"), { recursive: true });
-        writeFileSync(join(extractDir, "package", "index.js"), "module.exports = {};", "utf8");
-      }
-      return { stdout: "", stderr: "", exitCode: 0 } as any;
-    }) as any);
+  it("resolves scoped packages through the registry metadata endpoint", async () => {
+    const calls = stubRegistry({
+      tarballUrl: "https://registry.npmjs.org/@my-org/core-utils/-/core-utils-2.1.0.tgz",
+    });
+    extractIndexJs();
 
     const res = await fetchPackageSourceTool.execute({
       packageName: "@my-org/core-utils",
@@ -125,9 +165,63 @@ describe("Feature 12: Adversarial Package Fetcher (Co-located Challenge Suite)",
     });
 
     expect(res.success).toBe(true);
-    expect(requestedUrl).toBe(
+    expect(calls.map((c) => c.url)).toEqual([
+      "https://registry.npmjs.org/@my-org%2Fcore-utils/2.1.0",
       "https://registry.npmjs.org/@my-org/core-utils/-/core-utils-2.1.0.tgz",
-    );
+    ]);
+  });
+
+  it("refuses a tarball whose digest does not match the registry integrity", async () => {
+    stubRegistry({ integrity: `sha512-${createHash("sha512").update("other").digest("base64")}` });
+    extractIndexJs();
+
+    const res = await fetchPackageSourceTool.execute({ packageName: "pkg", version: "1.0.0" });
+
+    expect(res.success).toBe(false);
+    expect(res.error).toContain("failed verification");
+    expect(vi.mocked(execa)).not.toHaveBeenCalled();
+  });
+
+  it("accepts a tarball whose digest matches the registry integrity", async () => {
+    const bytes = new Uint8Array([9, 8, 7]);
+    stubRegistry({
+      tarballBytes: bytes,
+      integrity: `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
+    });
+    extractIndexJs();
+
+    const res = await fetchPackageSourceTool.execute({ packageName: "pkg", version: "1.0.0" });
+
+    expect(res.success).toBe(true);
+  });
+
+  it("uses the project .npmrc registry and sends credentials only to that registry", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "fetch-source-npmrc-"));
+    try {
+      writeFileSync(
+        join(dir, ".npmrc"),
+        "registry=https://npm.internal.example/\n//npm.internal.example/:_authToken=s3cret\n",
+      );
+      const calls = stubRegistry({ tarballUrl: "https://cdn.example.net/pkg-1.0.0.tgz" });
+      extractIndexJs();
+
+      const res = await fetchPackageSourceTool.execute({
+        cwd: dir,
+        packageName: "pkg",
+        version: "1.0.0",
+      });
+
+      expect(res.success).toBe(true);
+      expect(calls[0]).toMatchObject({
+        url: "https://npm.internal.example/pkg/1.0.0",
+        headers: { Authorization: "Bearer s3cret" },
+      });
+      // The tarball lives on another host: it must not receive the registry token.
+      expect(calls[1]?.url).toBe("https://cdn.example.net/pkg-1.0.0.tgz");
+      expect(calls[1]?.headers["Authorization"]).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("rejects path traversal and illegal characters in package names", async () => {

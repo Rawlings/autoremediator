@@ -1,3 +1,4 @@
+import { CHANGE_REQUEST_PROVIDER_VALUES } from "../platform/types.js";
 import type { CommandOptions, OutputFormat } from "./types.js";
 
 function hasChangeRequestOverrides(opts: CommandOptions): boolean {
@@ -18,6 +19,15 @@ export function validateSharedCommandOptions(opts: CommandOptions): void {
 
   if (hasChangeRequestOverrides(opts) && !opts.createChangeRequest) {
     throw new Error("change-request override flags require --create-change-request.");
+  }
+
+  if (
+    opts.changeRequestProvider &&
+    !CHANGE_REQUEST_PROVIDER_VALUES.includes(opts.changeRequestProvider)
+  ) {
+    throw new Error(
+      `--change-request-provider must be one of: ${CHANGE_REQUEST_PROVIDER_VALUES.join(", ")} (received: ${opts.changeRequestProvider}).`,
+    );
   }
 
   if (opts.createChangeRequest && (opts.dryRun || opts.preview)) {

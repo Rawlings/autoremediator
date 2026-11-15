@@ -587,6 +587,9 @@ export function createGitHubAppServer(options: ServerOptions): Server {
         })
       : undefined;
 
+  const stateStore =
+    options.stateStore ?? createInMemoryAppStateStore(options.maxTrackedDeliveries);
+
   const defaultRemediationHandler =
     options.enableDefaultRemediationHandler && installationTokenProvider
       ? createDefaultRemediationHandler({
@@ -596,12 +599,14 @@ export function createGitHubAppServer(options: ServerOptions): Server {
             return new Octokit({ auth: token });
           },
           onError: options.onError,
+          stateStore,
+          selfAppId: options.appId,
         })
       : undefined;
 
   const normalizedOptions: ServerOptions = {
     ...options,
-    stateStore: options.stateStore ?? createInMemoryAppStateStore(options.maxTrackedDeliveries),
+    stateStore,
     onRemediationRequested: options.onRemediationRequested ?? defaultRemediationHandler,
     runtimeCounters: options.runtimeCounters ?? createRuntimeCounters(),
   };

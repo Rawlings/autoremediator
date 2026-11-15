@@ -1,24 +1,19 @@
 import type http from "node:http";
 
 import { HttpError, readBody, sendJson } from "../http-utils.js";
-import { assertPathsConfined } from "../path-guard.js";
 
-function toMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-export async function readJsonBody<T>(
+/** Read the JSON request body, answering the request itself (415/413/400) when it is unusable. */
+export async function readJsonBody(
   req: http.IncomingMessage,
   res: http.ServerResponse,
-): Promise<T | undefined> {
+): Promise<unknown> {
   try {
     const body = await readBody(req);
     if (typeof body !== "object" || body === null) {
       sendJson(res, 400, { error: "Invalid JSON body" });
       return undefined;
     }
-    assertPathsConfined(body);
-    return body as T;
+    return body;
   } catch (error) {
     if (error instanceof HttpError) {
       sendJson(res, error.status, { error: error.message });
@@ -29,29 +24,4 @@ export async function readJsonBody<T>(
     }
     return undefined;
   }
-}
-
-export async function runRequest<T>(
-  res: http.ServerResponse,
-  action: () => Promise<T>,
-): Promise<void> {
-  try {
-    const report = await action();
-    sendJson(res, 200, report);
-  } catch (error) {
-    sendJson(res, 400, { error: toMessage(error) });
-  }
-}
-
-export function requireStringField(
-  body: Record<string, unknown> | undefined,
-  field: string,
-  res: http.ServerResponse,
-  errorMessage: string,
-): string | undefined {
-  if (!body || typeof body[field] !== "string" || !body[field]) {
-    sendJson(res, 400, { error: errorMessage });
-    return undefined;
-  }
-  return body[field];
 }

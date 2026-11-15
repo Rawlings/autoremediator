@@ -1,3 +1,6 @@
+import { codeScanningAlertTarget, dependabotAlertTarget } from "./alerts.js";
+import { parseComment } from "./commands.js";
+import { botKindOfBranch, isForkPullRequest } from "./doctor/bot-pr.js";
 import type { AppStateStore } from "./state.js";
 import type {
   DispatchResult,
@@ -241,11 +244,25 @@ export async function dispatchGitHubEvent(
       const ref = typeof head?.ref === "string" ? head.ref : "";
       return ref.startsWith("autoremediator/") || ref.includes("autoremediator");
     });
+    // Dependabot and Renovate branches go to the bot PR doctor, which the repository must enable.
+    // A pull request from a fork is dropped here already; the handler checks the rest.
+    const isBotPr = pullRequests.some((pr) => {
+      const head = pr.head as Record<string, unknown> | undefined;
+      const ref = typeof head?.ref === "string" ? head.ref : "";
+      return botKindOfBranch(ref) !== undefined && !isForkPullRequest(pr);
+    });
 
-    if (!isAutoremediatorPr && pullRequests.length > 0) {
+    if (!isAutoremediatorPr && !isBotPr && pullRequests.length > 0) {
+      const onlyForkedBot = pullRequests.every((pr) => {
+        const head = pr.head as Record<string, unknown> | undefined;
+        const ref = typeof head?.ref === "string" ? head.ref : "";
+        return botKindOfBranch(ref) !== undefined && isForkPullRequest(pr);
+      });
       return {
         status: "ignored",
-        reason: "check_run failure not on an autoremediator pull request branch",
+        reason: onlyForkedBot
+          ? "check_run failure on a bot pull request from a fork"
+          : "check_run failure not on an autoremediator pull request branch",
       };
     }
 
@@ -279,6 +296,78 @@ export async function dispatchGitHubEvent(
     return { status: "handled" };
   }
 
+  if (context.eventName === "issue_comment") {
+    if (readAction(payload) !== "created") {
+      return { status: "ignored", reason: "issue_comment action is not created" };
+    }
+    const comment = payload.comment as Record<string, unknown> | undefined;
+    const user = comment?.user as Record<string, unknown> | undefined;
+    const login = typeof user?.login === "string" ? user.login : "";
+    // Never react to bots (including this app's own replies, which mention the commands).
+    if (user?.type === "Bot" || login.endsWith("[bot]")) {
+      return { status: "ignored", reason: "comment written by a bot" };
+    }
+    const body = typeof comment?.body === "string" ? comment.body : "";
+    if (!parseComment(body)) {
+      return { status: "ignored", reason: "comment has no autoremediator command" };
+    }
+    return triggerRemediation(context, payload, options, "issue_comment");
+  }
+
+  if (context.eventName === "dependabot_alert" || context.eventName === "code_scanning_alert") {
+    const action = readAction(payload);
+    if (action !== "created" && action !== "reopened") {
+      return {
+        status: "ignored",
+        reason: `${context.eventName} action not triggerable: ${action ?? "unknown"}`,
+      };
+    }
+    const target =
+      context.eventName === "dependabot_alert"
+        ? dependabotAlertTarget(payload)
+        : codeScanningAlertTarget(payload);
+    if (!target) {
+      return {
+        status: "ignored",
+        reason: `${context.eventName} does not name a CVE or GHSA advisory`,
+      };
+    }
+    return triggerRemediation(context, payload, options, context.eventName);
+  }
+
   void payload;
   return { status: "ignored", reason: `Unhandled event type: ${context.eventName}` };
+}
+
+async function triggerRemediation(
+  context: WebhookContext,
+  payload: Record<string, unknown>,
+  options: DispatchOptions,
+  eventName: "issue_comment" | "dependabot_alert" | "code_scanning_alert",
+): Promise<DispatchResult> {
+  const installationId = readInstallationId(payload);
+  if (
+    installationId &&
+    options.stateStore &&
+    !options.stateStore.isInstallationActive(installationId)
+  ) {
+    return { status: "ignored", reason: `Installation ${installationId} is not active` };
+  }
+  try {
+    const triggerTask = options.onRemediationRequested?.({
+      eventName,
+      installationId,
+      deliveryId: context.deliveryId,
+      payload,
+    });
+    if (options.remediationTriggerTimeoutMs !== undefined && triggerTask !== undefined) {
+      await runWithTimeout(triggerTask, options.remediationTriggerTimeoutMs);
+    } else {
+      await triggerTask;
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown remediation trigger error";
+    return { status: "handled", reason: `Remediation trigger failed: ${message}` };
+  }
+  return { status: "handled" };
 }

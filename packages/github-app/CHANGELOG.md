@@ -1,5 +1,17 @@
 # @autoremediator/github-app
 
+## 0.5.0
+
+### Minor Changes
+
+- 6bb2158: The app understands agents and alerts: `/autoremediator plan|fix|retry|rollback|help` comment commands for people with write access, runs started by Dependabot and code scanning alerts, a bot PR doctor for failing Dependabot and Renovate pull requests (opt in), and the `check_run` subscription that pull request healing needed. Existing registrations must update their events and permissions on GitHub.
+
+### Patch Changes
+
+- Updated dependencies [3ef25c7]
+- Updated dependencies [fc66a87]
+  - autoremediator@0.22.0
+
 ## 0.4.2
 
 ### Patch Changes

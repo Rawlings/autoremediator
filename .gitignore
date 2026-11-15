@@ -14,3 +14,7 @@ scratch/
 # Generated from the repository root at pack time (see "prepack" in packages/core/package.json)
 packages/core/README.md
 packages/core/llms.txt
+# Dagger module codegen
+dagger/sdk/
+dagger/node_modules/
+dagger/package-lock.json

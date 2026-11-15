@@ -3,11 +3,23 @@ import { join } from "node:path";
 
 import type { PackageManager } from "./index.js";
 
+/** Package name -> every distinct installed version (a tree can hold several copies of one package). */
+export type InstalledVersions = Map<string, string[]>;
+
+function addVersion(versions: InstalledVersions, name: string, version: string): void {
+  const existing = versions.get(name);
+  if (!existing) {
+    versions.set(name, [version]);
+  } else if (!existing.includes(version)) {
+    existing.push(version);
+  }
+}
+
 export function parsePackageManagerListOutput(
   pm: PackageManager,
   stdout: string,
-): Map<string, string> {
-  const versions = new Map<string, string>();
+): InstalledVersions {
+  const versions = new Map<string, string[]>();
 
   if (pm === "bun") {
     return parseBunListOutput(stdout, versions);
@@ -40,7 +52,7 @@ type DependencyTree = {
   dependencies?: Record<string, DependencyTree>;
 };
 
-function parseYarnListOutput(stdout: string, versions: Map<string, string>): Map<string, string> {
+function parseYarnListOutput(stdout: string, versions: InstalledVersions): InstalledVersions {
   const lines = stdout
     .split("\n")
     .map((line) => line.trim())
@@ -62,7 +74,7 @@ function parseYarnListOutput(stdout: string, versions: Map<string, string>): Map
         const name = raw.slice(0, at);
         const version = raw.slice(at + 1);
         if (name && version) {
-          versions.set(name, version);
+          addVersion(versions, name, version);
         }
       }
     } catch {
@@ -75,7 +87,7 @@ function parseYarnListOutput(stdout: string, versions: Map<string, string>): Map
 
 function collectDependencyTree(
   tree: Record<string, DependencyTree> | undefined,
-  versions: Map<string, string>,
+  versions: InstalledVersions,
 ): void {
   if (!tree) return;
 
@@ -83,7 +95,7 @@ function collectDependencyTree(
     if (!entry || typeof entry !== "object") continue;
     const version = entry.version;
     if (typeof version === "string" && version) {
-      versions.set(name, version);
+      addVersion(versions, name, version);
     }
     collectDependencyTree(entry.dependencies, versions);
   }
@@ -94,7 +106,7 @@ function collectDependencyTree(
  * Each dependency line ends with `name@version`; leading tree-drawing characters
  * (├──, └──, │, spaces) are stripped before splitting on the last `@`.
  */
-function parseBunListOutput(stdout: string, versions: Map<string, string>): Map<string, string> {
+function parseBunListOutput(stdout: string, versions: InstalledVersions): InstalledVersions {
   const lines = stdout
     .split("\n")
     .map((line) => line.replace(/^[\s│├└─]+/, "").trim())
@@ -106,7 +118,7 @@ function parseBunListOutput(stdout: string, versions: Map<string, string>): Map<
     const name = line.slice(0, at);
     const version = line.slice(at + 1);
     if (name && version) {
-      versions.set(name, version);
+      addVersion(versions, name, version);
     }
   }
 
@@ -117,8 +129,8 @@ function parseBunListOutput(stdout: string, versions: Map<string, string>): Map<
  * Read `deno.lock` JSON from disk and extract installed npm package versions.
  * Supports both deno.lock v3 (packages.npm map) and v4 (packages object with npm: prefix keys).
  */
-export function resolveDenoInventory(cwd: string): Map<string, string> {
-  const versions = new Map<string, string>();
+export function resolveDenoInventory(cwd: string): InstalledVersions {
+  const versions = new Map<string, string[]>();
   let raw: string;
   try {
     raw = readFileSync(join(cwd, "deno.lock"), "utf8");
@@ -160,13 +172,13 @@ export function resolveDenoInventory(cwd: string): Map<string, string> {
   return versions;
 }
 
-function extractNameVersion(spec: string, versions: Map<string, string>): void {
+function extractNameVersion(spec: string, versions: InstalledVersions): void {
   // Handle scoped packages: "@scope/name@version" — lastIndexOf('@') after index 0
   const at = spec.lastIndexOf("@");
   if (at <= 0) return;
   const name = spec.slice(0, at);
   const version = spec.slice(at + 1);
   if (name && version) {
-    versions.set(name, version);
+    addVersion(versions, name, version);
   }
 }

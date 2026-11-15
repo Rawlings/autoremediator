@@ -1,0 +1,9 @@
+{
+  "id": "01-patch-bump",
+  "title": "Patch bump that just works",
+  "description": "A direct dependency has a fixed patch release with the same API. Nothing else has to change.",
+  "advisory": "CVE-2099-10001",
+  "expect": {
+    "outcome": "fixed"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "bench-app-08-trap-install-script",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "node \"$BENCH_TSC\" -p tsconfig.json",
+    "test": "node --test test/*.test.ts"
+  },
+  "dependencies": {
+    "bench-fastjson": "3.1.0"
+  }
+}

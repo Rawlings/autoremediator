@@ -63,4 +63,6 @@ jobs:
       - name: Publish to npm
         if: steps.version.outputs.published != 'true'
         working-directory: packages/core
-        run: npm publish --provenance --access public
+        # pnpm, not npm: only pnpm rewrites `catalog:` and `workspace:` ranges to real versions.
+        # (autoremediator@0.21.2 shipped with `yaml: "catalog:"` because npm published it as is.)
+        run: pnpm publish --provenance --access public --no-git-checks

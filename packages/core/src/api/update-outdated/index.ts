@@ -8,6 +8,7 @@ import {
   finalizeEvidence,
   writeEvidenceLog,
 } from "../../platform/evidence.js";
+import { loadMemoryConstraints } from "../../platform/memory/consume.js";
 import {
   detectPackageManager,
   getYarnMajorVersion,
@@ -24,6 +25,7 @@ import type {
   UpdateOutdatedOptions,
   UpdateOutdatedReport,
 } from "../../platform/types.js";
+import { assertAutonomyAllows } from "../autonomy/index.js";
 import {
   assertChangeRequestAllowed,
   createChangeRequestsForReports,
@@ -160,6 +162,7 @@ export async function updateOutdated(
 
   // Load policy exactly once
   const policy = loadPolicy(cwd, options.policy);
+  if (!options.dryRun) assertAutonomyAllows(cwd, options.policy, "apply", "updateOutdated");
   const correlation = resolveCorrelationContext(options);
   const provenance = resolveProvenanceContext(options);
   const constraints = resolveConstraints(options, cwd);
@@ -232,8 +235,9 @@ export async function updateOutdated(
   const pm = options.packageManager ?? detectPackageManager(cwd);
   const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
   const installCommand = resolveInstallCommand(pm, constraints, yarnMajor);
-  const testCommand = resolveTestCommand(pm, constraints);
+  const testCommand = resolveTestCommand(pm, constraints, cwd);
 
+  const memory = options.ignoreMemory ? undefined : loadMemoryConstraints(cwd);
   let successCount = 0;
   let failedCount = 0;
   let skippedCount = 0;
@@ -247,6 +251,19 @@ export async function updateOutdated(
         evidence,
         "update-outdated.skip",
         { packageName, reason: "major-bump-not-allowed" },
+        {},
+      );
+      continue;
+    }
+
+    // A package a person pinned in the repository's memory is left alone.
+    const pinned = memory?.pinned.get(packageName);
+    if (pinned) {
+      skippedCount++;
+      addEvidenceStep(
+        evidence,
+        "update-outdated.skip",
+        { packageName, reason: "pinned-by-memory", entry: pinned.id, why: pinned.reason },
         {},
       );
       continue;

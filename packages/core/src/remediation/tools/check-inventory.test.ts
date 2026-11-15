@@ -4,7 +4,11 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { resolveInventoryVersion, checkInventoryTool } from "./check-inventory.js";
+import {
+  checkInventoryTool,
+  pickDirectVersion,
+  resolveInventoryVersion,
+} from "./check-inventory.js";
 
 describe("resolveInventoryVersion", () => {
   it("resolves exact semver and clean strings", () => {
@@ -91,5 +95,25 @@ describe("checkInventoryTool fallback behavior", () => {
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("pickDirectVersion", () => {
+  it("returns the only copy when one is installed", () => {
+    expect(pickDirectVersion(["4.17.21"], "^4.17.0")).toBe("4.17.21");
+  });
+
+  it("prefers the highest copy that satisfies the declared range", () => {
+    expect(pickDirectVersion(["4.17.10", "4.17.21", "3.10.1"], "^4.17.0")).toBe("4.17.21");
+    expect(pickDirectVersion(["1.2.5", "0.0.8"], "~0.0.8")).toBe("0.0.8");
+  });
+
+  it("falls back to the highest copy when the range is not semver", () => {
+    expect(pickDirectVersion(["1.0.0", "2.0.0"], "workspace:*")).toBe("2.0.0");
+    expect(pickDirectVersion(["1.0.0", "2.0.0"], undefined)).toBe("2.0.0");
+  });
+
+  it("returns undefined for no copies", () => {
+    expect(pickDirectVersion([], "^1.0.0")).toBeUndefined();
   });
 });

@@ -1,0 +1,9 @@
+{
+  "CVE-2099-10010": {
+    "packageName": "bench-yaml",
+    "vulnerableRange": "<5.0.0",
+    "firstPatchedVersion": "5.0.0",
+    "severity": "HIGH",
+    "summary": "Synthetic advisory for the autoremediator benchmark (10-major-blocked-by-policy). Not a real vulnerability."
+  }
+}

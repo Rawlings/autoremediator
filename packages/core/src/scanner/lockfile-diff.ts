@@ -1,7 +1,7 @@
 import semver from "semver";
-import YAML from "yaml";
 
 import type { DeltaDependencyChange } from "../platform/types.js";
+import { parsePnpmLockDocument } from "./pnpm-lock-document.js";
 
 /**
  * Extracts a map of package names to their resolved versions from a lockfile content.
@@ -55,7 +55,7 @@ export function parseLockfileDependencies(
     }
   } else if (filename.endsWith("pnpm-lock.yaml")) {
     try {
-      const data = YAML.parse(content) as {
+      const data = parsePnpmLockDocument(content) as {
         packages?: Record<string, { name?: string; version?: string }>;
         snapshots?: Record<string, unknown>;
       };

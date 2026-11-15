@@ -1,0 +1,14 @@
+{
+  "name": "bench-money",
+  "version": "1.5.0",
+  "description": "Synthetic package for the autoremediator benchmark",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  }
+}

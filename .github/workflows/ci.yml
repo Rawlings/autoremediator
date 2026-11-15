@@ -52,3 +52,19 @@ jobs:
 
       - name: Test all packages
         run: pnpm test:all
+
+      # A published manifest must not carry pnpm-only protocols: npm cannot install `catalog:`.
+      - name: Check published manifests have no catalog or workspace ranges
+        run: |
+          set -euo pipefail
+          for dir in packages/*/; do
+            [ -f "$dir/package.json" ] || continue
+            [ "$(node -p "require('./$dir/package.json').private === true")" = "true" ] && continue
+            (cd "$dir" && pnpm pack --pack-destination "$RUNNER_TEMP/packed" >/dev/null)
+          done
+          for tarball in "$RUNNER_TEMP"/packed/*.tgz; do
+            if tar -xOzf "$tarball" package/package.json | grep -E '"(catalog|workspace):'; then
+              echo "::error::$tarball contains an unresolved catalog:/workspace: range"
+              exit 1
+            fi
+          done

@@ -13,10 +13,11 @@ const result = (
   packageName: string,
   applied: boolean,
   strategy: PatchResult["strategy"] = "version-bump",
+  fromVersion = "4.17.20",
 ): PatchResult => ({
   packageName,
   strategy,
-  fromVersion: "1.0.0",
+  fromVersion,
   applied,
   dryRun: false,
   message: "",
@@ -25,7 +26,7 @@ const result = (
 describe("buildSbom", () => {
   it("marks patched packages with status patched", () => {
     const packages = [pkg("lodash", "4.17.20", "direct"), pkg("minimist", "1.2.5", "transitive")];
-    const vulnerable = new Set(["lodash"]);
+    const vulnerable = new Set(["lodash@4.17.20"]);
     const results: PatchResult[] = [result("lodash", true)];
 
     const sbom = buildSbom(packages, vulnerable, results);
@@ -40,7 +41,7 @@ describe("buildSbom", () => {
 
   it("marks unpatched packages (not applied, non-none strategy)", () => {
     const packages = [pkg("lodash", "4.17.20", "direct")];
-    const vulnerable = new Set(["lodash"]);
+    const vulnerable = new Set(["lodash@4.17.20"]);
     const results: PatchResult[] = [result("lodash", false)];
 
     const sbom = buildSbom(packages, vulnerable, results);
@@ -49,7 +50,7 @@ describe("buildSbom", () => {
 
   it("marks skipped packages (strategy=none, applied=false)", () => {
     const packages = [pkg("lodash", "4.17.20", "direct")];
-    const vulnerable = new Set(["lodash"]);
+    const vulnerable = new Set(["lodash@4.17.20"]);
     const results: PatchResult[] = [result("lodash", false, "none")];
 
     const sbom = buildSbom(packages, vulnerable, results);
@@ -58,7 +59,7 @@ describe("buildSbom", () => {
 
   it("marks suppressed packages (suppressedBy present)", () => {
     const packages = [pkg("lodash", "4.17.20", "direct")];
-    const vulnerable = new Set(["lodash"]);
+    const vulnerable = new Set(["lodash@4.17.20"]);
     const r: PatchResult = {
       ...result("lodash", false, "none"),
       suppressedBy: { justification: "not_affected" },
@@ -78,5 +79,16 @@ describe("buildSbom", () => {
     const sbom = buildSbom(packages, new Set(), []);
     expect(sbom[0]).toMatchObject({ name: "express", version: "4.18.2", scope: "direct" });
     expect(sbom[1]).toMatchObject({ name: "qs", version: "6.11.0", scope: "transitive" });
+  });
+
+  it("only flags the vulnerable copy when a package is installed at several versions", () => {
+    const packages = [pkg("lodash", "4.17.21", "direct"), pkg("lodash", "4.17.10", "transitive")];
+    const vulnerable = new Set(["lodash@4.17.10"]);
+    const results: PatchResult[] = [result("lodash", true, "override", "4.17.10")];
+
+    const sbom = buildSbom(packages, vulnerable, results);
+
+    expect(sbom.find((e) => e.version === "4.17.21")?.status).toBeUndefined();
+    expect(sbom.find((e) => e.version === "4.17.10")?.status).toBe("patched");
   });
 });

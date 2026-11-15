@@ -1,37 +1,44 @@
 import type { InventoryPackage, PatchResult, SbomEntry, SbomStatus } from "../../platform/types.js";
 
+/** Identity of one installed copy; a package can be installed at several versions. */
+export function sbomKey(name: string, version: string): string {
+  return `${name}@${version}`;
+}
+
 /**
  * Build a Software Bill of Materials from the installed package inventory,
  * cross-referencing each package against the vulnerable and remediated sets.
  */
 export function buildSbom(
   packages: InventoryPackage[],
-  vulnerableNames: Set<string>,
+  vulnerableKeys: Set<string>,
   results: PatchResult[],
 ): SbomEntry[] {
-  const statusByPackage = new Map<string, SbomStatus>();
+  const statusByCopy = new Map<string, SbomStatus>();
   for (const result of results) {
-    if (!vulnerableNames.has(result.packageName)) continue;
+    const key = sbomKey(result.packageName, result.fromVersion);
+    if (!vulnerableKeys.has(key)) continue;
     if (result.suppressedBy) {
-      statusByPackage.set(result.packageName, "suppressed");
+      statusByCopy.set(key, "suppressed");
     } else if (!result.applied && result.strategy === "none") {
-      statusByPackage.set(result.packageName, "skipped");
+      statusByCopy.set(key, "skipped");
     } else if (result.applied) {
-      statusByPackage.set(result.packageName, "patched");
+      statusByCopy.set(key, "patched");
     } else {
-      statusByPackage.set(result.packageName, "unpatched");
+      statusByCopy.set(key, "unpatched");
     }
   }
 
   return packages.map((pkg) => {
-    const isVulnerable = vulnerableNames.has(pkg.name);
+    const key = sbomKey(pkg.name, pkg.version);
+    const isVulnerable = vulnerableKeys.has(key);
     const entry: SbomEntry = {
       name: pkg.name,
       version: pkg.version,
       scope: pkg.type === "direct" ? "direct" : "transitive",
     };
     if (isVulnerable) {
-      entry.status = statusByPackage.get(pkg.name) ?? "unpatched";
+      entry.status = statusByCopy.get(key) ?? "unpatched";
     }
     return entry;
   });

@@ -22,10 +22,10 @@ describe("parsePackageManagerListOutput – bun", () => {
 
     const result = parsePackageManagerListOutput("bun", stdout);
 
-    expect(result.get("lodash")).toBe("4.17.21");
-    expect(result.get("minimist")).toBe("1.2.8");
-    expect(result.get("@scope/dep")).toBe("2.0.0");
-    expect(result.get("semver")).toBe("7.6.0");
+    expect(result.get("lodash")).toEqual(["4.17.21"]);
+    expect(result.get("minimist")).toEqual(["1.2.8"]);
+    expect(result.get("@scope/dep")).toEqual(["2.0.0"]);
+    expect(result.get("semver")).toEqual(["7.6.0"]);
   });
 
   it("returns empty map for empty output", () => {
@@ -37,7 +37,7 @@ describe("parsePackageManagerListOutput – bun", () => {
     const stdout = "node_modules\n├── justname\n└── lodash@4.17.21";
     const result = parsePackageManagerListOutput("bun", stdout);
     expect(result.has("justname")).toBe(false);
-    expect(result.get("lodash")).toBe("4.17.21");
+    expect(result.get("lodash")).toEqual(["4.17.21"]);
   });
 });
 
@@ -57,9 +57,9 @@ describe("resolveDenoInventory – deno.lock v3", () => {
 
     const result = resolveDenoInventory("/project");
 
-    expect(result.get("lodash")).toBe("4.17.21");
-    expect(result.get("minimist")).toBe("1.2.8");
-    expect(result.get("@scope/pkg")).toBe("2.0.0");
+    expect(result.get("lodash")).toEqual(["4.17.21"]);
+    expect(result.get("minimist")).toEqual(["1.2.8"]);
+    expect(result.get("@scope/pkg")).toEqual(["2.0.0"]);
   });
 
   it("parses packages with npm: prefix keys (v4 format)", () => {
@@ -75,9 +75,9 @@ describe("resolveDenoInventory – deno.lock v3", () => {
 
     const result = resolveDenoInventory("/project");
 
-    expect(result.get("lodash")).toBe("4.17.21");
-    expect(result.get("minimist")).toBe("1.2.8");
-    expect(result.get("@scope/pkg")).toBe("2.0.0");
+    expect(result.get("lodash")).toEqual(["4.17.21"]);
+    expect(result.get("minimist")).toEqual(["1.2.8"]);
+    expect(result.get("@scope/pkg")).toEqual(["2.0.0"]);
   });
 
   it("returns empty map when deno.lock does not exist", () => {
@@ -93,5 +93,49 @@ describe("resolveDenoInventory – deno.lock v3", () => {
     mocked.readFileSync.mockReturnValue("not json");
     const result = resolveDenoInventory("/project");
     expect(result.size).toBe(0);
+  });
+});
+
+describe("parsePackageManagerListOutput – multiple installed versions", () => {
+  it("keeps every distinct version of the same package (npm tree)", () => {
+    const stdout = JSON.stringify({
+      dependencies: {
+        lodash: { version: "4.17.21" },
+        "old-lib": { version: "1.0.0", dependencies: { lodash: { version: "4.17.10" } } },
+        "other-lib": { version: "2.0.0", dependencies: { lodash: { version: "4.17.10" } } },
+      },
+    });
+
+    const result = parsePackageManagerListOutput("npm", stdout);
+
+    expect(result.get("lodash")).toEqual(["4.17.21", "4.17.10"]);
+    expect(result.get("old-lib")).toEqual(["1.0.0"]);
+  });
+
+  it("keeps every distinct version for yarn tree output", () => {
+    const stdout = [
+      JSON.stringify({
+        type: "tree",
+        data: { trees: [{ name: "minimist@1.2.5" }, { name: "minimist@0.0.8" }] },
+      }),
+      "not json",
+    ].join("\n");
+
+    expect(parsePackageManagerListOutput("yarn", stdout).get("minimist")).toEqual([
+      "1.2.5",
+      "0.0.8",
+    ]);
+  });
+
+  it("keeps every distinct version for bun output", () => {
+    const stdout = ["├── semver@7.6.0", "│   └── semver@5.7.2"].join("\n");
+    expect(parsePackageManagerListOutput("bun", stdout).get("semver")).toEqual(["7.6.0", "5.7.2"]);
+  });
+
+  it("keeps every distinct version from deno.lock", () => {
+    mocked.readFileSync.mockReturnValue(
+      JSON.stringify({ version: "3", packages: { npm: { "qs@6.11.0": {}, "qs@6.5.2": {} } } }),
+    );
+    expect(resolveDenoInventory("/project").get("qs")).toEqual(["6.11.0", "6.5.2"]);
   });
 });

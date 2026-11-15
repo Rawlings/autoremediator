@@ -85,6 +85,15 @@ describe("loadPolicy", () => {
     expect(loadPolicy(tmpDir)).toEqual(DEFAULT_POLICY);
   });
 
+  it("reads the default policy file when the path is empty", () => {
+    // The remediation pipeline hands its tools `policy: ""` when no path was given.
+    mkdirSync(join(tmpDir, ".github"), { recursive: true });
+    writeFileSync(join(tmpDir, ".github", "autoremediator.yml"), "allowMajorBumps: true", "utf8");
+
+    expect(loadPolicy(tmpDir, "").allowMajorBumps).toBe(true);
+    expect(loadPolicy(tmpDir, "  ").allowMajorBumps).toBe(true);
+  });
+
   it("uses explicitPath when provided, ignoring the default .github/autoremediator.yml", () => {
     // Write a file at the explicit path
     const explicitPath = join(tmpDir, "custom-policy.yml");
@@ -189,6 +198,21 @@ suppressions:
     expect(result.patchConfidenceThresholds?.low).toBe(0.3);
     expect(result.patchConfidenceThresholds?.medium).toBe(0.6);
     expect(result.patchConfidenceThresholds?.high).toBe(0.9);
+  });
+
+  it("parses recipes.packages and rejects names that are paths or unknown keys", () => {
+    expect(
+      loadPolicy(
+        tmpdir(),
+        '---\nrecipes:\n  packages:\n    - "@acme/autoremediator-recipes"\n    - plain-recipes',
+      ).recipes,
+    ).toEqual({
+      packages: ["@acme/autoremediator-recipes", "plain-recipes"],
+    });
+    expect(() => loadPolicy(tmpdir(), "---\nrecipes:\n  packages:\n    - ../../etc")).toThrow(
+      /recipes\.packages\.0/,
+    );
+    expect(() => loadPolicy(tmpdir(), "---\nrecipes:\n  run: true")).toThrow(/unknown field/);
   });
 
   it("parses escalationGraph mapping when provided", () => {

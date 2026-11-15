@@ -23,6 +23,9 @@ export interface ParsedDiagnostic {
 const ESC = String.fromCodePoint(27);
 const ANSI_REGEX = new RegExp(`${ESC}\\[[0-9;]*[a-zA-Z]`, "g");
 
+/** Longest log line the parser matches against. */
+const MAX_LINE_CHARS = 500;
+
 export function stripAnsi(text: string): string {
   return text.replaceAll(ANSI_REGEX, "");
 }
@@ -35,17 +38,18 @@ export function parseCheckRunLogs(rawLogs: string): ParsedDiagnostic {
   // Regex patterns
   // TypeScript: src/app.ts(12,5): error TS2305: ... OR src/app.ts:12:5 - error TS2305: ...
   const tsRegex =
-    /([a-zA-Z0-9_\-./\\]+\.(?:ts|tsx|js|jsx))[:(](\d+)[:,](\d+)\)?:?(?:\s*-\s*error|\s+error)\s+(TS\d+):\s*(.+)/;
+    /(?<![a-zA-Z0-9_\-./\\])([a-zA-Z0-9_\-./\\]+\.(?:ts|tsx|js|jsx))[:(](\d+)[:,](\d+)\)?:?(?:\s*-\s*error|\s+error)\s+(TS\d+):\s*(.+)/;
 
   // Linter (oxlint / eslint): src/app.ts:12:5: @typescript-eslint/no-unused-vars: ...
   const lintRegex =
-    /([a-zA-Z0-9_\-./\\]+\.(?:ts|tsx|js|jsx|json))[:(](\d+)[:,](\d+)\)?:?(?:\s*-\s*error|\s+error)?\s+([a-zA-Z0-9_\-/@]+):\s*(.+)/;
+    /(?<![a-zA-Z0-9_\-./\\])([a-zA-Z0-9_\-./\\]+\.(?:ts|tsx|js|jsx|json))[:(](\d+)[:,](\d+)\)?:?(?:\s*-\s*error|\s+error)?\s+([a-zA-Z0-9_\-/@]+):\s*(.+)/;
 
   // Test Failure: FAIL src/app.test.ts or AssertionError: ...
   const testFailRegex = /(?:FAIL|AssertionError:|Expected:|Received:)\s*(.+)/;
 
   for (const line of lines) {
-    const trimmed = line.trim();
+    // Log lines are untrusted and can be enormous; no diagnostic needs more than this.
+    const trimmed = line.slice(0, MAX_LINE_CHARS).trim();
     if (!trimmed) continue;
 
     const tsMatch = tsRegex.exec(trimmed);

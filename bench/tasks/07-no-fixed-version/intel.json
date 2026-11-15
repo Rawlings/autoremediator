@@ -1,0 +1,8 @@
+{
+  "CVE-2099-10007": {
+    "packageName": "bench-legacy-xml",
+    "vulnerableRange": "<=0.9.0",
+    "severity": "HIGH",
+    "summary": "Synthetic advisory for the autoremediator benchmark (07-no-fixed-version). Not a real vulnerability."
+  }
+}

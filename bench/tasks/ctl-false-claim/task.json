@@ -1,0 +1,19 @@
+{
+  "id": "ctl-false-claim",
+  "title": "Control: an agent claims success without fixing anything",
+  "description": "Task 03 with a scripted agent that reads the code and then reports the repair as done without editing anything. The benchmark must score this FAIL.",
+  "base": "03-minor-breaks-test",
+  "expect": {
+    "outcome": "fixed",
+    "sourceEdits": [
+      "src/"
+    ]
+  },
+  "control": {
+    "kind": "false-claim",
+    "modes": [
+      "agent-scripted",
+      "host-scripted"
+    ]
+  }
+}

@@ -38,6 +38,59 @@ describe("module boundaries (see docs/contributing/architecture.md)", () => {
     ).toEqual([]);
   });
 
+  it("run records depend on platform/ only", () => {
+    expect(
+      violations("runs", [
+        "remediation",
+        "api",
+        "catalog",
+        "cli",
+        "mcp",
+        "openapi",
+        "intelligence",
+        "scanner",
+      ]),
+    ).toEqual([]);
+  });
+
+  it("recipes are data and depend on platform/ only", () => {
+    expect(
+      violations("recipes", [
+        "remediation",
+        "api",
+        "catalog",
+        "cli",
+        "mcp",
+        "openapi",
+        "intelligence",
+        "scanner",
+        "runs",
+      ]),
+    ).toEqual([]);
+  });
+
+  it("earned autonomy (pure computation and the track record) depends on platform/ only", () => {
+    expect(
+      violations("autonomy", [
+        "remediation",
+        "api",
+        "catalog",
+        "cli",
+        "mcp",
+        "openapi",
+        "intelligence",
+        "scanner",
+        "runs",
+      ]),
+    ).toEqual([]);
+  });
+
+  it("the operation catalog sits on api/ and platform/ only", () => {
+    expect(
+      violations("catalog", ["remediation", "intelligence", "scanner", "cli", "mcp", "openapi"]),
+    ).toEqual([]);
+  });
+
   it("CLI, MCP and HTTP surfaces go through api/, never into remediation or intelligence", () => {
     expect([
       ...violations("cli", ["remediation", "intelligence"]),

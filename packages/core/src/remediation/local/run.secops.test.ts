@@ -1,6 +1,6 @@
 /**
  * Tests for SecOps wiring in runLocalRemediationPipeline:
- *   - VEX suppression early-exit
+ *   - VEX suppression (no mutation, covered copies reported)
  *   - Exploit signal flagging (KEV / EPSS)
  *   - SLA breach detection
  *   - Containment, escalation and package denylist enforcement
@@ -125,12 +125,24 @@ beforeEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// VEX suppression early-exit
+// VEX suppression
 // ---------------------------------------------------------------------------
 
 describe("VEX suppression", () => {
-  it("exits early with suppressed summary when suppressionsFile contains active match", async () => {
+  it("reports covered copies as suppressed without remediating when suppressionsFile has an active match", async () => {
     mockOsv.mockResolvedValue(makeOsvDetails());
+    mockInventory.mockResolvedValue({
+      packages: [
+        { name: "lodash", version: "4.17.10", type: "transitive" },
+        { name: "lodash", version: "4.17.21", type: "direct" },
+      ],
+    });
+    mockFindVulnerable.mockReturnValue([
+      {
+        installed: { name: "lodash", version: "4.17.10", type: "transitive" },
+        affected: makeOsvDetails().affectedPackages[0],
+      },
+    ]);
 
     const { mkdtempSync, writeFileSync, rmSync } = await import("node:fs");
     const { join } = await import("node:path");
@@ -155,12 +167,19 @@ describe("VEX suppression", () => {
         suppressionsFile: suppFile,
       } as any);
 
-      expect(result.results).toHaveLength(0);
-      expect(result.vulnerablePackages).toHaveLength(0);
       expect(result.summary).toContain("suppressed");
       expect(result.summary).toContain("not_affected");
-      // Inventory should NOT have been called
-      expect(mockInventory).not.toHaveBeenCalled();
+      expect(result.vulnerablePackages.map((v) => v.installed.version)).toEqual(["4.17.10"]);
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0]).toMatchObject({
+        packageName: "lodash",
+        fromVersion: "4.17.10",
+        strategy: "none",
+        applied: false,
+        suppressedBy: { justification: "not_affected", notes: "Test environment only" },
+      });
+      expect(result.sbom?.find((e) => e.version === "4.17.10")?.status).toBe("suppressed");
+      expect(result.sbom?.find((e) => e.version === "4.17.21")?.status).toBeUndefined();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
