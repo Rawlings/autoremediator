@@ -39,6 +39,7 @@ import {
 import { addRecipesCommand } from "./recipes.js";
 import { runBisect, type BisectCliOptions } from "./bisect.js";
 import { runTraceCommand, type TraceRunCommandOptions } from "./trace.js";
+import { registerEvidencePackCommands } from "./evidence-pack-commands.js";
 import { registerIncidentCommands } from "./incident-commands.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
@@ -349,6 +350,7 @@ export function createProgram(): Command {
     });
 
   registerIncidentCommands(program);
+  registerEvidencePackCommands(program);
 
   program
     .command("init")

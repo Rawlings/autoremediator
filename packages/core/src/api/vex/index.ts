@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 
 import type { PatchResult, RemediationReport, VexSuppression } from "../../platform/types.js";
 import type { ScanReport } from "../contracts.js";
+import { npmPurl, splitName } from "../evidence-pack/components.js";
 
 export interface CycloneDxVexVulnerabilityAnalysis {
   state: "resolved" | "not_affected" | "in_triage";
@@ -15,22 +16,40 @@ export interface CycloneDxVexVulnerabilityAnalysis {
 export interface CycloneDxVexVulnerability {
   id: string;
   analysis: CycloneDxVexVulnerabilityAnalysis;
+  /** 1.6 output only: the components the advisory matched, by purl. */
+  affects?: Array<{ ref: string; versions: Array<{ version: string; status: "affected" }> }>;
 }
 
 export interface CycloneDxVexDocument {
   bomFormat: "CycloneDX";
-  specVersion: "1.5";
+  specVersion: "1.5" | "1.6";
   version: number;
   serialNumber: string;
   metadata: {
     timestamp: string;
     tools: Array<{ name: string; version: string }>;
   };
+  /** 1.6 output only: the components `affects` refers to. */
+  components?: Array<{
+    type: "library";
+    "bom-ref": string;
+    group?: string;
+    name: string;
+    version: string;
+    purl: string;
+  }>;
   vulnerabilities: CycloneDxVexVulnerability[];
 }
 
 export interface ToCycloneDxVexOptions {
   toolVersion?: string;
+  /**
+   * CycloneDX version to emit (default `1.5`, unchanged). `1.6` additionally gives each
+   * vulnerability an `affects` list of purls, and maps policy justifications to values the
+   * CycloneDX schema accepts (`mitigated` becomes `protected_by_mitigating_control`; `fixed`
+   * becomes state `resolved`; `under_investigation` becomes `in_triage`).
+   */
+  specVersion?: "1.5" | "1.6";
 }
 
 const isResolved = (result: PatchResult): boolean => result.applied && !result.unresolvedReason;
@@ -95,10 +114,57 @@ function mapReportToVulnerability(report: RemediationReport): CycloneDxVexVulner
   };
 }
 
+/** The 1.6 form of one vulnerability: schema-valid analysis values, and `affects` by purl. */
+function upgradeToSpec16(
+  vulnerability: CycloneDxVexVulnerability,
+  report: RemediationReport,
+): CycloneDxVexVulnerability {
+  const { analysis } = vulnerability;
+  const suppressed =
+    report.results.length > 0 && report.results.every((result) => isSuppressed(result))
+      ? report.results[0]!.suppressedBy
+      : undefined;
+  let next: CycloneDxVexVulnerabilityAnalysis = analysis;
+  if (suppressed) {
+    const detail = analysis.detail ?? suppressed.justification;
+    switch (suppressed.justification) {
+      case "not_affected": {
+        next = { state: "not_affected", detail };
+        break;
+      }
+      case "mitigated": {
+        next = { state: "not_affected", justification: "protected_by_mitigating_control", detail };
+        break;
+      }
+      case "fixed": {
+        next = { state: "resolved", detail };
+        break;
+      }
+      case "under_investigation": {
+        next = { state: "in_triage", detail };
+        break;
+      }
+    }
+  } else if (analysis.justification === "code_not_in_execute_path") {
+    // Not a CycloneDX value; reachability is never asserted as not_affected here anyway.
+    next = { ...analysis, justification: undefined };
+  }
+  const seen = new Set<string>();
+  const affects: NonNullable<CycloneDxVexVulnerability["affects"]> = [];
+  for (const result of report.results) {
+    const ref = npmPurl(result.packageName, result.fromVersion);
+    if (seen.has(ref)) continue;
+    seen.add(ref);
+    affects.push({ ref, versions: [{ version: result.fromVersion, status: "affected" }] });
+  }
+  return { ...vulnerability, analysis: next, ...(affects.length > 0 ? { affects } : {}) };
+}
+
 export function toCycloneDxVex(
   report: ScanReport | RemediationReport,
   options: ToCycloneDxVexOptions = {},
 ): CycloneDxVexDocument {
+  const specVersion = options.specVersion ?? "1.5";
   const toolVersion = options.toolVersion ?? "unknown";
   const timestamp = new Date().toISOString();
   const serialNumber = `urn:uuid:${randomUUID()}`;
@@ -112,19 +178,40 @@ export function toCycloneDxVex(
     remediationReports = [report as RemediationReport];
   }
 
-  const vulnerabilities = remediationReports.map((remediationReport) =>
-    mapReportToVulnerability(remediationReport),
-  );
+  const vulnerabilities = remediationReports.map((remediationReport) => {
+    const mapped = mapReportToVulnerability(remediationReport);
+    return specVersion === "1.6" ? upgradeToSpec16(mapped, remediationReport) : mapped;
+  });
+
+  const components: NonNullable<CycloneDxVexDocument["components"]> = [];
+  if (specVersion === "1.6") {
+    const seen = new Set<string>();
+    for (const remediationReport of remediationReports) {
+      for (const result of remediationReport.results) {
+        const purl = npmPurl(result.packageName, result.fromVersion);
+        if (seen.has(purl)) continue;
+        seen.add(purl);
+        components.push({
+          type: "library",
+          "bom-ref": purl,
+          ...splitName(result.packageName),
+          version: result.fromVersion,
+          purl,
+        });
+      }
+    }
+  }
 
   return {
     bomFormat: "CycloneDX",
-    specVersion: "1.5",
+    specVersion,
     version: 1,
     serialNumber,
     metadata: {
       timestamp,
       tools: [{ name: "autoremediator", version: toolVersion }],
     },
+    ...(specVersion === "1.6" ? { components } : {}),
     vulnerabilities,
   };
 }

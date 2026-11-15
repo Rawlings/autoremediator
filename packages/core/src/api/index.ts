@@ -328,3 +328,21 @@ export {
   type PremortemTarget,
   type PremortemUsage,
 } from "./premortem/index.js";
+export {
+  buildEvidencePack,
+  craDeadlines,
+  EVIDENCE_PACK_DISCLAIMER,
+  INTOTO_PAYLOAD_TYPE,
+  PACK_PREDICATE_TYPE,
+  pae,
+  parseAwareness,
+  RUN_PREDICATE_TYPE,
+  SIGNING_KEY_ENV,
+  verifyEvidencePack,
+  type CraDeadlines,
+  type DsseEnvelope,
+  type EvidencePackFile,
+  type EvidencePackOptions,
+  type EvidencePackResult,
+  type EvidencePackVerification,
+} from "./evidence-pack/index.js";

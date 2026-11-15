@@ -40,6 +40,7 @@ import {
   validatePatchArtifact,
   verifyAttempt,
   verifyRun,
+  buildEvidencePack,
 } from "../api/index.js";
 
 /** The SDK functions operations call. Injectable so tests and embedders can substitute them. */
@@ -86,6 +87,7 @@ export interface ApiDeps {
   findVulnerableSymbolsFn: typeof findVulnerableSymbols;
   incidentFn: typeof incident;
   premortemFn: typeof premortem;
+  buildEvidencePackFn: typeof buildEvidencePack;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -131,4 +133,5 @@ export const defaultApiDeps: ApiDeps = {
   findVulnerableSymbolsFn: findVulnerableSymbols,
   incidentFn: incident,
   premortemFn: premortem,
+  buildEvidencePackFn: buildEvidencePack,
 };

@@ -113,6 +113,8 @@
     "@ai-sdk/openai": "^4.0.117",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
