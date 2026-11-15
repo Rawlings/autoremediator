@@ -1,6 +1,6 @@
 {
   "name": "autoremediator",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "private": false,
   "description": "Agentic remediation for Node.js dependencies. Plans the smallest safe fix from your audit, a CVE or GHSA id, or a SARIF report, has an agent repair the code an upgrade breaks, verifies every change, and rolls back what fails.",
   "keywords": [

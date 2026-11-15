@@ -1,7 +1,7 @@
 {
   "name": "autoremediator-rawlings",
   "displayName": "Node CVE Remediator",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Find vulnerable Node.js dependencies in VS Code, ranked by real-world exploit risk (OSV, CISA KEV, EPSS), and fix them with Autoremediator's verified, agentic remediation",
   "categories": [
     "Linters",
