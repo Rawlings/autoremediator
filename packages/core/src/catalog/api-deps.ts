@@ -40,6 +40,8 @@ import {
   validatePatchArtifact,
   verifyAttempt,
   verifyRun,
+  compilePolicy,
+  explainPolicy,
 } from "../api/index.js";
 
 /** The SDK functions operations call. Injectable so tests and embedders can substitute them. */
@@ -86,6 +88,8 @@ export interface ApiDeps {
   findVulnerableSymbolsFn: typeof findVulnerableSymbols;
   incidentFn: typeof incident;
   premortemFn: typeof premortem;
+  compilePolicyFn: typeof compilePolicy;
+  explainPolicyFn: typeof explainPolicy;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -131,4 +135,6 @@ export const defaultApiDeps: ApiDeps = {
   findVulnerableSymbolsFn: findVulnerableSymbols,
   incidentFn: incident,
   premortemFn: premortem,
+  compilePolicyFn: compilePolicy,
+  explainPolicyFn: explainPolicy,
 };

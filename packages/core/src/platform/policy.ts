@@ -68,7 +68,7 @@ export const DEFAULT_POLICY: AutoremediatorPolicy = {
 
 const packagePattern = z.string().trim().min(1);
 
-const suppressionSchema = z
+export const suppressionSchema = z
   .object({
     cveId: z.string().min(1),
     justification: z.enum(["not_affected", "fixed", "mitigated", "under_investigation"]),
@@ -78,7 +78,7 @@ const suppressionSchema = z
   .strict();
 
 /** Shape of the policy YAML. Unknown keys are rejected so typos and removed options are caught. */
-const policyFileSchema = z
+export const policyFileSchema = z
   .object({
     allowMajorBumps: z.boolean().default(false),
     denyPackages: z.array(packagePattern).default([]),
