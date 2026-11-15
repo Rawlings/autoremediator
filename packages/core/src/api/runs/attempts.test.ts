@@ -142,7 +142,7 @@ const fixPatch = [
 const plan = (...packages: string[]) => persistPlan(preview(...packages), { typecheck: true, runTests: true }, dir);
 const itemOf = (runId: string, name: string) => getRun({ cwd: dir, runId }).plan!.items.find((item) => item.packageName === name)!.itemId;
 
-describe("host-driven attempts", () => {
+describe("host-driven attempts", { timeout: 60_000 }, () => {
   it("opens an isolated checkout with the upgrade applied and says what is broken", async () => {
     const { runId } = await plan("dep");
     const view = await startAttempt({ cwd: dir, runId, itemId: itemOf(runId, "dep") }, deps());

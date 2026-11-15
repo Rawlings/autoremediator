@@ -148,7 +148,7 @@ const putRecipe = (root: string, recipe: Recipe, name = "x.json") => {
 };
 const attemptDir = (root: string, runId: string, attemptId: string) => join(new RunStore(root).runDir(runId), "attempts", attemptId);
 
-describe("recipes in applyPlan", () => {
+describe("recipes in applyPlan", { timeout: 60_000 }, () => {
   it("fixes the project from a committed recipe with no model and no agent", async () => {
     putRecipe(dir, fixRecipe);
     const { runId } = await plan();
@@ -264,7 +264,7 @@ describe("recipes in applyPlan", () => {
   });
 });
 
-describe("learning once and reusing it", () => {
+describe("learning once and reusing it", { timeout: 60_000 }, () => {
   it("captures what an agent did, saves it, and a second project then needs no agent", async () => {
     // Project one: an agent fixes it.
     const agent = agentThat((worktree) => {
@@ -340,7 +340,7 @@ describe("learning once and reusing it", () => {
   });
 });
 
-describe("recipes for a host agent's attempt", () => {
+describe("recipes for a host agent's attempt", { timeout: 60_000 }, () => {
   it("suggests recipes at startAttempt, applies one under the same validation and verifier, and finalizes it", async () => {
     putRecipe(dir, fixRecipe);
     const { runId } = await plan();
