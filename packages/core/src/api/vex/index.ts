@@ -15,6 +15,8 @@ export interface CycloneDxVexVulnerabilityAnalysis {
 export interface CycloneDxVexVulnerability {
   id: string;
   analysis: CycloneDxVexVulnerabilityAnalysis;
+  /** Present only when exploit-proof evidence exists for the vulnerability. */
+  properties?: Array<{ name: string; value: string }>;
 }
 
 export interface CycloneDxVexDocument {
@@ -29,8 +31,23 @@ export interface CycloneDxVexDocument {
   vulnerabilities: CycloneDxVexVulnerability[];
 }
 
+/** A reproduction script kept by `generateProofOfFix`, as the VEX output refers to it. */
+export interface ProofEvidenceRef {
+  /** Advisory ids the evidence answers to (the id it was made for and its aliases). */
+  advisoryIds: string[];
+  packageName: string;
+  vulnerableVersion: string;
+  fixedVersion: string;
+  /** Path of the evidence record, relative to the project. */
+  evidencePath: string;
+  scriptSha256: string;
+  signed: boolean;
+}
+
 export interface ToCycloneDxVexOptions {
   toolVersion?: string;
+  /** Evidence to cite. Without it the output is unchanged. */
+  proofEvidence?: readonly ProofEvidenceRef[];
 }
 
 const isResolved = (result: PatchResult): boolean => result.applied && !result.unresolvedReason;
@@ -95,6 +112,40 @@ function mapReportToVulnerability(report: RemediationReport): CycloneDxVexVulner
   };
 }
 
+/**
+ * Cite exploit-proof evidence for a vulnerability: a reproduction that failed on the vulnerable
+ * version and passed on the fixed one. Adds properties and a sentence of detail, and changes
+ * nothing else; with no evidence the entry is returned as it was.
+ */
+function withProofEvidence(
+  vulnerability: CycloneDxVexVulnerability,
+  report: RemediationReport,
+  evidence: readonly ProofEvidenceRef[],
+): CycloneDxVexVulnerability {
+  const id = report.cveId.toUpperCase();
+  const packages = new Set(report.results.map((result) => result.packageName));
+  const cited = evidence.filter(
+    (ref) => ref.advisoryIds.some((advisoryId) => advisoryId.toUpperCase() === id) && packages.has(ref.packageName),
+  );
+  if (cited.length === 0) return vulnerability;
+
+  const sentence = cited
+    .map(
+      (ref) =>
+        `exploit-proof evidence ${ref.evidencePath}: a reproduction script fails on ${ref.packageName}@${ref.vulnerableVersion} and passes on ${ref.packageName}@${ref.fixedVersion}${ref.signed ? " (signed)" : ""}`,
+    )
+    .join("; ");
+  const detail = vulnerability.analysis.detail;
+  return {
+    ...vulnerability,
+    analysis: { ...vulnerability.analysis, detail: detail ? `${detail}; ${sentence}` : sentence },
+    properties: cited.flatMap((ref) => [
+      { name: "autoremediator:proof-of-fix:evidence", value: ref.evidencePath },
+      { name: "autoremediator:proof-of-fix:script-sha256", value: ref.scriptSha256 },
+    ]),
+  };
+}
+
 export function toCycloneDxVex(
   report: ScanReport | RemediationReport,
   options: ToCycloneDxVexOptions = {},
@@ -113,7 +164,11 @@ export function toCycloneDxVex(
   }
 
   const vulnerabilities = remediationReports.map((remediationReport) =>
-    mapReportToVulnerability(remediationReport),
+    withProofEvidence(
+      mapReportToVulnerability(remediationReport),
+      remediationReport,
+      options.proofEvidence ?? [],
+    ),
   );
 
   return {

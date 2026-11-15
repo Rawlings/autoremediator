@@ -328,3 +328,18 @@ export {
   type PremortemTarget,
   type PremortemUsage,
 } from "./premortem/index.js";
+export {
+  defaultProveDeps,
+  findEvidence,
+  generateProofOfFix,
+  proofEvidenceRefs,
+  verifyProofEvidence,
+  type ProofEvidence,
+  type ProofEvidenceRef,
+  type ProveDeps,
+  type ProveOptions,
+  type ProveResult,
+  type ReproductionAgent,
+  type SignatureCheck,
+  type TrialSummary,
+} from "./prove/index.js";
