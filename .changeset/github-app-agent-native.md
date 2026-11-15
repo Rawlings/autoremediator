@@ -2,14 +2,4 @@
 "@autoremediator/github-app": minor
 ---
 
-Comment commands and alert triggers, and the missing `check_run` subscription.
-
-- The app manifest now subscribes to `check_run` (pull request healing could never fire without it),
-  `issue_comment`, `dependabot_alert` and `code_scanning_alert`, and asks for `issues: write`,
-  `vulnerability_alerts: read` and `security_events: read`. Existing registrations need their
-  permissions and events updated.
-- `/autoremediator plan|fix|help <CVE or GHSA ids>` on issues and pull requests. Write or admin access
-  is required; `plan` never changes anything, `fix` opens a pull request for review. Bot comments,
-  quoted text and code blocks are ignored, and only strictly matching advisory ids are used.
-- A Dependabot alert (or a code scanning alert whose rule is a CVE or GHSA) starts a run for that
-  advisory under the repository's own settings.
+The app understands agents and alerts: `/autoremediator plan|fix|retry|rollback|help` comment commands for people with write access, runs started by Dependabot and code scanning alerts, a bot PR doctor for failing Dependabot and Renovate pull requests (opt in), and the `check_run` subscription that pull request healing needed. Existing registrations must update their events and permissions on GitHub.
