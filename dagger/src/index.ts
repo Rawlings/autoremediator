@@ -27,7 +27,7 @@ export class Autoremediator {
   @func()
   container(
     @argument({ defaultPath: "/", ignore: ["**/node_modules", ".git"] }) source: Directory,
-    version = "^0.21.2",
+    version = "^0.22.0",
     nodeVersion = "26",
   ): Container {
     return dag
@@ -51,7 +51,7 @@ export class Autoremediator {
   @func()
   remediate(
     @argument({ defaultPath: "/", ignore: ["**/node_modules", ".git"] }) source: Directory,
-    version = "^0.21.2",
+    version = "^0.22.0",
     nodeVersion = "26",
     args: string[] = [],
   ): Directory {
@@ -73,7 +73,7 @@ export class Autoremediator {
   @func()
   report(
     @argument({ defaultPath: "/", ignore: ["**/node_modules", ".git"] }) source: Directory,
-    version = "^0.21.2",
+    version = "^0.22.0",
     nodeVersion = "26",
     args: string[] = [],
   ): File {

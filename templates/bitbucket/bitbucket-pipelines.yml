@@ -26,7 +26,7 @@ definitions:
           - git remote set-url origin "https://bitbucket.org/${BITBUCKET_REPO_FULL_NAME}.git"
           - |
             status=0
-            npx -y "autoremediator@^0.21.2" --audit --ci --output-format json \
+            npx -y "autoremediator@^0.22.0" --audit --ci --output-format json \
               --create-change-request --change-request-provider bitbucket \
               --change-request-repository "$BITBUCKET_REPO_FULL_NAME" \
               --change-request-base-branch "$BITBUCKET_BRANCH" \

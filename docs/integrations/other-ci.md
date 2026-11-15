@@ -7,7 +7,7 @@ module. For GitHub see [GitHub Action](github-action.md).
 Every template runs the same command and, when asked, opens a change request on the host:
 
 ```sh
-npx -y autoremediator@^0.21.2 --audit --ci --output-format json \
+npx -y autoremediator@^0.22.0 --audit --ci --output-format json \
   --create-change-request --change-request-provider <gitlab|bitbucket|azure-devops>
 ```
 
@@ -40,9 +40,9 @@ with `spec: inputs:`. Include it with GitLab 16.11 or later:
 
 ```yaml
 include:
-  - remote: https://raw.githubusercontent.com/rawlings/autoremediator/v0.21.2/templates/gitlab/autoremediator.yml
+  - remote: https://raw.githubusercontent.com/rawlings/autoremediator/v0.22.0/templates/gitlab/autoremediator.yml
     inputs:
-      version: "^0.21.2"
+      version: "^0.22.0"
       base_branch: main
 ```
 
@@ -59,7 +59,7 @@ Requirements:
 | ----- | ------- | ------- |
 | `job_name`, `stage` | `autoremediator`, `test` | Job name and stage |
 | `image` | `node:26` | Node.js 26+ image. Git is installed on Debian images that lack it |
-| `version` | `^0.21.2` | npm range that `npx` runs |
+| `version` | `^0.22.0` | npm range that `npx` runs |
 | `cwd` | `.` | Project directory |
 | `base_branch` | `$CI_DEFAULT_BRANCH` | Merge request target |
 | `run_tests` | `false` | Run the project's tests after each change |
@@ -115,7 +115,7 @@ Requirements:
 
 | Parameter | Default | Meaning |
 | --------- | ------- | ------- |
-| `version` | `^0.21.2` | npm range that `npx` runs |
+| `version` | `^0.22.0` | npm range that `npx` runs |
 | `nodeVersion` | `26.x` | Passed to `NodeTool@0` |
 | `baseBranch` | `main` | Pull request target |
 | `createPullRequest` | `true` | `false` reports without pushing |
@@ -130,7 +130,7 @@ entrypoint `autoremediator`, git included. Released images are published to
 
 ```sh
 docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/workdir" \
-  ghcr.io/rawlings/autoremediator:0.21.2 --audit --output-format json
+  ghcr.io/rawlings/autoremediator:0.22.0 --audit --output-format json
 ```
 
 The image carries npm but not pnpm, yarn or bun. Projects that use those need an image that adds

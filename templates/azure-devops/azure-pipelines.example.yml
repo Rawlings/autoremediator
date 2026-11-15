@@ -14,7 +14,7 @@ resources:
     - repository: autoremediator
       type: github
       name: rawlings/autoremediator
-      ref: refs/tags/v0.21.2
+      ref: refs/tags/v0.22.0
       endpoint: github-service-connection # GitHub service connection with read access
 
 pool:

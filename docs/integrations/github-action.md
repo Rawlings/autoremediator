@@ -10,7 +10,7 @@ permissions:
 
 steps:
   - uses: actions/checkout@v5
-  - uses: rawlings/autoremediator@v0.21.2
+  - uses: rawlings/autoremediator@v0.22.0
     with:
       audit: true
       run-tests: true
