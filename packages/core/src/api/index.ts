@@ -19,6 +19,8 @@ export type {
   InventoryPackage,
   VulnerablePackage,
   PatchResult,
+  MaintainerVexEvidence,
+  MaintainerVexIgnored,
   PatchStrategy,
   PatchStrategyCounts,
   DependencyScope,
@@ -343,3 +345,20 @@ export {
   type PolicyProposer,
   type PolicyRule,
 } from "./policy-nl/index.js";
+export {
+  maintain,
+  type MaintainAdvisory,
+  type MaintainDecision,
+  type MaintainOptions,
+  type MaintainPackageFinding,
+  type MaintainPlanSummary,
+  type MaintainResult,
+} from "./maintain/index.js";
+export {
+  readMaintainerVex,
+  type MaintainerVexReport,
+  type MaintainerVexStatementSummary,
+  type OwnVexSummary,
+  type ReadMaintainerVexOptions,
+  type ShippedVexSummary,
+} from "./maintainer-vex/index.js";

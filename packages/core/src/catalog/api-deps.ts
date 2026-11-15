@@ -42,6 +42,8 @@ import {
   verifyRun,
   compilePolicy,
   explainPolicy,
+  maintain,
+  readMaintainerVex,
 } from "../api/index.js";
 
 /** The SDK functions operations call. Injectable so tests and embedders can substitute them. */
@@ -90,6 +92,8 @@ export interface ApiDeps {
   premortemFn: typeof premortem;
   compilePolicyFn: typeof compilePolicy;
   explainPolicyFn: typeof explainPolicy;
+  maintainFn: typeof maintain;
+  readMaintainerVexFn: typeof readMaintainerVex;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -137,4 +141,6 @@ export const defaultApiDeps: ApiDeps = {
   premortemFn: premortem,
   compilePolicyFn: compilePolicy,
   explainPolicyFn: explainPolicy,
+  maintainFn: maintain,
+  readMaintainerVexFn: readMaintainerVex,
 };

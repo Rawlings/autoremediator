@@ -131,7 +131,10 @@ export function buildPlan(input: {
 }
 
 function describeSkip(result: RemediationReport["results"][number]): string {
-  if (result.suppressedBy) return `suppressed (${result.suppressedBy.justification})`;
+  if (result.suppressedBy) {
+    const source = result.suppressedBy.source === "maintainer-vex" ? " by maintainer VEX" : "";
+    return `suppressed${source} (${result.suppressedBy.justification})`;
+  }
   if (result.strategy === "patch-file") {
     return "needs a generated patch, which is produced when applied and cannot be previewed exactly";
   }

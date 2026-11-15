@@ -41,6 +41,7 @@ import { runBisect, type BisectCliOptions } from "./bisect.js";
 import { runTraceCommand, type TraceRunCommandOptions } from "./trace.js";
 import { registerIncidentCommands } from "./incident-commands.js";
 import { registerPolicyCommands } from "./policy-commands.js";
+import { registerMaintainCommands } from "./maintain-commands.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
 import { validateOutputFormat, validateSharedCommandOptions } from "./validators.js";
@@ -351,6 +352,7 @@ export function createProgram(): Command {
 
   registerIncidentCommands(program);
   registerPolicyCommands(program);
+  registerMaintainCommands(program);
 
   program
     .command("init")

@@ -15,6 +15,8 @@ export interface CycloneDxVexVulnerabilityAnalysis {
 export interface CycloneDxVexVulnerability {
   id: string;
   analysis: CycloneDxVexVulnerabilityAnalysis;
+  /** CycloneDX properties; carries `autoremediator:maintainer-vex` when installed packages ship a verdict. */
+  properties?: Array<{ name: string; value: string }>;
 }
 
 export interface CycloneDxVexDocument {
@@ -45,11 +47,53 @@ const isSuppressed = (result: PatchResult): boolean => result.suppressedBy != nu
  * triage evidence and never promoted to `not_affected`.
  */
 function mapReportToVulnerability(report: RemediationReport): CycloneDxVexVulnerability {
+  const vulnerability = mapOutcome(report);
+  // Maintainer verdicts are always reported, whether or not policy trusts them. They are what an
+  // installed package says about itself, so they are listed as a property and never decide state.
+  const claims = report.results.flatMap((result) =>
+    (result.maintainerVex ?? []).map(
+      (claim) =>
+        `${claim.maintainer.name}@${claim.maintainer.version}: not_affected (${claim.justification}) for ${result.packageName}@${result.fromVersion}`,
+    ),
+  );
+  return claims.length > 0
+    ? {
+        ...vulnerability,
+        properties: [...new Set(claims)].map((value) => ({
+          name: "autoremediator:maintainer-vex",
+          value,
+        })),
+      }
+    : vulnerability;
+}
+
+/** CycloneDX analysis justifications that match an OpenVEX one without stretching its meaning. */
+const CYCLONEDX_JUSTIFICATION: Record<string, string> = {
+  component_not_present: "code_not_present",
+  vulnerable_code_not_present: "code_not_present",
+  vulnerable_code_not_in_execute_path: "code_not_reachable",
+  inline_mitigations_already_exist: "protected_by_mitigating_control",
+};
+
+function mapOutcome(report: RemediationReport): CycloneDxVexVulnerability {
   const { results } = report;
   const resolved = results.filter((result) => isResolved(result));
 
   if (results.length > 0 && results.every((r) => isSuppressed(r))) {
-    const suppression = results[0]!.suppressedBy!;
+    const first = results[0]!;
+    const suppression = first.suppressedBy!;
+    if (suppression.source === "maintainer-vex") {
+      const openVex = first.maintainerVex?.[0]?.justification;
+      const mapped = openVex ? CYCLONEDX_JUSTIFICATION[openVex] : undefined;
+      return {
+        id: report.cveId,
+        analysis: {
+          state: "not_affected",
+          ...(mapped ? { justification: mapped } : {}),
+          detail: `Maintainer VEX, trusted by policy: ${suppression.notes ?? suppression.justification}`,
+        },
+      };
+    }
     return {
       id: report.cveId,
       analysis: {
