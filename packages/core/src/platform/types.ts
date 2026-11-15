@@ -538,6 +538,29 @@ export interface ScanReportLike {
   failedCount: number;
 }
 
+/** One accepted maintainer `not_affected` statement that applies to a vulnerable installed package. */
+export interface MaintainerVexEvidence {
+  /** The installed package that shipped the document and made the statement. */
+  maintainer: { name: string; version: string };
+  /** The document's path inside that package. */
+  file: string;
+  documentId: string;
+  author: string;
+  statementId?: string;
+  status: "not_affected";
+  justification: string;
+  impactStatement?: string;
+  statusNotes?: string;
+  timestamp: string;
+  /** The statement names the vulnerable package as a subcomponent (otherwise it is about the maintainer's own package). */
+  subcomponent: boolean;
+}
+
+export interface MaintainerVexIgnored {
+  maintainer: { name: string; version: string };
+  reason: string;
+}
+
 export interface PatchResult {
   packageName: string;
   strategy: PatchStrategy;
@@ -557,7 +580,16 @@ export interface PatchResult {
   reachability?: ReachabilityAssessment;
   alternativeSuggestions?: AlternativePackageSuggestion[];
   fixExplanation?: FixExplanation;
-  suppressedBy?: { justification: VexJustification; notes?: string };
+  suppressedBy?: {
+    justification: VexJustification;
+    notes?: string;
+    /** Who the suppression comes from: the project's policy (default) or a maintainer's shipped VEX, trusted by `trustMaintainerVex`. */
+    source?: "policy" | "maintainer-vex";
+  };
+  /** `not_affected` verdicts that installed packages ship for this advisory (OpenVEX in the tarball). Evidence only unless the policy sets `trustMaintainerVex`. */
+  maintainerVex?: MaintainerVexEvidence[];
+  /** Maintainer VEX statements that were read but not accepted for this result, with the reason. */
+  maintainerVexIgnored?: MaintainerVexIgnored[];
   validation?: {
     passed: boolean;
     error?: string;

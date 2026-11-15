@@ -12,6 +12,7 @@ implement is described in [How it works](../how-it-works.md).
 | `catalog/`              | Every capability defined once as an operation (zod input, annotations, handler). MCP tools are generated from it; HTTP routes and CLI commands are next. |
 | `api/init/`             | `init`: a planner that turns detected facts into reviewable file changes (safe JSON/TOML/Markdown merges, never overwrites an existing entry), plus the text shared by the generated agent files and the Claude Code plugin under `plugins/`. CLI and SDK only. |
 | `cli/`, `mcp/`, `openapi/` | Thin entry points: parse input, call `api/` or `catalog/`, format output. No remediation logic. |
+| `platform/maintainer-vex/` and `api/maintain/` | The VEX-in-the-package convention: `platform/maintainer-vex/` reads, validates (OpenVEX v0.2.0, strict, size and depth capped) and matches the documents installed packages ship, for the pipeline and `readMaintainerVex`; `api/maintain/` is the author-side planner behind `maintain` (OpenVEX file, `package.json` and changeset merges shown as a diff). See `docs/guides/maintainer-vex.md`. |
 | `remediation/local/`    | The pipeline (`run.ts`) and its stages: strategies, fallback, disposition, SBOM.        |
 | `remediation/tools/`    | Single-purpose operations (version bump, override, patch apply, inventory, …).          |
 | `remediation/patch/`    | Patch generation behind the `PatchGenerator` port; diff and syntax validation.          |

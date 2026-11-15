@@ -12,6 +12,11 @@ import {
 } from "../../intelligence/sources/snapshot.js";
 import { computeEscalationAction } from "../../platform/escalation.js";
 import type { PatchGenerator } from "../../platform/patch-generator.js";
+import {
+  findMaintainerVex,
+  readInstalledMaintainerVex,
+  type MaintainerVexIndex,
+} from "../../platform/maintainer-vex/index.js";
 import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
 import { createProjectSnapshot } from "../../platform/rollback.js";
 import type {
@@ -202,8 +207,19 @@ export async function runLocalRemediationPipeline(
   const containmentMode = options.containmentMode ?? effectivePolicy.containmentMode ?? false;
   const dispositionPolicy = options.dispositionPolicy ?? effectivePolicy.dispositionPolicy;
 
+  // Read the VEX documents installed packages ship once, and only when something is vulnerable.
+  let shippedVex: MaintainerVexIndex | undefined;
+
   for (const vulnerable of vulnerablePackages) {
     const snapshot = await createProjectSnapshot(cwd);
+
+    shippedVex ??= readInstalledMaintainerVex(cwd);
+    const maintainerVex = findMaintainerVex(shippedVex, normalizedId, vulnerable.installed);
+    const withMaintainerVex = (result: PatchResult): PatchResult => ({
+      ...result,
+      ...(maintainerVex.evidence.length > 0 ? { maintainerVex: maintainerVex.evidence } : {}),
+      ...(maintainerVex.ignored.length > 0 ? { maintainerVexIgnored: maintainerVex.ignored } : {}),
+    });
 
     const finalizePatchResult = (result: PatchResult): PatchResult => {
       const withDisposition = applyDispositionAndContainment(result, {
@@ -221,7 +237,7 @@ export async function runLocalRemediationPipeline(
           resolved.escalationGraph,
         );
       }
-      return withDisposition;
+      return withMaintainerVex(withDisposition);
     };
 
     if (!isPackageAllowed(effectivePolicy, vulnerable.installed.name)) {
@@ -234,6 +250,29 @@ export async function runLocalRemediationPipeline(
           dryRun,
           unresolvedReason: "policy-blocked",
           message: `Policy denyPackages blocked changes for package "${vulnerable.installed.name}".`,
+        }),
+      );
+      continue;
+    }
+
+    // Opt-in only: by default the maintainer's verdict is evidence and remediation goes ahead.
+    const maintainerClaim = maintainerVex.evidence[0];
+    if (resolved.trustMaintainerVex && maintainerClaim) {
+      const { maintainer } = maintainerClaim;
+      collectedResults.push(
+        withMaintainerVex({
+          packageName: vulnerable.installed.name,
+          fromVersion: vulnerable.installed.version,
+          strategy: "none",
+          applied: false,
+          dryRun,
+          dependencyScope: vulnerable.installed.type === "direct" ? "direct" : "transitive",
+          suppressedBy: {
+            justification: "not_affected",
+            source: "maintainer-vex",
+            notes: `${maintainer.name}@${maintainer.version} (${maintainerClaim.author}): ${maintainerClaim.justification}${maintainerClaim.impactStatement ? `. ${maintainerClaim.impactStatement}` : ""}`,
+          },
+          message: `Suppressed by maintainer VEX: ${maintainer.name}@${maintainer.version} (author ${maintainerClaim.author}) declares not_affected (${maintainerClaim.justification}) for ${normalizedId}.`,
         }),
       );
       continue;

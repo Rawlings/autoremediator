@@ -35,6 +35,8 @@ export interface AutoremediatorPolicy {
   suppressions?: VexSuppression[];
   sla?: SlaPolicy;
   skipUnreachable?: boolean;
+  /** Treat a maintainer's shipped `not_affected` VEX statement as a suppression. Default false: it is shown as evidence only. */
+  trustMaintainerVex?: boolean;
   dispositionPolicy?: DispositionPolicy;
   containmentMode?: boolean;
   escalationGraph?: EscalationGraph;
@@ -61,6 +63,7 @@ export const DEFAULT_POLICY: AutoremediatorPolicy = {
   suppressions: [],
   sla: undefined,
   skipUnreachable: false,
+  trustMaintainerVex: false,
   dispositionPolicy: undefined,
   containmentMode: false,
   escalationGraph: undefined,
@@ -98,6 +101,7 @@ const policyFileSchema = z
       .strict()
       .optional(),
     skipUnreachable: z.boolean().default(false),
+    trustMaintainerVex: z.boolean().default(false),
     dispositionPolicy: dispositionPolicySchema.optional(),
     containmentMode: z.boolean().default(false),
     escalationGraph: escalationGraphSchema.optional(),

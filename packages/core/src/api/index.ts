@@ -19,6 +19,8 @@ export type {
   InventoryPackage,
   VulnerablePackage,
   PatchResult,
+  MaintainerVexEvidence,
+  MaintainerVexIgnored,
   PatchStrategy,
   PatchStrategyCounts,
   DependencyScope,
@@ -328,3 +330,20 @@ export {
   type PremortemTarget,
   type PremortemUsage,
 } from "./premortem/index.js";
+export {
+  maintain,
+  type MaintainAdvisory,
+  type MaintainDecision,
+  type MaintainOptions,
+  type MaintainPackageFinding,
+  type MaintainPlanSummary,
+  type MaintainResult,
+} from "./maintain/index.js";
+export {
+  readMaintainerVex,
+  type MaintainerVexReport,
+  type MaintainerVexStatementSummary,
+  type OwnVexSummary,
+  type ReadMaintainerVexOptions,
+  type ShippedVexSummary,
+} from "./maintainer-vex/index.js";
