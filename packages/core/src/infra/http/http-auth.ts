@@ -1,4 +1,4 @@
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type http from "node:http";
 
 import { sha256 } from "../../shared/hash.js";
@@ -76,11 +76,18 @@ export function verifyJwtRole(token: string, secret: string): Role | undefined {
   return undefined;
 }
 
-/** Compares two secrets in constant time (over digests, so their lengths do not show either). */
-const sha256Digest = (value: string): Buffer => createHash("sha256").update(value).digest();
+/**
+ * Key for the comparison digests below. It exists only to make them keyed: the digests are never
+ * stored or sent anywhere, and a fresh key per process is all the comparison needs.
+ */
+const COMPARISON_KEY = randomBytes(32);
 
+const comparisonDigest = (value: string): Buffer =>
+  createHmac("sha256", COMPARISON_KEY).update(value).digest();
+
+/** Compares two secrets in constant time (over digests, so their lengths do not show either). */
 function sameSecret(a: string, b: string): boolean {
-  return timingSafeEqual(sha256Digest(a), sha256Digest(b));
+  return timingSafeEqual(comparisonDigest(a), comparisonDigest(b));
 }
 
 /**
