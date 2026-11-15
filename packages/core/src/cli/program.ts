@@ -39,6 +39,7 @@ import {
 import { addRecipesCommand } from "./recipes.js";
 import { runBisect, type BisectCliOptions } from "./bisect.js";
 import { runTraceCommand, type TraceRunCommandOptions } from "./trace.js";
+import { registerFreshnessCommands } from "./freshness-commands.js";
 import { registerIncidentCommands } from "./incident-commands.js";
 import { registerPolicyCommands } from "./policy-commands.js";
 import { registerMaintainCommands } from "./maintain-commands.js";
@@ -357,6 +358,7 @@ export function createProgram(): Command {
   registerMaintainCommands(program);
   registerProveCommands(program);
   registerRadarCommands(program);
+  registerFreshnessCommands(program);
 
   program
     .command("init")

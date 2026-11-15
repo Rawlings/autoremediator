@@ -34,6 +34,7 @@ import {
 import { HOOK_MANAGERS, HOOK_NAMES } from "../api/hooks/types.js";
 import { AGENT_HOSTS } from "../api/init/types.js";
 import { PACKAGE_VERSION } from "../version.js";
+import { FRESHNESS_OPERATIONS } from "./freshness-operations.js";
 import { INCIDENT_OPERATIONS } from "./incident-operations.js";
 import { POLICY_OPERATIONS } from "./policy-operations.js";
 import { MAINTAINER_VEX_OPERATIONS } from "./maintainer-vex-operations.js";
@@ -775,6 +776,7 @@ export const OPERATIONS: readonly Operation[] = [
   ...MAINTAINER_VEX_OPERATIONS,
   ...PROVE_OPERATIONS,
   ...RADAR_OPERATIONS,
+  ...FRESHNESS_OPERATIONS,
 ];
 
 export function getOperation(name: string): Operation | undefined {

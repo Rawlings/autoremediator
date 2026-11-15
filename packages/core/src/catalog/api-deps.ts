@@ -46,6 +46,8 @@ import {
   maintain,
   readMaintainerVex,
   generateProofOfFix,
+  freshnessReport,
+  planFreshnessStep,
 } from "../api/index.js";
 
 /** The SDK functions operations call. Injectable so tests and embedders can substitute them. */
@@ -98,6 +100,8 @@ export interface ApiDeps {
   readMaintainerVexFn: typeof readMaintainerVex;
   generateProofOfFixFn: typeof generateProofOfFix;
   radarFn: typeof radar;
+  freshnessReportFn: typeof freshnessReport;
+  planFreshnessStepFn: typeof planFreshnessStep;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -149,4 +153,6 @@ export const defaultApiDeps: ApiDeps = {
   readMaintainerVexFn: readMaintainerVex,
   generateProofOfFixFn: generateProofOfFix,
   radarFn: radar,
+  freshnessReportFn: freshnessReport,
+  planFreshnessStepFn: planFreshnessStep,
 };

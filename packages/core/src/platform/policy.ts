@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { parse as yamlParse, stringify as yamlStringify } from "yaml";
 import { z } from "zod";
 
+import { freshnessPolicySchema, type FreshnessPolicy } from "./freshness-policy.js";
 import {
   autonomyPolicySchema,
   type AutonomyPolicy,
@@ -44,6 +45,8 @@ export interface AutoremediatorPolicy {
   recipes?: { packages: string[] };
   /** Earned autonomy. Absent means the feature is off and behaviour is unchanged. */
   autonomy?: AutonomyPolicy;
+  /** How far behind the latest release direct dependencies may fall (see docs/guides/freshness.md). */
+  freshness?: FreshnessPolicy;
 }
 
 export const DEFAULT_POLICY: AutoremediatorPolicy = {
@@ -114,6 +117,7 @@ export const policyFileSchema = z
       .strict()
       .optional(),
     autonomy: autonomyPolicySchema.optional(),
+    freshness: freshnessPolicySchema.optional(),
   })
   .strict();
 

@@ -51,7 +51,8 @@ export function deterministicBranchName(
 export function commitTrailers(reports: readonly RemediationReport[]): string[] {
   const trailers: string[] = [];
   const cveIds = [...new Set(reports.map((report) => report.cveId.toUpperCase()))].toSorted();
-  for (const id of cveIds) trailers.push(`Fixes-CVE: ${id}`);
+  // A freshness step fixes no advisory; its pseudo id only names the branch.
+  for (const id of cveIds) if (!id.startsWith("FRESHNESS-")) trailers.push(`Fixes-CVE: ${id}`);
 
   const runIds = [...new Set(reports.map((report) => report.runId).filter((id): id is string => Boolean(id)))];
   for (const id of runIds) trailers.push(`Autoremediator-Run: ${id}`);
