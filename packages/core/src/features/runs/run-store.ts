@@ -9,11 +9,14 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 
+import { AutoremediatorError } from "../../shared/errors.js";
+import { readJsonFileSync } from "../../shared/json.js";
 import type { RemediationReport } from "../remediate/types.js";
 import type { RepoFingerprint } from "./fingerprint.js";
 import { isAttemptId, isRunId, newRunId } from "./ids.js";
 import { Ledger } from "./ledger.js";
 import type { RemediationPlan } from "./plan.js";
+import { attemptRecordSchema, planSchema, reportSchema, runRecordSchema } from "./schemas.js";
 
 export type RunStatus = "planned" | "applying" | "applied" | "partial" | "failed" | "rolled-back";
 
@@ -114,8 +117,10 @@ export class RunStore {
   }
 
   load(runId: string): RunRecord {
-    if (!this.exists(runId)) throw new Error(`Run not found: ${runId}`);
-    return JSON.parse(readFileSync(join(this.runDir(runId), "run.json"), "utf8")) as RunRecord;
+    if (!this.exists(runId)) {
+      throw new AutoremediatorError("run-not-found", `Run not found: ${runId}`);
+    }
+    return readJsonFileSync(join(this.runDir(runId), "run.json"), runRecordSchema);
   }
 
   update(runId: string, patch: Partial<Omit<RunRecord, "runId" | "schemaVersion">>): RunRecord {
@@ -154,17 +159,13 @@ export class RunStore {
   /** The run's plan, when it has one. */
   readPlan(runId: string): RemediationPlan | undefined {
     const file = join(this.runDir(runId), "plan.json");
-    return existsSync(file)
-      ? (JSON.parse(readFileSync(file, "utf8")) as RemediationPlan)
-      : undefined;
+    return existsSync(file) ? readJsonFileSync(file, planSchema) : undefined;
   }
 
   /** The preview report a plan was made from, when the run has one. */
   readReport(runId: string): RemediationReport | undefined {
     const file = join(this.runDir(runId), "report.json");
-    return existsSync(file)
-      ? (JSON.parse(readFileSync(file, "utf8")) as RemediationReport)
-      : undefined;
+    return existsSync(file) ? readJsonFileSync(file, reportSchema) : undefined;
   }
 
   /** Directory of one attempt; both ids are validated. */
@@ -190,9 +191,7 @@ export class RunStore {
     for (const name of readdirSync(root)) {
       if (!isAttemptId(name)) continue;
       try {
-        records.push(
-          JSON.parse(readFileSync(join(root, name, "attempt.json"), "utf8")) as AttemptRecord,
-        );
+        records.push(readJsonFileSync(join(root, name, "attempt.json"), attemptRecordSchema));
       } catch {
         // Skip a damaged attempt rather than hiding the others.
       }

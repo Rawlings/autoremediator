@@ -1,5 +1,6 @@
 import type { Octokit } from "@octokit/rest";
 
+import { errorMessage } from "../errors.js";
 import type { ErrorLogger } from "../types.js";
 
 /** Check output is attacker-influenced and can be huge; only this much of it is looked at. */
@@ -37,7 +38,7 @@ export async function collectCheckRunLogs(
         rawLogs += "\n" + annLines.join("\n");
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       void onError?.({
         timestamp: new Date().toISOString(),
         source: "github-app",

@@ -24,6 +24,7 @@ import {
   type ParsedDiagnostic,
 } from "../diagnostics/log-parser.js";
 import { fenced, oneLine } from "../diagnostics/sanitize.js";
+import { errorMessage } from "../errors.js";
 import { listPullRequestChangedFiles } from "../healing/pr-files.js";
 import { repairBranchFiles } from "../healing/repair-branch.js";
 import type { RepairStrategy } from "../healing/repair-strategy.js";
@@ -100,7 +101,7 @@ async function comment(params: BotPrDoctorParams, body: string, context: string)
       body,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = errorMessage(error);
     void params.logger?.({
       timestamp: new Date().toISOString(),
       source: "github-app",
@@ -240,7 +241,7 @@ export async function runBotPrDoctor(params: BotPrDoctorParams): Promise<Remedia
   } catch (error) {
     // The attempt is already counted, so a retry of this job would be skipped as a duplicate;
     // report the failure instead of throwing.
-    const message = error instanceof Error ? error.message : String(error);
+    const message = errorMessage(error);
     void params.logger?.({
       timestamp: new Date().toISOString(),
       source: "github-app",

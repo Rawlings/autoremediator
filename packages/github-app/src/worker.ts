@@ -1,3 +1,4 @@
+import { errorMessage } from "./errors.js";
 import type { JobQueue } from "./queue.js";
 import type { QueueJob } from "./types.js";
 
@@ -36,7 +37,7 @@ export function startJobWorker(options: StartJobWorkerOptions): JobWorkerHandle 
           await options.processJob(job);
           options.queue.completeJob(job.id);
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
+          const message = errorMessage(error);
           const updatedJob = options.queue.failJob(job.id, message, options.retryDelayMs);
           if (updatedJob) {
             options.onJobFailed?.(updatedJob);

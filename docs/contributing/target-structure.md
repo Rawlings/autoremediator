@@ -1,10 +1,25 @@
 # Target structure for `packages/core/src`
 
-**Status: applied (Phase 3 steps 1-4 of the code quality turnaround).** The layer folders were
-moved into `shared/`, `infra/`, `features/` and `surfaces/`, and `types.ts` was split by owner. The
-tree below is the plan; `architecture.md` describes the result. Still open: `api/index.ts` is not
-yet the root `index.ts`, feature barrels (`index.ts`) are missing for a few features, and the
-function-size, error-handling and validation work (steps 5-8) is not done.
+**Status: applied through Phase 3 step 4 (code quality turnaround), partly beyond.** Done: the layer
+folders now live in `shared/`, `infra/`, `features/` and `surfaces/`; `types.ts` is split by owner;
+the CLI has one command file per feature and one `emitScanReport`; `apply-package-override` is a
+transaction plus two writers; run records and the ledger are parsed against schemas; typed errors and
+`errorMessage` exist in `shared/`. Still open, in order of value:
+
+1. **The 14-feature dependency loop** (remediate, runs, patch, repair, verify, upgrade, change-request,
+   incident, evidence, jobs, recipes, maintainer-vex, reachability, trace). Until it is broken,
+   features cannot get `index.ts` barrels, because a barrel in a loop loads modules before their
+   imports have run (this was tried and reverted). The back-edges are listed by
+   `shared/governance/boundaries.test.ts`'s ratchet and in the audit; most come from `remediate/types.ts`,
+   `remediate/tools/tool-compat.ts` and `remediate/tools/check-inventory.ts` sitting above the engine
+   features that need them.
+2. `api/index.ts` is not yet the root `index.ts`, and the public export list is not curated.
+3. Function size (`createProgram`, `bisectLockfile`, `applyPlan`, `apply-patch-file`, ...), more JSON
+   boundaries (about 55 `JSON.parse(...) as T` left), adoption of the typed errors, silent catches and
+   sync file I/O in server paths.
+4. `github-app` and `vscode-extension`: `github-app` has its own `errorMessage`; its 900-line files are
+   not split.
+
 The audit that motivates this is in [code-quality-audit.md](code-quality-audit.md); the numbers come
 from `node scripts/quality-metrics.ts`.
 

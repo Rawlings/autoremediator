@@ -1,7 +1,9 @@
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 
 import { sha256 } from "../../shared/hash.js";
+import { parseJson } from "../../shared/json.js";
 import { canonicalJson } from "./hash.js";
+import { stepEventSchema } from "./schemas.js";
 
 export interface StepEvent {
   seq: number;
@@ -37,7 +39,7 @@ export class Ledger {
     return readFileSync(this.file, "utf8")
       .split("\n")
       .filter((line) => line.trim().length > 0)
-      .map((line) => JSON.parse(line) as StepEvent);
+      .map((line) => parseJson(line, stepEventSchema, this.file));
   }
 
   append(type: string, data: Record<string, unknown> = {}): StepEvent {

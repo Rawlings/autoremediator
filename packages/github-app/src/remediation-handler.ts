@@ -12,6 +12,7 @@ import { collectCheckRunLogs } from "./diagnostics/check-run-logs.js";
 import { parseCheckRunLogs } from "./diagnostics/log-parser.js";
 import { runBotPrDoctor } from "./doctor/bot-pr-doctor.js";
 import { botKindOfBranch, botKindOfLogin, isForkPullRequest } from "./doctor/bot-pr.js";
+import { errorMessage } from "./errors.js";
 import { healPullRequest, regexRepairStrategy } from "./healing/pr-healer.js";
 import { fetchRepoConfig } from "./repo-config.js";
 import { summarizeScanReport } from "./summary.js";
@@ -208,7 +209,7 @@ export function createDefaultRemediationHandler(
     // the job ends as `partial` (never retried). The reply and the result carry no error text:
     // it can hold clone URLs with tokens, so it goes to the log, redacted.
     const answerFailedCommand = async (error: unknown): Promise<RemediationJobResult> => {
-      const message = redactTokens(error instanceof Error ? error.message : String(error));
+      const message = redactTokens(errorMessage(error));
       void options.onError?.({
         timestamp: new Date().toISOString(),
         source: "github-app",
@@ -429,7 +430,7 @@ export function createDefaultRemediationHandler(
         try {
           await rm(tempDir, { recursive: true, force: true });
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
+          const message = errorMessage(error);
           void options.onError?.({
             timestamp: new Date().toISOString(),
             source: "github-app",
@@ -449,7 +450,7 @@ export function createDefaultRemediationHandler(
         try {
           await cleanupCheckout();
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
+          const message = errorMessage(error);
           void options.onError?.({
             timestamp: new Date().toISOString(),
             source: "github-app",
@@ -494,7 +495,7 @@ async function postComment(
       body,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = errorMessage(error);
     void options.onError?.({
       timestamp: new Date().toISOString(),
       source: "github-app",
@@ -913,7 +914,7 @@ async function collectAuditFindings(cwd: string): Promise<ParsedAuditFinding[]> 
     try {
       result = await runCommand(command, args, cwd);
     } catch (error) {
-      lastError = error instanceof Error ? error.message : String(error);
+      lastError = errorMessage(error);
       continue;
     }
 

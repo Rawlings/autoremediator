@@ -8,6 +8,7 @@
 import type { Octokit } from "@octokit/rest";
 
 import type { DiagnosticFinding, ParsedDiagnostic } from "../diagnostics/log-parser.js";
+import { errorMessage } from "../errors.js";
 import type { AutoremediatorRepoConfig, ErrorLogger } from "../types.js";
 import { listPullRequestChangedFiles } from "./pr-files.js";
 import { repairBranchFiles } from "./repair-branch.js";
@@ -229,7 +230,7 @@ export async function healPullRequest(options: HealPrOptions): Promise<HealPrRes
         labels: ["autoremediator/needs-human-review"],
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       void options.logger?.({
         timestamp: new Date().toISOString(),
         source: "github-app",
@@ -287,7 +288,7 @@ export async function healPullRequest(options: HealPrOptions): Promise<HealPrRes
         labels: ["autoremediator/needs-human-review"],
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       void options.logger?.({
         timestamp: new Date().toISOString(),
         source: "github-app",
@@ -314,7 +315,7 @@ export async function healPullRequest(options: HealPrOptions): Promise<HealPrRes
   try {
     allowedFiles = await listPullRequestChangedFiles(octokit, { owner, repo, pullNumber });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = errorMessage(error);
     void options.logger?.({
       timestamp: new Date().toISOString(),
       source: "github-app",
@@ -362,7 +363,7 @@ export async function healPullRequest(options: HealPrOptions): Promise<HealPrRes
         labels: ["autoremediator/needs-human-review"],
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       void options.logger?.({
         timestamp: new Date().toISOString(),
         source: "github-app",
@@ -398,7 +399,7 @@ export async function healPullRequest(options: HealPrOptions): Promise<HealPrRes
       body: commentBody,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = errorMessage(error);
     void options.logger?.({
       timestamp: new Date().toISOString(),
       source: "github-app",

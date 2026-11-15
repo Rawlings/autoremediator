@@ -1,6 +1,7 @@
 import type { Octokit } from "@octokit/rest";
 
 import type { DiagnosticFinding } from "../diagnostics/log-parser.js";
+import { errorMessage } from "../errors.js";
 import type { ErrorLogger } from "../types.js";
 import type { RepairStrategy } from "./repair-strategy.js";
 import { repairPathProblem } from "./safe-paths.js";
@@ -103,7 +104,7 @@ export async function repairBranchFiles(options: RepairBranchOptions): Promise<R
         healedFiles.push(filePath);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = errorMessage(error);
       void options.logger?.({
         timestamp: new Date().toISOString(),
         source: "github-app",

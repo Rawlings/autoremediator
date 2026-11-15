@@ -3,6 +3,7 @@ import { isAbsolute, normalize } from "node:path";
 import type { Octokit } from "@octokit/rest";
 import { parse as yamlParse } from "yaml";
 
+import { errorMessage } from "./errors.js";
 import {
   type AutoremediatorRepoConfig,
   type BotPrDoctorConfig,
@@ -180,7 +181,7 @@ export async function fetchRepoConfig(
     if (error !== null && typeof error === "object" && "status" in error && error.status === 404) {
       return { ...DEFAULT_REPO_CONFIG };
     }
-    const message = error instanceof Error ? error.message : String(error);
+    const message = errorMessage(error);
     void logger?.({
       timestamp: new Date().toISOString(),
       source: "github-app",
