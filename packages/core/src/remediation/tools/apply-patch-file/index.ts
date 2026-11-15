@@ -195,7 +195,7 @@ export const applyPatchFileTool = defineTool({
       };
       const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
       const installCommand = resolveInstallCommand(pm, commandConstraints, yarnMajor);
-      const testCommand = resolveTestCommand(pm, commandConstraints);
+      const testCommand = resolveTestCommand(pm, commandConstraints, cwd);
       const selectedPatch = patchContent ?? patches?.[0]?.unifiedDiff;
       const patchFiles = extractPatchedFiles(selectedPatch ?? "");
       const hunkCount = countPatchHunks(selectedPatch ?? "");

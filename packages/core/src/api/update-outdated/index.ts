@@ -15,6 +15,7 @@ import {
   resolveTestCommand,
   type PackageManager,
 } from "../../platform/package-manager/index.js";
+import { loadMemoryConstraints } from "../../platform/memory/consume.js";
 import { loadPolicy } from "../../platform/policy.js";
 import { withRepoLock } from "../../platform/repo-lock.js";
 import { safeExecaCommand } from "../../platform/safe-exec-command.js";
@@ -234,8 +235,9 @@ export async function updateOutdated(
   const pm = options.packageManager ?? detectPackageManager(cwd);
   const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
   const installCommand = resolveInstallCommand(pm, constraints, yarnMajor);
-  const testCommand = resolveTestCommand(pm, constraints);
+  const testCommand = resolveTestCommand(pm, constraints, cwd);
 
+  const memory = options.ignoreMemory ? undefined : loadMemoryConstraints(cwd);
   let successCount = 0;
   let failedCount = 0;
   let skippedCount = 0;
@@ -249,6 +251,19 @@ export async function updateOutdated(
         evidence,
         "update-outdated.skip",
         { packageName, reason: "major-bump-not-allowed" },
+        {},
+      );
+      continue;
+    }
+
+    // A package a person pinned in the repository's memory is left alone.
+    const pinned = memory?.pinned.get(packageName);
+    if (pinned) {
+      skippedCount++;
+      addEvidenceStep(
+        evidence,
+        "update-outdated.skip",
+        { packageName, reason: "pinned-by-memory", entry: pinned.id, why: pinned.reason },
         {},
       );
       continue;

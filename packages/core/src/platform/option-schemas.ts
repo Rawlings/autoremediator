@@ -560,7 +560,7 @@ export const listRunsOptionsSchema = z
 
 // Compile-time guard: the wire schema and the SDK options type must list the same fields.
 type WireKeys = keyof z.input<typeof remediateOptionsSchema>;
-type SdkOnly = "patchGenerator";
+type SdkOnly = "patchGenerator" | "ignoreMemory";
 type NotOnTheWire = Exclude<keyof RemediateOptions, WireKeys | SdkOnly>;
 type NotInTheSdk = Exclude<WireKeys, keyof RemediateOptions>;
 export const wireOptionsMatchSdk: [NotOnTheWire, NotInTheSdk] extends [never, never] ? true : never =

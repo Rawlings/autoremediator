@@ -76,7 +76,14 @@ const CLI_FLAGS: Record<WireOption, readonly string[] | { none: string }> = {
 };
 
 /** Flags that control the CLI itself rather than set an SDK option. */
-const CLI_ONLY_FLAGS = ["--interactive", "--audit", "--ci", "--output-format"];
+const CLI_ONLY_FLAGS = [
+  "--interactive",
+  "--audit",
+  "--ci",
+  "--output-format",
+  // SDK and CLI only, not on the wire: an agent must not be able to lift a person's memory constraints.
+  "--ignore-memory",
+];
 
 const cveFlags = () =>
   new Set(

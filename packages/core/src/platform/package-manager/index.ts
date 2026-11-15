@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { memoryTestCommand } from "../memory/consume.js";
 import { safeExeca } from "../safe-exec.js";
 import type { PackageManager, RemediationConstraints } from "../types.js";
 import { type InstalledVersions, parsePackageManagerListOutput } from "./list-parser.js";
@@ -138,10 +139,21 @@ export function resolveListCommand(
   return withWorkspace(base, pm, constraints?.workspace);
 }
 
+/**
+ * The command that runs a project's tests. With `cwd`, a project whose `package.json` has no test
+ * script gets the test command its memory holds, if any (see `memoryTestCommand`); a script the
+ * project defines is never overridden, and a workspace selection leaves the choice to the package
+ * manager.
+ */
 export function resolveTestCommand(
   pm: PackageManager,
   constraints?: RemediationConstraints,
+  cwd?: string,
 ): string[] {
+  if (cwd !== undefined && !constraints?.workspace && pm !== "deno") {
+    const remembered = memoryTestCommand(cwd, pm);
+    if (remembered) return remembered;
+  }
   const base =
     pm === "pnpm"
       ? ["pnpm", "test"]

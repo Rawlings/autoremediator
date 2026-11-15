@@ -27,6 +27,7 @@ import type {
   RemediationReport,
   VulnerablePackage,
 } from "../../platform/types.js";
+import { loadMemoryConstraints, pinnedMessage, rejectedMessage } from "../../platform/memory/consume.js";
 import { resolvePatchGenerator } from "../patch/resolve.js";
 import { checkInventoryTool } from "../tools/check-inventory.js";
 import { assessPackageReachability } from "../tools/check-reachability.js";
@@ -206,6 +207,8 @@ export async function runLocalRemediationPipeline(
   const effectivePolicy = loadPolicy(cwd, options.policy);
   const containmentMode = options.containmentMode ?? effectivePolicy.containmentMode ?? false;
   const dispositionPolicy = options.dispositionPolicy ?? effectivePolicy.dispositionPolicy;
+  // What earlier runs and people recorded: pinned packages and upgrades that were tried and rejected.
+  const memory = resolved.ignoreMemory ? undefined : loadMemoryConstraints(cwd);
 
   // Read the VEX documents installed packages ship once, and only when something is vulnerable.
   let shippedVex: MaintainerVexIndex | undefined;
@@ -250,6 +253,23 @@ export async function runLocalRemediationPipeline(
           dryRun,
           unresolvedReason: "policy-blocked",
           message: `Policy denyPackages blocked changes for package "${vulnerable.installed.name}".`,
+        }),
+      );
+      continue;
+    }
+
+    // A person's pin comes first: the package is left alone whatever else says.
+    const pinned = memory?.pinned.get(vulnerable.installed.name);
+    if (pinned) {
+      collectedResults.push(
+        finalizePatchResult({
+          packageName: vulnerable.installed.name,
+          fromVersion: vulnerable.installed.version,
+          strategy: "none",
+          applied: false,
+          dryRun,
+          unresolvedReason: "constraint-blocked",
+          message: pinnedMessage(pinned),
         }),
       );
       continue;
@@ -308,6 +328,12 @@ export async function runLocalRemediationPipeline(
       reproductionTest: options.reproductionTest,
       patchesDir: resolved.patchesDir,
       offlineIntelligence: resolved.offlineIntelligence,
+      rejectedVersions: new Map(
+        [...(memory?.rejected.get(vulnerable.installed.name) ?? [])].map(([version, entry]) => [
+          version,
+          rejectedMessage(entry),
+        ]),
+      ),
     });
 
     if (shouldAttemptPatchFallback(primary.result, constraints.preferVersionBump ?? false)) {

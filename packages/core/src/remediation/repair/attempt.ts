@@ -1,3 +1,5 @@
+import { renderMemoryForAgent } from "../../platform/memory/consume.js";
+import { proposeMemory } from "../../platform/memory/propose.js";
 import { createProjectSnapshot, type ProjectSnapshot } from "../../platform/rollback.js";
 import type {
   RepairAgent,
@@ -152,7 +154,7 @@ export function commandsFor(
   const typecheck = resolveTypecheckCommand(packageManager, options.constraints, checkout);
   return {
     ...(typecheck.length > 0 ? { typecheck } : {}),
-    tests: resolveTestCommand(packageManager, options.constraints),
+    tests: resolveTestCommand(packageManager, options.constraints, checkout),
   };
 }
 
@@ -195,6 +197,17 @@ export async function runRepairAttempt(
   try {
     const packageManager = (options.packageManager as PackageManager | undefined) ?? detectPackageManager(checkout.path);
     const before = await createProjectSnapshot(checkout.path);
+
+    // What the repository remembers, read once and shown to the agent as data.
+    let memory: string | undefined;
+    try {
+      memory = renderMemoryForAgent(request.cwd, item.packageName);
+    } catch (error) {
+      transcript.push({
+        step: 0,
+        text: `memory is unreadable and was not shown to the agent: ${error instanceof Error ? error.message : String(error)}`,
+      });
+    }
 
     const upgraded = await deps.applyUpgrade(item, checkout.path, options);
     if (!upgraded.applied) {
@@ -288,6 +301,7 @@ export async function runRepairAttempt(
           round: rounds,
           failure: failureOf(verification),
           previousRounds: [...previousRounds],
+          ...(memory ? { memory } : {}),
         },
         {
           worktree: checkout.path,
@@ -297,6 +311,11 @@ export async function runRepairAttempt(
           },
           signal: request.signal,
           commands: commandsFor(checkout.path, options, packageManager),
+          proposeMemory: (proposal) =>
+            proposeMemory(request.cwd, proposal, {
+              runId: request.runId,
+              attemptId: request.attemptId,
+            }),
         },
       );
       } catch (error) {

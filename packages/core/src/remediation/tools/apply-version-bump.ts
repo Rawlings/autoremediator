@@ -222,7 +222,7 @@ export const applyVersionBumpTool = defineTool({
     const newRange = isDowngrade ? toVersion : `${prefix}${toVersion}`;
 
     const effectiveInstallCommand = resolveInstallCommand(pm, commandConstraints, yarnMajor);
-    const effectiveTestCommand = resolveTestCommand(pm, commandConstraints);
+    const effectiveTestCommand = resolveTestCommand(pm, commandConstraints, cwd);
     const effectiveTypecheckCommand = resolveTypecheckCommand(pm, commandConstraints, cwd);
     const effectiveDedupeCommand = resolveDedupeCommand(pm, commandConstraints);
     const shouldTypecheck = typecheck || Boolean(commandConstraints.typecheck);

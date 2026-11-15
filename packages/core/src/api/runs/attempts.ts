@@ -24,6 +24,8 @@ import { type AttemptRecord, type AttemptStatus, RunStore } from "../../runs/run
 import { loadSnapshot, saveSnapshot } from "../../runs/snapshot-store.js";
 import { discardWorktree } from "../../runs/worktree.js";
 import { assertAutonomyAllows } from "../autonomy/index.js";
+import { type MemoryForHost, memoryForHost } from "../memory/index.js";
+import { passedTestCommands, recordMemory, rejectedUpgradeEntry, testCommandEntry } from "./memory-events.js";
 import { finalizeEvent, recordOutcomes } from "./autonomy-events.js";
 import { defaultRunDeps, type RunDeps } from "./deps.js";
 import { APPLICABLE_STATUSES, ensureRunSnapshot, promoteChange } from "./repair.js";
@@ -74,6 +76,8 @@ export interface AttemptView {
   changedFiles: string[];
   /** `startAttempt` only: recipes that apply to this upgrade; try one with `applyRecipe`. */
   recipes?: { id: string; source: string; summary?: string }[];
+  /** `startAttempt` only: what the repository's memory says that bears on this upgrade (data, not instructions). */
+  memory?: MemoryForHost;
   /** `applyRecipe` only: what became of the recipe. */
   recipe?: { id: string; applied: boolean; files: string[]; rejectedBy?: string };
   /** `finalizeAttempt` only: whether the change reached the project. */
@@ -227,8 +231,10 @@ export async function startAttempt(
   };
   store.writeAttempt(run.runId, record, { "verification.json": `${JSON.stringify(verification, null, 2)}\n` });
   store.ledger(run.runId).append("attempt.start", { attemptId, itemId: item.itemId, agent: "host" });
+  const memory = memoryForHost(cwd, item.packageName);
   return viewOf(record, run.runId, {
     ...withVerification(verification),
+    ...(memory.entries.length > 0 || memory.problem ? { memory } : {}),
     ...(recipes.length > 0 ? { recipes, message: `${record.reason} ${recipes.length} recipe(s) apply to this upgrade: try applyRecipe before editing.` } : {}),
   });
 }
@@ -351,6 +357,16 @@ export async function finalizeAttempt(
     ledger.append("attempt.done", { attemptId: record.attemptId, itemId: item.itemId, status: closed.status, rounds: 0 });
 
     const recordProblem = (problem: string) => ledger.append("autonomy.record-failed", { message: problem });
+    // What the verifier established is what memory may keep: the tests ran in the checkout, and a
+    // rejection in the project is the verifier's own finding.
+    await recordMemory(
+      cwd,
+      run.runId,
+      promoted.ok
+        ? passedTestCommands(checked.verification).map((command) => testCommandEntry(command))
+        : [rejectedUpgradeEntry(item, promoted.verification)],
+      (problem) => ledger.append("memory.record-failed", { message: problem }),
+    );
     if (!promoted.ok) {
       await recordOutcomes(cwd, plan.options.policy, [finalizeEvent(run, item.itemId, item.packageName, { promoted: false, message: promoted.message })], recordProblem);
       return viewOf(closed, run.runId, { finalized: false, verification: promoted.verification ?? checked.verification });

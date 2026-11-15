@@ -15,6 +15,8 @@ export interface CheckResult {
   message: string;
   /** Specifics that make a failure actionable (files, packages, command output tail). */
   details?: string[];
+  /** The command the check ran (`tests`), so a run can record how this project's tests run. */
+  command?: string[];
   durationMs: number;
 }
 

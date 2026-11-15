@@ -1,0 +1,62 @@
+export {
+  addDays,
+  cleanLine,
+  entryId,
+  entryLine,
+  instructionShaped,
+  isAutoRecorded,
+  isExpired,
+  MEMORY_ID,
+  MEMORY_KINDS,
+  MEMORY_LIMITS,
+  MEMORY_STATUSES,
+  parseEntry,
+  parseTestCommand,
+  type MemoryEntry,
+  type MemoryKind,
+  type MemoryStatus,
+  type StoredEntry,
+} from "./entries.js";
+export {
+  FENCE_INFO,
+  MemoryFileError,
+  MemoryFullError,
+  parseDocument,
+  serializeDocument,
+  type MemoryDocument,
+} from "./format.js";
+export {
+  constraintsFrom,
+  entriesFor,
+  loadMemoryConstraints,
+  memoryTestCommand,
+  pinnedMessage,
+  publicEntry,
+  rejectedMessage,
+  renderMemoryForAgent,
+  type MemoryConstraints,
+} from "./consume.js";
+export { MEMORY_PATH } from "./path.js";
+export {
+  acceptMemory,
+  addMemory,
+  buildEntry,
+  countByKind,
+  memoryPathOf,
+  pruneMemory,
+  readMemory,
+  removeMemory,
+  viewEntries,
+  type AddMemoryOptions,
+  type AddMemoryResult,
+  type MemoryState,
+  type MemoryView,
+  type NewMemoryEntry,
+} from "./store.js";
+export {
+  entryFromProposal,
+  MAX_PROPOSALS_PER_ATTEMPT,
+  proposeMemory,
+  PROPOSAL_KINDS,
+  type MemoryProposal,
+} from "./propose.js";

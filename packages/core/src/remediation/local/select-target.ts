@@ -15,7 +15,9 @@ export interface SkippedCandidate {
 export type TargetSelection =
   | { status: "selected"; version: string; knownAdvisories?: number; skipped: SkippedCandidate[] }
   | { status: "no-safe-version" }
-  | { status: "trust-blocked"; version: string; reason?: string };
+  | { status: "trust-blocked"; version: string; reason?: string }
+  /** Every fixed version was rejected earlier (see remediation memory). */
+  | { status: "memory-blocked"; version: string; reason: string };
 
 export interface SelectTargetParams {
   packageName: string;
@@ -26,6 +28,8 @@ export interface SelectTargetParams {
   supplyChainPolicy?: SupplyChainPolicy;
   /** Skip the advisory lookup on candidate versions (offline intelligence). */
   offline?: boolean;
+  /** Versions of this package that remediation memory says were tried and rejected, with why. */
+  rejected?: ReadonlyMap<string, string>;
 }
 
 export interface SelectTargetDeps {
@@ -63,7 +67,18 @@ export async function selectUpgradeTarget(
   let firstBlocked: { version: string; reason?: string } | undefined;
   let withAdvisories: { version: string; count: number } | undefined;
 
-  for (const version of resolution.ordered.slice(0, MAX_CANDIDATES_CHECKED)) {
+  // Versions memory says were rejected are passed over, and do not use up the candidates examined.
+  const remembered = resolution.ordered.filter((version) => params.rejected?.has(version));
+  for (const version of remembered) {
+    skipped.push({ version, reason: params.rejected!.get(version)! });
+  }
+  const candidates = resolution.ordered.filter((version) => !params.rejected?.has(version));
+  if (candidates.length === 0 && remembered.length > 0) {
+    const [first] = remembered;
+    return { status: "memory-blocked", version: first!, reason: params.rejected!.get(first!)! };
+  }
+
+  for (const version of candidates.slice(0, MAX_CANDIDATES_CHECKED)) {
     const trust = await deps.verifyTrust(
       params.packageName,
       version,

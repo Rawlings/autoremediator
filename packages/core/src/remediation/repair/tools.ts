@@ -5,6 +5,11 @@ import { tool, type ToolSet } from "ai";
 import { z } from "zod";
 
 import type { RepairBudget, RepairCommands } from "../../platform/repair-agent.js";
+import {
+  MAX_PROPOSALS_PER_ATTEMPT,
+  type MemoryProposal,
+  PROPOSAL_KINDS,
+} from "../../platform/memory/propose.js";
 import { runCommandCheck, tail } from "../verify/command-check.js";
 import { type ScopeGuard, ScopeViolation } from "./scope-guard.js";
 
@@ -25,6 +30,8 @@ export interface RepairState {
   filesChanged: Set<string>;
   submitted?: string;
   gaveUp?: string;
+  /** Memory proposals made so far in this attempt. */
+  memoryProposals?: number;
 }
 
 export interface RepairToolContext {
@@ -32,6 +39,8 @@ export interface RepairToolContext {
   commands: RepairCommands;
   budget: RepairBudget;
   state: RepairState;
+  /** Present when the host takes memory proposals; adds the `proposeMemory` tool. */
+  proposeMemory?: (proposal: MemoryProposal) => Promise<string>;
 }
 
 const refuse = (error: unknown): string => {
@@ -62,9 +71,37 @@ function* walk(dir: string): Generator<string> {
 
 /** The tools a built-in agent works with. Each is confined by the guard; none runs free-form commands. */
 export function createRepairTools(context: RepairToolContext): ToolSet {
-  const { guard, commands, budget, state } = context;
+  const { guard, commands, budget, state, proposeMemory } = context;
+
+  const memoryTools: ToolSet = proposeMemory
+    ? {
+        proposeMemory: tool({
+          description:
+            "Propose a short, factual note for the repository's memory, for a person to review: how its tests run, a flaky test, a package that must stay pinned, an upgrade that cannot work, an install quirk. It is stored as a proposal and changes nothing until a person accepts it. Facts only, one line, no instructions or links. A few per attempt at most.",
+          inputSchema: z.object({
+            kind: z.enum(PROPOSAL_KINDS),
+            text: z
+              .string()
+              .optional()
+              .describe("test-command: the command (e.g. pnpm run test:unit); flaky-test: the test; install-quirk and note: the fact"),
+            package: z.string().optional().describe("pinned-package and rejected-upgrade"),
+            fromVersion: z.string().optional().describe("rejected-upgrade"),
+            toVersion: z.string().optional().describe("rejected-upgrade"),
+            reason: z.string().optional().describe("pinned-package and rejected-upgrade: why; flaky-test: an optional note"),
+          }),
+          execute: async (proposal) => {
+            if ((state.memoryProposals ?? 0) >= MAX_PROPOSALS_PER_ATTEMPT) {
+              return `Refused: at most ${MAX_PROPOSALS_PER_ATTEMPT} proposals per attempt.`;
+            }
+            state.memoryProposals = (state.memoryProposals ?? 0) + 1;
+            return proposeMemory(proposal);
+          },
+        }),
+      }
+    : {};
 
   return {
+    ...memoryTools,
     readFile: tool({
       description:
         "Read a text file in the project (line-numbered). Use startLine/endLine for large files. Credentials and git internals are not readable.",

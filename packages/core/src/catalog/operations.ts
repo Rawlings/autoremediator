@@ -40,6 +40,7 @@ import { POLICY_OPERATIONS } from "./policy-operations.js";
 import { MAINTAINER_VEX_OPERATIONS } from "./maintainer-vex-operations.js";
 import { PROVE_OPERATIONS } from "./prove-operations.js";
 import { RADAR_OPERATIONS } from "./radar-operations.js";
+import { MEMORY_OPERATIONS } from "./memory-operations.js";
 import { RESPONSES } from "./responses.js";
 import { defineOperation, type Operation, type OperationContext } from "./define-operation.js";
 
@@ -777,6 +778,7 @@ export const OPERATIONS: readonly Operation[] = [
   ...PROVE_OPERATIONS,
   ...RADAR_OPERATIONS,
   ...FRESHNESS_OPERATIONS,
+  ...MEMORY_OPERATIONS,
 ];
 
 export function getOperation(name: string): Operation | undefined {

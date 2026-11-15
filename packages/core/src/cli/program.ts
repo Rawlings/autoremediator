@@ -45,6 +45,7 @@ import { registerPolicyCommands } from "./policy-commands.js";
 import { registerMaintainCommands } from "./maintain-commands.js";
 import { registerProveCommands } from "./prove-commands.js";
 import { registerRadarCommands } from "./radar-commands.js";
+import { registerMemoryCommands } from "./memory-commands.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
 import { validateOutputFormat, validateSharedCommandOptions } from "./validators.js";
@@ -167,7 +168,11 @@ function addSharedOptions(
     .option("--proof-of-fix", OPTION_DESCRIPTIONS.proofOfFix)
     .option("--require-proof-of-fix", OPTION_DESCRIPTIONS.requireProofOfFix)
     .option("--reproduction-test <path>", OPTION_DESCRIPTIONS.reproductionTest)
-    .option("--breaking-change-refactor", OPTION_DESCRIPTIONS.breakingChangeRefactor);
+    .option("--breaking-change-refactor", OPTION_DESCRIPTIONS.breakingChangeRefactor)
+    .option(
+      "--ignore-memory",
+      "Plan as if the repository's memory were empty: ignore pinned packages and rejected upgrades in .autoremediator/memory.md",
+    );
 
   if (includeSimulationMode) {
     program.option("--simulation-mode", OPTION_DESCRIPTIONS.simulationMode);
@@ -359,6 +364,7 @@ export function createProgram(): Command {
   registerProveCommands(program);
   registerRadarCommands(program);
   registerFreshnessCommands(program);
+  registerMemoryCommands(program);
 
   program
     .command("init")

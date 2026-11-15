@@ -18,6 +18,7 @@ import {
   type RepairOutcome,
   type RepairTask,
 } from "../../platform/repair-agent.js";
+import { addMemory, readMemory } from "../../platform/memory/index.js";
 import type { PlanItem } from "../../runs/plan.js";
 import { createWorktree } from "../../runs/worktree.js";
 import { type AttemptDeps, defaultAttemptDeps, runRepairAttempt } from "./attempt.js";
@@ -177,6 +178,45 @@ describe("runRepairAttempt", () => {
     expect(agent.calls[0]?.failure.details[0]).toContain("TS2554");
     expect(read("src/a.ts")).toBe("import { f } from 'dep';\nf(1, 2);\n");
     expect(read("package.json")).toContain("1.0.0");
+  });
+
+  it("shows the agent what the repository remembers, and lets it propose, not record", async () => {
+    await addMemory(dir, { kind: "install-quirk", text: "install needs python3" });
+    await addMemory(dir, { kind: "pinned-package", package: "unrelated", reason: "not this one" });
+    await addMemory(dir, { kind: "note", text: "only proposed", status: "proposed", source: "agent" });
+    const agent = agentThat(async (_task, env) => {
+      fixesTheCall(env);
+      const answer = await env.proposeMemory!({ kind: "flaky-test", text: "src/a.test.ts", reason: "slow" });
+      expect(answer).toMatch(/^Proposed mem_/);
+      return outcome();
+    });
+
+    const result = await runRepairAttempt(request(agent), deps());
+
+    expect(result.status).toBe("verified");
+    const shown = agent.calls[0]?.memory ?? "";
+    expect(shown).toContain("install needs python3");
+    expect(shown).not.toContain("unrelated");
+    expect(shown).not.toContain("only proposed");
+    // The proposal went to the project's memory (not the checkout), as a proposal.
+    expect(readMemory(dir).entries.filter((entry) => entry.kind === "flaky-test")).toMatchObject([
+      { status: "proposed", source: "agent:run_aaaaaaaaaaaaaaaaaaaa" },
+    ]);
+  });
+
+  it("still repairs when the memory file cannot be read, and says so in the transcript", async () => {
+    mkdirSync(join(dir, ".autoremediator"), { recursive: true });
+    writeFileSync(join(dir, ".autoremediator", "memory.md"), "x".repeat(1024 * 1024 + 1));
+    const agent = agentThat((_task, env) => {
+      fixesTheCall(env);
+      return outcome();
+    });
+
+    const result = await runRepairAttempt(request(agent), deps());
+
+    expect(result.status).toBe("verified");
+    expect(agent.calls[0]?.memory).toBeUndefined();
+    expect(result.transcript.some((entry) => entry.text.includes("memory is unreadable"))).toBe(true);
   });
 
   it("does not involve the agent when the upgrade already works", async () => {
