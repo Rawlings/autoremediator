@@ -256,3 +256,23 @@ export {
   type Transition as AutonomyTransition,
   type WindowStats as AutonomyWindowStats,
 } from "./autonomy/index.js";
+export {
+  analyzeDependencies,
+  removeUnusedDependencies,
+  type AnalyzeDependenciesOptions,
+  type AttackSurface,
+  type DependencyDietReport,
+  type DietApplyResult,
+  type DietApplyStatus,
+  type DietPackageReport,
+  type DuplicatePackage,
+  type DuplicatesReport,
+  type DuplicateVerdict,
+  type RemovedDependency,
+  type RemoveUnusedDependenciesOptions,
+  type ReplaceableDependency,
+  type ReplaceableStatus,
+  type SurfaceComponent,
+  type UnusedClassification,
+  type UnusedDependency,
+} from "./diet/index.js";

@@ -584,6 +584,36 @@ export const OPERATIONS: readonly Operation[] = [
     handler: (options, context) => context.api.getAutonomyFn(options),
   }),
   defineOperation({
+    name: "analyzeDependencies",
+    title: "Analyse dependencies for removal",
+    description:
+      "Find what the project could stop depending on: declared dependencies nothing uses (certainly-unused, probably-unused or used-indirectly, each with its reason), micro-packages a Node built-in now replaces (checked against the project's declared Node range), the same package installed at several versions with who pulls each and whether a dedupe stays within range, and a 0-100 attack-surface score with its breakdown. Reads the project, lockfile and installed packages; needs no network and changes nothing.",
+    input: z.object({ cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional() }).strict(),
+    annotations: READ_ONLY,
+    response: RESPONSES.dietReport,
+    mcp: true,
+    http: { method: "POST", path: "/packages/diet", positional: [] },
+    handler: ({ cwd }, context) => context.api.analyzeDependenciesFn({ cwd }),
+  }),
+  defineOperation({
+    name: "removeUnusedDependencies",
+    title: "Remove unused dependencies",
+    description:
+      "Remove only the dependencies analyzeDependencies calls certainly-unused through the package manager (npm or pnpm), then verify the result (scope, policy, frozen install, and the type check and tests when asked) and restore everything if any check fails. Never touches probably-unused dependencies, replaceable packages or duplicates. Command line and SDK only.",
+    input: z
+      .object({
+        cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional(),
+        policy: pathField(OPTION_DESCRIPTIONS.policy).optional(),
+        runTests: z.boolean().optional().describe("Run the project's tests as part of verification. Default false."),
+        typecheck: z.boolean().optional().describe("Type-check as part of verification. Default true."),
+      })
+      .strict(),
+    annotations: MUTATING,
+    response: RESPONSES.dietApply,
+    mcp: false,
+    handler: (options, context) => context.api.removeUnusedDependenciesFn(options),
+  }),
+  defineOperation({
     name: "scanDelta",
     title: "Scan a git delta",
     description:

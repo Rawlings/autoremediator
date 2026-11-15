@@ -243,5 +243,29 @@ export const RESPONSES = {
       nextPromotion: { type: "object" },
     }),
   },
+  dietReport: {
+    description: "DependencyDietReport",
+    schema: object({
+      schemaVersion: { type: "string" },
+      cwd: { type: "string" },
+      root: { type: "string" },
+      packageManager: { type: "string" },
+      packages: { type: "array", items: { type: "object" } },
+      duplicates: { type: "object" },
+      attackSurface: { type: "object" },
+      summary: { type: "object" },
+      notes: { type: "array", items: { type: "string" } },
+    }),
+  },
+  dietApply: {
+    description: "DietApplyResult",
+    schema: object({
+      status: { type: "string", enum: ["removed", "rolled-back", "nothing-to-remove", "failed"] },
+      removals: { type: "array", items: { type: "object" } },
+      verification: { type: "object" },
+      message: { type: "string" },
+      report: { type: "object" },
+    }),
+  },
   health: { description: "Server is healthy", schema: object({ status: { type: "string" } }) },
 } as const satisfies Record<string, ResponseSpec>;
