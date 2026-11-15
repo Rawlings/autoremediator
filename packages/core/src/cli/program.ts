@@ -7,8 +7,10 @@ import { OPTION_DESCRIPTIONS } from "../api/index.js";
 import { PACKAGE_VERSION } from "../version.js";
 import { type AutonomyCliOptions, runAutonomy } from "./autonomy.js";
 import {
+  runAssess,
   runDiffAudit,
   runEvaluate,
+  runSymbols,
   runInspectPatch,
   runListPatches,
   runPortfolio,
@@ -634,6 +636,65 @@ export function createProgram(): Command {
           version: targetVersion,
           outputFormat: opts.outputFormat,
         });
+      },
+    );
+
+  program
+    .command("assess <package>")
+    .description(
+      "How likely is upgrading a package to break this project? Compares two versions' public API, engines, module format and peers against the project's own usage (e.g. assess lodash --from 4.17.20 --to 4.17.21)",
+    )
+    .requiredOption("--from <version>", "Version the project uses now")
+    .requiredOption("--to <version>", "Version being considered")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(
+      async (
+        pkg: string,
+        opts: { cwd?: string; from: string; to: string; outputFormat?: string },
+      ) => {
+        validateOutputFormat(
+          (opts.outputFormat ?? "text") as "text" | "json",
+          ["text", "json"],
+          "assess",
+        );
+        await runAssess(pkg, opts);
+      },
+    );
+
+  program
+    .command("symbols <package>")
+    .description(
+      "Heuristic: list the exports that changed between a vulnerable version and its fix, ranked and checked for reachability from this project",
+    )
+    .requiredOption("--from <version>", "The vulnerable version")
+    .requiredOption("--to <version>", "The version that fixes it")
+    .option("--advisory-text <text>", "Advisory summary or details, used only to rank candidates")
+    .option("--cwe <ids>", "Comma-separated CWE ids (CWE-1333,CWE-94), used only to rank candidates")
+    .option("--limit <n>", "Largest number of candidates to show", (value) => Number.parseInt(value, 10))
+    .option("--no-reachability", "Skip checking candidates against this project's source")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(
+      async (
+        pkg: string,
+        opts: {
+          cwd?: string;
+          from: string;
+          to: string;
+          advisoryText?: string;
+          cwe?: string;
+          limit?: number;
+          reachability?: boolean;
+          outputFormat?: string;
+        },
+      ) => {
+        validateOutputFormat(
+          (opts.outputFormat ?? "text") as "text" | "json",
+          ["text", "json"],
+          "symbols",
+        );
+        await runSymbols(pkg, opts);
       },
     );
 

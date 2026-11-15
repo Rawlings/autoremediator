@@ -38,6 +38,9 @@ import { RESPONSES } from "./responses.js";
 import { defineOperation, type Operation, type OperationContext } from "./define-operation.js";
 
 const cveId = z.string("cveId is required (string)").min(1, "cveId is required (string)");
+const exactVersion = z
+  .string("an exact version is required (string)")
+  .regex(/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.+-]+)?$/, "must be an exact semver version such as 4.17.21");
 const inputPath = z
   .string("inputPath is required (string)")
   .min(1, "inputPath is required (string)")
@@ -719,6 +722,48 @@ export const OPERATIONS: readonly Operation[] = [
     response: RESPONSES.bisectReport,
     mcp: false,
     handler: (options, context) => context.api.bisectLockfileFn(options),
+  }),
+  defineOperation({
+    name: "assessUpgrade",
+    title: "Assess an upgrade",
+    description:
+      "How likely is upgrading an npm package from one version to another to break this project? Downloads both versions, compares their public API (declaration files, else JavaScript exports), engines, module format, exports map and peer dependencies, then intersects the changes with the project's own usage. Returns a High, Medium or Low rating with the affected file:line call sites and the reasons. Deterministic and explainable; a heuristic that cannot see types for untyped packages. Changes nothing.",
+    input: z
+      .object({
+        packageName: packageNameSchema.describe("Package to assess."),
+        from: exactVersion.describe("Version the project uses now."),
+        to: exactVersion.describe("Version being considered."),
+        cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional(),
+      })
+      .strict(),
+    annotations: READ_ONLY_NETWORK,
+    response: RESPONSES.upgradeImpact,
+    mcp: true,
+    http: { method: "POST", path: "/packages/assess-upgrade", positional: ["packageName", "from", "to"] },
+    handler: (input, context) => context.api.assessUpgradeFn(input),
+  }),
+  defineOperation({
+    name: "findVulnerableSymbols",
+    title: "Find candidate vulnerable symbols",
+    description:
+      "Heuristic. Diff a vulnerable version of an npm package against the version that fixes it and list the exported functions, classes and files whose implementation changed (formatting and comments ignored), ranked by how closely the change matches the advisory text or CWE ids if given, with each candidate checked for reachability from the project's source. A changed symbol is a candidate, not proof it was the vulnerable one. Changes nothing.",
+    input: z
+      .object({
+        packageName: packageNameSchema.describe("Package to diff."),
+        from: exactVersion.describe("The vulnerable version."),
+        to: exactVersion.describe("The version that fixes it."),
+        cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional(),
+        advisoryText: z.string().max(20_000).optional().describe("Advisory summary or details; used only to rank candidates."),
+        cwes: z.array(z.string().max(20)).max(20).optional().describe("CWE ids such as CWE-1333; used only to rank candidates."),
+        limit: z.number().int().min(1).max(200).optional().describe("Largest number of candidates to return (default 25)."),
+        checkReachability: z.boolean().optional().describe("Check each candidate against the project's source (default true)."),
+      })
+      .strict(),
+    annotations: READ_ONLY_NETWORK,
+    response: RESPONSES.vulnerableSymbols,
+    mcp: true,
+    http: { method: "POST", path: "/packages/vulnerable-symbols", positional: ["packageName", "from", "to"] },
+    handler: (input, context) => context.api.findVulnerableSymbolsFn(input),
   }),
 ];
 

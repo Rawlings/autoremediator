@@ -6,9 +6,11 @@ import {
   removeUnusedDependencies,
   applyPlan,
   applyRecipe,
+  assessUpgrade,
   checkReachability,
   evaluatePackage,
   finalizeAttempt,
+  findVulnerableSymbols,
   getRun,
   guardPackage,
   init,
@@ -78,6 +80,8 @@ export interface ApiDeps {
   getAutonomyFn: typeof getAutonomy;
   analyzeDependenciesFn: typeof analyzeDependencies;
   removeUnusedDependenciesFn: typeof removeUnusedDependencies;
+  assessUpgradeFn: typeof assessUpgrade;
+  findVulnerableSymbolsFn: typeof findVulnerableSymbols;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -119,4 +123,6 @@ export const defaultApiDeps: ApiDeps = {
   getAutonomyFn: getAutonomy,
   analyzeDependenciesFn: analyzeDependencies,
   removeUnusedDependenciesFn: removeUnusedDependencies,
+  assessUpgradeFn: assessUpgrade,
+  findVulnerableSymbolsFn: findVulnerableSymbols,
 };

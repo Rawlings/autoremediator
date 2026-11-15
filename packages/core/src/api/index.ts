@@ -174,6 +174,22 @@ export type {
   RuntimeReachabilityVerdict,
 } from "../platform/types.js";
 export { evaluatePackage } from "./evaluate/index.js";
+export {
+  assessUpgrade,
+  findVulnerableSymbols,
+  IMPACT_POINTS,
+  MEDIUM_THRESHOLD,
+  type AssessUpgradeInput,
+  type AssessUpgradeResult,
+  type Breakability,
+  type CallSite,
+  type CandidateBasis,
+  type FindVulnerableSymbolsInput,
+  type FixDiff,
+  type ImpactFinding,
+  type VulnerableSymbolCandidate,
+  type VulnerableSymbolsResult,
+} from "./assess/index.js";
 export { scanDelta } from "./delta-scan/index.js";
 export { init, AGENT_HOSTS } from "./init/index.js";
 export { installHooks, HOOK_MANAGERS, HOOK_NAMES } from "./hooks/index.js";
