@@ -41,6 +41,12 @@ export interface VerifyOptions {
   allowSourceEdits?: boolean;
   /** Skip checks that need the network. */
   offline?: boolean;
+  /**
+   * Leave the autonomy track record (a committed file Autoremediator itself appends to after each
+   * run) out of the scope check. Set only when judging the project itself, never a checkout an
+   * agent has been editing, so an agent cannot raise its own level.
+   */
+  ignoreTrackRecord?: boolean;
 }
 
 export interface VerifyRequest {

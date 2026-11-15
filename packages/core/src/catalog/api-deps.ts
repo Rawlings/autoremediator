@@ -1,6 +1,7 @@
 import {
   abandonAttempt,
   bisectLockfile,
+  getAutonomy,
   applyPlan,
   applyRecipe,
   checkReachability,
@@ -72,6 +73,7 @@ export interface ApiDeps {
   listRecipesFn: typeof listRecipes;
   applyRecipeFn: typeof applyRecipe;
   bisectLockfileFn: typeof bisectLockfile;
+  getAutonomyFn: typeof getAutonomy;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -110,4 +112,5 @@ export const defaultApiDeps: ApiDeps = {
   listRecipesFn: listRecipes,
   applyRecipeFn: applyRecipe,
   bisectLockfileFn: bisectLockfile,
+  getAutonomyFn: getAutonomy,
 };

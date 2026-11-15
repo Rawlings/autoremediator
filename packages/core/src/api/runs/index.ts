@@ -8,7 +8,7 @@ import {
   type RepairAgent,
   type RepairBudget,
 } from "../../platform/repair-agent.js";
-import type { PatchResult, RemediateOptions, RemediationReport } from "../../platform/types.js";
+import type { AutonomySummary, PatchResult, RemediateOptions, RemediationReport } from "../../platform/types.js";
 import { resolveConstraints } from "../context.js";
 import { resolveLanguageModel } from "../../remediation/patch/model.js";
 import { createBuiltinRepairAgent } from "../../remediation/repair/builtin-agent.js";
@@ -18,6 +18,8 @@ import type { StepEvent } from "../../runs/ledger.js";
 import { buildPlan, type PlanItem, type PlanOptions, type PlanSkip, type RemediationPlan } from "../../runs/plan.js";
 import { RunStore, type AttemptRecord, type RunRecord, type RunStatus } from "../../runs/run-store.js";
 import { loadSnapshot } from "../../runs/snapshot-store.js";
+import { assertAutonomyAllows, summarizeAutonomy } from "../autonomy/index.js";
+import { applyEvents, autonomyForReport, recordOutcomes, rollbackEvent, verifyEvents } from "./autonomy-events.js";
 import { defaultRunDeps, type RunDeps } from "./deps.js";
 import { hasRecipeFor } from "./recipes.js";
 import {
@@ -126,6 +128,8 @@ export interface RunReport {
   pending: string[];
   skipped: PlanSkip[];
   message: string;
+  /** Set when the policy configures earned autonomy: the level in force and what it says about this run. */
+  autonomy?: AutonomySummary;
 }
 
 export interface RunDetails {
@@ -338,6 +342,9 @@ export async function applyPlan(
   }
   const plan = store.readPlan(runId);
   if (!plan) throw new Error(`Run ${runId} has no plan.`);
+  // Earned autonomy (opt-in via the policy): below L2 nothing is changed, and the reason is given.
+  assertAutonomyAllows(cwd, plan.options.policy, "apply", `Applying run ${runId}`);
+  const levelBefore = summarizeAutonomy(cwd, plan.options.policy)?.level;
 
   const ledger = store.ledger(runId);
   const chain = ledger.verify();
@@ -512,6 +519,11 @@ export async function applyPlan(
     store.update(runId, { status, ...(failure ? { error: failure } : {}) });
     ledger.append("apply.end", { status });
 
+    await recordOutcomes(cwd, plan.options.policy, applyEvents(run, plan.options, outcomes), (problem) =>
+      ledger.append("autonomy.record-failed", { message: problem }),
+    );
+    const autonomy = autonomyForReport(cwd, plan.options.policy, status, outcomes, plan, levelBefore);
+
     return {
       runId,
       planId: plan.planId,
@@ -521,6 +533,7 @@ export async function applyPlan(
       pending: plan.items.filter((item) => !applied.has(item.itemId)).map((item) => item.itemId),
       skipped: plan.skipped,
       message: summarize(status, outcomes, plan),
+      ...(autonomy ? { autonomy } : {}),
     };
   } finally {
     release();
@@ -589,6 +602,7 @@ export async function rollbackRun(
   try {
     const plan = store.readPlan(runId);
     const policy = plan?.options.policy;
+    const appliedBefore = appliedCount(store, runId);
     const current = await fingerprintRepo(cwd, policy);
     if (!options.force && !sameInputs(current, run.after ?? run.base)) {
       throw new Error(
@@ -624,6 +638,12 @@ export async function rollbackRun(
       reinstalled,
       forced: Boolean(options.force),
     });
+    await recordOutcomes(
+      cwd,
+      policy,
+      rollbackEvent(run, plan, appliedBefore, { restoredFiles: snapshot.fileSnapshots.size, forced: Boolean(options.force) }),
+      (problem) => store.ledger(runId).append("autonomy.record-failed", { message: problem }),
+    );
 
     return {
       runId,
@@ -639,6 +659,14 @@ export async function rollbackRun(
   }
 }
 
+
+/** Items the run has applied, from its ledger. */
+function appliedCount(store: RunStore, runId: string): number {
+  return store
+    .ledger(runId)
+    .read()
+    .filter((event) => event.type === "item.done" && event.data["status"] === "applied").length;
+}
 
 function describeRollback(matchesBase: boolean, reinstalled: boolean, note?: string): string {
   const files = matchesBase
@@ -716,6 +744,8 @@ export async function verifyRun(
     options: {
       ...verifyOptionsOf(plan.options),
       allowSourceEdits: run.allowSourceEdits === true || plan.options.breakingChangeRefactor,
+      // Earlier runs append to the committed track record after this run's snapshot was taken.
+      ignoreTrackRecord: true,
       ...(options.offline ? { offline: true } : {}),
     },
     ...(options.checks ? { checks: options.checks } : {}),
@@ -727,6 +757,9 @@ export async function verifyRun(
     ...(result.failedCheck ? { failedCheck: result.failedCheck } : {}),
     checks: result.checks.map((check) => `${check.name}:${check.status}`),
   });
+  await recordOutcomes(cwd, plan.options.policy, verifyEvents(run, plan, applied.size, result), (problem) =>
+    store.ledger(runId).append("autonomy.record-failed", { message: problem }),
+  );
   return { runId, ...result };
 }
 

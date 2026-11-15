@@ -234,3 +234,17 @@ export {
   type BisectStep,
   type BisectStepKind,
 } from "./bisect/index.js";
+export {
+  getAutonomy,
+  AutonomyRefusedError,
+  LEVEL_NAMES as AUTONOMY_LEVEL_NAMES,
+  TRACK_RECORD_PATH,
+  type AutonomyConfig,
+  type AutonomyLevel,
+  type AutonomyStatus,
+  type AutonomySummary,
+  type GetAutonomyOptions,
+  type TrackEvent,
+  type Transition as AutonomyTransition,
+  type WindowStats as AutonomyWindowStats,
+} from "./autonomy/index.js";

@@ -150,6 +150,19 @@ export const OPTION_DESCRIPTIONS = {
   constraints: "Orchestration constraints that limit how remediation may change the project",
   changeRequest: "Native pull request / merge request creation controls",
   changeRequestEnabled: "Enable creation of native pull request / merge request after remediation",
+  autonomy:
+    "Earned autonomy: the policy sets a ceiling level (L0 observe, L1 suggest, L2 open pull request, L3 auto-merge-eligible, L4 autonomous with escalation) and the repository's own verified track record sets the level actually in force",
+  autonomyCeiling: "Highest autonomy level this repository may ever act at (L0 to L4)",
+  autonomyMinVerifiedRuns:
+    "Verified runs in the recent window needed for L3 (twice as many for L4). Default 5",
+  autonomyWindow: "How many of the most recent outcomes count as recent. Default 20",
+  autonomyMinSuccessRate:
+    "Share of recent runs that must be verified successes (0..1) for L3 and L4. Default 0.9",
+  autonomyCooldownDays:
+    "Days a rollback or verifier failure keeps the level capped (L1 after one, L0 after two). Default 7",
+  autonomyRequireTestCoverage:
+    "Require that recent verified runs also passed the project's tests (L3) and type check (L4). Default true",
+  autonomyOptions: "Path to the project's policy file, whose autonomy key is read",
 } as const;
 
 const unitInterval = z.number().min(0).max(1);
@@ -186,6 +199,30 @@ export const constraintsSchema = z
   })
   .partial()
   .strict();
+
+export const AUTONOMY_LEVEL_VALUES = ["L0", "L1", "L2", "L3", "L4"] as const;
+export type AutonomyLevel = (typeof AUTONOMY_LEVEL_VALUES)[number];
+
+/**
+ * The `autonomy` key of the policy file. Only the policy file can set it: the ceiling is a trust
+ * decision, so no wire option (MCP, HTTP, CLI flag) can raise it.
+ */
+export const autonomyPolicySchema = z
+  .object({
+    ceiling: z.enum(AUTONOMY_LEVEL_VALUES).describe(D.autonomyCeiling),
+    minVerifiedRuns: z.number().int().min(1).max(1000).describe(D.autonomyMinVerifiedRuns),
+    window: z.number().int().min(1).max(1000).describe(D.autonomyWindow),
+    minSuccessRate: unitInterval.describe(D.autonomyMinSuccessRate),
+    cooldownDays: z.number().min(0).max(3650).describe(D.autonomyCooldownDays),
+    requireTestCoverage: z.boolean().describe(D.autonomyRequireTestCoverage),
+  })
+  .partial({ minVerifiedRuns: true, window: true, minSuccessRate: true, cooldownDays: true, requireTestCoverage: true })
+  .strict()
+  .refine((value) => (value.window ?? 20) >= 2 * (value.minVerifiedRuns ?? 5), {
+    message: "window must be at least twice minVerifiedRuns, or L4 could never be reached",
+    path: ["window"],
+  });
+export type AutonomyPolicy = z.infer<typeof autonomyPolicySchema>;
 
 export const patchConfidenceThresholdsSchema = z
   .object({
@@ -361,6 +398,14 @@ export const evaluatePackageOptionsSchema = z
     packageManager: z.enum(PACKAGE_MANAGER_VALUES).describe(D.packageManager),
     cwd: pathField("Project root whose .npmrc selects the registry (default: process.cwd())"),
     enrichIntelligence: z.boolean().describe("Enrich with live CISA KEV and EPSS intelligence feeds"),
+  })
+  .partial()
+  .strict();
+
+export const getAutonomyOptionsSchema = z
+  .object({
+    cwd: pathField(D.cwd),
+    policy: pathField(D.autonomyOptions),
   })
   .partial()
   .strict();

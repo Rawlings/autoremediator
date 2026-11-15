@@ -18,6 +18,7 @@ export const RESPONSES = {
   remediationReport: {
     description: "RemediationReport",
     schema: object({
+      autonomy: { type: "object" },
       cveId: { type: "string" },
       cveDetails: { type: ["object", "null"] },
       vulnerablePackages: { type: "array", items: { type: "object" } },
@@ -101,6 +102,7 @@ export const RESPONSES = {
     pending: { type: "array", items: { type: "string" } },
     skipped: { type: "array", items: { type: "object" } },
     message: { type: "string" },
+    autonomy: { type: "object" },
   }) },
   runDetails: { description: "RunDetails", schema: object({
     run: { type: "object" },
@@ -218,6 +220,27 @@ export const RESPONSES = {
       warnings: { type: "array", items: { type: "string" } },
       startedAt: { type: "string" },
       durationMs: { type: "number" },
+    }),
+  },
+  autonomyStatus: {
+    description: "AutonomyStatus",
+    schema: object({
+      configured: { type: "boolean" },
+      message: { type: "string" },
+      cwd: { type: "string" },
+      recordPath: { type: "string" },
+      recordError: { type: "string" },
+      level: { type: "string", enum: ["L0", "L1", "L2", "L3", "L4"] },
+      levelName: { type: "string" },
+      ceiling: { type: "string", enum: ["L0", "L1", "L2", "L3", "L4"] },
+      earned: { type: "string", enum: ["L0", "L1", "L2", "L3", "L4"] },
+      allows: { type: "object" },
+      settings: { type: "object" },
+      evidence: { type: "object" },
+      reasons: { type: "array", items: { type: "string" } },
+      cap: { type: "object" },
+      history: { type: "array", items: { type: "object" } },
+      nextPromotion: { type: "object" },
     }),
   },
   health: { description: "Server is healthy", schema: object({ status: { type: "string" } }) },

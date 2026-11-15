@@ -42,6 +42,8 @@ export function classifyPath(path: string): PathClass {
 export async function changedFilesSince(
   cwd: string,
   statusBefore: readonly string[] | undefined,
+  /** Paths (relative to `cwd`) to leave out, such as bookkeeping the tool itself writes. */
+  ignore: readonly string[] = [],
 ): Promise<string[] | undefined> {
   if (statusBefore === undefined) return undefined;
   let stdout: string;
@@ -63,7 +65,7 @@ export async function changedFilesSince(
     // Porcelain paths are relative to the repository root; report them relative to `cwd`.
     paths.push(root && parsed.filePath.startsWith(root) ? parsed.filePath.slice(root.length) : parsed.filePath);
   }
-  return paths.toSorted();
+  return paths.filter((path) => !ignore.includes(path)).toSorted();
 }
 
 // ---------------------------------------------------------------------------

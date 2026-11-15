@@ -11,6 +11,7 @@ import {
 import { isAbsolute, join, relative, resolve } from "node:path";
 
 import { safeExeca } from "./safe-exec.js";
+import { TRACK_RECORD_PATH } from "./track-record-path.js";
 
 export interface ProjectSnapshot {
   cwd: string;
@@ -144,6 +145,8 @@ function resolveGitStatusPath(snapshot: ProjectSnapshot, filePath: string): stri
   }
   const rel = relative(realCwd, full);
   if (rel === "" || rel.startsWith("..") || isAbsolute(rel)) return null;
+  // The autonomy track record is history, not project state: a rollback must not rewind it.
+  if (rel.replaceAll("\\", "/") === TRACK_RECORD_PATH) return null;
   return join(snapshot.cwd, rel);
 }
 

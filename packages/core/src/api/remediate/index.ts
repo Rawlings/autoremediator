@@ -21,6 +21,7 @@ import {
   writeRemediateEvidence,
 } from "../remediate.evidence.js";
 import { applySimulationMetadata, assertValidSimulationMode } from "../reporting.js";
+import { assertAutonomyAllows, summarizeAutonomy } from "../autonomy/index.js";
 import { persistPlan } from "../runs/index.js";
 import { assertValidCveId } from "./validators.js";
 
@@ -34,6 +35,8 @@ export async function remediate(
 
   const normalizedCveId = cveId.toUpperCase();
   const cwd = options.cwd ?? process.cwd();
+  // Earned autonomy (opt-in via the policy): below L2 nothing may be changed.
+  if (!options.dryRun && !options.preview) assertAutonomyAllows(cwd, options.policy, "apply", "remediate");
   const constraints = resolveConstraints(options, cwd);
   const provenance = resolveProvenanceContext(options);
   const correlation = resolveCorrelationContext(options);
@@ -100,6 +103,8 @@ export async function remediate(
     constraints,
     resumedFromCache: false,
   };
+  const autonomySummary = summarizeAutonomy(cwd, options.policy);
+  if (autonomySummary) finalReport.autonomy = autonomySummary;
 
   if (options.changeRequest?.enabled) {
     finalReport.changeRequests = await createChangeRequestsForReports({
@@ -134,7 +139,14 @@ export async function planRemediation(
 
   // The preview becomes a plan that `applyPlan` can carry out later. `evidence: false` asks for no
   // files to be written, so no run is recorded then.
-  if (options.evidence === false) return report;
-  const { runId, planId } = await persistPlan(report, options, options.cwd ?? process.cwd());
-  return { ...report, runId, planId };
+  const cwd = options.cwd ?? process.cwd();
+  const autonomy = summarizeAutonomy(cwd, options.policy);
+  const withAutonomy = autonomy ? { ...report, autonomy } : report;
+  if (options.evidence === false) return withAutonomy;
+  // At L0 (observe) the findings are reported but no applicable plan is recorded.
+  if (autonomy?.level === "L0") {
+    return { ...withAutonomy, summary: `${report.summary} Autonomy is L0 (observe): no plan was recorded, so there is nothing to apply.` };
+  }
+  const { runId, planId } = await persistPlan(report, options, cwd);
+  return { ...withAutonomy, runId, planId };
 }

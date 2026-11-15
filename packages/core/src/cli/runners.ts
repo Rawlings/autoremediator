@@ -51,6 +51,7 @@ import {
 } from "../api/index.js";
 import type { ChangeRequestProvider } from "../platform/types.js";
 import { PACKAGE_VERSION } from "../version.js";
+import { formatAutonomyLine } from "./autonomy.js";
 import { formatCountMap, logJson } from "./output.js";
 import { runInteractiveTriage } from "./triage.js";
 import type { CommandOptions, OutputFormat } from "./types.js";
@@ -231,6 +232,7 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
   }
 
   process.stdout.write(`${report.summary}\n`);
+  if (report.autonomy) process.stdout.write(`${formatAutonomyLine(report.autonomy)}\n`);
   process.stdout.write(`Results: ${report.results.length}\n`);
   if (
     reportAsScan.dependencyScopeCounts?.transitive != null &&
@@ -706,6 +708,7 @@ export async function runPlan(cveId: string, opts: CommandOptions): Promise<void
   }
 
   process.stdout.write(`${report.summary}\n`);
+  if (report.autonomy) process.stdout.write(`${formatAutonomyLine(report.autonomy)}\n`);
   if (report.runId) {
     process.stdout.write(`Plan: ${report.planId}\nRun:  ${report.runId}\n`);
     process.stdout.write(`Apply it with: autoremediator runs apply ${report.runId}\n`);
@@ -778,6 +781,7 @@ export async function runRunsShow(runId: string, opts: RunsOptions): Promise<voi
 
 function printRunReport(report: Awaited<ReturnType<typeof applyPlan>>): void {
   process.stdout.write(`${report.message}\n`);
+  if (report.autonomy) process.stdout.write(`${formatAutonomyLine(report.autonomy)}\n`);
   for (const item of report.items) {
     process.stdout.write(
       `  ${item.status}  ${item.packageName} ${item.fromVersion} -> ${item.toVersion}: ${item.message}\n`,

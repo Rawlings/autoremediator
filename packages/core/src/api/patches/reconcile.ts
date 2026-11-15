@@ -20,6 +20,7 @@ import {
   setOverrideValue,
   type RawPackageJson,
 } from "../../remediation/tools/apply-package-override/helpers.js";
+import { assertAutonomyAllows } from "../autonomy/index.js";
 import { inspectPatchArtifact, listPatchArtifacts } from "./inspection.js";
 
 /**
@@ -30,6 +31,7 @@ export async function reconcilePatchArtifacts(
   options: PatchReconcileOptions = {},
 ): Promise<PatchReconcileReport> {
   const cwd = options.cwd ?? process.cwd();
+  if (options.autoApply) assertAutonomyAllows(cwd, undefined, "apply", "reconcilePatchArtifacts autoApply");
   const pm = options.packageManager ?? detectPackageManager(cwd);
 
   const summaries = await listPatchArtifacts(options);
