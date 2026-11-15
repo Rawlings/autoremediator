@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type http from "node:http";
 
 import { sha256 } from "../../shared/hash.js";
@@ -76,18 +76,26 @@ export function verifyJwtRole(token: string, secret: string): Role | undefined {
   return undefined;
 }
 
+/** Secrets are compared as blocks at least this long, so short ones do not show their length. */
+const COMPARISON_BLOCK_BYTES = 512;
+
+/** `value` as bytes, zero-padded to `length`. */
+function padded(value: Buffer, length: number): Buffer {
+  const block = Buffer.alloc(length);
+  value.copy(block);
+  return block;
+}
+
 /**
- * Key for the comparison digests below. It exists only to make them keyed: the digests are never
- * stored or sent anywhere, and a fresh key per process is all the comparison needs.
+ * Compares two secrets in constant time. Both are padded to the same length first, because
+ * `timingSafeEqual` needs equal lengths; the lengths themselves are compared afterwards.
  */
-const COMPARISON_KEY = randomBytes(32);
-
-const comparisonDigest = (value: string): Buffer =>
-  createHmac("sha256", COMPARISON_KEY).update(value).digest();
-
-/** Compares two secrets in constant time (over digests, so their lengths do not show either). */
 function sameSecret(a: string, b: string): boolean {
-  return timingSafeEqual(comparisonDigest(a), comparisonDigest(b));
+  const left = Buffer.from(a);
+  const right = Buffer.from(b);
+  const length = Math.max(left.length, right.length, COMPARISON_BLOCK_BYTES);
+  const sameContent = timingSafeEqual(padded(left, length), padded(right, length));
+  return sameContent && left.length === right.length;
 }
 
 /**
