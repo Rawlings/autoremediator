@@ -1,4 +1,4 @@
-import YAML from "yaml";
+import { parsePnpmLockDocument } from "../pnpm-lock-document.js";
 
 import { isRecord, type LockGraph, type LockNode, type LockRoot } from "./types.js";
 
@@ -38,7 +38,7 @@ const resolveAll = (
 
 /** Parse `pnpm-lock.yaml` (lockfile versions 5 to 9). */
 export function parsePnpmLock(content: string): LockGraph {
-  const data: unknown = YAML.parse(content);
+  const data: unknown = parsePnpmLockDocument(content);
   if (!isRecord(data)) throw new Error("pnpm-lock.yaml is not a YAML mapping");
 
   const declared = data["lockfileVersion"];

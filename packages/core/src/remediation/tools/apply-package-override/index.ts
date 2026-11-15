@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import {
   detectPackageManager,
+  getPnpmMajorVersion,
   getYarnMajorVersion,
   resolveDedupeCommand,
   resolveInstallCommand,
@@ -38,6 +39,13 @@ import {
   type DenoJson,
   type RawPackageJson,
 } from "./helpers.js";
+import {
+  PNPM_WORKSPACE_OVERRIDES_FROM,
+  pnpmLockRecordsOverride,
+  readWorkspaceYaml,
+  restoreWorkspaceYaml,
+  setWorkspaceOverride,
+} from "./pnpm-workspace.js";
 
 export const applyPackageOverrideTool = defineTool({
   description:
@@ -394,7 +402,9 @@ export const applyPackageOverrideTool = defineTool({
       };
     }
 
-    const overrideLabel = describeOverrideField(pm);
+    const pnpmMajor = pm === "pnpm" ? await getPnpmMajorVersion(cwd) : undefined;
+    const useWorkspaceYaml = pm === "pnpm" && (pnpmMajor ?? 0) >= PNPM_WORKSPACE_OVERRIDES_FROM;
+    const overrideLabel = useWorkspaceYaml ? "overrides in pnpm-workspace.yaml" : describeOverrideField(pm);
 
     const dependencyTrace = await collectDependencyTrace(cwd, pm, packageName, commandConstraints);
     const dependencyTraceSuffix = dependencyTrace ? ` Dependency trace: ${dependencyTrace}` : "";
@@ -465,8 +475,17 @@ export const applyPackageOverrideTool = defineTool({
       }
 
       const originalManifest = readFileSync(pkgPath, "utf8");
-      setOverrideValue(pkgJson, pm, overrideSelector, toVersion);
-      writeFileSync(pkgPath, serializeManifest(originalManifest, pkgJson), "utf8");
+      const originalWorkspace = useWorkspaceYaml ? readWorkspaceYaml(cwd) : undefined;
+      const restoreOverrideFiles = (): void => {
+        writeFileSync(pkgPath, originalManifest, "utf8");
+        if (useWorkspaceYaml) restoreWorkspaceYaml(cwd, originalWorkspace);
+      };
+      if (useWorkspaceYaml) {
+        setWorkspaceOverride(cwd, overrideSelector, toVersion);
+      } else {
+        setOverrideValue(pkgJson, pm, overrideSelector, toVersion);
+        writeFileSync(pkgPath, serializeManifest(originalManifest, pkgJson), "utf8");
+      }
 
       try {
         await safeExecaCommand(installCommand, {
@@ -475,7 +494,7 @@ export const applyPackageOverrideTool = defineTool({
           stdio: "pipe",
         });
       } catch (err) {
-        writeFileSync(pkgPath, originalManifest, "utf8");
+        restoreOverrideFiles();
         const message = err instanceof Error ? err.message : String(err);
         return {
           packageName,
@@ -489,6 +508,26 @@ export const applyPackageOverrideTool = defineTool({
         };
       }
 
+      // An install can succeed and still ignore the override (the wrong field for this pnpm version).
+      if (pm === "pnpm" && pnpmLockRecordsOverride(cwd, overrideSelector) === false) {
+        restoreOverrideFiles();
+        try {
+          await safeExecaCommand(installCommand, { timeoutMs: LONG_RUNNING_TIMEOUT_MS, cwd, stdio: "pipe" });
+        } catch {
+          // The files are restored; a failed reinstall here is reported by the next run.
+        }
+        return {
+          packageName,
+          strategy: "override",
+          fromVersion,
+          toVersion,
+          applied: false,
+          dryRun: false,
+          unresolvedReason: "override-apply-failed",
+          message: `pnpm did not record the ${overrideLabel} override for "${overrideSelector}" in pnpm-lock.yaml, so it had no effect. Reverted.${dependencyTraceSuffix}`,
+        };
+      }
+
       if (runTests) {
         try {
           await safeExecaCommand(testCommand, {
@@ -497,7 +536,7 @@ export const applyPackageOverrideTool = defineTool({
             stdio: "pipe",
           });
         } catch (err) {
-          writeFileSync(pkgPath, originalManifest, "utf8");
+          restoreOverrideFiles();
 
           try {
             await safeExecaCommand(installCommand, {
@@ -532,7 +571,7 @@ export const applyPackageOverrideTool = defineTool({
         });
 
         if (!positivePhaseResult.passed) {
-          writeFileSync(pkgPath, originalManifest, "utf8");
+          restoreOverrideFiles();
 
           try {
             await safeExecaCommand(installCommand, {

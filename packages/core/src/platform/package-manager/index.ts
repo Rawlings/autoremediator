@@ -30,6 +30,17 @@ export async function getYarnMajorVersion(cwd: string): Promise<number> {
   }
 }
 
+/** The installed pnpm major version, or undefined when it cannot be determined. */
+export async function getPnpmMajorVersion(cwd: string): Promise<number | undefined> {
+  try {
+    const result = await safeExeca("pnpm", ["--version"], { cwd, stdio: "pipe" });
+    const major = Number.parseInt(result.stdout.trim().split(".")[0] ?? "", 10);
+    return Number.isNaN(major) ? undefined : major;
+  } catch {
+    return undefined;
+  }
+}
+
 export function detectPackageManager(cwd: string): PackageManager {
   if (existsSync(join(cwd, "pnpm-lock.yaml"))) return "pnpm";
   if (existsSync(join(cwd, "yarn.lock"))) return "yarn";
