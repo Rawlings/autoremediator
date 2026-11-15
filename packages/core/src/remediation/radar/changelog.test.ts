@@ -252,3 +252,63 @@ describe("mentionsSecurity", () => {
     expect(mentionsSecurity("sanitizes things")).toBe(false);
   });
 });
+
+describe("changelog robustness on hostile input", () => {
+  const section = (text: string) => ({
+    version: "1.0.1",
+    startLine: 1,
+    lines: [{ line: 2, text }],
+  });
+
+  it("classifies a heading-like line padded with whitespace in bounded time", () => {
+    const started = performance.now();
+    classifySection(section(`security${" ".repeat(8000)}x`));
+    classifySection(section(`${" ".repeat(3)}#${" ".repeat(8000)}security${" ".repeat(8000)}x`));
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  it("scans a line of repeated negations once", () => {
+    const started = performance.now();
+    classifyLine("no xss ".repeat(20_000));
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  it("scans an unclosed code span with many matches once", () => {
+    const started = performance.now();
+    classifyLine(`\`${"xss ".repeat(60_000)}`);
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  it("parses a document of enormous lines in bounded time", () => {
+    const text = `## 1.0.1\n${"no xss ".repeat(60_000)}\n- fixes xss\n${"x\n".repeat(200_000)}`;
+    const started = performance.now();
+    const sections = parseChangelog(text);
+    const hits = sections.flatMap((entry) => classifySection(entry));
+    expect(performance.now() - started).toBeLessThan(2000);
+    expect(hits.some((hit) => hit.text.includes("fixes xss"))).toBe(true);
+    expect(hits.every((hit) => hit.text.length <= 1000)).toBe(true);
+  });
+});
+
+describe("negated prevention phrasings", () => {
+  it("scores sentences that say something is prevented", () => {
+    const texts = [
+      "Do not allow prototype pollution via __proto__ keys",
+      "Fix: don't allow path traversal in extracted tar entries",
+      "Not only fixes XSS",
+      "Never accept arbitrary files from the archive",
+      "Stop letting attackers read other users' data",
+      "The parser does not expose a path traversal any more",
+    ];
+    expect(texts.filter((text) => classifyLine(text).points === 0)).toEqual([]);
+  });
+
+  it("still ignores plain negation", () => {
+    const texts = [
+      "No security issues were found in this release",
+      "We do not have any xss",
+      "This is not a security issue",
+    ];
+    expect(texts.filter((text) => classifyLine(text).points > 0)).toEqual([]);
+  });
+});

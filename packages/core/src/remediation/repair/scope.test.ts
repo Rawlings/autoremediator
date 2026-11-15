@@ -131,6 +131,34 @@ describe("repair tools", () => {
     await expect(call(set, "searchCode", { pattern: "(" })).resolves.toMatch(/not a valid regular expression/);
   });
 
+  it("refuses search patterns that can backtrack catastrophically", async () => {
+    write("src/evil.ts", `${"a".repeat(30)}!`);
+    const set = tools(state());
+    for (const pattern of ["(a+)+$", "(.*)*x", String.raw`(\w+\s?)*$`, "((a+)b)*", "(a{2,})+$", "(?:a*)+b"]) {
+      await expect(call(set, "searchCode", { pattern })).resolves.toMatch(/nested quantifier/);
+    }
+    await expect(call(set, "searchCode", { pattern: "a".repeat(201) })).resolves.toMatch(/too long/);
+  });
+
+  it("still runs ordinary patterns, including groups, classes and escaped parentheses", async () => {
+    write("src/evil.ts", "foo(a+)+ bar [x+]+");
+    const set = tools(state());
+    await expect(call(set, "searchCode", { pattern: String.raw`foo\(a\+\)\+` })).resolves.toContain("src/evil.ts:1:");
+    await expect(call(set, "searchCode", { pattern: "(foo|bar)+ " })).resolves.toContain("src/evil.ts:1:");
+    await expect(call(set, "searchCode", { pattern: "[x+]+" })).resolves.toContain("src/evil.ts:1:");
+    await expect(call(set, "searchCode", { pattern: String.raw`(\w+)\(` })).resolves.toContain("src/evil.ts:1:");
+  });
+
+  it("caps the length of each searched line", async () => {
+    write("src/long.ts", `${"x".repeat(100_000)}NEEDLE\nshort NEEDLE`);
+    const set = tools(state());
+    const started = performance.now();
+    const result = await call(set, "searchCode", { pattern: "NEEDLE", dir: "src" });
+    expect(performance.now() - started).toBeLessThan(1000);
+    expect(result).not.toContain("long.ts:1:");
+    expect(result).toContain("long.ts:2: short NEEDLE");
+  });
+
   it("edits one exact occurrence in source files only", async () => {
     const s = state();
     const set = tools(s);

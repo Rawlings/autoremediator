@@ -116,6 +116,18 @@ const POST_NEGATION =
   /^\W*(?:\w+\W+){0,2}?(?:none|n\/a|nil|not (?:affected|applicable|relevant|related|a concern)|unaffected)\b/i;
 const NO_LONGER = /\bno longer\s+(?:\w+\s+){0,2}$/i;
 const NOT_PARTICIPLE = /\b(?:not|never|n't)\s+(?:\w+\s+){0,2}$/i;
+/** "not only fixes XSS" adds to a statement; it does not negate it. */
+const NOT_ONLY = /\bnot\s+(?:only|just|merely|simply)\b/i;
+/** "do not allow path traversal": the negator governs a verb that prevents the term, so this is a fix. */
+const PREVENTION =
+  /(?:\b\w+n't|\bnot|\bnever|\bcannot|\bwithout|\bno longer)\s+(?:\w+\s+){0,2}?(?:allow|permit|let|accept|expose|enable|trust|follow|execut|leak|reveal|serve|render|reflect|honou?r|process|run|pass|forward|resolve)\w*\b(?:\s+\w+){0,3}\s*$/i;
+
+/** Longest line the parser reads. Release text is untrusted; nothing past this is scored. */
+const MAX_LINE_CHARS = 1000;
+/** Most lines of one document the parser reads. */
+const MAX_DOCUMENT_LINES = 50_000;
+/** How far back from a term the negation check looks, in characters. */
+const CLAUSE_WINDOW = 120;
 
 const WEIGHTS = RADAR_POINTS.changelog;
 const STRENGTH_POINTS: Record<Strength, number> = {
@@ -136,10 +148,28 @@ function blankOut(text: string, pattern: RegExp): string {
   return text.replaceAll(pattern, (match) => " ".repeat(match.length));
 }
 
-function inCodeSpan(text: string, index: number): boolean {
-  let open = false;
-  for (let position = 0; position < index; position++) if (text[position] === "`") open = !open;
-  return open;
+/** Per-line lookup tables, built in one pass so each match is answered without rescanning the prefix. */
+interface LineContext {
+  /** `ticks[i]` is the number of backticks before index `i`. */
+  ticks: number[];
+  /** Ends of clause breaks, ascending. */
+  breaks: number[];
+}
+
+function buildContext(text: string): LineContext {
+  const ticks: number[] = [0];
+  let count = 0;
+  for (let position = 0; position < text.length; position++) {
+    if (text[position] === "`") count++;
+    ticks.push(count);
+  }
+  const breaks: number[] = [];
+  for (const match of text.matchAll(CLAUSE_BREAK)) breaks.push(match.index + match[0].length);
+  return { ticks, breaks };
+}
+
+function inCodeSpan(context: LineContext, index: number): boolean {
+  return (context.ticks[index] ?? 0) % 2 === 1;
 }
 
 function joinedToName(text: string, start: number, end: number): boolean {
@@ -155,17 +185,30 @@ function joinedToName(text: string, start: number, end: number): boolean {
 
 const CLAUSE_BREAK = /[.;!?,:()\u2014]|\bbut\b|\bhowever\b| - /gi;
 
-function clauseBefore(text: string, index: number): string {
-  const head = text.slice(0, index);
-  let boundary = 0;
-  for (const match of head.matchAll(CLAUSE_BREAK)) boundary = match.index + match[0].length;
+function clauseBefore(text: string, context: LineContext, index: number): string {
+  // The last break that ends at or before `index`.
+  let low = 0;
+  let high = context.breaks.length;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if ((context.breaks[mid] ?? 0) <= index) low = mid + 1;
+    else high = mid;
+  }
+  const boundary = low > 0 ? (context.breaks[low - 1] ?? 0) : 0;
+  const from = Math.max(boundary, index - CLAUSE_WINDOW);
   // Only the last few words matter: "no" at the start of a long sentence is not about this term.
-  return head.slice(boundary).split(/\s+/).slice(-6).join(" ");
+  return text.slice(from, index).split(/\s+/).slice(-6).join(" ");
 }
 
-function isNegated(text: string, term: Term, start: number, end: number): boolean {
-  const before = clauseBefore(text, start);
-  if (NO_LONGER.test(before)) return false;
+function isNegated(
+  text: string,
+  context: LineContext,
+  term: Term,
+  start: number,
+  end: number,
+): boolean {
+  const before = clauseBefore(text, context, start);
+  if (NO_LONGER.test(before) || NOT_ONLY.test(before) || PREVENTION.test(before)) return false;
   if (!NEGATORS.test(before) && !POST_NEGATION.test(text.slice(end))) return false;
   // "values were not escaped" describes the defect that was fixed.
   if (term.participle && NOT_PARTICIPLE.test(before) && /(?:ed|d)$/i.test(text.slice(start, end))) {
@@ -176,15 +219,16 @@ function isNegated(text: string, term: Term, start: number, end: number): boolea
 
 /** Score one line of release text with the fixed vocabulary. Zero when nothing relevant, or all negated. */
 export function classifyLine(text: string): { points: number; terms: string[] } {
-  const scrubbed = blankOut(text, NOT_SECURITY);
+  const scrubbed = blankOut(text.slice(0, MAX_LINE_CHARS), NOT_SECURITY);
+  const context = buildContext(scrubbed);
   const found = new Map<string, number>();
   for (const term of TERMS) {
     for (const match of scrubbed.matchAll(term.pattern)) {
       const start = match.index;
       const end = start + match[0].length;
-      if (term.bare && (inCodeSpan(scrubbed, start) || joinedToName(scrubbed, start, end)))
+      if (term.bare && (inCodeSpan(context, start) || joinedToName(scrubbed, start, end)))
         continue;
-      if (isNegated(scrubbed, term, start, end)) continue;
+      if (isNegated(scrubbed, context, term, start, end)) continue;
       found.set(term.id, STRENGTH_POINTS[term.strength]);
       break;
     }
@@ -232,7 +276,9 @@ function headerVersion(line: string, next: string | undefined): string | undefin
 
 /** Split release history into one section per version found in its headings. */
 export function parseChangelog(text: string): ChangelogSection[] {
-  const lines = text.split(/\r?\n/);
+  const lines = text
+    .split(/\r?\n/, MAX_DOCUMENT_LINES)
+    .map((line) => (line.length > MAX_LINE_CHARS ? line.slice(0, MAX_LINE_CHARS) : line));
   const sections: ChangelogSection[] = [];
   let current: ChangelogSection | undefined;
   for (const [index, raw] of lines.entries()) {
@@ -248,8 +294,9 @@ export function parseChangelog(text: string): ChangelogSection[] {
   return sections;
 }
 
+// Tokens are separated by at most one `\s*` each and the line is trimmed first, so matching is linear.
 const SECURITY_HEADING =
-  /^\s{0,3}(?:#{1,6}\s*)?(?:[*_]{1,2})?\s*security(?:\s+(?:fix(?:es)?|updates?|notes?))?\s*(?:[*_]{1,2})?\s*:?\s*$/i;
+  /^(?:#{1,6}\s*)?(?:[*_]{1,2}\s*)?security(?:\s+(?:fix(?:es)?|updates?|notes?))?(?:\s*[*_]{1,2})?\s*:?$/i;
 const ANY_HEADING = /^\s{0,3}(?:#{1,6}\s+\S|[*_]{2}[^*_]+[*_]{2}\s*:?\s*$)/;
 const NOTHING = /^\W*(?:none|n\/a|nil|nothing|no\b.*|not applicable)\W*$/i;
 
@@ -257,12 +304,20 @@ function stripBullet(line: string): string {
   return line.replace(/^\s*(?:[-*+]|\d+[.)])\s+/, "").trim();
 }
 
+function isSecurityHeading(text: string): boolean {
+  const line = text.slice(0, MAX_LINE_CHARS);
+  // At most three spaces of indentation, as in Markdown.
+  if (line.length - line.trimStart().length > 3) return false;
+  return SECURITY_HEADING.test(line.trim());
+}
+
 /** Lines of a section that look security-relevant, best first. */
 export function classifySection(section: ChangelogSection): ClassifiedLine[] {
   const hits: ClassifiedLine[] = [];
   let underSecurity = false;
-  for (const { line, text } of section.lines) {
-    if (SECURITY_HEADING.test(text)) {
+  for (const { line, text: rawText } of section.lines) {
+    const text = rawText.slice(0, MAX_LINE_CHARS);
+    if (isSecurityHeading(text)) {
       underSecurity = true;
       continue;
     }

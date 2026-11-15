@@ -186,4 +186,31 @@ describe("the proposeMemory tool", () => {
       outcome.transcript.filter((entry) => entry.text.includes("at most 5 proposals")),
     ).toHaveLength(2);
   });
+
+  it("counts the limit across the rounds of one attempt, and starts over for a new attempt", async () => {
+    const proposals = (count: number, offset: number) => [
+      ...Array.from({ length: count }, (_, index) =>
+        turn(["proposeMemory", { kind: "note", text: `observation ${offset + index}` }]),
+      ),
+      turn(["submit", { summary: "x" }]),
+    ];
+    const model = new MockLanguageModelV4({
+      modelId: "m",
+      doGenerate: [...proposals(3, 0), ...proposals(3, 10), ...proposals(1, 20)],
+    });
+    const agent = createBuiltinRepairAgent(model);
+    const withMemory = env({ proposeMemory: propose(dir) });
+
+    // Two rounds of the same attempt share one allowance of 5.
+    await agent.repair({ ...task, round: 1 }, withMemory);
+    const outcome = await agent.repair({ ...task, round: 2 }, withMemory);
+    expect(readMemory(dir).entries).toHaveLength(5);
+    expect(
+      outcome.transcript.filter((entry) => entry.text.includes("at most 5 proposals")),
+    ).toHaveLength(1);
+
+    // A different attempt has its own allowance.
+    await agent.repair({ ...task, attemptId: "attempt_bbbbbbbbbbbb" }, withMemory);
+    expect(readMemory(dir).entries).toHaveLength(6);
+  });
 });

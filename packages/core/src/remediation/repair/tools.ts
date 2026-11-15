@@ -18,6 +18,54 @@ const MAX_READ_LINES = 400;
 const MAX_LIST_ENTRIES = 300;
 const MAX_SEARCH_MATCHES = 60;
 const MAX_SEARCH_FILE_BYTES = 1_000_000;
+const MAX_SEARCH_PATTERN_CHARS = 200;
+/** Longest stretch of one line a search pattern is run against. */
+const MAX_SEARCH_LINE_CHARS = 500;
+
+/**
+ * Whether a regular expression has a quantified group that itself contains a quantifier, such as
+ * `(a+)+`, `(.*)*` or `(\w+\s?)*`. These can backtrack exponentially, and a model-supplied pattern
+ * runs synchronously where no timeout can interrupt it, so they are refused up front.
+ */
+export function hasNestedQuantifier(pattern: string): boolean {
+  // One entry per open group: does it contain a quantifier anywhere inside?
+  const groups: boolean[] = [];
+  const mark = () => {
+    if (groups.length > 0) groups[groups.length - 1] = true;
+  };
+  const quantifierAt = (index: number): boolean => {
+    const char = pattern[index];
+    if (char === "*" || char === "+") return true;
+    return char === "{" && /^\{\d+(?:,\d*)?\}/.test(pattern.slice(index, index + 24));
+  };
+  let index = 0;
+  while (index < pattern.length) {
+    const char = pattern[index];
+    if (char === "\\") {
+      index += 2;
+    } else if (char === "[") {
+      index++;
+      while (index < pattern.length && pattern[index] !== "]") index += pattern[index] === "\\" ? 2 : 1;
+      index++;
+    } else if (char === "(") {
+      groups.push(false);
+      index++;
+    } else if (char === ")") {
+      const inner = groups.pop() ?? false;
+      if (quantifierAt(index + 1)) {
+        if (inner) return true;
+        mark();
+      } else if (inner) {
+        mark();
+      }
+      index++;
+    } else {
+      if (quantifierAt(index)) mark();
+      index++;
+    }
+  }
+  return false;
+}
 const MAX_WRITE_BYTES = 400_000;
 const SKIPPED_DIRS = new Set(["node_modules", ".git", ".autoremediator", "dist", "build", "coverage", ".next"]);
 const PACKAGE_NAME = /^(@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/i;
@@ -161,6 +209,12 @@ export function createRepairTools(context: RepairToolContext): ToolSet {
       }),
       execute: async ({ pattern, dir }) => {
         try {
+          if (pattern.length > MAX_SEARCH_PATTERN_CHARS) {
+            return `Error: the pattern is too long (over ${MAX_SEARCH_PATTERN_CHARS} characters); search for a shorter literal or simpler pattern`;
+          }
+          if (hasNestedQuantifier(pattern)) {
+            return "Error: the pattern has a nested quantifier (a repeated group that contains a repeat, like (a+)+ or (.*)*), which can hang the search; use a simpler pattern or a literal string";
+          }
           let regex: RegExp;
           try {
             regex = new RegExp(pattern);
@@ -177,7 +231,7 @@ export function createRepairTools(context: RepairToolContext): ToolSet {
               if (text.includes("\0")) continue;
               const lines = text.split("\n");
               for (const [index, line] of lines.entries()) {
-                if (regex.test(line)) {
+                if (regex.test(line.slice(0, MAX_SEARCH_LINE_CHARS))) {
                   matches.push(`${guard.relativePath(file)}:${index + 1}: ${line.trim().slice(0, 200)}`);
                   if (matches.length >= MAX_SEARCH_MATCHES) return matches.join("\n");
                 }

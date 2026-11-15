@@ -69,6 +69,8 @@ function modelName(model: LanguageModel): string {
  * own work is correct; that is the verifier's call.
  */
 export function createBuiltinRepairAgent(model: LanguageModel): RepairAgent {
+  // Memory proposals made so far, per attempt: the allowance covers every round of an attempt.
+  const proposalsByAttempt = new Map<string, number>();
   return {
     id: `builtin:${modelName(model)}`,
 
@@ -77,7 +79,11 @@ export function createBuiltinRepairAgent(model: LanguageModel): RepairAgent {
         return { status: "budget-exhausted", rationale: "the attempt was cancelled", usage: [], transcript: [] };
       }
       const started = Date.now();
-      const state: RepairState = { commandRuns: 0, filesChanged: new Set() };
+      const state: RepairState = {
+        commandRuns: 0,
+        filesChanged: new Set(),
+        memoryProposals: proposalsByAttempt.get(task.attemptId) ?? 0,
+      };
       const tools = createRepairTools({
         guard: new ScopeGuard(env.worktree),
         commands: env.commands,
@@ -113,6 +119,8 @@ export function createBuiltinRepairAgent(model: LanguageModel): RepairAgent {
             ? "the time limit for this round was reached"
             : `the model call failed: ${error instanceof Error ? error.message : String(error)}`;
       }
+
+      proposalsByAttempt.set(task.attemptId, state.memoryProposals ?? 0);
 
       const usage: LlmUsageMetrics[] = [
         {

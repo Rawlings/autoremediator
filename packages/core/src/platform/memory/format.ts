@@ -62,6 +62,11 @@ export interface MemoryDocument {
 }
 
 const OPEN = new RegExp(`^(\`{3,})${FENCE_INFO}[ \\t]*\\r?$`);
+/** A fence line naming the memory block, however it is indented or fenced, or the template's heading. */
+const MARKER = new RegExp(
+  `^[ \\t]*(?:(?:\`{3,}|~{3,})[ \\t]*${FENCE_INFO}\\b|#{1,6}[ \\t]+Autoremediator memory[ \\t]*\\r?$)`,
+  "im",
+);
 const ANY_OPEN = /^( {0,3})(`{3,}|~{3,})(.*)$/;
 
 /** Locate the first `autoremediator-memory` fence that is not inside some other fenced block. */
@@ -89,7 +94,9 @@ function findBlock(rows: string[]): { open: number; close: number | undefined } 
       return { open: index, close: closeAt === -1 ? undefined : closeAt };
     }
     const opener = ANY_OPEN.exec(row);
-    if (opener) outer = { char: opener[2]![0]!, length: opener[2]!.length };
+    // CommonMark: the info string of a backtick fence cannot contain a backtick, so a prose line
+    // like "```npm test``` runs tests" is inline code, not the start of a fenced block.
+    if (opener && !(opener[2]![0] === "`" && opener[3]!.includes("`"))) outer = { char: opener[2]![0]!, length: opener[2]!.length };
   }
   return undefined;
 }
@@ -149,7 +156,14 @@ export function parseDocument(text: string): MemoryDocument {
   const rows = text.split("\n");
   const located = findBlock(rows);
   if (!located) {
-    return { head: text, lines: [], tail: "", eol, hasBlock: false, problems: [] };
+    // The file looks like it should have a block, but none can be read (swallowed by another
+    // fence, indented, or deleted): say so rather than showing an empty memory.
+    const problems = MARKER.test(text)
+      ? [
+          `the file mentions the \`${FENCE_INFO}\` fence or heading but has no readable block; entries (including pins) are not being used. Check that the \`\`\`${FENCE_INFO} line starts at the beginning of a line and is not inside another fenced block.`,
+        ]
+      : [];
+    return { head: text, lines: [], tail: "", eol, hasBlock: false, problems };
   }
   const bodyEnd = located.close ?? rows.length;
   const problems: string[] = [];

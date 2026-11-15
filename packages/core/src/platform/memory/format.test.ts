@@ -165,6 +165,34 @@ describe("the memory document", () => {
     expect(added.startsWith(text)).toBe(true);
   });
 
+  it("does not take inline code in prose for a fence (CommonMark: a backtick fence info has no backtick)", () => {
+    for (const prose of ["```npm test``` runs tests", "```a``` and ```b```", "   ```x`y"]) {
+      const text = `${prose}\n\n\`\`\`autoremediator-memory\n${entryLine(pin("left-pad"))}\n\`\`\`\n`;
+      const doc = parseDocument(text);
+      expect([prose, doc.hasBlock, entriesOf(doc).length]).toEqual([prose, true, 1]);
+      expect(serializeDocument(doc)).toBe(text);
+    }
+    // A real backtick fence still hides a lookalike inside it.
+    const hidden = '```js\n```autoremediator-memory\n{"kind":"note"}\n```\n```\n';
+    expect(parseDocument(hidden).hasBlock).toBe(false);
+  });
+
+  it("reports a problem when the file has the memory fence or heading but no block can be read", () => {
+    const inside = '````md\n```autoremediator-memory\n{"kind":"note"}\n```\n````\n';
+    expect(parseDocument(inside).problems).toEqual([expect.stringMatching(/no readable block/)]);
+
+    const indented = "# Notes\n\n    ```autoremediator-memory\n    {}\n    ```\n";
+    expect(parseDocument(indented).problems).toEqual([expect.stringMatching(/no readable block/)]);
+
+    const heading = "# Autoremediator memory\n\nsome prose, the block was deleted\n";
+    expect(parseDocument(heading).problems).toEqual([expect.stringMatching(/no readable block/)]);
+
+    // Nothing to report for ordinary files, or when the block is there.
+    expect(parseDocument("").problems).toEqual([]);
+    expect(parseDocument("# My notes\n").problems).toEqual([]);
+    expect(parseDocument("```autoremediator-memory\n```\n").problems).toEqual([]);
+  });
+
   it("refuses to write into a block that never closes, but still reads it", () => {
     const text = `x\n\`\`\`autoremediator-memory\n${entryLine(pin("left-pad"))}\n`;
     const doc = parseDocument(text);

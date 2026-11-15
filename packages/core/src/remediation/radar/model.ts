@@ -35,6 +35,11 @@ export interface RadarModelPort {
 
 const MAX_PROMPT_CHARS = 12_000;
 
+/** Package text with the prompt's own delimiter made unusable, so it cannot close the data block early. */
+function promptText(raw: string, max?: number): string {
+  return sanitizeEvidence(raw, max).replaceAll(/<(?=\s*\/?\s*untrusted)/gi, "\u2039");
+}
+
 const verdictSchema = z.object({
   verdict: z.enum(["security-relevant", "unclear", "not-security"]),
   confidence: z.number().min(0).max(1),
@@ -51,22 +56,22 @@ export const RADAR_SYSTEM_PROMPT = [
 /** Build the user prompt: bounded, with all package text inside `<untrusted>` markers. */
 export function buildRadarPrompt(request: RadarModelRequest): string {
   const parts = [
-    `Package: ${sanitizeEvidence(request.packageName, 120)} ${request.from} -> ${request.to}`,
+    `Package: ${promptText(request.packageName, 120)} ${request.from} -> ${request.to}`,
   ];
   if (request.changelog.length > 0) {
     parts.push(
       "Changelog lines:",
       "<untrusted>",
-      ...request.changelog.map((line) => sanitizeEvidence(line)),
+      ...request.changelog.map((line) => promptText(line)),
       "</untrusted>",
     );
   }
   for (const change of request.codeChanges) {
     parts.push(
-      `File ${sanitizeEvidence(change.file, 160)}:`,
+      `File ${promptText(change.file, 160)}:`,
       "<untrusted>",
-      ...change.removed.map((line) => `- ${sanitizeEvidence(line)}`),
-      ...change.added.map((line) => `+ ${sanitizeEvidence(line)}`),
+      ...change.removed.map((line) => `- ${promptText(line)}`),
+      ...change.added.map((line) => `+ ${promptText(line)}`),
       "</untrusted>",
     );
   }
