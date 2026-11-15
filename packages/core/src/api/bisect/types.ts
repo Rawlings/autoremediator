@@ -45,12 +45,7 @@ export interface BisectSkippedChange {
   reason: string;
 }
 
-export type BisectStepKind =
-  | "good-ref"
-  | "bad-ref"
-  | "all-updates"
-  | "subset"
-  | "without-culprit";
+export type BisectStepKind = "good-ref" | "bad-ref" | "all-updates" | "subset" | "without-culprit";
 
 export interface BisectCommandRecord {
   /** What was run, as a display string. */

@@ -2,8 +2,8 @@
 
 import type { Command } from "commander";
 
-import { isEntrypoint } from "../platform/entrypoint.js";
 import { EXIT_CODES } from "../api/reporting.js";
+import { isEntrypoint } from "../platform/entrypoint.js";
 import { formatCliError, wantsJson } from "./errors.js";
 import { createProgram as createCliProgram } from "./program.js";
 

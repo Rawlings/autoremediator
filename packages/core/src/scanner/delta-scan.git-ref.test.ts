@@ -11,7 +11,10 @@ let repo: string;
 let outside: string;
 
 const git = (...args: string[]): string =>
-  execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.com", ...args], { cwd: repo, encoding: "utf8" });
+  execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.com", ...args], {
+    cwd: repo,
+    encoding: "utf8",
+  });
 
 beforeEach(() => {
   repo = mkdtempSync(join(tmpdir(), "ar-delta-repo-"));
@@ -30,7 +33,9 @@ afterEach(() => {
 describe("scanDelta baseRef", () => {
   it("does not let a ref act as a git option", async () => {
     const target = join(outside, "planted.txt");
-    await expect(scanDelta({ cwd: repo, baseRef: `--output=${target}` })).rejects.toThrow(/not a valid git ref/);
+    await expect(scanDelta({ cwd: repo, baseRef: `--output=${target}` })).rejects.toThrow(
+      /not a valid git ref/,
+    );
     expect(existsSync(target)).toBe(false);
   });
 
@@ -39,7 +44,10 @@ describe("scanDelta baseRef", () => {
   });
 
   it("still diffs against a branch or HEAD", async () => {
-    writeFileSync(join(repo, "package.json"), JSON.stringify({ name: "x", dependencies: { left: "1.0.0" } }));
+    writeFileSync(
+      join(repo, "package.json"),
+      JSON.stringify({ name: "x", dependencies: { left: "1.0.0" } }),
+    );
     const changes = await collectDependencyChanges(repo, "HEAD");
     expect(changes.dependencyChanges.map((change) => change.packageName)).toEqual(["left"]);
   });

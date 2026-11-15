@@ -8,18 +8,38 @@ import { createProgram } from "./program.js";
 const report: BisectReport = {
   schemaVersion: "1",
   status: "culprit",
-  summary: "leaf-b 1.0.0 -> 1.1.0 (transitive) breaks the command. Holding it at 1.0.0 makes it pass.",
+  summary:
+    "leaf-b 1.0.0 -> 1.1.0 (transitive) breaks the command. Holding it at 1.0.0 makes it pass.",
   good: { ref: "v1", commit: "a".repeat(40) },
   bad: { ref: "HEAD", commit: "b".repeat(40) },
   packageManager: "npm",
   lockfile: "package-lock.json",
   command: "npm test",
   updates: [
-    { packageName: "leaf-a", fromVersion: "1.0.0", toVersion: "1.0.1", dependencyScope: "transitive" },
-    { packageName: "leaf-b", fromVersion: "1.0.0", toVersion: "1.1.0", dependencyScope: "transitive" },
+    {
+      packageName: "leaf-a",
+      fromVersion: "1.0.0",
+      toVersion: "1.0.1",
+      dependencyScope: "transitive",
+    },
+    {
+      packageName: "leaf-b",
+      fromVersion: "1.0.0",
+      toVersion: "1.1.0",
+      dependencyScope: "transitive",
+    },
   ],
-  skipped: [{ packageName: "new", fromVersions: [], toVersions: ["1.0.0"], reason: "added at the bad ref" }],
-  culprits: [{ packageName: "leaf-b", fromVersion: "1.0.0", toVersion: "1.1.0", dependencyScope: "transitive" }],
+  skipped: [
+    { packageName: "new", fromVersions: [], toVersions: ["1.0.0"], reason: "added at the bad ref" },
+  ],
+  culprits: [
+    {
+      packageName: "leaf-b",
+      fromVersion: "1.0.0",
+      toVersion: "1.1.0",
+      dependencyScope: "transitive",
+    },
+  ],
   holdingBackFixes: true,
   steps: [
     {
@@ -57,7 +77,11 @@ const report: BisectReport = {
     pins: [{ packageName: "leaf-b", version: "1.0.0", strategy: "override" }],
     runId: "run_x",
     planId: "plan_y",
-    nextCommands: ["autoremediator runs show run_x", "autoremediator runs apply run_x", "autoremediator runs rollback run_x"],
+    nextCommands: [
+      "autoremediator runs show run_x",
+      "autoremediator runs apply run_x",
+      "autoremediator runs rollback run_x",
+    ],
     notPlanned: [],
   },
   warnings: [],
@@ -87,7 +111,18 @@ describe("bisect surfaces", () => {
     expect(command).toBeDefined();
     const flags = command?.options.map((option) => option.long);
     expect(flags).toEqual(
-      expect.arrayContaining(["--good", "--bad", "--command", "--timeout", "--max-steps", "--package-manager", "--ignore-scripts", "--apply", "--cwd", "--output-format"]),
+      expect.arrayContaining([
+        "--good",
+        "--bad",
+        "--command",
+        "--timeout",
+        "--max-steps",
+        "--package-manager",
+        "--ignore-scripts",
+        "--apply",
+        "--cwd",
+        "--output-format",
+      ]),
     );
     expect(command?.options.find((option) => option.long === "--good")?.mandatory).toBe(true);
     expect(command?.options.find((option) => option.long === "--command")?.mandatory).toBe(true);
@@ -100,6 +135,8 @@ describe("bisect surfaces", () => {
     expect(operation?.http).toBeUndefined();
     expect(operation?.input.safeParse({ good: "v1", command: "npm test" }).success).toBe(true);
     expect(operation?.input.safeParse({ command: "npm test" }).success).toBe(false);
-    expect(operation?.input.safeParse({ good: "v1", command: "x", surprise: 1 }).success).toBe(false);
+    expect(operation?.input.safeParse({ good: "v1", command: "x", surprise: 1 }).success).toBe(
+      false,
+    );
   });
 });

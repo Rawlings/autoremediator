@@ -53,7 +53,7 @@ describe("re-running a change request for the same findings", () => {
     writeFileSync(join(dir, "package.json"), '{"name":"app"}\n');
     writeFileSync(join(dir, "file.txt"), "one\n");
     git(dir, "add .");
-    git(dir, 'commit -m initial');
+    git(dir, "commit -m initial");
     git(dir, `remote add origin "${remote}"`);
     git(dir, "push -u origin main");
   });
@@ -69,13 +69,25 @@ describe("re-running a change request for the same findings", () => {
     globalThis.fetch = vi.fn(async (url: string | URL, init?: RequestInit) => {
       if (init?.method === "POST") {
         if (created) {
-          return { ok: false, status: 422, text: async () => "A pull request already exists for owner:x" };
+          return {
+            ok: false,
+            status: 422,
+            text: async () => "A pull request already exists for owner:x",
+          };
         }
         created = true;
-        return { ok: true, status: 201, json: async () => ({ html_url: "https://github.com/owner/repo/pull/7" }) };
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({ html_url: "https://github.com/owner/repo/pull/7" }),
+        };
       }
       expect(String(url)).toContain("/pulls?state=open&head=owner%3Aautoremediator%2F");
-      return { ok: true, status: 200, json: async () => [{ html_url: "https://github.com/owner/repo/pull/7" }] };
+      return {
+        ok: true,
+        status: 200,
+        json: async () => [{ html_url: "https://github.com/owner/repo/pull/7" }],
+      };
     }) as unknown as typeof fetch;
   }
 
@@ -119,10 +131,18 @@ describe("re-running a change request for the same findings", () => {
     stubGitHub();
     const freshness: RemediationReport = { ...report, cveId: "FRESHNESS-2.0.0", runId: undefined };
     writeFileSync(join(dir, "file.txt"), "two\n");
-    const [first] = await createChangeRequestsForReports({ cwd: dir, options, reports: [freshness] });
+    const [first] = await createChangeRequestsForReports({
+      cwd: dir,
+      options,
+      reports: [freshness],
+    });
     expect(first?.created).toBe(true);
     writeFileSync(join(dir, "file.txt"), "three\n");
-    const [second] = await createChangeRequestsForReports({ cwd: dir, options, reports: [freshness] });
+    const [second] = await createChangeRequestsForReports({
+      cwd: dir,
+      options,
+      reports: [freshness],
+    });
     expect(second?.error).toBeUndefined();
     expect(second?.created).toBe(true);
     expect(second?.updated).toBe(true);
@@ -197,4 +217,3 @@ describe("a failed push", () => {
     }
   });
 });
-

@@ -4,7 +4,11 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { checkInventoryTool, pickDirectVersion, resolveInventoryVersion } from "./check-inventory.js";
+import {
+  checkInventoryTool,
+  pickDirectVersion,
+  resolveInventoryVersion,
+} from "./check-inventory.js";
 
 describe("resolveInventoryVersion", () => {
   it("resolves exact semver and clean strings", () => {

@@ -112,7 +112,11 @@ function clearEarlierPack(outDir: string): void {
   }
   if (!record(manifest)) throw notAPack("it is not an object");
   const generator = manifest["generator"];
-  if (manifest["schemaVersion"] !== "1" || !record(generator) || generator["name"] !== "autoremediator") {
+  if (
+    manifest["schemaVersion"] !== "1" ||
+    !record(generator) ||
+    generator["name"] !== "autoremediator"
+  ) {
     throw notAPack("it was not written by autoremediator");
   }
   const entries = manifest["files"];
@@ -124,7 +128,8 @@ function clearEarlierPack(outDir: string): void {
   for (const entry of entries as unknown[]) {
     const path = record(entry) ? entry["path"] : undefined;
     const digest = record(entry) ? entry["sha256"] : undefined;
-    if (typeof path !== "string" || typeof digest !== "string") throw notAPack("a file entry is malformed");
+    if (typeof path !== "string" || typeof digest !== "string")
+      throw notAPack("a file entry is malformed");
     const target = resolve(root, path);
     if (
       path === "" ||
@@ -151,7 +156,8 @@ function clearEarlierPack(outDir: string): void {
   const directories = new Set<string>();
   for (const path of removed) {
     rmSync(join(outDir, path), { force: true });
-    for (let dir = dirname(path); dir !== "." && dir !== "/"; dir = dirname(dir)) directories.add(dir);
+    for (let dir = dirname(path); dir !== "." && dir !== "/"; dir = dirname(dir))
+      directories.add(dir);
   }
   // Remove only the directories the pack itself made, deepest first, and only when nothing else is in them.
   for (const dir of [...directories].toSorted((a, b) => b.length - a.length)) {

@@ -16,7 +16,10 @@ const response = (description: string, properties: Record<string, unknown>) => (
 const freshnessInput = {
   cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional(),
   policy: pathField(OPTION_DESCRIPTIONS.policy).optional(),
-  packageManager: z.enum(PACKAGE_MANAGER_VALUES).optional().describe(OPTION_DESCRIPTIONS.packageManager),
+  packageManager: z
+    .enum(PACKAGE_MANAGER_VALUES)
+    .optional()
+    .describe(OPTION_DESCRIPTIONS.packageManager),
   packages: z
     .array(packageNameSchema)
     .max(200)
@@ -78,12 +81,11 @@ export const FRESHNESS_OPERATIONS: readonly Operation[] = [
         assess: z
           .boolean()
           .optional()
-          .describe("Rate steps with assessUpgrade (default true); false orders by step size only."),
+          .describe(
+            "Rate steps with assessUpgrade (default true); false orders by step size only.",
+          ),
         runTests: z.boolean().optional().describe(OPTION_DESCRIPTIONS.runTests),
-        typecheck: z
-          .boolean()
-          .optional()
-          .describe(OPTION_DESCRIPTIONS.typecheck),
+        typecheck: z.boolean().optional().describe(OPTION_DESCRIPTIONS.typecheck),
       })
       .strict(),
     annotations: {

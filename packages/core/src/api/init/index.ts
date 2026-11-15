@@ -32,7 +32,9 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
         ? renderDiff(change.path, change.before, change.after)
         : "",
   }));
-  const pending = changes.filter((change) => change.action === "create" || change.action === "update");
+  const pending = changes.filter(
+    (change) => change.action === "create" || change.action === "update",
+  );
 
   let applied = false;
   if (options.yes && !options.check) {
@@ -51,6 +53,8 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
     changes: summaries,
     drift: pending.length > 0,
     applied,
-    conflicts: changes.filter((change) => change.action === "conflict").map((change) => change.path),
+    conflicts: changes
+      .filter((change) => change.action === "conflict")
+      .map((change) => change.path),
   };
 }

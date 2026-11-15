@@ -24,7 +24,10 @@ export const NPM_PACKAGE_NAME = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-
 const sourceLine = z
   .string()
   .max(2000)
-  .refine((line) => !/[\n\r\0\u2028\u2029]/.test(line), "a line must not contain a line break or NUL");
+  .refine(
+    (line) => !/[\n\r\0\u2028\u2029]/.test(line),
+    "a line must not contain a line break or NUL",
+  );
 
 const range = z
   .string()
@@ -47,11 +50,13 @@ const hunkSchema = z
   })
   .strict()
   .refine(
-    (hunk) => hunk.remove.length + hunk.add.length > 0 && hunk.remove.join("\n") !== hunk.add.join("\n"),
+    (hunk) =>
+      hunk.remove.length + hunk.add.length > 0 && hunk.remove.join("\n") !== hunk.add.join("\n"),
     "a hunk must change something",
   )
   .refine(
-    (hunk) => [...hunk.before, ...hunk.remove, ...hunk.after].some((line) => line.trim().length > 0),
+    (hunk) =>
+      [...hunk.before, ...hunk.remove, ...hunk.after].some((line) => line.trim().length > 0),
     "a hunk must be anchored by at least one non-blank line",
   );
 
@@ -106,7 +111,8 @@ export type RecipeBreaking = Recipe["breaking"][number];
 
 /** Parse and validate recipe JSON. Throws one error naming every problem. */
 export function parseRecipe(text: string): Recipe {
-  if (Buffer.byteLength(text) > MAX_RECIPE_BYTES) throw new Error(`the recipe is larger than ${MAX_RECIPE_BYTES} bytes`);
+  if (Buffer.byteLength(text) > MAX_RECIPE_BYTES)
+    throw new Error(`the recipe is larger than ${MAX_RECIPE_BYTES} bytes`);
   let raw: unknown;
   try {
     raw = JSON.parse(text);
@@ -139,7 +145,13 @@ function canonical(value: unknown): string {
  * the same change captured twice is the same recipe.
  */
 export function recipeId(recipe: Recipe): string {
-  const { evidence: _evidence, observed: _observed, summary: _summary, breaking: _breaking, ...essence } = recipe;
+  const {
+    evidence: _evidence,
+    observed: _observed,
+    summary: _summary,
+    breaking: _breaking,
+    ...essence
+  } = recipe;
   return `${recipe.package}#${createHash("sha256").update(canonical(essence)).digest("hex").slice(0, 10)}`;
 }
 

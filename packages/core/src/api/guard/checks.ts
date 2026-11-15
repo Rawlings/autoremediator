@@ -28,7 +28,10 @@ const hasProvenance = (v: PackumentVersion | undefined): boolean => Boolean(v?.d
 const cleanText = (text: string): string => text.replaceAll(/\s+/g, " ").slice(0, 160);
 
 /** Which version a range or tag installs. Prefers stable, non-deprecated releases. */
-export function resolveVersion(packument: Packument, range: string | undefined): string | undefined {
+export function resolveVersion(
+  packument: Packument,
+  range: string | undefined,
+): string | undefined {
   const tags = packument["dist-tags"] ?? {};
   const versions = packument.versions ?? {};
   if (!range) return tags.latest;
@@ -86,7 +89,11 @@ export function judgePackument(input: JudgeInput): {
       .filter((v) => Date.parse(packument.time?.[v] ?? "") < cutoff)
       .toSorted((a, b) => semver.rcompare(a, b))[0];
     if (older) {
-      alternative = { packageName: name, version: older, reason: "the newest release that is old enough" };
+      alternative = {
+        packageName: name,
+        version: older,
+        reason: "the newest release that is old enough",
+      };
     }
   }
 

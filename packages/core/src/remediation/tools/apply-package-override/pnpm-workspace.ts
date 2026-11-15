@@ -42,7 +42,9 @@ export function pnpmLockRecordsOverride(dir: string, selector: string): boolean 
   const lockPath = join(dir, "pnpm-lock.yaml");
   if (!existsSync(lockPath)) return undefined;
   try {
-    const data = parsePnpmLockDocument(readFileSync(lockPath, "utf8")) as { overrides?: Record<string, unknown> } | undefined;
+    const data = parsePnpmLockDocument(readFileSync(lockPath, "utf8")) as
+      | { overrides?: Record<string, unknown> }
+      | undefined;
     return data?.overrides !== undefined && Object.hasOwn(data.overrides, selector);
   } catch {
     return undefined;

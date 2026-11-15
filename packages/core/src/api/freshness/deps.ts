@@ -42,9 +42,12 @@ export function readDirectDependencies(cwd: string): DirectDependency[] {
   try {
     manifest = JSON.parse(readFileSync(join(cwd, "package.json"), "utf8")) as typeof manifest;
   } catch (error) {
-    throw new Error(`Cannot read package.json in ${cwd}: ${error instanceof Error ? error.message : String(error)}`, {
-      cause: error,
-    });
+    throw new Error(
+      `Cannot read package.json in ${cwd}: ${error instanceof Error ? error.message : String(error)}`,
+      {
+        cause: error,
+      },
+    );
   }
   const found = new Map<string, DirectDependency>();
   for (const field of ["devDependencies", "dependencies"] as const) {

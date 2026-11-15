@@ -226,8 +226,7 @@ export function classifyLine(text: string): { points: number; terms: string[] } 
     for (const match of scrubbed.matchAll(term.pattern)) {
       const start = match.index;
       const end = start + match[0].length;
-      if (term.bare && (inCodeSpan(context, start) || joinedToName(scrubbed, start, end)))
-        continue;
+      if (term.bare && (inCodeSpan(context, start) || joinedToName(scrubbed, start, end))) continue;
       if (isNegated(scrubbed, context, term, start, end)) continue;
       found.set(term.id, STRENGTH_POINTS[term.strength]);
       break;

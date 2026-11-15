@@ -4,8 +4,11 @@ import { join } from "node:path";
 import YAML from "yaml";
 
 import type { PackageManager } from "../../platform/types.js";
+import {
+  setOverrideValue,
+  type RawPackageJson,
+} from "../../remediation/tools/apply-package-override/helpers.js";
 import { serializeManifest } from "../../remediation/tools/manifest-format.js";
-import { setOverrideValue, type RawPackageJson } from "../../remediation/tools/apply-package-override/helpers.js";
 import { parseLockfileDependencies } from "../../scanner/lockfile-diff.js";
 import type { BisectedPackage } from "./types.js";
 
@@ -77,7 +80,9 @@ export function applyPins(context: PinContext, pins: readonly Pin[]): void {
 /** Merge overrides into `pnpm-workspace.yaml`, keeping whatever else (and whatever comments) it has. */
 function writeWorkspaceOverrides(dir: string, overrides: readonly Pin[]): void {
   const path = join(dir, "pnpm-workspace.yaml");
-  const document = existsSync(path) ? YAML.parseDocument(readFileSync(path, "utf8")) : new YAML.Document({});
+  const document = existsSync(path)
+    ? YAML.parseDocument(readFileSync(path, "utf8"))
+    : new YAML.Document({});
   for (const pin of overrides) document.setIn(["overrides", pin.packageName], pin.version);
   writeFileSync(path, document.toString(), "utf8");
 }

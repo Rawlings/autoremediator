@@ -1,11 +1,14 @@
+import semver from "semver";
+
 /**
  * The freshness report: how far behind each direct dependency is, a project score, and the climb
  * for each one past the policy. Read-only: it queries the package manager and the registry and
  * changes nothing.
  */
-import type { NpmRegistryPackageInfo, PackageTimeline } from "../../intelligence/sources/registry.js";
-import semver from "semver";
-
+import type {
+  NpmRegistryPackageInfo,
+  PackageTimeline,
+} from "../../intelligence/sources/registry.js";
 import { isIgnoredPackage, type FreshnessPolicy } from "../../platform/freshness-policy.js";
 import {
   loadMemoryConstraints,
@@ -15,7 +18,12 @@ import {
 } from "../../platform/memory/consume.js";
 import { detectPackageManager } from "../../platform/package-manager/index.js";
 import { isPackageAllowed, loadPolicy, type AutoremediatorPolicy } from "../../platform/policy.js";
-import { defaultFreshnessDeps, mapLimit, type DirectDependency, type FreshnessDeps } from "./deps.js";
+import {
+  defaultFreshnessDeps,
+  mapLimit,
+  type DirectDependency,
+  type FreshnessDeps,
+} from "./deps.js";
 import { distanceBetween, exceedsPolicy, isBehind, penaltyOf, projectScore } from "./distance.js";
 import { climbSteps } from "./path.js";
 import type {
@@ -259,7 +267,12 @@ export function buildClimbs(gathered: Gathered): {
       });
       continue;
     }
-    if (entry.status !== "behind" || entry.exceeds.length === 0 || !entry.installed || !entry.latest) {
+    if (
+      entry.status !== "behind" ||
+      entry.exceeds.length === 0 ||
+      !entry.installed ||
+      !entry.latest
+    ) {
       continue;
     }
     // A person's pin comes first: the package is left alone, whatever else says.
@@ -309,7 +322,12 @@ export function buildClimbs(gathered: Gathered): {
       });
       continue;
     }
-    climbs.push({ packageName: entry.name, installed: entry.installed, latest: entry.latest, steps });
+    climbs.push({
+      packageName: entry.name,
+      installed: entry.installed,
+      latest: entry.latest,
+      steps,
+    });
   }
   return { climbs, unplanned };
 }
@@ -369,7 +387,9 @@ const groupOf = (entry: FreshnessPackage): number => {
 export function sortPackages(packages: readonly FreshnessPackage[]): FreshnessPackage[] {
   return packages.toSorted(
     (a, b) =>
-      groupOf(a) - groupOf(b) || (b.penalty ?? 0) - (a.penalty ?? 0) || a.name.localeCompare(b.name),
+      groupOf(a) - groupOf(b) ||
+      (b.penalty ?? 0) - (a.penalty ?? 0) ||
+      a.name.localeCompare(b.name),
   );
 }
 

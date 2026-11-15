@@ -159,7 +159,12 @@ describe("updateOutdated", () => {
       pinned: new Map([
         [
           "lodash",
-          { kind: "pinned-package", id: "mem_0123456789", package: "lodash", reason: "v5 drops a method we use" },
+          {
+            kind: "pinned-package",
+            id: "mem_0123456789",
+            package: "lodash",
+            reason: "v5 drops a method we use",
+          },
         ],
       ]),
       rejected: new Map(),
@@ -171,7 +176,11 @@ describe("updateOutdated", () => {
     expect(mocked.addEvidenceStep).toHaveBeenCalledWith(
       expect.anything(),
       "update-outdated.skip",
-      expect.objectContaining({ packageName: "lodash", reason: "pinned-by-memory", entry: "mem_0123456789" }),
+      expect.objectContaining({
+        packageName: "lodash",
+        reason: "pinned-by-memory",
+        entry: "mem_0123456789",
+      }),
       {},
     );
 

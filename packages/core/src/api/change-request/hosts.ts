@@ -64,7 +64,9 @@ const PROVIDER_HOSTS: Record<ChangeRequestProvider, RegExp> = {
 };
 
 function hostnameOf(host: string): string {
-  const withoutPort = host.startsWith("[") ? host.replace(/\]:\d+$/, "]") : host.replace(/:\d+$/, "");
+  const withoutPort = host.startsWith("[")
+    ? host.replace(/\]:\d+$/, "]")
+    : host.replace(/:\d+$/, "");
   return withoutPort.toLowerCase();
 }
 
@@ -72,7 +74,9 @@ function hostFromUrlOrHost(value: string | undefined): string | undefined {
   const text = value?.trim();
   if (!text) return undefined;
   try {
-    return hostnameOf(new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `https://${text}`).host);
+    return hostnameOf(
+      new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `https://${text}`).host,
+    );
   } catch {
     return undefined;
   }
@@ -141,7 +145,11 @@ export function checkTokenDestination(check: TokenDestinationCheck): TokenDestin
   }
   if (check.provider === "github") {
     const env = check.env ?? process.env;
-    if (PROVIDER_HOSTS.github.test(host) || namedGitHubHosts(check.githubApiUrl, env).has(host) || check.explicitToken) {
+    if (
+      PROVIDER_HOSTS.github.test(host) ||
+      namedGitHubHosts(check.githubApiUrl, env).has(host) ||
+      check.explicitToken
+    ) {
       return { send: true };
     }
     return {

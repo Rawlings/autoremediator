@@ -16,8 +16,16 @@ const pnpmLock = (packages: string[]) =>
 
 describe("lockfileChanges", () => {
   it("lists packages whose single locked version changed, with direct or transitive scope", () => {
-    const good = npmLock({ "node_modules/a": "1.0.0", "node_modules/b": "1.0.0", "node_modules/same": "2.0.0" });
-    const bad = npmLock({ "node_modules/a": "1.0.1", "node_modules/b": "1.1.0", "node_modules/same": "2.0.0" });
+    const good = npmLock({
+      "node_modules/a": "1.0.0",
+      "node_modules/b": "1.0.0",
+      "node_modules/same": "2.0.0",
+    });
+    const bad = npmLock({
+      "node_modules/a": "1.0.1",
+      "node_modules/b": "1.1.0",
+      "node_modules/same": "2.0.0",
+    });
     const { updates, skipped } = lockfileChanges("package-lock.json", good, bad, new Set(["a"]));
     expect(updates).toEqual([
       { packageName: "a", fromVersion: "1.0.0", toVersion: "1.0.1", dependencyScope: "direct" },
@@ -51,7 +59,12 @@ describe("lockfileChanges", () => {
     const bad = pnpmLock(["foo@1.0.1", "'@scope/bar@2.1.0(react@18.0.0)'", "baz@1.0.0"]);
     const { updates } = lockfileChanges("pnpm-lock.yaml", good, bad, new Set(["foo"]));
     expect(updates).toEqual([
-      { packageName: "@scope/bar", fromVersion: "2.0.0", toVersion: "2.1.0", dependencyScope: "transitive" },
+      {
+        packageName: "@scope/bar",
+        fromVersion: "2.0.0",
+        toVersion: "2.1.0",
+        dependencyScope: "transitive",
+      },
       { packageName: "foo", fromVersion: "1.0.0", toVersion: "1.0.1", dependencyScope: "direct" },
     ]);
   });
@@ -61,7 +74,12 @@ describe("lockfileChanges", () => {
       `# yarn lockfile v1\n\n\nfoo@^1.0.0:\n  version "${version}"\n  resolved "https://example.test/foo-${version}.tgz"\n`;
     const { updates } = lockfileChanges("yarn.lock", lock("1.0.0"), lock("1.2.0"), new Set());
     expect(updates).toEqual([
-      { packageName: "foo", fromVersion: "1.0.0", toVersion: "1.2.0", dependencyScope: "transitive" },
+      {
+        packageName: "foo",
+        fromVersion: "1.0.0",
+        toVersion: "1.2.0",
+        dependencyScope: "transitive",
+      },
     ]);
   });
 

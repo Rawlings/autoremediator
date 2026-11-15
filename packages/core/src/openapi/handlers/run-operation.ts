@@ -4,7 +4,9 @@ import { defaultApiDeps, httpOperations, type Operation } from "../../catalog/in
 import { publicErrorMessage, sendJson } from "../http-utils.js";
 import type { OpenApiServerDeps } from "../server.js";
 
-function describeIssues(error: { issues: Array<{ path: PropertyKey[]; message: string; code: string; keys?: string[] }> }): string {
+function describeIssues(error: {
+  issues: Array<{ path: PropertyKey[]; message: string; code: string; keys?: string[] }>;
+}): string {
   return error.issues
     .map((issue) => {
       const where = issue.path.length > 0 ? `${issue.path.join(".")}: ` : "";

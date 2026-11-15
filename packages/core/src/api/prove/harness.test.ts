@@ -147,8 +147,14 @@ describe("the harness", () => {
         `eval("1")`,
         `const m = "child_" + "process"; require(m)`,
       ]) {
-        const result = await harness.prove(`const assert = require("node:assert");\nrequire("fakepkg");\n${body}\n`);
-        expect({ body, accepted: result.accepted, stage: result.stage }).toEqual({ body, accepted: false, stage: "screen" });
+        const result = await harness.prove(
+          `const assert = require("node:assert");\nrequire("fakepkg");\n${body}\n`,
+        );
+        expect({ body, accepted: result.accepted, stage: result.stage }).toEqual({
+          body,
+          accepted: false,
+          stage: "screen",
+        });
         expect(result.vulnerableRun).toBeUndefined();
       }
     });
@@ -167,7 +173,10 @@ describe("the harness", () => {
         flood();
       `);
       expect(result.accepted).toBe(false);
-      expect(result.vulnerableRun).toMatchObject({ verdict: "output-limit", outputLimitExceeded: true });
+      expect(result.vulnerableRun).toMatchObject({
+        verdict: "output-limit",
+        outputLimitExceeded: true,
+      });
       expect(result.vulnerableRun?.outputTail.length).toBeLessThanOrEqual(2000);
     });
 

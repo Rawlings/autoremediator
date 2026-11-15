@@ -25,7 +25,9 @@ function hookCommand(range: string, host: "cursor" | "copilot"): string {
  * The guard itself always exits 0, so the fallback never replaces a real decision.
  * Source: https://cursor.com/docs/agent/hooks
  */
-export function cursorGuardHookEntry(range: string = `^${PACKAGE_VERSION}`): Record<string, unknown> {
+export function cursorGuardHookEntry(
+  range: string = `^${PACKAGE_VERSION}`,
+): Record<string, unknown> {
   return {
     command: `${hookCommand(range, "cursor")} || echo '{"permission":"allow"}'`,
     matcher: "npm|pnpm|yarn|bun",
@@ -40,7 +42,9 @@ export function cursorGuardHookEntry(range: string = `^${PACKAGE_VERSION}`): Rec
  * then goes through, as it does for Claude Code and Cursor.
  * Source: https://docs.github.com/en/copilot/reference/hooks-reference
  */
-export function copilotGuardHookEntry(range: string = `^${PACKAGE_VERSION}`): Record<string, unknown> {
+export function copilotGuardHookEntry(
+  range: string = `^${PACKAGE_VERSION}`,
+): Record<string, unknown> {
   const base = hookCommand(range, "copilot");
   return {
     type: "command",

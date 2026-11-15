@@ -20,7 +20,10 @@ import type { PlanItem, PlanOptions } from "../../runs/plan.js";
 
 /** The operations that change the project or run the package manager; replaceable in tests. */
 export interface RunDeps {
-  applyItem: (item: PlanItem, context: { cwd: string; options: PlanOptions }) => Promise<PatchResult>;
+  applyItem: (
+    item: PlanItem,
+    context: { cwd: string; options: PlanOptions },
+  ) => Promise<PatchResult>;
   /** Install exactly what the restored lockfile says. */
   reinstall: (context: { cwd: string; options: PlanOptions | undefined }) => Promise<void>;
   verify: (request: VerifyRequest) => Promise<VerificationResult>;
@@ -62,7 +65,9 @@ export const defaultRunDeps: RunDeps = {
   },
 
   async reinstall({ cwd, options }) {
-    const pm = (options?.packageManager as ReturnType<typeof detectPackageManager> | undefined) ?? detectPackageManager(cwd);
+    const pm =
+      (options?.packageManager as ReturnType<typeof detectPackageManager> | undefined) ??
+      detectPackageManager(cwd);
     const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
     // Frozen, so the lockfile that was just restored is installed as it is and not rewritten.
     const [command, ...args] = resolveInstallCommand(

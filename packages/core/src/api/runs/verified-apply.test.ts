@@ -37,7 +37,10 @@ let dir: string;
 const git = (...args: string[]) => execFileSync("git", args, { cwd: dir, stdio: "ignore" });
 const read = (file: string) => readFileSync(join(dir, file), "utf8");
 const setLodash = (version: string) =>
-  writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "app", dependencies: { lodash: version } }, null, 2));
+  writeFileSync(
+    join(dir, "package.json"),
+    JSON.stringify({ name: "app", dependencies: { lodash: version } }, null, 2),
+  );
 
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "verified-apply-"));
@@ -63,7 +66,13 @@ const preview: RemediationReport = {
     severity: "HIGH",
     references: [],
     affectedPackages: [
-      { name: "lodash", ecosystem: "npm", vulnerableRange: "<4.17.21", firstPatchedVersion: "4.17.21", source: "osv" },
+      {
+        name: "lodash",
+        ecosystem: "npm",
+        vulnerableRange: "<4.17.21",
+        firstPatchedVersion: "4.17.21",
+        source: "osv",
+      },
     ],
   },
   vulnerablePackages: [],
@@ -109,10 +118,15 @@ describe("applyPlan with the real verifier", () => {
   it("keeps a change that fixes the advisory and stays in scope", async () => {
     const { runId } = await persistPlan(preview, {}, dir);
 
-    const outcome = await applyPlan({ cwd: dir, runId }, depsThat(() => setLodash("4.17.21")));
+    const outcome = await applyPlan(
+      { cwd: dir, runId },
+      depsThat(() => setLodash("4.17.21")),
+    );
 
     expect(outcome.status).toBe("applied");
-    expect(outcome.items[0]?.verification?.checks.map((check) => [check.name, check.status])).toEqual([
+    expect(
+      outcome.items[0]?.verification?.checks.map((check) => [check.name, check.status]),
+    ).toEqual([
       ["scope", "passed"],
       ["policy", "passed"],
       ["supply-chain", "passed"],
@@ -134,9 +148,9 @@ describe("applyPlan with the real verifier", () => {
     expect(outcome.pending).toHaveLength(1);
     expect(outcome.items[0]).toMatchObject({ status: "failed" });
     expect(outcome.items[0]?.message).toMatch(/Verification failed \(vuln-gone\)/);
-    expect(outcome.items[0]?.verification?.checks.find((check) => check.name === "vuln-gone")?.details).toEqual([
-      "lodash@4.17.5 is still in <4.17.21 (CVE-2021-23337)",
-    ]);
+    expect(
+      outcome.items[0]?.verification?.checks.find((check) => check.name === "vuln-gone")?.details,
+    ).toEqual(["lodash@4.17.5 is still in <4.17.21 (CVE-2021-23337)"]);
     expect(read("package.json")).toBe(before);
     expect(deps.reinstall).toHaveBeenCalledTimes(1);
   });
@@ -151,7 +165,9 @@ describe("applyPlan with the real verifier", () => {
     const outcome = await applyPlan({ cwd: dir, runId }, deps);
 
     expect(outcome.items[0]?.message).toMatch(/Verification failed \(scope\)/);
-    expect(outcome.items[0]?.verification?.checks[0]?.details?.[0]).toMatch(/index.js: project source/);
+    expect(outcome.items[0]?.verification?.checks[0]?.details?.[0]).toMatch(
+      /index.js: project source/,
+    );
     expect(read("index.js")).toBe("module.exports = 1;\n");
     expect(read("package.json")).toContain("4.17.20");
   });
@@ -167,12 +183,17 @@ describe("applyPlan with the real verifier", () => {
     const outcome = await applyPlan({ cwd: dir, runId }, deps);
 
     expect(outcome.items[0]?.message).toMatch(/Verification failed \(scope\)/);
-    expect(getRun({ cwd: dir, runId }).ledger.events.some((event) => event.type === "item.rejected")).toBe(true);
+    expect(
+      getRun({ cwd: dir, runId }).ledger.events.some((event) => event.type === "item.rejected"),
+    ).toBe(true);
   });
 
   it("rejects a major bump the policy does not allow, even though it fixes the advisory", async () => {
     const { runId } = await persistPlan(preview, {}, dir);
-    const outcome = await applyPlan({ cwd: dir, runId }, depsThat(() => setLodash("5.0.0")));
+    const outcome = await applyPlan(
+      { cwd: dir, runId },
+      depsThat(() => setLodash("5.0.0")),
+    );
     expect(outcome.items[0]?.message).toMatch(/Verification failed \(policy\)/);
     expect(read("package.json")).toContain("4.17.20");
   });

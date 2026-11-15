@@ -493,10 +493,7 @@ export const EXIT_CODES = {
 const APPROVAL_REASONS = ["policy-blocked"] as const;
 const POLICY_REASONS = ["constraint-blocked", "major-bump-required"] as const;
 
-function countReasons(
-  counts: CiSummary["unresolvedByReason"],
-  reasons: readonly string[],
-): number {
+function countReasons(counts: CiSummary["unresolvedByReason"], reasons: readonly string[]): number {
   let total = 0;
   for (const reason of reasons) {
     total += (counts as Record<string, number> | undefined)?.[reason] ?? 0;

@@ -42,7 +42,9 @@ describe("readMaintainerVex on every surface", () => {
     expect(matchHttpRoute("POST", "/maintainer-vex")?.operation.name).toBe("readMaintainerVex");
     expect(Object.keys(toOpenApiPaths())).toContain("/maintainer-vex");
     expect(roleFor(byName("readMaintainerVex"))).toBe("reader");
-    expect(mapRequestToInput(byName("readMaintainerVex"), { options: { advisory: "CVE-2026-1" } })).toEqual({
+    expect(
+      mapRequestToInput(byName("readMaintainerVex"), { options: { advisory: "CVE-2026-1" } }),
+    ).toEqual({
       ok: true,
       input: { advisory: "CVE-2026-1" },
     });
@@ -55,7 +57,11 @@ describe("readMaintainerVex on every surface", () => {
       version: "2.0.0",
       dependencies: { "bad-dep": "^1" },
       vex: true,
-      files: { "vex.openvex.json": vexDocument({ name: "lib", version: "2.0.0" }, [{ vulnerability: "CVE-2026-1111" }]) },
+      files: {
+        "vex.openvex.json": vexDocument({ name: "lib", version: "2.0.0" }, [
+          { vulnerability: "CVE-2026-1111" },
+        ]),
+      },
     });
     const { defaultApiDeps } = await import("./api-deps.js");
     const env = { AUTOREMEDIATOR_ALLOWED_ROOTS: dir };

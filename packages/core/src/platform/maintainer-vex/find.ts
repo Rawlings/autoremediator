@@ -84,7 +84,8 @@ export function findMaintainerVex(
     if (about.length === 0) continue;
 
     const dated = about.filter(
-      (entry) => stamp(entry.statement, shipped.document.timestamp) <= now.getTime() + FUTURE_SKEW_MS,
+      (entry) =>
+        stamp(entry.statement, shipped.document.timestamp) <= now.getTime() + FUTURE_SKEW_MS,
     );
     if (dated.length === 0) {
       skip(`${maintainer.name}@${maintainer.version} dates its statement in the future`);
@@ -92,7 +93,9 @@ export function findMaintainerVex(
     }
     // Newest statement wins; on a tie, a statement that is not `not_affected` wins, then the higher version.
     const latest = dated.toSorted((a, b) => {
-      const byTime = stamp(b.statement, shipped.document.timestamp) - stamp(a.statement, shipped.document.timestamp);
+      const byTime =
+        stamp(b.statement, shipped.document.timestamp) -
+        stamp(a.statement, shipped.document.timestamp);
       if (byTime !== 0) return byTime;
       const aOk = a.statement.status === "not_affected" ? 1 : 0;
       const bOk = b.statement.status === "not_affected" ? 1 : 0;
@@ -126,7 +129,9 @@ export function findMaintainerVex(
   }
   // One maintainer saying the advisory affects the package outweighs another saying it does not:
   // acting on "not affected" needs nobody installed to disagree.
-  const disagreement = ignored.find((entry) => /says (affected|under_investigation|fixed)\b/.test(entry.reason));
+  const disagreement = ignored.find((entry) =>
+    /says (affected|under_investigation|fixed)\b/.test(entry.reason),
+  );
   if (disagreement && evidence.length > 0) {
     for (const claim of evidence.splice(0)) {
       ignored.push({

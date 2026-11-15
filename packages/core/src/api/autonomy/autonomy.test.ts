@@ -181,16 +181,18 @@ describe("a caller-supplied policy cannot lift the repository's ceiling", () => 
   it("inline policy that has no autonomy key still leaves the repo's L1 in force", () => {
     policy("  ceiling: L1");
     for (const inline of ["{}", "---\nallowMajorBumps: true\n", '{"autonomy":{"ceiling":"L4"}}']) {
-      expect(() => assertAutonomyAllows(dir, inline, "apply", "anything")).toThrow(AutonomyRefusedError);
+      expect(() => assertAutonomyAllows(dir, inline, "apply", "anything")).toThrow(
+        AutonomyRefusedError,
+      );
     }
   });
 
   it("an explicit policy may make it stricter", () => {
     policy("  ceiling: L3");
     expect(() => assertAutonomyAllows(dir, undefined, "apply", "anything")).not.toThrow();
-    expect(() => assertAutonomyAllows(dir, '{"autonomy":{"ceiling":"L1"}}', "apply", "anything")).toThrow(
-      AutonomyRefusedError,
-    );
+    expect(() =>
+      assertAutonomyAllows(dir, '{"autonomy":{"ceiling":"L1"}}', "apply", "anything"),
+    ).toThrow(AutonomyRefusedError);
   });
 
   it("a caller policy cannot relax the evidence rules while lowering the ceiling", () => {
@@ -532,7 +534,9 @@ describe("robustness", () => {
     policy("  ceiling: L3");
     await seed(2);
     const path = recordPathOf(dir);
-    const json = JSON.parse(read(".autoremediator/track-record.json")) as { events: Array<Record<string, unknown>> };
+    const json = JSON.parse(read(".autoremediator/track-record.json")) as {
+      events: Array<Record<string, unknown>>;
+    };
     json.events[0]!["detail"] = "edited by hand";
     writeFileSync(path, JSON.stringify(json));
     expect(getAutonomy({ cwd: dir })).toMatchObject({

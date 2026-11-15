@@ -13,7 +13,10 @@ const dirs: string[] = [];
 afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
-const project = (policy?: string, dependencies: Record<string, string> = { a: "^1.0.0" }): string => {
+const project = (
+  policy?: string,
+  dependencies: Record<string, string> = { a: "^1.0.0" },
+): string => {
   const dir = makeProject(dependencies, policy);
   dirs.push(dir);
   return dir;
@@ -22,7 +25,12 @@ const project = (policy?: string, dependencies: Record<string, string> = { a: "^
 describe("freshnessReport", () => {
   const packages = {
     // Three majors behind.
-    old: { installed: "1.0.0", latest: "4.0.0", versions: ["1.0.0", "2.0.0", "3.0.0", "4.0.0"], published: { "1.0.0": "2024-06-01T00:00:00Z" } },
+    old: {
+      installed: "1.0.0",
+      latest: "4.0.0",
+      versions: ["1.0.0", "2.0.0", "3.0.0", "4.0.0"],
+      published: { "1.0.0": "2024-06-01T00:00:00Z" },
+    },
     // A minor behind.
     minor: { installed: "2.1.0", latest: "2.2.0", versions: ["2.1.0", "2.2.0"] },
     // Up to date: not reported by `outdated`, but installed.
@@ -97,7 +105,10 @@ describe("freshnessReport", () => {
     );
     expect(report.climbs.map((climb) => climb.packageName)).toEqual(["minor"]);
     expect(report.unplanned).toEqual([
-      { packageName: "old", reason: expect.stringMatching(/registry could not be read for old: registry exploded/) },
+      {
+        packageName: "old",
+        reason: expect.stringMatching(/registry could not be read for old: registry exploded/),
+      },
     ]);
   });
 
@@ -123,7 +134,10 @@ describe("freshnessReport", () => {
       expect(report.counts.unknownAge).toBe(1);
       expect(report.climbs.map((climb) => climb.packageName)).toEqual([]);
       expect(report.unplanned).toEqual([
-        { packageName: "unknown", reason: expect.stringMatching(/age of unknown 1\.0\.0 is unknown.*maxAgeDays/) },
+        {
+          packageName: "unknown",
+          reason: expect.stringMatching(/age of unknown 1\.0\.0 is unknown.*maxAgeDays/),
+        },
       ]);
     });
 
@@ -152,7 +166,11 @@ describe("freshnessReport", () => {
     await freshnessReport({ cwd }, fakeDeps(packages, { assessed }));
     expect(assessed).toEqual([]);
     await freshnessReport({ cwd, assess: true }, fakeDeps(packages, { assessed }));
-    expect(assessed.toSorted()).toEqual(["minor 2.1.0->2.2.0", "old 1.0.0->2.0.0", "skipped 1.0.0->9.0.0"]);
+    expect(assessed.toSorted()).toEqual([
+      "minor 2.1.0->2.2.0",
+      "old 1.0.0->2.0.0",
+      "skipped 1.0.0->9.0.0",
+    ]);
   });
 });
 
@@ -192,7 +210,10 @@ describe("orderClimbs", () => {
   });
 
   it("breaks a tie on rating by step size, then by how near the climb is to done, then by name", () => {
-    const longer = { ...climb("c-long", "minor", "Low"), steps: [step("c-long", "minor"), step("c-long", "major")] };
+    const longer = {
+      ...climb("c-long", "minor", "Low"),
+      steps: [step("c-long", "minor"), step("c-long", "major")],
+    };
     const ordered = orderClimbs([
       climb("b-major", "major", "Low"),
       climb("a-minor", "minor", "Low"),
@@ -216,7 +237,10 @@ describe("orderClimbs", () => {
 
   it("puts held climbs last whatever their rating", () => {
     const held = { held: { reason: "high-breakability" as const, message: "x" } };
-    const ordered = orderClimbs([climb("held-low", "patch", "Low", held), climb("ok-medium", "minor", "Medium")]);
+    const ordered = orderClimbs([
+      climb("held-low", "patch", "Low", held),
+      climb("ok-medium", "minor", "Medium"),
+    ]);
     expect(ordered.map((entry) => entry.packageName)).toEqual(["ok-medium", "held-low"]);
   });
 
@@ -233,19 +257,31 @@ describe("holds", () => {
     safe: { installed: "1.0.0", latest: "1.1.0", versions: ["1.0.0", "1.1.0"] },
   };
   const assess = {
-    risky: { breakability: "High" as const, score: 70, summary: "a removed export is called in src/a.ts." },
+    risky: {
+      breakability: "High" as const,
+      score: 70,
+      summary: "a removed export is called in src/a.ts.",
+    },
   };
 
   it("holds a High step unless allowHigh, and orders it after the safe one", async () => {
-    const cwd = project("allowMajorBumps: true\nfreshness:\n  maxMajorsBehind: 0\n  maxMinorsBehind: 0\n", {});
+    const cwd = project(
+      "allowMajorBumps: true\nfreshness:\n  maxMajorsBehind: 0\n  maxMinorsBehind: 0\n",
+      {},
+    );
     const held = await freshnessReport({ cwd, assess: true }, fakeDeps(table, { assess }));
     expect(held.climbs.map((entry) => entry.packageName)).toEqual(["safe", "risky"]);
     expect(held.climbs[1]!.held).toEqual({
       reason: "high-breakability",
-      message: expect.stringMatching(/a removed export is called in src\/a\.ts\. Held: pass allowHigh/),
+      message: expect.stringMatching(
+        /a removed export is called in src\/a\.ts\. Held: pass allowHigh/,
+      ),
     });
 
-    const allowed = await freshnessReport({ cwd, assess: true, allowHigh: true }, fakeDeps(table, { assess }));
+    const allowed = await freshnessReport(
+      { cwd, assess: true, allowHigh: true },
+      fakeDeps(table, { assess }),
+    );
     expect(allowed.climbs.every((entry) => entry.held === undefined)).toBe(true);
   });
 
@@ -274,7 +310,9 @@ describe("holds", () => {
 
   it("holds a step whose only newer release is deprecated", async () => {
     const cwd = project("freshness:\n  maxMinorsBehind: 0\n", {});
-    const base = fakeDeps({ dep: { installed: "3.4.0", latest: "3.5.0", versions: ["3.4.0", "3.5.0"] } });
+    const base = fakeDeps({
+      dep: { installed: "3.4.0", latest: "3.5.0", versions: ["3.4.0", "3.5.0"] },
+    });
     const deps = {
       ...base,
       async fetchTimeline(name: string, dir: string) {
@@ -292,7 +330,9 @@ describe("holds", () => {
   it("holds a package the policy denies", async () => {
     const cwd = project("denyPackages: [safe]\nfreshness:\n  maxMinorsBehind: 0\n", {});
     const report = await freshnessReport({ cwd }, fakeDeps(table));
-    expect(report.climbs.find((entry) => entry.packageName === "safe")?.held?.reason).toBe("package-not-allowed");
+    expect(report.climbs.find((entry) => entry.packageName === "safe")?.held?.reason).toBe(
+      "package-not-allowed",
+    );
   });
 
   it("rates an upgrade it could not assess as Unknown and does not hold it", async () => {
@@ -300,7 +340,9 @@ describe("holds", () => {
     const report = await freshnessReport(
       { cwd, assess: true },
       fakeDeps(table, {
-        assess: { safe: { breakability: "Unknown", summary: "could not assess safe 1.0.0 -> 1.1.0: 404" } },
+        assess: {
+          safe: { breakability: "Unknown", summary: "could not assess safe 1.0.0 -> 1.1.0: 404" },
+        },
       }),
     );
     const safe = report.climbs.find((entry) => entry.packageName === "safe")!;

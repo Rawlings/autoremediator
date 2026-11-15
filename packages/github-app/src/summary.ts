@@ -3,9 +3,7 @@ import type { ScanReport } from "autoremediator";
 /** Markdown for a comment: what a run did, and what it could not do. */
 export function summarizeScanReport(report: ScanReport, mode: "plan" | "fix"): string {
   const lines: string[] = [
-    mode === "plan"
-      ? "**Autoremediator plan** (nothing was changed)"
-      : "**Autoremediator result**",
+    mode === "plan" ? "**Autoremediator plan** (nothing was changed)" : "**Autoremediator result**",
     "",
   ];
   let rows = 0;
@@ -20,7 +18,9 @@ export function summarizeScanReport(report: ScanReport, mode: "plan" | "fix"): s
         : result.dryRun
           ? "would fix"
           : `not fixed: ${result.unresolvedReason ?? "unknown"}`;
-      lines.push(`- ${cveReport.cveId}: \`${result.packageName}\` ${change} (${result.strategy}), ${outcome}`);
+      lines.push(
+        `- ${cveReport.cveId}: \`${result.packageName}\` ${change} (${result.strategy}), ${outcome}`,
+      );
     }
   }
   if (rows === 0) lines.push("No vulnerable installed packages were found for those advisories.");
@@ -29,8 +29,10 @@ export function summarizeScanReport(report: ScanReport, mode: "plan" | "fix"): s
   }
   const requests = report.changeRequests ?? [];
   for (const request of requests) {
-    if (request.url) lines.push("", `Pull request: ${request.url}${request.updated ? " (updated)" : ""}`);
-    else if (request.error) lines.push("", `Pull request not created: ${request.error.slice(0, 200)}`);
+    if (request.url)
+      lines.push("", `Pull request: ${request.url}${request.updated ? " (updated)" : ""}`);
+    else if (request.error)
+      lines.push("", `Pull request not created: ${request.error.slice(0, 200)}`);
   }
   return lines.join("\n");
 }

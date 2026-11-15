@@ -24,7 +24,8 @@ export type McpToolResult = {
 };
 
 /** Structured content must be an object, so a list result is wrapped as `{ items }`. */
-const isListResponse = (operation: Operation): boolean => operation.response.schema["type"] === "array";
+const isListResponse = (operation: Operation): boolean =>
+  operation.response.schema["type"] === "array";
 
 export function toStructured(operation: Operation, result: unknown): Record<string, unknown> {
   if (isListResponse(operation)) return { items: result };
@@ -127,7 +128,8 @@ export async function callMcpOperation(
       getAllowedRoots(options.env, options.clientRoots),
     );
   } catch (err) {
-    if (err instanceof PathNotAllowedError) return errorResult(JSON.stringify({ error: err.message }));
+    if (err instanceof PathNotAllowedError)
+      return errorResult(JSON.stringify({ error: err.message }));
     throw err;
   }
 
@@ -138,7 +140,8 @@ export async function callMcpOperation(
     } catch (err) {
       return errorResult(err instanceof Error ? err.message : String(err));
     }
-    if (!approved) return errorResult(`${operation.title} was declined by the user; nothing was changed.`);
+    if (!approved)
+      return errorResult(`${operation.title} was declined by the user; nothing was changed.`);
   }
 
   try {

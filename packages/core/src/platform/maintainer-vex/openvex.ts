@@ -8,7 +8,12 @@ import { z } from "zod";
  */
 export const OPENVEX_CONTEXT = "https://openvex.dev/ns/v0.2.0";
 
-export const OPENVEX_STATUSES = ["not_affected", "affected", "fixed", "under_investigation"] as const;
+export const OPENVEX_STATUSES = [
+  "not_affected",
+  "affected",
+  "fixed",
+  "under_investigation",
+] as const;
 export type OpenVexStatus = (typeof OPENVEX_STATUSES)[number];
 
 export const OPENVEX_JUSTIFICATIONS = [

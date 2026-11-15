@@ -19,7 +19,9 @@ describe("screenScript", () => {
   });
 
   it("accepts import syntax, a subpath of the package, and the node: prefix", () => {
-    expect(screen(`import assert from "node:assert";\nimport template from "lodash/template";\n`).ok).toBe(true);
+    expect(
+      screen(`import assert from "node:assert";\nimport template from "lodash/template";\n`).ok,
+    ).toBe(true);
     expect(screen(`const assert = require("assert/strict");\nrequire("lodash/fp");`).ok).toBe(true);
   });
 
@@ -36,8 +38,14 @@ describe("screenScript", () => {
     ["fetch", `require("lodash"); fetch("http://x");`],
     ["eval", `require("lodash"); eval("1");`],
     ["the Function constructor", `require("lodash"); new Function("return 1")();`],
-    ["the constructor chain", `require("lodash"); ({}).constructor.constructor("return process")();`],
-    ["a version check", `require("lodash"); if (require("lodash").VERSION) {}\nconst v = _.version;`],
+    [
+      "the constructor chain",
+      `require("lodash"); ({}).constructor.constructor("return process")();`,
+    ],
+    [
+      "a version check",
+      `require("lodash"); if (require("lodash").VERSION) {}\nconst v = _.version;`,
+    ],
     ["the manifest", `require("lodash"); require("lodash/package.json");`],
     ["a version it was told", `require("lodash"); if (x === "4.17.18") process.exit(1);`],
   ])("refuses %s", (_name, body) => {
@@ -48,14 +56,23 @@ describe("screenScript", () => {
 
   it.each([
     ["a concatenated module name", `require("lodash"); require("child_"+"process");`],
-    ["a template-built module name", ["require(\"lodash\"); require(`child_", "$", "{\"process\"}`);"].join("")],
+    [
+      "a template-built module name",
+      ['require("lodash"); require(`child_', "$", '{"process"}`);'].join(""),
+    ],
     ["destructuring the environment", `require("lodash"); const { env } = process;`],
     ["a computed process member", `require("lodash"); process["env"];`],
     ["an indirect eval", `require("lodash"); (0, eval)("1");`],
     ["process aliased", `require("lodash"); const p = process; p.binding("fs");`],
     ["a computed manifest path", `require("lodash"); require("lodash/package" + ".json");`],
-    ["the script's own location", `require("lodash"); if (__dirname.endsWith("vulnerable")) process.exit(1);`],
-    ["the working directory", `require("lodash"); if (process.cwd().includes("fixed")) process.exit(1);`],
+    [
+      "the script's own location",
+      `require("lodash"); if (__dirname.endsWith("vulnerable")) process.exit(1);`,
+    ],
+    [
+      "the working directory",
+      `require("lodash"); if (process.cwd().includes("fixed")) process.exit(1);`,
+    ],
     ["a bare require used as a value", `const r = require; r("lodash"); r("child_process");`],
     ["require.resolve", `require("lodash"); require.resolve("lodash");`],
     ["the module object", `require("lodash"); module.require("child_process");`],

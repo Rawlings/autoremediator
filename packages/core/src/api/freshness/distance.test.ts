@@ -42,13 +42,23 @@ describe("distanceBetween", () => {
 
   it("reports the age of the installed version in whole days, and omits it without a date", () => {
     expect(
-      distanceBetween({ installed: "1.0.0", latest: "2.0.0", installedPublishedAt: daysAgo(400), now: NOW })
-        ?.ageDays,
+      distanceBetween({
+        installed: "1.0.0",
+        latest: "2.0.0",
+        installedPublishedAt: daysAgo(400),
+        now: NOW,
+      })?.ageDays,
     ).toBe(400);
-    expect(distanceBetween({ installed: "1.0.0", latest: "2.0.0", now: NOW })?.ageDays).toBeUndefined();
     expect(
-      distanceBetween({ installed: "1.0.0", latest: "2.0.0", installedPublishedAt: "not a date", now: NOW })
-        ?.ageDays,
+      distanceBetween({ installed: "1.0.0", latest: "2.0.0", now: NOW })?.ageDays,
+    ).toBeUndefined();
+    expect(
+      distanceBetween({
+        installed: "1.0.0",
+        latest: "2.0.0",
+        installedPublishedAt: "not a date",
+        now: NOW,
+      })?.ageDays,
     ).toBeUndefined();
   });
 
@@ -68,9 +78,9 @@ describe("exceedsPolicy", () => {
     expect(exceedsPolicy(distance, true, { maxMajorsBehind: 1, ignore: [] })).toEqual([
       "2 majors behind (limit 1)",
     ]);
-    expect(exceedsPolicy(distance, true, { maxMajorsBehind: 2, maxAgeDays: 365, ignore: [] })).toEqual([
-      "installed version is 500 days old (limit 365)",
-    ]);
+    expect(
+      exceedsPolicy(distance, true, { maxMajorsBehind: 2, maxAgeDays: 365, ignore: [] }),
+    ).toEqual(["installed version is 500 days old (limit 365)"]);
     expect(
       exceedsPolicy({ ...distance, majorsBehind: 0, minorsBehind: 4 }, true, {
         maxMinorsBehind: 3,
@@ -80,11 +90,15 @@ describe("exceedsPolicy", () => {
   });
 
   it("treats 0 as a real limit", () => {
-    expect(exceedsPolicy({ ...distance, majorsBehind: 1 }, true, { maxMajorsBehind: 0, ignore: [] })).toHaveLength(1);
+    expect(
+      exceedsPolicy({ ...distance, majorsBehind: 1 }, true, { maxMajorsBehind: 0, ignore: [] }),
+    ).toHaveLength(1);
   });
 
   it("never flags a package that is not behind, however old its version", () => {
-    expect(exceedsPolicy({ ...distance, majorsBehind: 0 }, false, { maxAgeDays: 1, ignore: [] })).toEqual([]);
+    expect(
+      exceedsPolicy({ ...distance, majorsBehind: 0 }, false, { maxAgeDays: 1, ignore: [] }),
+    ).toEqual([]);
   });
 
   it("flags nothing without a policy", () => {

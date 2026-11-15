@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { clearCisaKevCache, enrichWithCisaKev, findKevEntry } from "./cisa-kev.js";
 import type { CveDetails } from "../../platform/types.js";
+import { clearCisaKevCache, enrichWithCisaKev, findKevEntry } from "./cisa-kev.js";
 
 describe("cisa-kev source", () => {
   it("finds a matching CVE in the KEV feed", () => {

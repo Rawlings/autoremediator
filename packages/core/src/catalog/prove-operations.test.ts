@@ -31,7 +31,9 @@ afterEach(() => {
 describe("generateProofOfFix on every surface", () => {
   it("is an MCP tool, an HTTP route and an OpenAPI path generated from the catalog", () => {
     expect(toMcpTools().map((tool) => tool.name)).toContain("generateProofOfFix");
-    expect(matchHttpRoute("POST", "/proof-of-fix/generate")?.operation.name).toBe("generateProofOfFix");
+    expect(matchHttpRoute("POST", "/proof-of-fix/generate")?.operation.name).toBe(
+      "generateProofOfFix",
+    );
     expect(Object.keys(toOpenApiPaths())).toContain("/proof-of-fix/generate");
     // It writes files into the project's patches directory, runs a model and uses the network, but
     // changes no dependency: an operator, not an admin; not read-only.
@@ -45,13 +47,23 @@ describe("generateProofOfFix on every surface", () => {
 
   it("takes the advisory at the top level of an HTTP body and the rest under options", () => {
     expect(
-      mapRequestToInput(operation, { cveId: "GHSA-abcd-efgh-ijkl", options: { package: "lodash", maxTrials: 2 } }),
-    ).toEqual({ ok: true, input: { package: "lodash", maxTrials: 2, cveId: "GHSA-abcd-efgh-ijkl" } });
-    expect(mapRequestToInput(operation, { cveId: "x", package: "lodash" })).toMatchObject({ ok: false });
+      mapRequestToInput(operation, {
+        cveId: "GHSA-abcd-efgh-ijkl",
+        options: { package: "lodash", maxTrials: 2 },
+      }),
+    ).toEqual({
+      ok: true,
+      input: { package: "lodash", maxTrials: 2, cveId: "GHSA-abcd-efgh-ijkl" },
+    });
+    expect(mapRequestToInput(operation, { cveId: "x", package: "lodash" })).toMatchObject({
+      ok: false,
+    });
   });
 
   it("marks the key and the patches directory as paths, so remote callers are confined to the allowed roots", () => {
-    const properties = (inputJsonSchema(operation) as { properties: Record<string, { "x-path"?: boolean }> }).properties;
+    const properties = (
+      inputJsonSchema(operation) as { properties: Record<string, { "x-path"?: boolean }> }
+    ).properties;
     expect(properties["signingKeyPath"]?.["x-path"]).toBe(true);
     expect(properties["patchesDir"]?.["x-path"]).toBe(true);
     expect(properties["cwd"]?.["x-path"]).toBe(true);
@@ -61,14 +73,22 @@ describe("generateProofOfFix on every surface", () => {
     expect(Object.keys(operation.input.shape)).not.toContain("overwrite");
     expect(Object.keys(operation.input.shape)).not.toContain("agent");
     await expect(
-      callMcpOperation("generateProofOfFix", { cveId: "GHSA-abcd-efgh-ijkl", overwrite: true }, deps),
+      callMcpOperation(
+        "generateProofOfFix",
+        { cveId: "GHSA-abcd-efgh-ijkl", overwrite: true },
+        deps,
+      ),
     ).resolves.toMatchObject({ isError: true });
     expect(deps.generateProofOfFixFn).not.toHaveBeenCalled();
   });
 
   it("refuses a signing key or patches directory outside the allowed roots", async () => {
     const env = { AUTOREMEDIATOR_ALLOWED_ROOTS: dir };
-    for (const extra of [{ signingKeyPath: "/etc/passwd" }, { patchesDir: "/etc/patches" }, { cwd: "/etc" }]) {
+    for (const extra of [
+      { signingKeyPath: "/etc/passwd" },
+      { patchesDir: "/etc/patches" },
+      { cwd: "/etc" },
+    ]) {
       const result = await callMcpOperation(
         "generateProofOfFix",
         { cveId: "GHSA-abcd-efgh-ijkl", cwd: dir, ...extra },

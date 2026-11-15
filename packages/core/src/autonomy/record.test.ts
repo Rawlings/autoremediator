@@ -138,8 +138,11 @@ describe("damaged records are refused, never replaced", () => {
 });
 
 describe("the hash chain", () => {
-  const readJson = (): { schemaVersion: number; head?: string; events: Array<Record<string, unknown>> } =>
-    JSON.parse(readFileSync(recordPathOf(dir), "utf8")) as ReturnType<typeof readJson>;
+  const readJson = (): {
+    schemaVersion: number;
+    head?: string;
+    events: Array<Record<string, unknown>>;
+  } => JSON.parse(readFileSync(recordPathOf(dir), "utf8")) as ReturnType<typeof readJson>;
   const writeJson = (value: unknown) => write(JSON.stringify(value));
   const fixed = () => new Date("2026-03-04T05:06:07.000Z");
   const chain = /hash chain is broken/;
@@ -173,9 +176,13 @@ describe("the hash chain", () => {
   });
 
   it("refuses events reordered, even when the sequence numbers are renumbered", async () => {
-    await appendTrackEvents(dir, [event(1), event(2, { type: "rollback" }), event(3)], { now: fixed });
+    await appendTrackEvents(dir, [event(1), event(2, { type: "rollback" }), event(3)], {
+      now: fixed,
+    });
     const json = readJson();
-    json.events = [json.events[1]!, json.events[0]!, json.events[2]!].map((e, index) => Object.assign(e, { seq: index + 1 }));
+    json.events = [json.events[1]!, json.events[0]!, json.events[2]!].map((e, index) =>
+      Object.assign(e, { seq: index + 1 }),
+    );
     writeJson(json);
     expect(() => readTrackRecord(dir)).toThrow(chain);
   });
@@ -239,7 +246,9 @@ describe("the hash chain", () => {
       expect(record.events.map((e) => e.seq)).toEqual([1, 2, 3, 4]);
       expect(record.events.every((e) => typeof e.prev === "string")).toBe(true);
       // The old events keep their content.
-      const upgraded = readJson().events.slice(0, 3).map(({ prev: _prev, ...rest }) => rest);
+      const upgraded = readJson()
+        .events.slice(0, 3)
+        .map(({ prev: _prev, ...rest }) => rest);
       expect(upgraded).toEqual(legacy(3).events);
       // And from then on the chain is enforced: stripping a hash is refused.
       const json = readJson();

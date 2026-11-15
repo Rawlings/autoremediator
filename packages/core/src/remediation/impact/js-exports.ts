@@ -80,7 +80,9 @@ function isFunctionNode(node: AstNode | undefined): node is AstNode {
 }
 
 function isClassNode(node: AstNode | undefined): node is AstNode {
-  return node !== undefined && (node.type === "ClassDeclaration" || node.type === "ClassExpression");
+  return (
+    node !== undefined && (node.type === "ClassDeclaration" || node.type === "ClassExpression")
+  );
 }
 
 function identName(node: unknown): string | undefined {
@@ -577,7 +579,8 @@ export function analyzeModule(path: string, code: string): ModuleInfo | undefine
     });
   }
 
-  let discovery: ModuleInfo["discovery"] = exports.size > 0 || reexports.length > 0 ? "declared" : "none";
+  let discovery: ModuleInfo["discovery"] =
+    exports.size > 0 || reexports.length > 0 ? "declared" : "none";
   if (discovery === "none") {
     // UMD bundles such as lodash export a namespace function built up with `ns.name = fn`.
     const counts = new Map<string, number>();

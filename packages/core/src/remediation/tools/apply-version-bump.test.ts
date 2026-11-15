@@ -78,7 +78,10 @@ describe("applyVersionBumpTool authentic on-disk verification", () => {
 
   it("pins a rollback exactly, so a caret range cannot keep the version being rolled back from", async () => {
     const pkgPath = join(tempDir, "package.json");
-    writeFileSync(pkgPath, JSON.stringify({ name: "demo", dependencies: { lodash: "^4.17.21" } }, null, 2));
+    writeFileSync(
+      pkgPath,
+      JSON.stringify({ name: "demo", dependencies: { lodash: "^4.17.21" } }, null, 2),
+    );
 
     const result = await (applyVersionBumpTool as any).execute({
       cwd: tempDir,
@@ -134,7 +137,8 @@ describe("applyVersionBumpTool authentic on-disk verification", () => {
   it("puts back the exact original bytes when the upgrade is rolled back", async () => {
     const pkgPath = join(tempDir, "package.json");
     // Tabs, CRLF line endings, no final newline, and a key order JSON.stringify would not choose.
-    const original = '{\r\n\t"name": "demo",\r\n\t"dependencies": {\r\n\t\t"lodash": "^4.17.0"\r\n\t}\r\n}';
+    const original =
+      '{\r\n\t"name": "demo",\r\n\t"dependencies": {\r\n\t\t"lodash": "^4.17.0"\r\n\t}\r\n}';
     writeFileSync(pkgPath, original);
     writeFileSync(join(tempDir, "tsconfig.json"), "{}");
     mockSafeExeca.mockImplementation(async (file: string, args: readonly string[]) => {
@@ -161,7 +165,10 @@ describe("applyVersionBumpTool authentic on-disk verification", () => {
 
   it("keeps the file's indentation, line endings and final newline when it upgrades", async () => {
     const pkgPath = join(tempDir, "package.json");
-    writeFileSync(pkgPath, '{\n\t"name": "demo",\n\t"dependencies": {\n\t\t"lodash": "^4.17.0"\n\t}\n}\n');
+    writeFileSync(
+      pkgPath,
+      '{\n\t"name": "demo",\n\t"dependencies": {\n\t\t"lodash": "^4.17.0"\n\t}\n}\n',
+    );
 
     await (applyVersionBumpTool as any).execute({
       cwd: tempDir,

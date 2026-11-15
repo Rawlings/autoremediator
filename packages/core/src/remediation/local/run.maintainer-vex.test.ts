@@ -8,8 +8,8 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { CveDetails } from "../../platform/types.js";
 import { installFake, vexDocument } from "../../platform/maintainer-vex/__tests__/fixtures.js";
+import type { CveDetails } from "../../platform/types.js";
 
 const { mockOsv, mockInventory, mockPrimaryResult, mockFindVulnerable } = vi.hoisted(() => ({
   mockOsv: vi.fn(),
@@ -27,14 +27,19 @@ vi.mock("../../intelligence/sources/nvd.js", () => ({ enrichWithNvd: async (d: C
 vi.mock("../../intelligence/sources/cisa-kev.js", () => ({
   enrichWithCisaKev: async (d: CveDetails) => d,
 }));
-vi.mock("../../intelligence/sources/epss.js", () => ({ enrichWithEpss: async (d: CveDetails) => d }));
+vi.mock("../../intelligence/sources/epss.js", () => ({
+  enrichWithEpss: async (d: CveDetails) => d,
+}));
 vi.mock("../tools/check-inventory.js", () => ({ checkInventoryTool: { execute: mockInventory } }));
 vi.mock("./primary-strategy.js", () => ({ resolvePrimaryResult: mockPrimaryResult }));
-vi.mock("./fallback.js", () => ({ shouldAttemptPatchFallback: () => false, tryPatchFallback: vi.fn() }));
+vi.mock("./fallback.js", () => ({
+  shouldAttemptPatchFallback: () => false,
+  tryPatchFallback: vi.fn(),
+}));
 vi.mock("./vulnerability-match.js", () => ({ findVulnerablePackages: mockFindVulnerable }));
 
-import { runLocalRemediationPipeline } from "./run.js";
 import { toCycloneDxVex } from "../../api/vex/index.js";
+import { runLocalRemediationPipeline } from "./run.js";
 
 const CVE = "CVE-2026-1111";
 const details: CveDetails = {
@@ -42,7 +47,13 @@ const details: CveDetails = {
   summary: "Test vulnerability",
   severity: "HIGH",
   affectedPackages: [
-    { name: "bad-dep", ecosystem: "npm", vulnerableRange: "<2.0.0", firstPatchedVersion: "2.0.0", source: "osv" },
+    {
+      name: "bad-dep",
+      ecosystem: "npm",
+      vulnerableRange: "<2.0.0",
+      firstPatchedVersion: "2.0.0",
+      source: "osv",
+    },
   ],
   references: [],
 };
@@ -59,7 +70,11 @@ beforeEach(() => {
     vex: true,
     files: {
       "vex.openvex.json": vexDocument({ name: "lib", version: "2.0.0" }, [
-        { vulnerability: CVE, subcomponents: ["pkg:npm/bad-dep"], impact: "Never calls the parser." },
+        {
+          vulnerability: CVE,
+          subcomponents: ["pkg:npm/bad-dep"],
+          impact: "Never calls the parser.",
+        },
       ]),
     },
   });
@@ -71,7 +86,10 @@ beforeEach(() => {
     ],
   });
   mockFindVulnerable.mockReturnValue([
-    { installed: { name: "bad-dep", version: "1.0.0", type: "transitive" }, affected: details.affectedPackages[0] },
+    {
+      installed: { name: "bad-dep", version: "1.0.0", type: "transitive" },
+      affected: details.affectedPackages[0],
+    },
   ]);
   mockPrimaryResult.mockResolvedValue({
     result: {
@@ -165,7 +183,9 @@ describe("maintainer VEX in remediation", () => {
       version: "1.0.0",
       vex: true,
       files: {
-        "vex.openvex.json": vexDocument({ name: "bad-dep", version: "1.0.0" }, [{ vulnerability: CVE }]),
+        "vex.openvex.json": vexDocument({ name: "bad-dep", version: "1.0.0" }, [
+          { vulnerability: CVE },
+        ]),
       },
     });
     writePolicy("trustMaintainerVex: true\n");

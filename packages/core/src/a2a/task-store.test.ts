@@ -50,7 +50,10 @@ describe("truncateMessage", () => {
     };
 
   it("keeps a short message as it is", () => {
-    const short = message([{ text: "hello" }, { data: { operation: "guardPackage", input: { spec: "x" } } }]);
+    const short = message([
+      { text: "hello" },
+      { data: { operation: "guardPackage", input: { spec: "x" } } },
+    ]);
     expect(truncateMessage(short)).toEqual(short);
   });
 

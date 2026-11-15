@@ -56,12 +56,18 @@ function findUp(file: string, cwd: string): string | undefined {
 /** A non-negative finite number from a config value; anything else is "not set". */
 function toNumber(value: unknown): number | undefined {
   const parsed =
-    typeof value === "number" ? value : typeof value === "string" ? Number(value.trim()) : Number.NaN;
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value.trim())
+        : Number.NaN;
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
 function toStringList(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
 }
 
 function readYamlFile(path: string | undefined): Record<string, unknown> {
@@ -92,7 +98,8 @@ const toCooldown = (
   hours: number | undefined,
   exclude: string[],
   source: string,
-): Cooldown | undefined => (hours !== undefined && hours > 0 ? { hours, exclude, source } : undefined);
+): Cooldown | undefined =>
+  hours !== undefined && hours > 0 ? { hours, exclude, source } : undefined;
 
 type CooldownReader = (cwd: string, env: NodeJS.ProcessEnv) => Cooldown | undefined;
 

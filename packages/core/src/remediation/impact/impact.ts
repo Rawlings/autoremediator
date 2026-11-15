@@ -9,7 +9,11 @@
  */
 import { compareSurfaces, type ApiChange, type ChangeSeverity } from "./api-diff.js";
 import { extractDtsSurface, extractJsSurface, type ApiSurface } from "./dts-surface.js";
-import { comparePackageManifests, isSubpathExported, type PackageLevelChange } from "./manifest-diff.js";
+import {
+  comparePackageManifests,
+  isSubpathExported,
+  type PackageLevelChange,
+} from "./manifest-diff.js";
 import { PackageIndex, specifierFor, type EntryPoint } from "./package-index.js";
 import type { CallSite, PackageSource } from "./types.js";
 import { sitesForExport, sitesForStaticMember, type UsageIndex } from "./usage-index.js";
@@ -29,7 +33,9 @@ export type FindingEvidence =
   | "unresolved";
 
 /** Points per finding. The breakability rating is a function of these and nothing else. */
-export const IMPACT_POINTS: Readonly<Record<FindingEvidence, Readonly<Record<ChangeSeverity, number>>>> = {
+export const IMPACT_POINTS: Readonly<
+  Record<FindingEvidence, Readonly<Record<ChangeSeverity, number>>>
+> = {
   "project-usage": { breaking: 50, "possibly-breaking": 20 },
   "name-match": { breaking: 20, "possibly-breaking": 8 },
   "project-conflict": { breaking: 50, "possibly-breaking": 50 },
@@ -45,7 +51,9 @@ export const MEDIUM_THRESHOLD = 15;
  * the project's manifest proves. Everything else tops out at Medium, however many findings.
  */
 export function isHard(evidence: FindingEvidence, severity: ChangeSeverity): boolean {
-  return severity === "breaking" && (evidence === "project-usage" || evidence === "project-conflict");
+  return (
+    severity === "breaking" && (evidence === "project-usage" || evidence === "project-conflict")
+  );
 }
 
 export interface ImpactFinding {
@@ -71,7 +79,9 @@ export interface Rating {
 }
 
 /** The rating for a set of findings. Pure and deterministic. */
-export function rate(findings: ReadonlyArray<Pick<ImpactFinding, "evidence" | "severity" | "points">>): Rating {
+export function rate(
+  findings: ReadonlyArray<Pick<ImpactFinding, "evidence" | "severity" | "points">>,
+): Rating {
   const score = findings.reduce((total, finding) => total + finding.points, 0);
   if (findings.some((finding) => isHard(finding.evidence, finding.severity))) {
     return { score, breakability: "High" };
@@ -129,11 +139,14 @@ function uniqueSites(sites: CallSite[]): CallSite[] {
 function pseudoEntry(index: PackageIndex, subpath: string): EntryPoint | undefined {
   const known = index.entries.find((entry) => entry.subpath === subpath);
   if (known) return known;
-  if (index.source.manifest.exports !== undefined && index.source.manifest.exports !== null) return undefined;
+  if (index.source.manifest.exports !== undefined && index.source.manifest.exports !== null)
+    return undefined;
   const relative = subpath.replace(/^\.\//, "");
   const file = index.resolveRelative("package.json", `./${relative}`);
   const base = relative.replace(/\.[cm]?js$/, "");
-  const typesFile = [`${base}.d.ts`, `${base}/index.d.ts`].find((candidate) => index.hasFile(candidate));
+  const typesFile = [`${base}.d.ts`, `${base}/index.d.ts`].find((candidate) =>
+    index.hasFile(candidate),
+  );
   return file || typesFile ? { subpath, file, typesFile } : undefined;
 }
 
@@ -150,7 +163,10 @@ function surfacesFor(
     };
   }
   if (oldEntry.file && newEntry.file) {
-    return { before: extractJsSurface(before, oldEntry.file), after: extractJsSurface(after, newEntry.file) };
+    return {
+      before: extractJsSurface(before, oldEntry.file),
+      after: extractJsSurface(after, newEntry.file),
+    };
   }
   return undefined;
 }
@@ -170,7 +186,9 @@ function intersectApiChange(change: ApiChange, usage: UsageIndex): Intersection 
     if (change.arity && change.category === "signature-changed") {
       const { min, max } = change.arity;
       const calls = exportSites.filter((site) => site.kind === "call" || site.kind === "new");
-      const bad = calls.filter((site) => site.argCount !== undefined && (site.argCount < min || site.argCount > max));
+      const bad = calls.filter(
+        (site) => site.argCount !== undefined && (site.argCount < min || site.argCount > max),
+      );
       const unknown = exportSites.filter(
         (site) =>
           site.kind !== "import" &&
@@ -189,12 +207,22 @@ function intersectApiChange(change: ApiChange, usage: UsageIndex): Intersection 
     const calls = exportSites.filter((site) => site.kind === "call");
     if (change.arity) {
       const { min, max } = change.arity;
-      const bad = calls.filter((site) => site.argCount !== undefined && (site.argCount < min || site.argCount > max));
-      return { sites: bad, evidence: "project-usage", compatible: calls.length > 0 && bad.length === 0 };
+      const bad = calls.filter(
+        (site) => site.argCount !== undefined && (site.argCount < min || site.argCount > max),
+      );
+      return {
+        sites: bad,
+        evidence: "project-usage",
+        compatible: calls.length > 0 && bad.length === 0,
+      };
     }
     return { sites: calls, evidence: "project-usage" };
   }
-  const objectLike = change.memberOf === "enum" || change.memberOf === "namespace" || change.memberOf === "object" || change.member.startsWith("static ");
+  const objectLike =
+    change.memberOf === "enum" ||
+    change.memberOf === "namespace" ||
+    change.memberOf === "object" ||
+    change.member.startsWith("static ");
   if (objectLike) {
     // `pkg.member` where `pkg` is the module object (default export or `require()` result) is a
     // use of the export named `member`; for a named export it is a member access on that binding.
@@ -204,8 +232,17 @@ function intersectApiChange(change: ApiChange, usage: UsageIndex): Intersection 
         : sitesForStaticMember(usage, change.specifier, exportName, memberName);
     if (change.arity) {
       const { min, max } = change.arity;
-      const bad = sites.filter((site) => site.kind === "call" && site.argCount !== undefined && (site.argCount < min || site.argCount > max));
-      return { sites: bad, evidence: "project-usage", compatible: sites.length > 0 && bad.length === 0 };
+      const bad = sites.filter(
+        (site) =>
+          site.kind === "call" &&
+          site.argCount !== undefined &&
+          (site.argCount < min || site.argCount > max),
+      );
+      return {
+        sites: bad,
+        evidence: "project-usage",
+        compatible: sites.length > 0 && bad.length === 0,
+      };
     }
     return { sites, evidence: "project-usage" };
   }
@@ -213,8 +250,14 @@ function intersectApiChange(change: ApiChange, usage: UsageIndex): Intersection 
     const constructed = exportSites.filter((site) => site.kind === "new");
     if (change.arity) {
       const { min, max } = change.arity;
-      const bad = constructed.filter((site) => site.argCount !== undefined && (site.argCount < min || site.argCount > max));
-      return { sites: bad, evidence: "project-usage", compatible: constructed.length > 0 && bad.length === 0 };
+      const bad = constructed.filter(
+        (site) => site.argCount !== undefined && (site.argCount < min || site.argCount > max),
+      );
+      return {
+        sites: bad,
+        evidence: "project-usage",
+        compatible: constructed.length > 0 && bad.length === 0,
+      };
     }
     return { sites: constructed, evidence: "project-usage" };
   }
@@ -323,7 +366,12 @@ export function analyzeUpgrade(input: AnalyzeUpgradeInput): UpgradeImpact {
   for (const change of apiChanges) {
     const reach = intersectApiChange(change, usage);
     if (reach.sites.length === 0) {
-      if (!reach.compatible && (usage.opaque.get(change.specifier)?.length ?? 0) > 0 && change.severity === "breaking") opaqueBreaking++;
+      if (
+        !reach.compatible &&
+        (usage.opaque.get(change.specifier)?.length ?? 0) > 0 &&
+        change.severity === "breaking"
+      )
+        opaqueBreaking++;
       countUnreached(change.severity);
       continue;
     }
@@ -368,9 +416,20 @@ export function analyzeUpgrade(input: AnalyzeUpgradeInput): UpgradeImpact {
   const projectUsesPackage = usage.specifiers.size > 0;
   const requireSites = [...usage.requireSites.values()].flat();
   const importSites = [...usage.importSites.values()].flat();
-  const packageChanges = comparePackageManifests(before.manifest, after.manifest, projectManifest, input.runtimeNode);
+  const packageChanges = comparePackageManifests(
+    before.manifest,
+    after.manifest,
+    projectManifest,
+    input.runtimeNode,
+  );
   for (const change of packageChanges) {
-    const finding = packageChangeFinding(change, { usage, packageName, requireSites, importSites, after });
+    const finding = packageChangeFinding(change, {
+      usage,
+      packageName,
+      requireSites,
+      importSites,
+      after,
+    });
     if (finding) findings.push(finding);
     else countUnreached(change.severity);
   }
@@ -428,7 +487,10 @@ export function analyzeUpgrade(input: AnalyzeUpgradeInput): UpgradeImpact {
 
 function usageSites(usage: UsageIndex, specifier: string): CallSite[] {
   const sites: CallSite[] = [];
-  sites.push(...(usage.importSites.get(specifier) ?? []), ...(usage.requireSites.get(specifier) ?? []));
+  sites.push(
+    ...(usage.importSites.get(specifier) ?? []),
+    ...(usage.requireSites.get(specifier) ?? []),
+  );
   return sites;
 }
 
@@ -451,26 +513,41 @@ function packageChangeFinding(
   };
 
   if (change.category === "exports-map") {
-    const deepSpecifiers = [...context.usage.specifiers].filter((specifier) => specifier.startsWith(`${context.packageName}/`));
+    const deepSpecifiers = [...context.usage.specifiers].filter((specifier) =>
+      specifier.startsWith(`${context.packageName}/`),
+    );
     const gone = deepSpecifiers.filter((specifier) => {
       const subpath = `./${specifier.slice(context.packageName.length + 1)}`;
       return change.restrictsDeepImports
         ? !isSubpathExported(context.after.manifest, subpath)
-        : (change.removedSubpaths ?? []).includes(subpath) && !isSubpathExported(context.after.manifest, subpath);
+        : (change.removedSubpaths ?? []).includes(subpath) &&
+            !isSubpathExported(context.after.manifest, subpath);
     });
     if (gone.length === 0) return undefined;
     return toFinding(
-      { ...base, severity: "breaking", evidence: "project-usage", specifier: gone[0], reason: `${change.reason}; the project imports ${gone.map((specifier) => `\`${specifier}\``).join(", ")}` },
+      {
+        ...base,
+        severity: "breaking",
+        evidence: "project-usage",
+        specifier: gone[0],
+        reason: `${change.reason}; the project imports ${gone.map((specifier) => `\`${specifier}\``).join(", ")}`,
+      },
       gone.flatMap((specifier) => usageSites(context.usage, specifier)),
     );
   }
   if (change.category === "module-format") {
     if (change.affectsRequire) {
       if (context.requireSites.length === 0) return undefined;
-      return toFinding({ ...base, severity: change.severity, evidence: "project-usage" }, context.requireSites);
+      return toFinding(
+        { ...base, severity: change.severity, evidence: "project-usage" },
+        context.requireSites,
+      );
     }
     if (context.importSites.length === 0) return undefined;
-    return toFinding({ ...base, severity: change.severity, evidence: "unresolved" }, context.importSites);
+    return toFinding(
+      { ...base, severity: change.severity, evidence: "unresolved" },
+      context.importSites,
+    );
   }
   // engines and peer dependencies concern the project as a whole, not a call site.
   return toFinding(
@@ -500,7 +577,14 @@ function summarize(
       ? ` ${unreached.breaking} breaking and ${unreached.possiblyBreaking} possibly-breaking change${unreached.breaking + unreached.possiblyBreaking === 1 ? "" : "s"} do not touch code in this project.`
       : "";
   if (breakability === "High") {
-    return `High: ${hard.length} breaking change${hard.length === 1 ? "" : "s"} hit this project${sites.length > 0 ? `, e.g. ${sites.slice(0, 3).map((site) => describeSite(site)).join(", ")}` : ""}.${unreachedText}`;
+    return `High: ${hard.length} breaking change${hard.length === 1 ? "" : "s"} hit this project${
+      sites.length > 0
+        ? `, e.g. ${sites
+            .slice(0, 3)
+            .map((site) => describeSite(site))
+            .join(", ")}`
+        : ""
+    }.${unreachedText}`;
   }
   if (breakability === "Medium") {
     return `Medium: ${findings.length} change${findings.length === 1 ? "" : "s"} may affect this project and could not be ruled out.${unreachedText}`;

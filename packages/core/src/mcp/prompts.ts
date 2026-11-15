@@ -21,15 +21,23 @@ interface PromptDefinition {
   validate: (args: Record<string, string>) => string | undefined;
 }
 
-const need = (args: Record<string, string>, name: string, pattern: RegExp, what: string): string | undefined =>
+const need = (
+  args: Record<string, string>,
+  name: string,
+  pattern: RegExp,
+  what: string,
+): string | undefined =>
   args[name] && pattern.test(args[name]) ? undefined : `${name} is required: ${what}`;
 
 const PROMPTS: PromptDefinition[] = [
   {
     name: "remediate-cve",
     title: "Remediate a CVE safely",
-    description: "Plan the fix for a CVE, show it for review, apply it, verify it, and offer to roll it back.",
-    arguments: [{ name: "cveId", description: "CVE or GHSA id, e.g. CVE-2021-23337", required: true }],
+    description:
+      "Plan the fix for a CVE, show it for review, apply it, verify it, and offer to roll it back.",
+    arguments: [
+      { name: "cveId", description: "CVE or GHSA id, e.g. CVE-2021-23337", required: true },
+    ],
     validate: (args) => need(args, "cveId", CVE_ID, "a CVE or GHSA id"),
     build: ({ cveId }) =>
       [
@@ -46,7 +54,8 @@ const PROMPTS: PromptDefinition[] = [
   {
     name: "repair-upgrade",
     title: "Repair a project broken by an upgrade",
-    description: "Make one plan item's upgrade work with the project, using an isolated checkout and the verifier as judge.",
+    description:
+      "Make one plan item's upgrade work with the project, using an isolated checkout and the verifier as judge.",
     arguments: [
       { name: "runId", description: "Run id from planRemediation", required: true },
       { name: "itemId", description: "Plan item id (see the run's plan)", required: true },
@@ -69,9 +78,11 @@ const PROMPTS: PromptDefinition[] = [
   {
     name: "review-run",
     title: "Review a run",
-    description: "Summarise what a run did, check it still holds, and flag anything that needs a human.",
+    description:
+      "Summarise what a run did, check it still holds, and flag anything that needs a human.",
     arguments: [{ name: "runId", description: "Run id", required: true }],
-    validate: (args) => need(args, "runId", RUN_ID, "run_ followed by 20 lowercase letters or digits"),
+    validate: (args) =>
+      need(args, "runId", RUN_ID, "run_ followed by 20 lowercase letters or digits"),
     build: ({ runId }) =>
       [
         `Review run ${runId}.`,
@@ -85,7 +96,12 @@ const PROMPTS: PromptDefinition[] = [
 
 export function listPrompts() {
   return {
-    prompts: PROMPTS.map(({ name, title, description, arguments: args }) => ({ name, title, description, arguments: args })),
+    prompts: PROMPTS.map(({ name, title, description, arguments: args }) => ({
+      name,
+      title,
+      description,
+      arguments: args,
+    })),
   };
 }
 
@@ -96,6 +112,8 @@ export function getPrompt(name: string, args: Record<string, string> = {}) {
   if (problem) throw new Error(problem);
   return {
     description: prompt.description,
-    messages: [{ role: "user" as const, content: { type: "text" as const, text: prompt.build(args) } }],
+    messages: [
+      { role: "user" as const, content: { type: "text" as const, text: prompt.build(args) } },
+    ],
   };
 }

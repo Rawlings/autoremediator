@@ -10,8 +10,8 @@ import {
 } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 
-import { safeExeca } from "./safe-exec.js";
 import { MEMORY_PATH } from "./memory/path.js";
+import { safeExeca } from "./safe-exec.js";
 import { TRACK_RECORD_PATH } from "./track-record-path.js";
 
 export interface ProjectSnapshot {

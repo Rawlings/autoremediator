@@ -19,11 +19,7 @@ import {
 } from "../catalog/index.js";
 import { authorizeRole, callerIdentity, type Role } from "../platform/http-auth.js";
 import { HttpError, readBody, sendJson } from "../platform/http-security.js";
-import {
-  confinePaths,
-  getAllowedRoots,
-  PathNotAllowedError,
-} from "../platform/path-guard.js";
+import { confinePaths, getAllowedRoots, PathNotAllowedError } from "../platform/path-guard.js";
 import { PACKAGE_VERSION } from "../version.js";
 import {
   A2A_PROTOCOL_VERSION,

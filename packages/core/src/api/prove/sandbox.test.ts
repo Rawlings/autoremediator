@@ -1,12 +1,25 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { createServer, type Server } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { PLATFORM_INJECTED_ENV, runSandboxed, SANDBOX_ENV, type SandboxResult, verifySandbox } from "./sandbox.js";
+import {
+  PLATFORM_INJECTED_ENV,
+  runSandboxed,
+  SANDBOX_ENV,
+  type SandboxResult,
+  verifySandbox,
+} from "./sandbox.js";
 
 /**
  * These run hostile scripts straight through the sandbox, with the static screen out of the way:
@@ -24,9 +37,18 @@ afterEach(() => {
   rmSync(outside, { recursive: true, force: true });
 });
 
-const run = (script: string, over: Partial<{ timeoutMs: number; maxOutputBytes: number }> = {}): Promise<SandboxResult> => {
+const run = (
+  script: string,
+  over: Partial<{ timeoutMs: number; maxOutputBytes: number }> = {},
+): Promise<SandboxResult> => {
   writeFileSync(join(root, "s.cjs"), script, "utf8");
-  return runSandboxed({ dir: root, script: "s.cjs", timeoutMs: 8000, maxOutputBytes: 64 * 1024, ...over });
+  return runSandboxed({
+    dir: root,
+    script: "s.cjs",
+    timeoutMs: 8000,
+    maxOutputBytes: 64 * 1024,
+    ...over,
+  });
 };
 
 const outcomeOf = (result: SandboxResult): Record<string, string> =>
@@ -36,7 +58,14 @@ describe("verifySandbox", () => {
   it("shows, by trying each one from inside, that the things it claims to refuse are refused", async () => {
     const report = await verifySandbox();
     expect(report.denied).toEqual(
-      expect.arrayContaining(["network-connect", "dns-lookup", "child-process", "read-outside-dir", "write-outside-dir", "signal-all-processes"]),
+      expect.arrayContaining([
+        "network-connect",
+        "dns-lookup",
+        "child-process",
+        "read-outside-dir",
+        "write-outside-dir",
+        "signal-all-processes",
+      ]),
     );
     expect(report.notLimited.join(" ")).toContain("CPU time");
     expect(report.node).toBe(process.version);
@@ -63,9 +92,9 @@ describe("a hostile script is contained", () => {
       expect(out["home"]).toBe("ERR_ACCESS_DENIED");
       expect(out["etc"]).toBe("ERR_ACCESS_DENIED");
       expect(out["sibling"]).toBe("ERR_ACCESS_DENIED");
-      expect((out["env"] as unknown as string[]).filter((name) => !PLATFORM_INJECTED_ENV.has(name))).toEqual(
-        Object.keys(SANDBOX_ENV).toSorted(),
-      );
+      expect(
+        (out["env"] as unknown as string[]).filter((name) => !PLATFORM_INJECTED_ENV.has(name)),
+      ).toEqual(Object.keys(SANDBOX_ENV).toSorted());
       expect(result.stdout).not.toContain("hunter2");
       expect(result.stdout).not.toContain("top secret");
     } finally {
@@ -84,7 +113,11 @@ describe("a hostile script is contained", () => {
       attempt("mkdir", () => fs.mkdirSync(${JSON.stringify(join(outside, "d"))}));
       console.log(JSON.stringify(out));
     `);
-    expect(outcomeOf(result)).toEqual({ inside: "ERR_ACCESS_DENIED", outside: "ERR_ACCESS_DENIED", mkdir: "ERR_ACCESS_DENIED" });
+    expect(outcomeOf(result)).toEqual({
+      inside: "ERR_ACCESS_DENIED",
+      outside: "ERR_ACCESS_DENIED",
+      mkdir: "ERR_ACCESS_DENIED",
+    });
     expect(existsSync(target)).toBe(false);
     expect(existsSync(join(root, "planted.txt"))).toBe(false);
   });
@@ -149,7 +182,11 @@ describe("a hostile script is contained", () => {
       console.log(JSON.stringify(out));
     `);
     expect(result.stderr).toBe("");
-    const out = JSON.parse(result.stdout.trim()) as { attempts: number; started: number; code: string };
+    const out = JSON.parse(result.stdout.trim()) as {
+      attempts: number;
+      started: number;
+      code: string;
+    };
     expect(out).toEqual({ attempts: 200, started: 0, code: "ERR_ACCESS_DENIED" });
     expect(existsSync(marker)).toBe(false);
   });
@@ -195,21 +232,27 @@ describe("a hostile script is contained", () => {
   });
 
   it("is killed when it floods its output, and what it said is capped", async () => {
-    const result = await run(`
+    const result = await run(
+      `
       const chunk = "x".repeat(8192);
       const flood = () => { process.stdout.write(chunk); setImmediate(flood); };
       flood();
-    `, { maxOutputBytes: 32 * 1024 });
+    `,
+      { maxOutputBytes: 32 * 1024 },
+    );
     expect(result.outputLimitExceeded).toBe(true);
     expect(result.stdout.length).toBeLessThanOrEqual(32 * 1024);
     expect(result.durationMs).toBeLessThan(8000);
   });
 
   it("is killed by the timeout when it floods its output without ever yielding (a pipe holds 64 KiB, then the writes pile up in its own memory)", async () => {
-    const result = await run(`
+    const result = await run(
+      `
       const chunk = "x".repeat(8192);
       for (;;) process.stdout.write(chunk);
-    `, { timeoutMs: 700 });
+    `,
+      { timeoutMs: 700 },
+    );
     expect(result.timedOut || result.outputLimitExceeded).toBe(true);
     expect(result.durationMs).toBeLessThan(5000);
   });

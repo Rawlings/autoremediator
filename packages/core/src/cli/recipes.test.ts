@@ -1,5 +1,13 @@
 /** `autoremediator recipes ...` against the real API and a real project directory. */
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -31,14 +39,17 @@ const recipe = recipeSchema.parse({
   toRange: ">=2.0.0 <3.0.0",
   summary: "f lost its second argument",
   breaking: [{ kind: "diagnostic-TS2554", message: "Expected 1 arguments, but got 2." }],
-  hunks: [{ before: ["import { f } from 'dep';"], remove: ["f(1, 2);"], add: ["f(1);"], after: [] }],
+  hunks: [
+    { before: ["import { f } from 'dep';"], remove: ["f(1, 2);"], add: ["f(1);"], after: [] },
+  ],
 });
 const put = () => {
   const file = join(dir, ".autoremediator/recipes/dep/1.0.0-to-2.0.0.json");
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, serializeRecipe(recipe));
 };
-const run = (...args: string[]) => createProgram().parseAsync(["recipes", ...args, "--cwd", dir], { from: "user" });
+const run = (...args: string[]) =>
+  createProgram().parseAsync(["recipes", ...args, "--cwd", dir], { from: "user" });
 
 describe("recipes list and show", () => {
   it("says there are none", async () => {
@@ -49,7 +60,9 @@ describe("recipes list and show", () => {
   it("lists, filters by upgrade, and shows a recipe's hunks", async () => {
     put();
     await run("list", "--from", "1.2.0", "--to", "2.0.0");
-    expect(output).toContain(`${recipeId(recipe)}  dep >=1.0.0 <2.0.0 -> >=2.0.0 <3.0.0  1 hunk(s)  this project  [applies]`);
+    expect(output).toContain(
+      `${recipeId(recipe)}  dep >=1.0.0 <2.0.0 -> >=2.0.0 <3.0.0  1 hunk(s)  this project  [applies]`,
+    );
     output = "";
     await run("list", "--from", "1.2.0", "--to", "3.0.0");
     expect(output).toContain("[does not apply]");
@@ -73,7 +86,9 @@ describe("recipes list and show", () => {
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(file, "{}");
     await run("list");
-    expect(output).toMatch(/unusable: \.autoremediator\/recipes\/dep\/broken\.json: invalid recipe/);
+    expect(output).toMatch(
+      /unusable: \.autoremediator\/recipes\/dep\/broken\.json: invalid recipe/,
+    );
   });
 });
 
@@ -81,20 +96,35 @@ describe("recipes export", () => {
   it("writes a package skeleton and publishes nothing", async () => {
     put();
     const out = join(dir, "pkg");
-    await run("export", "--name", "@acme/autoremediator-recipes", "--out", out, "--package-version", "1.2.3");
-    expect(JSON.parse(readFileSync(join(out, "package.json"), "utf8"))).toMatchObject({ name: "@acme/autoremediator-recipes", version: "1.2.3" });
+    await run(
+      "export",
+      "--name",
+      "@acme/autoremediator-recipes",
+      "--out",
+      out,
+      "--package-version",
+      "1.2.3",
+    );
+    expect(JSON.parse(readFileSync(join(out, "package.json"), "utf8"))).toMatchObject({
+      name: "@acme/autoremediator-recipes",
+      version: "1.2.3",
+    });
     expect(readdirSync(join(out, "recipes/dep"))).toHaveLength(1);
     expect(output).toContain("npm publish");
   });
 
   it("refuses a name that is not an npm package name", async () => {
     put();
-    await expect(run("export", "--name", "Not Valid", "--out", join(dir, "pkg"))).rejects.toThrow(/not a valid npm package name/);
+    await expect(run("export", "--name", "Not Valid", "--out", join(dir, "pkg"))).rejects.toThrow(
+      /not a valid npm package name/,
+    );
   });
 });
 
 describe("recipes capture", () => {
   it("needs a run that exists", async () => {
-    await expect(run("capture", "--run", "run_aaaaaaaaaaaaaaaaaaaa")).rejects.toThrow(/run_aaaaaaaaaaaaaaaaaaaa/);
+    await expect(run("capture", "--run", "run_aaaaaaaaaaaaaaaaaaaa")).rejects.toThrow(
+      /run_aaaaaaaaaaaaaaaaaaaa/,
+    );
   });
 });

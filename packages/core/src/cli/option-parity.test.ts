@@ -3,8 +3,8 @@ import type { z } from "zod";
 
 import type { remediateOptionsSchema } from "../platform/option-schemas.js";
 import { createProgram } from "./program.js";
-import type { CommandOptions } from "./types.js";
 import { toRemediateOptions } from "./runners.js";
+import type { CommandOptions } from "./types.js";
 
 type WireOption = keyof z.input<typeof remediateOptionsSchema>;
 
@@ -162,7 +162,10 @@ describe("toRemediateOptions", () => {
       typecheck: true,
       model: "anthropic:claude-sonnet-5-5",
       patchConfidenceThresholds: { high: 0.9 },
-      exploitSignalOverride: { kev: { mandatory: true }, epss: { mandatory: true, threshold: 0.4 } },
+      exploitSignalOverride: {
+        kev: { mandatory: true },
+        epss: { mandatory: true, threshold: 0.4 },
+      },
       dispositionPolicy: { minConfidenceForAutoApply: 0.8 },
       offlineIntelligence: true,
       intelligenceSnapshotPath: "/p/intel.json",

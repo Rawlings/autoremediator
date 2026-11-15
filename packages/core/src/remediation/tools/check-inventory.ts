@@ -71,7 +71,11 @@ export function resolveInventoryVersion(rawVersion: string): string {
 }
 
 function declaredRange(pkgJson: PackageJson, name: string): string | undefined {
-  return pkgJson.dependencies?.[name] ?? pkgJson.devDependencies?.[name] ?? pkgJson.peerDependencies?.[name];
+  return (
+    pkgJson.dependencies?.[name] ??
+    pkgJson.devDependencies?.[name] ??
+    pkgJson.peerDependencies?.[name]
+  );
 }
 
 /**
@@ -79,7 +83,10 @@ function declaredRange(pkgJson: PackageJson, name: string): string | undefined {
  * trivially it; with several, prefer the highest copy satisfying the declared range, and when
  * the range is not a semver range (workspace:, file:, git) fall back to the highest copy.
  */
-export function pickDirectVersion(versions: string[], range: string | undefined): string | undefined {
+export function pickDirectVersion(
+  versions: string[],
+  range: string | undefined,
+): string | undefined {
   if (versions.length === 0) return undefined;
   if (versions.length === 1) return versions[0];
   const valid = versions.filter((v) => semver.valid(v));

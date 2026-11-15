@@ -111,7 +111,14 @@ export const policyFileSchema = z
     recipes: z
       .object({
         packages: z
-          .array(z.string().regex(/^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/, "must be an npm package name"))
+          .array(
+            z
+              .string()
+              .regex(
+                /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/,
+                "must be an npm package name",
+              ),
+          )
           .default([]),
       })
       .strict()

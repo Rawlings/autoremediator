@@ -1,8 +1,8 @@
 /** Capturing what a successful repair learned as a recipe (best effort: a repair is never failed for it). */
 import { loadPolicy } from "../../platform/policy.js";
 import type { RepairFailure } from "../../platform/repair-agent.js";
-import { discoverRecipes, recipesFor } from "../../recipes/discover.js";
 import { captureRecipe, rangeAround } from "../../recipes/capture.js";
+import { discoverRecipes, recipesFor } from "../../recipes/discover.js";
 import type { Recipe, RecipeBreaking } from "../../recipes/schema.js";
 import { parseCompilerDiagnostics } from "../../remediation/refactor/codemods.js";
 import { classifyPath } from "../../remediation/verify/changes.js";
@@ -12,7 +12,11 @@ import { PACKAGE_VERSION } from "../../version.js";
 const MAX_BREAKING = 20;
 
 /** What broke, as far as the verifier's first findings and the import lines of the diff say. */
-export function breakingFrom(failure: RepairFailure | undefined, diff: string, packageName: string): RecipeBreaking[] {
+export function breakingFrom(
+  failure: RepairFailure | undefined,
+  diff: string,
+  packageName: string,
+): RecipeBreaking[] {
   const found: RecipeBreaking[] = [];
   const seen = new Set<string>();
   const add = (entry: RecipeBreaking) => {
@@ -28,7 +32,11 @@ export function breakingFrom(failure: RepairFailure | undefined, diff: string, p
       for (const diagnostic of parseCompilerDiagnostics(failure.details.join("\n"))) {
         const symbol = diagnostic.missingMember ?? diagnostic.suggestedSymbol;
         add({
-          kind: diagnostic.missingMember ? "symbol-removed" : diagnostic.code ? `diagnostic-${diagnostic.code}` : "diagnostic",
+          kind: diagnostic.missingMember
+            ? "symbol-removed"
+            : diagnostic.code
+              ? `diagnostic-${diagnostic.code}`
+              : "diagnostic",
           ...(symbol ? { symbol: symbol.slice(0, 200) } : {}),
           message: diagnostic.message.slice(0, 300),
         });
@@ -39,9 +47,19 @@ export function breakingFrom(failure: RepairFailure | undefined, diff: string, p
     }
   }
 
-  const mentions = (line: string) => line.includes(`"${packageName}"`) || line.includes(`'${packageName}'`) || line.includes(`"${packageName}/`) || line.includes(`'${packageName}/`);
+  const mentions = (line: string) =>
+    line.includes(`"${packageName}"`) ||
+    line.includes(`'${packageName}'`) ||
+    line.includes(`"${packageName}/`) ||
+    line.includes(`'${packageName}/`);
   for (const line of diff.split("\n")) {
-    if ((line.startsWith("-") || line.startsWith("+")) && !line.startsWith("---") && !line.startsWith("+++") && /\b(import|require)\b/.test(line) && mentions(line)) {
+    if (
+      (line.startsWith("-") || line.startsWith("+")) &&
+      !line.startsWith("---") &&
+      !line.startsWith("+++") &&
+      /\b(import|require)\b/.test(line) &&
+      mentions(line)
+    ) {
       add({ kind: "import-changed", message: line.slice(0, 300) });
     }
   }
@@ -64,10 +82,15 @@ export interface AttemptRecipeInput {
 }
 
 /** The recipe a repair's diff makes, or undefined (with the reason) when it cannot be expressed as one. */
-export function recipeFromAttempt(input: AttemptRecipeInput): { recipe: Recipe; skipped: { file: string; reason: string }[] } | { error: string } {
+export function recipeFromAttempt(
+  input: AttemptRecipeInput,
+): { recipe: Recipe; skipped: { file: string; reason: string }[] } | { error: string } {
   const fromRange = input.fromRange ?? rangeAround(input.fromVersion);
   const toRange = input.toRange ?? rangeAround(input.toVersion);
-  if (!fromRange || !toRange) return { error: `cannot make a version range from ${input.fromVersion} and ${input.toVersion}` };
+  if (!fromRange || !toRange)
+    return {
+      error: `cannot make a version range from ${input.fromVersion} and ${input.toVersion}`,
+    };
   try {
     return captureRecipe({
       diff: input.diff,
@@ -85,7 +108,10 @@ export function recipeFromAttempt(input: AttemptRecipeInput): { recipe: Recipe; 
         agent: input.agentId,
         capturedAt: new Date().toISOString(),
         autoremediator: PACKAGE_VERSION,
-        checks: (input.verification?.checks ?? []).map((check) => ({ name: check.name, status: check.status })),
+        checks: (input.verification?.checks ?? []).map((check) => ({
+          name: check.name,
+          status: check.status,
+        })),
       },
     });
   } catch (error) {
@@ -98,9 +124,17 @@ export function recipeFromAttempt(input: AttemptRecipeInput): { recipe: Recipe; 
  * package). Cheap and read-only; packages that ship recipes for themselves are only found once
  * an attempt's checkout has the new version installed.
  */
-export function hasRecipeFor(cwd: string, item: { packageName: string; fromVersion: string; toVersion: string }, policy: string | undefined): boolean {
+export function hasRecipeFor(
+  cwd: string,
+  item: { packageName: string; fromVersion: string; toVersion: string },
+  policy: string | undefined,
+): boolean {
   try {
-    const found = discoverRecipes({ projectDir: cwd, installRoot: cwd, policyPackages: loadPolicy(cwd, policy).recipes?.packages ?? [] });
+    const found = discoverRecipes({
+      projectDir: cwd,
+      installRoot: cwd,
+      policyPackages: loadPolicy(cwd, policy).recipes?.packages ?? [],
+    });
     return recipesFor(found, item.packageName, item.fromVersion, item.toVersion).length > 0;
   } catch {
     return false;

@@ -5,8 +5,8 @@
  */
 import semver from "semver";
 
-import { exportsMapOf, moduleFormat } from "./package-index.js";
 import type { ChangeSeverity } from "./api-diff.js";
+import { exportsMapOf, moduleFormat } from "./package-index.js";
 
 export interface PackageLevelChange {
   category: "engines" | "module-format" | "exports-map" | "peer-dependency";
@@ -30,7 +30,9 @@ export interface PackageLevelChange {
 function stringRecord(value: unknown): Record<string, string> {
   if (typeof value !== "object" || value === null) return {};
   return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+    Object.entries(value as Record<string, unknown>).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string",
+    ),
   );
 }
 
@@ -78,7 +80,12 @@ export function isSubpathExported(manifest: Record<string, unknown>, subpath: st
       const before = key.slice(0, star);
       const after = key.slice(star + 1);
       for (const candidate of candidates) {
-        if (candidate.startsWith(before) && candidate.endsWith(after) && candidate.length > before.length + after.length) return true;
+        if (
+          candidate.startsWith(before) &&
+          candidate.endsWith(after) &&
+          candidate.length > before.length + after.length
+        )
+          return true;
       }
     }
   }
@@ -103,20 +110,21 @@ export function comparePackageManifests(
     if (narrowed !== false) {
       const projectNode = project ? enginesNode(project) : undefined;
       const projectRange = validRange(projectNode);
-      const conflict = projectRange && newRange ? safeSubset(projectRange, newRange) === false : false;
+      const conflict =
+        projectRange && newRange ? safeSubset(projectRange, newRange) === false : false;
       const runtimeOk = newRange ? semver.satisfies(runtimeNode, newRange) : undefined;
       // The project's own declared range already fits inside the new one: nothing to flag.
       const projectFits = projectRange !== undefined && !conflict;
       if (!projectFits) {
         changes.push({
-        category: "engines",
-        severity: conflict ? "breaking" : "possibly-breaking",
-        reason: conflict
-          ? `engines.node narrowed to "${newNode}" and the project declares engines.node "${projectNode}", which allows versions outside it`
-          : `engines.node ${oldNode === undefined ? "was unset and is now" : `changed from "${oldNode}" to`} "${newNode}"${projectNode ? "" : "; the project declares no engines.node"}${runtimeOk === undefined ? "" : runtimeOk ? `; Node ${runtimeNode} on this machine satisfies it` : `; Node ${runtimeNode} on this machine does NOT satisfy it`}`,
-        before: oldNode,
-        after: newNode,
-        evidence: conflict ? "project-conflict" : "unresolved",
+          category: "engines",
+          severity: conflict ? "breaking" : "possibly-breaking",
+          reason: conflict
+            ? `engines.node narrowed to "${newNode}" and the project declares engines.node "${projectNode}", which allows versions outside it`
+            : `engines.node ${oldNode === undefined ? "was unset and is now" : `changed from "${oldNode}" to`} "${newNode}"${projectNode ? "" : "; the project declares no engines.node"}${runtimeOk === undefined ? "" : runtimeOk ? `; Node ${runtimeNode} on this machine satisfies it` : `; Node ${runtimeNode} on this machine does NOT satisfy it`}`,
+          before: oldNode,
+          after: newNode,
+          evidence: conflict ? "project-conflict" : "unresolved",
         });
       }
     }
@@ -177,11 +185,21 @@ export function comparePackageManifests(
   // Peer dependencies
   const oldPeers = stringRecord(before.peerDependencies);
   const newPeers = stringRecord(after.peerDependencies);
-  const newMeta = (typeof after.peerDependenciesMeta === "object" && after.peerDependenciesMeta !== null ? after.peerDependenciesMeta : {}) as Record<string, { optional?: boolean } | undefined>;
+  const newMeta = (
+    typeof after.peerDependenciesMeta === "object" && after.peerDependenciesMeta !== null
+      ? after.peerDependenciesMeta
+      : {}
+  ) as Record<string, { optional?: boolean } | undefined>;
   const projectDeps = project
-    ? { ...stringRecord(project.peerDependencies), ...stringRecord(project.devDependencies), ...stringRecord(project.dependencies) }
+    ? {
+        ...stringRecord(project.peerDependencies),
+        ...stringRecord(project.devDependencies),
+        ...stringRecord(project.dependencies),
+      }
     : {};
-  for (const [peer, range] of Object.entries(newPeers).toSorted((a, b) => a[0].localeCompare(b[0]))) {
+  for (const [peer, range] of Object.entries(newPeers).toSorted((a, b) =>
+    a[0].localeCompare(b[0]),
+  )) {
     if (newMeta[peer]?.optional === true) continue;
     const previous = oldPeers[peer];
     const projectRange = projectDeps[peer];
@@ -195,7 +213,11 @@ export function comparePackageManifests(
           after: `${peer}@${range}`,
           evidence: "unresolved",
         });
-      } else if (validNew && validRange(projectRange) && safeIntersects(projectRange, validNew) === false) {
+      } else if (
+        validNew &&
+        validRange(projectRange) &&
+        safeIntersects(projectRange, validNew) === false
+      ) {
         changes.push({
           category: "peer-dependency",
           severity: "breaking",
@@ -208,7 +230,11 @@ export function comparePackageManifests(
       const validOld = validRange(previous);
       const narrowed = validOld && validNew ? safeSubset(validOld, validNew) === false : false;
       if (!narrowed) continue;
-      if (projectRange !== undefined && validRange(projectRange) && safeIntersects(projectRange, validNew ?? "*") === false) {
+      if (
+        projectRange !== undefined &&
+        validRange(projectRange) &&
+        safeIntersects(projectRange, validNew ?? "*") === false
+      ) {
         changes.push({
           category: "peer-dependency",
           severity: "breaking",

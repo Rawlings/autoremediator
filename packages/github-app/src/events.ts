@@ -317,14 +317,20 @@ export async function dispatchGitHubEvent(
   if (context.eventName === "dependabot_alert" || context.eventName === "code_scanning_alert") {
     const action = readAction(payload);
     if (action !== "created" && action !== "reopened") {
-      return { status: "ignored", reason: `${context.eventName} action not triggerable: ${action ?? "unknown"}` };
+      return {
+        status: "ignored",
+        reason: `${context.eventName} action not triggerable: ${action ?? "unknown"}`,
+      };
     }
     const target =
       context.eventName === "dependabot_alert"
         ? dependabotAlertTarget(payload)
         : codeScanningAlertTarget(payload);
     if (!target) {
-      return { status: "ignored", reason: `${context.eventName} does not name a CVE or GHSA advisory` };
+      return {
+        status: "ignored",
+        reason: `${context.eventName} does not name a CVE or GHSA advisory`,
+      };
     }
     return triggerRemediation(context, payload, options, context.eventName);
   }
@@ -340,7 +346,11 @@ async function triggerRemediation(
   eventName: "issue_comment" | "dependabot_alert" | "code_scanning_alert",
 ): Promise<DispatchResult> {
   const installationId = readInstallationId(payload);
-  if (installationId && options.stateStore && !options.stateStore.isInstallationActive(installationId)) {
+  if (
+    installationId &&
+    options.stateStore &&
+    !options.stateStore.isInstallationActive(installationId)
+  ) {
     return { status: "ignored", reason: `Installation ${installationId} is not active` };
   }
   try {

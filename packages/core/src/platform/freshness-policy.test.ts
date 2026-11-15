@@ -48,7 +48,9 @@ describe("policy `freshness` key", () => {
   });
 
   it("rejects blank ignore entries", () => {
-    expect(() => load("freshness:\n  maxMajorsBehind: 1\n  ignore: ['']")).toThrow(/freshness\.ignore/);
+    expect(() => load("freshness:\n  maxMajorsBehind: 1\n  ignore: ['']")).toThrow(
+      /freshness\.ignore/,
+    );
   });
 });
 

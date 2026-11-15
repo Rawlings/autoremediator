@@ -56,7 +56,11 @@ const permissive = (calls: string[]): RunDeps => ({
 describe("freshness and remediation memory", () => {
   it("leaves a pinned package alone and says why, unless memory is ignored", async () => {
     const cwd = project({ lib: "^1.0.0", other: "^3.0.0" });
-    await addMemory(cwd, { kind: "pinned-package", package: "lib", reason: "v1.2 drops a callback" });
+    await addMemory(cwd, {
+      kind: "pinned-package",
+      package: "lib",
+      reason: "v1.2 drops a callback",
+    });
 
     const report = await freshnessReport({ cwd }, fakeDeps(table));
     expect(report.climbs.map((climb) => climb.packageName)).toEqual(["other"]);
@@ -111,7 +115,10 @@ describe("freshness and remediation memory", () => {
     const report = await freshnessReport({ cwd }, fakeDeps(onlyOther));
     expect(report.climbs).toEqual([]);
     expect(report.unplanned).toEqual([
-      { packageName: "other", reason: expect.stringMatching(/other@3\.1\.0 was rejected earlier: breaks our build/) },
+      {
+        packageName: "other",
+        reason: expect.stringMatching(/other@3\.1\.0 was rejected earlier: breaks our build/),
+      },
     ]);
   });
 
@@ -120,7 +127,11 @@ describe("freshness and remediation memory", () => {
     const planned = await planFreshnessStep({ cwd }, fakeDeps(onlyOther));
     expect(planned.planned).toBeDefined();
     // Pinned after the plan was made and reviewed.
-    await addMemory(cwd, { kind: "pinned-package", package: "other", reason: "frozen for the release" });
+    await addMemory(cwd, {
+      kind: "pinned-package",
+      package: "other",
+      reason: "frozen for the release",
+    });
 
     const calls: string[] = [];
     await expect(

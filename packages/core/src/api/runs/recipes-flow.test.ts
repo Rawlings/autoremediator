@@ -4,7 +4,16 @@
  * project's type check, and the model (a scripted agent through the `RepairAgent` port).
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -15,8 +24,8 @@ import type { PatchResult, RemediationReport } from "../../platform/types.js";
 import { recipeSchema, recipeId, serializeRecipe, type Recipe } from "../../recipes/schema.js";
 import { defaultAttemptDeps, runRepairAttempt } from "../../remediation/repair/attempt.js";
 import { verify } from "../../remediation/verify/verifier.js";
-import { createWorktree } from "../../runs/worktree.js";
 import { RunStore } from "../../runs/run-store.js";
+import { createWorktree } from "../../runs/worktree.js";
 import { applyRecipe, captureRecipe, listRecipes } from "../recipes/index.js";
 import { finalizeAttempt, startAttempt } from "./attempts.js";
 import { applyPlan, getRun, persistPlan, rollbackRun, type RunDeps } from "./index.js";
@@ -26,8 +35,16 @@ vi.mock("../../remediation/tools/check-inventory.js", () => ({
     execute: vi.fn(async ({ cwd }: { cwd: string }) => {
       const { readFileSync } = await import("node:fs");
       const { join } = await import("node:path");
-      const manifest = JSON.parse(readFileSync(join(cwd, "package.json"), "utf8")) as { dependencies: Record<string, string> };
-      return { packages: Object.entries(manifest.dependencies).map(([name, version]) => ({ name, version, type: "direct" as const })) };
+      const manifest = JSON.parse(readFileSync(join(cwd, "package.json"), "utf8")) as {
+        dependencies: Record<string, string>;
+      };
+      return {
+        packages: Object.entries(manifest.dependencies).map(([name, version]) => ({
+          name,
+          version,
+          type: "direct" as const,
+        })),
+      };
     }),
   },
 }));
@@ -38,17 +55,24 @@ vi.mock("../../remediation/verify/command-check.js", async (importOriginal) => (
     const { join } = await import("node:path");
     return readFileSync(join(cwd, "src/a.ts"), "utf8").includes("f(1);")
       ? { passed: true, output: "" }
-      : { passed: false, output: "src/a.ts(2,1): error TS2554: Expected 0-1 arguments, but got 2." };
+      : {
+          passed: false,
+          output: "src/a.ts(2,1): error TS2554: Expected 0-1 arguments, but got 2.",
+        };
   }),
 }));
 
 let dir: string;
 let cache: string;
 const roots: string[] = [];
-const git = (root: string, ...args: string[]) => execFileSync("git", args, { cwd: root, encoding: "utf8" });
+const git = (root: string, ...args: string[]) =>
+  execFileSync("git", args, { cwd: root, encoding: "utf8" });
 const read = (root: string, file: string) => readFileSync(join(root, file), "utf8");
 const setDep = (root: string, version: string) =>
-  writeFileSync(join(root, "package.json"), JSON.stringify({ name: "app", dependencies: { dep: version } }, null, 2));
+  writeFileSync(
+    join(root, "package.json"),
+    JSON.stringify({ name: "app", dependencies: { dep: version } }, null, 2),
+  );
 
 /** A project that breaks on dep 2.0.0 until `f(1, 2)` becomes `f(1)`. */
 function makeProject(source = "import { f } from 'dep';\nf(1, 2);\n"): string {
@@ -89,18 +113,51 @@ const preview: RemediationReport = {
     summary: "",
     severity: "HIGH",
     references: [],
-    affectedPackages: [{ name: "dep", ecosystem: "npm", vulnerableRange: "<2.0.0", firstPatchedVersion: "2.0.0", source: "osv" }],
+    affectedPackages: [
+      {
+        name: "dep",
+        ecosystem: "npm",
+        vulnerableRange: "<2.0.0",
+        firstPatchedVersion: "2.0.0",
+        source: "osv",
+      },
+    ],
   },
   vulnerablePackages: [],
   summary: "preview",
-  results: [{ packageName: "dep", strategy: "version-bump", fromVersion: "1.0.0", toVersion: "2.0.0", applied: false, dryRun: true, message: "planned", dependencyScope: "direct" }],
+  results: [
+    {
+      packageName: "dep",
+      strategy: "version-bump",
+      fromVersion: "1.0.0",
+      toVersion: "2.0.0",
+      applied: false,
+      dryRun: true,
+      message: "planned",
+      dependencyScope: "direct",
+    },
+  ],
 };
 const plan = (root = dir) => persistPlan(preview, { typecheck: true, runTests: true }, root);
 
-const upgraded = (): PatchResult => ({ packageName: "dep", strategy: "version-bump", fromVersion: "1.0.0", toVersion: "2.0.0", applied: true, dryRun: false, message: "applied" });
+const upgraded = (): PatchResult => ({
+  packageName: "dep",
+  strategy: "version-bump",
+  fromVersion: "1.0.0",
+  toVersion: "2.0.0",
+  applied: true,
+  dryRun: false,
+  message: "applied",
+});
 const breaksTheProject: RunDeps["applyItem"] = async () => ({
-  packageName: "dep", strategy: "version-bump", fromVersion: "1.0.0", toVersion: "2.0.0", applied: false, dryRun: false,
-  unresolvedReason: "validation-failed", message: "npm test failed after upgrading dep to 2.0.0. Rolled back.",
+  packageName: "dep",
+  strategy: "version-bump",
+  fromVersion: "1.0.0",
+  toVersion: "2.0.0",
+  applied: false,
+  dryRun: false,
+  unresolvedReason: "validation-failed",
+  message: "npm test failed after upgrading dep to 2.0.0. Rolled back.",
 });
 
 const deps = (): RunDeps => ({
@@ -126,12 +183,27 @@ const deps = (): RunDeps => ({
   },
 });
 
-const agentThat = (repair: (worktree: string) => RepairOutcome): RepairAgent & { calls: number } => {
-  const agent = { id: "scripted", calls: 0, async repair(_task: unknown, env: { worktree: string }) { agent.calls += 1; return repair(env.worktree); } };
+const agentThat = (
+  repair: (worktree: string) => RepairOutcome,
+): RepairAgent & { calls: number } => {
+  const agent = {
+    id: "scripted",
+    calls: 0,
+    async repair(_task: unknown, env: { worktree: string }) {
+      agent.calls += 1;
+      return repair(env.worktree);
+    },
+  };
   return agent as RepairAgent & { calls: number };
 };
-const submitted = (): RepairOutcome => ({ status: "submitted", rationale: "dropped the removed argument", usage: [{ purpose: "upgrade-repair", model: "m", inputTokens: 500, outputTokens: 60 }], transcript: [{ step: 1, text: "editFile(...)" }] });
-const fix = (worktree: string) => writeFileSync(join(worktree, "src/a.ts"), "import { f } from 'dep';\nf(1);\n");
+const submitted = (): RepairOutcome => ({
+  status: "submitted",
+  rationale: "dropped the removed argument",
+  usage: [{ purpose: "upgrade-repair", model: "m", inputTokens: 500, outputTokens: 60 }],
+  transcript: [{ step: 1, text: "editFile(...)" }],
+});
+const fix = (worktree: string) =>
+  writeFileSync(join(worktree, "src/a.ts"), "import { f } from 'dep';\nf(1);\n");
 
 const fixRecipe: Recipe = recipeSchema.parse({
   schemaVersion: 1,
@@ -139,14 +211,17 @@ const fixRecipe: Recipe = recipeSchema.parse({
   fromRange: ">=1.0.0 <2.0.0",
   toRange: ">=2.0.0 <3.0.0",
   summary: "f lost its second argument",
-  hunks: [{ before: ["import { f } from 'dep';"], remove: ["f(1, 2);"], add: ["f(1);"], after: [] }],
+  hunks: [
+    { before: ["import { f } from 'dep';"], remove: ["f(1, 2);"], add: ["f(1);"], after: [] },
+  ],
 });
 const putRecipe = (root: string, recipe: Recipe, name = "x.json") => {
   const file = join(root, ".autoremediator/recipes/dep", name);
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, serializeRecipe(recipe));
 };
-const attemptDir = (root: string, runId: string, attemptId: string) => join(new RunStore(root).runDir(runId), "attempts", attemptId);
+const attemptDir = (root: string, runId: string, attemptId: string) =>
+  join(new RunStore(root).runDir(runId), "attempts", attemptId);
 
 describe("recipes in applyPlan", { timeout: 60_000 }, () => {
   it("fixes the project from a committed recipe with no model and no agent", async () => {
@@ -156,17 +231,28 @@ describe("recipes in applyPlan", { timeout: 60_000 }, () => {
     const outcome = await applyPlan({ cwd: dir, runId }, deps());
 
     expect(outcome.status).toBe("applied");
-    expect(outcome.items[0]).toMatchObject({ status: "applied", repair: { status: "promoted", rounds: 0 } });
-    expect(outcome.items[0]?.message).toMatch(/repaired the project with a recipe: recipe dep#[0-9a-f]{10} made the project work \(src\/a\.ts\); no model was asked/);
+    expect(outcome.items[0]).toMatchObject({
+      status: "applied",
+      repair: { status: "promoted", rounds: 0 },
+    });
+    expect(outcome.items[0]?.message).toMatch(
+      /repaired the project with a recipe: recipe dep#[0-9a-f]{10} made the project work \(src\/a\.ts\); no model was asked/,
+    );
     expect(read(dir, "package.json")).toContain('"dep": "2.0.0"');
     expect(read(dir, "src/a.ts")).toBe("import { f } from 'dep';\nf(1);\n");
 
     const details = getRun({ cwd: dir, runId });
     const [attempt] = details.attempts;
-    expect(attempt).toMatchObject({ status: "promoted", agentId: `recipe:${recipeId(fixRecipe)}`, rounds: 0 });
+    expect(attempt).toMatchObject({
+      status: "promoted",
+      agentId: `recipe:${recipeId(fixRecipe)}`,
+      rounds: 0,
+    });
     expect(attempt?.inputTokens).toBeUndefined();
     const dirOfAttempt = attemptDir(dir, runId, attempt!.attemptId);
-    expect(readFileSync(join(dirOfAttempt, "transcript.jsonl"), "utf8")).toMatch(/the verifier accepted it/);
+    expect(readFileSync(join(dirOfAttempt, "transcript.jsonl"), "utf8")).toMatch(
+      /the verifier accepted it/,
+    );
     expect(readFileSync(join(dirOfAttempt, "diff.patch"), "utf8")).toContain("+f(1);");
     // A recipe's own fix is not captured again.
     expect(existsSync(join(dirOfAttempt, "recipe.json"))).toBe(false);
@@ -184,7 +270,10 @@ describe("recipes in applyPlan", { timeout: 60_000 }, () => {
   });
 
   it("takes a recipe the verifier rejects back out and hands over to the agent from the checkout as it was", async () => {
-    const wrong = recipeSchema.parse({ ...fixRecipe, hunks: [{ ...fixRecipe.hunks[0]!, add: ["f(1, 3);"] }] });
+    const wrong = recipeSchema.parse({
+      ...fixRecipe,
+      hunks: [{ ...fixRecipe.hunks[0]!, add: ["f(1, 3);"] }],
+    });
     putRecipe(dir, wrong);
     let seen = "";
     const agent = agentThat((worktree) => {
@@ -201,23 +290,36 @@ describe("recipes in applyPlan", { timeout: 60_000 }, () => {
     expect(seen).toBe("import { f } from 'dep';\nf(1, 2);\n"); // the recipe was undone before the agent looked
     const [attempt] = getRun({ cwd: dir, runId }).attempts;
     expect(attempt?.agentId).toBe("scripted");
-    const transcript = readFileSync(join(attemptDir(dir, runId, attempt!.attemptId), "transcript.jsonl"), "utf8");
+    const transcript = readFileSync(
+      join(attemptDir(dir, runId, attempt!.attemptId), "transcript.jsonl"),
+      "utf8",
+    );
     expect(transcript).toMatch(/the verifier rejected it \(typecheck\); undone/);
   });
 
   it("does not apply a recipe whose context has drifted, and without an agent the item stays failed and the project untouched", async () => {
-    putRecipe(dir, recipeSchema.parse({ ...fixRecipe, hunks: [{ ...fixRecipe.hunks[0]!, remove: ["f(1,2);"] }] }));
+    putRecipe(
+      dir,
+      recipeSchema.parse({
+        ...fixRecipe,
+        hunks: [{ ...fixRecipe.hunks[0]!, remove: ["f(1,2);"] }],
+      }),
+    );
     const { runId } = await plan();
 
     const outcome = await applyPlan({ cwd: dir, runId }, deps());
 
     expect(outcome.items[0]).toMatchObject({ status: "failed", repair: { status: "rejected" } });
-    expect(outcome.items[0]?.message).toMatch(/no recipe made the project work \(1 tried\) and no repair agent is configured/);
+    expect(outcome.items[0]?.message).toMatch(
+      /no recipe made the project work \(1 tried\) and no repair agent is configured/,
+    );
     expect(read(dir, "package.json")).toContain('"dep": "1.0.0"');
     expect(read(dir, "src/a.ts")).toBe("import { f } from 'dep';\nf(1, 2);\n");
     expect(git(dir, "status", "--porcelain").trim()).toBe("");
     const [attempt] = getRun({ cwd: dir, runId }).attempts;
-    expect(readFileSync(join(attemptDir(dir, runId, attempt!.attemptId), "transcript.jsonl"), "utf8")).toMatch(/not applied: hunk 1 .* does not match any source file exactly/);
+    expect(
+      readFileSync(join(attemptDir(dir, runId, attempt!.attemptId), "transcript.jsonl"), "utf8"),
+    ).toMatch(/not applied: hunk 1 .* does not match any source file exactly/);
   });
 
   it("does nothing, and creates no checkout, when no recipe is for this upgrade and no model is configured", async () => {
@@ -245,11 +347,19 @@ describe("recipes in applyPlan", { timeout: 60_000 }, () => {
     };
     // A policy package installed in the project (a real checkout installs it too); the project commits its policy.
     mkdirSync(join(dir, "node_modules/@acme/recipes/recipes/dep"), { recursive: true });
-    writeFileSync(join(dir, "node_modules/@acme/recipes/recipes/dep/r.json"), serializeRecipe(fixRecipe));
-    writeFileSync(join(dir, ".github/autoremediator.yml"), 'allowMajorBumps: true\nrecipes:\n  packages:\n    - "@acme/recipes"\n');
+    writeFileSync(
+      join(dir, "node_modules/@acme/recipes/recipes/dep/r.json"),
+      serializeRecipe(fixRecipe),
+    );
+    writeFileSync(
+      join(dir, ".github/autoremediator.yml"),
+      'allowMajorBumps: true\nrecipes:\n  packages:\n    - "@acme/recipes"\n',
+    );
     git(dir, "add", "-A");
     git(dir, "commit", "-q", "-m", "policy");
-    expect(listRecipes({ cwd: dir }).recipes.map((entry) => entry.source)).toEqual([{ kind: "policy-package", package: "@acme/recipes" }]);
+    expect(listRecipes({ cwd: dir }).recipes.map((entry) => entry.source)).toEqual([
+      { kind: "policy-package", package: "@acme/recipes" },
+    ]);
 
     const { runId } = await plan();
     const outcome = await applyPlan({ cwd: dir, runId }, deps());
@@ -260,7 +370,9 @@ describe("recipes in applyPlan", { timeout: 60_000 }, () => {
     const stranger = makeProject();
     shipped(stranger, "evil-dep", fixRecipe);
     expect(listRecipes({ cwd: stranger }).recipes).toEqual([]);
-    expect(listRecipes({ cwd: stranger }).problems[0]?.error).toMatch(/may only ship recipes for itself/);
+    expect(listRecipes({ cwd: stranger }).problems[0]?.error).toMatch(
+      /may only ship recipes for itself/,
+    );
   });
 });
 
@@ -277,42 +389,68 @@ describe("learning once and reusing it", { timeout: 60_000 }, () => {
     expect(agent.calls).toBe(1);
 
     const attempt = getRun({ cwd: dir, runId }).attempts[0]!;
-    const derived = JSON.parse(readFileSync(join(attemptDir(dir, runId, attempt.attemptId), "recipe.json"), "utf8")) as Recipe;
+    const derived = JSON.parse(
+      readFileSync(join(attemptDir(dir, runId, attempt.attemptId), "recipe.json"), "utf8"),
+    ) as Recipe;
     expect(derived).toMatchObject({
       package: "dep",
       fromRange: ">=1.0.0 <2.0.0",
       toRange: ">=2.0.0 <3.0.0",
       observed: { fromVersion: "1.0.0", toVersion: "2.0.0" },
       summary: "dropped the removed argument",
-      hunks: [{ before: ["import { f } from 'dep';"], remove: ["f(1, 2);"], add: ["f(1);"], after: [] }],
+      hunks: [
+        { before: ["import { f } from 'dep';"], remove: ["f(1, 2);"], add: ["f(1);"], after: [] },
+      ],
       evidence: { runId, attemptId: attempt.attemptId, agent: "scripted" },
     });
     // What broke came from the verifier's findings; the evidence is the checks that passed.
-    expect(derived.breaking[0]).toMatchObject({ kind: "diagnostic-TS2554", message: expect.stringContaining("Expected 0-1 arguments") });
-    expect(derived.evidence?.checks.map((check) => check.name)).toEqual(expect.arrayContaining(["scope", "typecheck"]));
-    expect(derived.evidence?.checks.every((check) => check.status === "passed" || check.status === "skipped")).toBe(true);
-    expect(getRun({ cwd: dir, runId }).ledger.events.map((event) => event.type)).toContain("recipe.captured");
+    expect(derived.breaking[0]).toMatchObject({
+      kind: "diagnostic-TS2554",
+      message: expect.stringContaining("Expected 0-1 arguments"),
+    });
+    expect(derived.evidence?.checks.map((check) => check.name)).toEqual(
+      expect.arrayContaining(["scope", "typecheck"]),
+    );
+    expect(
+      derived.evidence?.checks.every(
+        (check) => check.status === "passed" || check.status === "skipped",
+      ),
+    ).toBe(true);
+    expect(getRun({ cwd: dir, runId }).ledger.events.map((event) => event.type)).toContain(
+      "recipe.captured",
+    );
 
     // Capture it into the project's committed directory (idempotently).
     const saved = captureRecipe({ cwd: dir, runId });
     expect(saved).toMatchObject({ created: true });
     expect(saved.path).toBe(join(dir, ".autoremediator/recipes/dep/1.0.0-to-2.0.0.json"));
     expect(captureRecipe({ cwd: dir, runId }).created).toBe(false);
-    expect(listRecipes({ cwd: dir, packageName: "dep", fromVersion: "1.0.0", toVersion: "2.0.0" }).recipes).toMatchObject([{ id: saved.id, applies: true, hunks: 1 }]);
+    expect(
+      listRecipes({ cwd: dir, packageName: "dep", fromVersion: "1.0.0", toVersion: "2.0.0" })
+        .recipes,
+    ).toMatchObject([{ id: saved.id, applies: true, hunks: 1 }]);
     expect(listRecipes({ cwd: dir, recipeId: saved.id }).recipes[0]?.recipe?.hunks).toHaveLength(1);
 
     // Project two has the same code and never sees the agent.
     const second = makeProject();
     writeFileSync(join(second, ".gitignore"), ".autoremediator\n");
     mkdirSync(join(second, ".autoremediator/recipes/dep"), { recursive: true });
-    writeFileSync(join(second, ".autoremediator/recipes/dep/shared.json"), readFileSync(saved.path));
+    writeFileSync(
+      join(second, ".autoremediator/recipes/dep/shared.json"),
+      readFileSync(saved.path),
+    );
     const secondRun = await plan(second);
     const lonely = agentThat(() => submitted());
-    const reuse = await applyPlan({ cwd: second, runId: secondRun.runId, repairAgent: lonely }, deps());
+    const reuse = await applyPlan(
+      { cwd: second, runId: secondRun.runId, repairAgent: lonely },
+      deps(),
+    );
     expect(reuse.status).toBe("applied");
     expect(lonely.calls).toBe(0);
     expect(read(second, "src/a.ts")).toBe("import { f } from 'dep';\nf(1);\n");
-    expect(getRun({ cwd: second, runId: secondRun.runId }).attempts[0]?.agentId).toBe(`recipe:${saved.id}`);
+    expect(getRun({ cwd: second, runId: secondRun.runId }).attempts[0]?.agentId).toBe(
+      `recipe:${saved.id}`,
+    );
 
     // And the whole thing can still be rolled back.
     await rollbackRun({ cwd: second, runId: secondRun.runId }, deps());
@@ -324,8 +462,12 @@ describe("learning once and reusing it", { timeout: 60_000 }, () => {
     putRecipe(dir, fixRecipe);
     const { runId } = await plan();
     await applyPlan({ cwd: dir, runId }, deps());
-    expect(() => captureRecipe({ cwd: dir, runId })).toThrow(/no promoted agent repair with a recipe/);
-    expect(() => captureRecipe({ cwd: dir, runId, attemptId: "attempt_aaaaaaaaaaaa" })).toThrow(/no recipe to capture/);
+    expect(() => captureRecipe({ cwd: dir, runId })).toThrow(
+      /no promoted agent repair with a recipe/,
+    );
+    expect(() => captureRecipe({ cwd: dir, runId, attemptId: "attempt_aaaaaaaaaaaa" })).toThrow(
+      /no recipe to capture/,
+    );
   });
 
   it("applies the recipe only where its context matches: a project with different code is left alone", async () => {
@@ -348,9 +490,14 @@ describe("recipes for a host agent's attempt", { timeout: 60_000 }, () => {
 
     const started = await startAttempt({ cwd: dir, runId, itemId: item!.itemId }, deps());
     expect(started.verification?.passed).toBe(false);
-    expect(started.recipes).toEqual([{ id: recipeId(fixRecipe), source: "project", summary: "f lost its second argument" }]);
+    expect(started.recipes).toEqual([
+      { id: recipeId(fixRecipe), source: "project", summary: "f lost its second argument" },
+    ]);
 
-    const applied = await applyRecipe({ cwd: dir, runId, attemptId: started.attemptId, recipeId: recipeId(fixRecipe) }, deps());
+    const applied = await applyRecipe(
+      { cwd: dir, runId, attemptId: started.attemptId, recipeId: recipeId(fixRecipe) },
+      deps(),
+    );
     expect(applied.recipe).toEqual({ id: recipeId(fixRecipe), applied: true, files: ["src/a.ts"] });
     expect(applied.verification?.passed).toBe(true);
     expect(read(started.worktreePath!, "src/a.ts")).toBe("import { f } from 'dep';\nf(1);\n");
@@ -358,12 +505,20 @@ describe("recipes for a host agent's attempt", { timeout: 60_000 }, () => {
     const done = await finalizeAttempt({ cwd: dir, runId, attemptId: started.attemptId }, deps());
     expect(done.finalized).toBe(true);
     expect(read(dir, "src/a.ts")).toBe("import { f } from 'dep';\nf(1);\n");
-    expect(getRun({ cwd: dir, runId }).ledger.events.map((event) => event.type)).toContain("attempt.recipe");
+    expect(getRun({ cwd: dir, runId }).ledger.events.map((event) => event.type)).toContain(
+      "attempt.recipe",
+    );
   });
 
   it("undoes a recipe the verifier rejects, and refuses recipes that are for another upgrade or do not match", async () => {
-    const wrong = recipeSchema.parse({ ...fixRecipe, hunks: [{ ...fixRecipe.hunks[0]!, add: ["f(1, 3);"] }] });
-    const drifted = recipeSchema.parse({ ...fixRecipe, hunks: [{ ...fixRecipe.hunks[0]!, remove: ["f(1,2);"] }] });
+    const wrong = recipeSchema.parse({
+      ...fixRecipe,
+      hunks: [{ ...fixRecipe.hunks[0]!, add: ["f(1, 3);"] }],
+    });
+    const drifted = recipeSchema.parse({
+      ...fixRecipe,
+      hunks: [{ ...fixRecipe.hunks[0]!, remove: ["f(1,2);"] }],
+    });
     const elsewhere = recipeSchema.parse({ ...fixRecipe, toRange: ">=9.0.0" });
     putRecipe(dir, wrong, "wrong.json");
     putRecipe(dir, drifted, "drifted.json");
@@ -371,15 +526,35 @@ describe("recipes for a host agent's attempt", { timeout: 60_000 }, () => {
     const { runId } = await plan();
     const [item] = getRun({ cwd: dir, runId }).plan!.items;
     const started = await startAttempt({ cwd: dir, runId, itemId: item!.itemId }, deps());
-    expect(started.recipes?.map((entry) => entry.id).toSorted()).toEqual([recipeId(wrong), recipeId(drifted)].toSorted());
+    expect(started.recipes?.map((entry) => entry.id).toSorted()).toEqual(
+      [recipeId(wrong), recipeId(drifted)].toSorted(),
+    );
 
-    const rejected = await applyRecipe({ cwd: dir, runId, attemptId: started.attemptId, recipeId: recipeId(wrong) }, deps());
+    const rejected = await applyRecipe(
+      { cwd: dir, runId, attemptId: started.attemptId, recipeId: recipeId(wrong) },
+      deps(),
+    );
     expect(rejected.recipe).toMatchObject({ applied: false, rejectedBy: "typecheck" });
     expect(rejected.message).toMatch(/undone; the checkout is as it was/);
     expect(read(started.worktreePath!, "src/a.ts")).toBe("import { f } from 'dep';\nf(1, 2);\n");
 
-    await expect(applyRecipe({ cwd: dir, runId, attemptId: started.attemptId, recipeId: recipeId(drifted) }, deps())).rejects.toThrow(/does not apply: hunk 1/);
-    await expect(applyRecipe({ cwd: dir, runId, attemptId: started.attemptId, recipeId: recipeId(elsewhere) }, deps())).rejects.toThrow(/not for dep 1\.0\.0 to 2\.0\.0/);
-    await expect(applyRecipe({ cwd: dir, runId, attemptId: started.attemptId, recipeId: "dep#0000000000" }, deps())).rejects.toThrow(/Recipe not found/);
+    await expect(
+      applyRecipe(
+        { cwd: dir, runId, attemptId: started.attemptId, recipeId: recipeId(drifted) },
+        deps(),
+      ),
+    ).rejects.toThrow(/does not apply: hunk 1/);
+    await expect(
+      applyRecipe(
+        { cwd: dir, runId, attemptId: started.attemptId, recipeId: recipeId(elsewhere) },
+        deps(),
+      ),
+    ).rejects.toThrow(/not for dep 1\.0\.0 to 2\.0\.0/);
+    await expect(
+      applyRecipe(
+        { cwd: dir, runId, attemptId: started.attemptId, recipeId: "dep#0000000000" },
+        deps(),
+      ),
+    ).rejects.toThrow(/Recipe not found/);
   });
 });

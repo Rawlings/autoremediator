@@ -4,7 +4,9 @@ import { pkg } from "./__tests__/fixtures.js";
 import { findVulnerableSymbols, parseCweIds } from "./fix-diff.js";
 
 const symbols = (diff: ReturnType<typeof findVulnerableSymbols>): string[] =>
-  diff.candidates.map((candidate) => `${candidate.specifier}#${candidate.exportName}:${candidate.basis}`);
+  diff.candidates.map(
+    (candidate) => `${candidate.specifier}#${candidate.exportName}:${candidate.basis}`,
+  );
 
 describe("findVulnerableSymbols", () => {
   it("ignores formatting, comments, quote style and parentheses", () => {
@@ -53,7 +55,10 @@ describe("findVulnerableSymbols", () => {
       { type: "module", main: "index.js" },
     );
     const diff = findVulnerableSymbols(before, after);
-    expect(symbols(diff).toSorted()).toEqual(["fixture-pkg#a:direct", "fixture-pkg#default:direct"]);
+    expect(symbols(diff).toSorted()).toEqual([
+      "fixture-pkg#a:direct",
+      "fixture-pkg#default:direct",
+    ]);
     const a = diff.candidates.find((candidate) => candidate.exportName === "a");
     expect(a?.file).toBe("lib/a.js");
   });
@@ -68,7 +73,10 @@ describe("findVulnerableSymbols", () => {
       "impl.js": `function one() { return 1; }\nfunction two() { return 22; }\nmodule.exports = { one, two, three: function () { return 33; } };`,
     });
     const diff = findVulnerableSymbols(before, after);
-    expect(symbols(diff).toSorted()).toEqual(["fixture-pkg#three:direct", "fixture-pkg#two:direct"]);
+    expect(symbols(diff).toSorted()).toEqual([
+      "fixture-pkg#three:direct",
+      "fixture-pkg#two:direct",
+    ]);
   });
 
   it("reports an export that calls a changed internal function, with the hop count", () => {
@@ -85,16 +93,24 @@ describe("findVulnerableSymbols", () => {
   });
 
   it("reports an export removed by the fix", () => {
-    const before = pkg("1.0.0", { "index.js": `exports.unsafe = function () { return eval("1"); };\nexports.safe = function () { return 1; };` });
-    const after = pkg("1.0.1", { "index.js": `exports.safe = function () { return 1; };\nexports.added = function () { return 1; };` });
+    const before = pkg("1.0.0", {
+      "index.js": `exports.unsafe = function () { return eval("1"); };\nexports.safe = function () { return 1; };`,
+    });
+    const after = pkg("1.0.1", {
+      "index.js": `exports.safe = function () { return 1; };\nexports.added = function () { return 1; };`,
+    });
     const diff = findVulnerableSymbols(before, after);
     expect(symbols(diff)).toEqual(["fixture-pkg#unsafe:removed-in-fix"]);
     expect(diff.addedExports).toEqual(["fixture-pkg#added"]);
   });
 
   it("does not treat a version constant bump as a fix", () => {
-    const before = pkg("1.0.0", { "index.js": `exports.VERSION = "1.0.0";\nexports.f = function () { return 1; };` });
-    const after = pkg("1.0.1", { "index.js": `exports.VERSION = "1.0.1";\nexports.f = function () { return 1; };` });
+    const before = pkg("1.0.0", {
+      "index.js": `exports.VERSION = "1.0.0";\nexports.f = function () { return 1; };`,
+    });
+    const after = pkg("1.0.1", {
+      "index.js": `exports.VERSION = "1.0.1";\nexports.f = function () { return 1; };`,
+    });
     expect(findVulnerableSymbols(before, after).candidates).toEqual([]);
   });
 
@@ -113,23 +129,33 @@ describe("findVulnerableSymbols", () => {
     expect(byCwe.candidates[0]?.symbol).toBe("beta");
     expect(byCwe.candidates[0]?.reasons.join(" ")).toMatch(/regular expression or size limit/);
 
-    const byText = findVulnerableSymbols(before, after, { hints: { text: "alpha is vulnerable to prototype pollution" } });
+    const byText = findVulnerableSymbols(before, after, {
+      hints: { text: "alpha is vulnerable to prototype pollution" },
+    });
     expect(byText.candidates[0]?.symbol).toBe("alpha");
     expect(byText.candidates[0]?.reasons.join(" ")).toMatch(/named in the advisory text/);
   });
 
   it("only exposes what an exports map exposes, and still sees changes behind it", () => {
     const manifest = { exports: { ".": "./lib/public.js" } };
-    const before = pkg("1.0.0", {
-      "lib/public.js": `const { inner } = require("./internal.js");\nexports.api = function () { return inner(); };`,
-      "lib/internal.js": `exports.inner = function () { return 1; };`,
-      "lib/private-only.js": `exports.hidden = function () { return 1; };`,
-    }, manifest);
-    const after = pkg("1.0.1", {
-      "lib/public.js": `const { inner } = require("./internal.js");\nexports.api = function () { return inner(); };`,
-      "lib/internal.js": `exports.inner = function () { return 2; };`,
-      "lib/private-only.js": `exports.hidden = function () { return 2; };`,
-    }, manifest);
+    const before = pkg(
+      "1.0.0",
+      {
+        "lib/public.js": `const { inner } = require("./internal.js");\nexports.api = function () { return inner(); };`,
+        "lib/internal.js": `exports.inner = function () { return 1; };`,
+        "lib/private-only.js": `exports.hidden = function () { return 1; };`,
+      },
+      manifest,
+    );
+    const after = pkg(
+      "1.0.1",
+      {
+        "lib/public.js": `const { inner } = require("./internal.js");\nexports.api = function () { return inner(); };`,
+        "lib/internal.js": `exports.inner = function () { return 2; };`,
+        "lib/private-only.js": `exports.hidden = function () { return 2; };`,
+      },
+      manifest,
+    );
     const diff = findVulnerableSymbols(before, after);
     // `hidden` is not importable; the public `api` is reported through the internal module.
     expect(symbols(diff)).toEqual(["fixture-pkg#api:via-internal-module"]);
@@ -138,13 +164,23 @@ describe("findVulnerableSymbols", () => {
 
   it("finds namespace-assignment exports in a UMD bundle and says the discovery is weak", () => {
     const body = (extra: string): string => {
-      const lines = Array.from({ length: 9 }, (_, index) => `  lodash.fn${index} = fn${index};`).join("\n");
-      const defs = Array.from({ length: 9 }, (_, index) => `  function fn${index}() { return ${index}; }`).join("\n");
+      const lines = Array.from(
+        { length: 9 },
+        (_, index) => `  lodash.fn${index} = fn${index};`,
+      ).join("\n");
+      const defs = Array.from(
+        { length: 9 },
+        (_, index) => `  function fn${index}() { return ${index}; }`,
+      ).join("\n");
       return `;(function () {\n  function runInContext() {\n${defs}\n  function template(s) { ${extra} return s; }\n  function lodash() {}\n${lines}\n  lodash.template = template;\n  return lodash;\n  }\n  var _ = runInContext();\n  (typeof module == "object" ? module : {}).exports = _;\n}.call(this));`;
     };
     const diff = findVulnerableSymbols(
       pkg("1.0.0", { "lodash.js": body("") }, { main: "lodash.js" }),
-      pkg("1.0.1", { "lodash.js": body("if (/bad/.test(s)) throw new Error('x');") }, { main: "lodash.js" }),
+      pkg(
+        "1.0.1",
+        { "lodash.js": body("if (/bad/.test(s)) throw new Error('x');") },
+        { main: "lodash.js" },
+      ),
     );
     expect(symbols(diff)).toContain("fixture-pkg#template:direct");
     expect(diff.limitations.join(" ")).toMatch(/namespace-assignment heuristic/);
@@ -167,8 +203,15 @@ describe("findVulnerableSymbols", () => {
 
   it("limits the number of candidates but reports the total", () => {
     const make = (suffix: string): string =>
-      Array.from({ length: 10 }, (_, index) => `exports.f${index} = function () { return "${suffix}${index}"; };`).join("\n");
-    const diff = findVulnerableSymbols(pkg("1.0.0", { "index.js": make("a") }), pkg("1.0.1", { "index.js": make("b") }), { limit: 3 });
+      Array.from(
+        { length: 10 },
+        (_, index) => `exports.f${index} = function () { return "${suffix}${index}"; };`,
+      ).join("\n");
+    const diff = findVulnerableSymbols(
+      pkg("1.0.0", { "index.js": make("a") }),
+      pkg("1.0.1", { "index.js": make("b") }),
+      { limit: 3 },
+    );
     expect(diff.candidates).toHaveLength(3);
     expect(diff.totalCandidates).toBe(10);
   });

@@ -9,7 +9,8 @@ export function renderDiff(path: string, before: string | undefined, after: stri
   const table = Array.from({ length: rows }, () => Array.from<number>({ length: cols }).fill(0));
   for (let i = a.length - 1; i >= 0; i -= 1) {
     for (let j = b.length - 1; j >= 0; j -= 1) {
-      table[i]![j] = a[i] === b[j] ? table[i + 1]![j + 1]! + 1 : Math.max(table[i + 1]![j]!, table[i]![j + 1]!);
+      table[i]![j] =
+        a[i] === b[j] ? table[i + 1]![j + 1]! + 1 : Math.max(table[i + 1]![j]!, table[i]![j + 1]!);
     }
   }
 
@@ -29,5 +30,9 @@ export function renderDiff(path: string, before: string | undefined, after: stri
       i += 1;
     }
   }
-  return [`--- ${before === undefined ? "/dev/null" : `a/${path}`}`, `+++ b/${path}`, ...lines].join("\n");
+  return [
+    `--- ${before === undefined ? "/dev/null" : `a/${path}`}`,
+    `+++ b/${path}`,
+    ...lines,
+  ].join("\n");
 }

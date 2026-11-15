@@ -6,8 +6,8 @@ import { execa } from "execa";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { getRun, listRuns, rollbackRun } from "../runs/index.js";
-import { applyFreshness, planFreshnessStep } from "./step.js";
 import { freshnessReport } from "./report.js";
+import { applyFreshness, planFreshnessStep } from "./step.js";
 import { FreshnessRegistry } from "./tests/registry.js";
 
 /**
@@ -86,9 +86,17 @@ async function makeProject(dependencies: Record<string, string>, policy: string)
 }
 
 const installed = (dir: string, name: string): string =>
-  (JSON.parse(readFileSync(join(dir, "node_modules", name, "package.json"), "utf8")) as { version: string }).version;
+  (
+    JSON.parse(readFileSync(join(dir, "node_modules", name, "package.json"), "utf8")) as {
+      version: string;
+    }
+  ).version;
 const ranges = (dir: string): Record<string, string> =>
-  (JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as { dependencies: Record<string, string> }).dependencies;
+  (
+    JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
+      dependencies: Record<string, string>;
+    }
+  ).dependencies;
 
 describe("freshness against a real project and registry", () => {
   it("reports how far behind each dependency is, from npm outdated and the registry's publish times", async () => {
@@ -104,11 +112,15 @@ describe("freshness against a real project and registry", () => {
       releasesBehind: 3,
       ageDays: 400,
     });
-    expect(report.packages.find((entry) => entry.name === "other")).toMatchObject({ minorsBehind: 1, releasesBehind: 1 });
-    expect(report.climbs.map((climb) => `${climb.packageName}: ${climb.steps.map((step) => step.toVersion).join(" > ")}`)).toEqual([
-      "other: 1.1.0",
-      "lib: 1.2.0 > 2.0.0 > 3.0.0",
-    ]);
+    expect(report.packages.find((entry) => entry.name === "other")).toMatchObject({
+      minorsBehind: 1,
+      releasesBehind: 1,
+    });
+    expect(
+      report.climbs.map(
+        (climb) => `${climb.packageName}: ${climb.steps.map((step) => step.toVersion).join(" > ")}`,
+      ),
+    ).toEqual(["other: 1.1.0", "lib: 1.2.0 > 2.0.0 > 3.0.0"]);
     expect(report.score).toBe(Math.round(100 - (80 + 5) / 2));
 
     // With assess, the first step of each climb is rated by the real upgrade analysis on the registry's tarballs.
@@ -120,7 +132,12 @@ describe("freshness against a real project and registry", () => {
     const cwd = await makeProject({ lib: "1.0.0", other: "1.0.0" }, POLICY);
     const result = await applyFreshness({ cwd, maxSteps: 5, runTests: true, allowHigh: true });
 
-    expect(result.steps.map((step) => `${step.status}: ${step.step.packageName} ${step.step.fromVersion} -> ${step.step.toVersion}`)).toEqual([
+    expect(
+      result.steps.map(
+        (step) =>
+          `${step.status}: ${step.step.packageName} ${step.step.fromVersion} -> ${step.step.toVersion}`,
+      ),
+    ).toEqual([
       "applied: other 1.0.0 -> 1.1.0",
       "applied: lib 1.0.0 -> 1.2.0",
       "applied: lib 1.2.0 -> 2.0.0",
@@ -139,7 +156,9 @@ describe("freshness against a real project and registry", () => {
     expect(installed(cwd, "other")).toBe("1.1.0");
 
     // Every step is its own run, and the failed one is closed as rolled back.
-    const statuses = Object.fromEntries(result.steps.map((step) => [step.runId!, getRun({ cwd, runId: step.runId! }).run.status]));
+    const statuses = Object.fromEntries(
+      result.steps.map((step) => [step.runId!, getRun({ cwd, runId: step.runId! }).run.status]),
+    );
     expect(Object.values(statuses)).toEqual(["applied", "applied", "applied", "rolled-back"]);
     expect(listRuns({ cwd })).toHaveLength(4);
 
@@ -195,10 +214,13 @@ describe("freshness against a real project and registry", () => {
       const url = input instanceof Request ? input.url : String(input);
       if (url.startsWith("https://gitlab.example.com/")) {
         requests.push(url);
-        return new Response(JSON.stringify({ web_url: "https://gitlab.example.com/group/app/-/merge_requests/1" }), {
-          status: 201,
-          headers: { "content-type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ web_url: "https://gitlab.example.com/group/app/-/merge_requests/1" }),
+          {
+            status: 201,
+            headers: { "content-type": "application/json" },
+          },
+        );
       }
       return realFetch(input, init);
     });
@@ -219,10 +241,20 @@ describe("freshness against a real project and registry", () => {
     expect(requests).toHaveLength(1);
 
     // The branch is on the remote with the bump; the working tree is back on main as it was.
-    await expect(run("git", ["branch", "--list"], bare)).resolves.toContain("autoremediator/freshness-1.1.0-other");
-    const onBranch = await run("git", ["show", "autoremediator/freshness-1.1.0-other:package.json"], bare);
+    await expect(run("git", ["branch", "--list"], bare)).resolves.toContain(
+      "autoremediator/freshness-1.1.0-other",
+    );
+    const onBranch = await run(
+      "git",
+      ["show", "autoremediator/freshness-1.1.0-other:package.json"],
+      bare,
+    );
     expect(onBranch).toContain('"other": "1.1.0"');
-    const message = await run("git", ["log", "-1", "--format=%B", "autoremediator/freshness-1.1.0-other"], bare);
+    const message = await run(
+      "git",
+      ["log", "-1", "--format=%B", "autoremediator/freshness-1.1.0-other"],
+      bare,
+    );
     expect(message).toContain("dependency freshness: other 1.0.0 -> 1.1.0");
     expect(message).toContain("Autoremediator-Run: run_");
     expect(message).not.toContain("Fixes-CVE");

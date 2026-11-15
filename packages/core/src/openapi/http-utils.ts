@@ -15,4 +15,3 @@ export function parsePort(): number {
   }
   return DEFAULT_PORT;
 }
-

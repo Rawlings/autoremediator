@@ -37,21 +37,33 @@ export type RecipePlan =
 const options = { includePrerelease: true } as const;
 
 /** Whether a recipe is for upgrading from `fromVersion` to `toVersion`. */
-export function appliesTo(recipe: Pick<Recipe, "fromRange" | "toRange">, fromVersion: string, toVersion: string): boolean {
+export function appliesTo(
+  recipe: Pick<Recipe, "fromRange" | "toRange">,
+  fromVersion: string,
+  toVersion: string,
+): boolean {
   if (!valid(fromVersion) || !valid(toVersion)) return false;
-  return satisfies(fromVersion, recipe.fromRange, options) && satisfies(toVersion, recipe.toRange, options);
+  return (
+    satisfies(fromVersion, recipe.fromRange, options) &&
+    satisfies(toVersion, recipe.toRange, options)
+  );
 }
 
 /** Whether source text refers to the package: a quoted import or require of it or of a subpath. */
 export function mentionsPackage(text: string, packageName: string): boolean {
-  return ['"', "'", "`"].some((quote) => text.includes(`${quote}${packageName}${quote}`) || text.includes(`${quote}${packageName}/`));
+  return ['"', "'", "`"].some(
+    (quote) =>
+      text.includes(`${quote}${packageName}${quote}`) || text.includes(`${quote}${packageName}/`),
+  );
 }
 
 const SAFE_PATH = /^[A-Za-z0-9_@+.,=-]+(?:\/[A-Za-z0-9_@+.,=-]+)*$/;
 
 /** A path safe to put in a diff header: plain characters, no `.` or `..` segments. */
 export function isSafeDiffPath(path: string): boolean {
-  return SAFE_PATH.test(path) && path.split("/").every((segment) => segment !== "." && segment !== "..");
+  return (
+    SAFE_PATH.test(path) && path.split("/").every((segment) => segment !== "." && segment !== "..")
+  );
 }
 
 interface Edit {
@@ -79,7 +91,8 @@ function findAll(lines: readonly string[], pattern: readonly string[]): number[]
 }
 
 const describeHunk = (hunk: RecipeHunk): string => {
-  const anchor = [...hunk.remove, ...hunk.before, ...hunk.after].find((line) => line.trim().length > 0) ?? "";
+  const anchor =
+    [...hunk.remove, ...hunk.before, ...hunk.after].find((line) => line.trim().length > 0) ?? "";
   return JSON.stringify(anchor.trim().slice(0, 80));
 };
 
@@ -88,7 +101,8 @@ function renderFileDiff(path: string, old: readonly string[], edits: readonly Ed
   for (const edit of edits) {
     const group = groups.at(-1);
     const previous = group?.at(-1);
-    if (group && previous && edit.start - (previous.start + previous.delLength) <= 2 * CONTEXT) group.push(edit);
+    if (group && previous && edit.start - (previous.start + previous.delLength) <= 2 * CONTEXT)
+      group.push(edit);
     else groups.push([edit]);
   }
 
@@ -125,7 +139,10 @@ function renderFileDiff(path: string, old: readonly string[], edits: readonly Ed
       newCount += 1;
     }
     const newStart = oldStart + delta;
-    out.push(`@@ -${oldCount === 0 ? oldStart : oldStart + 1},${oldCount} +${newCount === 0 ? newStart : newStart + 1},${newCount} @@`, ...body);
+    out.push(
+      `@@ -${oldCount === 0 ? oldStart : oldStart + 1},${oldCount} +${newCount === 0 ? newStart : newStart + 1},${newCount} @@`,
+      ...body,
+    );
     delta += newCount - oldCount;
   }
   return `${out.join("\n")}\n`;
@@ -143,7 +160,8 @@ export function planRecipe(recipe: Recipe, files: readonly SourceFile[]): Recipe
 
   for (const file of files) {
     if (!isSafeDiffPath(file.path)) continue;
-    if (file.text.length > MAX_FILE_BYTES || file.text.includes("\r") || !file.text.endsWith("\n")) continue;
+    if (file.text.length > MAX_FILE_BYTES || file.text.includes("\r") || !file.text.endsWith("\n"))
+      continue;
     if (!mentionsPackage(file.text, recipe.package)) continue;
     const lines = file.text.slice(0, -1).split("\n");
 
@@ -151,16 +169,24 @@ export function planRecipe(recipe: Recipe, files: readonly SourceFile[]): Recipe
       const pattern = [...hunk.before, ...hunk.remove, ...hunk.after];
       for (const found of findAll(lines, pattern)) {
         total += 1;
-        if (total > MAX_CHANGES) return { ok: false, reason: `the recipe would make more than ${MAX_CHANGES} changes` };
+        if (total > MAX_CHANGES)
+          return { ok: false, reason: `the recipe would make more than ${MAX_CHANGES} changes` };
         matchedHunks.add(index);
         const entry = edits.get(file.path) ?? { lines, edits: [] };
-        entry.edits.push({ hunk: index, start: found + hunk.before.length, delLength: hunk.remove.length, add: hunk.add });
+        entry.edits.push({
+          hunk: index,
+          start: found + hunk.before.length,
+          delLength: hunk.remove.length,
+          add: hunk.add,
+        });
         edits.set(file.path, entry);
       }
     }
   }
 
-  const missing = recipe.hunks.flatMap((hunk, index) => (!matchedHunks.has(index) && !hunk.optional ? [index] : []));
+  const missing = recipe.hunks.flatMap((hunk, index) =>
+    !matchedHunks.has(index) && !hunk.optional ? [index] : [],
+  );
   if (missing.length > 0) {
     return {
       ok: false,
@@ -168,18 +194,27 @@ export function planRecipe(recipe: Recipe, files: readonly SourceFile[]): Recipe
     };
   }
   if (edits.size === 0) return { ok: false, reason: "no source file matches the recipe" };
-  if (edits.size > MAX_FILES_CHANGED) return { ok: false, reason: `the recipe would change more than ${MAX_FILES_CHANGED} files` };
+  if (edits.size > MAX_FILES_CHANGED)
+    return { ok: false, reason: `the recipe would change more than ${MAX_FILES_CHANGED} files` };
 
   const matches: RecipeMatch[] = [];
   const diffs: string[] = [];
-  for (const [path, entry] of [...edits.entries()].toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+  for (const [path, entry] of [...edits.entries()].toSorted(([a], [b]) =>
+    a < b ? -1 : a > b ? 1 : 0,
+  )) {
     // An insertion goes in before a replacement that starts at the same line.
-    const sorted = entry.edits.toSorted((a, b) => a.start - b.start || a.delLength - b.delLength || a.hunk - b.hunk);
+    const sorted = entry.edits.toSorted(
+      (a, b) => a.start - b.start || a.delLength - b.delLength || a.hunk - b.hunk,
+    );
     for (const [index, edit] of sorted.entries()) {
       const previous = sorted[index - 1];
-      const bothInsertions = previous?.start === edit.start && previous.delLength === 0 && edit.delLength === 0;
+      const bothInsertions =
+        previous?.start === edit.start && previous.delLength === 0 && edit.delLength === 0;
       if (previous && (edit.start < previous.start + previous.delLength || bothInsertions)) {
-        return { ok: false, reason: `hunks ${previous.hunk + 1} and ${edit.hunk + 1} overlap in ${path}` };
+        return {
+          ok: false,
+          reason: `hunks ${previous.hunk + 1} and ${edit.hunk + 1} overlap in ${path}`,
+        };
       }
       matches.push({ hunk: edit.hunk, file: path, line: edit.start + 1 });
     }

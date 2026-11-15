@@ -1,9 +1,9 @@
-import { collectDependencyChanges } from "../../scanner/delta-scan.js";
 import { resolveGitCommit } from "../../platform/git-ref.js";
 import { safeExeca } from "../../platform/safe-exec.js";
 import type { DeltaDependencyChange } from "../../platform/types.js";
-import { guardPackage, type GuardDeps, defaultGuardDeps } from "./index.js";
+import { collectDependencyChanges } from "../../scanner/delta-scan.js";
 import { guardExitCode } from "./hook.js";
+import { guardPackage, type GuardDeps, defaultGuardDeps } from "./index.js";
 import type { GuardOptions, GuardReport, GuardVerdict } from "./types.js";
 
 export interface GuardDiffOptions extends GuardOptions {
@@ -46,7 +46,8 @@ const NON_REGISTRY = /^(?:[a-z][a-z0-9+.-]*:|\.{0,2}\/|~\/|[\w.-]+\/[\w.-]+$)/i;
 export function specForChange(change: DeltaDependencyChange): { spec: string } | { skip: string } {
   const version = change.newVersion?.trim();
   if (!version) return { skip: "no version" };
-  if (LOCAL_PROTOCOL.test(version)) return { skip: `${version.split(":")[0]}: dependencies are not registry packages` };
+  if (LOCAL_PROTOCOL.test(version))
+    return { skip: `${version.split(":")[0]}: dependencies are not registry packages` };
   if (version.startsWith("npm:")) return { spec: `${change.packageName}@${version}` };
   if (NON_REGISTRY.test(version)) return { spec: version };
   return { spec: `${change.packageName}@${version}` };
@@ -60,7 +61,11 @@ async function resolveBase(cwd: string, ref: string): Promise<string> {
   return sha || commit;
 }
 
-async function mapLimit<T, R>(items: readonly T[], limit: number, run: (item: T) => Promise<R>): Promise<R[]> {
+async function mapLimit<T, R>(
+  items: readonly T[],
+  limit: number,
+  run: (item: T) => Promise<R>,
+): Promise<R[]> {
   const results: R[] = [];
   let next = 0;
   const worker = async (): Promise<void> => {
@@ -69,7 +74,9 @@ async function mapLimit<T, R>(items: readonly T[], limit: number, run: (item: T)
       results[index] = await run(items[index] as T);
     }
   };
-  await Promise.all(Array.from({ length: Math.min(Math.max(1, limit), items.length) }, () => worker()));
+  await Promise.all(
+    Array.from({ length: Math.min(Math.max(1, limit), items.length) }, () => worker()),
+  );
   return results;
 }
 
@@ -96,7 +103,11 @@ export async function guardGitDiff(
     if (change.dependencyType === "peerDependencies") continue;
     const target = specForChange(change);
     if ("skip" in target) {
-      skipped.push({ packageName: change.packageName, version: change.newVersion ?? "", reason: target.skip });
+      skipped.push({
+        packageName: change.packageName,
+        version: change.newVersion ?? "",
+        reason: target.skip,
+      });
     } else {
       specs.set(target.spec, change.packageName);
     }

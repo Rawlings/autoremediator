@@ -1,5 +1,5 @@
-import type { InitChangeSummary } from "../init/types.js";
 import type { PackageManager } from "../../platform/types.js";
+import type { InitChangeSummary } from "../init/types.js";
 
 export type MaintainDecision =
   /** The advisory's package is only a development dependency (or nothing of this project ships it): nothing to say to consumers. */

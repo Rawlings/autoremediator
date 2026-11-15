@@ -5,9 +5,9 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { Packument } from "./checks.js";
 import { guardGitDiff, specForChange } from "./diff.js";
 import { minAgeHoursFor, type GuardDeps } from "./index.js";
-import type { Packument } from "./checks.js";
 
 const NOW = Date.parse("2026-06-01T00:00:00Z");
 const ago = (hours: number): string => new Date(NOW - hours * 3_600_000).toISOString();
@@ -35,12 +35,19 @@ function deps(missing: string[] = []): GuardDeps & { asked: string[] } {
 
 let dir: string;
 const git = (...args: string[]) =>
-  execFileSync("git", ["-c", "user.email=t@example.test", "-c", "user.name=t", "-c", "commit.gpgsign=false", ...args], {
-    cwd: dir,
-    encoding: "utf8",
-  });
+  execFileSync(
+    "git",
+    ["-c", "user.email=t@example.test", "-c", "user.name=t", "-c", "commit.gpgsign=false", ...args],
+    {
+      cwd: dir,
+      encoding: "utf8",
+    },
+  );
 const manifest = (dependencies: Record<string, string>, extra: Record<string, unknown> = {}) =>
-  writeFileSync(join(dir, "package.json"), `${JSON.stringify({ name: "app", version: "1.0.0", dependencies, ...extra }, null, 2)}\n`);
+  writeFileSync(
+    join(dir, "package.json"),
+    `${JSON.stringify({ name: "app", version: "1.0.0", dependencies, ...extra }, null, 2)}\n`,
+  );
 
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "guard-diff-"));
@@ -68,7 +75,14 @@ describe("specForChange", () => {
     expect(specForChange(change("https://x.test/p.tgz"))).toEqual({ spec: "https://x.test/p.tgz" });
   });
   it("skips local protocols", () => {
-    for (const version of ["workspace:*", "link:../x", "file:../x", "portal:../x", "catalog:", undefined]) {
+    for (const version of [
+      "workspace:*",
+      "link:../x",
+      "file:../x",
+      "portal:../x",
+      "catalog:",
+      undefined,
+    ]) {
       expect(specForChange(change(version))).toHaveProperty("skip");
     }
   });
@@ -96,17 +110,29 @@ describe("guardGitDiff", () => {
   });
 
   it("ignores removed dependencies and, by default, packages only the lockfile gained", async () => {
-    writeFileSync(join(dir, "package-lock.json"), JSON.stringify({ packages: { "": {}, "node_modules/kept": { version: "1.0.0" } } }));
+    writeFileSync(
+      join(dir, "package-lock.json"),
+      JSON.stringify({ packages: { "": {}, "node_modules/kept": { version: "1.0.0" } } }),
+    );
     git("add", ".");
     git("commit", "-q", "-m", "lock");
     manifest({});
     writeFileSync(
       join(dir, "package-lock.json"),
-      JSON.stringify({ packages: { "": {}, "node_modules/kept": { version: "1.0.0" }, "node_modules/deep": { version: "3.0.0" } } }),
+      JSON.stringify({
+        packages: {
+          "": {},
+          "node_modules/kept": { version: "1.0.0" },
+          "node_modules/deep": { version: "3.0.0" },
+        },
+      }),
     );
     const d = deps();
     expect((await guardGitDiff({ cwd: dir, offline: true }, d)).checked).toBe(0);
-    const withTransitive = await guardGitDiff({ cwd: dir, offline: true, includeTransitive: true }, d);
+    const withTransitive = await guardGitDiff(
+      { cwd: dir, offline: true, includeTransitive: true },
+      d,
+    );
     expect(withTransitive.reports.map((report) => report.spec)).toEqual(["deep@3.0.0"]);
   });
 
@@ -120,16 +146,26 @@ describe("guardGitDiff", () => {
     git("checkout", "-q", "feature");
     // Against the tip of main, `kept` would read as a downgrade (^3 to ^2) and be skipped; against
     // the merge base it is this branch's own upgrade (^1 to ^2).
-    const result = await guardGitDiff({ cwd: dir, offline: true, baseRef: "main", minPublishAgeHours: 0 }, deps());
-    expect(result.reports.map((report) => report.spec).toSorted()).toEqual(["kept@^2.0.0", "mine@^1.0.0"]);
+    const result = await guardGitDiff(
+      { cwd: dir, offline: true, baseRef: "main", minPublishAgeHours: 0 },
+      deps(),
+    );
+    expect(result.reports.map((report) => report.spec).toSorted()).toEqual([
+      "kept@^2.0.0",
+      "mine@^1.0.0",
+    ]);
   });
 
   it("refuses a ref that does not exist instead of guarding everything", async () => {
-    await expect(guardGitDiff({ cwd: dir, baseRef: "no-such-ref" }, deps())).rejects.toThrow(/not a commit/);
+    await expect(guardGitDiff({ cwd: dir, baseRef: "no-such-ref" }, deps())).rejects.toThrow(
+      /not a commit/,
+    );
   });
 
   it("refuses a ref that git would read as an option", async () => {
-    await expect(guardGitDiff({ cwd: dir, baseRef: "--git-dir=/tmp" }, deps())).rejects.toThrow(/not a valid git ref/);
+    await expect(guardGitDiff({ cwd: dir, baseRef: "--git-dir=/tmp" }, deps())).rejects.toThrow(
+      /not a valid git ref/,
+    );
   });
 });
 
@@ -150,7 +186,10 @@ describe("minAgeHoursFor", () => {
 
   it("honours the package manager's exemptions", () => {
     write("pnpm-lock.yaml", "lockfileVersion: '9.0'\n");
-    write("pnpm-workspace.yaml", "minimumReleaseAge: 10080\nminimumReleaseAgeExclude:\n  - exempt-*\n");
+    write(
+      "pnpm-workspace.yaml",
+      "minimumReleaseAge: 10080\nminimumReleaseAgeExclude:\n  - exempt-*\n",
+    );
     expect(minAgeHoursFor("exempt-pkg", { cwd: dir })).toBe(72);
     expect(minAgeHoursFor("other", { cwd: dir })).toBe(168);
   });

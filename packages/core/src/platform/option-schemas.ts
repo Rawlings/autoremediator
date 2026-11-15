@@ -139,7 +139,8 @@ export const OPTION_DESCRIPTIONS = {
   supplyChainPolicy:
     "Supply-chain trust gate for candidate versions: minimum release age, install scripts, provenance",
   supplyChainMinPublishAgeHours: "Skip versions published more recently than this many hours",
-  supplyChainBlockInstallScripts: "Skip versions that define preinstall, install or postinstall scripts",
+  supplyChainBlockInstallScripts:
+    "Skip versions that define preinstall, install or postinstall scripts",
   supplyChainRequireProvenance: "Require a provenance attestation on the chosen version",
   exploitSignalOverride:
     "Treat CVEs with an exploit signal as mandatory regardless of severity: CISA KEV status and/or an EPSS probability above a threshold",
@@ -158,7 +159,8 @@ export const OPTION_DESCRIPTIONS = {
   autonomyCeiling: "Highest autonomy level this repository may ever act at (L0 to L4)",
   autonomyMinVerifiedRuns:
     "Verified runs in the recent window needed for L3 (twice as many for L4). Default 5",
-  autonomyWindow: "How many of the most recent runs count as recent (a run with several changes is one run). Default 20",
+  autonomyWindow:
+    "How many of the most recent runs count as recent (a run with several changes is one run). Default 20",
   autonomyMinSuccessRate:
     "Share of recent runs that must be verified successes (0..1) for L3 and L4. Default 0.9",
   autonomyCooldownDays:
@@ -219,7 +221,13 @@ export const autonomyPolicySchema = z
     cooldownDays: z.number().min(0).max(3650).describe(D.autonomyCooldownDays),
     requireTestCoverage: z.boolean().describe(D.autonomyRequireTestCoverage),
   })
-  .partial({ minVerifiedRuns: true, window: true, minSuccessRate: true, cooldownDays: true, requireTestCoverage: true })
+  .partial({
+    minVerifiedRuns: true,
+    window: true,
+    minSuccessRate: true,
+    cooldownDays: true,
+    requireTestCoverage: true,
+  })
   .strict()
   .refine((value) => (value.window ?? 20) >= 2 * (value.minVerifiedRuns ?? 5), {
     message: "window must be at least twice minVerifiedRuns, or L4 could never be reached",
@@ -251,9 +259,7 @@ export const exploitSignalOverrideSchema = z
 
 export const dispositionPolicySchema = z
   .object({
-    minConfidenceForAutoApply: unitInterval.describe(
-      D.dispositionPolicyMinConfidenceForAutoApply,
-    ),
+    minConfidenceForAutoApply: unitInterval.describe(D.dispositionPolicyMinConfidenceForAutoApply),
     holdForTransitive: z.boolean().describe(D.dispositionPolicyHoldForTransitive),
     escalateOnKev: z.boolean().describe(D.dispositionPolicyEscalateOnKev),
     escalateOnSlaBreachSeverities: z
@@ -373,7 +379,10 @@ export const patchArtifactQuerySchema = z
   .strict();
 
 export const reconcileOptionsSchema = patchArtifactQuerySchema.extend({
-  autoApply: z.boolean().optional().describe("Apply the upstream fix and retire the patch when one is available"),
+  autoApply: z
+    .boolean()
+    .optional()
+    .describe("Apply the upstream fix and retire the patch when one is available"),
   runTests: z.boolean().optional().describe(D.runTests),
 });
 
@@ -388,7 +397,9 @@ export const deltaScanOptionsSchema = z
     cwd: pathField(D.cwd),
     baseRef: z
       .string()
-      .describe("Git base reference to compare against (e.g. 'HEAD', 'origin/main'). Defaults to 'HEAD'."),
+      .describe(
+        "Git base reference to compare against (e.g. 'HEAD', 'origin/main'). Defaults to 'HEAD'.",
+      ),
     includeUnstaged: z.boolean().describe("Also compare unstaged working-tree changes"),
     packageManager: z.enum(PACKAGE_MANAGER_VALUES).describe(D.packageManager),
   })
@@ -400,7 +411,9 @@ export const evaluatePackageOptionsSchema = z
     version: z.string().describe("Specific package version to evaluate"),
     packageManager: z.enum(PACKAGE_MANAGER_VALUES).describe(D.packageManager),
     cwd: pathField("Project root whose .npmrc selects the registry (default: process.cwd())"),
-    enrichIntelligence: z.boolean().describe("Enrich with live CISA KEV and EPSS intelligence feeds"),
+    enrichIntelligence: z
+      .boolean()
+      .describe("Enrich with live CISA KEV and EPSS intelligence feeds"),
   })
   .partial()
   .strict();
@@ -475,7 +488,9 @@ export const applyPlanOptionsSchema = z
     verify: z
       .boolean()
       .optional()
-      .describe("Verify each item after applying it and take it back out if it fails (default: true)"),
+      .describe(
+        "Verify each item after applying it and take it back out if it fails (default: true)",
+      ),
     repair: z
       .boolean()
       .optional()
@@ -485,7 +500,9 @@ export const applyPlanOptionsSchema = z
     model: z
       .string()
       .optional()
-      .describe('Language model for repair as "<provider>:<model-id>" (default: AUTOREMEDIATOR_MODEL)'),
+      .describe(
+        'Language model for repair as "<provider>:<model-id>" (default: AUTOREMEDIATOR_MODEL)',
+      ),
     maxRepairRounds: z
       .number()
       .int()
@@ -521,7 +538,10 @@ export const itemIdSchema = z
 
 export const attemptIdSchema = z
   .string(required("attemptId"))
-  .regex(ATTEMPT_ID_PATTERN, "attemptId must look like attempt_ followed by 12 lowercase letters or digits")
+  .regex(
+    ATTEMPT_ID_PATTERN,
+    "attemptId must look like attempt_ followed by 12 lowercase letters or digits",
+  )
   .describe("Attempt id returned by startAttempt");
 
 export const startAttemptOptionsSchema = z
@@ -569,5 +589,6 @@ type WireKeys = keyof z.input<typeof remediateOptionsSchema>;
 type SdkOnly = "patchGenerator" | "ignoreMemory";
 type NotOnTheWire = Exclude<keyof RemediateOptions, WireKeys | SdkOnly>;
 type NotInTheSdk = Exclude<WireKeys, keyof RemediateOptions>;
-export const wireOptionsMatchSdk: [NotOnTheWire, NotInTheSdk] extends [never, never] ? true : never =
-  true;
+export const wireOptionsMatchSdk: [NotOnTheWire, NotInTheSdk] extends [never, never]
+  ? true
+  : never = true;

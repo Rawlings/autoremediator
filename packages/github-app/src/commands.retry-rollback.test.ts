@@ -180,7 +180,9 @@ describe("retry", () => {
   it("a fix that failed can be retried, because the request is recorded before it runs", async () => {
     const { send, comments } = setup();
     remediateFromScanMock.mockRejectedValueOnce(new Error("network"));
-    await expect(send("/autoremediator fix CVE-2021-23337")).resolves.toMatchObject({ status: "partial" });
+    await expect(send("/autoremediator fix CVE-2021-23337")).resolves.toMatchObject({
+      status: "partial",
+    });
     remediateFromScanMock.mockClear();
     await send("/autoremediator retry CVE-2021-23337");
     expect(remediateFromScanMock).toHaveBeenCalledTimes(1);

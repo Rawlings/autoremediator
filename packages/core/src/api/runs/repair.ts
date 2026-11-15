@@ -8,9 +8,9 @@ import {
 } from "../../platform/rollback.js";
 import { safeExeca } from "../../platform/safe-exec.js";
 import type { CveDetails, LlmUsageMetrics } from "../../platform/types.js";
+import { recipeId, serializeRecipe } from "../../recipes/schema.js";
 import type { AttemptRequest, AttemptResult } from "../../remediation/repair/attempt.js";
 import type { VerificationResult, VerifyRequest } from "../../remediation/verify/types.js";
-import { recipeId, serializeRecipe } from "../../recipes/schema.js";
 import { newAttemptId } from "../../runs/ids.js";
 import type { PlanItem, RemediationPlan } from "../../runs/plan.js";
 import type { AttemptRecord, AttemptStatus, RunStatus, RunStore } from "../../runs/run-store.js";
@@ -27,7 +27,11 @@ export const APPLICABLE_STATUSES = new Set<RunStatus>(["planned", "applying", "f
  * Take the run's rollback snapshot before its first change; later calls do nothing, because the
  * state before the first change is the one a rollback must return to.
  */
-export async function ensureRunSnapshot(store: RunStore, runId: string, cwd: string): Promise<void> {
+export async function ensureRunSnapshot(
+  store: RunStore,
+  runId: string,
+  cwd: string,
+): Promise<void> {
   if (store.hasFile(runId, SNAPSHOT_MANIFEST)) return;
   saveSnapshot(join(store.runDir(runId), SNAPSHOT_DIR), await createProjectSnapshot(cwd));
   store.ledger(runId).append("snapshot.saved", { dir: SNAPSHOT_DIR });
@@ -90,23 +94,38 @@ export async function promoteChange(params: {
   const absolute = files.map((file) => resolve(root, file));
   const outside = absolute.filter((file) => relative(resolve(cwd), file).startsWith(".."));
   if (outside.length > 0) {
-    return { ok: false, message: `the change touches files outside the project directory: ${outside.join(", ")}` };
+    return {
+      ok: false,
+      message: `the change touches files outside the project directory: ${outside.join(", ")}`,
+    };
   }
 
   try {
     await git(root, ["apply", "--check", "-"], diff);
   } catch {
-    return { ok: false, message: "the verified change no longer applies to the project (it changed since the attempt began)" };
+    return {
+      ok: false,
+      message:
+        "the verified change no longer applies to the project (it changed since the attempt began)",
+    };
   }
 
   // Everything the change touches, plus the usual dependency files, so a failure can be undone.
   const before = await createProjectSnapshot(cwd, [...discoverProjectFiles(cwd), ...absolute]);
   addToSnapshot(
     `${params.runDir}/${SNAPSHOT_DIR}`,
-    new Map(files.map((file) => [relative(resolve(cwd), resolve(root, file)), before.fileSnapshots.get(relative(resolve(cwd), resolve(root, file))) ?? null])),
+    new Map(
+      files.map((file) => [
+        relative(resolve(cwd), resolve(root, file)),
+        before.fileSnapshots.get(relative(resolve(cwd), resolve(root, file))) ?? null,
+      ]),
+    ),
   );
 
-  const undo = async (message: string, verification?: VerificationResult): Promise<PromotionResult> => {
+  const undo = async (
+    message: string,
+    verification?: VerificationResult,
+  ): Promise<PromotionResult> => {
     await restoreProjectSnapshot(before);
     await deps.reinstall().catch(() => undefined);
     return { ok: false, message, ...(verification ? { verification } : {}) };
@@ -115,13 +134,17 @@ export async function promoteChange(params: {
   try {
     await git(root, ["apply", "-"], diff);
   } catch (error) {
-    return undo(`applying the verified change failed: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
+    return undo(
+      `applying the verified change failed: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`,
+    );
   }
 
   try {
     await deps.reinstall();
   } catch (error) {
-    return undo(`installing after applying the change failed: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`);
+    return undo(
+      `installing after applying the change failed: ${error instanceof Error ? error.message.split("\n")[0] : String(error)}`,
+    );
   }
 
   const verification = await deps.verify({
@@ -137,7 +160,10 @@ export async function promoteChange(params: {
   });
   if (!verification.passed) {
     const failed = verification.checks.find((check) => check.name === verification.failedCheck);
-    return undo(`the change failed verification in the project (${verification.failedCheck}): ${failed?.message ?? ""}`, verification);
+    return undo(
+      `the change failed verification in the project (${verification.failedCheck}): ${failed?.message ?? ""}`,
+      verification,
+    );
   }
   return { ok: true, message: "applied to the project", verification };
 }
@@ -190,7 +216,11 @@ export async function repairItem(
   const attemptId = newAttemptId();
   const ledger = store.ledger(runId);
   const startedAt = new Date().toISOString();
-  ledger.append("attempt.start", { attemptId, itemId: item.itemId, agent: context.agent?.id ?? "recipes" });
+  ledger.append("attempt.start", {
+    attemptId,
+    itemId: item.itemId,
+    agent: context.agent?.id ?? "recipes",
+  });
 
   const attempt = await deps.attempt({
     cwd: context.cwd,
@@ -241,9 +271,17 @@ export async function repairItem(
       });
       if ("recipe" in captured) {
         recipeJson = serializeRecipe(captured.recipe);
-        ledger.append("recipe.captured", { attemptId, itemId: item.itemId, recipeId: recipeId(captured.recipe) });
+        ledger.append("recipe.captured", {
+          attemptId,
+          itemId: item.itemId,
+          recipeId: recipeId(captured.recipe),
+        });
       } else {
-        ledger.append("recipe.not-captured", { attemptId, itemId: item.itemId, reason: captured.error });
+        ledger.append("recipe.not-captured", {
+          attemptId,
+          itemId: item.itemId,
+          reason: captured.error,
+        });
       }
     }
   }
@@ -257,7 +295,10 @@ export async function repairItem(
     rounds: attempt.rounds,
     changedFiles: attempt.changedFiles,
     ...(attempt.usage.length > 0
-      ? { inputTokens: sum(attempt.usage, "inputTokens"), outputTokens: sum(attempt.usage, "outputTokens") }
+      ? {
+          inputTokens: sum(attempt.usage, "inputTokens"),
+          outputTokens: sum(attempt.usage, "outputTokens"),
+        }
       : {}),
     startedAt,
     endedAt: new Date().toISOString(),
@@ -267,7 +308,9 @@ export async function repairItem(
     ...(recipeJson ? { "recipe.json": recipeJson } : {}),
     ...(verification ? { "verification.json": `${JSON.stringify(verification, null, 2)}\n` } : {}),
     ...(attempt.transcript.length > 0
-      ? { "transcript.jsonl": `${attempt.transcript.map((entry) => JSON.stringify(entry)).join("\n")}\n` }
+      ? {
+          "transcript.jsonl": `${attempt.transcript.map((entry) => JSON.stringify(entry)).join("\n")}\n`,
+        }
       : {}),
   });
   ledger.append("attempt.done", { attemptId, itemId: item.itemId, status, rounds: attempt.rounds });

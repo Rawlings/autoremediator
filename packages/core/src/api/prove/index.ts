@@ -4,13 +4,21 @@
  * fixed one, repeatably, in a sandbox). See `docs/guides/proof-of-fix-generation.md`.
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { getModelSpec } from "../../platform/config.js";
-import { resolveLanguageModel } from "../../remediation/patch/model.js";
 import { findVulnerableSymbols } from "../../remediation/impact/fix-diff.js";
+import { resolveLanguageModel } from "../../remediation/patch/model.js";
 import { isAdvisoryId } from "../incident/target.js";
 import { resolvePatchesDir } from "../patches/helpers.js";
 import type { ProofEvidenceRef } from "../vex/index.js";
@@ -52,7 +60,12 @@ export {
 } from "./evidence.js";
 export { createBuiltinReproductionAgent } from "./agent.js";
 export { screenScript, type ScreenResult } from "./screen.js";
-export { runSandboxed, SandboxUnavailableError, verifySandbox, type SandboxReport } from "./sandbox.js";
+export {
+  runSandboxed,
+  SandboxUnavailableError,
+  verifySandbox,
+  type SandboxReport,
+} from "./sandbox.js";
 export type {
   AdvisoryContext,
   JudgedRun,
@@ -191,7 +204,10 @@ export async function generateProofOfFix(
 ): Promise<ProveResult> {
   const typedId = cveId.trim();
   const advisoryId = isAdvisoryId(typedId) ? normalizeAdvisoryId(typedId) : typedId;
-  if (advisoryId === "") throw new Error("Name the advisory: a CVE or GHSA id, or any label together with advisoryText.");
+  if (advisoryId === "")
+    throw new Error(
+      "Name the advisory: a CVE or GHSA id, or any label together with advisoryText.",
+    );
   if (!options.advisoryText && !isAdvisoryId(advisoryId)) {
     throw new Error(
       `"${advisoryId.slice(0, 80)}" is not an advisory id (CVE-, GHSA-, OSV-, MAL-). Give one, or pass advisoryText to describe the vulnerability yourself.`,
@@ -199,7 +215,10 @@ export async function generateProofOfFix(
   }
   const cwd = options.cwd ?? process.cwd();
   const maxTrials = Math.min(10, Math.max(1, Math.trunc(options.maxTrials ?? DEFAULT_MAX_TRIALS)));
-  const timeoutMs = Math.min(60_000, Math.max(1000, Math.trunc(options.timeoutMs ?? DEFAULT_RUN_TIMEOUT_MS)));
+  const timeoutMs = Math.min(
+    60_000,
+    Math.max(1000, Math.trunc(options.timeoutMs ?? DEFAULT_RUN_TIMEOUT_MS)),
+  );
 
   // Everything that can fail cheaply fails before the network is touched or a model is paid for.
   const agent = await resolveAgent(options, deps);
@@ -214,8 +233,7 @@ export async function generateProofOfFix(
   }
   const advisory = contextFor(looked?.context.id ?? advisoryId, looked, options.advisoryText);
   const packageName = choosePackage(options.package, looked?.affected ?? []);
-  const published =
-    options.vulnerableVersion ? [] : await deps.listVersions(packageName, cwd);
+  const published = options.vulnerableVersion ? [] : await deps.listVersions(packageName, cwd);
   const { vulnerableVersion, fixedVersion } = chooseVersions({
     packageName,
     affected: looked?.affected ?? [],
@@ -226,7 +244,10 @@ export async function generateProofOfFix(
 
   const patchesPath = resolvePatchesDir(cwd, options.patchesDir);
   const scriptPath = join(patchesPath, scriptFileName(packageName, vulnerableVersion));
-  const evidencePath = join(patchesPath, `${baseName(packageName, vulnerableVersion)}${EVIDENCE_SUFFIX}`);
+  const evidencePath = join(
+    patchesPath,
+    `${baseName(packageName, vulnerableVersion)}${EVIDENCE_SUFFIX}`,
+  );
   if (existsSync(scriptPath) && !options.overwrite && !ownedByEvidence(scriptPath, evidencePath)) {
     throw new Error(
       `${relativeTo(cwd, scriptPath)} already exists and was not written by this command. Review it, or pass overwrite to replace it.`,
@@ -287,7 +308,12 @@ export async function generateProofOfFix(
 
     const outcome = await agent.propose(
       { advisory, packageName, vulnerableVersion, fixedVersion, candidates, maxTrials },
-      { sources: { vulnerable: vulnerable.source, fixed: fixed.source }, trial, signal: new AbortController().signal, maxWallMs: AGENT_WALL_MS },
+      {
+        sources: { vulnerable: vulnerable.source, fixed: fixed.source },
+        trial,
+        signal: new AbortController().signal,
+        maxWallMs: AGENT_WALL_MS,
+      },
     );
 
     const base = {
@@ -323,7 +349,10 @@ export async function generateProofOfFix(
       vulnerableVersion,
       fixedVersion,
       claim: CLAIM,
-      script: { path: relativeTo(cwd, scriptPath), sha256: createHash("sha256").update(script).digest("hex") },
+      script: {
+        path: relativeTo(cwd, scriptPath),
+        sha256: createHash("sha256").update(script).digest("hex"),
+      },
       vulnerableRun: result.vulnerableRun!,
       fixedRun: result.fixedRun!,
       confirmedRuns: CONFIRM_RUNS,
@@ -331,7 +360,12 @@ export async function generateProofOfFix(
         vulnerable: { url: vulnerable.tarballUrl, integrity: vulnerable.integrity },
         fixed: { url: fixed.tarballUrl, integrity: fixed.integrity },
       },
-      sandbox: { ...sandbox, env: Object.keys(SANDBOX_ENV), timeoutMs, maxOutputBytes: MAX_OUTPUT_BYTES },
+      sandbox: {
+        ...sandbox,
+        env: Object.keys(SANDBOX_ENV),
+        timeoutMs,
+        maxOutputBytes: MAX_OUTPUT_BYTES,
+      },
       nodeVersion: process.version,
       timestamp: deps.now().toISOString(),
       model: outcome.usage[0]?.model ?? null,
@@ -346,7 +380,11 @@ export async function generateProofOfFix(
     let signaturePath: string | undefined;
     if (signingKey) {
       signaturePath = `${evidencePath}${SIGNATURE_SUFFIX}`;
-      writeFileSync(signaturePath, `${JSON.stringify(signRecord(Buffer.from(recordText, "utf8"), signingKey), null, 2)}\n`, "utf8");
+      writeFileSync(
+        signaturePath,
+        `${JSON.stringify(signRecord(Buffer.from(recordText, "utf8"), signingKey), null, 2)}\n`,
+        "utf8",
+      );
     }
 
     return {
@@ -390,7 +428,10 @@ function candidateLines(
 ): string[] {
   try {
     const diff = findVulnerableSymbols(vulnerable.source, fixed.source, {
-      hints: { text: [advisory.summary, advisory.details].filter(Boolean).join("\n"), cwes: advisory.cwes },
+      hints: {
+        text: [advisory.summary, advisory.details].filter(Boolean).join("\n"),
+        cwes: advisory.cwes,
+      },
       limit: 8,
     });
     return diff.candidates.map(

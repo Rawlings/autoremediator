@@ -58,11 +58,22 @@ export function runProcess(spec: ProcessSpec): Promise<ProcessResult> {
     let child;
     try {
       if (spec.shell !== undefined) {
-        child = spawn(spec.shell, { cwd: spec.cwd, env, shell: true, detached: !windows, stdio: ["ignore", "pipe", "pipe"] });
+        child = spawn(spec.shell, {
+          cwd: spec.cwd,
+          env,
+          shell: true,
+          detached: !windows,
+          stdio: ["ignore", "pipe", "pipe"],
+        });
       } else {
         const [file, ...args] = spec.argv ?? [];
         if (!file) throw new Error("empty command");
-        child = spawn(file, args, { cwd: spec.cwd, env, detached: !windows, stdio: ["ignore", "pipe", "pipe"] });
+        child = spawn(file, args, {
+          cwd: spec.cwd,
+          env,
+          detached: !windows,
+          stdio: ["ignore", "pipe", "pipe"],
+        });
       }
     } catch (error) {
       output = `could not start: ${error instanceof Error ? error.message : String(error)}`;
@@ -154,7 +165,9 @@ export function sanitizeOutput(text: string, options: SanitizeOptions = {}): str
 
   const env = options.env ?? process.env;
   const secrets = Object.entries(env)
-    .filter(([name, value]) => SECRET_NAME.test(name) && typeof value === "string" && value.length >= 8)
+    .filter(
+      ([name, value]) => SECRET_NAME.test(name) && typeof value === "string" && value.length >= 8,
+    )
     .map(([, value]) => value!)
     .toSorted((a, b) => b.length - a.length);
   for (const secret of secrets) result = result.replaceAll(secret, "[redacted]");

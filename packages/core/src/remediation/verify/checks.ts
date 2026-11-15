@@ -1,6 +1,7 @@
 import semver from "semver";
 
 import { readCooldown, withCooldown } from "../../platform/cooldown.js";
+import { MEMORY_PATH } from "../../platform/memory/path.js";
 import {
   detectPackageManager,
   getYarnMajorVersion,
@@ -11,13 +12,12 @@ import {
 import { DEFAULT_POLICY, isPackageAllowed, loadPolicy } from "../../platform/policy.js";
 import type { AutoremediatorPolicy } from "../../platform/policy.js";
 import { loadRegistryConfig } from "../../platform/registry-config.js";
-import { MEMORY_PATH } from "../../platform/memory/path.js";
-import { TRACK_RECORD_PATH } from "../../platform/track-record-path.js";
 import { verifyPackageTrust } from "../../platform/supply-chain.js";
+import { TRACK_RECORD_PATH } from "../../platform/track-record-path.js";
 import type { InventoryPackage, PackageManager } from "../../platform/types.js";
+import { findVulnerablePackages } from "../local/vulnerability-match.js";
 import { prepareReproductionTestFile, runProofOfFixPhase } from "../proof-of-fix/runner.js";
 import { checkInventoryTool } from "../tools/check-inventory.js";
-import { findVulnerablePackages } from "../local/vulnerability-match.js";
 import {
   changedFilesSince,
   classifyPath,
@@ -49,8 +49,16 @@ export interface CheckContext {
 
 export type CheckFn = (context: CheckContext) => Promise<CheckOutcome>;
 
-const pass = (message: string, details?: string[]): CheckOutcome => ({ status: "passed", message, ...(details ? { details } : {}) });
-const fail = (message: string, details?: string[]): CheckOutcome => ({ status: "failed", message, ...(details ? { details } : {}) });
+const pass = (message: string, details?: string[]): CheckOutcome => ({
+  status: "passed",
+  message,
+  ...(details ? { details } : {}),
+});
+const fail = (message: string, details?: string[]): CheckOutcome => ({
+  status: "failed",
+  message,
+  ...(details ? { details } : {}),
+});
 const skip = (message: string): CheckOutcome => ({ status: "skipped", message });
 
 export function createCheckContext(request: VerifyRequest): CheckContext {
@@ -91,7 +99,9 @@ export function createCheckContext(request: VerifyRequest): CheckContext {
           workspace: options.constraints?.workspace ?? policy.constraints?.workspace,
         })
         .then((result) => (result.error ? { error: result.error } : { packages: result.packages }))
-        .catch((error: unknown) => ({ error: error instanceof Error ? error.message : String(error) }))),
+        .catch((error: unknown) => ({
+          error: error instanceof Error ? error.message : String(error),
+        }))),
   };
 }
 
@@ -104,7 +114,8 @@ const constraintsOf = (context: CheckContext) => ({
 /** Only the files a dependency change may touch (plus the project's source, if allowed) changed. */
 const scope: CheckFn = async (context) => {
   const files = await context.changedFiles();
-  if (files === undefined) return skip("not a git repository, so the changed files cannot be listed");
+  if (files === undefined)
+    return skip("not a git repository, so the changed files cannot be listed");
 
   const violations: string[] = [];
   for (const file of files) {
@@ -141,7 +152,9 @@ const policyCheck: CheckFn = async (context) => {
       violations.push(`${label}: blocked by allowPackages/denyPackages`);
     }
     if (change.kind === "override" && constraints.directDependenciesOnly) {
-      violations.push(`${label}: an override changes a transitive dependency, but directDependenciesOnly is set`);
+      violations.push(
+        `${label}: an override changes a transitive dependency, but directDependenciesOnly is set`,
+      );
     }
     if (change.kind === "override" && constraints.preferVersionBump) {
       violations.push(`${label}: an override, but preferVersionBump rejects overrides`);
@@ -177,12 +190,17 @@ const supplyChain: CheckFn = async (context) => {
   }
   return problems.length > 0
     ? fail(`${problems.length} version(s) fail the supply-chain gate`, problems)
-    : pass(checked === 0 ? "no new versions to check" : `${checked} new version(s) pass the supply-chain gate`);
+    : pass(
+        checked === 0
+          ? "no new versions to check"
+          : `${checked} new version(s) pass the supply-chain gate`,
+      );
 };
 
 /** A frozen install succeeds: the lockfile agrees with the manifests the change left behind. */
 const install: CheckFn = async (context) => {
-  const yarnMajor = context.packageManager === "yarn" ? await getYarnMajorVersion(context.request.cwd) : undefined;
+  const yarnMajor =
+    context.packageManager === "yarn" ? await getYarnMajorVersion(context.request.cwd) : undefined;
   const command = resolveInstallCommand(
     context.packageManager,
     { ...constraintsOf(context), enforceFrozenLockfile: true },
@@ -191,7 +209,10 @@ const install: CheckFn = async (context) => {
   const outcome = await runCommandCheck(command, context.request.cwd);
   return outcome.passed
     ? pass(`${command.join(" ")} succeeded`)
-    : fail(`${command.join(" ")} failed: the lockfile does not match the manifests`, tail(outcome.output));
+    : fail(
+        `${command.join(" ")} failed: the lockfile does not match the manifests`,
+        tail(outcome.output),
+      );
 };
 
 /** None of the advisories still matches an installed package, except the ones knowingly left. */
@@ -199,7 +220,8 @@ const vulnGone: CheckFn = async (context) => {
   if (context.request.advisories.length === 0) return skip("no advisory to check against");
 
   const inventory = await context.inventory();
-  if ("error" in inventory) return fail("the installed packages could not be listed", [inventory.error]);
+  if ("error" in inventory)
+    return fail("the installed packages could not be listed", [inventory.error]);
 
   const allowed = new Set(context.request.expectedRemaining ?? []);
   const remaining: string[] = [];
@@ -213,23 +235,37 @@ const vulnGone: CheckFn = async (context) => {
   }
   return remaining.length > 0
     ? fail(`${remaining.length} vulnerable package(s) remain`, remaining)
-    : pass(`no vulnerable copy of the ${context.request.advisories.length} advisory package(s) remains`);
+    : pass(
+        `no vulnerable copy of the ${context.request.advisories.length} advisory package(s) remains`,
+      );
 };
 
 const typecheck: CheckFn = async (context) => {
   const requested = context.options.typecheck ?? constraintsOf(context).typecheck;
   if (!requested) return skip("not requested");
-  const command = resolveTypecheckCommand(context.packageManager, constraintsOf(context), context.request.cwd);
+  const command = resolveTypecheckCommand(
+    context.packageManager,
+    constraintsOf(context),
+    context.request.cwd,
+  );
   if (command.length === 0) return skip("no typecheck script or tsconfig found");
   const outcome = await runCommandCheck(command, context.request.cwd);
-  return outcome.passed ? pass(`${command.join(" ")} succeeded`) : fail(`${command.join(" ")} failed`, tail(outcome.output));
+  return outcome.passed
+    ? pass(`${command.join(" ")} succeeded`)
+    : fail(`${command.join(" ")} failed`, tail(outcome.output));
 };
 
 const tests: CheckFn = async (context) => {
   if (!context.options.runTests) return skip("not requested");
-  const command = resolveTestCommand(context.packageManager, constraintsOf(context), context.request.cwd);
+  const command = resolveTestCommand(
+    context.packageManager,
+    constraintsOf(context),
+    context.request.cwd,
+  );
   const outcome = await runCommandCheck(command, context.request.cwd);
-  return outcome.passed ? { ...pass(`${command.join(" ")} passed`), command } : fail(`${command.join(" ")} failed`, tail(outcome.output));
+  return outcome.passed
+    ? { ...pass(`${command.join(" ")} passed`), command }
+    : fail(`${command.join(" ")} failed`, tail(outcome.output));
 };
 
 /** The reproduction test, run now, passes. (That it failed before is established when it is written.) */
@@ -237,7 +273,9 @@ const proofOfFix: CheckFn = async (context) => {
   const { proofOfFix: proof, reproductionTest, requireProofOfFix, patchesDir } = context.options;
   const required = requireProofOfFix ?? constraintsOf(context).requireProofOfFix;
   if (!proof && !reproductionTest) {
-    return required ? fail("proof of fix is required, but no reproduction test was supplied") : skip("no reproduction test supplied");
+    return required
+      ? fail("proof of fix is required, but no reproduction test was supplied")
+      : skip("no reproduction test supplied");
   }
 
   const prepared = await prepareReproductionTestFile({
@@ -248,10 +286,19 @@ const proofOfFix: CheckFn = async (context) => {
     proofOfFix: proof,
     reproductionTest,
   });
-  if (!prepared.testFilePath) return required ? fail("the reproduction test could not be found") : skip("no reproduction test found");
+  if (!prepared.testFilePath)
+    return required
+      ? fail("the reproduction test could not be found")
+      : skip("no reproduction test found");
 
-  const phase = await runProofOfFixPhase({ stage: "positive", testFilePath: prepared.testFilePath, cwd: context.request.cwd });
-  return phase.passed ? pass("the reproduction test passes") : fail("the reproduction test still fails", phase.error ? [phase.error] : undefined);
+  const phase = await runProofOfFixPhase({
+    stage: "positive",
+    testFilePath: prepared.testFilePath,
+    cwd: context.request.cwd,
+  });
+  return phase.passed
+    ? pass("the reproduction test passes")
+    : fail("the reproduction test still fails", phase.error ? [phase.error] : undefined);
 };
 
 export const CHECKS: Record<CheckName, CheckFn> = {

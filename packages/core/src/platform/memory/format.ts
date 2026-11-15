@@ -96,7 +96,8 @@ function findBlock(rows: string[]): { open: number; close: number | undefined } 
     const opener = ANY_OPEN.exec(row);
     // CommonMark: the info string of a backtick fence cannot contain a backtick, so a prose line
     // like "```npm test``` runs tests" is inline code, not the start of a fenced block.
-    if (opener && !(opener[2]![0] === "`" && opener[3]!.includes("`"))) outer = { char: opener[2]![0]!, length: opener[2]!.length };
+    if (opener && !(opener[2]![0] === "`" && opener[3]!.includes("`")))
+      outer = { char: opener[2]![0]!, length: opener[2]!.length };
   }
   return undefined;
 }

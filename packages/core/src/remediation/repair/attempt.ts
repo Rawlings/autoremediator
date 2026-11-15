@@ -1,6 +1,10 @@
 import { renderMemoryForAgent } from "../../platform/memory/consume.js";
 import { proposeMemory } from "../../platform/memory/propose.js";
-import { createProjectSnapshot, type ProjectSnapshot } from "../../platform/rollback.js";
+import {
+  detectPackageManager,
+  resolveTestCommand,
+  resolveTypecheckCommand,
+} from "../../platform/package-manager/index.js";
 import type {
   RepairAgent,
   RepairBudget,
@@ -9,24 +13,25 @@ import type {
   RepairOutcome,
   TranscriptEntry,
 } from "../../platform/repair-agent.js";
-import {
-  detectPackageManager,
-  resolveTestCommand,
-  resolveTypecheckCommand,
-} from "../../platform/package-manager/index.js";
+import { createProjectSnapshot, type ProjectSnapshot } from "../../platform/rollback.js";
 import type {
   CveDetails,
   LlmUsageMetrics,
   PackageManager,
   PatchResult,
 } from "../../platform/types.js";
+import type { PlanItem, PlanOptions } from "../../runs/plan.js";
 import { createWorktree, worktreeDiff, type Worktree } from "../../runs/worktree.js";
 import { applyPackageOverrideTool } from "../tools/apply-package-override/index.js";
 import { applyVersionBumpTool } from "../tools/apply-version-bump.js";
-import type { PlanItem, PlanOptions } from "../../runs/plan.js";
-import { verify } from "../verify/verifier.js";
 import type { CheckName, VerificationResult, VerifyRequest } from "../verify/types.js";
-import { findApplicableRecipes, type FindRecipesParams, type FoundRecipes, tryRecipes } from "./recipe-attempt.js";
+import { verify } from "../verify/verifier.js";
+import {
+  findApplicableRecipes,
+  type FindRecipesParams,
+  type FoundRecipes,
+  tryRecipes,
+} from "./recipe-attempt.js";
 
 /** Everything except `install`: the agent cannot change dependencies, and the upgrade already installed. */
 export const ATTEMPT_CHECKS: readonly CheckName[] = [
@@ -136,7 +141,9 @@ export function attemptVerifyRequest(params: {
       ...(options.runTests === undefined ? {} : { runTests: options.runTests }),
       ...(options.typecheck === undefined ? {} : { typecheck: options.typecheck }),
       ...(options.proofOfFix === undefined ? {} : { proofOfFix: options.proofOfFix }),
-      ...(options.requireProofOfFix === undefined ? {} : { requireProofOfFix: options.requireProofOfFix }),
+      ...(options.requireProofOfFix === undefined
+        ? {}
+        : { requireProofOfFix: options.requireProofOfFix }),
       ...(options.reproductionTest ? { reproductionTest: options.reproductionTest } : {}),
       ...(options.constraints ? { constraints: options.constraints } : {}),
       allowSourceEdits: true,
@@ -184,8 +191,22 @@ export async function runRepairAttempt(
   const { agent, budget, item, options } = request;
   const usage: LlmUsageMetrics[] = [];
   const transcript: TranscriptEntry[] = [];
-  const base: Pick<AttemptResult, "agentId" | "usage" | "transcript" | "changedFiles" | "diff" | "initialFailure"> = { agentId: agent?.id ?? "recipes", usage, transcript, changedFiles: [] as string[], diff: "" };
-  const fail = (status: AttemptStatus, reason: string, rounds: number, verification?: VerificationResult): AttemptResult => ({
+  const base: Pick<
+    AttemptResult,
+    "agentId" | "usage" | "transcript" | "changedFiles" | "diff" | "initialFailure"
+  > = {
+    agentId: agent?.id ?? "recipes",
+    usage,
+    transcript,
+    changedFiles: [] as string[],
+    diff: "",
+  };
+  const fail = (
+    status: AttemptStatus,
+    reason: string,
+    rounds: number,
+    verification?: VerificationResult,
+  ): AttemptResult => ({
     ...base,
     status,
     reason,
@@ -195,7 +216,8 @@ export async function runRepairAttempt(
 
   const checkout = await deps.createWorktree(request.cwd, request.attemptId);
   try {
-    const packageManager = (options.packageManager as PackageManager | undefined) ?? detectPackageManager(checkout.path);
+    const packageManager =
+      (options.packageManager as PackageManager | undefined) ?? detectPackageManager(checkout.path);
     const before = await createProjectSnapshot(checkout.path);
 
     // What the repository remembers, read once and shown to the agent as data.
@@ -211,7 +233,11 @@ export async function runRepairAttempt(
 
     const upgraded = await deps.applyUpgrade(item, checkout.path, options);
     if (!upgraded.applied) {
-      return fail("failed", `the upgrade could not be applied in a clean checkout: ${upgraded.message}`, 0);
+      return fail(
+        "failed",
+        `the upgrade could not be applied in a clean checkout: ${upgraded.message}`,
+        0,
+      );
     }
 
     const judge = (): Promise<VerificationResult> =>
@@ -245,14 +271,25 @@ export async function runRepairAttempt(
           ...(options.policy ? { policy: options.policy } : {}),
         });
       } catch (error) {
-        found = { recipes: [], problems: [{ file: "(recipes)", error: error instanceof Error ? error.message : String(error) }] };
+        found = {
+          recipes: [],
+          problems: [
+            { file: "(recipes)", error: error instanceof Error ? error.message : String(error) },
+          ],
+        };
       }
-      for (const problem of found.problems) transcript.push({ step: 0, text: `recipe ${problem.file}: unusable: ${problem.error}` });
+      for (const problem of found.problems)
+        transcript.push({ step: 0, text: `recipe ${problem.file}: unusable: ${problem.error}` });
       let trial: Awaited<ReturnType<typeof tryRecipes>>;
       try {
         trial = await tryRecipes({ checkout: checkout.path, recipes: found.recipes, judge });
       } catch (error) {
-        return fail("failed", error instanceof Error ? error.message : String(error), 0, verification);
+        return fail(
+          "failed",
+          error instanceof Error ? error.message : String(error),
+          0,
+          verification,
+        );
       }
       transcript.push(...trial.transcript);
       if (trial.fixed) {
@@ -281,7 +318,8 @@ export async function runRepairAttempt(
 
     while (!verification.passed && rounds < budget.maxRepairRounds) {
       if (!agent) break; // unreachable: without an agent the block above has already returned
-      if (request.signal.aborted) return fail("rejected", "the attempt was cancelled", rounds, verification);
+      if (request.signal.aborted)
+        return fail("rejected", "the attempt was cancelled", rounds, verification);
       const spent = sum(usage, "inputTokens") + sum(usage, "outputTokens");
       if (budget.maxTotalTokens !== undefined && spent >= budget.maxTotalTokens) {
         return fail("rejected", "the token budget was used up", rounds, verification);
@@ -291,41 +329,53 @@ export async function runRepairAttempt(
       let outcome: RepairOutcome;
       try {
         outcome = await agent.repair(
-        {
-          runId: request.runId,
-          attemptId: request.attemptId,
-          cveId: item.cveId,
-          packageName: item.packageName,
-          fromVersion: item.fromVersion,
-          toVersion: item.toVersion,
-          round: rounds,
-          failure: failureOf(verification),
-          previousRounds: [...previousRounds],
-          ...(memory ? { memory } : {}),
-        },
-        {
-          worktree: checkout.path,
-          budget: {
-            ...budget,
-            ...(budget.maxTotalTokens === undefined ? {} : { maxTotalTokens: budget.maxTotalTokens - spent }),
+          {
+            runId: request.runId,
+            attemptId: request.attemptId,
+            cveId: item.cveId,
+            packageName: item.packageName,
+            fromVersion: item.fromVersion,
+            toVersion: item.toVersion,
+            round: rounds,
+            failure: failureOf(verification),
+            previousRounds: [...previousRounds],
+            ...(memory ? { memory } : {}),
           },
-          signal: request.signal,
-          commands: commandsFor(checkout.path, options, packageManager),
-          proposeMemory: (proposal) =>
-            proposeMemory(request.cwd, proposal, {
-              runId: request.runId,
-              attemptId: request.attemptId,
-            }),
-        },
-      );
+          {
+            worktree: checkout.path,
+            budget: {
+              ...budget,
+              ...(budget.maxTotalTokens === undefined
+                ? {}
+                : { maxTotalTokens: budget.maxTotalTokens - spent }),
+            },
+            signal: request.signal,
+            commands: commandsFor(checkout.path, options, packageManager),
+            proposeMemory: (proposal) =>
+              proposeMemory(request.cwd, proposal, {
+                runId: request.runId,
+                attemptId: request.attemptId,
+              }),
+          },
+        );
       } catch (error) {
-        return fail("failed", `the agent failed: ${error instanceof Error ? error.message : String(error)}`, rounds, verification);
+        return fail(
+          "failed",
+          `the agent failed: ${error instanceof Error ? error.message : String(error)}`,
+          rounds,
+          verification,
+        );
       }
       usage.push(...outcome.usage);
       transcript.push(...outcome.transcript);
 
       if (outcome.status !== "submitted") {
-        return fail("rejected", `the agent ${outcome.status === "gave-up" ? "gave up" : "ran out of budget"}: ${outcome.rationale}`, rounds, verification);
+        return fail(
+          "rejected",
+          `the agent ${outcome.status === "gave-up" ? "gave up" : "ran out of budget"}: ${outcome.rationale}`,
+          rounds,
+          verification,
+        );
       }
       previousRounds.push(outcome.rationale);
       verification = await judge();

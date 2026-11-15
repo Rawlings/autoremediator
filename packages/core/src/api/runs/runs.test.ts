@@ -7,8 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { PatchResult, RemediationReport } from "../../platform/types.js";
 import type { VerificationResult } from "../../remediation/verify/types.js";
-import { planRemediation } from "../remediate/index.js";
 import { RunStore } from "../../runs/run-store.js";
+import { planRemediation } from "../remediate/index.js";
 import {
   applyPlan,
   getRun,
@@ -21,9 +21,10 @@ import {
 } from "./index.js";
 
 let dir: string;
-const pkg = () => JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
-  dependencies: Record<string, string>;
-};
+const pkg = () =>
+  JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
+    dependencies: Record<string, string>;
+  };
 const writePkg = (dependencies: Record<string, string>) =>
   writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "app", dependencies }, null, 2));
 
@@ -67,9 +68,25 @@ const report = (results: PatchResult[]): RemediationReport =>
 const twoItemReport = () =>
   report([
     result({}),
-    result({ packageName: "minimist", fromVersion: "1.2.0", toVersion: "1.2.6", strategy: "override" }),
-    result({ packageName: "left-pad", strategy: "patch-file", toVersion: undefined, fromVersion: "1.0.0" }),
-    result({ packageName: "qs", fromVersion: "6.0.0", toVersion: undefined, strategy: "none", unresolvedReason: "no-safe-version" }),
+    result({
+      packageName: "minimist",
+      fromVersion: "1.2.0",
+      toVersion: "1.2.6",
+      strategy: "override",
+    }),
+    result({
+      packageName: "left-pad",
+      strategy: "patch-file",
+      toVersion: undefined,
+      fromVersion: "1.0.0",
+    }),
+    result({
+      packageName: "qs",
+      fromVersion: "6.0.0",
+      toVersion: undefined,
+      strategy: "none",
+      unresolvedReason: "no-safe-version",
+    }),
   ]);
 
 /** No agent is configured in these tests, so an attempt is never started. */
@@ -113,7 +130,9 @@ describe("persistPlan", () => {
     const details = getRun({ cwd: dir, runId });
 
     expect(details.run).toMatchObject({ status: "planned", planId, cveIds: ["CVE-2021-23337"] });
-    expect(details.plan?.items.map((item) => [item.packageName, item.toVersion, item.strategy])).toEqual([
+    expect(
+      details.plan?.items.map((item) => [item.packageName, item.toVersion, item.strategy]),
+    ).toEqual([
       ["lodash", "4.17.21", "version-bump"],
       ["minimist", "1.2.6", "override"],
     ]);
@@ -217,7 +236,9 @@ describe("applyPlan", () => {
   it("will not run two appliers on one run", async () => {
     const { runId } = await persistPlan(twoItemReport(), {}, dir);
     writeFileSync(join(new RunStore(dir).runDir(runId), "apply.lock"), String(process.pid));
-    await expect(applyPlan({ cwd: dir, runId }, bumping())).rejects.toThrow(/already being applied/);
+    await expect(applyPlan({ cwd: dir, runId }, bumping())).rejects.toThrow(
+      /already being applied/,
+    );
   });
 
   it("marks an item that did not apply as failed without stopping the others", async () => {
@@ -228,7 +249,12 @@ describe("applyPlan", () => {
       attempt: noAttempt,
       async applyItem(item) {
         if (item.packageName === "lodash") {
-          return result({ applied: false, dryRun: false, unresolvedReason: "install-failed", message: "install failed" });
+          return result({
+            applied: false,
+            dryRun: false,
+            unresolvedReason: "install-failed",
+            message: "install failed",
+          });
         }
         return bumping().applyItem(item, { cwd: dir, options: {} });
       },
@@ -241,7 +267,10 @@ describe("applyPlan", () => {
       ["lodash", "failed"],
       ["minimist", "applied"],
     ]);
-    expect(outcome.items[0]).toMatchObject({ message: "install failed", unresolvedReason: "install-failed" });
+    expect(outcome.items[0]).toMatchObject({
+      message: "install failed",
+      unresolvedReason: "install-failed",
+    });
   });
 });
 
@@ -334,7 +363,9 @@ describe("rollbackRun", () => {
     await applyPlan({ cwd: dir, runId }, bumping());
     writePkg({ lodash: "4.17.21", minimist: "1.2.6", mine: "9.9.9" });
 
-    await expect(rollbackRun({ cwd: dir, runId }, bumping())).rejects.toThrow(/discard those changes/);
+    await expect(rollbackRun({ cwd: dir, runId }, bumping())).rejects.toThrow(
+      /discard those changes/,
+    );
     expect(pkg().dependencies["mine"]).toBe("9.9.9");
 
     await rollbackRun({ cwd: dir, runId, force: true }, bumping());
@@ -343,10 +374,14 @@ describe("rollbackRun", () => {
 
   it("has nothing to undo for an unapplied or already rolled-back run", async () => {
     const { runId } = await persistPlan(twoItemReport(), {}, dir);
-    await expect(rollbackRun({ cwd: dir, runId }, bumping())).rejects.toThrow(/nothing to roll back/);
+    await expect(rollbackRun({ cwd: dir, runId }, bumping())).rejects.toThrow(
+      /nothing to roll back/,
+    );
     await applyPlan({ cwd: dir, runId }, bumping());
     await rollbackRun({ cwd: dir, runId }, bumping());
-    await expect(rollbackRun({ cwd: dir, runId }, bumping())).rejects.toThrow(/already rolled back/);
+    await expect(rollbackRun({ cwd: dir, runId }, bumping())).rejects.toThrow(
+      /already rolled back/,
+    );
     await expect(applyPlan({ cwd: dir, runId }, bumping())).rejects.toThrow(/nothing to apply/);
   });
 
@@ -355,7 +390,9 @@ describe("rollbackRun", () => {
     await applyPlan({ cwd: dir, runId }, bumping());
     const manifest = join(new RunStore(dir).runDir(runId), "snapshot", "snapshot.json");
     writeFileSync(manifest, readFileSync(manifest, "utf8").replace(dir, "/somewhere/else"));
-    await expect(rollbackRun({ cwd: dir, runId }, bumping())).rejects.toThrow(/different directory/);
+    await expect(rollbackRun({ cwd: dir, runId }, bumping())).rejects.toThrow(
+      /different directory/,
+    );
   });
 });
 
@@ -365,23 +402,27 @@ describe("tampering and bad input", () => {
     const file = join(new RunStore(dir).runDir(runId), "steps.jsonl");
     writeFileSync(file, readFileSync(file, "utf8").replace('"items":2', '"items":0'));
 
-    await expect(applyPlan({ cwd: dir, runId }, bumping())).rejects.toThrow(/ledger failed verification/);
+    await expect(applyPlan({ cwd: dir, runId }, bumping())).rejects.toThrow(
+      /ledger failed verification/,
+    );
     expect(getRun({ cwd: dir, runId }).ledger.ok).toBe(false);
   });
 
   it("rejects ids that could escape the runs directory", () => {
     expect(() => getRun({ cwd: dir, runId: "../../package" })).toThrow(/Invalid run id/);
-    return expect(applyPlan({ cwd: dir, runId: "../x" }, bumping())).rejects.toThrow(/Invalid run id/);
+    return expect(applyPlan({ cwd: dir, runId: "../x" }, bumping())).rejects.toThrow(
+      /Invalid run id/,
+    );
   });
 
   it("needs an id, and reports unknown ones", async () => {
     await expect(applyPlan({ cwd: dir }, bumping())).rejects.toThrow(/runId or a planId/);
-    await expect(applyPlan({ cwd: dir, planId: "plan_0000000000000000" }, bumping())).rejects.toThrow(
-      /No run found/,
-    );
-    await expect(applyPlan({ cwd: dir, runId: "run_" + "a".repeat(20) }, bumping())).rejects.toThrow(
-      /not found/,
-    );
+    await expect(
+      applyPlan({ cwd: dir, planId: "plan_0000000000000000" }, bumping()),
+    ).rejects.toThrow(/No run found/);
+    await expect(
+      applyPlan({ cwd: dir, runId: "run_" + "a".repeat(20) }, bumping()),
+    ).rejects.toThrow(/not found/);
   });
 });
 
@@ -395,7 +436,9 @@ describe("listRuns", () => {
     await applyPlan({ cwd: dir, runId: second.runId }, bumping());
 
     expect(listRuns({ cwd: dir }).map((run) => run.runId)).toEqual([second.runId, first.runId]);
-    expect(listRuns({ cwd: dir, status: "planned" }).map((run) => run.runId)).toEqual([first.runId]);
+    expect(listRuns({ cwd: dir, status: "planned" }).map((run) => run.runId)).toEqual([
+      first.runId,
+    ]);
     expect(listRuns({ cwd: dir, limit: 1 })).toHaveLength(1);
   });
 });
@@ -468,17 +511,25 @@ describe("rollbackRun reinstall", () => {
     const rolled = await rollbackRun({ cwd: dir, runId, reinstall: false }, deps);
 
     expect(vi.mocked(deps.reinstall)).not.toHaveBeenCalled();
-    expect(rolled).toMatchObject({ reinstalled: false, reinstallNote: "skipped (reinstall: false)" });
+    expect(rolled).toMatchObject({
+      reinstalled: false,
+      reinstallNote: "skipped (reinstall: false)",
+    });
   });
 });
-
 
 describe("verification during apply", () => {
   const failing = (failedCheck: "vuln-gone" | "scope" = "vuln-gone"): VerificationResult => ({
     passed: false,
     failedCheck,
     checks: [
-      { name: failedCheck, status: "failed", message: "lodash@4.17.10 is still vulnerable", details: ["lodash@4.17.10 is still in <4.17.21"], durationMs: 0 },
+      {
+        name: failedCheck,
+        status: "failed",
+        message: "lodash@4.17.10 is still vulnerable",
+        details: ["lodash@4.17.10 is still in <4.17.21"],
+        durationMs: 0,
+      },
     ],
     durationMs: 0,
   });
@@ -497,8 +548,14 @@ describe("verification during apply", () => {
     expect(calls[0]?.expectedRemaining).toEqual(["left-pad", "qs", "minimist"]);
     expect(calls[1]?.expectedRemaining).toEqual(["left-pad", "qs"]);
     // It sees the files as they were before the item, so it can tell what the item changed.
-    expect(JSON.parse(calls[0]!.baseFiles.get("package.json")!).dependencies.lodash).toBe("4.17.20");
-    expect(getRun({ cwd: dir, runId }).ledger.events.filter((event) => event.type === "item.done").every((event) => event.data["verified"] === true)).toBe(true);
+    expect(JSON.parse(calls[0]!.baseFiles.get("package.json")!).dependencies.lodash).toBe(
+      "4.17.20",
+    );
+    expect(
+      getRun({ cwd: dir, runId })
+        .ledger.events.filter((event) => event.type === "item.done")
+        .every((event) => event.data["verified"] === true),
+    ).toBe(true);
   });
 
   it("takes an item back out when verification fails, and carries on with the rest", async () => {
@@ -525,7 +582,10 @@ describe("verification during apply", () => {
       failedCheck: "vuln-gone",
       details: ["lodash@4.17.10 is still in <4.17.21"],
     });
-    expect(getRun({ cwd: dir, runId }).items[0]).toMatchObject({ packageName: "lodash", status: "failed" });
+    expect(getRun({ cwd: dir, runId }).items[0]).toMatchObject({
+      packageName: "lodash",
+      status: "failed",
+    });
   });
 
   it("leaves a rejected item retryable and a later rollback intact", async () => {
@@ -553,7 +613,13 @@ describe("verification during apply", () => {
     const { runId } = await persistPlan(report([result({})]), {}, dir);
     const deps: RunDeps = {
       ...bumping(),
-      applyItem: async () => result({ applied: false, dryRun: false, unresolvedReason: "install-failed", message: "no" }),
+      applyItem: async () =>
+        result({
+          applied: false,
+          dryRun: false,
+          unresolvedReason: "install-failed",
+          message: "no",
+        }),
     };
     await applyPlan({ cwd: dir, runId }, deps);
     expect(deps.verify).not.toHaveBeenCalled();
@@ -588,7 +654,11 @@ describe("verifyRun", () => {
 
     await verifyRun({ cwd: dir, runId }, deps);
 
-    expect(vi.mocked(deps.verify).mock.calls[0]![0].expectedRemaining).toEqual(["left-pad", "qs", "minimist"]);
+    expect(vi.mocked(deps.verify).mock.calls[0]![0].expectedRemaining).toEqual([
+      "left-pad",
+      "qs",
+      "minimist",
+    ]);
   });
 
   it("has nothing to verify before a run was applied", async () => {

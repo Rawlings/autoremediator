@@ -52,16 +52,32 @@ __metadata:
 
 describe("yarn.lock aliases", () => {
   it("names a classic npm: alias by the package it installs, not by the alias", () => {
-    const graph = parseYarnLock(CLASSIC, { dependencies: { foo: "npm:bar@^1.0.0", baz: "^3.0.0" } });
-    expect([...graph.nodes.keys()].toSorted()).toEqual(["@org/real@2.1.0", "bar@1.0.0", "baz@3.0.0"]);
-    expect(graph.nodes.get("bar@1.0.0")).toMatchObject({ name: "bar", version: "1.0.0", deps: ["baz@3.0.0"] });
+    const graph = parseYarnLock(CLASSIC, {
+      dependencies: { foo: "npm:bar@^1.0.0", baz: "^3.0.0" },
+    });
+    expect([...graph.nodes.keys()].toSorted()).toEqual([
+      "@org/real@2.1.0",
+      "bar@1.0.0",
+      "baz@3.0.0",
+    ]);
+    expect(graph.nodes.get("bar@1.0.0")).toMatchObject({
+      name: "bar",
+      version: "1.0.0",
+      deps: ["baz@3.0.0"],
+    });
     expect(graph.nodes.has("foo@1.0.0")).toBe(false);
     expect(graph.roots[0]?.prod).toEqual(["bar@1.0.0", "baz@3.0.0"]);
   });
 
   it("names a berry alias by its resolution, scoped names included", () => {
-    const graph = parseYarnLock(BERRY, { dependencies: { foo: "npm:bar@^1.0.0", short: "npm:@org/real@^2.0.0" } });
-    expect([...graph.nodes.keys()].toSorted()).toEqual(["@org/real@2.1.0", "bar@1.0.0", "baz@3.0.0"]);
+    const graph = parseYarnLock(BERRY, {
+      dependencies: { foo: "npm:bar@^1.0.0", short: "npm:@org/real@^2.0.0" },
+    });
+    expect([...graph.nodes.keys()].toSorted()).toEqual([
+      "@org/real@2.1.0",
+      "bar@1.0.0",
+      "baz@3.0.0",
+    ]);
     expect(graph.nodes.get("bar@1.0.0")).toMatchObject({ name: "bar", deps: ["baz@3.0.0"] });
     expect(graph.roots[0]?.prod).toEqual(["bar@1.0.0", "@org/real@2.1.0"]);
   });

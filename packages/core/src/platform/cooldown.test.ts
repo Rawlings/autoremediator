@@ -30,7 +30,10 @@ describe("readCooldown", () => {
 
   it("reads npm min-release-age (days) from .npmrc and from the environment", () => {
     write(".npmrc", "min-release-age=3\n");
-    expect(readCooldown(dir, "npm", env)).toMatchObject({ hours: 72, source: "npm min-release-age" });
+    expect(readCooldown(dir, "npm", env)).toMatchObject({
+      hours: 72,
+      source: "npm min-release-age",
+    });
     expect(readCooldown(dir, "npm", { ...env, npm_config_min_release_age: "1" })?.hours).toBe(24);
   });
 
@@ -86,7 +89,7 @@ describe("readCooldown", () => {
   it("reads bun minimumReleaseAge (seconds) and exclusions from bunfig.toml", () => {
     write(
       "bunfig.toml",
-      '[install]\nminimumReleaseAge = 259200\nminimumReleaseAgeExcludes = ["react", \'@types/*\']\n',
+      "[install]\nminimumReleaseAge = 259200\nminimumReleaseAgeExcludes = [\"react\", '@types/*']\n",
     );
     expect(readCooldown(dir, "bun", env)).toEqual({
       hours: 72,
@@ -129,6 +132,8 @@ describe("withCooldown", () => {
   it("does not apply the cooldown to packages the package manager exempts", () => {
     expect(withCooldown(undefined, cooldown, "webpack")).toBeUndefined();
     expect(withCooldown(undefined, cooldown, "@acme/core")).toBeUndefined();
-    expect(withCooldown(undefined, cooldown, "webpack-cli")).toMatchObject({ minPublishAgeHours: 72 });
+    expect(withCooldown(undefined, cooldown, "webpack-cli")).toMatchObject({
+      minPublishAgeHours: 72,
+    });
   });
 });

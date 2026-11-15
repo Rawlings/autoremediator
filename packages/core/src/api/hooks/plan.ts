@@ -168,7 +168,14 @@ function planScriptFiles(input: PlanInput, directory: string, strictExec: boolea
       notExecutable && file.content !== undefined && !("remove" in removeShellBlock(file.content));
     if (userLogic && !uninstall) {
       const reason = `${path} exists but is not executable, so git ignores it; making it executable would switch its old contents back on. Make it executable yourself, or delete the file and run this again`;
-      changes.push({ path, absolutePath, action: "conflict", reason, before: file.content, after: file.content ?? "" });
+      changes.push({
+        path,
+        absolutePath,
+        action: "conflict",
+        reason,
+        before: file.content,
+        after: file.content ?? "",
+      });
       statuses.push({ hook, state: "conflict", path, detail: "exists but is not executable" });
       continue;
     }
@@ -291,7 +298,11 @@ function guardSharedDirectory(input: PlanInput, directory: string, plan: HooksPl
   );
   const statuses = plan.statuses.map((status): HookStatus =>
     conflicted.has(status.path) && status.state !== "conflict"
-      ? { ...status, state: "conflict", detail: "is in a hooks folder shared with other repositories" }
+      ? {
+          ...status,
+          state: "conflict",
+          detail: "is in a hooks folder shared with other repositories",
+        }
       : status,
   );
   return { ...plan, changes, statuses, nextSteps: [] };

@@ -1,8 +1,6 @@
-
-
 import type { Operation } from "../define-operation.js";
-import { ERROR_RESPONSE_SCHEMA, RESPONSES } from "../responses.js";
 import { OPERATIONS } from "../operations.js";
+import { ERROR_RESPONSE_SCHEMA, RESPONSES } from "../responses.js";
 import { inputJsonSchema, type JsonSchemaObject } from "../schema.js";
 
 export type HttpRole = "reader" | "operator" | "admin";
@@ -55,7 +53,9 @@ export function matchHttpRoute(
   return undefined;
 }
 
-export type RequestMapping = { ok: true; input: Record<string, unknown> } | { ok: false; error: string };
+export type RequestMapping =
+  | { ok: true; input: Record<string, unknown> }
+  | { ok: false; error: string };
 
 /**
  * Turn an HTTP request into the operation's flat input. Fields named in `http.positional` sit at the
@@ -93,7 +93,8 @@ export function mapRequestToInput(
     if (key in record) lifted[key] = record[key];
   }
   const clash = Object.keys(lifted).find((key) => key in options);
-  if (clash) return { ok: false, error: `"${clash}" belongs at the top level, not under "options"` };
+  if (clash)
+    return { ok: false, error: `"${clash}" belongs at the top level, not under "options"` };
 
   return { ok: true, input: { ...options, ...lifted } };
 }
@@ -103,10 +104,15 @@ export function mapRequestToInput(
 // ---------------------------------------------------------------------------
 
 const json = (schema: unknown) => ({ "application/json": { schema } });
-const errorResponse = (description: string) => ({ description, content: json(ERROR_RESPONSE_SCHEMA) });
+const errorResponse = (description: string) => ({
+  description,
+  content: json(ERROR_RESPONSE_SCHEMA),
+});
 
 function pick(properties: Record<string, unknown>, keys: readonly string[]) {
-  return Object.fromEntries(keys.flatMap((key) => (key in properties ? [[key, properties[key]]] : [])));
+  return Object.fromEntries(
+    keys.flatMap((key) => (key in properties ? [[key, properties[key]]] : [])),
+  );
 }
 
 function requestBodySchema(operation: Operation, schema: JsonSchemaObject) {
@@ -140,7 +146,10 @@ function toOpenApiOperation(operation: Operation) {
   const status = String(binding.status ?? 200);
 
   const responses: Record<string, unknown> = {
-    [status]: { description: operation.response.description, content: json(operation.response.schema) },
+    [status]: {
+      description: operation.response.description,
+      content: json(operation.response.schema),
+    },
     "400": errorResponse("Invalid input or operation error"),
     "403": errorResponse("A path argument is outside the server's allowed roots"),
   };
@@ -157,7 +166,8 @@ function toOpenApiOperation(operation: Operation) {
           in: "path",
           required: true,
           schema: { type: "string" },
-          description: (schema.properties?.[binding.pathParam]?.["description"] as string) ?? undefined,
+          description:
+            (schema.properties?.[binding.pathParam]?.["description"] as string) ?? undefined,
         },
       ],
       responses,
@@ -186,7 +196,9 @@ export function toOpenApiPaths(
       get: {
         operationId: "openapiJson",
         summary: "Get the OpenAPI specification document",
-        responses: { "200": { description: "OpenAPI specification", content: json({ type: "object" }) } },
+        responses: {
+          "200": { description: "OpenAPI specification", content: json({ type: "object" }) },
+        },
       },
     },
     "/health": {
@@ -194,7 +206,10 @@ export function toOpenApiPaths(
         operationId: "health",
         summary: "Health check",
         responses: {
-          "200": { description: RESPONSES.health.description, content: json(RESPONSES.health.schema) },
+          "200": {
+            description: RESPONSES.health.description,
+            content: json(RESPONSES.health.schema),
+          },
         },
       },
     },
@@ -209,4 +224,3 @@ export function toOpenApiPaths(
   }
   return paths;
 }
-

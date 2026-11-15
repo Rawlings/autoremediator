@@ -49,7 +49,9 @@ describe("manifestProblems: only the target dependency may change in package.jso
     const weakened = edit((m) => {
       m.scripts.typecheck = "true";
     });
-    expect(manifestProblems(baseline, weakened, "bench-money")[0]).toMatch(/scripts\.typecheck changed/);
+    expect(manifestProblems(baseline, weakened, "bench-money")[0]).toMatch(
+      /scripts\.typecheck changed/,
+    );
     const removed = edit((m) => {
       delete (m.scripts as Record<string, string>)["test"];
     });
@@ -68,16 +70,22 @@ describe("manifestProblems: only the target dependency may change in package.jso
     const other = edit((m) => {
       m.dependencies.other = "9.9.9";
     });
-    expect(manifestProblems(baseline, other, "bench-money")[0]).toMatch(/dependencies\.other changed/);
+    expect(manifestProblems(baseline, other, "bench-money")[0]).toMatch(
+      /dependencies\.other changed/,
+    );
     const dropped = edit((m) => {
       delete (m.dependencies as Record<string, string>)["other"];
     });
-    expect(manifestProblems(baseline, dropped, "bench-money")[0]).toMatch(/dependencies\.other changed/);
+    expect(manifestProblems(baseline, dropped, "bench-money")[0]).toMatch(
+      /dependencies\.other changed/,
+    );
   });
 
   it("rejects an override for another package, and any other new field", () => {
     const override = { ...baseline, overrides: { other: "3.0.0" } };
-    expect(manifestProblems(baseline, override, "bench-money")[0]).toMatch(/overrides\.other changed/);
+    expect(manifestProblems(baseline, override, "bench-money")[0]).toMatch(
+      /overrides\.other changed/,
+    );
     const extra = { ...baseline, jest: { testMatch: [] } };
     expect(manifestProblems(baseline, extra, "bench-money")[0]).toMatch(/jest\.testMatch changed/);
   });

@@ -235,7 +235,9 @@ export function readInstalledMaintainerVex(cwd: string): MaintainerVexIndex {
   };
   const nodeModules = join(cwd, "node_modules");
   if (!existsSync(nodeModules)) {
-    index.notes.push("No node_modules directory: install dependencies to read the VEX documents they ship.");
+    index.notes.push(
+      "No node_modules directory: install dependencies to read the VEX documents they ship.",
+    );
     return index;
   }
 
@@ -245,7 +247,11 @@ export function readInstalledMaintainerVex(cwd: string): MaintainerVexIndex {
     if (!manifest) continue;
     const name = manifest["name"];
     const version = manifest["version"];
-    if (!isValidPackageName(name) || typeof version !== "string" || semver.valid(version) !== version) {
+    if (
+      !isValidPackageName(name) ||
+      typeof version !== "string" ||
+      semver.valid(version) !== version
+    ) {
       continue;
     }
     index.scanned += 1;

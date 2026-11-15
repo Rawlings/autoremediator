@@ -10,17 +10,30 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { loadPolicy } from "../../platform/policy.js";
-import { discoverRecipes, type Discovery, type RecipeEntry, type RecipeSource } from "../../recipes/discover.js";
+import { rangeAround } from "../../recipes/capture.js";
+import {
+  discoverRecipes,
+  type Discovery,
+  type RecipeEntry,
+  type RecipeSource,
+} from "../../recipes/discover.js";
 import { appliesTo } from "../../recipes/engine.js";
 import { type Recipe, parseRecipe, recipeId } from "../../recipes/schema.js";
 import { exportRecipePackage, saveProjectRecipe, type ExportResult } from "../../recipes/store.js";
-import { applyRecipeToCheckout } from "../../remediation/repair/recipe-attempt.js";
-import { undoPatch } from "../../remediation/repair/patch-apply.js";
 import { defaultAttemptDeps } from "../../remediation/repair/attempt.js";
-import { rangeAround } from "../../recipes/capture.js";
+import { undoPatch } from "../../remediation/repair/patch-apply.js";
+import { applyRecipeToCheckout } from "../../remediation/repair/recipe-attempt.js";
 import type { AttemptRecord } from "../../runs/run-store.js";
+import {
+  type AttemptQuery,
+  type AttemptView,
+  context,
+  loadOpen,
+  verifyAttempt,
+  viewOf,
+  withVerification,
+} from "../runs/attempts.js";
 import { defaultRunDeps, type RunDeps } from "../runs/deps.js";
-import { type AttemptQuery, type AttemptView, context, loadOpen, verifyAttempt, viewOf, withVerification } from "../runs/attempts.js";
 
 export interface ListRecipesOptions {
   /** Project directory (default: process.cwd()). */
@@ -60,7 +73,12 @@ export interface RecipeListing {
 }
 
 function discover(cwd: string, installRoot: string, policy: string | undefined): Discovery {
-  return discoverRecipes({ projectDir: cwd, installRoot, fallbackInstallRoot: cwd, policyPackages: loadPolicy(cwd, policy).recipes?.packages ?? [] });
+  return discoverRecipes({
+    projectDir: cwd,
+    installRoot,
+    fallbackInstallRoot: cwd,
+    policyPackages: loadPolicy(cwd, policy).recipes?.packages ?? [],
+  });
 }
 
 function summarize(entry: RecipeEntry, options: ListRecipesOptions): RecipeSummary {
@@ -106,17 +124,24 @@ export interface ApplyRecipeOptions extends AttemptQuery {
  * `proposePatch`; the verifier then decides. If it does not pass, the recipe is taken back out and
  * the checkout is as it was.
  */
-export async function applyRecipe(options: ApplyRecipeOptions, deps: RunDeps = defaultRunDeps): Promise<AttemptView> {
+export async function applyRecipe(
+  options: ApplyRecipeOptions,
+  deps: RunDeps = defaultRunDeps,
+): Promise<AttemptView> {
   const { cwd, store } = context(options);
   const record = loadOpen(store, options.runId, options.attemptId);
   const plan = store.readPlan(options.runId);
   const item = plan?.items.find((candidate) => candidate.itemId === record.itemId);
-  if (!plan || !item) throw new Error(`Attempt ${record.attemptId} refers to a plan item that no longer exists.`);
+  if (!plan || !item)
+    throw new Error(`Attempt ${record.attemptId} refers to a plan item that no longer exists.`);
 
   const found = discover(cwd, record.worktreePath, plan.options.policy);
   const entry = found.recipes.find((candidate) => candidate.id === options.recipeId);
   if (!entry) throw new Error(`Recipe not found: ${options.recipeId} (see listRecipes).`);
-  if (entry.recipe.package !== item.packageName || !appliesTo(entry.recipe, item.fromVersion, item.toVersion)) {
+  if (
+    entry.recipe.package !== item.packageName ||
+    !appliesTo(entry.recipe, item.fromVersion, item.toVersion)
+  ) {
     throw new Error(
       `Recipe ${entry.id} is for ${entry.recipe.package} ${entry.recipe.fromRange} to ${entry.recipe.toRange}, not for ${item.packageName} ${item.fromVersion} to ${item.toVersion}.`,
     );
@@ -127,17 +152,34 @@ export async function applyRecipe(options: ApplyRecipeOptions, deps: RunDeps = d
   const files = application.applied.files;
 
   const ledger = store.ledger(options.runId);
-  const checked = await verifyAttempt({ cwd, runId: options.runId, attemptId: options.attemptId }, deps);
+  const checked = await verifyAttempt(
+    { cwd, runId: options.runId, attemptId: options.attemptId },
+    deps,
+  );
   if (checked.verification?.passed) {
-    ledger.append("attempt.recipe", { attemptId: record.attemptId, recipeId: entry.id, applied: true, files });
-    return { ...checked, recipe: { id: entry.id, applied: true, files }, message: `Recipe ${entry.id} applied to ${files.join(", ")} and the verifier accepted it. Finalize it.` };
+    ledger.append("attempt.recipe", {
+      attemptId: record.attemptId,
+      recipeId: entry.id,
+      applied: true,
+      files,
+    });
+    return {
+      ...checked,
+      recipe: { id: entry.id, applied: true, files },
+      message: `Recipe ${entry.id} applied to ${files.join(", ")} and the verifier accepted it. Finalize it.`,
+    };
   }
 
   await undoPatch(record.worktreePath, application.applied);
   const rejectedBy = checked.verification?.failedCheck ?? "unknown";
   const restored: AttemptRecord = { ...record, endedAt: new Date().toISOString() };
   store.writeAttempt(options.runId, restored);
-  ledger.append("attempt.recipe", { attemptId: record.attemptId, recipeId: entry.id, applied: false, rejectedBy });
+  ledger.append("attempt.recipe", {
+    attemptId: record.attemptId,
+    recipeId: entry.id,
+    applied: false,
+    rejectedBy,
+  });
   return viewOf(restored, options.runId, {
     recipe: { id: entry.id, applied: false, files, rejectedBy },
     message: `Recipe ${entry.id} matched ${files.join(", ")} but the verifier rejected it (${rejectedBy}), so it was undone; the checkout is as it was.`,
@@ -176,9 +218,15 @@ export function captureRecipe(options: CaptureRecipeOptions): CaptureRecipeResul
   store.load(options.runId);
   const candidates = store
     .listAttempts(options.runId)
-    .filter((attempt) => attempt.status === "promoted" && (!options.attemptId || attempt.attemptId === options.attemptId))
+    .filter(
+      (attempt) =>
+        attempt.status === "promoted" &&
+        (!options.attemptId || attempt.attemptId === options.attemptId),
+    )
     .toReversed();
-  const chosen = candidates.find((attempt) => existsSync(join(store.attemptDir(options.runId, attempt.attemptId), "recipe.json")));
+  const chosen = candidates.find((attempt) =>
+    existsSync(join(store.attemptDir(options.runId, attempt.attemptId), "recipe.json")),
+  );
   if (!chosen) {
     throw new Error(
       options.attemptId
@@ -187,7 +235,9 @@ export function captureRecipe(options: CaptureRecipeOptions): CaptureRecipeResul
     );
   }
 
-  const recipe = parseRecipe(readFileSync(join(store.attemptDir(options.runId, chosen.attemptId), "recipe.json"), "utf8"));
+  const recipe = parseRecipe(
+    readFileSync(join(store.attemptDir(options.runId, chosen.attemptId), "recipe.json"), "utf8"),
+  );
   const withRanges: Recipe = {
     ...recipe,
     fromRange: options.fromRange ?? recipe.fromRange,

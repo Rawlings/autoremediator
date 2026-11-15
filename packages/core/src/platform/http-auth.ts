@@ -113,7 +113,6 @@ export function getRoleForToken(
   return undefined;
 }
 
-
 /**
  * Who a request comes from, for binding stored results to their caller: the `sub` of a verified JWT
  * (so a refreshed token is the same caller), otherwise a digest of the bearer token. Never the token
@@ -176,7 +175,8 @@ export function authorizeRole(
   }
 
   const userRole = getRoleForToken(authHeader.slice("Bearer ".length).trim());
-  if (!userRole) return { ok: false, status: 401, error: "Unauthorized: Invalid or expired API token" };
+  if (!userRole)
+    return { ok: false, status: 401, error: "Unauthorized: Invalid or expired API token" };
 
   if (ROLE_HIERARCHY[userRole] < ROLE_HIERARCHY[requiredRole]) {
     return {

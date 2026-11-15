@@ -23,7 +23,9 @@ export function describeProve(result: ProveResult): string {
   const head = `${result.advisoryId}: ${result.package} ${result.vulnerableVersion} (vulnerable) vs ${result.fixedVersion} (fixed)`;
   const lines = [head];
   for (const trial of result.trials) {
-    lines.push(`  try ${trial.attempt}: ${trial.accepted ? "accepted" : "rejected"} (${trial.stage}) ${trial.reason}`);
+    lines.push(
+      `  try ${trial.attempt}: ${trial.accepted ? "accepted" : "rejected"} (${trial.stage}) ${trial.reason}`,
+    );
   }
   if (result.trials.length === 0) {
     lines.push(`  no script was proposed (${result.agent.status}: ${result.agent.rationale})`);
@@ -93,7 +95,11 @@ export function registerProveCommands(program: Command): void {
       "--signing-key <path>",
       "Ed25519 private key (PEM) to sign the evidence record with, as a detached DSSE signature (create one with: openssl genpkey -algorithm ed25519 -out key.pem)",
     )
-    .option("--max-trials <n>", "Candidate scripts the agent may try, 1-10 (default 4)", parseInteger)
+    .option(
+      "--max-trials <n>",
+      "Candidate scripts the agent may try, 1-10 (default 4)",
+      parseInteger,
+    )
     .option(
       "--timeout-ms <ms>",
       "Wall-clock limit of one sandboxed run, 1000-60000 (default 10000)",

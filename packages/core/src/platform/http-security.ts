@@ -73,7 +73,8 @@ export function readBody(req: http.IncomingMessage): Promise<unknown> {
  * capped in length. Never a stack trace, never the object's own string form (which can carry one).
  */
 export function publicErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : typeof error === "string" ? error : "Request failed";
+  const message =
+    error instanceof Error ? error.message : typeof error === "string" ? error : "Request failed";
   const [firstLine = ""] = message.split(/\r?\n/, 1);
   const trimmed = firstLine.trim().slice(0, 500);
   return trimmed === "" ? "Request failed" : trimmed;
@@ -94,7 +95,10 @@ export function sendJson(res: http.ServerResponse, status: number, body: unknown
  * `AUTOREMEDIATOR_ALLOWED_HOSTS`. Rejecting anything else stops a DNS-rebinding page from
  * reaching a server that listens on loopback.
  */
-export function isHostAllowed(req: http.IncomingMessage, env: NodeJS.ProcessEnv = process.env): boolean {
+export function isHostAllowed(
+  req: http.IncomingMessage,
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
   const configured = env["AUTOREMEDIATOR_ALLOWED_HOSTS"]
     ?.split(",")
     .map((h) => h.trim().toLowerCase())

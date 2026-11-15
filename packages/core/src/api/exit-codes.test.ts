@@ -30,7 +30,9 @@ describe("ciExitCode", () => {
 
   it("is 3 when the only failures wait for approval", () => {
     expect(
-      ciExitCode(summary({ failedCount: 2, successCount: 1, unresolvedByReason: { "policy-blocked": 2 } })),
+      ciExitCode(
+        summary({ failedCount: 2, successCount: 1, unresolvedByReason: { "policy-blocked": 2 } }),
+      ),
     ).toBe(EXIT_CODES.needsApproval);
   });
 
@@ -59,7 +61,10 @@ describe("ciExitCode", () => {
   it("lets a real failure outrank approval and policy", () => {
     expect(
       ciExitCode(
-        summary({ failedCount: 2, unresolvedByReason: { "policy-blocked": 1, "install-failed": 1 } }),
+        summary({
+          failedCount: 2,
+          unresolvedByReason: { "policy-blocked": 1, "install-failed": 1 },
+        }),
       ),
     ).toBe(EXIT_CODES.failed);
     expect(
@@ -74,8 +79,8 @@ describe("ciExitCode", () => {
   });
 
   it("treats errors with no recorded reason as failures", () => {
-    expect(ciExitCode(summary({ failedCount: 1, errors: [{ cveId: "CVE-1", message: "x" }] }))).toBe(
-      EXIT_CODES.failed,
-    );
+    expect(
+      ciExitCode(summary({ failedCount: 1, errors: [{ cveId: "CVE-1", message: "x" }] })),
+    ).toBe(EXIT_CODES.failed);
   });
 });

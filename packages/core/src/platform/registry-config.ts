@@ -39,7 +39,11 @@ function expandEnv(value: string, env: NodeJS.ProcessEnv): string | undefined {
  * Hosts whose registry credentials a project `.npmrc` may fill from any environment variable
  * (`//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}` is the normal way to use them).
  */
-const KNOWN_REGISTRY_HOSTS = new Set(["registry.npmjs.org", "npm.pkg.github.com", "registry.yarnpkg.com"]);
+const KNOWN_REGISTRY_HOSTS = new Set([
+  "registry.npmjs.org",
+  "npm.pkg.github.com",
+  "registry.yarnpkg.com",
+]);
 const NPM_SPECIFIC_ENV = /^(?:NPM|NODE_AUTH|YARN|PNPM|BUN)|NPM_(?:TOKEN|AUTH)|REGISTRY/i;
 
 /**
@@ -118,7 +122,10 @@ export function createRegistryConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): RegistryConfig {
   const defaultRegistry = trimTrailingSlashes(
-    env["npm_config_registry"] ?? env["NPM_CONFIG_REGISTRY"] ?? npmrc.get("registry") ?? DEFAULT_NPM_REGISTRY,
+    env["npm_config_registry"] ??
+      env["NPM_CONFIG_REGISTRY"] ??
+      npmrc.get("registry") ??
+      DEFAULT_NPM_REGISTRY,
   );
 
   const scopeRegistries = new Map<string, string>();

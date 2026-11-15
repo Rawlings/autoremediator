@@ -58,13 +58,22 @@ describe("ScopeGuard", () => {
       expect(() => guard.resolveInside(bad)).toThrow(ScopeViolation);
     }
     symlinkSync(outside, join(root, "src", "link"));
-    expect(() => guard.resolveInside("src/link/secret.txt")).toThrow(/outside the project checkout/);
+    expect(() => guard.resolveInside("src/link/secret.txt")).toThrow(
+      /outside the project checkout/,
+    );
     expect(() => guard.assertWritable("src/link/new.ts")).toThrow(ScopeViolation);
   });
 
   it("does not let an agent read credentials or git internals", () => {
     const guard = new ScopeGuard(root);
-    for (const secret of [".env", ".npmrc", ".git/config", "keys/server.pem", "id_rsa", ".autoremediator/runs/x"]) {
+    for (const secret of [
+      ".env",
+      ".npmrc",
+      ".git/config",
+      "keys/server.pem",
+      "id_rsa",
+      ".autoremediator/runs/x",
+    ]) {
       expect(() => guard.assertReadable(secret)).toThrow(ScopeViolation);
     }
     expect(guard.assertReadable("src/a.ts")).toBe(join(root, "src/a.ts"));
@@ -95,7 +104,10 @@ describe("ScopeGuard", () => {
 
 describe("repair tools", () => {
   const state = (): RepairState => ({ commandRuns: 0, filesChanged: new Set() });
-  const tools = (s: RepairState, commands = { typecheck: ["tsc"], tests: ["npm", "test"] }): ToolSet =>
+  const tools = (
+    s: RepairState,
+    commands = { typecheck: ["tsc"], tests: ["npm", "test"] },
+  ): ToolSet =>
     createRepairTools({
       guard: new ScopeGuard(root),
       commands,
@@ -109,8 +121,12 @@ describe("repair tools", () => {
 
   it("reads numbered line ranges and refuses credentials", async () => {
     const set = tools(state());
-    await expect(call(set, "readFile", { path: "src/a.ts" })).resolves.toContain("1\texport const a = 1;");
-    await expect(call(set, "readFile", { path: "src/a.ts", startLine: 2, endLine: 2 })).resolves.toContain("2\texport const b = 2;");
+    await expect(call(set, "readFile", { path: "src/a.ts" })).resolves.toContain(
+      "1\texport const a = 1;",
+    );
+    await expect(
+      call(set, "readFile", { path: "src/a.ts", startLine: 2, endLine: 2 }),
+    ).resolves.toContain("2\texport const b = 2;");
     await expect(call(set, "readFile", { path: ".env" })).resolves.toMatch(/^Refused/);
     await expect(call(set, "readFile", { path: "../outside" })).resolves.toMatch(/^Refused/);
     await expect(call(set, "readFile", { path: "src" })).resolves.toMatch(/not a file/);
@@ -126,27 +142,48 @@ describe("repair tools", () => {
     await expect(call(set, "searchCode", { pattern: "export const (a|b)" })).resolves.toBe(
       "src/a.ts:1: export const a = 1;\nsrc/a.ts:2: export const b = 2;",
     );
-    await expect(call(set, "searchCode", { pattern: "declare function" })).resolves.toBe("(no matches)");
+    await expect(call(set, "searchCode", { pattern: "declare function" })).resolves.toBe(
+      "(no matches)",
+    );
     await expect(call(set, "searchCode", { pattern: "TOKEN" })).resolves.toBe("(no matches)");
-    await expect(call(set, "searchCode", { pattern: "(" })).resolves.toMatch(/not a valid regular expression/);
+    await expect(call(set, "searchCode", { pattern: "(" })).resolves.toMatch(
+      /not a valid regular expression/,
+    );
   });
 
   it("refuses search patterns that can backtrack catastrophically", async () => {
     write("src/evil.ts", `${"a".repeat(30)}!`);
     const set = tools(state());
-    for (const pattern of ["(a+)+$", "(.*)*x", String.raw`(\w+\s?)*$`, "((a+)b)*", "(a{2,})+$", "(?:a*)+b"]) {
+    for (const pattern of [
+      "(a+)+$",
+      "(.*)*x",
+      String.raw`(\w+\s?)*$`,
+      "((a+)b)*",
+      "(a{2,})+$",
+      "(?:a*)+b",
+    ]) {
       await expect(call(set, "searchCode", { pattern })).resolves.toMatch(/nested quantifier/);
     }
-    await expect(call(set, "searchCode", { pattern: "a".repeat(201) })).resolves.toMatch(/too long/);
+    await expect(call(set, "searchCode", { pattern: "a".repeat(201) })).resolves.toMatch(
+      /too long/,
+    );
   });
 
   it("still runs ordinary patterns, including groups, classes and escaped parentheses", async () => {
     write("src/evil.ts", "foo(a+)+ bar [x+]+");
     const set = tools(state());
-    await expect(call(set, "searchCode", { pattern: String.raw`foo\(a\+\)\+` })).resolves.toContain("src/evil.ts:1:");
-    await expect(call(set, "searchCode", { pattern: "(foo|bar)+ " })).resolves.toContain("src/evil.ts:1:");
-    await expect(call(set, "searchCode", { pattern: "[x+]+" })).resolves.toContain("src/evil.ts:1:");
-    await expect(call(set, "searchCode", { pattern: String.raw`(\w+)\(` })).resolves.toContain("src/evil.ts:1:");
+    await expect(call(set, "searchCode", { pattern: String.raw`foo\(a\+\)\+` })).resolves.toContain(
+      "src/evil.ts:1:",
+    );
+    await expect(call(set, "searchCode", { pattern: "(foo|bar)+ " })).resolves.toContain(
+      "src/evil.ts:1:",
+    );
+    await expect(call(set, "searchCode", { pattern: "[x+]+" })).resolves.toContain(
+      "src/evil.ts:1:",
+    );
+    await expect(call(set, "searchCode", { pattern: String.raw`(\w+)\(` })).resolves.toContain(
+      "src/evil.ts:1:",
+    );
   });
 
   it("caps the length of each searched line", async () => {
@@ -162,23 +199,40 @@ describe("repair tools", () => {
   it("edits one exact occurrence in source files only", async () => {
     const s = state();
     const set = tools(s);
-    await expect(call(set, "editFile", { path: "src/a.ts", oldText: "a = 1", newText: "a = 10" })).resolves.toBe("Edited src/a.ts");
+    await expect(
+      call(set, "editFile", { path: "src/a.ts", oldText: "a = 1", newText: "a = 10" }),
+    ).resolves.toBe("Edited src/a.ts");
     expect(read("src/a.ts")).toBe("export const a = 10;\nexport const b = 2;\n");
     expect([...s.filesChanged]).toEqual(["src/a.ts"]);
 
-    await expect(call(set, "editFile", { path: "src/a.ts", oldText: "nope", newText: "x" })).resolves.toMatch(/not found/);
-    await expect(call(set, "editFile", { path: "src/a.ts", oldText: "export const", newText: "x" })).resolves.toMatch(/more than once/);
-    await expect(call(set, "editFile", { path: "package.json", oldText: "app", newText: "evil" })).resolves.toMatch(/^Refused/);
-    await expect(call(set, "editFile", { path: "src/missing.ts", oldText: "a", newText: "b" })).resolves.toMatch(/does not exist/);
+    await expect(
+      call(set, "editFile", { path: "src/a.ts", oldText: "nope", newText: "x" }),
+    ).resolves.toMatch(/not found/);
+    await expect(
+      call(set, "editFile", { path: "src/a.ts", oldText: "export const", newText: "x" }),
+    ).resolves.toMatch(/more than once/);
+    await expect(
+      call(set, "editFile", { path: "package.json", oldText: "app", newText: "evil" }),
+    ).resolves.toMatch(/^Refused/);
+    await expect(
+      call(set, "editFile", { path: "src/missing.ts", oldText: "a", newText: "b" }),
+    ).resolves.toMatch(/does not exist/);
     expect(read("package.json")).toBe('{"name":"app"}');
   });
 
   it("creates new source files and nothing outside the allowed kinds", async () => {
     const s = state();
     const set = tools(s);
-    await expect(call(set, "writeFile", { path: "src/deep/new.ts", content: "export {};\n" })).resolves.toBe("Wrote src/deep/new.ts");
+    await expect(
+      call(set, "writeFile", { path: "src/deep/new.ts", content: "export {};\n" }),
+    ).resolves.toBe("Wrote src/deep/new.ts");
     expect(read("src/deep/new.ts")).toBe("export {};\n");
-    for (const path of ["package-lock.json", ".github/workflows/ci.yml", "notes.md", "../escape.ts"]) {
+    for (const path of [
+      "package-lock.json",
+      ".github/workflows/ci.yml",
+      "notes.md",
+      "../escape.ts",
+    ]) {
       await expect(call(set, "writeFile", { path, content: "x" })).resolves.toMatch(/^Refused/);
     }
     expect(read("package-lock.json")).toBe("{}");
@@ -186,16 +240,25 @@ describe("repair tools", () => {
 
   it("runs only the project's own checks, within the command budget", async () => {
     const run = vi.mocked(commandCheck.runCommandCheck);
-    run.mockResolvedValueOnce({ passed: false, output: "src/a.ts(1,1): error TS2554: Expected 0 arguments" });
+    run.mockResolvedValueOnce({
+      passed: false,
+      output: "src/a.ts(1,1): error TS2554: Expected 0 arguments",
+    });
     const s = state();
     const set = tools(s);
 
-    await expect(call(set, "runCheck", { name: "typecheck" })).resolves.toContain("FAILED\nsrc/a.ts(1,1): error TS2554");
+    await expect(call(set, "runCheck", { name: "typecheck" })).resolves.toContain(
+      "FAILED\nsrc/a.ts(1,1): error TS2554",
+    );
     expect(run.mock.calls[0]?.[0]).toEqual(["tsc"]);
     await expect(call(set, "runCheck", { name: "tests" })).resolves.toBe("tests: passed");
-    await expect(call(set, "runCheck", { name: "tests" })).resolves.toMatch(/Command limit reached/);
+    await expect(call(set, "runCheck", { name: "tests" })).resolves.toMatch(
+      /Command limit reached/,
+    );
     expect(s.commandRuns).toBe(2);
-    await expect(call(tools(state()), "runCheck", { name: "build" })).resolves.toMatch(/No build command/);
+    await expect(call(tools(state()), "runCheck", { name: "build" })).resolves.toMatch(
+      /No build command/,
+    );
   });
 
   it("shows a dependency's upgrade notes and refuses names that are not packages", async () => {
@@ -203,8 +266,12 @@ describe("repair tools", () => {
     const docs = await call(set, "readPackageDocs", { packageName: "dep" });
     expect(docs).toContain('dep@"2.0.0" types: index.d.ts');
     expect(docs).toContain("f no longer takes arguments");
-    await expect(call(set, "readPackageDocs", { packageName: "../../etc" })).resolves.toMatch(/not a package name/);
-    await expect(call(set, "readPackageDocs", { packageName: "absent" })).resolves.toMatch(/not installed/);
+    await expect(call(set, "readPackageDocs", { packageName: "../../etc" })).resolves.toMatch(
+      /not a package name/,
+    );
+    await expect(call(set, "readPackageDocs", { packageName: "absent" })).resolves.toMatch(
+      /not installed/,
+    );
   });
 
   it("records the end of the conversation", async () => {

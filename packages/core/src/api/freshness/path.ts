@@ -56,7 +56,11 @@ interface Candidate {
  * deprecated is skipped when any other boundary has a candidate. Only when every candidate is
  * deprecated are they returned, flagged, for the step to be held.
  */
-function candidates(input: ClimbInput, installed: semver.SemVer, latest: semver.SemVer): Candidate[] {
+function candidates(
+  input: ClimbInput,
+  installed: semver.SemVer,
+  latest: semver.SemVer,
+): Candidate[] {
   const stable = input.versions.filter(
     (version) =>
       semver.valid(version) !== null &&

@@ -201,10 +201,17 @@ suppressions:
   });
 
   it("parses recipes.packages and rejects names that are paths or unknown keys", () => {
-    expect(loadPolicy(tmpdir(), "---\nrecipes:\n  packages:\n    - \"@acme/autoremediator-recipes\"\n    - plain-recipes").recipes).toEqual({
+    expect(
+      loadPolicy(
+        tmpdir(),
+        '---\nrecipes:\n  packages:\n    - "@acme/autoremediator-recipes"\n    - plain-recipes',
+      ).recipes,
+    ).toEqual({
       packages: ["@acme/autoremediator-recipes", "plain-recipes"],
     });
-    expect(() => loadPolicy(tmpdir(), "---\nrecipes:\n  packages:\n    - ../../etc")).toThrow(/recipes\.packages\.0/);
+    expect(() => loadPolicy(tmpdir(), "---\nrecipes:\n  packages:\n    - ../../etc")).toThrow(
+      /recipes\.packages\.0/,
+    );
     expect(() => loadPolicy(tmpdir(), "---\nrecipes:\n  run: true")).toThrow(/unknown field/);
   });
 

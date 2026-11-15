@@ -22,7 +22,10 @@ export function parsePackageSpec(input: string): ParsedSpec {
 
   // `owner/repo` (GitHub shorthand), URLs, git and file specs bypass registry checks.
   if (!name.startsWith("@") && NON_REGISTRY.test(spec)) {
-    return { kind: "other", reason: `"${spec.slice(0, 80)}" is not a registry package, so its contents cannot be checked` };
+    return {
+      kind: "other",
+      reason: `"${spec.slice(0, 80)}" is not a registry package, so its contents cannot be checked`,
+    };
   }
   if (!NAME.test(name) || name.length > 214) {
     return { kind: "invalid", reason: `"${name.slice(0, 80)}" is not a valid npm package name` };
@@ -39,9 +42,37 @@ const INSTALLERS: Record<string, string[]> = {
 
 /** Flags that take their value as the next word, per package manager (`--flag=value` carries it inline). */
 const VALUE_FLAGS: Record<string, ReadonlySet<string>> = {
-  npm: new Set(["--registry", "--prefix", "--workspace", "-w", "--tag", "--cache", "--loglevel", "--userconfig", "--omit", "--include", "--otp"]),
-  pnpm: new Set(["--filter", "-F", "--dir", "-C", "--registry", "--reporter", "--loglevel", "--workspace-concurrency"]),
-  yarn: new Set(["--cwd", "--registry", "--cache-folder", "--modules-folder", "--network-timeout", "--mutex"]),
+  npm: new Set([
+    "--registry",
+    "--prefix",
+    "--workspace",
+    "-w",
+    "--tag",
+    "--cache",
+    "--loglevel",
+    "--userconfig",
+    "--omit",
+    "--include",
+    "--otp",
+  ]),
+  pnpm: new Set([
+    "--filter",
+    "-F",
+    "--dir",
+    "-C",
+    "--registry",
+    "--reporter",
+    "--loglevel",
+    "--workspace-concurrency",
+  ]),
+  yarn: new Set([
+    "--cwd",
+    "--registry",
+    "--cache-folder",
+    "--modules-folder",
+    "--network-timeout",
+    "--mutex",
+  ]),
   bun: new Set(["--cwd", "-c", "--config", "--registry", "--cache-dir", "--backend"]),
 };
 
@@ -57,7 +88,10 @@ export function extractInstallSpecs(command: string): string[] {
     const words = segment.trim().split(/\s+/).filter(Boolean);
     // The package manager has to be the command itself, optionally after `sudo` or VAR=value words.
     let at = 0;
-    while (at < words.length && (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[at]!) || words[at] === "sudo")) {
+    while (
+      at < words.length &&
+      (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[at]!) || words[at] === "sudo")
+    ) {
       at += 1;
     }
     const manager = words[at];

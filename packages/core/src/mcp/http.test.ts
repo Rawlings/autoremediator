@@ -1,5 +1,5 @@
-import { request as httpRequest } from "node:http";
 import { mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { request as httpRequest } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -24,7 +24,15 @@ beforeEach(async () => {
   vi.stubEnv("AUTOREMEDIATOR_API_TOKENS", "admin:adm,operator:opr,reader:rdr");
   deps = {
     ...defaultApiDeps,
-    applyPlanFn: vi.fn(async () => ({ runId: "run_x", status: "applied", items: [], pending: [], skipped: [], message: "ok", cwd: dir })),
+    applyPlanFn: vi.fn(async () => ({
+      runId: "run_x",
+      status: "applied",
+      items: [],
+      pending: [],
+      skipped: [],
+      message: "ok",
+      cwd: dir,
+    })),
   } as unknown as ApiDeps;
   server = createMcpHttpServer({ deps, projectDir: dir });
   await new Promise<void>((resolve) => {
@@ -40,10 +48,19 @@ afterEach(async () => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-const rpc = (method: string, params: object = {}, headers: Record<string, string> = {}, id: number | undefined = 1) =>
+const rpc = (
+  method: string,
+  params: object = {},
+  headers: Record<string, string> = {},
+  id: number | undefined = 1,
+) =>
   fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream", ...headers },
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
+      ...headers,
+    },
     body: JSON.stringify({ jsonrpc: "2.0", ...(id === undefined ? {} : { id }), method, params }),
   });
 
@@ -53,7 +70,9 @@ const call = (name: string, args: object, token?: string) =>
 
 async function client(token: string) {
   const c = new Client({ name: "test", version: "0" });
-  await c.connect(new StreamableHTTPClientTransport(new URL(url), { requestInit: { headers: bearer(token) } }));
+  await c.connect(
+    new StreamableHTTPClientTransport(new URL(url), { requestInit: { headers: bearer(token) } }),
+  );
   return c;
 }
 
@@ -62,8 +81,13 @@ describe("requiredRole", () => {
     expect(requiredRole({ method: "initialize" }).role).toBe("reader");
     expect(requiredRole({ method: "resources/read", params: { uri: "x" } }).role).toBe("reader");
     expect(requiredRole({ method: "tools/call", params: { name: "getRun" } }).role).toBe("reader");
-    expect(requiredRole({ method: "tools/call", params: { name: "startAttempt" } }).role).toBe("operator");
-    expect(requiredRole({ method: "tools/call", params: { name: "applyPlan" } })).toEqual({ role: "admin", label: "tool applyPlan" });
+    expect(requiredRole({ method: "tools/call", params: { name: "startAttempt" } }).role).toBe(
+      "operator",
+    );
+    expect(requiredRole({ method: "tools/call", params: { name: "applyPlan" } })).toEqual({
+      role: "admin",
+      label: "tool applyPlan",
+    });
     expect(requiredRole({ method: "tools/call", params: { name: "nope" } }).role).toBe("reader");
   });
 
@@ -83,10 +107,16 @@ describe("MCP over HTTP", () => {
     const { tools } = await c.listTools();
     expect(tools.map((tool) => tool.name)).toContain("applyPlan");
 
-    const { runId } = await persistPlan({ cveId: "CVE-1", cveDetails: null, vulnerablePackages: [], summary: "", results: [] }, {}, dir);
+    const { runId } = await persistPlan(
+      { cveId: "CVE-1", cveDetails: null, vulnerablePackages: [], summary: "", results: [] },
+      {},
+      dir,
+    );
     const run = await c.callTool({ name: "getRun", arguments: { runId, cwd: dir } });
     expect(run.structuredContent).toMatchObject({ run: { runId } });
-    expect((await c.listResources()).resources.map((resource) => resource.uri)).toContain(`autoremediator://runs/${runId}`);
+    expect((await c.listResources()).resources.map((resource) => resource.uri)).toContain(
+      `autoremediator://runs/${runId}`,
+    );
     expect((await c.listPrompts()).prompts).toHaveLength(3);
     await c.close();
   });
@@ -133,23 +163,40 @@ describe("MCP over HTTP", () => {
 
     // `fetch` will not send a made-up Host header, so use a raw request.
     const foreign = await new Promise<number>((resolve, reject) => {
-      const req = httpRequest(url, { method: "POST", headers: { "Content-Type": "application/json", Host: "evil.example", ...bearer("adm") } }, (res) => {
-        res.resume();
-        resolve(res.statusCode ?? 0);
-      });
+      const req = httpRequest(
+        url,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Host: "evil.example", ...bearer("adm") },
+        },
+        (res) => {
+          res.resume();
+          resolve(res.statusCode ?? 0);
+        },
+      );
       req.on("error", reject);
       req.end("{}");
     });
     expect(foreign).toBe(403);
-    const text = await fetch(url, { method: "POST", headers: { "Content-Type": "text/plain", ...bearer("adm") }, body: "{}" });
+    const text = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain", ...bearer("adm") },
+      body: "{}",
+    });
     expect(text.status).toBe(415);
-    const broken = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", ...bearer("adm") }, body: "{nope" });
+    const broken = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...bearer("adm") },
+      body: "{nope",
+    });
     expect(broken.status).toBe(400);
   });
 
   it("confines path arguments the same way the other transports do", async () => {
     const response = await call("listRuns", { cwd: "/etc" }, "rdr");
-    const body = (await response.json()) as { result: { isError?: boolean; content: Array<{ text: string }> } };
+    const body = (await response.json()) as {
+      result: { isError?: boolean; content: Array<{ text: string }> };
+    };
     expect(body.result.isError).toBe(true);
     expect(body.result.content[0]?.text).toMatch(/Path not allowed/);
   });
@@ -192,7 +239,11 @@ describe("the built server in HTTP mode", () => {
 
       const response = await fetch(`http://127.0.0.1:${port}/mcp`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream", Authorization: "Bearer rdr" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json, text/event-stream",
+          Authorization: "Bearer rdr",
+        },
         body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }),
       });
       expect(response.status).toBe(200);

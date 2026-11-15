@@ -15,7 +15,10 @@ export type DoctorReservation =
   | { outcome: "granted"; attempt: number }
   /** This head commit already has an attempt (several checks fail at once, or a redelivery). */
   | { outcome: "duplicate" }
-  | { outcome: "limit"; /** True only the first time, so the limit is announced once. */ announce: boolean };
+  | {
+      outcome: "limit";
+      /** True only the first time, so the limit is announced once. */ announce: boolean;
+    };
 
 export type RemediationMode = "plan" | "fix";
 

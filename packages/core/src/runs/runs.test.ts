@@ -4,12 +4,12 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { fingerprintRepo, sameInputs } from "./fingerprint.js";
 import { canonicalJson, sha256 } from "./hash.js";
 import { isPlanId, isRunId, newRunId } from "./ids.js";
 import { Ledger } from "./ledger.js";
-import { fingerprintRepo, sameInputs } from "./fingerprint.js";
-import { loadSnapshot, saveSnapshot } from "./snapshot-store.js";
 import { RunStore } from "./run-store.js";
+import { loadSnapshot, saveSnapshot } from "./snapshot-store.js";
 
 let dir: string;
 beforeEach(() => {
@@ -31,7 +31,13 @@ describe("canonicalJson / ids", () => {
   it("generates run ids that pass validation, and rejects anything path-like", () => {
     expect(isRunId(newRunId())).toBe(true);
     expect(newRunId()).not.toBe(newRunId());
-    for (const bad of ["../etc", "run_short", "run_" + "A".repeat(20), "run_/../../x" + "a".repeat(8), 5]) {
+    for (const bad of [
+      "../etc",
+      "run_short",
+      "run_" + "A".repeat(20),
+      "run_/../../x" + "a".repeat(8),
+      5,
+    ]) {
       expect(isRunId(bad)).toBe(false);
     }
     expect(isPlanId("plan_0123456789abcdef")).toBe(true);
@@ -77,7 +83,10 @@ describe("Ledger", () => {
     ledger.append("c", { n: 3 });
     const lines = readFileSync(file, "utf8").trimEnd().split("\n");
 
-    writeFileSync(file, [lines[0]!.replace('"n":1', '"n":9'), lines[1], lines[2]].join("\n") + "\n");
+    writeFileSync(
+      file,
+      [lines[0]!.replace('"n":1', '"n":9'), lines[1], lines[2]].join("\n") + "\n",
+    );
     expect(ledger.verify()).toMatchObject({ ok: false, seq: 1 });
 
     writeFileSync(file, [lines[0], lines[2]].join("\n") + "\n");

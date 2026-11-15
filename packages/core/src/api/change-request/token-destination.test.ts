@@ -10,14 +10,30 @@ import { checkTokenDestination } from "./hosts.js";
 import { createChangeRequestsForReports } from "./index.js";
 
 describe("checkTokenDestination", () => {
-  const check = (remoteUrl: string | undefined, over: Partial<Parameters<typeof checkTokenDestination>[0]> = {}) =>
-    checkTokenDestination({ provider: "github", remoteUrl, explicitToken: false, env: {}, ...over });
+  const check = (
+    remoteUrl: string | undefined,
+    over: Partial<Parameters<typeof checkTokenDestination>[0]> = {},
+  ) =>
+    checkTokenDestination({
+      provider: "github",
+      remoteUrl,
+      explicitToken: false,
+      env: {},
+      ...over,
+    });
 
   it("sends a GitHub token to github.com and to hosts the user named", () => {
     expect(check("https://github.com/o/r.git").send).toBe(true);
     expect(check("https://acme.ghe.com/o/r.git").send).toBe(true);
-    expect(check("https://ghe.corp.example/o/r.git", { githubApiUrl: "https://ghe.corp.example/api/v3" }).send).toBe(true);
-    expect(check("https://ghe.corp.example/o/r.git", { env: { GITHUB_SERVER_URL: "https://ghe.corp.example" } }).send).toBe(true);
+    expect(
+      check("https://ghe.corp.example/o/r.git", { githubApiUrl: "https://ghe.corp.example/api/v3" })
+        .send,
+    ).toBe(true);
+    expect(
+      check("https://ghe.corp.example/o/r.git", {
+        env: { GITHUB_SERVER_URL: "https://ghe.corp.example" },
+      }).send,
+    ).toBe(true);
   });
 
   it("refuses to send a GitHub token to another host", () => {

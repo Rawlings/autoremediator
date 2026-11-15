@@ -162,19 +162,27 @@ export function verifyRecordSignature(
     return { valid: false, reason: "the signature file is not JSON" };
   }
   if (typeof signature !== "object" || signature === null) {
-    return { valid: false, reason: "the signature file is not an autoremediator proof-of-fix signature" };
+    return {
+      valid: false,
+      reason: "the signature file is not an autoremediator proof-of-fix signature",
+    };
   }
   if (
     signature.payloadType !== PAYLOAD_TYPE ||
     signature.algorithm !== "ed25519" ||
     typeof signature.sig !== "string"
   ) {
-    return { valid: false, reason: "the signature file is not an autoremediator proof-of-fix signature" };
+    return {
+      valid: false,
+      reason: "the signature file is not an autoremediator proof-of-fix signature",
+    };
   }
   let publicKey: KeyObject;
   try {
     const pem = readFileSync(keyPath);
-    publicKey = pem.includes("PRIVATE KEY") ? createPublicKey(createPrivateKey(pem)) : createPublicKey(pem);
+    publicKey = pem.includes("PRIVATE KEY")
+      ? createPublicKey(createPrivateKey(pem))
+      : createPublicKey(pem);
   } catch {
     return { valid: false, reason: `could not read a PEM key from "${keyPath}"` };
   }
@@ -188,7 +196,9 @@ export function verifyRecordSignature(
     publicKey,
     Buffer.from(signature.sig, "base64"),
   );
-  return ok ? { valid: true, keyid } : { valid: false, keyid, reason: "the signature does not match the record" };
+  return ok
+    ? { valid: true, keyid }
+    : { valid: false, keyid, reason: "the signature does not match the record" };
 }
 
 /** An evidence record found on disk. */
@@ -211,7 +221,8 @@ const isEvidence = (value: unknown): value is ProofEvidence => {
     typeof candidate.vulnerableVersion === "string" &&
     typeof candidate.fixedVersion === "string" &&
     (candidate.aliases === undefined ||
-      (Array.isArray(candidate.aliases) && candidate.aliases.every((alias) => typeof alias === "string"))) &&
+      (Array.isArray(candidate.aliases) &&
+        candidate.aliases.every((alias) => typeof alias === "string"))) &&
     typeof candidate.script?.path === "string" &&
     typeof candidate.script.sha256 === "string"
   );
@@ -236,7 +247,8 @@ export function findEvidence(cwd: string, patchesDir: string): FoundEvidence[] {
     let scriptCurrent = false;
     try {
       scriptCurrent =
-        createHash("sha256").update(readFileSync(scriptPath)).digest("hex") === parsed.script.sha256;
+        createHash("sha256").update(readFileSync(scriptPath)).digest("hex") ===
+        parsed.script.sha256;
     } catch {
       scriptCurrent = false;
     }
@@ -255,5 +267,9 @@ export function findEvidence(cwd: string, patchesDir: string): FoundEvidence[] {
 export function verifyProofEvidence(recordPath: string, keyPath: string): SignatureCheck {
   const signaturePath = `${recordPath}${SIGNATURE_SUFFIX}`;
   if (!existsSync(signaturePath)) return { valid: false, reason: "there is no signature file" };
-  return verifyRecordSignature(readFileSync(recordPath), readFileSync(signaturePath, "utf8"), keyPath);
+  return verifyRecordSignature(
+    readFileSync(recordPath),
+    readFileSync(signaturePath, "utf8"),
+    keyPath,
+  );
 }

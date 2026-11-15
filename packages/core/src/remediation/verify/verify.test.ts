@@ -15,11 +15,13 @@ import {
 } from "./changes.js";
 import { CHECKS } from "./checks.js";
 import * as commandCheck from "./command-check.js";
-import { verify } from "./verifier.js";
 import { CHECK_NAMES, type VerifyRequest } from "./types.js";
+import { verify } from "./verifier.js";
 
 const mocks = vi.hoisted(() => ({ inventory: vi.fn() }));
-vi.mock("../tools/check-inventory.js", () => ({ checkInventoryTool: { execute: mocks.inventory } }));
+vi.mock("../tools/check-inventory.js", () => ({
+  checkInventoryTool: { execute: mocks.inventory },
+}));
 vi.mock("./command-check.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./command-check.js")>()),
   runCommandCheck: vi.fn(async () => ({ passed: true, output: "" })),
@@ -57,7 +59,13 @@ const advisory = (range = "<4.17.21"): CveDetails => ({
   severity: "HIGH",
   references: [],
   affectedPackages: [
-    { name: "lodash", ecosystem: "npm", vulnerableRange: range, firstPatchedVersion: "4.17.21", source: "osv" },
+    {
+      name: "lodash",
+      ecosystem: "npm",
+      vulnerableRange: range,
+      firstPatchedVersion: "4.17.21",
+      source: "osv",
+    },
   ],
 });
 
@@ -72,7 +80,11 @@ const request = (over: Partial<VerifyRequest> = {}): VerifyRequest => ({
 
 const installed = (...packages: Array<[string, string]>) =>
   mocks.inventory.mockResolvedValue({
-    packages: packages.map(([name, version]): InventoryPackage => ({ name, version, type: "direct" })),
+    packages: packages.map(([name, version]): InventoryPackage => ({
+      name,
+      version,
+      type: "direct",
+    })),
   });
 
 describe("path and declaration helpers", () => {
@@ -102,7 +114,10 @@ describe("path and declaration helpers", () => {
     expect(overrideTarget("@scope/child")).toBe("@scope/child");
 
     const declared = readDeclarations(
-      manifest({ a: "^1.0.0" }, { overrides: { b: "2.0.0", c: { d: "3.0.0" } }, pnpm: { overrides: { e: "4.0.0" } } }),
+      manifest(
+        { a: "^1.0.0" },
+        { overrides: { b: "2.0.0", c: { d: "3.0.0" } }, pnpm: { overrides: { e: "4.0.0" } } },
+      ),
     );
     expect(declared.map((declaration) => [declaration.kind, declaration.name])).toEqual([
       ["dependency", "a"],
@@ -191,7 +206,9 @@ describe("policy check", () => {
 
   it("rejects a major bump unless allowed", async () => {
     write("package.json", manifest({ lodash: "5.0.0" }));
-    expect((await verify(request({ checks: ["policy"] }))).checks[0]?.details?.[0]).toMatch(/major bump/);
+    expect((await verify(request({ checks: ["policy"] }))).checks[0]?.details?.[0]).toMatch(
+      /major bump/,
+    );
 
     withPolicy("allowMajorBumps: true\n");
     expect((await verify(request({ checks: ["policy"] }))).passed).toBe(true);
@@ -199,9 +216,13 @@ describe("policy check", () => {
 
   it("rejects overrides when the constraints forbid them", async () => {
     write("package.json", manifest({ lodash: "4.17.20" }, { overrides: { minimist: "1.2.6" } }));
-    const direct = await verify(request({ checks: ["policy"], options: { constraints: { directDependenciesOnly: true } } }));
+    const direct = await verify(
+      request({ checks: ["policy"], options: { constraints: { directDependenciesOnly: true } } }),
+    );
     expect(direct.checks[0]?.details?.[0]).toMatch(/directDependenciesOnly/);
-    const prefer = await verify(request({ checks: ["policy"], options: { constraints: { preferVersionBump: true } } }));
+    const prefer = await verify(
+      request({ checks: ["policy"], options: { constraints: { preferVersionBump: true } } }),
+    );
     expect(prefer.checks[0]?.details?.[0]).toMatch(/preferVersionBump/);
   });
 
@@ -241,9 +262,9 @@ describe("vuln-gone check", () => {
       status: "failed",
       details: ["npm ls exploded"],
     });
-    expect((await verify(request({ checks: ["vuln-gone"], advisories: [] }))).checks[0]?.status).toBe(
-      "skipped",
-    );
+    expect(
+      (await verify(request({ checks: ["vuln-gone"], advisories: [] }))).checks[0]?.status,
+    ).toBe("skipped");
   });
 });
 
@@ -264,8 +285,13 @@ describe("command checks", () => {
     expect(run).not.toHaveBeenCalled();
 
     write("tsconfig.json", "{}");
-    await verify(request({ checks: ["tests", "typecheck"], options: { runTests: true, typecheck: true } }));
-    expect(run.mock.calls.map((call) => call[0])).toEqual([["npx", "tsc", "--noEmit"], ["npm", "test"]]);
+    await verify(
+      request({ checks: ["tests", "typecheck"], options: { runTests: true, typecheck: true } }),
+    );
+    expect(run.mock.calls.map((call) => call[0])).toEqual([
+      ["npx", "tsc", "--noEmit"],
+      ["npm", "test"],
+    ]);
   });
 
   it("fails on a failing test run", async () => {
@@ -278,16 +304,22 @@ describe("command checks", () => {
 describe("proof-of-fix check", () => {
   it("is skipped without a test, and a failure when one is required", async () => {
     expect((await verify(request({ checks: ["proof-of-fix"] }))).checks[0]?.status).toBe("skipped");
-    const required = await verify(request({ checks: ["proof-of-fix"], options: { requireProofOfFix: true } }));
+    const required = await verify(
+      request({ checks: ["proof-of-fix"], options: { requireProofOfFix: true } }),
+    );
     expect(required).toMatchObject({ passed: false, failedCheck: "proof-of-fix" });
   });
 
   it("passes a reproduction test that passes now and fails one that does not", async () => {
     write("repro-ok.cjs", "process.exit(0);\n");
     write("repro-bad.cjs", "throw new Error('still exploitable');\n");
-    const ok = await verify(request({ checks: ["proof-of-fix"], options: { reproductionTest: "repro-ok.cjs" } }));
+    const ok = await verify(
+      request({ checks: ["proof-of-fix"], options: { reproductionTest: "repro-ok.cjs" } }),
+    );
     expect(ok.checks[0]?.status).toBe("passed");
-    const bad = await verify(request({ checks: ["proof-of-fix"], options: { reproductionTest: "repro-bad.cjs" } }));
+    const bad = await verify(
+      request({ checks: ["proof-of-fix"], options: { reproductionTest: "repro-bad.cjs" } }),
+    );
     expect(bad).toMatchObject({ passed: false, failedCheck: "proof-of-fix" });
   });
 });

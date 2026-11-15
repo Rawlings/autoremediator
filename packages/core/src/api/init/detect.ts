@@ -1,9 +1,15 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { delimiter, join } from "node:path";
 
-import { safeExeca } from "../../platform/safe-exec.js";
 import { detectPackageManager } from "../../platform/package-manager/index.js";
-import { AGENT_HOSTS, type AgentHost, type CiSystem, type GitHost, type ProjectFacts } from "./types.js";
+import { safeExeca } from "../../platform/safe-exec.js";
+import {
+  AGENT_HOSTS,
+  type AgentHost,
+  type CiSystem,
+  type GitHost,
+  type ProjectFacts,
+} from "./types.js";
 
 /** Files or folders whose presence says a host is used in this project. */
 const HOST_MARKERS: Record<AgentHost, string[]> = {
@@ -41,7 +47,9 @@ function remoteHostname(remote: string): string {
   const hasScheme = scheme !== -1;
   if (hasScheme) rest = rest.slice(scheme + 3);
   // `scp`-style remotes end the host at the first `:`; URLs end the authority at the first `/`.
-  const stops = (hasScheme ? ["/"] : ["/", ":"]).map((stop) => rest.indexOf(stop)).filter((index) => index !== -1);
+  const stops = (hasScheme ? ["/"] : ["/", ":"])
+    .map((stop) => rest.indexOf(stop))
+    .filter((index) => index !== -1);
   const authority = rest.slice(0, stops.length > 0 ? Math.min(...stops) : rest.length);
   const host = authority.slice(authority.lastIndexOf("@") + 1);
   const port = hasScheme ? host.indexOf(":") : -1;

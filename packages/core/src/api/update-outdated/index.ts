@@ -8,6 +8,7 @@ import {
   finalizeEvidence,
   writeEvidenceLog,
 } from "../../platform/evidence.js";
+import { loadMemoryConstraints } from "../../platform/memory/consume.js";
 import {
   detectPackageManager,
   getYarnMajorVersion,
@@ -15,7 +16,6 @@ import {
   resolveTestCommand,
   type PackageManager,
 } from "../../platform/package-manager/index.js";
-import { loadMemoryConstraints } from "../../platform/memory/consume.js";
 import { loadPolicy } from "../../platform/policy.js";
 import { withRepoLock } from "../../platform/repo-lock.js";
 import { safeExecaCommand } from "../../platform/safe-exec-command.js";
@@ -25,11 +25,11 @@ import type {
   UpdateOutdatedOptions,
   UpdateOutdatedReport,
 } from "../../platform/types.js";
+import { assertAutonomyAllows } from "../autonomy/index.js";
 import {
   assertChangeRequestAllowed,
   createChangeRequestsForReports,
 } from "../change-request/index.js";
-import { assertAutonomyAllows } from "../autonomy/index.js";
 import {
   resolveConstraints,
   resolveCorrelationContext,

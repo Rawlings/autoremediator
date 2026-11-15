@@ -4,12 +4,21 @@
  * a function of the source, and the agent is a script.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { addMemory, readMemory } from "../../platform/memory/index.js";
 import {
   DEFAULT_REPAIR_BUDGET,
   type RepairAgent,
@@ -18,7 +27,6 @@ import {
   type RepairOutcome,
   type RepairTask,
 } from "../../platform/repair-agent.js";
-import { addMemory, readMemory } from "../../platform/memory/index.js";
 import type { PlanItem } from "../../runs/plan.js";
 import { createWorktree } from "../../runs/worktree.js";
 import { type AttemptDeps, defaultAttemptDeps, runRepairAttempt } from "./attempt.js";
@@ -32,7 +40,11 @@ vi.mock("../tools/check-inventory.js", () => ({
         dependencies: Record<string, string>;
       };
       return {
-        packages: Object.entries(manifest.dependencies).map(([name, version]) => ({ name, version, type: "direct" as const })),
+        packages: Object.entries(manifest.dependencies).map(([name, version]) => ({
+          name,
+          version,
+          type: "direct" as const,
+        })),
       };
     }),
   },
@@ -47,7 +59,10 @@ vi.mock("../verify/command-check.js", async (importOriginal) => ({
     const ok = readFileSync(join(cwd, "src/a.ts"), "utf8").includes("f(1);");
     return ok
       ? { passed: true, output: "" }
-      : { passed: false, output: "src/a.ts(2,1): error TS2554: Expected 0-1 arguments, but got 2." };
+      : {
+          passed: false,
+          output: "src/a.ts(2,1): error TS2554: Expected 0-1 arguments, but got 2.",
+        };
   }),
 }));
 
@@ -56,7 +71,10 @@ let cache: string;
 const git = (...args: string[]) => execFileSync("git", args, { cwd: dir, stdio: "ignore" });
 const read = (file: string) => readFileSync(join(dir, file), "utf8");
 const setDep = (root: string, version: string) =>
-  writeFileSync(join(root, "package.json"), JSON.stringify({ name: "app", dependencies: { dep: version } }, null, 2));
+  writeFileSync(
+    join(root, "package.json"),
+    JSON.stringify({ name: "app", dependencies: { dep: version } }, null, 2),
+  );
 
 const item: PlanItem = {
   itemId: "item_1",
@@ -98,7 +116,13 @@ const advisory = {
   severity: "HIGH" as const,
   references: [],
   affectedPackages: [
-    { name: "dep", ecosystem: "npm" as const, vulnerableRange: "<2.0.0", firstPatchedVersion: "2.0.0", source: "osv" as const },
+    {
+      name: "dep",
+      ecosystem: "npm" as const,
+      vulnerableRange: "<2.0.0",
+      firstPatchedVersion: "2.0.0",
+      source: "osv" as const,
+    },
   ],
 };
 
@@ -108,7 +132,15 @@ const deps = (over: Partial<AttemptDeps> = {}): AttemptDeps => ({
   createWorktree: (cwd, name) => createWorktree(cwd, name, { XDG_CACHE_HOME: cache }),
   applyUpgrade: async (_item, checkout) => {
     setDep(checkout, "2.0.0");
-    return { packageName: "dep", strategy: "version-bump", fromVersion: "1.0.0", toVersion: "2.0.0", applied: true, dryRun: false, message: "ok" };
+    return {
+      packageName: "dep",
+      strategy: "version-bump",
+      fromVersion: "1.0.0",
+      toVersion: "2.0.0",
+      applied: true,
+      dryRun: false,
+      message: "ok",
+    };
   },
   ...over,
 });
@@ -121,7 +153,9 @@ const outcome = (over: Partial<RepairOutcome> = {}): RepairOutcome => ({
   ...over,
 });
 
-const agentThat = (repair: (task: RepairTask, env: RepairEnv) => Promise<RepairOutcome> | RepairOutcome): RepairAgent & { calls: RepairTask[] } => {
+const agentThat = (
+  repair: (task: RepairTask, env: RepairEnv) => Promise<RepairOutcome> | RepairOutcome,
+): RepairAgent & { calls: RepairTask[] } => {
   const calls: RepairTask[] = [];
   return {
     id: "scripted",
@@ -136,7 +170,11 @@ const agentThat = (repair: (task: RepairTask, env: RepairEnv) => Promise<RepairO
 const fixesTheCall = (env: RepairEnv) =>
   writeFileSync(join(env.worktree, "src/a.ts"), "import { f } from 'dep';\nf(1);\n");
 
-const request = (agent: RepairAgent, budget: Partial<RepairBudget> = {}, signal = new AbortController().signal) => ({
+const request = (
+  agent: RepairAgent,
+  budget: Partial<RepairBudget> = {},
+  signal = new AbortController().signal,
+) => ({
   cwd: dir,
   runId: "run_aaaaaaaaaaaaaaaaaaaa",
   attemptId: "attempt-1",
@@ -158,8 +196,13 @@ describe("runRepairAttempt", () => {
 
     const result = await runRepairAttempt(request(agent), deps());
 
-    expect(result).toMatchObject({ status: "verified", rounds: 1, reason: "changed f's call", agentId: "scripted" });
-    expect(result.diff).toContain('-f(1, 2);');
+    expect(result).toMatchObject({
+      status: "verified",
+      rounds: 1,
+      reason: "changed f's call",
+      agentId: "scripted",
+    });
+    expect(result.diff).toContain("-f(1, 2);");
     expect(result.diff).toContain("+f(1);");
     expect(result.diff).toContain('+    "dep": "2.0.0"');
     expect(result.changedFiles).toEqual(["package.json", "src/a.ts"]);
@@ -183,10 +226,19 @@ describe("runRepairAttempt", () => {
   it("shows the agent what the repository remembers, and lets it propose, not record", async () => {
     await addMemory(dir, { kind: "install-quirk", text: "install needs python3" });
     await addMemory(dir, { kind: "pinned-package", package: "unrelated", reason: "not this one" });
-    await addMemory(dir, { kind: "note", text: "only proposed", status: "proposed", source: "agent" });
+    await addMemory(dir, {
+      kind: "note",
+      text: "only proposed",
+      status: "proposed",
+      source: "agent",
+    });
     const agent = agentThat(async (_task, env) => {
       fixesTheCall(env);
-      const answer = await env.proposeMemory!({ kind: "flaky-test", text: "src/a.test.ts", reason: "slow" });
+      const answer = await env.proposeMemory!({
+        kind: "flaky-test",
+        text: "src/a.test.ts",
+        reason: "slow",
+      });
       expect(answer).toMatch(/^Proposed mem_/);
       return outcome();
     });
@@ -216,7 +268,9 @@ describe("runRepairAttempt", () => {
 
     expect(result.status).toBe("verified");
     expect(agent.calls[0]?.memory).toBeUndefined();
-    expect(result.transcript.some((entry) => entry.text.includes("memory is unreadable"))).toBe(true);
+    expect(result.transcript.some((entry) => entry.text.includes("memory is unreadable"))).toBe(
+      true,
+    );
   });
 
   it("does not involve the agent when the upgrade already works", async () => {
@@ -241,7 +295,9 @@ describe("runRepairAttempt", () => {
     await runRepairAttempt(request(agent), deps());
     expect(seen).toHaveLength(1);
     expect(existsSync(seen[0]!)).toBe(false);
-    expect(execFileSync("git", ["worktree", "list"], { cwd: dir, encoding: "utf8" }).trim().split("\n")).toHaveLength(1);
+    expect(
+      execFileSync("git", ["worktree", "list"], { cwd: dir, encoding: "utf8" }).trim().split("\n"),
+    ).toHaveLength(1);
   });
 
   it("rejects when the agent gives up or runs out of budget", async () => {
@@ -293,7 +349,9 @@ describe("runRepairAttempt", () => {
 
     expect(result.status).toBe("rejected");
     expect(result.verification?.failedCheck).toBe("scope");
-    expect(result.verification?.checks.find((check) => check.name === "scope")?.details?.[0]).toMatch(/ci.yml/);
+    expect(
+      result.verification?.checks.find((check) => check.name === "scope")?.details?.[0],
+    ).toMatch(/ci.yml/);
     expect(existsSync(join(dir, ".github", "workflows"))).toBe(false);
   });
 
@@ -313,7 +371,15 @@ describe("runRepairAttempt", () => {
     const result = await runRepairAttempt(
       request(agent),
       deps({
-        applyUpgrade: async () => ({ packageName: "dep", strategy: "none", fromVersion: "1.0.0", applied: false, dryRun: false, message: "install failed", unresolvedReason: "install-failed" }),
+        applyUpgrade: async () => ({
+          packageName: "dep",
+          strategy: "none",
+          fromVersion: "1.0.0",
+          applied: false,
+          dryRun: false,
+          message: "install failed",
+          unresolvedReason: "install-failed",
+        }),
       }),
     );
     expect(result).toMatchObject({ status: "failed" });
@@ -322,20 +388,38 @@ describe("runRepairAttempt", () => {
   });
 
   it("treats a crashing agent as a failed attempt", async () => {
-    const result = await runRepairAttempt(request(agentThat(() => { throw new Error("segfault"); })), deps());
+    const result = await runRepairAttempt(
+      request(
+        agentThat(() => {
+          throw new Error("segfault");
+        }),
+      ),
+      deps(),
+    );
     expect(result).toMatchObject({ status: "failed" });
     expect(result.reason).toMatch(/the agent failed: segfault/);
   });
 
   it("stops asking the agent once the token budget is spent, or the attempt is cancelled", async () => {
-    const spendy = agentThat(() => outcome({ usage: [{ purpose: "upgrade-repair", model: "m", inputTokens: 900, outputTokens: 200 }] }));
+    const spendy = agentThat(() =>
+      outcome({
+        usage: [{ purpose: "upgrade-repair", model: "m", inputTokens: 900, outputTokens: 200 }],
+      }),
+    );
     const spent = await runRepairAttempt(request(spendy, { maxTotalTokens: 1000 }), deps());
     expect(spent.reason).toMatch(/token budget was used up/);
     expect(spendy.calls).toHaveLength(1);
 
     const controller = new AbortController();
     controller.abort();
-    const cancelled = await runRepairAttempt(request(agentThat(() => outcome()), {}, controller.signal), deps());
+    const cancelled = await runRepairAttempt(
+      request(
+        agentThat(() => outcome()),
+        {},
+        controller.signal,
+      ),
+      deps(),
+    );
     expect(cancelled.reason).toMatch(/cancelled/);
   });
 });

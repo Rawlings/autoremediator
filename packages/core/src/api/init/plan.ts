@@ -43,16 +43,39 @@ function readIfExists(cwd: string, path: string): string | undefined {
 }
 
 /** Turn a merge outcome into a reviewable change. */
-function toChange(path: string, reason: string, before: string | undefined, merged: MergeResult): FileChange {
+function toChange(
+  path: string,
+  reason: string,
+  before: string | undefined,
+  merged: MergeResult,
+): FileChange {
   if ("conflict" in merged) {
-    return { path, action: "conflict", reason: `${path} ${merged.conflict}`, ...(before === undefined ? {} : { before }), after: before ?? "" };
+    return {
+      path,
+      action: "conflict",
+      reason: `${path} ${merged.conflict}`,
+      ...(before === undefined ? {} : { before }),
+      after: before ?? "",
+    };
   }
-  const action = before === undefined ? "create" : before === merged.content ? "unchanged" : "update";
-  return { path, action, reason, ...(before === undefined ? {} : { before }), after: merged.content };
+  const action =
+    before === undefined ? "create" : before === merged.content ? "unchanged" : "update";
+  return {
+    path,
+    action,
+    reason,
+    ...(before === undefined ? {} : { before }),
+    after: merged.content,
+  };
 }
 
 /** Write a file only when it is absent; an existing file is the user's and is not replaced. */
-function createOnly(path: string, reason: string, before: string | undefined, content: string): FileChange {
+function createOnly(
+  path: string,
+  reason: string,
+  before: string | undefined,
+  content: string,
+): FileChange {
   if (before === undefined) return { path, action: "create", reason, after: content };
   return { path, action: "unchanged", reason, before, after: before };
 }
@@ -62,7 +85,12 @@ function createOnly(path: string, reason: string, before: string | undefined, co
  * that is already there is ours only if it carries the generated marker; otherwise it is a person's
  * own file (or one an older release wrote, which had no marker) and is left alone.
  */
-function owned(path: string, reason: string, before: string | undefined, content: string): FileChange {
+function owned(
+  path: string,
+  reason: string,
+  before: string | undefined,
+  content: string,
+): FileChange {
   if (before !== undefined && !before.includes(GENERATED_MARKER)) {
     return {
       path,
@@ -76,11 +104,25 @@ function owned(path: string, reason: string, before: string | undefined, content
   return { path, action, reason, ...(before === undefined ? {} : { before }), after: content };
 }
 
-function hostChanges(cwd: string, host: AgentHost, guard: boolean, hosts: AgentHost[]): FileChange[] {
+function hostChanges(
+  cwd: string,
+  host: AgentHost,
+  guard: boolean,
+  hosts: AgentHost[],
+): FileChange[] {
   const entry = mcpServerEntry();
-  const json = (path: string, key: "mcpServers" | "servers", extra: Record<string, unknown> = {}) => {
+  const json = (
+    path: string,
+    key: "mcpServers" | "servers",
+    extra: Record<string, unknown> = {},
+  ) => {
     const before = readIfExists(cwd, path);
-    return toChange(path, "connect the Autoremediator MCP server", before, mergeJsonMcpConfig(before, key, entry, extra));
+    return toChange(
+      path,
+      "connect the Autoremediator MCP server",
+      before,
+      mergeJsonMcpConfig(before, key, entry, extra),
+    );
   };
   const copilotHooks = (): FileChange[] => {
     const before = readIfExists(cwd, COPILOT_HOOKS_PATH);
@@ -98,7 +140,12 @@ function hostChanges(cwd: string, host: AgentHost, guard: boolean, hosts: AgentH
       json(".mcp.json", "mcpServers"),
       ...SKILLS.map((skill) => {
         const path = `.claude/skills/${skill.name}/SKILL.md`;
-        return owned(path, "teach Claude Code the safe remediation steps", readIfExists(cwd, path), renderSkill(skill));
+        return owned(
+          path,
+          "teach Claude Code the safe remediation steps",
+          readIfExists(cwd, path),
+          renderSkill(skill),
+        );
       }),
       ...(guard
         ? [
@@ -116,7 +163,12 @@ function hostChanges(cwd: string, host: AgentHost, guard: boolean, hosts: AgentH
     ],
     cursor: () => [
       json(".cursor/mcp.json", "mcpServers"),
-      owned(CURSOR_RULE_PATH, "teach Cursor the safe remediation steps", readIfExists(cwd, CURSOR_RULE_PATH), cursorRuleContent()),
+      owned(
+        CURSOR_RULE_PATH,
+        "teach Cursor the safe remediation steps",
+        readIfExists(cwd, CURSOR_RULE_PATH),
+        cursorRuleContent(),
+      ),
       ...(guard
         ? [
             (() => {
@@ -139,7 +191,14 @@ function hostChanges(cwd: string, host: AgentHost, guard: boolean, hosts: AgentH
     gemini: () => [json(".gemini/settings.json", "mcpServers")],
     codex: () => {
       const before = readIfExists(cwd, ".codex/config.toml");
-      return [toChange(".codex/config.toml", "connect the Autoremediator MCP server", before, mergeCodexToml(before, entry))];
+      return [
+        toChange(
+          ".codex/config.toml",
+          "connect the Autoremediator MCP server",
+          before,
+          mergeCodexToml(before, entry),
+        ),
+      ];
     },
     copilot: () => [
       owned(
@@ -159,7 +218,8 @@ function hostChanges(cwd: string, host: AgentHost, guard: boolean, hosts: AgentH
  * `.pnpmfile.mjs` (which pnpm prefers) is the user's, so it is reported as a conflict rather than edited.
  */
 function pnpmfileChange(cwd: string): FileChange {
-  const reason = "check dependencies pnpm is about to add with guard (run pnpm install once afterwards to record it in the lockfile)";
+  const reason =
+    "check dependencies pnpm is about to add with guard (run pnpm install once afterwards to record it in the lockfile)";
   const before = readIfExists(cwd, PNPMFILE_PATH);
   const content = pnpmfileGuardContent();
   if (readIfExists(cwd, ".pnpmfile.mjs") !== undefined) {
@@ -189,7 +249,11 @@ function pnpmfileChange(cwd: string): FileChange {
 }
 
 /** Everything `init` would write, in a stable order. Reads the project; writes nothing. */
-export function planInit(facts: ProjectFacts, hosts: AgentHost[], options: InitOptions): FileChange[] {
+export function planInit(
+  facts: ProjectFacts,
+  hosts: AgentHost[],
+  options: InitOptions,
+): FileChange[] {
   const { cwd } = facts;
   const changes: FileChange[] = [];
 
@@ -206,7 +270,12 @@ export function planInit(facts: ProjectFacts, hosts: AgentHost[], options: InitO
 
   const gitignoreBefore = readIfExists(cwd, ".gitignore");
   changes.push(
-    toChange(".gitignore", "keep run state out of git, but not recipes or the autonomy track record", gitignoreBefore, mergeRunStateIgnore(gitignoreBefore)),
+    toChange(
+      ".gitignore",
+      "keep run state out of git, but not recipes or the autonomy track record",
+      gitignoreBefore,
+      mergeRunStateIgnore(gitignoreBefore),
+    ),
   );
 
   for (const host of hosts) changes.push(...hostChanges(cwd, host, options.guard === true, hosts));
@@ -216,13 +285,23 @@ export function planInit(facts: ProjectFacts, hosts: AgentHost[], options: InitO
   if (options.agentsMd !== false && hosts.length > 0) {
     const before = readIfExists(cwd, "AGENTS.md");
     changes.push(
-      toChange("AGENTS.md", "tell any coding agent how to use Autoremediator", before, mergeMarkedSection(before, AGENTS_MD_SECTION)),
+      toChange(
+        "AGENTS.md",
+        "tell any coding agent how to use Autoremediator",
+        before,
+        mergeMarkedSection(before, AGENTS_MD_SECTION),
+      ),
     );
   }
 
   if (options.ci && facts.ci.includes("github-actions")) {
     changes.push(
-      createOnly(WORKFLOW_PATH, "run remediation weekly and open a pull request", readIfExists(cwd, WORKFLOW_PATH), workflowContent()),
+      createOnly(
+        WORKFLOW_PATH,
+        "run remediation weekly and open a pull request",
+        readIfExists(cwd, WORKFLOW_PATH),
+        workflowContent(),
+      ),
     );
   }
 

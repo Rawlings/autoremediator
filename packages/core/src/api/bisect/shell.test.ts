@@ -14,7 +14,11 @@ afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
 describe("runProcess", () => {
   it("returns the exit code and the combined output of a shell command", async () => {
-    const result = await runProcess({ shell: "echo out; echo err 1>&2; exit 7", cwd: dir, timeoutMs: 10_000 });
+    const result = await runProcess({
+      shell: "echo out; echo err 1>&2; exit 7",
+      cwd: dir,
+      timeoutMs: 10_000,
+    });
     expect(result.exitCode).toBe(7);
     expect(result.output).toContain("out");
     expect(result.output).toContain("err");
@@ -22,7 +26,11 @@ describe("runProcess", () => {
   });
 
   it("runs an argv without a shell, so metacharacters are plain arguments", async () => {
-    const result = await runProcess({ argv: ["node", "-p", "process.argv[1]", "a; echo injected"], cwd: dir, timeoutMs: 10_000 });
+    const result = await runProcess({
+      argv: ["node", "-p", "process.argv[1]", "a; echo injected"],
+      cwd: dir,
+      timeoutMs: 10_000,
+    });
     expect(result.output.trim()).toBe("a; echo injected");
   });
 
@@ -41,7 +49,12 @@ describe("runProcess", () => {
 
   it("stops when aborted", async () => {
     const controller = new AbortController();
-    const pending = runProcess({ shell: "sleep 30", cwd: dir, timeoutMs: 60_000, signal: controller.signal });
+    const pending = runProcess({
+      shell: "sleep 30",
+      cwd: dir,
+      timeoutMs: 60_000,
+      signal: controller.signal,
+    });
     setTimeout(() => controller.abort(), 200);
     const result = await pending;
     expect(result.aborted).toBe(true);
@@ -49,7 +62,11 @@ describe("runProcess", () => {
   });
 
   it("reports a program that cannot be started as exit code 127", async () => {
-    const result = await runProcess({ argv: ["definitely-not-a-program-xyz"], cwd: dir, timeoutMs: 5000 });
+    const result = await runProcess({
+      argv: ["definitely-not-a-program-xyz"],
+      cwd: dir,
+      timeoutMs: 5000,
+    });
     expect(result.exitCode).toBe(127);
     expect(result.output).toContain("could not start");
   });
@@ -80,14 +97,21 @@ describe("sanitizeOutput", () => {
       "clone https://user:hunter2@example.test/repo.git",
       "from env: s3cr3t-value-from-env",
     ].join("\n");
-    const out = sanitizeOutput(text, { env: { MY_API_TOKEN: "s3cr3t-value-from-env", SHORT_TOKEN: "abc", PATH: "/usr/bin" } });
-    expect(out).not.toMatch(/npm_abc|ghp_abc|secretvalue123|abcdefghijklmnop\.|hunter2|s3cr3t-value/);
+    const out = sanitizeOutput(text, {
+      env: { MY_API_TOKEN: "s3cr3t-value-from-env", SHORT_TOKEN: "abc", PATH: "/usr/bin" },
+    });
+    expect(out).not.toMatch(
+      /npm_abc|ghp_abc|secretvalue123|abcdefghijklmnop\.|hunter2|s3cr3t-value/,
+    );
     expect(out).toContain("https://[redacted]@example.test/repo.git");
     expect(out.split("[redacted]").length).toBeGreaterThanOrEqual(6);
   });
 
   it("shortens checkout and home paths", () => {
-    const out = sanitizeOutput("error at /tmp/wt-123/src/x.js:4", { paths: [["/tmp/wt-123", "<checkout>"]], env: {} });
+    const out = sanitizeOutput("error at /tmp/wt-123/src/x.js:4", {
+      paths: [["/tmp/wt-123", "<checkout>"]],
+      env: {},
+    });
     expect(out).toBe("error at <checkout>/src/x.js:4");
   });
 

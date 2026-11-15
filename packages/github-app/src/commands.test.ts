@@ -9,7 +9,9 @@ describe("parseComment", () => {
       advisoryIds: ["CVE-2021-23337"],
       ignored: [],
     });
-    expect(parseComment("/autoremediator fix CVE-2021-23337, GHSA-35jh-r3h4-6jhm CVE-2021-23337")).toEqual({
+    expect(
+      parseComment("/autoremediator fix CVE-2021-23337, GHSA-35jh-r3h4-6jhm CVE-2021-23337"),
+    ).toEqual({
       name: "fix",
       advisoryIds: ["CVE-2021-23337", "GHSA-35JH-R3H4-6JHM"],
       ignored: [],

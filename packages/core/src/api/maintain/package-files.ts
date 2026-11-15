@@ -29,7 +29,10 @@ export function filesCover(files: readonly unknown[], path: string): boolean {
     const normalized = entry.replace(/^\.\//, "").replace(/\/+$/, "");
     if (normalized === "" || normalized.startsWith("!")) continue;
     if (normalized === path || path.startsWith(`${normalized}/`)) return true;
-    if (/[*?]/.test(normalized) && (globToRegExp(normalized).test(path) || globToRegExp(`${normalized}/**`).test(path))) {
+    if (
+      /[*?]/.test(normalized) &&
+      (globToRegExp(normalized).test(path) || globToRegExp(`${normalized}/**`).test(path))
+    ) {
       return true;
     }
   }
@@ -41,7 +44,10 @@ export function filesCover(files: readonly unknown[], path: string): boolean {
  * author's key order and indentation, never changes a valid `vex` they already declared, and
  * refuses a file it cannot parse or a `vex`/`files` that is not what npm expects.
  */
-export function editPackageJson(existing: string, defaultPath: string = DEFAULT_VEX_FILE): PackageJsonEdit {
+export function editPackageJson(
+  existing: string,
+  defaultPath: string = DEFAULT_VEX_FILE,
+): PackageJsonEdit {
   let manifest: Record<string, unknown>;
   try {
     const parsed: unknown = JSON.parse(existing);
@@ -90,7 +96,8 @@ export function pendingBump(cwd: string, packageName: string): Bump | undefined 
   try {
     // Changesets that `maintain` itself wrote are patches by construction and say nothing about the author's plans.
     names = readdirSync(directory).filter(
-      (name) => name.endsWith(".md") && name.toLowerCase() !== "readme.md" && !name.startsWith("maintain-"),
+      (name) =>
+        name.endsWith(".md") && name.toLowerCase() !== "readme.md" && !name.startsWith("maintain-"),
     );
   } catch {
     return undefined;
@@ -147,7 +154,8 @@ export function nextVersionOf(
   const pending = usesChangesets ? pendingBump(cwd, packageName) : undefined;
   const bump: Bump = pending ?? "patch";
   const version = semver.inc(current, bump);
-  if (!version) return { note: `Cannot compute the next version from ${current}; pass --next-version.` };
+  if (!version)
+    return { note: `Cannot compute the next version from ${current}; pass --next-version.` };
   const why = pending
     ? `a ${pending} bump is already pending in .changeset`
     : `a patch after ${current}`;

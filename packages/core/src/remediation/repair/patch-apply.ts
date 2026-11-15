@@ -31,17 +31,29 @@ export interface AppliedPatch {
 /** Check a diff against everything an attempt may change, then apply it to the checkout. */
 export async function validateAndApplyPatch(checkout: string, diff: string): Promise<AppliedPatch> {
   if (diff.trim().length === 0) throw new Error("The patch is empty.");
-  if (Buffer.byteLength(diff) > MAX_PATCH_BYTES) throw new Error(`The patch is larger than ${MAX_PATCH_BYTES} bytes.`);
+  if (Buffer.byteLength(diff) > MAX_PATCH_BYTES)
+    throw new Error(`The patch is larger than ${MAX_PATCH_BYTES} bytes.`);
   for (const [pattern, what] of FORBIDDEN_PATCH) {
-    if (pattern.test(diff)) throw new Error(`The patch contains ${what}, which an attempt may not change.`);
+    if (pattern.test(diff))
+      throw new Error(`The patch contains ${what}, which an attempt may not change.`);
   }
   const text = diff.endsWith("\n") ? diff : `${diff}\n`;
 
-  const top = (await safeExeca("git", ["rev-parse", "--show-toplevel"], { cwd: checkout, stdio: "pipe" })).stdout.trim();
+  const top = (
+    await safeExeca("git", ["rev-parse", "--show-toplevel"], { cwd: checkout, stdio: "pipe" })
+  ).stdout.trim();
   let files: string[];
   try {
-    const numstat = await safeExeca("git", ["apply", "--numstat", "-"], { cwd: top, input: text, stdio: "pipe" });
-    files = numstat.stdout.split("\n").filter(Boolean).map((line) => line.split("\t")[2] ?? "").filter(Boolean);
+    const numstat = await safeExeca("git", ["apply", "--numstat", "-"], {
+      cwd: top,
+      input: text,
+      stdio: "pipe",
+    });
+    files = numstat.stdout
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => line.split("\t")[2] ?? "")
+      .filter(Boolean);
   } catch (cause) {
     throw new Error("The patch is not a valid unified diff.", { cause });
   }
@@ -52,7 +64,8 @@ export async function validateAndApplyPatch(checkout: string, diff: string): Pro
     try {
       guard.assertWritable(resolve(top, file));
     } catch (error) {
-      if (error instanceof ScopeViolation) throw new Error(`Patch refused: ${error.message}`, { cause: error });
+      if (error instanceof ScopeViolation)
+        throw new Error(`Patch refused: ${error.message}`, { cause: error });
       throw error;
     }
   }
@@ -60,7 +73,10 @@ export async function validateAndApplyPatch(checkout: string, diff: string): Pro
   try {
     await safeExeca("git", ["apply", "--check", "-"], { cwd: top, input: text, stdio: "pipe" });
   } catch (cause) {
-    throw new Error("The patch does not apply to the checkout as it is now (read the files again and rebase it).", { cause });
+    throw new Error(
+      "The patch does not apply to the checkout as it is now (read the files again and rebase it).",
+      { cause },
+    );
   }
   await safeExeca("git", ["apply", "-"], { cwd: top, input: text, stdio: "pipe" });
   return { text, files };
@@ -68,6 +84,8 @@ export async function validateAndApplyPatch(checkout: string, diff: string): Pro
 
 /** Take an applied patch back out, exactly. */
 export async function undoPatch(checkout: string, applied: AppliedPatch): Promise<void> {
-  const top = (await safeExeca("git", ["rev-parse", "--show-toplevel"], { cwd: checkout, stdio: "pipe" })).stdout.trim();
+  const top = (
+    await safeExeca("git", ["rev-parse", "--show-toplevel"], { cwd: checkout, stdio: "pipe" })
+  ).stdout.trim();
   await safeExeca("git", ["apply", "-R", "-"], { cwd: top, input: applied.text, stdio: "pipe" });
 }

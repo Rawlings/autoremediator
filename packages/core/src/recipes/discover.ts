@@ -13,7 +13,13 @@ import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from "
 import { join, relative, sep } from "node:path";
 
 import { appliesTo } from "./engine.js";
-import { MAX_RECIPE_BYTES, NPM_PACKAGE_NAME, parseRecipe, recipeId, type Recipe } from "./schema.js";
+import {
+  MAX_RECIPE_BYTES,
+  NPM_PACKAGE_NAME,
+  parseRecipe,
+  recipeId,
+  type Recipe,
+} from "./schema.js";
 
 export const PROJECT_RECIPES_DIR = ".autoremediator/recipes";
 export const INSTALLED_RECIPES_DIR = "autoremediator-recipes";
@@ -67,11 +73,18 @@ function jsonFiles(root: string): string[] {
     } catch {
       return;
     }
-    for (const entry of entries.toSorted((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
+    for (const entry of entries.toSorted((a, b) =>
+      a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
+    )) {
       const full = join(dir, entry.name);
       if (entry.isSymbolicLink()) continue;
       if (entry.isDirectory()) walk(full, depth + 1);
-      else if (entry.isFile() && entry.name.endsWith(".json") && found.length < MAX_FILES_PER_SOURCE) found.push(full);
+      else if (
+        entry.isFile() &&
+        entry.name.endsWith(".json") &&
+        found.length < MAX_FILES_PER_SOURCE
+      )
+        found.push(full);
     }
   };
   walk(root, 0);
@@ -101,7 +114,10 @@ function collect(
       if (rejected) into.problems.push({ file: shown, error: rejected });
       else into.recipes.push({ id: recipeId(recipe), source, file: shown, recipe });
     } catch (error) {
-      into.problems.push({ file: shown, error: error instanceof Error ? error.message : String(error) });
+      into.problems.push({
+        file: shown,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 }
@@ -130,7 +146,8 @@ function installedPackageNames(installRoot: string): string[] {
     if (entry.name.startsWith(".")) continue;
     if (entry.name.startsWith("@")) {
       try {
-        for (const inner of readdirSync(join(modules, entry.name))) names.push(`${entry.name}/${inner}`);
+        for (const inner of readdirSync(join(modules, entry.name)))
+          names.push(`${entry.name}/${inner}`);
       } catch {
         // An unreadable scope directory has no recipes to offer.
       }
@@ -142,7 +159,13 @@ function installedPackageNames(installRoot: string): string[] {
 export function discoverRecipes(options: DiscoverOptions): Discovery {
   const found: Discovery = { recipes: [], problems: [] };
 
-  collect(join(options.projectDir, PROJECT_RECIPES_DIR), PROJECT_RECIPES_DIR, { kind: "project" }, () => undefined, found);
+  collect(
+    join(options.projectDir, PROJECT_RECIPES_DIR),
+    PROJECT_RECIPES_DIR,
+    { kind: "project" },
+    () => undefined,
+    found,
+  );
 
   const { installRoot } = options;
   for (const name of options.policyPackages ?? []) {
@@ -150,11 +173,20 @@ export function discoverRecipes(options: DiscoverOptions): Discovery {
       (installRoot ? packageDir(installRoot, name) : undefined) ??
       (options.fallbackInstallRoot ? packageDir(options.fallbackInstallRoot, name) : undefined);
     if (!dir) {
-      found.problems.push({ file: name, error: "named in the policy as a recipes package but not installed" });
+      found.problems.push({
+        file: name,
+        error: "named in the policy as a recipes package but not installed",
+      });
       continue;
     }
     for (const sub of [PACKAGE_RECIPES_DIR, INSTALLED_RECIPES_DIR]) {
-      collect(join(dir, sub), `${name}/${sub}`, { kind: "policy-package", package: name }, () => undefined, found);
+      collect(
+        join(dir, sub),
+        `${name}/${sub}`,
+        { kind: "policy-package", package: name },
+        () => undefined,
+        found,
+      );
     }
   }
 
@@ -187,6 +219,7 @@ export function recipesFor(
   toVersion: string,
 ): RecipeEntry[] {
   return discovery.recipes.filter(
-    (entry) => entry.recipe.package === packageName && appliesTo(entry.recipe, fromVersion, toVersion),
+    (entry) =>
+      entry.recipe.package === packageName && appliesTo(entry.recipe, fromVersion, toVersion),
   );
 }

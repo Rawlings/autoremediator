@@ -42,8 +42,7 @@ describe("PR Auto-Healer", () => {
         {
           filePath: "scripts/release.js",
           line: 1,
-          message:
-            "Property 'verifySignature' does not exist on type 'X'. Did you mean 'noop'?",
+          message: "Property 'verifySignature' does not exist on type 'X'. Did you mean 'noop'?",
           category: "typescript" as const,
         },
       ];
@@ -309,7 +308,9 @@ describe("PR Auto-Healer", () => {
       const getContent = vi.fn().mockResolvedValue({
         data: {
           type: "file",
-          content: Buffer.from(`if (!verifySignature(sig)) {}\nfunction noop() {}\n`).toString("base64"),
+          content: Buffer.from(`if (!verifySignature(sig)) {}\nfunction noop() {}\n`).toString(
+            "base64",
+          ),
           sha: "blob-1",
           size: 40,
         },
@@ -333,7 +334,8 @@ describe("PR Auto-Healer", () => {
             {
               filePath: "scripts/release.js",
               line: 1,
-              message: "Property 'verifySignature' does not exist on type 'X'. Did you mean 'noop'?",
+              message:
+                "Property 'verifySignature' does not exist on type 'X'. Did you mean 'noop'?",
               category: "typescript",
             },
           ],

@@ -1,4 +1,12 @@
-import { cpSync, existsSync, mkdirSync, readdirSync, realpathSync, rmSync, rmdirSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  rmdirSync,
+} from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, relative } from "node:path";
 
@@ -79,10 +87,17 @@ export async function createWorktree(
       await safeExeca(
         "git",
         [
-          "-c", "user.name=autoremediator",
-          "-c", "user.email=autoremediator@localhost",
-          "-c", "commit.gpgsign=false",
-          "commit", "--no-verify", "--quiet", "-m", "autoremediator: working tree at attempt start",
+          "-c",
+          "user.name=autoremediator",
+          "-c",
+          "user.email=autoremediator@localhost",
+          "-c",
+          "commit.gpgsign=false",
+          "commit",
+          "--no-verify",
+          "--quiet",
+          "-m",
+          "autoremediator: working tree at attempt start",
         ],
         { cwd: repoWorktree, stdio: "pipe" },
       );
@@ -150,7 +165,11 @@ export async function createRefWorktree(
 ): Promise<Worktree & { root: string }> {
   const root = (await git(cwd, ["rev-parse", "--show-toplevel"]).catch(() => "")).trim();
   if (!root) throw new Error("A checkout needs a git repository: this directory is not one.");
-  const commit = (await git(root, ["rev-parse", "--verify", "--end-of-options", `${ref}^{commit}`]).catch(() => "")).trim();
+  const commit = (
+    await git(root, ["rev-parse", "--verify", "--end-of-options", `${ref}^{commit}`]).catch(
+      () => "",
+    )
+  ).trim();
   if (!commit) throw new Error(`Cannot resolve git ref ${JSON.stringify(ref)} to a commit.`);
 
   const repoWorktree = join(worktreeRoot(root, env), name);

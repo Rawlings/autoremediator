@@ -54,7 +54,12 @@ export const fetchPackageSourceTool = defineTool({
       .default(["*.js", "*.ts"])
       .describe("File patterns to extract (glob patterns, default: *.js, *.ts)"),
   }),
-  execute: async ({ cwd, packageName, version, filePatterns }): Promise<FetchPackageSourceResult> => {
+  execute: async ({
+    cwd,
+    packageName,
+    version,
+    filePatterns,
+  }): Promise<FetchPackageSourceResult> => {
     // Validate package name against npm spec before using in URL
     if (!/^(@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/i.test(packageName)) {
       return { success: false, error: `Invalid package name: ${packageName}` };

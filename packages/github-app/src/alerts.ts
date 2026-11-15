@@ -10,7 +10,9 @@ export interface AlertTarget {
 }
 
 function obj(value: unknown): Record<string, unknown> | undefined {
-  return value !== null && typeof value === "object" ? (value as Record<string, unknown>) : undefined;
+  return value !== null && typeof value === "object"
+    ? (value as Record<string, unknown>)
+    : undefined;
 }
 const str = (value: unknown): string | undefined => (typeof value === "string" ? value : undefined);
 

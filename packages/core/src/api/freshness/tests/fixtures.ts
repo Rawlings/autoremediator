@@ -3,7 +3,10 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import type { NpmRegistryPackageInfo, PackageTimeline } from "../../../intelligence/sources/registry.js";
+import type {
+  NpmRegistryPackageInfo,
+  PackageTimeline,
+} from "../../../intelligence/sources/registry.js";
 import type { FreshnessDeps } from "../deps.js";
 import type { StepAssessment } from "../types.js";
 
@@ -66,7 +69,11 @@ export function fakeDeps(
     async assess(name, from, to) {
       options.assessed?.push(`${name} ${from}->${to}`);
       return (
-        options.assess?.[name] ?? { breakability: "Low", score: 0, summary: "nothing in the project reaches the changes" }
+        options.assess?.[name] ?? {
+          breakability: "Low",
+          score: 0,
+          summary: "nothing in the project reaches the changes",
+        }
       );
     },
     now: () => NOW,

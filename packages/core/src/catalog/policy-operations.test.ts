@@ -36,10 +36,16 @@ describe("compilePolicy and explainPolicy on every surface", () => {
     for (const name of ["compilePolicy", "explainPolicy"]) {
       expect(toMcpTools().map((tool) => tool.name)).toContain(name);
     }
-    expect(byName("explainPolicy").annotations).toMatchObject({ readOnlyHint: true, destructiveHint: false });
+    expect(byName("explainPolicy").annotations).toMatchObject({
+      readOnlyHint: true,
+      destructiveHint: false,
+    });
     expect(roleFor(byName("explainPolicy"))).toBe("reader");
     // It writes nothing, but it sends the policy and the request to a model provider the caller chooses.
-    expect(byName("compilePolicy").annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false });
+    expect(byName("compilePolicy").annotations).toMatchObject({
+      readOnlyHint: false,
+      destructiveHint: false,
+    });
     expect(roleFor(byName("compilePolicy"))).toBe("operator");
     expect(matchHttpRoute("POST", "/policy/compile")?.operation.name).toBe("compilePolicy");
     expect(matchHttpRoute("POST", "/policy/explain")?.operation.name).toBe("explainPolicy");

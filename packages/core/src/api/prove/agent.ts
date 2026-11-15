@@ -99,7 +99,10 @@ function createTools(task: ReproductionTask, env: ReproductionEnv, state: AgentS
           .filter((file) => (prefix ? file.startsWith(prefix) : true))
           .toSorted();
         const shown = files.slice(0, MAX_LIST);
-        return `${shown.join("\n")}${files.length > shown.length ? `\n[${files.length - shown.length} more]` : ""}` || "no files";
+        return (
+          `${shown.join("\n")}${files.length > shown.length ? `\n[${files.length - shown.length} more]` : ""}` ||
+          "no files"
+        );
       },
     }),
     readSource: tool({
@@ -107,16 +110,23 @@ function createTools(task: ReproductionTask, env: ReproductionEnv, state: AgentS
         "Read a source file of one version of the package, line-numbered. Compare the vulnerable and fixed versions of a file to see what the fix changed.",
       inputSchema: z.object({
         version: z.enum(["vulnerable", "fixed"]),
-        path: z.string().describe("Package-relative path as listed by listFiles, e.g. lib/index.js"),
+        path: z
+          .string()
+          .describe("Package-relative path as listed by listFiles, e.g. lib/index.js"),
         startLine: z.number().int().positive().optional(),
         endLine: z.number().int().positive().optional(),
       }),
       execute: async ({ version, path, startLine, endLine }) => {
         const text = source(version).files.get(path);
-        if (text === undefined) return `Error: no file "${path}" in the ${version} version (use listFiles)`;
+        if (text === undefined)
+          return `Error: no file "${path}" in the ${version} version (use listFiles)`;
         const lines = text.split("\n");
         const from = Math.max(1, startLine ?? 1);
-        const to = Math.min(lines.length, endLine ?? from + MAX_READ_LINES - 1, from + MAX_READ_LINES - 1);
+        const to = Math.min(
+          lines.length,
+          endLine ?? from + MAX_READ_LINES - 1,
+          from + MAX_READ_LINES - 1,
+        );
         let shown = lines
           .slice(from - 1, to)
           .map((line, index) => `${from + index}\t${line}`)
@@ -152,7 +162,10 @@ function createTools(task: ReproductionTask, env: ReproductionEnv, state: AgentS
   };
 }
 
-function describeStep(step: StepResult<ToolSet>, index: number): Array<{ step: number; text: string }> {
+function describeStep(
+  step: StepResult<ToolSet>,
+  index: number,
+): Array<{ step: number; text: string }> {
   const entries: Array<{ step: number; text: string }> = [];
   if (step.text.trim()) entries.push({ step: index, text: step.text.trim().slice(0, 2000) });
   const results = new Map(step.toolResults.map((result) => [result.toolCallId, result.output]));
@@ -167,7 +180,8 @@ function describeStep(step: StepResult<ToolSet>, index: number): Array<{ step: n
   return entries;
 }
 
-const modelName = (model: LanguageModel): string => (typeof model === "string" ? model : model.modelId);
+const modelName = (model: LanguageModel): string =>
+  typeof model === "string" ? model : model.modelId;
 
 /**
  * An agent that drives an AI SDK model through read-only tools over the two versions' source and

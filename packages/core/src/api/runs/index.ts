@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { createProjectSnapshot, restoreProjectSnapshot } from "../../platform/rollback.js";
 import { getModelSpec } from "../../platform/config.js";
 import { loadMemoryConstraints, pinnedMessage } from "../../platform/memory/consume.js";
 import {
@@ -9,20 +8,47 @@ import {
   type RepairAgent,
   type RepairBudget,
 } from "../../platform/repair-agent.js";
-import type { AutonomySummary, PatchResult, RemediateOptions, RemediationReport } from "../../platform/types.js";
-import { resolveConstraints } from "../context.js";
+import { createProjectSnapshot, restoreProjectSnapshot } from "../../platform/rollback.js";
+import type {
+  AutonomySummary,
+  PatchResult,
+  RemediateOptions,
+  RemediationReport,
+} from "../../platform/types.js";
 import { resolveLanguageModel } from "../../remediation/patch/model.js";
 import { createBuiltinRepairAgent } from "../../remediation/repair/builtin-agent.js";
+import type {
+  CheckName,
+  VerificationResult,
+  VerifyRequest,
+} from "../../remediation/verify/types.js";
 import { fingerprintRepo, sameInputs } from "../../runs/fingerprint.js";
 import { isPlanId, isRunId } from "../../runs/ids.js";
 import type { StepEvent } from "../../runs/ledger.js";
-import { buildPlan, type PlanItem, type PlanOptions, type PlanSkip, type RemediationPlan } from "../../runs/plan.js";
-import { RunStore, type AttemptRecord, type RunRecord, type RunStatus } from "../../runs/run-store.js";
+import {
+  buildPlan,
+  type PlanItem,
+  type PlanOptions,
+  type PlanSkip,
+  type RemediationPlan,
+} from "../../runs/plan.js";
+import {
+  RunStore,
+  type AttemptRecord,
+  type RunRecord,
+  type RunStatus,
+} from "../../runs/run-store.js";
 import { loadSnapshot } from "../../runs/snapshot-store.js";
 import { assertAutonomyAllows, summarizeAutonomy } from "../autonomy/index.js";
-import { applyEvents, autonomyForReport, recordOutcomes, rollbackEvent, verifyEvents } from "./autonomy-events.js";
+import { resolveConstraints } from "../context.js";
+import {
+  applyEvents,
+  autonomyForReport,
+  recordOutcomes,
+  rollbackEvent,
+  verifyEvents,
+} from "./autonomy-events.js";
 import { defaultRunDeps, type RunDeps } from "./deps.js";
-import { hasRecipeFor } from "./recipes.js";
 import {
   appliedTestCommand,
   passedTestCommands,
@@ -30,6 +56,7 @@ import {
   rejectedUpgradeEntry,
   testCommandEntry,
 } from "./memory-events.js";
+import { hasRecipeFor } from "./recipes.js";
 import {
   APPLICABLE_STATUSES,
   ensureRunSnapshot,
@@ -38,13 +65,11 @@ import {
   SNAPSHOT_MANIFEST,
   type RepairItemResult,
 } from "./repair.js";
-import type { CheckName, VerificationResult, VerifyRequest } from "../../remediation/verify/types.js";
 
 export type { AttemptRecord, AttemptStatus, RunRecord, RunStatus } from "../../runs/run-store.js";
 export type { RunDeps } from "./deps.js";
 export type { PlanItem, PlanSkip, RemediationPlan } from "../../runs/plan.js";
 export type { CheckName, CheckResult, VerificationResult } from "../../remediation/verify/types.js";
-
 
 // ---------------------------------------------------------------------------
 // Types
@@ -212,14 +237,12 @@ export async function persistPlan(
   store.writeJson(run.runId, "plan.json", plan);
   store.writeJson(run.runId, "report.json", report);
   store.update(run.runId, { planId: plan.planId });
-  store
-    .ledger(run.runId)
-    .append("plan.created", {
-      planId: plan.planId,
-      cveId: report.cveId,
-      items: plan.items.length,
-      skipped: plan.skipped.length,
-    });
+  store.ledger(run.runId).append("plan.created", {
+    planId: plan.planId,
+    cveId: report.cveId,
+    items: plan.items.length,
+    skipped: plan.skipped.length,
+  });
   return { runId: run.runId, planId: plan.planId };
 }
 
@@ -240,7 +263,8 @@ function outcomesFrom(events: StepEvent[], plan: RemediationPlan | undefined): I
       fromVersion: item.fromVersion,
       toVersion: item.toVersion,
       strategy: item.strategy,
-      status: event.type === "item.done" && event.data["status"] === "applied" ? "applied" : "failed",
+      status:
+        event.type === "item.done" && event.data["status"] === "applied" ? "applied" : "failed",
       message: typeof event.data["message"] === "string" ? event.data["message"] : "",
       ...(typeof event.data["unresolvedReason"] === "string"
         ? { unresolvedReason: event.data["unresolvedReason"] }
@@ -287,12 +311,16 @@ export function listRuns(options: ListRunsOptions = {}): RunRecord[] {
 
 function resolveRun(store: RunStore, options: ApplyPlanOptions): RunRecord {
   if (options.runId) {
-    if (!isRunId(options.runId)) throw new Error(`Invalid run id: ${JSON.stringify(options.runId)}`);
+    if (!isRunId(options.runId))
+      throw new Error(`Invalid run id: ${JSON.stringify(options.runId)}`);
     return store.load(options.runId);
   }
   if (options.planId) {
-    if (!isPlanId(options.planId)) throw new Error(`Invalid plan id: ${JSON.stringify(options.planId)}`);
-    const match = store.list().find((run) => run.planId === options.planId && run.status !== "rolled-back");
+    if (!isPlanId(options.planId))
+      throw new Error(`Invalid plan id: ${JSON.stringify(options.planId)}`);
+    const match = store
+      .list()
+      .find((run) => run.planId === options.planId && run.status !== "rolled-back");
     if (!match) throw new Error(`No run found for plan ${options.planId}`);
     return match;
   }
@@ -317,7 +345,9 @@ async function resolveRepairAgent(
   const spec = getModelSpec(options.model);
   if (!spec) {
     if (options.repair === true) {
-      throw new Error('Repair needs a model: pass `model` ("<provider>:<model-id>") or set AUTOREMEDIATOR_MODEL.');
+      throw new Error(
+        'Repair needs a model: pass `model` ("<provider>:<model-id>") or set AUTOREMEDIATOR_MODEL.',
+      );
     }
     return undefined;
   }
@@ -329,7 +359,6 @@ async function resolveRepairAgent(
     return undefined;
   }
 }
-
 
 /**
  * Apply a plan. Before the first change the project's manifests and lockfiles are snapshotted to
@@ -408,10 +437,14 @@ export async function applyPlan(
     await ensureRunSnapshot(store, runId, cwd);
 
     store.update(runId, { status: "applying" });
-    ledger.append("apply.start", { itemIds: options.itemIds ?? "all", resumed: run.status !== "planned" });
+    ledger.append("apply.start", {
+      itemIds: options.itemIds ?? "all",
+      resumed: run.status !== "planned",
+    });
 
     const selected = plan.items.filter(
-      (item) => !applied.has(item.itemId) && (!options.itemIds || options.itemIds.includes(item.itemId)),
+      (item) =>
+        !applied.has(item.itemId) && (!options.itemIds || options.itemIds.includes(item.itemId)),
     );
 
     const advisories = store.readReport(runId)?.cveDetails;
@@ -463,10 +496,18 @@ export async function applyPlan(
           },
           {
             attempt: deps.attempt,
-            promote: { verify: deps.verify, reinstall: () => deps.reinstall({ cwd, options: plan.options }) },
+            promote: {
+              verify: deps.verify,
+              reinstall: () => deps.reinstall({ cwd, options: plan.options }),
+            },
           },
         );
-        repair = { attemptId: repaired.attemptId, status: repaired.status, rounds: repaired.rounds, reason: repaired.message };
+        repair = {
+          attemptId: repaired.attemptId,
+          status: repaired.status,
+          rounds: repaired.rounds,
+          reason: repaired.message,
+        };
         if (repaired.status === "promoted") {
           ok = true;
           message = `Upgraded ${item.packageName} to ${item.toVersion} and repaired the project with ${repaired.agentId.startsWith("recipe:") ? "a recipe" : "an agent"}: ${repaired.message}`;
@@ -491,13 +532,18 @@ export async function applyPlan(
           statusBefore: before.isGit ? (before.gitStatusBefore ?? []) : undefined,
           advisories: advisories ? [advisories] : [],
           expectedRemaining: [...skippedNames, ...others],
-          options: { ...verifyOptionsOf(plan.options), allowSourceEdits: plan.options.breakingChangeRefactor },
+          options: {
+            ...verifyOptionsOf(plan.options),
+            allowSourceEdits: plan.options.breakingChangeRefactor,
+          },
           checks: ["scope", "policy", "supply-chain", "vuln-gone"],
         });
 
         if (!verification.passed) {
           // The verifier disposes: whatever the tool reported, this change does not stand.
-          const failed = verification.checks.find((check) => check.name === verification!.failedCheck);
+          const failed = verification.checks.find(
+            (check) => check.name === verification!.failedCheck,
+          );
           message = `Verification failed (${verification.failedCheck}): ${failed?.message ?? "see details"}`;
           await restoreProjectSnapshot(before);
           const reinstallNote = await deps
@@ -544,8 +590,11 @@ export async function applyPlan(
     store.update(runId, { status, ...(failure ? { error: failure } : {}) });
     ledger.append("apply.end", { status });
 
-    await recordOutcomes(cwd, plan.options.policy, applyEvents(run, plan.options, outcomes), (problem) =>
-      ledger.append("autonomy.record-failed", { message: problem }),
+    await recordOutcomes(
+      cwd,
+      plan.options.policy,
+      applyEvents(run, plan.options, outcomes),
+      (problem) => ledger.append("autonomy.record-failed", { message: problem }),
     );
     // What this run established for the repository's memory: upgrades the verifier rejected, and how tests ran.
     const testCommands = new Set(
@@ -564,7 +613,14 @@ export async function applyPlan(
       ],
       (problem) => ledger.append("memory.record-failed", { message: problem }),
     );
-    const autonomy = autonomyForReport(cwd, plan.options.policy, status, outcomes, plan, levelBefore);
+    const autonomy = autonomyForReport(
+      cwd,
+      plan.options.policy,
+      status,
+      outcomes,
+      plan,
+      levelBefore,
+    );
 
     return {
       runId,
@@ -608,7 +664,10 @@ function summarize(status: RunStatus, outcomes: ItemOutcome[], plan: Remediation
 }
 
 /** Continue a run that was interrupted or left partial, skipping items already applied. */
-export async function resumeRun(query: RunQuery, deps: RunDeps = defaultRunDeps): Promise<RunReport> {
+export async function resumeRun(
+  query: RunQuery,
+  deps: RunDeps = defaultRunDeps,
+): Promise<RunReport> {
   const run = new RunStore(query.cwd ?? process.cwd()).load(query.runId);
   if (run.status === "planned") {
     throw new Error(`Run ${run.runId} has not started; use applyPlan.`);
@@ -634,7 +693,8 @@ export async function rollbackRun(
   const run = store.load(options.runId);
   const runId = run.runId;
 
-  if (run.status === "planned") throw new Error(`Run ${runId} made no changes; there is nothing to roll back.`);
+  if (run.status === "planned")
+    throw new Error(`Run ${runId} made no changes; there is nothing to roll back.`);
   if (run.status === "rolled-back") throw new Error(`Run ${runId} is already rolled back.`);
   if (!store.hasFile(runId, SNAPSHOT_MANIFEST)) {
     throw new Error(`Run ${runId} has no snapshot to restore.`);
@@ -654,7 +714,9 @@ export async function rollbackRun(
 
     const snapshot = loadSnapshot(join(store.runDir(runId), SNAPSHOT_DIR));
     if (snapshot.cwd !== run.cwd) {
-      throw new Error(`Run ${runId}: snapshot was taken for a different directory; refusing to restore.`);
+      throw new Error(
+        `Run ${runId}: snapshot was taken for a different directory; refusing to restore.`,
+      );
     }
     await restoreProjectSnapshot(snapshot);
 
@@ -683,7 +745,10 @@ export async function rollbackRun(
     await recordOutcomes(
       cwd,
       policy,
-      rollbackEvent(run, plan, appliedBefore, { restoredFiles: snapshot.fileSnapshots.size, forced: Boolean(options.force) }),
+      rollbackEvent(run, plan, appliedBefore, {
+        restoredFiles: snapshot.fileSnapshots.size,
+        forced: Boolean(options.force),
+      }),
       (problem) => store.ledger(runId).append("autonomy.record-failed", { message: problem }),
     );
 
@@ -700,7 +765,6 @@ export async function rollbackRun(
     release();
   }
 }
-
 
 /** Items the run has applied, from its ledger. */
 function appliedCount(store: RunStore, runId: string): number {
@@ -724,7 +788,9 @@ function verifyOptionsOf(options: PlanOptions): VerifyRequest["options"] {
     ...(options.runTests === undefined ? {} : { runTests: options.runTests }),
     ...(options.typecheck === undefined ? {} : { typecheck: options.typecheck }),
     ...(options.proofOfFix === undefined ? {} : { proofOfFix: options.proofOfFix }),
-    ...(options.requireProofOfFix === undefined ? {} : { requireProofOfFix: options.requireProofOfFix }),
+    ...(options.requireProofOfFix === undefined
+      ? {}
+      : { requireProofOfFix: options.requireProofOfFix }),
     ...(options.reproductionTest ? { reproductionTest: options.reproductionTest } : {}),
     ...(options.patchesDir ? { patchesDir: options.patchesDir } : {}),
     ...(options.constraints ? { constraints: options.constraints } : {}),
@@ -799,8 +865,11 @@ export async function verifyRun(
     ...(result.failedCheck ? { failedCheck: result.failedCheck } : {}),
     checks: result.checks.map((check) => `${check.name}:${check.status}`),
   });
-  await recordOutcomes(cwd, plan.options.policy, verifyEvents(run, plan, applied.size, result), (problem) =>
-    store.ledger(runId).append("autonomy.record-failed", { message: problem }),
+  await recordOutcomes(
+    cwd,
+    plan.options.policy,
+    verifyEvents(run, plan, applied.size, result),
+    (problem) => store.ledger(runId).append("autonomy.record-failed", { message: problem }),
   );
   await recordMemory(
     cwd,

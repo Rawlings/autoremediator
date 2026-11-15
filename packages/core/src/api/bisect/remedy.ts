@@ -133,7 +133,9 @@ export async function planRemedy(request: RemedyRequest): Promise<BisectRemedy> 
         ? "The lockfile now holds the good version of every pinned package."
         : `The run finished ${run.status}, but the lockfile does not hold the good version of ${unchanged
             .map((pin) => `${pin.packageName}@${pin.version}`)
-            .join(", ")}. The package manager may be ignoring the override it was given (pnpm 11 and later read overrides from pnpm-workspace.yaml, not package.json); roll the run back with \`autoremediator runs rollback ${runId}\` or pin it by hand.`,
+            .join(
+              ", ",
+            )}. The package manager may be ignoring the override it was given (pnpm 11 and later read overrides from pnpm-workspace.yaml, not package.json); roll the run back with \`autoremediator runs rollback ${runId}\` or pin it by hand.`,
     },
   };
 }

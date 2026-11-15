@@ -1,9 +1,9 @@
-import { evaluatePackage } from "../../remediation/evaluate-package.js";
 import { queryOsvPackage } from "../../intelligence/sources/osv.js";
 import { readCooldown, withCooldown } from "../../platform/cooldown.js";
 import { httpClient } from "../../platform/http-client.js";
 import { detectPackageManager } from "../../platform/package-manager/index.js";
 import { loadRegistryConfig, packumentUrl } from "../../platform/registry-config.js";
+import { evaluatePackage } from "../../remediation/evaluate-package.js";
 import { judgePackument, resolveVersion, verdictOf, type Packument } from "./checks.js";
 import { findLookalike } from "./popular.js";
 import { parsePackageSpec } from "./spec.js";
@@ -54,7 +54,10 @@ export function minAgeHoursFor(name: string, options: GuardOptions): number {
   const cwd = options.cwd ?? process.cwd();
   try {
     const cooldown = readCooldown(cwd, detectPackageManager(cwd));
-    return withCooldown({ minPublishAgeHours: DEFAULT_MIN_AGE_HOURS }, cooldown, name)?.minPublishAgeHours ?? DEFAULT_MIN_AGE_HOURS;
+    return (
+      withCooldown({ minPublishAgeHours: DEFAULT_MIN_AGE_HOURS }, cooldown, name)
+        ?.minPublishAgeHours ?? DEFAULT_MIN_AGE_HOURS
+    );
   } catch {
     return DEFAULT_MIN_AGE_HOURS;
   }
@@ -105,7 +108,13 @@ export async function guardPackage(
     const message = error instanceof Error ? error.message : String(error);
     return report(
       spec,
-      [{ check: "registry", severity: "warn", message: `Could not read "${name}" from the registry (${message.slice(0, 120)}), so it was not checked.` }],
+      [
+        {
+          check: "registry",
+          severity: "warn",
+          message: `Could not read "${name}" from the registry (${message.slice(0, 120)}), so it was not checked.`,
+        },
+      ],
       { packageName: name },
       now,
     );
@@ -124,7 +133,14 @@ export async function guardPackage(
       ],
       {
         packageName: name,
-        ...(lookalike ? { alternative: { packageName: lookalike, reason: "a widely used package with a similar name" } } : {}),
+        ...(lookalike
+          ? {
+              alternative: {
+                packageName: lookalike,
+                reason: "a widely used package with a similar name",
+              },
+            }
+          : {}),
       },
       now,
     );
@@ -134,7 +150,13 @@ export async function guardPackage(
   if (!version || !packument.versions?.[version]) {
     return report(
       spec,
-      [{ check: "exists", severity: "block", message: `No release of "${name}" matches "${range ?? "latest"}".` }],
+      [
+        {
+          check: "exists",
+          severity: "block",
+          message: `No release of "${name}" matches "${range ?? "latest"}".`,
+        },
+      ],
       { packageName: name },
       now,
     );
@@ -150,7 +172,11 @@ export async function guardPackage(
   let alternative: GuardAlternative | undefined = judged.alternative;
 
   if (options.offline) {
-    findings.push({ check: "malware", severity: "info", message: "Offline: known-malware and advisory databases were not checked." });
+    findings.push({
+      check: "malware",
+      severity: "info",
+      message: "Offline: known-malware and advisory databases were not checked.",
+    });
   } else {
     try {
       const malware = (await deps.osvIds(name, version)).filter((id) => id.startsWith("MAL-"));
@@ -162,32 +188,66 @@ export async function guardPackage(
         });
       }
     } catch {
-      findings.push({ check: "malware", severity: "warn", message: "The OSV malware feed could not be reached, so malware was not checked." });
+      findings.push({
+        check: "malware",
+        severity: "warn",
+        message: "The OSV malware feed could not be reached, so malware was not checked.",
+      });
     }
 
     try {
       const evaluation = await deps.evaluate(name, { version, cwd: options.cwd });
       const vulns = evaluation.vulnerabilities.filter((entry) => !entry.cveId.startsWith("MAL-"));
       if (vulns.length > 0 && evaluation.verdict !== "safe") {
-        const worst = evaluation.verdict === "actively-exploited" ? "block" : evaluation.verdict === "vulnerable" ? "warn" : "info";
+        const worst =
+          evaluation.verdict === "actively-exploited"
+            ? "block"
+            : evaluation.verdict === "vulnerable"
+              ? "warn"
+              : "info";
         findings.push({
           check: "vulnerabilities",
           severity: worst,
-          message: `${name}@${version} has ${vulns.length} known ${vulns.length === 1 ? "vulnerability" : "vulnerabilities"} (${vulns.slice(0, 3).map((v) => v.cveId).join(", ")}${evaluation.verdict === "actively-exploited" ? "; at least one is being exploited" : ""}).`,
+          message: `${name}@${version} has ${vulns.length} known ${vulns.length === 1 ? "vulnerability" : "vulnerabilities"} (${vulns
+            .slice(0, 3)
+            .map((v) => v.cveId)
+            .join(
+              ", ",
+            )}${evaluation.verdict === "actively-exploited" ? "; at least one is being exploited" : ""}).`,
         });
-        if (evaluation.recommendedVersion && evaluation.recommendedVersion !== version && !alternative) {
-          alternative = { packageName: name, version: evaluation.recommendedVersion, reason: "a version without those vulnerabilities" };
+        if (
+          evaluation.recommendedVersion &&
+          evaluation.recommendedVersion !== version &&
+          !alternative
+        ) {
+          alternative = {
+            packageName: name,
+            version: evaluation.recommendedVersion,
+            reason: "a version without those vulnerabilities",
+          };
         }
       }
     } catch {
-      findings.push({ check: "vulnerabilities", severity: "warn", message: "Known vulnerabilities could not be looked up." });
+      findings.push({
+        check: "vulnerabilities",
+        severity: "warn",
+        message: "Known vulnerabilities could not be looked up.",
+      });
     }
   }
 
-  return report(spec, findings, { packageName: name, resolvedVersion: version, ...(alternative ? { alternative } : {}) }, now);
+  return report(
+    spec,
+    findings,
+    { packageName: name, resolvedVersion: version, ...(alternative ? { alternative } : {}) },
+    now,
+  );
 }
 
 /** Guard several specs; reports come back in the order given. */
-export async function guardPackages(specs: readonly string[], options: GuardOptions = {}): Promise<GuardReport[]> {
+export async function guardPackages(
+  specs: readonly string[],
+  options: GuardOptions = {},
+): Promise<GuardReport[]> {
   return Promise.all(specs.map((spec) => guardPackage(spec, options)));
 }

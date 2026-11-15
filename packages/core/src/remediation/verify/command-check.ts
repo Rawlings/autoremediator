@@ -1,5 +1,5 @@
-import { LONG_RUNNING_TIMEOUT_MS } from "../../platform/timeouts.js";
 import { safeExecaCommand } from "../../platform/safe-exec-command.js";
+import { LONG_RUNNING_TIMEOUT_MS } from "../../platform/timeouts.js";
 
 export interface CommandOutcome {
   passed: boolean;

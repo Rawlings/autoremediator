@@ -4,7 +4,12 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { assertPathsConfined, confinePaths, PathNotAllowedError, type PathGuardSchema } from "./path-guard.js";
+import {
+  assertPathsConfined,
+  confinePaths,
+  PathNotAllowedError,
+  type PathGuardSchema,
+} from "./path-guard.js";
 
 const path = { type: "string", "x-path": true } as const;
 const schema: PathGuardSchema = {
@@ -79,9 +84,9 @@ describe("assertPathsConfined", () => {
   });
 
   it("checks paths nested in arrays and sub-objects (portfolio targets)", () => {
-    expect(
-      check({ targets: [{ cwd: join(root, "project") }, { cwd: outside }] }),
-    ).toThrow(forbidden);
+    expect(check({ targets: [{ cwd: join(root, "project") }, { cwd: outside }] })).toThrow(
+      forbidden,
+    );
     expect(check({ options: { cwd: outside } })).toThrow(forbidden);
   });
 
@@ -99,14 +104,21 @@ describe("assertPathsConfined", () => {
 
   it("only guards fields the schema tags as paths", () => {
     expect(() =>
-      assertPathsConfined({ properties: { other: { type: "string" } } }, { other: outside }, [root], root),
+      assertPathsConfined(
+        { properties: { other: { type: "string" } } },
+        { other: outside },
+        [root],
+        root,
+      ),
     ).not.toThrow();
   });
 
   it("treats a multi-line value as inline content, not a path", () => {
-    expect(() => check({ cwd: root, reproductionTest: "const a = 1;\nprocess.exit(a);" })()).not.toThrow();
+    expect(() =>
+      check({ cwd: root, reproductionTest: "const a = 1;\nprocess.exit(a);" })(),
+    ).not.toThrow();
     expect(() => check({ cwd: root, policy: "---\nallowMajorBumps: false\n" })()).not.toThrow();
-    expect(() => check({ cwd: root, policy: "{\n\"allowMajorBumps\": false\n}" })()).not.toThrow();
+    expect(() => check({ cwd: root, policy: '{\n"allowMajorBumps": false\n}' })()).not.toThrow();
     expect(check({ cwd: root, reproductionTest: join(outside, "test.js") })).toThrow(forbidden);
   });
 
@@ -134,14 +146,23 @@ describe("confinePaths", () => {
 
   it("hands handlers the absolute path that was checked, so no handler resolves it differently", () => {
     const cwd = join(root, "a", "b");
-    const out = confinePaths(schema, { cwd, inputPath: "../scan.json", targets: [{ cwd: "../../a" }] }, [root], root);
+    const out = confinePaths(
+      schema,
+      { cwd, inputPath: "../scan.json", targets: [{ cwd: "../../a" }] },
+      [root],
+      root,
+    );
     expect(out.cwd).toBe(cwd);
     expect(out.inputPath).toBe(join(root, "a", "scan.json"));
     expect(out.targets[0]?.cwd).toBe(join(root, "a"));
   });
 
   it("leaves inline content untouched and does not mutate its input", () => {
-    const input = { cwd: root, policy: "---\nallowMajorBumps: false\n", reproductionTest: "process.exit(1)" };
+    const input = {
+      cwd: root,
+      policy: "---\nallowMajorBumps: false\n",
+      reproductionTest: "process.exit(1)",
+    };
     const copy = structuredClone(input);
     const out = confinePaths(schema, input, [root], root);
     expect(out.policy).toBe(input.policy);
@@ -150,7 +171,8 @@ describe("confinePaths", () => {
   });
 
   it("still refuses what assertPathsConfined refuses", () => {
-    expect(() => confinePaths(schema, { cwd: root, inputPath: "../../../etc/passwd" }, [root], root)).toThrow(PathNotAllowedError);
+    expect(() =>
+      confinePaths(schema, { cwd: root, inputPath: "../../../etc/passwd" }, [root], root),
+    ).toThrow(PathNotAllowedError);
   });
 });
-

@@ -26,10 +26,13 @@ export function requiredRole(body: unknown): { role: Role; label: string } {
     if (typeof message !== "object" || message === null) continue;
     const { method, params } = message as { method?: unknown; params?: { name?: unknown } };
     if (method !== "tools/call" || typeof params?.name !== "string") continue;
-    const operation = mcpOperations.find((candidate) => candidate.name === params.name) ?? getOperation(params.name);
+    const operation =
+      mcpOperations.find((candidate) => candidate.name === params.name) ??
+      getOperation(params.name);
     if (!operation) continue;
     const role = roleFor(operation);
-    if (ROLE_RANK[role] > ROLE_RANK[required.role]) required = { role, label: `tool ${operation.name}` };
+    if (ROLE_RANK[role] > ROLE_RANK[required.role])
+      required = { role, label: `tool ${operation.name}` };
   }
   return required;
 }
@@ -60,7 +63,11 @@ export function createMcpHttpServer(options: McpHttpOptions = {}): http.Server {
 
         // A fresh server per request: nothing carries over between calls. Confirmation by
         // elicitation needs a session, so over HTTP the role check is the gate.
-        const server = createMcpServer({ deps: options.deps, confirm: "off", projectDir: options.projectDir });
+        const server = createMcpServer({
+          deps: options.deps,
+          confirm: "off",
+          projectDir: options.projectDir,
+        });
         const transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: undefined,
           enableJsonResponse: true,
@@ -92,7 +99,10 @@ function parsePort(argv: readonly string[], env: NodeJS.ProcessEnv): number {
   return Number.isNaN(port) ? DEFAULT_PORT : port;
 }
 
-export function startMcpHttpServer(argv: readonly string[] = process.argv, env: NodeJS.ProcessEnv = process.env): http.Server {
+export function startMcpHttpServer(
+  argv: readonly string[] = process.argv,
+  env: NodeJS.ProcessEnv = process.env,
+): http.Server {
   const port = parsePort(argv, env);
   const server = createMcpHttpServer();
   server.listen(port, "127.0.0.1", () => {

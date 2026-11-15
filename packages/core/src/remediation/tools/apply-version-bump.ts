@@ -16,8 +16,6 @@ import {
 import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
 import { withRepoLock } from "../../platform/repo-lock.js";
 import { safeExecaCommand } from "../../platform/safe-exec-command.js";
-import { runCommandCheck } from "../verify/command-check.js";
-import { serializeManifest } from "./manifest-format.js";
 import { LONG_RUNNING_TIMEOUT_MS } from "../../platform/timeouts.js";
 import type {
   PatchResult,
@@ -32,6 +30,8 @@ import {
 } from "../proof-of-fix/runner.js";
 import { findPackageCallSites } from "../refactor/call-site-finder.js";
 import { refactorConsumerCallSites, revertRefactorSnapshots } from "../refactor/codemods.js";
+import { runCommandCheck } from "../verify/command-check.js";
+import { serializeManifest } from "./manifest-format.js";
 /**
  * Tool: apply-version-bump
  *

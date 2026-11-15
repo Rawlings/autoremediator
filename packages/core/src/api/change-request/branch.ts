@@ -41,7 +41,10 @@ export function deterministicBranchName(
       .filter(Boolean)
       .join("-");
   } else {
-    const digest = createHash("sha256").update(JSON.stringify([cves, packages])).digest("hex").slice(0, 8);
+    const digest = createHash("sha256")
+      .update(JSON.stringify([cves, packages]))
+      .digest("hex")
+      .slice(0, 8);
     name = `${token(cves[0] ?? "remediation", 40)}-and-${Math.max(cves.length - 1, 0) + packages.length}-more-${digest}`;
   }
   return `${safePrefix}/${name || "remediation"}`;
@@ -54,16 +57,23 @@ export function commitTrailers(reports: readonly RemediationReport[]): string[] 
   // A freshness step fixes no advisory; its pseudo id names the branch. It still gets a trailer of
   // its own, so a re-run can tell the commit is ours.
   for (const id of cveIds) {
-    trailers.push(id.startsWith("FRESHNESS-") ? `Autoremediator-Change: ${id}` : `Fixes-CVE: ${id}`);
+    trailers.push(
+      id.startsWith("FRESHNESS-") ? `Autoremediator-Change: ${id}` : `Fixes-CVE: ${id}`,
+    );
   }
 
-  const runIds = [...new Set(reports.map((report) => report.runId).filter((id): id is string => Boolean(id)))];
+  const runIds = [
+    ...new Set(reports.map((report) => report.runId).filter((id): id is string => Boolean(id))),
+  ];
   for (const id of runIds) trailers.push(`Autoremediator-Run: ${id}`);
 
   // Claim verification only for phases that actually ran and passed in every applied result.
   const applied = reports.flatMap((report) => report.results).filter((result) => result.applied);
   const phaseSets = applied.map((result) => result.validationPhases ?? []);
-  if (phaseSets.length > 0 && phaseSets.every((phases) => phases.length > 0 && phases.every((phase) => phase.passed))) {
+  if (
+    phaseSets.length > 0 &&
+    phaseSets.every((phases) => phases.length > 0 && phases.every((phase) => phase.passed))
+  ) {
     let common = new Set(phaseSets[0]!.map((phase) => phase.phase));
     for (const phases of phaseSets.slice(1)) {
       const names = new Set(phases.map((phase) => phase.phase));

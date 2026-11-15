@@ -5,8 +5,8 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ProveResult } from "../api/index.js";
-import { describeProve } from "./prove-commands.js";
 import { createProgram } from "./program.js";
+import { describeProve } from "./prove-commands.js";
 
 let dir: string;
 beforeEach(() => {
@@ -36,7 +36,14 @@ describe("autoremediator prove", () => {
   it("is a command with the options the task names", () => {
     const command = createProgram().commands.find((candidate) => candidate.name() === "prove")!;
     expect(command.options.map((option) => option.long)).toEqual(
-      expect.arrayContaining(["--package", "--model", "--signing-key", "--patches-dir", "--fixed-version", "--vulnerable-version"]),
+      expect.arrayContaining([
+        "--package",
+        "--model",
+        "--signing-key",
+        "--patches-dir",
+        "--fixed-version",
+        "--vulnerable-version",
+      ]),
     );
   });
 
@@ -44,16 +51,18 @@ describe("autoremediator prove", () => {
     const saved = process.env["AUTOREMEDIATOR_MODEL"];
     delete process.env["AUTOREMEDIATOR_MODEL"];
     try {
-      await expect(run("prove", "GHSA-abcd-efgh-ijkl", "--package", "lodash", "--cwd", dir)).rejects.toThrow(
-        /needs a model/,
-      );
+      await expect(
+        run("prove", "GHSA-abcd-efgh-ijkl", "--package", "lodash", "--cwd", dir),
+      ).rejects.toThrow(/needs a model/);
     } finally {
       if (saved !== undefined) process.env["AUTOREMEDIATOR_MODEL"] = saved;
     }
   });
 
   it("rejects an unknown output format", async () => {
-    await expect(run("prove", "GHSA-abcd-efgh-ijkl", "--cwd", dir, "--output-format", "xml")).rejects.toThrow();
+    await expect(
+      run("prove", "GHSA-abcd-efgh-ijkl", "--cwd", dir, "--output-format", "xml"),
+    ).rejects.toThrow();
   });
 });
 
@@ -63,8 +72,20 @@ describe("describeProve", () => {
       ...base,
       status: "kept",
       reason: "ok",
-      trials: [{ attempt: 1, accepted: true, stage: "confirmed", reason: "Fails on lodash@4.17.18 and passes on lodash@4.17.19, 2 times each.", scriptSha256: "x" }],
-      files: { script: "patches/lodash+4.17.18.test.cjs", evidence: "patches/lodash+4.17.18.proof.json", signature: "patches/lodash+4.17.18.proof.json.sig" },
+      trials: [
+        {
+          attempt: 1,
+          accepted: true,
+          stage: "confirmed",
+          reason: "Fails on lodash@4.17.18 and passes on lodash@4.17.19, 2 times each.",
+          scriptSha256: "x",
+        },
+      ],
+      files: {
+        script: "patches/lodash+4.17.18.test.cjs",
+        evidence: "patches/lodash+4.17.18.proof.json",
+        signature: "patches/lodash+4.17.18.proof.json.sig",
+      },
     });
     expect(text).toContain("Kept. Script: patches/lodash+4.17.18.test.cjs");
     expect(text).toContain("Signature: patches/lodash+4.17.18.proof.json.sig");

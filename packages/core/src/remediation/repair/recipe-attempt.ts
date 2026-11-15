@@ -12,10 +12,15 @@ import { join } from "node:path";
 import { loadPolicy } from "../../platform/policy.js";
 import type { TranscriptEntry } from "../../platform/repair-agent.js";
 import { safeExeca } from "../../platform/safe-exec.js";
-import { type Discovery, discoverRecipes, type RecipeEntry, recipesFor } from "../../recipes/discover.js";
+import {
+  type Discovery,
+  discoverRecipes,
+  type RecipeEntry,
+  recipesFor,
+} from "../../recipes/discover.js";
 import { planRecipe, type RecipePlan, type SourceFile } from "../../recipes/engine.js";
-import type { VerificationResult } from "../verify/types.js";
 import { classifyPath } from "../verify/changes.js";
+import type { VerificationResult } from "../verify/types.js";
 import { type AppliedPatch, undoPatch, validateAndApplyPatch } from "./patch-apply.js";
 
 const MAX_SOURCE_FILE_BYTES = 1_000_000;
@@ -54,7 +59,8 @@ export function findApplicableRecipes(params: FindRecipesParams): FoundRecipes {
 
 /** Tracked project source files in a checkout, with their text. Symlinks and big files are left out. */
 export async function listSourceFiles(checkout: string): Promise<SourceFile[]> {
-  const run = (args: string[]) => safeExeca("git", args, { cwd: checkout, stdio: "pipe" }).then((result) => result.stdout);
+  const run = (args: string[]) =>
+    safeExeca("git", args, { cwd: checkout, stdio: "pipe" }).then((result) => result.stdout);
   const top = (await run(["rev-parse", "--show-toplevel"])).trim();
   const names = (await run(["ls-files", "--full-name", "-z"])).split("\0").filter(Boolean);
   const files: SourceFile[] = [];
@@ -121,10 +127,14 @@ export async function tryRecipes(params: {
     }
     const verification = await params.judge();
     if (verification.passed) {
-      say(`${label}: applied to ${application.applied.files.join(", ")} and the verifier accepted it`);
+      say(
+        `${label}: applied to ${application.applied.files.join(", ")} and the verifier accepted it`,
+      );
       return { fixed: { entry, verification, files: application.applied.files }, transcript };
     }
-    say(`${label}: applied to ${application.applied.files.join(", ")} but the verifier rejected it (${verification.failedCheck ?? "unknown"}); undone`);
+    say(
+      `${label}: applied to ${application.applied.files.join(", ")} but the verifier rejected it (${verification.failedCheck ?? "unknown"}); undone`,
+    );
     try {
       await undoPatch(params.checkout, application.applied);
     } catch (cause) {

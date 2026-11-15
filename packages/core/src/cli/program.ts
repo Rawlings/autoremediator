@@ -6,6 +6,16 @@ import { HOOK_HOSTS, type HookHost } from "../api/guard/hook.js";
 import { OPTION_DESCRIPTIONS } from "../api/index.js";
 import { PACKAGE_VERSION } from "../version.js";
 import { type AutonomyCliOptions, runAutonomy } from "./autonomy.js";
+import { runBisect, type BisectCliOptions } from "./bisect.js";
+import { registerEvidencePackCommands } from "./evidence-pack-commands.js";
+import { registerFreshnessCommands } from "./freshness-commands.js";
+import { registerIncidentCommands } from "./incident-commands.js";
+import { registerMaintainCommands } from "./maintain-commands.js";
+import { registerMemoryCommands } from "./memory-commands.js";
+import { registerPolicyCommands } from "./policy-commands.js";
+import { registerProveCommands } from "./prove-commands.js";
+import { registerRadarCommands } from "./radar-commands.js";
+import { addRecipesCommand } from "./recipes.js";
 import {
   runAssess,
   runDiffAudit,
@@ -36,17 +46,7 @@ import {
   runRunsVerify,
   type RunsOptions as RunsCliOptions,
 } from "./runners.js";
-import { addRecipesCommand } from "./recipes.js";
-import { runBisect, type BisectCliOptions } from "./bisect.js";
 import { runTraceCommand, type TraceRunCommandOptions } from "./trace.js";
-import { registerFreshnessCommands } from "./freshness-commands.js";
-import { registerEvidencePackCommands } from "./evidence-pack-commands.js";
-import { registerIncidentCommands } from "./incident-commands.js";
-import { registerPolicyCommands } from "./policy-commands.js";
-import { registerMaintainCommands } from "./maintain-commands.js";
-import { registerProveCommands } from "./prove-commands.js";
-import { registerRadarCommands } from "./radar-commands.js";
-import { registerMemoryCommands } from "./memory-commands.js";
 import type { CommandOptions } from "./types.js";
 import { isCveId } from "./types.js";
 import { validateOutputFormat, validateSharedCommandOptions } from "./validators.js";
@@ -204,8 +204,14 @@ const runsAction =
 const hookOptions = (command: Command): Command =>
   command
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
-    .option("--hooks <list>", "Hooks to handle, comma-separated: pre-push,post-merge (default both)")
-    .option("--manager <name>", "Hook manager to write for: husky|lefthook|pre-commit|git (default: detected)")
+    .option(
+      "--hooks <list>",
+      "Hooks to handle, comma-separated: pre-push,post-merge (default both)",
+    )
+    .option(
+      "--manager <name>",
+      "Hook manager to write for: husky|lefthook|pre-commit|git (default: detected)",
+    )
     .option(
       "--allow-shared-hooks-path",
       "Write into a hooks folder outside the repository (a global core.hooksPath shared with other repositories)",
@@ -214,7 +220,9 @@ const hookOptions = (command: Command): Command =>
 const hookAction =
   (mode: "install" | "uninstall" | "status") =>
   async (...received: unknown[]) => {
-    const merged = mergeCommandOptions(received.at(-1) as Command) as unknown as Parameters<typeof runHook>[1];
+    const merged = mergeCommandOptions(received.at(-1) as Command) as unknown as Parameters<
+      typeof runHook
+    >[1];
     validateOutputFormat(merged.outputFormat, ["text", "json"], `hook ${mode}`);
     await runHook(mode, merged);
   };
@@ -318,12 +326,20 @@ export function createProgram(): Command {
       "Judge npm packages before installing them: existence, malware, look-alike names, release age, install scripts, provenance, vulnerabilities. Exits 0 clear, 3 check first, 4 blocked",
     )
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
-    .option("--min-age-hours <hours>", "Block releases younger than this (default 72, 0 turns it off)", (value: string) =>
-      Number.parseFloat(value),
+    .option(
+      "--min-age-hours <hours>",
+      "Block releases younger than this (default 72, 0 turns it off)",
+      (value: string) => Number.parseFloat(value),
     )
     .option("--offline", "Skip the OSV malware and advisory lookups")
-    .option("--git-diff", "Check the dependencies added or changed in package.json since --base instead of naming packages")
-    .option("--base <ref>", "With --git-diff: git ref to compare with (default HEAD; a branch is compared at the merge base)")
+    .option(
+      "--git-diff",
+      "Check the dependencies added or changed in package.json since --base instead of naming packages",
+    )
+    .option(
+      "--base <ref>",
+      "With --git-diff: git ref to compare with (default HEAD; a branch is compared at the merge base)",
+    )
     .option("--include-transitive", "With --git-diff: also check packages only the lockfile gained")
     .option("--output-format <format>", "Output format: text|json", "text")
     .action(async (packages: string[], opts: Parameters<typeof runGuard>[1]) => {
@@ -337,25 +353,39 @@ export function createProgram(): Command {
       "Report what the project could stop depending on: unused dependencies, micro-packages a Node built-in replaces, duplicate versions, and an attack-surface score. With --apply, remove only the certainly-unused dependencies, verify, and roll back on any failure",
     )
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
-    .option("--apply", "Remove the certainly-unused dependencies through npm or pnpm, then verify and roll back if any check fails")
+    .option(
+      "--apply",
+      "Remove the certainly-unused dependencies through npm or pnpm, then verify and roll back if any check fails",
+    )
     .option("--run-tests", "With --apply: also run the project's tests during verification")
     .option("--no-typecheck", "With --apply: skip the type check during verification")
     .option("--policy <path>", OPTION_DESCRIPTIONS.policy)
-    .option("--package-manager <name>", "With --apply: package manager to use (auto-detected from the lockfile)")
+    .option(
+      "--package-manager <name>",
+      "With --apply: package manager to use (auto-detected from the lockfile)",
+    )
     .option("--verbose", "List every duplicate and every indirectly used dependency")
     .option("--output-format <format>", "Output format: text|json", "text")
     .action(async (opts: DietCliOptions) => {
       validateOutputFormat(opts.outputFormat as "text" | "json", ["text", "json"], "diet");
       if (!opts.apply && (opts.runTests || opts.typecheck === false || opts.packageManager)) {
-        throw new Error("--run-tests, --no-typecheck and --package-manager only apply with --apply.");
+        throw new Error(
+          "--run-tests, --no-typecheck and --package-manager only apply with --apply.",
+        );
       }
       await runDiet(opts);
     });
 
   program
     .command("guard-hook")
-    .description("Agent pre-command hook (Claude Code, Cursor, Copilot): reads the hook JSON on stdin and answers allow, ask or deny for package installs")
-    .option("--host <host>", `Agent host whose hook format to speak: ${HOOK_HOSTS.join("|")}`, "claude-code")
+    .description(
+      "Agent pre-command hook (Claude Code, Cursor, Copilot): reads the hook JSON on stdin and answers allow, ask or deny for package installs",
+    )
+    .option(
+      "--host <host>",
+      `Agent host whose hook format to speak: ${HOOK_HOSTS.join("|")}`,
+      "claude-code",
+    )
     .action(async (opts: { host: string }) => {
       if (!HOOK_HOSTS.includes(opts.host as HookHost)) {
         throw new Error(`Unknown host "${opts.host}". Use one of: ${HOOK_HOSTS.join(", ")}.`);
@@ -376,9 +406,15 @@ export function createProgram(): Command {
     .command("init")
     .description("Set up the project: policy file, agent MCP configuration and instructions")
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
-    .option("--hosts <list>", "Agent hosts to configure, comma-separated: claude-code,cursor,vscode,codex,gemini,copilot")
+    .option(
+      "--hosts <list>",
+      "Agent hosts to configure, comma-separated: claude-code,cursor,vscode,codex,gemini,copilot",
+    )
     .option("--ci", "Also write a weekly remediation workflow (GitHub Actions)")
-    .option("--guard", "Also install guard hooks (Claude Code, Cursor, Copilot) and a pnpmfile (pnpm projects) that check package installs")
+    .option(
+      "--guard",
+      "Also install guard hooks (Claude Code, Cursor, Copilot) and a pnpmfile (pnpm projects) that check package installs",
+    )
     .option("--no-policy", "Do not write the policy file")
     .option("--no-agents-md", "Do not add a section to AGENTS.md")
     .option("--yes", "Write the changes without asking")
@@ -391,7 +427,9 @@ export function createProgram(): Command {
 
   const hook = program
     .command("hook")
-    .description("Install git hooks that check dependency changes: pre-push blocks a risky push, post-merge advises");
+    .description(
+      "Install git hooks that check dependency changes: pre-push blocks a risky push, post-merge advises",
+    );
   hookOptions(
     hook
       .command("install")
@@ -405,7 +443,9 @@ export function createProgram(): Command {
       .option("--yes", "Write the changes without asking"),
   ).action(hookAction("uninstall"));
   hookOptions(
-    hook.command("status").description("Report installed, missing or modified hooks; exits 1 on drift"),
+    hook
+      .command("status")
+      .description("Report installed, missing or modified hooks; exits 1 on drift"),
   ).action(hookAction("status"));
 
   const runs = program
@@ -417,7 +457,9 @@ export function createProgram(): Command {
       .command("list")
       .description("List recorded runs, newest first")
       .option("--status <status>", "Only runs in this state")
-      .option("--limit <n>", "Show at most this many", (value: string) => Number.parseInt(value, 10)),
+      .option("--limit <n>", "Show at most this many", (value: string) =>
+        Number.parseInt(value, 10),
+      ),
   ).action(runsAction("list", async (_args, opts) => runRunsList(opts)));
 
   runsOptions(
@@ -435,16 +477,25 @@ export function createProgram(): Command {
       .option("--plan-id <id>", "Plan id, instead of a run id")
       .option("--item <id...>", "Apply only these plan items")
       .option("--no-verify", "Do not verify each item after applying it")
-      .option("--repair", "Have an agent repair the project when an upgrade breaks it (needs a model)")
+      .option(
+        "--repair",
+        "Have an agent repair the project when an upgrade breaks it (needs a model)",
+      )
       .option("--no-repair", "Never use an agent, even if a model is configured")
       .option("--model <name>", OPTION_DESCRIPTIONS.model)
-      .option("--max-repair-rounds <n>", "Times the verifier's findings go back to the agent (default 3)", (value: string) => Number.parseInt(value, 10)),
+      .option(
+        "--max-repair-rounds <n>",
+        "Times the verifier's findings go back to the agent (default 3)",
+        (value: string) => Number.parseInt(value, 10),
+      ),
   ).action(runsAction("apply", async ([runId], opts) => runRunsApply(runId, opts)));
 
   runsOptions(
     runs
       .command("verify")
-      .description("Check a run's project with the verifier: scope, policy, install, advisories, tests")
+      .description(
+        "Check a run's project with the verifier: scope, policy, install, advisories, tests",
+      )
       .argument("<runId>", "Run id")
       .option("--check <name...>", "Run only these checks")
       .option("--offline", "Skip checks that need the network"),
@@ -470,8 +521,14 @@ export function createProgram(): Command {
     .command("autonomy")
     .description("Show the autonomy level this repository has earned, and why");
   for (const [mode, text] of [
-    ["status", "Show the level in force, the ceiling, the level earned and what the next one needs"],
-    ["explain", "Explain the level: the evidence, the settings and every promotion and demotion with its cause"],
+    [
+      "status",
+      "Show the level in force, the ceiling, the level earned and what the next one needs",
+    ],
+    [
+      "explain",
+      "Explain the level: the evidence, the settings and every promotion and demotion with its cause",
+    ],
   ] as const) {
     autonomy
       .command(mode)
@@ -627,7 +684,11 @@ export function createProgram(): Command {
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
     .option("--output-format <format>", "Output format: text|json", "text")
     .action(async (command: string[], opts: TraceRunCommandOptions) => {
-      validateOutputFormat((opts.outputFormat ?? "text") as "text" | "json", ["text", "json"], "trace run");
+      validateOutputFormat(
+        (opts.outputFormat ?? "text") as "text" | "json",
+        ["text", "json"],
+        "trace run",
+      );
       await runTraceCommand(command, opts);
     });
 
@@ -695,8 +756,13 @@ export function createProgram(): Command {
     .requiredOption("--from <version>", "The vulnerable version")
     .requiredOption("--to <version>", "The version that fixes it")
     .option("--advisory-text <text>", "Advisory summary or details, used only to rank candidates")
-    .option("--cwe <ids>", "Comma-separated CWE ids (CWE-1333,CWE-94), used only to rank candidates")
-    .option("--limit <n>", "Largest number of candidates to show", (value) => Number.parseInt(value, 10))
+    .option(
+      "--cwe <ids>",
+      "Comma-separated CWE ids (CWE-1333,CWE-94), used only to rank candidates",
+    )
+    .option("--limit <n>", "Largest number of candidates to show", (value) =>
+      Number.parseInt(value, 10),
+    )
     .option("--no-reachability", "Skip checking candidates against this project's source")
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
     .option("--output-format <format>", "Output format: text|json", "text")
@@ -745,17 +811,33 @@ export function createProgram(): Command {
       "Find which package update in the lockfile diff between a good and a bad git ref breaks a command, in isolated worktrees. Runs --command with your privileges. Exits 0 when a culprit is found, 1 otherwise",
     )
     .requiredOption("--good <ref>", "Git ref (commit, tag, branch) where the command passes")
-    .option("--bad <ref>", "Git ref where the command fails (default: HEAD; committed state, not the working tree)")
-    .requiredOption("--command <command>", "Shell command to run after installing; exit code 0 means pass")
-    .option("--timeout <seconds>", "Kill the command after this long and count it as failing (default: 600)", (value: string) =>
-      Number.parseFloat(value),
+    .option(
+      "--bad <ref>",
+      "Git ref where the command fails (default: HEAD; committed state, not the working tree)",
     )
-    .option("--max-steps <n>", "Evaluate at most this many candidate states (default: 30)", (value: string) =>
-      Number.parseInt(value, 10),
+    .requiredOption(
+      "--command <command>",
+      "Shell command to run after installing; exit code 0 means pass",
+    )
+    .option(
+      "--timeout <seconds>",
+      "Kill the command after this long and count it as failing (default: 600)",
+      (value: string) => Number.parseFloat(value),
+    )
+    .option(
+      "--max-steps <n>",
+      "Evaluate at most this many candidate states (default: 30)",
+      (value: string) => Number.parseInt(value, 10),
     )
     .option("--package-manager <name>", "npm|pnpm|yarn (default: from the lockfile)")
-    .option("--ignore-scripts", "Pass --ignore-scripts to every install so package install scripts do not run")
-    .option("--apply", "Apply the recommended pin through the run machinery instead of only planning it")
+    .option(
+      "--ignore-scripts",
+      "Pass --ignore-scripts to every install so package install scripts do not run",
+    )
+    .option(
+      "--apply",
+      "Apply the recommended pin through the run machinery instead of only planning it",
+    )
     .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
     .option("--output-format <format>", "Output format: text|json", "text")
     .action(async (opts: BisectCliOptions) => {

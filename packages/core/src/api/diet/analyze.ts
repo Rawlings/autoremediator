@@ -110,13 +110,11 @@ export async function analyzeDependencies(
     // Other packages of the workspace: the root's dependencies are usually used from a member, and
     // a member is covered by the root's scripts and configuration.
     const elsewhere = isRootOfWorkspace
-      ? targets
-          .slice(1)
-          .map((member) => ({
-            usage: scans.get(member.dir)!.usage,
-            index: scans.get(member.dir)!.index,
-            packageName: member.name,
-          }))
+      ? targets.slice(1).map((member) => ({
+          usage: scans.get(member.dir)!.usage,
+          index: scans.get(member.dir)!.index,
+          packageName: member.name,
+        }))
       : isWorkspace
         ? [
             {

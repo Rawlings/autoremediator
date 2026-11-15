@@ -12,7 +12,8 @@ export class ScopeViolation extends Error {
 }
 
 /** Files that hold credentials: an agent has no reason to read them, and its context goes to a provider. */
-const SECRET_NAMES = /^(\.env(\..*)?|\.npmrc|\.yarnrc\.yml|\.pypirc|id_rsa.*|id_ed25519.*|.*\.(pem|key|p12|pfx))$/i;
+const SECRET_NAMES =
+  /^(\.env(\..*)?|\.npmrc|\.yarnrc\.yml|\.pypirc|id_rsa.*|id_ed25519.*|.*\.(pem|key|p12|pfx))$/i;
 
 /**
  * What an agent working in a checkout may read and write. Everything is confined to the checkout
@@ -48,7 +49,8 @@ export class ScopeGuard {
     if (rel === ".git" || rel.startsWith(".git/") || rel.startsWith(".autoremediator/")) {
       throw new ScopeViolation(`"${rel}" is not readable`);
     }
-    if (SECRET_NAMES.test(name)) throw new ScopeViolation(`"${rel}" may hold credentials and is not readable`);
+    if (SECRET_NAMES.test(name))
+      throw new ScopeViolation(`"${rel}" may hold credentials and is not readable`);
     return full;
   }
 

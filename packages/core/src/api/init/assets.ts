@@ -26,7 +26,10 @@ export const INSTRUCTED_TOOLS = [
 export const DOCS_URL = "https://github.com/Rawlings/autoremediator/tree/master/docs";
 
 /** How the MCP server is started from a config file. Pinned to the compatible range at write time. */
-export function mcpServerEntry(range: string = `^${PACKAGE_VERSION}`): { command: string; args: string[] } {
+export function mcpServerEntry(range: string = `^${PACKAGE_VERSION}`): {
+  command: string;
+  args: string[];
+} {
   return { command: "npx", args: ["-y", "-p", `autoremediator@${range}`, "autoremediator-mcp"] };
 }
 
@@ -161,7 +164,9 @@ export function renderSkill(skill: SkillDefinition): string {
 export const COPILOT_AGENT_PATH = ".github/agents/autoremediator.agent.md";
 
 export function copilotAgentContent(): string {
-  const skills = SKILLS.map((skill) => `## ${skill.name}\n\n${skill.body.replace(/^# .*\n\n/, "")}`).join("\n\n");
+  const skills = SKILLS.map(
+    (skill) => `## ${skill.name}\n\n${skill.body.replace(/^# .*\n\n/, "")}`,
+  ).join("\n\n");
   return `---
 name: autoremediator
 description: ${yamlString("Fixes vulnerable npm dependencies safely. Plans first, applies with verification, repairs upgrades that break the project, and can roll back.")}

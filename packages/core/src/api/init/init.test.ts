@@ -20,7 +20,6 @@ import {
 import { chooseHosts, detectProject, gitHostFromRemote } from "./detect.js";
 import { renderDiff } from "./diff.js";
 import { init } from "./index.js";
-import { claudeCodePluginFiles } from "./plugin-files.js";
 import {
   mergeClaudeGuardHook,
   mergeCodexToml,
@@ -29,6 +28,7 @@ import {
   mergeJsonMcpConfig,
   mergeMarkedSection,
 } from "./merge.js";
+import { claudeCodePluginFiles } from "./plugin-files.js";
 
 let dir: string;
 
@@ -58,7 +58,11 @@ describe("mergeJsonMcpConfig", () => {
   });
 
   it("keeps other servers and unrelated keys, and the file's indentation", () => {
-    const existing = JSON.stringify({ other: 1, mcpServers: { github: { command: "gh" } } }, null, 4);
+    const existing = JSON.stringify(
+      { other: 1, mcpServers: { github: { command: "gh" } } },
+      null,
+      4,
+    );
     const merged = mergeJsonMcpConfig(existing, "mcpServers", ENTRY) as { content: string };
     const parsed = JSON.parse(merged.content);
     expect(parsed.other).toBe(1);
@@ -75,14 +79,18 @@ describe("mergeJsonMcpConfig", () => {
   });
 
   it("adds the host-specific type field", () => {
-    const merged = mergeJsonMcpConfig(undefined, "servers", ENTRY, { type: "stdio" }) as { content: string };
+    const merged = mergeJsonMcpConfig(undefined, "servers", ENTRY, { type: "stdio" }) as {
+      content: string;
+    };
     expect(JSON.parse(merged.content).servers.autoremediator).toEqual({ type: "stdio", ...ENTRY });
   });
 
   it("refuses files it cannot parse or that have the wrong shape", () => {
     expect(mergeJsonMcpConfig("{ not json", "mcpServers", ENTRY)).toHaveProperty("conflict");
     expect(mergeJsonMcpConfig("[]", "mcpServers", ENTRY)).toHaveProperty("conflict");
-    expect(mergeJsonMcpConfig('{"mcpServers": []}', "mcpServers", ENTRY)).toHaveProperty("conflict");
+    expect(mergeJsonMcpConfig('{"mcpServers": []}', "mcpServers", ENTRY)).toHaveProperty(
+      "conflict",
+    );
   });
 });
 
@@ -101,7 +109,8 @@ describe("mergeCodexToml", () => {
 });
 
 describe("mergeCodexToml with unusual spellings of the table", () => {
-  const tableOf = (text: string): number => text.split("\n").filter((line) => /^\[mcp_servers\b/.test(line.trim())).length;
+  const tableOf = (text: string): number =>
+    text.split("\n").filter((line) => /^\[mcp_servers\b/.test(line.trim())).length;
 
   it("treats a quoted table name as the existing entry", () => {
     for (const existing of [
@@ -161,7 +170,8 @@ describe("mergeMarkedSection", () => {
   });
 
   it("keeps CRLF line endings in a CRLF file", () => {
-    const first = (mergeMarkedSection("# Guide\r\nline\r\n", "one\ntwo") as { content: string }).content;
+    const first = (mergeMarkedSection("# Guide\r\nline\r\n", "one\ntwo") as { content: string })
+      .content;
     expect(first.replaceAll("\r\n", "")).not.toContain("\n");
     expect(first.startsWith("# Guide\r\nline\r\n\r\n<!-- autoremediator:begin -->\r\n")).toBe(true);
     const second = (mergeMarkedSection(first, "three") as { content: string }).content;
@@ -172,11 +182,15 @@ describe("mergeMarkedSection", () => {
   });
 
   it("keeps LF in an LF file", () => {
-    expect((mergeMarkedSection("# Guide\n", "one") as { content: string }).content).not.toContain("\r");
+    expect((mergeMarkedSection("# Guide\n", "one") as { content: string }).content).not.toContain(
+      "\r",
+    );
   });
 
   it("refuses an unmatched marker", () => {
-    expect(mergeMarkedSection("<!-- autoremediator:begin -->\nx", "body")).toHaveProperty("conflict");
+    expect(mergeMarkedSection("<!-- autoremediator:begin -->\nx", "body")).toHaveProperty(
+      "conflict",
+    );
   });
 });
 
@@ -203,29 +217,38 @@ describe("mergeClaudeGuardHook", () => {
     }
   });
   it("accepts a group without hooks, and keeps the user's groups", () => {
-    const merged = mergeClaudeGuardHook('{"hooks":{"PreToolUse":[{"matcher":"Edit"}]}}', "x guard-hook") as { content: string };
+    const merged = mergeClaudeGuardHook(
+      '{"hooks":{"PreToolUse":[{"matcher":"Edit"}]}}',
+      "x guard-hook",
+    ) as { content: string };
     expect(JSON.parse(merged.content).hooks.PreToolUse).toHaveLength(2);
   });
 });
 
 describe("mergeGitignore", () => {
   it("adds the entry once", () => {
-    const once = (mergeGitignore("node_modules/\n", [".autoremediator/"]) as { content: string }).content;
+    const once = (mergeGitignore("node_modules/\n", [".autoremediator/"]) as { content: string })
+      .content;
     expect(once).toBe("node_modules/\n.autoremediator/\n");
     expect(mergeGitignore(once, [".autoremediator/"])).toEqual({ content: once });
   });
 
   it("accepts the entry without a trailing slash", () => {
-    expect(mergeGitignore(".autoremediator\n", [".autoremediator/"])).toEqual({ content: ".autoremediator\n" });
+    expect(mergeGitignore(".autoremediator\n", [".autoremediator/"])).toEqual({
+      content: ".autoremediator\n",
+    });
   });
 
   it("starts a new line when the file lacks a final newline", () => {
-    expect(mergeGitignore("dist", [".autoremediator/"])).toEqual({ content: "dist\n.autoremediator/\n" });
+    expect(mergeGitignore("dist", [".autoremediator/"])).toEqual({
+      content: "dist\n.autoremediator/\n",
+    });
   });
 });
 
 describe("mergeRunStateIgnore", () => {
-  const block = ".autoremediator/*\n!.autoremediator/recipes/\n!.autoremediator/track-record.json\n!.autoremediator/memory.md\n";
+  const block =
+    ".autoremediator/*\n!.autoremediator/recipes/\n!.autoremediator/track-record.json\n!.autoremediator/memory.md\n";
   it("adds the block to a file without it, and is then stable", () => {
     const once = (mergeRunStateIgnore("dist\n") as { content: string }).content;
     expect(once).toBe(`dist\n${block}`);
@@ -233,7 +256,9 @@ describe("mergeRunStateIgnore", () => {
   });
 
   it("replaces the whole-directory entry so the negations can take effect", () => {
-    expect((mergeRunStateIgnore("a\n.autoremediator/\nb\n") as { content: string }).content).toBe(`a\n${block}b\n`);
+    expect((mergeRunStateIgnore("a\n.autoremediator/\nb\n") as { content: string }).content).toBe(
+      `a\n${block}b\n`,
+    );
     expect((mergeRunStateIgnore(".autoremediator\n") as { content: string }).content).toBe(block);
   });
 
@@ -242,16 +267,24 @@ describe("mergeRunStateIgnore", () => {
   });
 
   it("replaces the rooted spellings of the directory entry too", () => {
-    expect((mergeRunStateIgnore("a\n/.autoremediator/\nb\n") as { content: string }).content).toBe(`a\n${block}b\n`);
+    expect((mergeRunStateIgnore("a\n/.autoremediator/\nb\n") as { content: string }).content).toBe(
+      `a\n${block}b\n`,
+    );
     expect((mergeRunStateIgnore("/.autoremediator\n") as { content: string }).content).toBe(block);
   });
 
   it("drops a directory entry that sits next to the star entry, which would undo the negations", () => {
-    expect((mergeRunStateIgnore(".autoremediator/\n.autoremediator/*\n") as { content: string }).content).toBe(block);
+    expect(
+      (mergeRunStateIgnore(".autoremediator/\n.autoremediator/*\n") as { content: string }).content,
+    ).toBe(block);
   });
 
   it("moves negations that come before the star line, where git would ignore them", () => {
-    const merged = (mergeRunStateIgnore("!.autoremediator/memory.md\ndist\n.autoremediator/*\n") as { content: string }).content;
+    const merged = (
+      mergeRunStateIgnore("!.autoremediator/memory.md\ndist\n.autoremediator/*\n") as {
+        content: string;
+      }
+    ).content;
     expect(merged).toBe(`dist\n${block}`);
     expect(mergeRunStateIgnore(merged)).toEqual({ content: merged });
   });
@@ -314,7 +347,9 @@ describe("init", () => {
     const result = await init({ cwd: dir, hosts: ["cursor", "vscode"] });
     expect(result.applied).toBe(false);
     expect(result.drift).toBe(true);
-    expect(result.changes.every((change) => change.action !== "update" || change.diff !== "")).toBe(true);
+    expect(result.changes.every((change) => change.action !== "update" || change.diff !== "")).toBe(
+      true,
+    );
     expect(existsSync(join(dir, ".cursor"))).toBe(false);
     expect(existsSync(join(dir, ".github"))).toBe(false);
   });
@@ -335,10 +370,16 @@ describe("init", () => {
     expect(read(".claude/skills/fix-cve/SKILL.md")).toContain("planRemediation");
     expect(read(".cursor/rules/autoremediator.mdc")).toContain("alwaysApply: false");
     expect(read("AGENTS.md")).toContain("autoremediator:begin");
-    expect(read(".gitignore")).toBe(".autoremediator/*\n!.autoremediator/recipes/\n!.autoremediator/track-record.json\n!.autoremediator/memory.md\n");
+    expect(read(".gitignore")).toBe(
+      ".autoremediator/*\n!.autoremediator/recipes/\n!.autoremediator/track-record.json\n!.autoremediator/memory.md\n",
+    );
     expect(read(".github/autoremediator.yml")).toContain("allowMajorBumps: false");
 
-    const again = await init({ cwd: dir, hosts: ["claude-code", "cursor", "vscode", "codex", "gemini", "copilot"], yes: true });
+    const again = await init({
+      cwd: dir,
+      hosts: ["claude-code", "cursor", "vscode", "codex", "gemini", "copilot"],
+      yes: true,
+    });
     expect(again.drift).toBe(false);
     expect(again.applied).toBe(false);
     expect(again.changes.every((change) => change.action === "unchanged")).toBe(true);
@@ -351,7 +392,9 @@ describe("init", () => {
     await init({ cwd: dir, hosts: ["cursor"], yes: true });
     expect(JSON.parse(read(".cursor/mcp.json")).mcpServers.github).toEqual({ url: "https://x" });
     expect(read("AGENTS.md").startsWith("# Team rules\n\nBe kind.\n")).toBe(true);
-    expect(read(".gitignore")).toBe("node_modules/\n.autoremediator/*\n!.autoremediator/recipes/\n!.autoremediator/track-record.json\n!.autoremediator/memory.md\n");
+    expect(read(".gitignore")).toBe(
+      "node_modules/\n.autoremediator/*\n!.autoremediator/recipes/\n!.autoremediator/track-record.json\n!.autoremediator/memory.md\n",
+    );
   });
 
   it("leaves a file it cannot merge alone and says so", async () => {
@@ -389,7 +432,13 @@ describe("init", () => {
   });
 
   it("installs the guard hook for Claude Code only when asked, keeping the user's settings", async () => {
-    put(".claude/settings.json", JSON.stringify({ permissions: { allow: ["Bash(ls)"] }, hooks: { PreToolUse: [{ matcher: "Edit", hooks: [{ type: "command", command: "lint" }] }] } }));
+    put(
+      ".claude/settings.json",
+      JSON.stringify({
+        permissions: { allow: ["Bash(ls)"] },
+        hooks: { PreToolUse: [{ matcher: "Edit", hooks: [{ type: "command", command: "lint" }] }] },
+      }),
+    );
     await init({ cwd: dir, hosts: ["claude-code"], yes: true });
     expect(JSON.parse(read(".claude/settings.json")).hooks.PreToolUse).toHaveLength(1);
 
@@ -411,7 +460,9 @@ describe("init", () => {
     await init({ cwd: dir, hosts: [], yes: true });
     expect(() => loadPolicy(dir)).not.toThrow();
     for (const typecheck of [true, false]) {
-      expect(() => loadPolicy(dir, policyFileContent({ typecheck }).replace(/^/, "---\n"))).not.toThrow();
+      expect(() =>
+        loadPolicy(dir, policyFileContent({ typecheck }).replace(/^/, "---\n")),
+      ).not.toThrow();
     }
   });
 });
@@ -422,7 +473,8 @@ describe("files init does not own", () => {
     ".cursor/rules/autoremediator.mdc",
     ".github/agents/autoremediator.agent.md",
   ];
-  const hostFor = (path: string) => (path.startsWith(".claude") ? "claude-code" : path.startsWith(".cursor") ? "cursor" : "copilot");
+  const hostFor = (path: string) =>
+    path.startsWith(".claude") ? "claude-code" : path.startsWith(".cursor") ? "cursor" : "copilot";
 
   it.each(ours)("leaves a file of the user's at %s alone and says why", async (path) => {
     put(path, "---\nname: mine\n---\n\nMy own instructions.\n");
@@ -448,7 +500,9 @@ describe("files init does not own", () => {
 
   it("puts the marker after the front matter, as an HTML comment", () => {
     for (const text of [renderSkill(SKILLS[0]!), copilotAgentContent(), cursorRuleContent()]) {
-      expect(GENERATED_MARKER).toBe("<!-- generated by autoremediator init: safe to regenerate -->");
+      expect(GENERATED_MARKER).toBe(
+        "<!-- generated by autoremediator init: safe to regenerate -->",
+      );
       expect(text).toMatch(new RegExp(`^---\\n[\\s\\S]*?\\n---\\n\\n${GENERATED_MARKER}\\n`));
     }
   });
@@ -462,7 +516,9 @@ describe("agent instructions", () => {
   });
 
   it("only name tools that an MCP host can call", () => {
-    const mcp = new Set(OPERATIONS.filter((operation) => operation.mcp).map((operation) => operation.name));
+    const mcp = new Set(
+      OPERATIONS.filter((operation) => operation.mcp).map((operation) => operation.name),
+    );
     for (const tool of INSTRUCTED_TOOLS) expect(mcp.has(tool)).toBe(true);
   });
 
@@ -512,13 +568,20 @@ describe("agent instructions", () => {
       expect(typeof data.description).toBe("string");
     }
     for (const skill of SKILLS) {
-      const data = parseYaml(/^---\n([\s\S]*?)\n---\n/.exec(renderSkill(skill))![1]!, { strict: true }) as Record<string, unknown>;
+      const data = parseYaml(/^---\n([\s\S]*?)\n---\n/.exec(renderSkill(skill))![1]!, {
+        strict: true,
+      }) as Record<string, unknown>;
       expect(data).toEqual({ name: skill.name, description: skill.description });
     }
   });
 
   it("describes the CLI commands that exist", () => {
-    for (const command of ["autoremediator plan", "runs apply", "runs rollback", "autoremediator guard"]) {
+    for (const command of [
+      "autoremediator plan",
+      "runs apply",
+      "runs rollback",
+      "autoremediator guard",
+    ]) {
       expect(AGENTS_MD_SECTION).toContain(command);
     }
   });

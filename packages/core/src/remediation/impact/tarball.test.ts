@@ -3,14 +3,22 @@ import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 
 import { packageTarball, tar, tgz } from "./__tests__/fixtures.js";
-import { DEFAULT_TARBALL_LIMITS, normalizeEntryPath, readPackageTarball, TarballError } from "./tarball.js";
+import {
+  DEFAULT_TARBALL_LIMITS,
+  normalizeEntryPath,
+  readPackageTarball,
+  TarballError,
+} from "./tarball.js";
 
 const manifest = { name: "x", version: "1.0.0" };
 
 describe("readPackageTarball", () => {
   it("reads source files and the manifest, stripping the package/ prefix", () => {
     const result = readPackageTarball(
-      packageTarball({ "index.js": "exports.a = 1;", "lib/b.ts": "export const b = 1;", "README.md": "no" }, manifest),
+      packageTarball(
+        { "index.js": "exports.a = 1;", "lib/b.ts": "export const b = 1;", "README.md": "no" },
+        manifest,
+      ),
     );
     expect([...result.files.keys()].toSorted()).toEqual(["index.js", "lib/b.ts"]);
     expect(result.manifest.name).toBe("x");
@@ -19,7 +27,12 @@ describe("readPackageTarball", () => {
   it("skips node_modules, minified bundles and non-source files", () => {
     const result = readPackageTarball(
       packageTarball(
-        { "node_modules/dep/index.js": "x", "dist/a.min.js": "x", "data.json": "{}", "src/a.js": "ok" },
+        {
+          "node_modules/dep/index.js": "x",
+          "dist/a.min.js": "x",
+          "data.json": "{}",
+          "src/a.js": "ok",
+        },
         manifest,
       ),
     );
@@ -59,15 +72,23 @@ describe("readPackageTarball", () => {
   it("rejects a decompression bomb", () => {
     const bomb = gzipSync(Buffer.alloc(8 * 1024 * 1024));
     expect(bomb.length).toBeLessThan(50_000);
-    expect(() => readPackageTarball(bomb, { ...DEFAULT_TARBALL_LIMITS, maxUnpackedBytes: 1024 * 1024 })).toThrow(
-      /zip bomb/,
-    );
+    expect(() =>
+      readPackageTarball(bomb, { ...DEFAULT_TARBALL_LIMITS, maxUnpackedBytes: 1024 * 1024 }),
+    ).toThrow(/zip bomb/);
   });
 
   it("rejects too many entries", () => {
-    const entries = Array.from({ length: 30 }, (_, index) => ({ path: `package/f${index}.js`, content: "x" }));
-    const bytes = tgz([{ path: "package/package.json", content: JSON.stringify(manifest) }, ...entries]);
-    expect(() => readPackageTarball(bytes, { ...DEFAULT_TARBALL_LIMITS, maxEntries: 10 })).toThrow(/more than 10 entries/);
+    const entries = Array.from({ length: 30 }, (_, index) => ({
+      path: `package/f${index}.js`,
+      content: "x",
+    }));
+    const bytes = tgz([
+      { path: "package/package.json", content: JSON.stringify(manifest) },
+      ...entries,
+    ]);
+    expect(() => readPackageTarball(bytes, { ...DEFAULT_TARBALL_LIMITS, maxEntries: 10 })).toThrow(
+      /more than 10 entries/,
+    );
   });
 
   it("skips a file over the size limit and stops retaining past the total budget", () => {
@@ -82,7 +103,12 @@ describe("readPackageTarball", () => {
   });
 
   it("detects a corrupt header and a truncated archive", () => {
-    const raw = tar([{ path: "package/package.json", content: JSON.stringify({ ...manifest, pad: "x".repeat(2000) }) }]);
+    const raw = tar([
+      {
+        path: "package/package.json",
+        content: JSON.stringify({ ...manifest, pad: "x".repeat(2000) }),
+      },
+    ]);
     const corrupt = Buffer.from(raw);
     corrupt[0] = (corrupt[0] ?? 0) ^ 0xff;
     expect(() => readPackageTarball(gzipSync(corrupt))).toThrow(/checksum/);
@@ -90,8 +116,12 @@ describe("readPackageTarball", () => {
   });
 
   it("requires a valid package.json and valid gzip", () => {
-    expect(() => readPackageTarball(tgz([{ path: "package/index.js", content: "x" }]))).toThrow(/no root package.json/);
-    expect(() => readPackageTarball(tgz([{ path: "package/package.json", content: "{nope" }]))).toThrow(/not valid JSON/);
+    expect(() => readPackageTarball(tgz([{ path: "package/index.js", content: "x" }]))).toThrow(
+      /no root package.json/,
+    );
+    expect(() =>
+      readPackageTarball(tgz([{ path: "package/package.json", content: "{nope" }])),
+    ).toThrow(/not valid JSON/);
     expect(() => readPackageTarball(new Uint8Array([1, 2, 3]))).toThrow(/not a valid gzip/);
   });
 

@@ -514,7 +514,10 @@ describe("HTTP server", () => {
     });
 
     it("does not show one caller's task to another caller who holds the same role", async () => {
-      vi.stubEnv("AUTOREMEDIATOR_API_TOKENS", "admin:adm-SECRET,reader:rdr-SECRET,reader:rdr-OTHER");
+      vi.stubEnv(
+        "AUTOREMEDIATOR_API_TOKENS",
+        "admin:adm-SECRET,reader:rdr-SECRET,reader:rdr-OTHER",
+      );
       const sent = await json(
         await rpc("SendMessage", invoke("guardPackage", { spec: "left-pad" }), asReader),
       );
@@ -530,17 +533,26 @@ describe("HTTP server", () => {
 
     it("tells callers apart by the subject of their JWT, not by the token text", async () => {
       const secret = "jwt-SECRET-value";
-      const jwt = (sub: string, exp: number) =>
-        ({ Authorization: `Bearer ${createSignedJwt({ sub, role: "reader", exp }, secret)}` });
+      const jwt = (sub: string, exp: number) => ({
+        Authorization: `Bearer ${createSignedJwt({ sub, role: "reader", exp }, secret)}`,
+      });
       const future = Math.floor(Date.now() / 1000) + 3600;
       const sent = await json(
-        await rpc("SendMessage", invoke("guardPackage", { spec: "left-pad" }), jwt("alice", future)),
+        await rpc(
+          "SendMessage",
+          invoke("guardPackage", { spec: "left-pad" }),
+          jwt("alice", future),
+        ),
       );
       const id = sent.result.task.id as string;
 
       // A refreshed token for the same subject reads it; another subject with the same role does not.
-      expect((await json(await rpc("GetTask", { id }, jwt("alice", future + 60)))).result.id).toBe(id);
-      expect((await json(await rpc("GetTask", { id }, jwt("mallory", future)))).error.code).toBe(-32_001);
+      expect((await json(await rpc("GetTask", { id }, jwt("alice", future + 60)))).result.id).toBe(
+        id,
+      );
+      expect((await json(await rpc("GetTask", { id }, jwt("mallory", future)))).error.code).toBe(
+        -32_001,
+      );
     });
 
     it("keeps only a short copy of the caller's message, but answers with the whole thing", async () => {

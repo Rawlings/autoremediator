@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 /**
  * npm registry API client
  *
@@ -13,8 +14,6 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import semver from "semver";
-
-import { createHash } from "node:crypto";
 
 import { httpClient } from "../../platform/http-client.js";
 import { type PackageManager, detectPackageManager } from "../../platform/package-manager/index.js";
@@ -306,7 +305,9 @@ export function assertTarballUrlAllowed(url: string): void {
   }
   const local = ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname);
   if (parsed.protocol !== "https:" && !(parsed.protocol === "http:" && local)) {
-    throw new Error(`Refusing to download tarball over ${parsed.protocol.replace(":", "")}: ${parsed.host}`);
+    throw new Error(
+      `Refusing to download tarball over ${parsed.protocol.replace(":", "")}: ${parsed.host}`,
+    );
   }
 }
 
@@ -585,7 +586,9 @@ export async function fetchPackageTimeline(
   }
   return {
     versions,
-    deprecated: new Set(versions.filter((version) => Boolean(data.versions?.[version]?.deprecated))),
+    deprecated: new Set(
+      versions.filter((version) => Boolean(data.versions?.[version]?.deprecated)),
+    ),
     published,
   };
 }

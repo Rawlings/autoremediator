@@ -29,7 +29,12 @@ export async function verify(
   for (const name of CHECK_NAMES) {
     if (!wanted.has(name)) continue;
     if (failedCheck) {
-      results.push({ name, status: "skipped", message: `not run: ${failedCheck} failed`, durationMs: 0 });
+      results.push({
+        name,
+        status: "skipped",
+        message: `not run: ${failedCheck} failed`,
+        durationMs: 0,
+      });
       continue;
     }
 

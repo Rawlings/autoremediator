@@ -15,12 +15,7 @@ import { renderDiff } from "../init/diff.js";
 import type { FileChange } from "../init/types.js";
 import { checkReachability } from "../reachability/index.js";
 import { planRemediation } from "../remediate/index.js";
-import {
-  changesetName,
-  editPackageJson,
-  nextVersionOf,
-  renderChangeset,
-} from "./package-files.js";
+import { changesetName, editPackageJson, nextVersionOf, renderChangeset } from "./package-files.js";
 import type {
   MaintainAdvisory,
   MaintainOptions,
@@ -89,7 +84,9 @@ function readManifest(cwd: string): Manifest {
   }
   const { name, version } = raw;
   if (!isValidPackageName(name) || typeof version !== "string") {
-    throw new Error(`${path} needs a valid "name" and a "version" for maintain to describe the package.`);
+    throw new Error(
+      `${path} needs a valid "name" and a "version" for maintain to describe the package.`,
+    );
   }
   let author: string = npmPurl(name);
   const declared = raw["author"];
@@ -97,7 +94,10 @@ function readManifest(cwd: string): Manifest {
   else if (typeof declared === "object" && declared !== null) {
     const { name: authorName, email } = declared as { name?: unknown; email?: unknown };
     if (typeof authorName === "string" && authorName.trim() !== "") {
-      author = typeof email === "string" && email !== "" ? `${authorName.trim()} <${email}>` : authorName.trim();
+      author =
+        typeof email === "string" && email !== ""
+          ? `${authorName.trim()} <${email}>`
+          : authorName.trim();
     }
   }
   return { name, version, private: raw["private"] === true, author: author.slice(0, 512) };
@@ -119,7 +119,10 @@ function scopeOf(
 
 function summarizePlan(report: RemediationReport): MaintainPlanSummary | undefined {
   const items = report.results
-    .filter((result) => result.toVersion && (result.strategy === "version-bump" || result.strategy === "override"))
+    .filter(
+      (result) =>
+        result.toVersion && (result.strategy === "version-bump" || result.strategy === "override"),
+    )
     .map((result) => ({
       packageName: result.packageName,
       fromVersion: result.fromVersion,
@@ -147,7 +150,9 @@ async function assess(
     ...(options.policy ? { policy: options.policy } : {}),
     ...(options.packageManager ? { packageManager: options.packageManager } : {}),
     ...(options.offlineIntelligence ? { offlineIntelligence: true } : {}),
-    ...(options.intelligenceSnapshotPath ? { intelligenceSnapshotPath: options.intelligenceSnapshotPath } : {}),
+    ...(options.intelligenceSnapshotPath
+      ? { intelligenceSnapshotPath: options.intelligenceSnapshotPath }
+      : {}),
     // A recorded plan is a write under .autoremediator/, so only with approval.
     evidence: options.yes === true,
   });
@@ -163,7 +168,11 @@ async function assess(
     if (seen.has(key)) continue;
     seen.add(key);
     const scope = scopeOf(cwd, locks, installed.name, installed.version);
-    const finding: MaintainPackageFinding = { name: installed.name, version: installed.version, scope };
+    const finding: MaintainPackageFinding = {
+      name: installed.name,
+      version: installed.version,
+      scope,
+    };
     if (scope === "production" || scope === "unknown") {
       const reach = await deps.reachability({
         cwd,
@@ -178,7 +187,9 @@ async function assess(
     packages.push(finding);
   }
 
-  const shipped = packages.filter((entry) => entry.scope === "production" || entry.scope === "unknown");
+  const shipped = packages.filter(
+    (entry) => entry.scope === "production" || entry.scope === "unknown",
+  );
   const plan = summarizePlan(report);
   const base = { id, ...(severity ? { severity } : {}), packages, ...(plan ? { plan } : {}) };
   if (shipped.length === 0) {
@@ -222,10 +233,16 @@ async function assess(
 }
 
 function toDraft(advisory: MaintainAdvisory): DraftStatement | undefined {
-  if (advisory.decision !== "not_affected" && advisory.decision !== "affected" && advisory.decision !== "under_investigation") {
+  if (
+    advisory.decision !== "not_affected" &&
+    advisory.decision !== "affected" &&
+    advisory.decision !== "under_investigation"
+  ) {
     return undefined;
   }
-  const shipped = advisory.packages.filter((entry) => entry.scope === "production" || entry.scope === "unknown");
+  const shipped = advisory.packages.filter(
+    (entry) => entry.scope === "production" || entry.scope === "unknown",
+  );
   const evidence = shipped
     .map((entry) => {
       const basis = entry.evidenceKind === "both" ? "static scan and runtime trace" : "static scan";
@@ -258,7 +275,8 @@ function changesetLines(advisories: readonly MaintainAdvisory[]): string[] {
       .filter((entry) => entry.scope === "production" || entry.scope === "unknown")
       .map((entry) => `\`${entry.name}\``)
       .join(", ");
-    const fixes = advisory.plan?.items.map((item) => `\`${item.packageName}\` to ${item.toVersion}`) ?? [];
+    const fixes =
+      advisory.plan?.items.map((item) => `\`${item.packageName}\` to ${item.toVersion}`) ?? [];
     switch (advisory.decision) {
       case "affected": {
         lines.push(
@@ -275,7 +293,9 @@ function changesetLines(advisories: readonly MaintainAdvisory[]): string[] {
         break;
       }
       case "under_investigation": {
-        lines.push(`- Record in the shipped OpenVEX document that ${advisory.id} in ${names} is under investigation.`);
+        lines.push(
+          `- Record in the shipped OpenVEX document that ${advisory.id} in ${names} is under investigation.`,
+        );
         break;
       }
       case "not-shipped":
@@ -302,15 +322,25 @@ function toChange(
       after: before ?? "",
     };
   }
-  const action = before === undefined ? "create" : before === merged.content ? "unchanged" : "update";
-  return { path, action, reason, ...(before === undefined ? {} : { before }), after: merged.content };
+  const action =
+    before === undefined ? "create" : before === merged.content ? "unchanged" : "update";
+  return {
+    path,
+    action,
+    reason,
+    ...(before === undefined ? {} : { before }),
+    after: merged.content,
+  };
 }
 
 const readIfExists = (cwd: string, path: string): string | undefined =>
   existsSync(join(cwd, path)) ? readFileSync(join(cwd, path), "utf8") : undefined;
 
 /** The implementation with its outside world injectable. Use {@link maintain}. */
-export async function maintainWith(deps: MaintainDeps, options: MaintainOptions = {}): Promise<MaintainResult> {
+export async function maintainWith(
+  deps: MaintainDeps,
+  options: MaintainOptions = {},
+): Promise<MaintainResult> {
   const cwd = resolve(options.cwd ?? process.cwd());
   const manifest = readManifest(cwd);
   const notes: string[] = [];
@@ -331,7 +361,13 @@ export async function maintainWith(deps: MaintainDeps, options: MaintainOptions 
   for (const id of ids.toSorted()) advisories.push(await assess(id, options, cwd, locks, deps));
 
   const usesChangesets = existsSync(join(cwd, ".changeset", "config.json"));
-  const next = nextVersionOf(cwd, manifest.name, manifest.version, options.nextVersion, usesChangesets);
+  const next = nextVersionOf(
+    cwd,
+    manifest.name,
+    manifest.version,
+    options.nextVersion,
+    usesChangesets,
+  );
   if (next.note) notes.push(next.note);
 
   const changes: FileChange[] = [];
@@ -342,12 +378,19 @@ export async function maintainWith(deps: MaintainDeps, options: MaintainOptions 
   const written = advisories.filter((advisory) => toDraft(advisory) !== undefined);
 
   if (manifest.private) {
-    notes.push("This package is private, so it publishes nothing: no OpenVEX document or changeset was prepared.");
+    notes.push(
+      "This package is private, so it publishes nothing: no OpenVEX document or changeset was prepared.",
+    );
   } else if (drafts.length > 0 && next.version) {
     const before = readIfExists(cwd, "package.json")!;
     const edit = editPackageJson(before);
     changes.push(
-      toChange("package.json", "declare the OpenVEX document (vex) and ship it (files)", before, edit),
+      toChange(
+        "package.json",
+        "declare the OpenVEX document (vex) and ship it (files)",
+        before,
+        edit,
+      ),
     );
     if ("vexPath" in edit) {
       const existing = readIfExists(cwd, edit.vexPath);
@@ -372,7 +415,9 @@ export async function maintainWith(deps: MaintainDeps, options: MaintainOptions 
         notes.push(`.npmignore exists: check that it does not exclude ${edit.vexPath}.`);
       }
       if (!Array.isArray((JSON.parse(before) as { files?: unknown }).files)) {
-        notes.push(`package.json has no "files" list, so ${edit.vexPath} ships unless .npmignore or .gitignore excludes it.`);
+        notes.push(
+          `package.json has no "files" list, so ${edit.vexPath} ships unless .npmignore or .gitignore excludes it.`,
+        );
       }
     }
     if (usesChangesets) {
@@ -380,9 +425,14 @@ export async function maintainWith(deps: MaintainDeps, options: MaintainOptions 
       const path = `.changeset/${changesetName(written.map((entry) => entry.id))}.md`;
       const existing = readIfExists(cwd, path);
       changes.push(
-        toChange(path, "release the dependency update and the VEX statements as a patch", existing, {
-          content: renderChangeset(manifest.name, lines),
-        }),
+        toChange(
+          path,
+          "release the dependency update and the VEX statements as a patch",
+          existing,
+          {
+            content: renderChangeset(manifest.name, lines),
+          },
+        ),
       );
     } else {
       notes.push(
@@ -393,7 +443,9 @@ export async function maintainWith(deps: MaintainDeps, options: MaintainOptions 
     notes.push("No OpenVEX statements were prepared because the next version is not known.");
   }
 
-  const pending = changes.filter((change) => change.action === "create" || change.action === "update");
+  const pending = changes.filter(
+    (change) => change.action === "create" || change.action === "update",
+  );
   let applied = false;
   if (options.yes) {
     for (const change of pending) {
@@ -422,7 +474,9 @@ export async function maintainWith(deps: MaintainDeps, options: MaintainOptions 
     })),
     drift: pending.length > 0,
     applied,
-    conflicts: changes.filter((change) => change.action === "conflict").map((change) => change.path),
+    conflicts: changes
+      .filter((change) => change.action === "conflict")
+      .map((change) => change.path),
     notes,
   };
 }

@@ -7,13 +7,13 @@ import { remediateFromScan, type CveSeverity, type ScanReport } from "autoremedi
 
 import { codeScanningAlertTarget, dependabotAlertTarget } from "./alerts.js";
 import { HELP_TEXT, parseComment } from "./commands.js";
-import { summarizeScanReport } from "./summary.js";
-import { botKindOfBranch, botKindOfLogin, isForkPullRequest } from "./doctor/bot-pr.js";
-import { runBotPrDoctor } from "./doctor/bot-pr-doctor.js";
 import { collectCheckRunLogs } from "./diagnostics/check-run-logs.js";
 import { parseCheckRunLogs } from "./diagnostics/log-parser.js";
+import { runBotPrDoctor } from "./doctor/bot-pr-doctor.js";
+import { botKindOfBranch, botKindOfLogin, isForkPullRequest } from "./doctor/bot-pr.js";
 import { healPullRequest, regexRepairStrategy } from "./healing/pr-healer.js";
 import { fetchRepoConfig } from "./repo-config.js";
+import { summarizeScanReport } from "./summary.js";
 import type {
   AutoremediatorRepoConfig,
   DefaultRemediationHandlerOptions,
@@ -106,7 +106,8 @@ export function createDefaultRemediationHandler(
       if (botPr) {
         if (typeof botPr.number !== "number" || !repoRef || !checkRun) return;
         // The webhook shows the head repository; the doctor checks again against the live pull request.
-        if (isForkPullRequest(botPr)) return { status: "success", reason: "Pull request comes from a fork" };
+        if (isForkPullRequest(botPr))
+          return { status: "success", reason: "Pull request comes from a fork" };
         return runBotPrDoctor({
           octokit,
           owner: repoRef.owner,
@@ -175,7 +176,10 @@ export function createDefaultRemediationHandler(
           ? dependabotAlertTarget(payload)
           : codeScanningAlertTarget(payload);
       if (!target) return;
-      if (SEVERITY_RANK[normalizeSeverity(target.severity)] < SEVERITY_RANK[repoConfig.minimumSeverity]) {
+      if (
+        SEVERITY_RANK[normalizeSeverity(target.severity)] <
+        SEVERITY_RANK[repoConfig.minimumSeverity]
+      ) {
         return { status: "success", reason: "Alert is below the configured minimum severity" };
       }
       targeted = { cveIds: target.advisoryIds };
@@ -221,7 +225,10 @@ export function createDefaultRemediationHandler(
           options,
         );
       }
-      return { status: "partial", reason: "The request failed and was answered; it is not retried" };
+      return {
+        status: "partial",
+        reason: "The request failed and was answered; it is not retried",
+      };
     };
     const answersCommand = Boolean(targeted?.reply && repoRef);
 
@@ -320,7 +327,8 @@ export function createDefaultRemediationHandler(
           enabled: true,
           provider: "github",
           grouping: pullRequest.grouping,
-          repository: pullRequest.repository ?? (repoRef ? `${repoRef.owner}/${repoRef.repo}` : undefined),
+          repository:
+            pullRequest.repository ?? (repoRef ? `${repoRef.owner}/${repoRef.repo}` : undefined),
           baseBranch: pullRequest.baseBranch,
           branchPrefix: pullRequest.branchPrefix,
           titlePrefix: pullRequest.titlePrefix,
@@ -473,7 +481,12 @@ async function postComment(
   options: DefaultRemediationHandlerOptions,
 ): Promise<void> {
   try {
-    await octokit.issues.createComment({ owner: repo.owner, repo: repo.repo, issue_number: issueNumber, body });
+    await octokit.issues.createComment({
+      owner: repo.owner,
+      repo: repo.repo,
+      issue_number: issueNumber,
+      body,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     void options.onError?.({
@@ -589,7 +602,8 @@ async function prepareCommentRun(
   }
 
   // Remember the request before running it, so a run that fails can still be retried.
-  for (const id of command.advisoryIds) options.stateStore?.recordRemediationMode(modeKey(id), mode);
+  for (const id of command.advisoryIds)
+    options.stateStore?.recordRemediationMode(modeKey(id), mode);
 
   return {
     run: {

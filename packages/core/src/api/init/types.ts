@@ -1,5 +1,12 @@
 /** Agent hosts `init` knows how to configure. */
-export const AGENT_HOSTS = ["claude-code", "cursor", "vscode", "codex", "gemini", "copilot"] as const;
+export const AGENT_HOSTS = [
+  "claude-code",
+  "cursor",
+  "vscode",
+  "codex",
+  "gemini",
+  "copilot",
+] as const;
 export type AgentHost = (typeof AGENT_HOSTS)[number];
 
 export type GitHost = "github" | "gitlab" | "bitbucket" | "azure-devops" | "other" | "none";

@@ -88,7 +88,10 @@ function summarize(
 function readOwn(cwd: string): OwnVexSummary {
   let manifest: Record<string, unknown>;
   try {
-    manifest = JSON.parse(readFileSync(join(cwd, "package.json"), "utf8")) as Record<string, unknown>;
+    manifest = JSON.parse(readFileSync(join(cwd, "package.json"), "utf8")) as Record<
+      string,
+      unknown
+    >;
   } catch {
     return { declared: false };
   }
@@ -97,11 +100,21 @@ function readOwn(cwd: string): OwnVexSummary {
   if ("error" in field) return { declared: true, status: "invalid", reason: field.error };
   const file = readVexFile(cwd, field.path);
   if ("error" in file) {
-    return { declared: true, file: field.path, status: "invalid", reason: `${field.path} ${file.error}` };
+    return {
+      declared: true,
+      file: field.path,
+      status: "invalid",
+      reason: `${field.path} ${file.error}`,
+    };
   }
   const parsed = parseOpenVex(file.content);
   if ("error" in parsed) {
-    return { declared: true, file: field.path, status: "invalid", reason: `${field.path} ${parsed.error}` };
+    return {
+      declared: true,
+      file: field.path,
+      status: "invalid",
+      reason: `${field.path} ${parsed.error}`,
+    };
   }
   const name = manifest["name"];
   const version = manifest["version"];
@@ -160,7 +173,9 @@ export function readMaintainerVex(options: ReadMaintainerVexOptions = {}): Maint
     schemaVersion: "1.0",
     cwd,
     scanned: index.scanned,
-    packages: packages.toSorted((a, b) => `${a.name}@${a.version}`.localeCompare(`${b.name}@${b.version}`)),
+    packages: packages.toSorted((a, b) =>
+      `${a.name}@${a.version}`.localeCompare(`${b.name}@${b.version}`),
+    ),
     rejected: index.rejected
       .filter((entry) => !options.packageName || entry.package === options.packageName)
       .toSorted((a, b) => a.package.localeCompare(b.package)),

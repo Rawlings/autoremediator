@@ -90,7 +90,12 @@ describe("built-in repair agent", () => {
     expect(outcome.rationale).toBe("dropped the removed second argument");
     expect(readFileSync(join(dir, "src/a.ts"), "utf8")).toBe("import { f } from 'dep';\nf(1);\n");
     expect(outcome.usage).toEqual([
-      expect.objectContaining({ purpose: "upgrade-repair", model: "scripted", inputTokens: 400, outputTokens: 80 }),
+      expect.objectContaining({
+        purpose: "upgrade-repair",
+        model: "scripted",
+        inputTokens: 400,
+        outputTokens: 80,
+      }),
     ]);
     expect(outcome.transcript.map((entry) => entry.text.split("(")[0])).toEqual([
       "readFile",
@@ -132,7 +137,10 @@ describe("built-in repair agent", () => {
     const outcome = await createBuiltinRepairAgent(
       scripted(turn(["giveUp", { reason: "the API was removed with no replacement" }])),
     ).repair(task, env());
-    expect(outcome).toMatchObject({ status: "gave-up", rationale: "the API was removed with no replacement" });
+    expect(outcome).toMatchObject({
+      status: "gave-up",
+      rationale: "the API was removed with no replacement",
+    });
   });
 
   it("refuses edits outside project source and carries on", async () => {
@@ -147,12 +155,17 @@ describe("built-in repair agent", () => {
 
     expect(outcome.status).toBe("submitted");
     expect(readFileSync(join(dir, "package.json"), "utf8")).toBe('{"name":"app"}');
-    expect(outcome.transcript.slice(0, 3).every((entry) => entry.text.includes("Refused"))).toBe(true);
+    expect(outcome.transcript.slice(0, 3).every((entry) => entry.text.includes("Refused"))).toBe(
+      true,
+    );
   });
 
   it("stops when the step budget runs out", async () => {
     const turns = Array.from({ length: 10 }, () => turn(["listFiles", {}]));
-    const outcome = await createBuiltinRepairAgent(scripted(...turns)).repair(task, env({}, { maxSteps: 3 }));
+    const outcome = await createBuiltinRepairAgent(scripted(...turns)).repair(
+      task,
+      env({}, { maxSteps: 3 }),
+    );
     expect(outcome.status).toBe("budget-exhausted");
     expect(outcome.transcript).toHaveLength(3);
   });
@@ -176,7 +189,10 @@ describe("built-in repair agent", () => {
       turn(["runCheck", { name: "tests" }]),
       turn(["giveUp", { reason: "out of runs" }]),
     );
-    const outcome = await createBuiltinRepairAgent(model).repair(task, env({}, { maxCommandRuns: 2 }));
+    const outcome = await createBuiltinRepairAgent(model).repair(
+      task,
+      env({}, { maxCommandRuns: 2 }),
+    );
     expect(run).toHaveBeenCalledTimes(2);
     expect(outcome.transcript[2]?.text).toContain("Command limit reached");
   });
@@ -196,10 +212,9 @@ describe("built-in repair agent", () => {
   it("stops when the attempt is cancelled", async () => {
     const controller = new AbortController();
     controller.abort();
-    const outcome = await createBuiltinRepairAgent(scripted(turn(["submit", { summary: "x" }]))).repair(
-      task,
-      env({ signal: controller.signal }),
-    );
+    const outcome = await createBuiltinRepairAgent(
+      scripted(turn(["submit", { summary: "x" }])),
+    ).repair(task, env({ signal: controller.signal }));
     expect(outcome.status).toBe("budget-exhausted");
     expect(outcome.rationale).toMatch(/cancelled/);
   });

@@ -18,7 +18,15 @@ export interface Signature {
   text: string;
 }
 
-export type MemberKind = "method" | "property" | "constructor" | "getter" | "setter" | "call" | "construct" | "index";
+export type MemberKind =
+  | "method"
+  | "property"
+  | "constructor"
+  | "getter"
+  | "setter"
+  | "call"
+  | "construct"
+  | "index";
 
 export interface ApiMember {
   /** Unique within the container: `name`, `static name`, `[call]`, `[new]`, `[index]`. */
@@ -67,7 +75,11 @@ export interface ApiSurface {
 }
 
 function squash(text: string): string {
-  return text.replaceAll(/\/\*[\s\S]*?\*\//g, "").replaceAll(/\s+/g, " ").replaceAll(/\s*([,;])\s*/g, "$1 ").trim();
+  return text
+    .replaceAll(/\/\*[\s\S]*?\*\//g, "")
+    .replaceAll(/\s+/g, " ")
+    .replaceAll(/\s*([,;])\s*/g, "$1 ")
+    .trim();
 }
 
 function slice(code: string, node: AstNode | null | undefined): string | undefined {
@@ -100,9 +112,18 @@ function paramOf(code: string, raw: AstNode, index: number): ParamInfo {
   }
   if (raw.type === "AssignmentPattern") {
     const left = raw.left as AstNode | undefined;
-    return { name: left?.type === "Identifier" ? String(left.name) : `arg${index}`, optional: true, rest: false };
+    return {
+      name: left?.type === "Identifier" ? String(left.name) : `arg${index}`,
+      optional: true,
+      rest: false,
+    };
   }
-  return { name: `arg${index}`, optional: raw.optional === true, rest: false, type: annotationText(code, raw.typeAnnotation) };
+  return {
+    name: `arg${index}`,
+    optional: raw.optional === true,
+    rest: false,
+    type: annotationText(code, raw.typeAnnotation),
+  };
 }
 
 function signatureOf(code: string, fn: AstNode): Signature {
@@ -113,7 +134,10 @@ function signatureOf(code: string, fn: AstNode): Signature {
   const returns = annotationText(code, fn.returnType);
   const typeParams = slice(code, fn.typeParameters as AstNode | undefined);
   const paramText = params
-    .map((param) => `${param.rest ? "..." : ""}${param.name}${param.optional && !param.rest ? "?" : ""}${param.type ? `: ${param.type}` : ""}`)
+    .map(
+      (param) =>
+        `${param.rest ? "..." : ""}${param.name}${param.optional && !param.rest ? "?" : ""}${param.type ? `: ${param.type}` : ""}`,
+    )
     .join(", ");
   return {
     params,
@@ -174,9 +198,23 @@ function readMembers(code: string, symbol: ApiSymbol, body: unknown[]): void {
         const isStatic = raw.static === true;
         const methodKind = raw.kind as string;
         const kind: MemberKind =
-          methodKind === "constructor" ? "constructor" : methodKind === "get" ? "getter" : methodKind === "set" ? "setter" : "method";
+          methodKind === "constructor"
+            ? "constructor"
+            : methodKind === "get"
+              ? "getter"
+              : methodKind === "set"
+                ? "setter"
+                : "method";
         addMember(symbol, {
-          key: kind === "constructor" ? "[new]" : memberKey(kind === "getter" || kind === "setter" ? `${kind === "getter" ? "get" : "set"} ${name}` : name, isStatic),
+          key:
+            kind === "constructor"
+              ? "[new]"
+              : memberKey(
+                  kind === "getter" || kind === "setter"
+                    ? `${kind === "getter" ? "get" : "set"} ${name}`
+                    : name,
+                  isStatic,
+                ),
           name: kind === "constructor" ? "constructor" : name,
           static: isStatic,
           kind,
@@ -201,11 +239,27 @@ function readMembers(code: string, symbol: ApiSymbol, body: unknown[]): void {
         break;
       }
       case "TSCallSignatureDeclaration": {
-        addMember(symbol, { key: "[call]", name: "[call]", static: false, kind: "call", optional: false, readonly: false, signatures: [signatureOf(code, raw)] });
+        addMember(symbol, {
+          key: "[call]",
+          name: "[call]",
+          static: false,
+          kind: "call",
+          optional: false,
+          readonly: false,
+          signatures: [signatureOf(code, raw)],
+        });
         break;
       }
       case "TSConstructSignatureDeclaration": {
-        addMember(symbol, { key: "[new]", name: "[new]", static: false, kind: "construct", optional: false, readonly: false, signatures: [signatureOf(code, raw)] });
+        addMember(symbol, {
+          key: "[new]",
+          name: "[new]",
+          static: false,
+          kind: "construct",
+          optional: false,
+          readonly: false,
+          signatures: [signatureOf(code, raw)],
+        });
         break;
       }
       case "TSIndexSignature": {
@@ -234,10 +288,21 @@ function blankSymbol(name: string, kind: SymbolKind): ApiSymbol {
 
 function mergeInto(target: ApiSymbol, incoming: ApiSymbol): void {
   // Declaration merging: a function with a namespace, a class with an interface.
-  const priority: SymbolKind[] = ["class", "function", "enum", "variable", "interface", "type", "namespace", "module", "value"];
+  const priority: SymbolKind[] = [
+    "class",
+    "function",
+    "enum",
+    "variable",
+    "interface",
+    "type",
+    "namespace",
+    "module",
+    "value",
+  ];
   if (priority.indexOf(incoming.kind) < priority.indexOf(target.kind)) target.kind = incoming.kind;
   target.signatures.push(...incoming.signatures);
-  for (const member of incoming.members.values()) addMember(target, { ...member, signatures: [...member.signatures] });
+  for (const member of incoming.members.values())
+    addMember(target, { ...member, signatures: [...member.signatures] });
   target.type ??= incoming.type;
   target.extends ??= incoming.extends;
   if (incoming.typeRefs) target.typeRefs = [...(target.typeRefs ?? []), ...incoming.typeRefs];
@@ -254,7 +319,8 @@ function mergeInto(target: ApiSymbol, incoming: ApiSymbol): void {
 /** Named types and inline object members a declared type is made of (`A & B & { c(): void }`). */
 function collectTypeShape(code: string, symbol: ApiSymbol, type: AstNode): void {
   if (type.type === "TSIntersectionType") {
-    for (const part of (type.types as AstNode[] | undefined) ?? []) collectTypeShape(code, symbol, part);
+    for (const part of (type.types as AstNode[] | undefined) ?? [])
+      collectTypeShape(code, symbol, part);
   } else if (type.type === "TSTypeReference") {
     const name = typeName(type.typeName as AstNode | undefined);
     if (name) symbol.typeRefs = [...(symbol.typeRefs ?? []), name];
@@ -289,16 +355,26 @@ function symbolFromDeclaration(code: string, declaration: AstNode): ApiSymbol[] 
       if (id?.type !== "Identifier") return [];
       const symbol = blankSymbol(String(id.name), "class");
       symbol.extends = slice(code, declaration.superClass as AstNode | undefined);
-      readMembers(code, symbol, ((declaration.body as AstNode | undefined)?.body as unknown[] | undefined) ?? []);
+      readMembers(
+        code,
+        symbol,
+        ((declaration.body as AstNode | undefined)?.body as unknown[] | undefined) ?? [],
+      );
       return [symbol];
     }
     case "TSInterfaceDeclaration": {
       const id = declaration.id as AstNode | undefined;
       if (id?.type !== "Identifier") return [];
       const symbol = blankSymbol(String(id.name), "interface");
-      const parents = ((declaration.extends as AstNode[] | undefined) ?? []).map((parent) => slice(code, parent)).filter(Boolean);
+      const parents = ((declaration.extends as AstNode[] | undefined) ?? [])
+        .map((parent) => slice(code, parent))
+        .filter(Boolean);
       if (parents.length > 0) symbol.extends = parents.join(", ");
-      readMembers(code, symbol, ((declaration.body as AstNode | undefined)?.body as unknown[] | undefined) ?? []);
+      readMembers(
+        code,
+        symbol,
+        ((declaration.body as AstNode | undefined)?.body as unknown[] | undefined) ?? [],
+      );
       return [symbol];
     }
     case "TSTypeAliasDeclaration": {
@@ -312,7 +388,10 @@ function symbolFromDeclaration(code: string, declaration: AstNode): ApiSymbol[] 
       const id = declaration.id as AstNode | undefined;
       if (id?.type !== "Identifier") return [];
       const symbol = blankSymbol(String(id.name), "enum");
-      const members = ((declaration.body as AstNode | undefined)?.members as AstNode[] | undefined) ?? (declaration.members as AstNode[] | undefined) ?? [];
+      const members =
+        ((declaration.body as AstNode | undefined)?.members as AstNode[] | undefined) ??
+        (declaration.members as AstNode[] | undefined) ??
+        [];
       for (const member of members) {
         const name = nameOfNode(member.id);
         if (name === undefined) continue;
@@ -336,7 +415,9 @@ function symbolFromDeclaration(code: string, declaration: AstNode): ApiSymbol[] 
         if (id?.type !== "Identifier") continue;
         const symbol = blankSymbol(String(id.name), "variable");
         symbol.type = annotationText(code, id.typeAnnotation) ?? "unknown";
-        const annotation = (id.typeAnnotation as AstNode | undefined)?.typeAnnotation as AstNode | undefined;
+        const annotation = (id.typeAnnotation as AstNode | undefined)?.typeAnnotation as
+          | AstNode
+          | undefined;
         if (annotation) collectTypeShape(code, symbol, annotation);
         result.push(symbol);
       }
@@ -349,7 +430,10 @@ function symbolFromDeclaration(code: string, declaration: AstNode): ApiSymbol[] 
       symbol.nested = new Map();
       const body = (declaration.body as AstNode | undefined)?.body as AstNode[] | undefined;
       for (const statement of body ?? []) {
-        const inner = statement.type === "ExportNamedDeclaration" ? (statement.declaration as AstNode | undefined) : statement;
+        const inner =
+          statement.type === "ExportNamedDeclaration"
+            ? (statement.declaration as AstNode | undefined)
+            : statement;
         if (!inner) continue;
         for (const nested of symbolFromDeclaration(code, inner)) {
           const known = symbol.nested.get(nested.name);
@@ -363,7 +447,10 @@ function symbolFromDeclaration(code: string, declaration: AstNode): ApiSymbol[] 
             optional: false,
             readonly: false,
             signatures: nested.signatures,
-            type: nested.kind === "function" ? undefined : (nested.type ?? `${nested.kind} with ${nested.members.size} members`),
+            type:
+              nested.kind === "function"
+                ? undefined
+                : (nested.type ?? `${nested.kind} with ${nested.members.size} members`),
           });
         }
       }
@@ -378,7 +465,12 @@ function symbolFromDeclaration(code: string, declaration: AstNode): ApiSymbol[] 
 interface DtsFileInfo {
   declared: Map<string, ApiSymbol>;
   exported: Map<string, string>;
-  reexports: Array<{ source: string; names?: Array<{ exported: string; imported: string }>; all: boolean; namespace?: string }>;
+  reexports: Array<{
+    source: string;
+    names?: Array<{ exported: string; imported: string }>;
+    all: boolean;
+    namespace?: string;
+  }>;
   exportAssignment?: string;
 }
 
@@ -424,7 +516,12 @@ function readDtsFile(path: string, code: string): DtsFileInfo | undefined {
       case "ExportAllDeclaration": {
         const source = (statement.source as { value?: string } | undefined)?.value;
         const exported = statement.exported as { name?: string; value?: string } | null;
-        if (source) info.reexports.push({ source, all: !exported, namespace: exported?.name ?? exported?.value });
+        if (source)
+          info.reexports.push({
+            source,
+            all: !exported,
+            namespace: exported?.name ?? exported?.value,
+          });
         break;
       }
       case "ExportDefaultDeclaration": {
@@ -478,7 +575,8 @@ function expandTypeRefs(declared: Map<string, ApiSymbol>, symbol: ApiSymbol, dep
     if (!target || target === symbol) continue;
     expandTypeRefs(declared, target, depth + 1);
     for (const member of target.members.values()) {
-      if (!symbol.members.has(member.key)) symbol.members.set(member.key, { ...member, signatures: [...member.signatures] });
+      if (!symbol.members.has(member.key))
+        symbol.members.set(member.key, { ...member, signatures: [...member.signatures] });
     }
   }
   symbol.typeRefs = undefined;
@@ -501,8 +599,8 @@ export function extractDtsSurface(index: PackageIndex, entryFile: string): ApiSu
   const resolveDts = (from: string, specifier: string): string | undefined => {
     if (!specifier.startsWith(".")) return undefined;
     const base = joinPath(from, specifier).replace(/\.(?:[cm]?js|d\.[cm]?ts)$/, "");
-    return [`${base}.d.ts`, `${base}.d.mts`, `${base}.d.cts`, `${base}/index.d.ts`].find((candidate) =>
-      index.hasFile(candidate),
+    return [`${base}.d.ts`, `${base}.d.mts`, `${base}.d.cts`, `${base}/index.d.ts`].find(
+      (candidate) => index.hasFile(candidate),
     );
   };
 
@@ -514,17 +612,26 @@ export function extractDtsSurface(index: PackageIndex, entryFile: string): ApiSu
 
     for (const [exported, local] of info.exported) {
       const symbol = info.declared.get(local);
-      if (symbol) result.set(exported, { ...symbol, name: exported, signatures: [...symbol.signatures], members: new Map(symbol.members) });
+      if (symbol)
+        result.set(exported, {
+          ...symbol,
+          name: exported,
+          signatures: [...symbol.signatures],
+          members: new Map(symbol.members),
+        });
     }
     for (const reexport of info.reexports) {
       const target = resolveDts(path, reexport.source);
       if (!target) {
-        notes.push(`Re-export from "${reexport.source}" in ${path} was not followed (outside the package).`);
+        notes.push(
+          `Re-export from "${reexport.source}" in ${path} was not followed (outside the package).`,
+        );
         continue;
       }
       const targetExports = resolveFile(target, depth + 1, stack);
       if (reexport.all) {
-        for (const [name, symbol] of targetExports) if (name !== "default" && !result.has(name)) result.set(name, symbol);
+        for (const [name, symbol] of targetExports)
+          if (name !== "default" && !result.has(name)) result.set(name, symbol);
       } else if (reexport.names) {
         for (const { exported, imported } of reexport.names) {
           const symbol = targetExports.get(imported);
@@ -533,7 +640,16 @@ export function extractDtsSurface(index: PackageIndex, entryFile: string): ApiSu
       } else if (reexport.namespace) {
         const namespace = blankSymbol(reexport.namespace, "namespace");
         for (const [name, symbol] of targetExports) {
-          addMember(namespace, { key: name, name, static: false, kind: symbol.kind === "function" ? "method" : "property", optional: false, readonly: false, signatures: symbol.signatures, type: symbol.type ?? symbol.kind });
+          addMember(namespace, {
+            key: name,
+            name,
+            static: false,
+            kind: symbol.kind === "function" ? "method" : "property",
+            optional: false,
+            readonly: false,
+            signatures: symbol.signatures,
+            type: symbol.type ?? symbol.kind,
+          });
         }
         result.set(reexport.namespace, namespace);
       }
@@ -541,7 +657,12 @@ export function extractDtsSurface(index: PackageIndex, entryFile: string): ApiSu
     if (info.exportAssignment) {
       const target = info.declared.get(info.exportAssignment);
       if (target) {
-        result.set("default", { ...target, name: "default", signatures: [...target.signatures], members: new Map(target.members) });
+        result.set("default", {
+          ...target,
+          name: "default",
+          signatures: [...target.signatures],
+          members: new Map(target.members),
+        });
         // `export = x` with a merged namespace: the namespace's declarations are the named exports.
         for (const [name, nested] of target.nested ?? []) result.set(name, nested);
       }
@@ -569,7 +690,14 @@ export function extractJsSurface(index: PackageIndex, entryFile: string): ApiSur
   for (const [rawName, binding] of index.exportsOf(entryFile)) {
     // A CommonJS `module.exports = fn` is what an ESM or interop consumer sees as the default.
     const name = rawName === "module.exports" ? "default" : rawName;
-    const kind: SymbolKind = binding.kind === "function" ? "function" : binding.kind === "class" ? "class" : binding.kind === "module" ? "module" : "value";
+    const kind: SymbolKind =
+      binding.kind === "function"
+        ? "function"
+        : binding.kind === "class"
+          ? "class"
+          : binding.kind === "module"
+            ? "module"
+            : "value";
     const symbol = blankSymbol(name, kind);
     if (binding.params) {
       const text = `(${binding.params.map((param) => `${param.rest ? "..." : ""}${param.name}${param.optional && !param.rest ? "?" : ""}`).join(", ")})`;
@@ -583,7 +711,14 @@ export function extractJsSurface(index: PackageIndex, entryFile: string): ApiSur
         kind: member.kind === "field" ? "property" : member.kind,
         optional: false,
         readonly: false,
-        signatures: member.params ? [{ params: member.params, text: `(${member.params.map((param) => param.name).join(", ")})` }] : [],
+        signatures: member.params
+          ? [
+              {
+                params: member.params,
+                text: `(${member.params.map((param) => param.name).join(", ")})`,
+              },
+            ]
+          : [],
       });
     }
     symbols.set(name, symbol);

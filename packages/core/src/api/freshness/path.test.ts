@@ -116,12 +116,14 @@ describe("climbSteps", () => {
     expect(steps.map((step) => step.kind)).toEqual(["catch-up", "major", "major", "major"]);
     // A single catch-up inside one 0.x minor is not a boundary crossing.
     expect(
-      climbSteps(base({ installed: "0.2.0", latest: "0.2.3", versions: ["0.2.0", "0.2.3"] }))[0]!.kind,
+      climbSteps(base({ installed: "0.2.0", latest: "0.2.3", versions: ["0.2.0", "0.2.3"] }))[0]!
+        .kind,
     ).toBe("catch-up");
     // And the climb still stops once the policy is met.
-    expect(
-      targets({ ...input, policy: { maxMinorsBehind: 6, ignore: [] } }),
-    ).toEqual(["0.2.3", "0.3.1"]);
+    expect(targets({ ...input, policy: { maxMinorsBehind: 6, ignore: [] } })).toEqual([
+      "0.2.3",
+      "0.3.1",
+    ]);
   });
 
   it("applies maxAgeDays to the version a step lands on", () => {

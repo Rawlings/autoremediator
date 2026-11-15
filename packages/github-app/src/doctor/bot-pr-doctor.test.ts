@@ -38,7 +38,10 @@ function makeOctokit(setup: Setup = {}) {
     pulls: {
       get: vi.fn(async () => ({ data: setup.pr ?? pullRequest() })),
       listFiles: vi.fn(async ({ page }: { page?: number }) => ({
-        data: (page ?? 1) > 1 ? [] : (setup.prFiles ?? ["src/app.ts"]).map((filename) => ({ filename })),
+        data:
+          (page ?? 1) > 1
+            ? []
+            : (setup.prFiles ?? ["src/app.ts"]).map((filename) => ({ filename })),
       })),
     },
     checks: { listAnnotations: vi.fn(async () => ({ data: [] })) },
@@ -321,7 +324,10 @@ describe("bot PR doctor", () => {
     });
 
     it("also refuses when the output claims a file the pull request did not touch", async () => {
-      const { octokit, send } = setup({}, { files: { "src/app.ts": BROKEN }, prFiles: ["package.json"] });
+      const { octokit, send } = setup(
+        {},
+        { files: { "src/app.ts": BROKEN }, prFiles: ["package.json"] },
+      );
       await send();
       expect(octokit.repos.createOrUpdateFileContents).not.toHaveBeenCalled();
       expect(commentsOf(octokit)).toHaveLength(1);
@@ -338,7 +344,9 @@ describe("bot PR doctor", () => {
       const { octokit, send } = setup(
         {},
         {
-          files: { [FORGED_FILE]: "// release\nif (!verifySignature(sig)) throw new Error('bad');\n" },
+          files: {
+            [FORGED_FILE]: "// release\nif (!verifySignature(sig)) throw new Error('bad');\n",
+          },
           prFiles: [FORGED_FILE],
         },
       );

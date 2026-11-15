@@ -42,7 +42,10 @@ const lib = { name: "lib", version: "2.0.0" };
 describe("purls", () => {
   it("parses npm purls strictly", () => {
     expect(parseNpmPurl("pkg:npm/lodash@4.17.21")).toEqual({ name: "lodash", version: "4.17.21" });
-    expect(parseNpmPurl("pkg:npm/%40scope/name@1.0.0")).toEqual({ name: "@scope/name", version: "1.0.0" });
+    expect(parseNpmPurl("pkg:npm/%40scope/name@1.0.0")).toEqual({
+      name: "@scope/name",
+      version: "1.0.0",
+    });
     expect(parseNpmPurl("pkg:npm/@scope/name")).toEqual({ name: "@scope/name" });
     expect(parseNpmPurl("pkg:npm/lodash@^4.0.0")).toBeUndefined();
     expect(parseNpmPurl("pkg:pypi/lodash@1.0.0")).toBeUndefined();
@@ -55,7 +58,17 @@ describe("purls", () => {
   it("only accepts a package-relative json path in package.json#vex", () => {
     expect(resolveVexField(true)).toEqual({ path: "vex.openvex.json" });
     expect(resolveVexField("./security/vex.json")).toEqual({ path: "security/vex.json" });
-    for (const bad of ["../x.json", "/etc/x.json", "C:/x.json", "https://x.test/v.json", "a/../b.json", "vex.txt", "", 5, false]) {
+    for (const bad of [
+      "../x.json",
+      "/etc/x.json",
+      "C:/x.json",
+      "https://x.test/v.json",
+      "a/../b.json",
+      "vex.txt",
+      "",
+      5,
+      false,
+    ]) {
       expect(resolveVexField(bad)).toHaveProperty("error");
     }
   });
@@ -64,7 +77,9 @@ describe("purls", () => {
 describe("reading what installed packages ship", () => {
   it("accepts a valid not_affected statement from a dependent and reports it as evidence", () => {
     installLib(
-      vexDocument(lib, [{ vulnerability: CVE, subcomponents: ["pkg:npm/bad-dep"], impact: "We never call it." }]),
+      vexDocument(lib, [
+        { vulnerability: CVE, subcomponents: ["pkg:npm/bad-dep"], impact: "We never call it." },
+      ]),
     );
     const index = readInstalledMaintainerVex(cwd);
     expect(index.rejected).toEqual([]);
@@ -101,13 +116,19 @@ describe("reading what installed packages ship", () => {
       dependencies: { "bad-dep": "^1.0.0" },
       vex: "vex/openvex.json",
       at: join(store, "@acme", "lib"),
-      files: { "vex/openvex.json": vexDocument({ name: "@acme/lib", version: "2.0.0" }, [{ vulnerability: CVE }]) },
+      files: {
+        "vex/openvex.json": vexDocument({ name: "@acme/lib", version: "2.0.0" }, [
+          { vulnerability: CVE },
+        ]),
+      },
     });
     mkdirSync(join(cwd, "node_modules", "@acme"), { recursive: true });
     symlinkSync(dir, join(cwd, "node_modules", "@acme", "lib"));
 
     const index = readInstalledMaintainerVex(cwd);
-    expect(index.documents.map((entry) => `${entry.package.name}@${entry.package.version}`)).toEqual(["@acme/lib@2.0.0"]);
+    expect(
+      index.documents.map((entry) => `${entry.package.name}@${entry.package.version}`),
+    ).toEqual(["@acme/lib@2.0.0"]);
     expect(findMaintainerVex(index, CVE, vulnerable).evidence).toHaveLength(1);
   });
 
@@ -137,8 +158,12 @@ describe("reading what installed packages ship", () => {
   });
 
   it("accepts a subcomponent pinned to exactly the installed version", () => {
-    installLib(vexDocument(lib, [{ vulnerability: CVE, subcomponents: ["pkg:npm/bad-dep@1.0.0"] }]));
-    expect(findMaintainerVex(readInstalledMaintainerVex(cwd), CVE, vulnerable).evidence).toHaveLength(1);
+    installLib(
+      vexDocument(lib, [{ vulnerability: CVE, subcomponents: ["pkg:npm/bad-dep@1.0.0"] }]),
+    );
+    expect(
+      findMaintainerVex(readInstalledMaintainerVex(cwd), CVE, vulnerable).evidence,
+    ).toHaveLength(1);
   });
 
   it("rejects a package declaring itself not affected by an advisory about itself", () => {
@@ -146,7 +171,9 @@ describe("reading what installed packages ship", () => {
       name: "bad-dep",
       version: "1.0.0",
       vex: true,
-      files: { "vex.openvex.json": vexDocument(vulnerable, [{ vulnerability: CVE, impact: "Trust me." }]) },
+      files: {
+        "vex.openvex.json": vexDocument(vulnerable, [{ vulnerability: CVE, impact: "Trust me." }]),
+      },
     });
     const index = readInstalledMaintainerVex(cwd);
     expect(index.documents).toHaveLength(1);
@@ -168,7 +195,9 @@ describe("reading what installed packages ship", () => {
         ]),
       },
     });
-    expect(findMaintainerVex(readInstalledMaintainerVex(cwd), CVE, vulnerable).evidence).toEqual([]);
+    expect(findMaintainerVex(readInstalledMaintainerVex(cwd), CVE, vulnerable).evidence).toEqual(
+      [],
+    );
   });
 
   it("ignores a helper bundled inside the vulnerable package, whose claim is not independent", () => {
@@ -179,7 +208,11 @@ describe("reading what installed packages ship", () => {
       dependencies: { "bad-dep": "*" },
       vex: true,
       at: join(cwd, "node_modules", "bad-dep", "node_modules", "helper"),
-      files: { "vex.openvex.json": vexDocument({ name: "helper", version: "1.0.0" }, [{ vulnerability: CVE, justification: "vulnerable_code_not_present" }]) },
+      files: {
+        "vex.openvex.json": vexDocument({ name: "helper", version: "1.0.0" }, [
+          { vulnerability: CVE, justification: "vulnerable_code_not_present" },
+        ]),
+      },
     });
     const match = findMaintainerVex(readInstalledMaintainerVex(cwd), CVE, vulnerable);
     expect(match.evidence).toEqual([]);
@@ -188,7 +221,10 @@ describe("reading what installed packages ship", () => {
 
   it("acts on nothing when one installed maintainer says not_affected and another says affected", () => {
     installFake(cwd, { name: "bad-dep", version: "1.0.0" });
-    for (const [name, status] of [["lib-a", "not_affected"], ["lib-b", "affected"]] as const) {
+    for (const [name, status] of [
+      ["lib-a", "not_affected"],
+      ["lib-b", "affected"],
+    ] as const) {
       installFake(cwd, {
         name,
         version: "1.0.0",
@@ -196,7 +232,13 @@ describe("reading what installed packages ship", () => {
         vex: true,
         files: {
           "vex.openvex.json": vexDocument({ name, version: "1.0.0" }, [
-            { vulnerability: CVE, status, ...(status === "not_affected" ? { justification: "vulnerable_code_not_present" } : {}) },
+            {
+              vulnerability: CVE,
+              status,
+              ...(status === "not_affected"
+                ? { justification: "vulnerable_code_not_present" }
+                : {}),
+            },
           ]),
         },
       });
@@ -212,7 +254,11 @@ describe("reading what installed packages ship", () => {
       name: "unrelated",
       version: "1.0.0",
       vex: true,
-      files: { "vex.openvex.json": vexDocument({ name: "unrelated", version: "1.0.0" }, [{ vulnerability: CVE }]) },
+      files: {
+        "vex.openvex.json": vexDocument({ name: "unrelated", version: "1.0.0" }, [
+          { vulnerability: CVE },
+        ]),
+      },
     });
     const match = findMaintainerVex(readInstalledMaintainerVex(cwd), CVE, vulnerable);
     expect(match.evidence).toEqual([]);
@@ -227,13 +273,21 @@ describe("reading what installed packages ship", () => {
       version: "1.0.0",
       dependencies: { middle: "^1.0.0" },
       vex: true,
-      files: { "vex.openvex.json": vexDocument({ name: "top", version: "1.0.0" }, [{ vulnerability: CVE }]) },
+      files: {
+        "vex.openvex.json": vexDocument({ name: "top", version: "1.0.0" }, [
+          { vulnerability: CVE },
+        ]),
+      },
     });
-    expect(findMaintainerVex(readInstalledMaintainerVex(cwd), CVE, vulnerable).evidence).toHaveLength(1);
+    expect(
+      findMaintainerVex(readInstalledMaintainerVex(cwd), CVE, vulnerable).evidence,
+    ).toHaveLength(1);
   });
 
   it("does not take a free-text impact statement as a justification", () => {
-    installLib(vexDocument(lib, [{ vulnerability: CVE, justification: null, impact: "It is fine." }]));
+    installLib(
+      vexDocument(lib, [{ vulnerability: CVE, justification: null, impact: "It is fine." }]),
+    );
     const match = findMaintainerVex(readInstalledMaintainerVex(cwd), CVE, vulnerable);
     expect(match.evidence).toEqual([]);
     expect(match.ignored[0]?.reason).toContain("no OpenVEX justification");
@@ -243,7 +297,12 @@ describe("reading what installed packages ship", () => {
     installLib(
       vexDocument(lib, [
         { vulnerability: CVE, timestamp: "2026-01-01T00:00:00Z" },
-        { vulnerability: CVE, status: "affected", timestamp: "2026-02-01T00:00:00Z", justification: null },
+        {
+          vulnerability: CVE,
+          status: "affected",
+          timestamp: "2026-02-01T00:00:00Z",
+          justification: null,
+        },
       ]),
     );
     const match = findMaintainerVex(readInstalledMaintainerVex(cwd), CVE, vulnerable);
@@ -255,10 +314,17 @@ describe("reading what installed packages ship", () => {
     installLib(
       vexDocument(lib, [
         { vulnerability: CVE, timestamp: "2026-01-01T00:00:00Z" },
-        { vulnerability: CVE, status: "under_investigation", timestamp: "2026-01-01T00:00:00Z", justification: null },
+        {
+          vulnerability: CVE,
+          status: "under_investigation",
+          timestamp: "2026-01-01T00:00:00Z",
+          justification: null,
+        },
       ]),
     );
-    expect(findMaintainerVex(readInstalledMaintainerVex(cwd), CVE, vulnerable).evidence).toEqual([]);
+    expect(findMaintainerVex(readInstalledMaintainerVex(cwd), CVE, vulnerable).evidence).toEqual(
+      [],
+    );
   });
 
   it("ignores statements dated in the future", () => {
@@ -289,10 +355,17 @@ describe("hostile documents", () => {
       ["no author", { ...base, author: undefined }, "author"],
       ["unknown key", { ...base, surprise: true }, "unknown field"],
       ["statements not a list", { ...base, statements: {} }, "statements"],
-      ["bad status", { ...base, statements: [{ ...(base["statements"] as object[])[0], status: "fine" }] }, "status"],
+      [
+        "bad status",
+        { ...base, statements: [{ ...(base["statements"] as object[])[0], status: "fine" }] },
+        "status",
+      ],
       [
         "bad justification",
-        { ...base, statements: [{ ...(base["statements"] as object[])[0], justification: "trust_me" }] },
+        {
+          ...base,
+          statements: [{ ...(base["statements"] as object[])[0], justification: "trust_me" }],
+        },
         "justification",
       ],
       ["bad timestamp", { ...base, timestamp: "yesterday" }, "timestamp"],
@@ -318,7 +391,10 @@ describe("hostile documents", () => {
   it("rejects prototype-pollution-shaped keys at any depth, and pollutes nothing", () => {
     const hostile = [
       `{"__proto__":{"polluted":"yes"}}`,
-      vexDocument(lib, [{ vulnerability: CVE }]).replace(`"version": 1,`, `"version": 1, "__proto__": {"polluted": "yes"},`),
+      vexDocument(lib, [{ vulnerability: CVE }]).replace(
+        `"version": 1,`,
+        `"version": 1, "__proto__": {"polluted": "yes"},`,
+      ),
       vexDocument(lib, [{ vulnerability: CVE }]).replace(
         `"vulnerability": {`,
         `"vulnerability": { "constructor": {"prototype": {"polluted": "yes"}},`,
@@ -361,7 +437,12 @@ describe("hostile documents", () => {
     const outside = join(cwd, "outside.json");
     writeFileSync(outside, vexDocument(lib, [{ vulnerability: CVE }]));
     installFake(cwd, { name: "bad-dep", version: "1.0.0" });
-    const dir = installFake(cwd, { name: "lib", version: "2.0.0", dependencies: { "bad-dep": "^1" }, vex: true });
+    const dir = installFake(cwd, {
+      name: "lib",
+      version: "2.0.0",
+      dependencies: { "bad-dep": "^1" },
+      vex: true,
+    });
     symlinkSync(outside, join(dir, "vex.openvex.json"));
     const index = readInstalledMaintainerVex(cwd);
     expect(index.documents).toEqual([]);

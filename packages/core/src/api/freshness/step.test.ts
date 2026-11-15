@@ -25,7 +25,9 @@ const project = (policy: string, dependencies: Record<string, string>): string =
   return dir;
 };
 const manifest = (dir: string): { dependencies: Record<string, string> } =>
-  JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as { dependencies: Record<string, string> };
+  JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
+    dependencies: Record<string, string>;
+  };
 
 const table: Record<string, FakePackage> = {
   // Two steps: 1.0.0 -> 1.5.0 (catch-up), then 1.5.0 -> 2.0.0.
@@ -55,11 +57,16 @@ function runDeps(options: { failing?: string[]; calls?: string[] } = {}): RunDep
         };
       }
       const path = join(cwd, "package.json");
-      const json = JSON.parse(readFileSync(path, "utf8")) as { dependencies: Record<string, string> };
+      const json = JSON.parse(readFileSync(path, "utf8")) as {
+        dependencies: Record<string, string>;
+      };
       json.dependencies[item.packageName] = `^${item.toVersion}`;
       writeFileSync(path, `${JSON.stringify(json, null, 2)}\n`);
       // The lockfile moves with it, as an install would.
-      writeFileSync(join(cwd, "package-lock.json"), `{"lockfileVersion":3,"locked":"${item.packageName}@${item.toVersion}"}\n`);
+      writeFileSync(
+        join(cwd, "package-lock.json"),
+        `{"lockfileVersion":3,"locked":"${item.packageName}@${item.toVersion}"}\n`,
+      );
       return { ...base, applied: true, message: "ok" };
     },
     async reinstall() {},
@@ -75,7 +82,11 @@ function liveDeps(dir: string, packages: Record<string, FakePackage>, extra = {}
   return {
     ...base,
     readDirect: () =>
-      Object.keys(manifest(dir).dependencies).map((name) => ({ name, field: "dependencies" as const, range: "^1.0.0" })),
+      Object.keys(manifest(dir).dependencies).map((name) => ({
+        name,
+        field: "dependencies" as const,
+        range: "^1.0.0",
+      })),
     async queryOutdated() {
       const current = manifest(dir).dependencies;
       const map = await base.queryOutdated("", {});
@@ -101,7 +112,12 @@ describe("planFreshnessStep", () => {
     const result = await planFreshnessStep({ cwd }, fakeDeps(table));
 
     // Equal ratings and step size: `other` is one step from done, `lib` has two.
-    expect(result.planned?.step).toMatchObject({ packageName: "other", fromVersion: "3.0.0", toVersion: "3.1.0", level: "minor" });
+    expect(result.planned?.step).toMatchObject({
+      packageName: "other",
+      fromVersion: "3.0.0",
+      toVersion: "3.1.0",
+      level: "minor",
+    });
     expect(readFileSync(join(cwd, "package.json"), "utf8")).toBe(before);
 
     const run = getRun({ cwd, runId: result.planned!.runId });
@@ -123,7 +139,10 @@ describe("planFreshnessStep", () => {
 
   it("carries runTests and typecheck into the plan so applying it runs the same checks", async () => {
     const cwd = project(POLICY, { other: "^3.0.0" });
-    const result = await planFreshnessStep({ cwd, runTests: true, typecheck: true }, fakeDeps(table));
+    const result = await planFreshnessStep(
+      { cwd, runTests: true, typecheck: true },
+      fakeDeps(table),
+    );
     const plan = getRun({ cwd, runId: result.planned!.runId }).plan!;
     expect(plan.options).toMatchObject({ runTests: true, typecheck: true });
   });
@@ -145,16 +164,26 @@ describe("planFreshnessStep", () => {
 
   it("says why when there is no freshness policy, and when every step is held", async () => {
     const none = project("allowMajorBumps: true\n", { lib: "^1.0.0" });
-    expect((await planFreshnessStep({ cwd: none }, fakeDeps(table))).reason).toMatch(/no `freshness` key/);
+    expect((await planFreshnessStep({ cwd: none }, fakeDeps(table))).reason).toMatch(
+      /no `freshness` key/,
+    );
 
     const cwd = project(POLICY, { lib: "^1.0.0" });
     const held = await planFreshnessStep(
       { cwd },
-      fakeDeps({ lib: table.lib! }, { assess: { lib: { breakability: "High", summary: "removed export is used" } } }),
+      fakeDeps(
+        { lib: table.lib! },
+        { assess: { lib: { breakability: "High", summary: "removed export is used" } } },
+      ),
     );
     expect(held.planned).toBeUndefined();
     expect(held.reason).toMatch(/held/);
-    expect(held.held).toEqual([{ packageName: "lib", reason: expect.stringMatching(/removed export is used Held: pass allowHigh/) }]);
+    expect(held.held).toEqual([
+      {
+        packageName: "lib",
+        reason: expect.stringMatching(/removed export is used Held: pass allowHigh/),
+      },
+    ]);
   });
 
   it("records no plan at autonomy L0 (observe) and a plan at L1", async () => {
@@ -172,11 +201,24 @@ describe("planFreshnessStep", () => {
 describe("stepReport", () => {
   it("is named for the step, so each one has its own branch and run", () => {
     const report = stepReport(
-      { packageName: "lib", field: "dependencies", fromVersion: "1.0.0", toVersion: "2.0.0", level: "major", kind: "major", index: 2, of: 3 },
+      {
+        packageName: "lib",
+        field: "dependencies",
+        fromVersion: "1.0.0",
+        toVersion: "2.0.0",
+        level: "major",
+        kind: "major",
+        index: 2,
+        of: 3,
+      },
       { breakability: "Medium", score: 20, summary: "one signature changed" },
     );
     expect(report.cveId).toBe("FRESHNESS-2.0.0");
-    expect(report.results[0]).toMatchObject({ strategy: "version-bump", dryRun: true, applied: false });
+    expect(report.results[0]).toMatchObject({
+      strategy: "version-bump",
+      dryRun: true,
+      applied: false,
+    });
     expect(report.results[0]!.message).toMatch(/step 2 of 3.*Medium: one signature changed/);
   });
 });
@@ -199,7 +241,11 @@ describe("applyFreshness", () => {
   it("takes up to maxSteps steps, one run each, climbing a package one jump at a time", async () => {
     const cwd = project(POLICY, { lib: "^1.0.0", other: "^3.0.0" });
     const calls: string[] = [];
-    const result = await applyFreshness({ cwd, maxSteps: 3 }, liveDeps(cwd, table), runDeps({ calls }));
+    const result = await applyFreshness(
+      { cwd, maxSteps: 3 },
+      liveDeps(cwd, table),
+      runDeps({ calls }),
+    );
 
     expect(calls).toEqual(["other->3.1.0", "lib->1.5.0", "lib->2.0.0"]);
     expect(result.status).toBe("ok");
@@ -225,7 +271,9 @@ describe("applyFreshness", () => {
     expect(failed.rolledBack).toBe(true);
     expect(failed.message).toMatch(/did not hold: npm test failed/);
     expect(getRun({ cwd, runId: failed.runId! }).run.status).toBe("rolled-back");
-    expect(result.stopped).toEqual([{ packageName: "other", reason: expect.stringMatching(/npm test failed/) }]);
+    expect(result.stopped).toEqual([
+      { packageName: "other", reason: expect.stringMatching(/npm test failed/) },
+    ]);
 
     // `other` is left alone, and `lib` still climbed.
     expect(manifest(cwd).dependencies.other).toBe("^3.0.0");
@@ -238,7 +286,10 @@ describe("applyFreshness", () => {
   it("stops trying after MAX_FAILED_ATTEMPTS failures even with steps to spare", async () => {
     const names = ["a", "b", "c", "d", "e"];
     const packages = Object.fromEntries(
-      names.map((name) => [name, { installed: "1.0.0", latest: "1.1.0", versions: ["1.0.0", "1.1.0"] }]),
+      names.map((name) => [
+        name,
+        { installed: "1.0.0", latest: "1.1.0", versions: ["1.0.0", "1.1.0"] },
+      ]),
     );
     const cwd = project(POLICY, Object.fromEntries(names.map((name) => [name, "^1.0.0"])));
     const calls: string[] = [];
@@ -261,21 +312,35 @@ describe("applyFreshness", () => {
         return {
           passed: false,
           failedCheck: "scope",
-          checks: [{ name: "scope", status: "failed", message: "src/index.ts changed", details: [], durationMs: 0 }],
+          checks: [
+            {
+              name: "scope",
+              status: "failed",
+              message: "src/index.ts changed",
+              details: [],
+              durationMs: 0,
+            },
+          ],
           durationMs: 0,
         };
       },
     };
     const result = await applyFreshness({ cwd }, liveDeps(cwd, table), rejecting);
     expect(result.status).toBe("failed");
-    expect(result.steps[0]!.message).toMatch(/Verification failed \(scope\): src\/index\.ts changed/);
+    expect(result.steps[0]!.message).toMatch(
+      /Verification failed \(scope\): src\/index\.ts changed/,
+    );
     expect(manifest(cwd).dependencies.other).toBe("^3.0.0");
   });
 
   it("refuses below L2 before recording or changing anything", async () => {
     const cwd = project(`${POLICY}autonomy:\n  ceiling: L1\n`, { other: "^3.0.0" });
-    await expect(applyFreshness({ cwd }, fakeDeps(table), runDeps())).rejects.toThrow(AutonomyRefusedError);
-    await expect(applyFreshness({ cwd }, fakeDeps(table), runDeps())).rejects.toThrow(/does not allow changing the project/);
+    await expect(applyFreshness({ cwd }, fakeDeps(table), runDeps())).rejects.toThrow(
+      AutonomyRefusedError,
+    );
+    await expect(applyFreshness({ cwd }, fakeDeps(table), runDeps())).rejects.toThrow(
+      /does not allow changing the project/,
+    );
     expect(listRuns({ cwd })).toHaveLength(0);
     expect(manifest(cwd).dependencies.other).toBe("^3.0.0");
   });
@@ -283,7 +348,9 @@ describe("applyFreshness", () => {
   it("records each step in the autonomy track record when the policy opts in", async () => {
     const cwd = project(`${POLICY}autonomy:\n  ceiling: L2\n`, { other: "^3.0.0" });
     await applyFreshness({ cwd }, liveDeps(cwd, table), runDeps());
-    const record = JSON.parse(readFileSync(join(cwd, ".autoremediator", "track-record.json"), "utf8")) as {
+    const record = JSON.parse(
+      readFileSync(join(cwd, ".autoremediator", "track-record.json"), "utf8"),
+    ) as {
       events: Array<{ type: string; packages: string[] }>;
     };
     expect(record.events.map((event) => `${event.type}:${event.packages.join(",")}`)).toEqual([
@@ -293,7 +360,11 @@ describe("applyFreshness", () => {
 
   it("reports nothing to do, with the reason, when every dependency is within the policy", async () => {
     const cwd = project(POLICY, { other: "^3.0.0" });
-    const result = await applyFreshness({ cwd }, fakeDeps({ other: { ...table.other!, current: true } }), runDeps());
+    const result = await applyFreshness(
+      { cwd },
+      fakeDeps({ other: { ...table.other!, current: true } }),
+      runDeps(),
+    );
     expect(result.status).toBe("nothing-to-do");
     expect(result.message).toMatch(/within the freshness policy/);
     expect(listRuns({ cwd })).toHaveLength(0);
@@ -301,8 +372,14 @@ describe("applyFreshness", () => {
 
   it("rejects a maxSteps that is not a small whole number", async () => {
     const cwd = project(POLICY, { other: "^3.0.0" });
-    await expect(applyFreshness({ cwd, maxSteps: 0 }, fakeDeps(table), runDeps())).rejects.toThrow(/maxSteps/);
-    await expect(applyFreshness({ cwd, maxSteps: 1.5 }, fakeDeps(table), runDeps())).rejects.toThrow(/maxSteps/);
-    await expect(applyFreshness({ cwd, maxSteps: 500 }, fakeDeps(table), runDeps())).rejects.toThrow(/maxSteps/);
+    await expect(applyFreshness({ cwd, maxSteps: 0 }, fakeDeps(table), runDeps())).rejects.toThrow(
+      /maxSteps/,
+    );
+    await expect(
+      applyFreshness({ cwd, maxSteps: 1.5 }, fakeDeps(table), runDeps()),
+    ).rejects.toThrow(/maxSteps/);
+    await expect(
+      applyFreshness({ cwd, maxSteps: 500 }, fakeDeps(table), runDeps()),
+    ).rejects.toThrow(/maxSteps/);
   });
 });

@@ -43,7 +43,10 @@ export function mergeJsonMcpConfig(
     doc = parsed as Record<string, unknown>;
   }
   const current = doc[key];
-  if (current !== undefined && (typeof current !== "object" || current === null || Array.isArray(current))) {
+  if (
+    current !== undefined &&
+    (typeof current !== "object" || current === null || Array.isArray(current))
+  ) {
     return { conflict: `has a "${key}" that is not an object, so it was left alone` };
   }
   const servers = { ...(current as Record<string, unknown> | undefined) };
@@ -101,10 +104,20 @@ export function mergeCodexToml(existing: string | undefined, entry: McpServerEnt
     if (!key) continue;
     const path = [...table, ...key];
     if (path[0] === "mcp_servers" && path.length === 1) {
-      return { conflict: 'defines mcp_servers inline, so it was left alone; add the autoremediator server to it by hand' };
+      return {
+        conflict:
+          "defines mcp_servers inline, so it was left alone; add the autoremediator server to it by hand",
+      };
     }
-    if (path[0] === "mcp_servers" && path[1] === SERVER_NAME && !(table[0] === "mcp_servers" && table[1] === SERVER_NAME)) {
-      return { conflict: "defines the autoremediator server with dotted or inline keys, so it was left alone" };
+    if (
+      path[0] === "mcp_servers" &&
+      path[1] === SERVER_NAME &&
+      !(table[0] === "mcp_servers" && table[1] === SERVER_NAME)
+    ) {
+      return {
+        conflict:
+          "defines the autoremediator server with dotted or inline keys, so it was left alone",
+      };
     }
   }
   if (hasTable) return { content: existing };
@@ -126,7 +139,8 @@ export function mergeMarkedSection(existing: string | undefined, body: string): 
   const end = existing.indexOf(END);
   if (start !== -1 && end > start) {
     return {
-      content: existing.slice(0, start) + section + existing.slice(end + END.length).replace(/^\r?\n/, ""),
+      content:
+        existing.slice(0, start) + section + existing.slice(end + END.length).replace(/^\r?\n/, ""),
     };
   }
   if (start !== -1 || end !== -1) {
@@ -139,7 +153,9 @@ export function mergeMarkedSection(existing: string | undefined, body: string): 
 /** Ensure each line is present in a `.gitignore`. */
 export function mergeGitignore(existing: string | undefined, lines: string[]): MergeResult {
   const present = new Set((existing ?? "").split("\n").map((line) => line.trim()));
-  const missing = lines.filter((line) => !present.has(line) && !present.has(line.replace(/\/$/, "")));
+  const missing = lines.filter(
+    (line) => !present.has(line) && !present.has(line.replace(/\/$/, "")),
+  );
   if (missing.length === 0) return { content: existing ?? "" };
   const base = existing ?? "";
   const prefix = base === "" || base.endsWith("\n") ? base : `${base}\n`;
@@ -169,7 +185,10 @@ export function mergeClaudeGuardHook(existing: string | undefined, command: stri
     doc = parsed as Record<string, unknown>;
   }
   const hooks = doc.hooks;
-  if (hooks !== undefined && (typeof hooks !== "object" || hooks === null || Array.isArray(hooks))) {
+  if (
+    hooks !== undefined &&
+    (typeof hooks !== "object" || hooks === null || Array.isArray(hooks))
+  ) {
     return { conflict: 'has a "hooks" that is not an object, so it was left alone' };
   }
   const events = { ...(hooks as Record<string, unknown> | undefined) };
@@ -181,20 +200,30 @@ export function mergeClaudeGuardHook(existing: string | undefined, command: stri
   let present = false;
   for (const group of groups) {
     if (typeof group !== "object" || group === null || Array.isArray(group)) {
-      return { conflict: 'has a "hooks.PreToolUse" entry that is not an object, so it was left alone' };
+      return {
+        conflict: 'has a "hooks.PreToolUse" entry that is not an object, so it was left alone',
+      };
     }
     const inner = (group as HookGroup).hooks;
     if (inner === undefined) continue;
     if (!Array.isArray(inner)) {
-      return { conflict: 'has a "hooks.PreToolUse" entry whose "hooks" is not a list, so it was left alone' };
+      return {
+        conflict:
+          'has a "hooks.PreToolUse" entry whose "hooks" is not a list, so it was left alone',
+      };
     }
     for (const hook of inner as unknown[]) {
       if (typeof hook !== "object" || hook === null || Array.isArray(hook)) {
-        return { conflict: 'has a hook in "hooks.PreToolUse" that is not an object, so it was left alone' };
+        return {
+          conflict: 'has a hook in "hooks.PreToolUse" that is not an object, so it was left alone',
+        };
       }
       const hookCommand = (hook as { command?: unknown }).command;
       if (hookCommand !== undefined && typeof hookCommand !== "string") {
-        return { conflict: 'has a hook in "hooks.PreToolUse" whose command is not text, so it was left alone' };
+        return {
+          conflict:
+            'has a hook in "hooks.PreToolUse" whose command is not text, so it was left alone',
+        };
       }
       if (hookCommand?.includes("guard-hook")) present = true;
     }
@@ -202,7 +231,9 @@ export function mergeClaudeGuardHook(existing: string | undefined, command: stri
   if (!present) {
     groups.push({ matcher: "Bash", hooks: [{ type: "command", command }] });
   }
-  return { content: `${JSON.stringify({ ...doc, hooks: { ...events, PreToolUse: groups } }, null, indent)}\n` };
+  return {
+    content: `${JSON.stringify({ ...doc, hooks: { ...events, PreToolUse: groups } }, null, indent)}\n`,
+  };
 }
 
 /**
@@ -211,7 +242,11 @@ export function mergeClaudeGuardHook(existing: string | undefined, command: stri
  * wrote; an entry that already runs `guard-hook` leaves the file unchanged.
  * Sources: https://cursor.com/docs/agent/hooks and docs.github.com/en/copilot/reference/hooks-reference
  */
-export function mergeHooksFile(existing: string | undefined, event: string, entry: Record<string, unknown>): MergeResult {
+export function mergeHooksFile(
+  existing: string | undefined,
+  event: string,
+  entry: Record<string, unknown>,
+): MergeResult {
   let doc: Record<string, unknown> = {};
   let indent = "  ";
   if (existing !== undefined && existing.trim() !== "") {
@@ -228,7 +263,10 @@ export function mergeHooksFile(existing: string | undefined, event: string, entr
     doc = parsed as Record<string, unknown>;
   }
   const hooks = doc.hooks;
-  if (hooks !== undefined && (typeof hooks !== "object" || hooks === null || Array.isArray(hooks))) {
+  if (
+    hooks !== undefined &&
+    (typeof hooks !== "object" || hooks === null || Array.isArray(hooks))
+  ) {
     return { conflict: 'has a "hooks" that is not an object, so it was left alone' };
   }
   const events = { ...(hooks as Record<string, unknown> | undefined) };
@@ -241,7 +279,9 @@ export function mergeHooksFile(existing: string | undefined, event: string, entr
     (item) =>
       typeof item === "object" &&
       item !== null &&
-      Object.values(item).some((value) => typeof value === "string" && value.includes("guard-hook")),
+      Object.values(item).some(
+        (value) => typeof value === "string" && value.includes("guard-hook"),
+      ),
   );
   if (!present) list.push(entry);
   return {
@@ -262,7 +302,12 @@ export const RUN_STATE_IGNORE = [
 
 const STAR_ENTRY = RUN_STATE_IGNORE[0];
 const NEGATIONS: readonly string[] = RUN_STATE_IGNORE.slice(1);
-const DIRECTORY_FORMS = new Set([".autoremediator/", ".autoremediator", "/.autoremediator/", "/.autoremediator"]);
+const DIRECTORY_FORMS = new Set([
+  ".autoremediator/",
+  ".autoremediator",
+  "/.autoremediator/",
+  "/.autoremediator",
+]);
 const STAR_FORMS = new Set([".autoremediator/*", "/.autoremediator/*"]);
 const trimmed = (line: string): string => line.trim();
 
@@ -270,7 +315,9 @@ export function mergeRunStateIgnore(text = ""): MergeResult {
   const original = text === "" ? [] : text.replace(/\n$/, "").split("\n");
 
   // Where the star entry goes: where the first star or directory entry is, else the end.
-  const firstEntry = original.findIndex((line) => STAR_FORMS.has(trimmed(line)) || DIRECTORY_FORMS.has(trimmed(line)));
+  const firstEntry = original.findIndex(
+    (line) => STAR_FORMS.has(trimmed(line)) || DIRECTORY_FORMS.has(trimmed(line)),
+  );
   const lines: string[] = [];
   let starAt = -1;
   for (const [index, line] of original.entries()) {

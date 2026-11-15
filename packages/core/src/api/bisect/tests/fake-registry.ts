@@ -62,7 +62,9 @@ export class FakeRegistry {
       const name = path.slice(1);
       const versions = this.packages.get(name);
       if (!versions) {
-        response.writeHead(404, { "content-type": "application/json" }).end('{"error":"not found"}');
+        response
+          .writeHead(404, { "content-type": "application/json" })
+          .end('{"error":"not found"}');
         return;
       }
       const sorted = [...versions.keys()].toSorted((a, b) =>

@@ -1,12 +1,20 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { execa } from "execa";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { parseLockfileDependencies } from "../../scanner/lockfile-diff.js";
 import { worktreeRoot } from "../../runs/worktree.js";
+import { parseLockfileDependencies } from "../../scanner/lockfile-diff.js";
 import { getRun } from "../runs/index.js";
 import { bisectLockfile } from "./index.js";
 import { FakeRegistry } from "./tests/fake-registry.js";
@@ -58,7 +66,10 @@ async function run(cmd: string, args: string[], cwd: string): Promise<string> {
   return result.all ?? "";
 }
 
-async function makeRepo(manager: Manager, registry: FakeRegistry): Promise<{ dir: string; good: string; bad: string }> {
+async function makeRepo(
+  manager: Manager,
+  registry: FakeRegistry,
+): Promise<{ dir: string; good: string; bad: string }> {
   const dir = join(scratch, `${manager}-repo`);
   mkdirSync(dir, { recursive: true });
   await run("git", ["init", "--quiet", "--initial-branch=main"], dir);
@@ -97,10 +108,16 @@ async function makeRepo(manager: Manager, registry: FakeRegistry): Promise<{ dir
   await run("git", ["commit", "--quiet", "-m", "bad: lockfile regenerated"], dir);
   const bad = (await run("git", ["rev-parse", "HEAD"], dir)).trim();
 
-  const before = parseLockfileDependencies(lockfile, await run("git", ["show", `${good}:${lockfile}`], dir));
-  const after = parseLockfileDependencies(lockfile, await run("git", ["show", `${bad}:${lockfile}`], dir));
-  expect([...after.get("leaf-b") ?? []]).toEqual(["1.1.0"]);
-  expect([...before.get("leaf-b") ?? []]).toEqual(["1.0.0"]);
+  const before = parseLockfileDependencies(
+    lockfile,
+    await run("git", ["show", `${good}:${lockfile}`], dir),
+  );
+  const after = parseLockfileDependencies(
+    lockfile,
+    await run("git", ["show", `${bad}:${lockfile}`], dir),
+  );
+  expect([...(after.get("leaf-b") ?? [])]).toEqual(["1.1.0"]);
+  expect([...(before.get("leaf-b") ?? [])]).toEqual(["1.0.0"]);
   return { dir, good, bad };
 }
 
@@ -140,12 +157,21 @@ beforeAll(async () => {
       ["direct-lib", "1.0.0"],
     ];
     for (const [name, version] of old) {
-      await registry.publish({ name, version, files: { "index.js": `module.exports = ${JSON.stringify(`${name}@${version}`)};\n` } });
+      await registry.publish({
+        name,
+        version,
+        files: { "index.js": `module.exports = ${JSON.stringify(`${name}@${version}`)};\n` },
+      });
     }
     await registry.publish({
       name: "mid",
       version: "1.0.0",
-      dependencies: { "leaf-a": "^1.0.0", "leaf-b": "^1.0.0", "leaf-c": "^2.0.0", "leaf-d": "^1.0.0" },
+      dependencies: {
+        "leaf-a": "^1.0.0",
+        "leaf-b": "^1.0.0",
+        "leaf-c": "^2.0.0",
+        "leaf-d": "^1.0.0",
+      },
     });
     repos[manager] = await makeRepo(manager, registry);
   }
@@ -158,16 +184,28 @@ afterAll(async () => {
 });
 
 const LOCKFILE: Record<Manager, string> = { npm: "package-lock.json", pnpm: "pnpm-lock.yaml" };
-const FROZEN_INSTALL: Record<Manager, string> = { npm: "npm ci", pnpm: "pnpm install --frozen-lockfile" };
+const FROZEN_INSTALL: Record<Manager, string> = {
+  npm: "npm ci",
+  pnpm: "pnpm install --frozen-lockfile",
+};
 
 describe.each(["npm", "pnpm"] as const)("bisect with real %s and a local registry", (manager) => {
   it("finds the one transitive update that breaks the command", async () => {
     const repo = repos[manager]!;
-    const report = await bisectLockfile({ cwd: repo.dir, good: repo.good, command: "node check.js single" });
+    const report = await bisectLockfile({
+      cwd: repo.dir,
+      good: repo.good,
+      command: "node check.js single",
+    });
 
     expect(report.status).toBe("culprit");
     expect(report.culprits).toEqual([
-      { packageName: "leaf-b", fromVersion: "1.0.0", toVersion: "1.1.0", dependencyScope: "transitive" },
+      {
+        packageName: "leaf-b",
+        fromVersion: "1.0.0",
+        toVersion: "1.1.0",
+        dependencyScope: "transitive",
+      },
     ]);
     expect(report.updates.map((item) => item.packageName)).toEqual([
       "direct-lib",
@@ -194,44 +232,78 @@ describe.each(["npm", "pnpm"] as const)("bisect with real %s and a local registr
     expect(report.stepsUsed).toBeLessThanOrEqual(8);
 
     // The remedy is a plan in the run store that pins the package back; nothing was applied.
-    expect(report.remedy?.pins).toEqual([{ packageName: "leaf-b", version: "1.0.0", strategy: "override" }]);
+    expect(report.remedy?.pins).toEqual([
+      { packageName: "leaf-b", version: "1.0.0", strategy: "override" },
+    ]);
     expect(report.remedy?.runId).toBeDefined();
     expect(report.remedy?.applied).toBeUndefined();
     const details = getRun({ cwd: repo.dir, runId: report.remedy?.runId ?? "" });
     expect(details.run.status).toBe("planned");
     expect(details.plan?.items).toMatchObject([
-      { packageName: "leaf-b", fromVersion: "1.1.0", toVersion: "1.0.0", strategy: "override", dependencyScope: "transitive" },
+      {
+        packageName: "leaf-b",
+        fromVersion: "1.1.0",
+        toVersion: "1.0.0",
+        strategy: "override",
+        dependencyScope: "transitive",
+      },
     ]);
 
     // The main checkout is as it was, and no checkout is left behind.
     expect((await run("git", ["status", "--porcelain"], repo.dir)).trim()).toBe("");
     await expect(worktreeLines(repo.dir)).resolves.toHaveLength(1);
-    const root = worktreeRoot(await run("git", ["rev-parse", "--show-toplevel"], repo.dir).then((text) => text.trim()));
+    const root = worktreeRoot(
+      await run("git", ["rev-parse", "--show-toplevel"], repo.dir).then((text) => text.trim()),
+    );
     expect(existsSync(root) ? readdirSync(root) : []).toEqual([]);
   }, 240_000);
 
   it("reports the smallest set of updates that fail only together", async () => {
     const repo = repos[manager]!;
-    const report = await bisectLockfile({ cwd: repo.dir, good: repo.good, command: "node check.js pair" });
+    const report = await bisectLockfile({
+      cwd: repo.dir,
+      good: repo.good,
+      command: "node check.js pair",
+    });
     expect(report.status).toBe("culprit-set");
-    expect(report.culprits.map((item) => item.packageName).toSorted()).toEqual(["leaf-a", "leaf-c"]);
+    expect(report.culprits.map((item) => item.packageName).toSorted()).toEqual([
+      "leaf-a",
+      "leaf-c",
+    ]);
     expect(report.holdingBackFixes).toBe(true);
-    expect(report.remedy?.pins.map((pin) => pin.packageName).toSorted()).toEqual(["leaf-a", "leaf-c"]);
+    expect(report.remedy?.pins.map((pin) => pin.packageName).toSorted()).toEqual([
+      "leaf-a",
+      "leaf-c",
+    ]);
   }, 240_000);
 
   it("finds a direct dependency and applies the pin when asked, through the run machinery", async () => {
     const repo = repos[manager]!;
     const dir = await clone(repo.dir, `${manager}-apply`);
-    const report = await bisectLockfile({ cwd: dir, good: repo.good, command: "node check.js direct", apply: true });
+    const report = await bisectLockfile({
+      cwd: dir,
+      good: repo.good,
+      command: "node check.js direct",
+      apply: true,
+    });
     expect(report.status).toBe("culprit");
-    expect(report.culprits).toMatchObject([{ packageName: "direct-lib", dependencyScope: "direct" }]);
-    expect(report.remedy?.pins).toEqual([{ packageName: "direct-lib", version: "1.0.0", strategy: "version-bump" }]);
+    expect(report.culprits).toMatchObject([
+      { packageName: "direct-lib", dependencyScope: "direct" },
+    ]);
+    expect(report.remedy?.pins).toEqual([
+      { packageName: "direct-lib", version: "1.0.0", strategy: "version-bump" },
+    ]);
     expect(report.remedy?.applied).toMatchObject({ effective: true, status: "applied" });
 
-    const lock = parseLockfileDependencies(LOCKFILE[manager], readFileSync(join(dir, LOCKFILE[manager]), "utf8"));
+    const lock = parseLockfileDependencies(
+      LOCKFILE[manager],
+      readFileSync(join(dir, LOCKFILE[manager]), "utf8"),
+    );
     expect([...(lock.get("direct-lib") ?? [])]).toEqual(["1.0.0"]);
     // A direct dependency is pinned to the exact version: a range would keep the newer lock entry.
-    expect(JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).dependencies["direct-lib"]).toBe("1.0.0");
+    expect(
+      JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).dependencies["direct-lib"],
+    ).toBe("1.0.0");
     expect((await run("node", ["check.js", "direct"], dir)).trim()).toBe("ok 1.1.0");
   }, 240_000);
 });
@@ -240,10 +312,18 @@ describe("bisect with real pnpm: applying a transitive pin", () => {
   it("checks the lockfile after applying and says so when the override was not honoured", async () => {
     const repo = repos["pnpm"]!;
     const dir = await clone(repo.dir, "pnpm-apply-transitive");
-    const report = await bisectLockfile({ cwd: dir, good: repo.good, command: "node check.js single", apply: true });
+    const report = await bisectLockfile({
+      cwd: dir,
+      good: repo.good,
+      command: "node check.js single",
+      apply: true,
+    });
     expect(report.status).toBe("culprit");
     const applied = report.remedy?.applied;
-    const lock = parseLockfileDependencies("pnpm-lock.yaml", readFileSync(join(dir, "pnpm-lock.yaml"), "utf8"));
+    const lock = parseLockfileDependencies(
+      "pnpm-lock.yaml",
+      readFileSync(join(dir, "pnpm-lock.yaml"), "utf8"),
+    );
     // Whatever the existing override step did, the report agrees with the lockfile.
     expect(applied?.effective).toBe([...(lock.get("leaf-b") ?? [])].join() === "1.0.0");
     if (!applied?.effective) expect(applied?.note).toContain("pnpm-workspace.yaml");
@@ -277,7 +357,11 @@ describe("bisect with real npm: failure modes", () => {
     writeFileSync(join(dir, "broken-marker"), "x\n");
     await run("git", ["add", "--all"], dir);
     await run("git", ["commit", "--quiet", "-m", "source change"], dir);
-    const report = await bisectLockfile({ cwd: dir, good: repo.good, command: "test ! -f broken-marker" });
+    const report = await bisectLockfile({
+      cwd: dir,
+      good: repo.good,
+      command: "test ! -f broken-marker",
+    });
     expect(report.status).toBe("not-attributable");
     expect(report.summary).toContain("does not come from a version change");
     expect(report.culprits).toEqual([]);
@@ -286,7 +370,11 @@ describe("bisect with real npm: failure modes", () => {
 
   it("says not reproducible when the command passes at the bad ref, or fails at the good one", async () => {
     const repo = repos["npm"]!;
-    const passes = await bisectLockfile({ cwd: repo.dir, good: repo.good, command: "node check.js none" });
+    const passes = await bisectLockfile({
+      cwd: repo.dir,
+      good: repo.good,
+      command: "node check.js none",
+    });
     expect(passes.status).toBe("not-reproducible");
     expect(passes.summary).toContain("passes at the bad ref");
     expect(passes.steps.map((step) => step.kind)).toEqual(["good-ref", "bad-ref"]);
@@ -301,7 +389,12 @@ describe("bisect with real npm: failure modes", () => {
 
   it("stops at the step limit and says the answer is not final", async () => {
     const repo = repos["npm"]!;
-    const report = await bisectLockfile({ cwd: repo.dir, good: repo.good, command: "node check.js single", maxSteps: 2 });
+    const report = await bisectLockfile({
+      cwd: repo.dir,
+      good: repo.good,
+      command: "node check.js single",
+      maxSteps: 2,
+    });
     expect(report.status).toBe("incomplete");
     expect(report.stopped).toBe("max-steps");
     expect(report.stepsUsed).toBe(2);
@@ -335,5 +428,4 @@ describe("bisect with real npm: failure modes", () => {
     expect(() => process.kill(Number(readFileSync(pidFile, "utf8")), 0)).toThrow();
     await expect(worktreeLines(repo.dir)).resolves.toHaveLength(1);
   }, 180_000);
-
 });

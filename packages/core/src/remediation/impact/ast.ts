@@ -56,7 +56,11 @@ export function childNodes(node: AstNode): AstNode[] {
  */
 export function walk(
   root: AstNode,
-  visit: (node: AstNode, parent: AstNode | undefined, ancestors: readonly AstNode[]) => boolean | void,
+  visit: (
+    node: AstNode,
+    parent: AstNode | undefined,
+    ancestors: readonly AstNode[],
+  ) => boolean | void,
 ): void {
   const ancestors: AstNode[] = [];
   const stack: Array<{ node: AstNode; depth: number }> = [{ node: root, depth: 0 }];
@@ -200,10 +204,7 @@ export function nameOfNode(node: unknown): string | undefined {
 }
 
 /** Name of a property key that is a plain identifier or string literal; undefined when computed. */
-export function propertyName(
-  key: unknown,
-  computed: boolean | undefined,
-): string | undefined {
+export function propertyName(key: unknown, computed: boolean | undefined): string | undefined {
   if (!isNode(key)) return undefined;
   if (key.type === "Identifier" && !computed) return String(key.name);
   if (key.type === "Literal" && typeof key.value === "string") return key.value;

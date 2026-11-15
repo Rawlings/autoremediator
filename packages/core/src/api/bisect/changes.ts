@@ -43,7 +43,8 @@ export function lockfileChanges(
   for (const name of [...new Set([...before.keys(), ...after.keys()])].toSorted()) {
     const was = [...(before.get(name) ?? [])].toSorted();
     const now = [...(after.get(name) ?? [])].toSorted();
-    if (was.length === now.length && was.every((version, index) => version === now[index])) continue;
+    if (was.length === now.length && was.every((version, index) => version === now[index]))
+      continue;
 
     const [from] = was;
     const [to] = now;

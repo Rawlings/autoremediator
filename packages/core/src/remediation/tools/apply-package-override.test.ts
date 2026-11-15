@@ -132,7 +132,9 @@ describe("apply-package-override", () => {
     const written = mocked.writeFileSync.mock.calls.map((call) => String(call[0]));
     expect(written).toContain("/tmp/project/pnpm-workspace.yaml");
     expect(written).not.toContain("/tmp/project/package.json");
-    const workspaceText = mocked.writeFileSync.mock.calls.find((call) => String(call[0]).endsWith("pnpm-workspace.yaml"))?.[1] as string;
+    const workspaceText = mocked.writeFileSync.mock.calls.find((call) =>
+      String(call[0]).endsWith("pnpm-workspace.yaml"),
+    )?.[1] as string;
     expect(workspaceText).toContain("minimist: 1.2.8");
     expect(workspaceText).toContain("# keep me");
     expect(result.applied).toBe(true);

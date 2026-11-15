@@ -16,7 +16,6 @@ import {
 import { isPackageAllowed, loadPolicy } from "../../../platform/policy.js";
 import { withRepoLock } from "../../../platform/repo-lock.js";
 import { safeExecaCommand } from "../../../platform/safe-exec-command.js";
-import { serializeManifest } from "../manifest-format.js";
 import { LONG_RUNNING_TIMEOUT_MS } from "../../../platform/timeouts.js";
 import type {
   PatchResult,
@@ -28,6 +27,7 @@ import {
   prepareReproductionTestFile,
   runProofOfFixPhase,
 } from "../../proof-of-fix/runner.js";
+import { serializeManifest } from "../manifest-format.js";
 import { defineTool } from "../tool-compat.js";
 import {
   collectDependencyTrace,
@@ -404,7 +404,9 @@ export const applyPackageOverrideTool = defineTool({
 
     const pnpmMajor = pm === "pnpm" ? await getPnpmMajorVersion(cwd) : undefined;
     const useWorkspaceYaml = pm === "pnpm" && (pnpmMajor ?? 0) >= PNPM_WORKSPACE_OVERRIDES_FROM;
-    const overrideLabel = useWorkspaceYaml ? "overrides in pnpm-workspace.yaml" : describeOverrideField(pm);
+    const overrideLabel = useWorkspaceYaml
+      ? "overrides in pnpm-workspace.yaml"
+      : describeOverrideField(pm);
 
     const dependencyTrace = await collectDependencyTrace(cwd, pm, packageName, commandConstraints);
     const dependencyTraceSuffix = dependencyTrace ? ` Dependency trace: ${dependencyTrace}` : "";
@@ -512,7 +514,11 @@ export const applyPackageOverrideTool = defineTool({
       if (pm === "pnpm" && pnpmLockRecordsOverride(cwd, overrideSelector) === false) {
         restoreOverrideFiles();
         try {
-          await safeExecaCommand(installCommand, { timeoutMs: LONG_RUNNING_TIMEOUT_MS, cwd, stdio: "pipe" });
+          await safeExecaCommand(installCommand, {
+            timeoutMs: LONG_RUNNING_TIMEOUT_MS,
+            cwd,
+            stdio: "pipe",
+          });
         } catch {
           // The files are restored; a failed reinstall here is reported by the next run.
         }

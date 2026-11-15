@@ -48,7 +48,9 @@ export async function fetchVerifiedPackage(
   const bytes = await downloadTarball(info, registry);
   const check = verifyTarballIntegrity(bytes, info);
   if (!check.ok) {
-    throw new Error(`Refusing ${name}@${version}: the tarball failed verification (${check.reason})`);
+    throw new Error(
+      `Refusing ${name}@${version}: the tarball failed verification (${check.reason})`,
+    );
   }
   if (!check.verified || !info.integrity) {
     throw new Error(
@@ -93,7 +95,9 @@ export async function installFetchedPackage(
   assertRegistryOnlyDependencies(fetched.source.manifest, `${fetched.name}@${fetched.version}`);
   const dependencies = fetched.source.manifest["dependencies"];
   const hasDependencies =
-    typeof dependencies === "object" && dependencies !== null && Object.keys(dependencies).length > 0;
+    typeof dependencies === "object" &&
+    dependencies !== null &&
+    Object.keys(dependencies).length > 0;
   const registry = loadRegistryConfig(cwd);
 
   await safeExeca(
@@ -129,20 +133,26 @@ export async function installFetchedPackage(
 }
 
 /** What a dependency spec may be: a registry range or tag, never a path, URL, git or workspace reference. */
-const NON_REGISTRY_SPEC = /^(?:file|link|portal|workspace|git|git\+[a-z]+|https?|ssh|github|gitlab|bitbucket|gist):|^[./~\\]|^[^@:\s]+\/[^@:\s]+$/i;
+const NON_REGISTRY_SPEC =
+  /^(?:file|link|portal|workspace|git|git\+[a-z]+|https?|ssh|github|gitlab|bitbucket|gist):|^[./~\\]|^[^@:\s]+\/[^@:\s]+$/i;
 
 /**
  * The package is attacker-chosen, so its manifest is too. A `file:` or `link:` dependency makes npm
  * create a symlink to a path of the attacker's choosing, and the sandbox's read permission follows
  * symlinks. Registry specs only.
  */
-export function assertRegistryOnlyDependencies(manifest: Record<string, unknown>, label: string): void {
+export function assertRegistryOnlyDependencies(
+  manifest: Record<string, unknown>,
+  label: string,
+): void {
   for (const field of ["dependencies", "peerDependencies", "optionalDependencies"]) {
     const entries = manifest[field];
     if (typeof entries !== "object" || entries === null) continue;
     for (const [name, spec] of Object.entries(entries as Record<string, unknown>)) {
       if (typeof spec !== "string" || NON_REGISTRY_SPEC.test(spec.trim())) {
-        throw new Error(`${label} declares ${field}.${name} as "${String(spec).slice(0, 60)}", which is not a registry version; refusing to install it for a proof run.`);
+        throw new Error(
+          `${label} declares ${field}.${name} as "${String(spec).slice(0, 60)}", which is not a registry version; refusing to install it for a proof run.`,
+        );
       }
     }
   }
@@ -159,7 +169,8 @@ export function assertNoEscapingLinks(dir: string): void {
     for (const entry of readdirSync(current, { withFileTypes: true })) {
       const full = join(current, entry.name);
       if (entry.isSymbolicLink()) {
-        const inBin = relative(root, current).split(sep).slice(-2).join("/") === "node_modules/.bin";
+        const inBin =
+          relative(root, current).split(sep).slice(-2).join("/") === "node_modules/.bin";
         let target: string | undefined;
         try {
           target = realpathSync(full);
@@ -168,7 +179,9 @@ export function assertNoEscapingLinks(dir: string): void {
         }
         const inside = target !== undefined && (target === root || target.startsWith(root + sep));
         if (!inBin || !inside) {
-          throw new Error(`The installed package tree contains a symbolic link (${relative(root, full)}); refusing to run a proof inside it.`);
+          throw new Error(
+            `The installed package tree contains a symbolic link (${relative(root, full)}); refusing to run a proof inside it.`,
+          );
         }
       } else if (entry.isDirectory()) {
         visit(full);

@@ -115,7 +115,8 @@ export function truncateMessage<M extends MessageLike>(
       typeof part.mediaType === "string" ? { mediaType: part.mediaType.slice(0, 100) } : {};
     if (typeof part.text === "string") {
       const budget = Math.max(0, remaining - 64);
-      const text = part.text.length > budget ? `${part.text.slice(0, budget)}...[truncated]` : part.text;
+      const text =
+        part.text.length > budget ? `${part.text.slice(0, budget)}...[truncated]` : part.text;
       const copy = { text, ...mediaType };
       kept.push(copy);
       remaining -= byteLength(copy) + 1;
@@ -123,9 +124,7 @@ export function truncateMessage<M extends MessageLike>(
       const whole = { data: part.data, ...mediaType };
       const size = byteLength(whole);
       const copy =
-        size <= remaining
-          ? whole
-          : { data: { truncated: true, bytes: size }, ...mediaType };
+        size <= remaining ? whole : { data: { truncated: true, bytes: size }, ...mediaType };
       kept.push(copy);
       remaining -= byteLength(copy) + 1;
     }

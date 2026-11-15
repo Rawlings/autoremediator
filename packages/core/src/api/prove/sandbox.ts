@@ -19,8 +19,8 @@
  * Where those limits matter, run the whole tool in a container.
  */
 import { spawn } from "node:child_process";
-import { createServer } from "node:net";
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -158,7 +158,9 @@ export function runSandboxed(options: SandboxOptions): Promise<SandboxResult> {
     child.once("error", (error) => {
       clearTimeout(timer);
       killGroup();
-      reject(new SandboxUnavailableError("Could not start the sandboxed process.", { cause: error }));
+      reject(
+        new SandboxUnavailableError("Could not start the sandboxed process.", { cause: error }),
+      );
     });
     child.once("close", (exitCode, signal) => {
       clearTimeout(timer);
@@ -315,7 +317,12 @@ async function runProbe(dir: string, args: string[]): Promise<SandboxResult> {
     `process.argv.push(...${JSON.stringify(args)});\nrequire("./probe.cjs");\n`,
     "utf8",
   );
-  return runSandboxed({ dir, script: "run-probe.cjs", timeoutMs: 15_000, maxOutputBytes: 64 * 1024 });
+  return runSandboxed({
+    dir,
+    script: "run-probe.cjs",
+    timeoutMs: 15_000,
+    maxOutputBytes: 64 * 1024,
+  });
 }
 
 let verified: Promise<SandboxReport> | undefined;

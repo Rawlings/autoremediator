@@ -103,8 +103,10 @@ function visit(node: Node, walk: Walk, parent?: Node): void {
       const name = node.name as string;
       const why = FORBIDDEN_IDENTIFIERS[name];
       if (why) walk.violations.add(`${name}: ${why}`);
-      if (name === "require") walk.violations.add("uses `require` other than by calling it with a literal module name");
-      if (name === "process") walk.violations.add("uses `process` other than exit, exitCode, stdout, stderr or nextTick");
+      if (name === "require")
+        walk.violations.add("uses `require` other than by calling it with a literal module name");
+      if (name === "process")
+        walk.violations.add("uses `process` other than exit, exitCode, stdout, stderr or nextTick");
       return;
     }
     case "MetaProperty": {
@@ -114,10 +116,14 @@ function visit(node: Node, walk: Walk, parent?: Node): void {
     case "Literal": {
       if (typeof node.value === "string") {
         if (/\bpackage\.json\b/.test(node.value)) {
-          walk.violations.add("reads the package manifest (the script must call the package, not look at its version)");
+          walk.violations.add(
+            "reads the package manifest (the script must call the package, not look at its version)",
+          );
         }
         if (node.value === "version" || node.value === "versions") {
-          walk.violations.add("reads a version (the script must call the package, not look at its version)");
+          walk.violations.add(
+            "reads a version (the script must call the package, not look at its version)",
+          );
         }
       }
       return;
@@ -129,14 +135,27 @@ function visit(node: Node, walk: Walk, parent?: Node): void {
       if (!computed && isNode(property) && property.type === "Identifier") {
         const name = property.name as string;
         if (name === "version" || name === "versions") {
-          walk.violations.add("reads a version (the script must call the package, not look at its version)");
+          walk.violations.add(
+            "reads a version (the script must call the package, not look at its version)",
+          );
         }
-        if (name === "constructor") walk.violations.add("reaches the Function constructor through `.constructor`");
+        if (name === "constructor")
+          walk.violations.add("reaches the Function constructor through `.constructor`");
       }
       if (isNode(object) && object.type === "Identifier" && object.name === "process") {
-        if (computed || !isNode(property) || property.type !== "Identifier" || !ALLOWED_PROCESS_MEMBERS.has(property.name as string)) {
-          const used = !computed && isNode(property) && property.type === "Identifier" ? `process.${String(property.name)}` : "process[...]";
-          walk.violations.add(`${used}: uses a process API the script has no need for (environment, signals, version, directory)`);
+        if (
+          computed ||
+          !isNode(property) ||
+          property.type !== "Identifier" ||
+          !ALLOWED_PROCESS_MEMBERS.has(property.name as string)
+        ) {
+          const used =
+            !computed && isNode(property) && property.type === "Identifier"
+              ? `process.${String(property.name)}`
+              : "process[...]";
+          walk.violations.add(
+            `${used}: uses a process API the script has no need for (environment, signals, version, directory)`,
+          );
         }
         if (computed) visit(property as Node, walk, node);
         return;
@@ -150,9 +169,11 @@ function visit(node: Node, walk: Walk, parent?: Node): void {
       if (isNode(callee) && callee.type === "Identifier" && callee.name === "require") {
         const args = node.arguments as unknown[];
         const specifier = literalString(args[0]);
-        if (specifier === undefined || args.length !== 1) walk.violations.add("loads a module by a computed name");
+        if (specifier === undefined || args.length !== 1)
+          walk.violations.add("loads a module by a computed name");
         else walk.specifiers.push(specifier);
-        for (const arg of args) if (isNode(arg) && literalString(arg) === undefined) visit(arg, walk, node);
+        for (const arg of args)
+          if (isNode(arg) && literalString(arg) === undefined) visit(arg, walk, node);
         return;
       }
       break;
@@ -233,7 +254,9 @@ export function screenScript(
 
   for (const specifier of new Set(walk.specifiers)) {
     if (/\bpackage\.json\b/.test(specifier)) {
-      violations.add("reads the package manifest (the script must call the package, not look at its version)");
+      violations.add(
+        "reads the package manifest (the script must call the package, not look at its version)",
+      );
     }
     if (!allowedSpecifier(specifier, context.packageName)) {
       violations.add(
@@ -241,12 +264,21 @@ export function screenScript(
       );
     }
   }
-  if (!walk.specifiers.some((specifier) => specifier === context.packageName || specifier.startsWith(`${context.packageName}/`))) {
-    violations.add(`never loads ${context.packageName}; a reproduction must exercise the package through its public API`);
+  if (
+    !walk.specifiers.some(
+      (specifier) =>
+        specifier === context.packageName || specifier.startsWith(`${context.packageName}/`),
+    )
+  ) {
+    violations.add(
+      `never loads ${context.packageName}; a reproduction must exercise the package through its public API`,
+    );
   }
   for (const version of context.versions) {
     if (script.includes(version)) {
-      violations.add(`mentions the version ${version} (the script must behave differently because of the code, not because of a version it was told)`);
+      violations.add(
+        `mentions the version ${version} (the script must behave differently because of the code, not because of a version it was told)`,
+      );
     }
   }
   return { ok: violations.size === 0, violations: [...violations] };

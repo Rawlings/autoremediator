@@ -44,7 +44,8 @@ export interface VersionChoice {
   fixedVersion: string;
 }
 
-const stable = (version: string): boolean => semver.valid(version) !== null && semver.prerelease(version) === null;
+const stable = (version: string): boolean =>
+  semver.valid(version) !== null && semver.prerelease(version) === null;
 
 /**
  * The pair of versions to prove against. Explicit versions win. Otherwise the fixed version is the
@@ -74,7 +75,9 @@ export function chooseVersions(input: {
       .filter(stable)
       .filter((version) => semver.lt(version, fixedVersion))
       .filter((version) =>
-        entries.length === 0 ? true : entries.some((entry) => semver.satisfies(version, entry.vulnerableRange)),
+        entries.length === 0
+          ? true
+          : entries.some((entry) => semver.satisfies(version, entry.vulnerableRange)),
       )
       .toSorted(semver.rcompare);
     vulnerableVersion = inRange[0];
@@ -96,7 +99,10 @@ export function chooseVersions(input: {
 }
 
 /** Pick the package when the caller did not name one, if the advisory affects exactly one. */
-export function choosePackage(requested: string | undefined, affected: readonly AdvisoryAffected[]): string {
+export function choosePackage(
+  requested: string | undefined,
+  affected: readonly AdvisoryAffected[],
+): string {
   if (requested) return requested;
   const names = [...new Set(affected.map((entry) => entry.name))];
   if (names.length === 1) return names[0]!;

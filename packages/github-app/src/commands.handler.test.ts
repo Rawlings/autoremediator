@@ -117,13 +117,18 @@ describe("comment commands in the handler", () => {
   it("scans only the advisories named, not everything the audit finds", async () => {
     const { send } = setup("write");
     await send("/autoremediator plan CVE-2021-23337");
-    const [input, options] = remediateFromScanMock.mock.calls[0] as [string, Record<string, unknown>];
+    const [input, options] = remediateFromScanMock.mock.calls[0] as [
+      string,
+      Record<string, unknown>,
+    ];
     expect(input).toMatch(/filtered-findings\.sarif$/);
     expect(options.audit).toBe(false);
   });
 
   it("tells the issue the request failed without leaking the error, and is not retried", async () => {
-    remediateFromScanMock.mockRejectedValueOnce(new Error("clone https://x-access-token:SECRET@github.com failed"));
+    remediateFromScanMock.mockRejectedValueOnce(
+      new Error("clone https://x-access-token:SECRET@github.com failed"),
+    );
     const { send, comments } = setup("write");
     const result = await send("/autoremediator fix CVE-2021-23337");
     // A thrown error would be re-queued and the reply posted again, up to three times.
@@ -155,7 +160,9 @@ describe("comment commands in the handler", () => {
   it("answers with the generic failure comment when the checkout fails, and is not retried", async () => {
     const comments: string[] = [];
     const octokit = {
-      repos: { getCollaboratorPermissionLevel: vi.fn(async () => ({ data: { permission: "write" } })) },
+      repos: {
+        getCollaboratorPermissionLevel: vi.fn(async () => ({ data: { permission: "write" } })),
+      },
       issues: {
         createComment: vi.fn(async ({ body }: { body: string }) => {
           comments.push(body);
@@ -174,7 +181,10 @@ describe("comment commands in the handler", () => {
       eventName: "issue_comment",
       installationId: 1,
       payload: {
-        comment: { body: "/autoremediator fix CVE-2021-23337", user: { login: "alice", type: "User" } },
+        comment: {
+          body: "/autoremediator fix CVE-2021-23337",
+          user: { login: "alice", type: "User" },
+        },
         issue: { number: 7 },
         repository: { name: "r", owner: { login: "o" } },
       },
@@ -192,7 +202,9 @@ describe("comment commands in the handler", () => {
     try {
       const comments: string[] = [];
       const octokit = {
-        repos: { getCollaboratorPermissionLevel: vi.fn(async () => ({ data: { permission: "write" } })) },
+        repos: {
+          getCollaboratorPermissionLevel: vi.fn(async () => ({ data: { permission: "write" } })),
+        },
         issues: {
           createComment: vi.fn(async ({ body }: { body: string }) => {
             comments.push(body);
@@ -209,7 +221,10 @@ describe("comment commands in the handler", () => {
         installationId: 1,
         installationToken: "ghs_SECRET",
         payload: {
-          comment: { body: "/autoremediator plan CVE-2021-23337", user: { login: "alice", type: "User" } },
+          comment: {
+            body: "/autoremediator plan CVE-2021-23337",
+            user: { login: "alice", type: "User" },
+          },
           issue: { number: 7 },
           repository: { name: "r", owner: { login: "o" } },
         },
@@ -247,7 +262,10 @@ describe("alerts in the handler", () => {
 
   const alert = (severity: string) => ({
     action: "created",
-    alert: { security_advisory: { cve_id: "CVE-2021-23337", severity }, dependency: { package: { name: "lodash" } } },
+    alert: {
+      security_advisory: { cve_id: "CVE-2021-23337", severity },
+      dependency: { package: { name: "lodash" } },
+    },
     repository: { name: "r", owner: { login: "o" } },
   });
   const make = (config: Partial<AutoremediatorRepoConfig>) =>

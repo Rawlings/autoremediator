@@ -1,9 +1,9 @@
+import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { execa } from "execa";
-import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 
 import { fetchPackageSourceTool } from "./fetch-package-source.js";

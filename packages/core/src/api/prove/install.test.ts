@@ -9,15 +9,32 @@ import { assertNoEscapingLinks, assertRegistryOnlyDependencies } from "./install
 describe("assertRegistryOnlyDependencies", () => {
   it("accepts registry ranges and tags", () => {
     expect(() =>
-      assertRegistryOnlyDependencies({ dependencies: { a: "^1.2.3", b: "latest", c: "npm:d@1", e: ">=1 <2" } }, "p@1"),
+      assertRegistryOnlyDependencies(
+        { dependencies: { a: "^1.2.3", b: "latest", c: "npm:d@1", e: ">=1 <2" } },
+        "p@1",
+      ),
     ).not.toThrow();
   });
 
   it("refuses paths, URLs, git and workspace references", () => {
-    for (const spec of ["file:/etc", "link:../x", "git+https://x/y.git", "github:o/r", "o/r", "https://x/y.tgz", "../x", "/abs", "workspace:*"]) {
-      expect(() => assertRegistryOnlyDependencies({ dependencies: { evil: spec } }, "p@1")).toThrow(/not a registry version/);
+    for (const spec of [
+      "file:/etc",
+      "link:../x",
+      "git+https://x/y.git",
+      "github:o/r",
+      "o/r",
+      "https://x/y.tgz",
+      "../x",
+      "/abs",
+      "workspace:*",
+    ]) {
+      expect(() => assertRegistryOnlyDependencies({ dependencies: { evil: spec } }, "p@1")).toThrow(
+        /not a registry version/,
+      );
     }
-    expect(() => assertRegistryOnlyDependencies({ peerDependencies: { evil: "file:/x" } }, "p@1")).toThrow();
+    expect(() =>
+      assertRegistryOnlyDependencies({ peerDependencies: { evil: "file:/x" } }, "p@1"),
+    ).toThrow();
     expect(() => assertRegistryOnlyDependencies({ dependencies: { evil: 5 } }, "p@1")).toThrow();
   });
 });

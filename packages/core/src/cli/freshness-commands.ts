@@ -63,10 +63,14 @@ function distanceText(entry: FreshnessReport["packages"][number]): string {
   const parts = [
     entry.majorsBehind ? `${entry.majorsBehind} major${entry.majorsBehind === 1 ? "" : "s"}` : "",
     entry.minorsBehind ? `${entry.minorsBehind} minor${entry.minorsBehind === 1 ? "" : "s"}` : "",
-    entry.patchesBehind ? `${entry.patchesBehind} patch${entry.patchesBehind === 1 ? "" : "es"}` : "",
+    entry.patchesBehind
+      ? `${entry.patchesBehind} patch${entry.patchesBehind === 1 ? "" : "es"}`
+      : "",
   ].filter(Boolean);
   const extra = [
-    entry.releasesBehind === undefined ? "" : `${entry.releasesBehind} release${entry.releasesBehind === 1 ? "" : "s"}`,
+    entry.releasesBehind === undefined
+      ? ""
+      : `${entry.releasesBehind} release${entry.releasesBehind === 1 ? "" : "s"}`,
     entry.ageDays === undefined ? "" : `installed ${entry.ageDays} days old`,
   ].filter(Boolean);
   return `${parts.join(", ")}${extra.length > 0 ? ` (${extra.join(", ")})` : ""}`;
@@ -98,10 +102,14 @@ export function renderFreshnessReport(report: FreshnessReport): string {
     }
   }
   if (report.climbs.length > 0) {
-    lines.push("", "Climb, safest first (one jump per step; only the first jump of each is taken at a time):");
+    lines.push(
+      "",
+      "Climb, safest first (one jump per step; only the first jump of each is taken at a time):",
+    );
     for (const climb of report.climbs) lines.push(climbLine(climb));
   }
-  for (const entry of report.unplanned) lines.push("", `Not planned: ${entry.packageName}: ${entry.reason}`);
+  for (const entry of report.unplanned)
+    lines.push("", `Not planned: ${entry.packageName}: ${entry.reason}`);
   for (const note of report.notes) lines.push("", `Note: ${note}`);
   return `${lines.join("\n")}\n`;
 }
@@ -115,7 +123,9 @@ function renderPlan(result: FreshnessPlanResult): string {
       `Run ${result.planned.runId}, plan ${result.planned.planId}. Review it with \`autoremediator runs show ${result.planned.runId}\`, apply it with \`autoremediator runs apply ${result.planned.runId}\`.`,
     );
     if (result.planned.assessment) {
-      lines.push(`Upgrade impact ${result.planned.assessment.breakability}: ${result.planned.assessment.summary}`);
+      lines.push(
+        `Upgrade impact ${result.planned.assessment.breakability}: ${result.planned.assessment.summary}`,
+      );
     }
   } else {
     lines.push(result.reason ?? "No step was planned.");
@@ -142,7 +152,10 @@ function renderApply(result: ApplyFreshnessResult): string {
       `  ${outcome.status === "applied" ? "applied" : "FAILED "} ${outcome.step.packageName} ${outcome.step.fromVersion} -> ${outcome.step.toVersion} (run ${outcome.runId ?? "-"})`,
     );
     if (outcome.status === "failed") {
-      lines.push(`    ${brief(outcome.message)}`, `    rolled back: ${outcome.rolledBack ? "yes" : "no, check the project"}`);
+      lines.push(
+        `    ${brief(outcome.message)}`,
+        `    rolled back: ${outcome.rolledBack ? "yes" : "no, check the project"}`,
+      );
     }
     if (outcome.changeRequest) {
       lines.push(
@@ -152,7 +165,8 @@ function renderApply(result: ApplyFreshnessResult): string {
       );
     }
   }
-  for (const entry of result.stopped) lines.push(`  stopped: ${entry.packageName}: ${brief(entry.reason, 1)}`);
+  for (const entry of result.stopped)
+    lines.push(`  stopped: ${entry.packageName}: ${brief(entry.reason, 1)}`);
   if (result.remaining.length > 0) lines.push(`  still to do: ${result.remaining.join(", ")}`);
   return `${lines.join("\n")}\n`;
 }
@@ -161,7 +175,9 @@ export async function runFreshness(opts: FreshnessCliOptions): Promise<void> {
   const common = {
     cwd: opts.cwd,
     ...(opts.policy ? { policy: opts.policy } : {}),
-    ...(opts.packageManager ? { packageManager: opts.packageManager as "npm" | "pnpm" | "yarn" } : {}),
+    ...(opts.packageManager
+      ? { packageManager: opts.packageManager as "npm" | "pnpm" | "yarn" }
+      : {}),
     ...(packagesOf(opts) ? { packages: packagesOf(opts) } : {}),
     ...(opts.allowHigh ? { allowHigh: true } : {}),
     ...(opts.ignoreMemory ? { ignoreMemory: true } : {}),
@@ -186,7 +202,9 @@ export async function runFreshness(opts: FreshnessCliOptions): Promise<void> {
               grouping: "per-package" as const,
               ...(opts.changeRequestRepository ? { repository: opts.changeRequestRepository } : {}),
               ...(opts.changeRequestBaseBranch ? { baseBranch: opts.changeRequestBaseBranch } : {}),
-              ...(opts.changeRequestBranchPrefix ? { branchPrefix: opts.changeRequestBranchPrefix } : {}),
+              ...(opts.changeRequestBranchPrefix
+                ? { branchPrefix: opts.changeRequestBranchPrefix }
+                : {}),
             },
           }
         : {}),
@@ -227,15 +245,24 @@ export function registerFreshnessCommands(program: Command): void {
     .option("--policy <path>", OPTION_DESCRIPTIONS.policy)
     .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
     .option("--package <list>", "Only these direct dependencies, comma-separated")
-    .option("--assess", "Report only: rate the first step of each climb with assessUpgrade and order them safest first")
+    .option(
+      "--assess",
+      "Report only: rate the first step of each climb with assessUpgrade and order them safest first",
+    )
     .option("--no-assess", "With --plan: do not rate steps (order by step size only)")
     .option("--allow-high", "Take steps assessUpgrade rates High (held otherwise)")
     .option(
       "--ignore-memory",
       "Plan as if the repository's memory were empty: ignore pinned packages and rejected upgrades in .autoremediator/memory.md",
     )
-    .option("--plan", "Record the next step as a plan (never applied); review it with `runs show`, apply it with `runs apply`")
-    .option("--apply", "Take steps now: plan, apply and verify each one, rolling back any that does not hold")
+    .option(
+      "--plan",
+      "Record the next step as a plan (never applied); review it with `runs show`, apply it with `runs apply`",
+    )
+    .option(
+      "--apply",
+      "Take steps now: plan, apply and verify each one, rolling back any that does not hold",
+    )
     .option(
       "--max-steps <n>",
       "With --apply: most steps to take in this run (default 1)",
@@ -244,17 +271,26 @@ export function registerFreshnessCommands(program: Command): void {
     .option("--run-tests", "With --plan or --apply: run the project's tests for each step")
     .option("--typecheck", "With --plan or --apply: run the project's type check for each step")
     .option("--model <provider:model>", OPTION_DESCRIPTIONS.model)
-    .option("--no-repair", "With --apply: never use a model to repair a step that breaks the project")
+    .option(
+      "--no-repair",
+      "With --apply: never use a model to repair a step that breaks the project",
+    )
     .option(
       "--max-repair-rounds <n>",
       "With --apply: most feedback rounds per repair (default 3)",
       (value: string) => Number.parseInt(value, 10),
     )
-    .option("--create-change-request", "With --apply: one change request per step, on its own branch")
+    .option(
+      "--create-change-request",
+      "With --apply: one change request per step, on its own branch",
+    )
     .option("--change-request-provider <provider>", OPTION_DESCRIPTIONS.changeRequestProvider)
     .option("--change-request-repository <repository>", OPTION_DESCRIPTIONS.changeRequestRepository)
     .option("--change-request-base-branch <branch>", OPTION_DESCRIPTIONS.changeRequestBaseBranch)
-    .option("--change-request-branch-prefix <prefix>", OPTION_DESCRIPTIONS.changeRequestBranchPrefix)
+    .option(
+      "--change-request-branch-prefix <prefix>",
+      OPTION_DESCRIPTIONS.changeRequestBranchPrefix,
+    )
     .option("--output-format <format>", "Output format: text|json", "text")
     .action(async (opts: FreshnessCliOptions) => {
       validateOutputFormat(opts.outputFormat as "text" | "json", ["text", "json"], "freshness");
@@ -267,16 +303,32 @@ export function registerFreshnessCommands(program: Command): void {
           opts.model ? "--model" : "",
           opts.createChangeRequest ? "--create-change-request" : "",
         ].filter(Boolean);
-        if (misplaced.length > 0) throw new Error(`${misplaced.join(", ")} only apply with --plan or --apply.`);
+        if (misplaced.length > 0)
+          throw new Error(`${misplaced.join(", ")} only apply with --plan or --apply.`);
       }
       if (opts.apply && opts.assess === false) {
-        throw new Error("--no-assess only applies with --plan: --apply orders and holds steps by their rating.");
+        throw new Error(
+          "--no-assess only applies with --plan: --apply orders and holds steps by their rating.",
+        );
       }
-      if (!opts.createChangeRequest && (opts.changeRequestProvider || opts.changeRequestRepository || opts.changeRequestBaseBranch || opts.changeRequestBranchPrefix)) {
+      if (
+        !opts.createChangeRequest &&
+        (opts.changeRequestProvider ||
+          opts.changeRequestRepository ||
+          opts.changeRequestBaseBranch ||
+          opts.changeRequestBranchPrefix)
+      ) {
         throw new Error("change-request override flags require --create-change-request.");
       }
-      if (opts.changeRequestProvider && !CHANGE_REQUEST_PROVIDER_VALUES.includes(opts.changeRequestProvider as ChangeRequestProvider)) {
-        throw new Error(`--change-request-provider must be one of: ${CHANGE_REQUEST_PROVIDER_VALUES.join(", ")} (received: ${opts.changeRequestProvider}).`);
+      if (
+        opts.changeRequestProvider &&
+        !CHANGE_REQUEST_PROVIDER_VALUES.includes(
+          opts.changeRequestProvider as ChangeRequestProvider,
+        )
+      ) {
+        throw new Error(
+          `--change-request-provider must be one of: ${CHANGE_REQUEST_PROVIDER_VALUES.join(", ")} (received: ${opts.changeRequestProvider}).`,
+        );
       }
       if (opts.maxSteps !== undefined && (!Number.isInteger(opts.maxSteps) || opts.maxSteps < 1)) {
         throw new Error("--max-steps must be a whole number of at least 1.");

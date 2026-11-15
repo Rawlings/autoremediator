@@ -110,7 +110,11 @@ const FIXED_PROBLEM: Partial<Record<JudgedRun["verdict"], string>> = {
 export function createHarness(options: HarnessOptions): Harness {
   const run = options.run ?? runSandboxed;
   const confirmRuns = Math.max(1, options.confirmRuns ?? CONFIRM_RUNS);
-  const dirs = [...new Set([options.vulnerableDir, options.fixedDir].flatMap((dir) => [dir, realpathSync(dir)]))];
+  const dirs = [
+    ...new Set(
+      [options.vulnerableDir, options.fixedDir].flatMap((dir) => [dir, realpathSync(dir)]),
+    ),
+  ];
 
   const execute = async (
     dir: string,
@@ -147,7 +151,8 @@ export function createHarness(options: HarnessOptions): Harness {
       let first: { vulnerable: JudgedRun; fixed: JudgedRun } | undefined;
       for (let round = 1; round <= confirmRuns; round++) {
         const stage = round === 1 ? ("vulnerable" as const) : ("confirmed" as const);
-        const suffix = round === 1 ? "" : ` (run ${round} of ${confirmRuns}: the result must be repeatable)`;
+        const suffix =
+          round === 1 ? "" : ` (run ${round} of ${confirmRuns}: the result must be repeatable)`;
 
         const vulnerableRun = await execute(options.vulnerableDir, judgeVulnerable);
         if (vulnerableRun.verdict !== "reproduced") {

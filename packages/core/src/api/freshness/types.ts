@@ -1,11 +1,11 @@
 import type { FreshnessPolicy } from "../../platform/freshness-policy.js";
-import type { Breakability } from "../../remediation/impact/impact.js";
 import type {
   ChangeRequestOptions,
   ChangeRequestResult,
   PackageManager,
   RemediateOptions,
 } from "../../platform/types.js";
+import type { Breakability } from "../../remediation/impact/impact.js";
 import type { ApplyPlanOptions, RunReport } from "../runs/index.js";
 
 export type { FreshnessPolicy };
@@ -171,7 +171,8 @@ export interface FreshnessPlanResult {
 }
 
 export interface ApplyFreshnessOptions
-  extends PlanFreshnessStepOptions,
+  extends
+    PlanFreshnessStepOptions,
     Pick<
       ApplyPlanOptions,
       "repair" | "model" | "repairAgent" | "repairBudget" | "signal" | "verify"

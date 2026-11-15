@@ -19,8 +19,7 @@ const GENESIS = "0".repeat(64);
 
 function hashEvent(prevHash: string, event: Omit<StepEvent, "prevHash" | "hash">): string {
   return sha256(
-    prevHash +
-      canonicalJson({ seq: event.seq, at: event.at, type: event.type, data: event.data }),
+    prevHash + canonicalJson({ seq: event.seq, at: event.at, type: event.type, data: event.data }),
   );
 }
 
@@ -62,7 +61,11 @@ export class Ledger {
     }
     for (const event of events) {
       if (event.seq !== expectedSeq) {
-        return { ok: false, seq: expectedSeq, reason: `expected event ${expectedSeq}, found ${event.seq}` };
+        return {
+          ok: false,
+          seq: expectedSeq,
+          reason: `expected event ${expectedSeq}, found ${event.seq}`,
+        };
       }
       if (event.prevHash !== prevHash) {
         return { ok: false, seq: event.seq, reason: "chain broken: previous hash does not match" };

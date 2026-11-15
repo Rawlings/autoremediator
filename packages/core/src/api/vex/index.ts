@@ -186,7 +186,9 @@ function withProofEvidence(
   const id = report.cveId.toUpperCase();
   const packages = new Set(report.results.map((result) => result.packageName));
   const cited = evidence.filter(
-    (ref) => ref.advisoryIds.some((advisoryId) => advisoryId.toUpperCase() === id) && packages.has(ref.packageName),
+    (ref) =>
+      ref.advisoryIds.some((advisoryId) => advisoryId.toUpperCase() === id) &&
+      packages.has(ref.packageName),
   );
   if (cited.length === 0) return vulnerability;
 

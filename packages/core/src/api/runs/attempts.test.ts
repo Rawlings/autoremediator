@@ -3,7 +3,15 @@
  * the package manager (package.json is the "install") and the project's type check.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -11,9 +19,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { PatchResult, RemediationReport } from "../../platform/types.js";
 import { defaultAttemptDeps } from "../../remediation/repair/attempt.js";
-import { addMemory, listMemory } from "../memory/index.js";
 import { verify } from "../../remediation/verify/verifier.js";
 import { createWorktree } from "../../runs/worktree.js";
+import { addMemory, listMemory } from "../memory/index.js";
 import {
   abandonAttempt,
   finalizeAttempt,
@@ -29,8 +37,16 @@ vi.mock("../../remediation/tools/check-inventory.js", () => ({
     execute: vi.fn(async ({ cwd }: { cwd: string }) => {
       const { readFileSync } = await import("node:fs");
       const { join } = await import("node:path");
-      const manifest = JSON.parse(readFileSync(join(cwd, "package.json"), "utf8")) as { dependencies: Record<string, string> };
-      return { packages: Object.entries(manifest.dependencies).map(([name, version]) => ({ name, version, type: "direct" as const })) };
+      const manifest = JSON.parse(readFileSync(join(cwd, "package.json"), "utf8")) as {
+        dependencies: Record<string, string>;
+      };
+      return {
+        packages: Object.entries(manifest.dependencies).map(([name, version]) => ({
+          name,
+          version,
+          type: "direct" as const,
+        })),
+      };
     }),
   },
 }));
@@ -41,7 +57,10 @@ vi.mock("../../remediation/verify/command-check.js", async (importOriginal) => (
     const { join } = await import("node:path");
     return readFileSync(join(cwd, "src/a.ts"), "utf8").includes("f(1);")
       ? { passed: true, output: "" }
-      : { passed: false, output: "src/a.ts(2,1): error TS2554: Expected 0-1 arguments, but got 2." };
+      : {
+          passed: false,
+          output: "src/a.ts(2,1): error TS2554: Expected 0-1 arguments, but got 2.",
+        };
   }),
 }));
 
@@ -108,19 +127,31 @@ const preview = (...packages: string[]): RemediationReport => ({
 });
 
 const upgrade = (item: { packageName: string }): PatchResult => ({
-  packageName: item.packageName, strategy: "version-bump", fromVersion: "1.0.0", toVersion: "2.0.0", applied: true, dryRun: false, message: "ok",
+  packageName: item.packageName,
+  strategy: "version-bump",
+  fromVersion: "1.0.0",
+  toVersion: "2.0.0",
+  applied: true,
+  dryRun: false,
+  message: "ok",
 });
 
 const deps = (): RunDeps => ({
-  applyItem: async () => { throw new Error("not used"); },
+  applyItem: async () => {
+    throw new Error("not used");
+  },
   reinstall: vi.fn(async () => undefined),
   verify: (request) => verify(request),
-  attempt: async () => { throw new Error("not used"); },
+  attempt: async () => {
+    throw new Error("not used");
+  },
   attemptDeps: {
     ...defaultAttemptDeps,
     createWorktree: (cwd, name) => createWorktree(cwd, name, { XDG_CACHE_HOME: cache }),
     applyUpgrade: async (item, checkout) => {
-      const manifest = JSON.parse(readFileSync(join(checkout, "package.json"), "utf8")) as { dependencies: Record<string, string> };
+      const manifest = JSON.parse(readFileSync(join(checkout, "package.json"), "utf8")) as {
+        dependencies: Record<string, string>;
+      };
       manifest.dependencies[item.packageName] = "2.0.0";
       setDeps(checkout, manifest.dependencies);
       return upgrade(item);
@@ -128,7 +159,8 @@ const deps = (): RunDeps => ({
   },
 });
 
-const fix = (worktree: string) => writeFileSync(join(worktree, "src/a.ts"), "import { f } from 'dep';\nf(1);\n");
+const fix = (worktree: string) =>
+  writeFileSync(join(worktree, "src/a.ts"), "import { f } from 'dep';\nf(1);\n");
 const fixPatch = [
   "diff --git a/src/a.ts b/src/a.ts",
   "--- a/src/a.ts",
@@ -140,8 +172,10 @@ const fixPatch = [
   "",
 ].join("\n");
 
-const plan = (...packages: string[]) => persistPlan(preview(...packages), { typecheck: true, runTests: true }, dir);
-const itemOf = (runId: string, name: string) => getRun({ cwd: dir, runId }).plan!.items.find((item) => item.packageName === name)!.itemId;
+const plan = (...packages: string[]) =>
+  persistPlan(preview(...packages), { typecheck: true, runTests: true }, dir);
+const itemOf = (runId: string, name: string) =>
+  getRun({ cwd: dir, runId }).plan!.items.find((item) => item.packageName === name)!.itemId;
 
 describe("host-driven attempts", { timeout: 60_000 }, () => {
   it("opens an isolated checkout with the upgrade applied and says what is broken", async () => {
@@ -152,25 +186,44 @@ describe("host-driven attempts", { timeout: 60_000 }, () => {
     expect(view.attemptId).toMatch(/^attempt_[0-9a-z]{12}$/);
     expect(view.worktreePath).toBeDefined();
     expect(view.worktreePath!.startsWith(dir)).toBe(false);
-    expect(readFileSync(join(view.worktreePath!, "package.json"), "utf8")).toContain('"dep": "2.0.0"');
+    expect(readFileSync(join(view.worktreePath!, "package.json"), "utf8")).toContain(
+      '"dep": "2.0.0"',
+    );
     expect(view.verification?.passed).toBe(false);
     expect(view.failure).toMatchObject({ failedCheck: "typecheck" });
     expect(view.failure?.details[0]).toContain("TS2554");
     // The project is untouched, and the attempt is on record.
     expect(read("package.json")).toContain('"dep": "1.0.0"');
-    expect(getRun({ cwd: dir, runId }).attempts).toMatchObject([{ attemptId: view.attemptId, status: "open", agentId: "host" }]);
+    expect(getRun({ cwd: dir, runId }).attempts).toMatchObject([
+      { attemptId: view.attemptId, status: "open", agentId: "host" },
+    ]);
     await abandonAttempt({ cwd: dir, runId, attemptId: view.attemptId });
   });
 
   it("tells the host what the repository remembers about the package, and nothing about others", async () => {
     await addMemory({ cwd: dir, kind: "install-quirk", text: "install needs python3" });
     await addMemory({ cwd: dir, kind: "pinned-package", package: "other", reason: "unrelated" });
-    await addMemory({ cwd: dir, kind: "rejected-upgrade", package: "dep", toVersion: "3.0.0", reason: "too far" });
-    await addMemory({ cwd: dir, kind: "note", text: "a proposal", status: "proposed", source: "agent" });
+    await addMemory({
+      cwd: dir,
+      kind: "rejected-upgrade",
+      package: "dep",
+      toVersion: "3.0.0",
+      reason: "too far",
+    });
+    await addMemory({
+      cwd: dir,
+      kind: "note",
+      text: "a proposal",
+      status: "proposed",
+      source: "agent",
+    });
     const { runId } = await plan("dep");
     const view = await startAttempt({ cwd: dir, runId, itemId: itemOf(runId, "dep") }, deps());
 
-    expect(view.memory?.entries.map((entry) => entry["kind"]).toSorted()).toEqual(["install-quirk", "rejected-upgrade"]);
+    expect(view.memory?.entries.map((entry) => entry["kind"]).toSorted()).toEqual([
+      "install-quirk",
+      "rejected-upgrade",
+    ]);
     expect(view.memory?.note).toMatch(/not instructions/);
     expect(JSON.stringify(view.memory)).not.toMatch(/unrelated|a proposal/);
     await abandonAttempt({ cwd: dir, runId, attemptId: view.attemptId });
@@ -236,30 +289,51 @@ describe("host-driven attempts", { timeout: 60_000 }, () => {
     const deps_ = deps();
     const opened = await startAttempt({ cwd: dir, runId, itemId: itemOf(runId, "dep") }, deps_);
 
-    const proposed = await proposePatch({ cwd: dir, runId, attemptId: opened.attemptId, diff: fixPatch });
+    const proposed = await proposePatch({
+      cwd: dir,
+      runId,
+      attemptId: opened.attemptId,
+      diff: fixPatch,
+    });
 
     expect(proposed.changedFiles).toEqual(["src/a.ts"]);
     expect(readFileSync(join(opened.worktreePath!, "src/a.ts"), "utf8")).toContain("f(1);");
     expect(read("src/a.ts")).toContain("f(1, 2);");
-    expect((await verifyAttempt({ cwd: dir, runId, attemptId: opened.attemptId }, deps_)).verification?.passed).toBe(true);
+    expect(
+      (await verifyAttempt({ cwd: dir, runId, attemptId: opened.attemptId }, deps_)).verification
+        ?.passed,
+    ).toBe(true);
     await abandonAttempt({ cwd: dir, runId, attemptId: opened.attemptId });
   });
 
   it("refuses patches that change what a host may not", async () => {
     const { runId } = await plan("dep");
     const opened = await startAttempt({ cwd: dir, runId, itemId: itemOf(runId, "dep") }, deps());
-    const propose = (diff: string) => proposePatch({ cwd: dir, runId, attemptId: opened.attemptId, diff });
+    const propose = (diff: string) =>
+      proposePatch({ cwd: dir, runId, attemptId: opened.attemptId, diff });
     const file = (name: string, body: string[]) =>
       [`diff --git a/${name} b/${name}`, `--- a/${name}`, `+++ b/${name}`, ...body, ""].join("\n");
 
-    await expect(propose(file("package.json", ["@@ -1,1 +1,1 @@", "-{", "+{ "]))).rejects.toThrow(/Patch refused/);
-    await expect(propose(file(".github/workflows/ci.yml", ["@@ -0,0 +1 @@", "+on: push"]))).rejects.toThrow(/Patch refused|does not apply/);
-    await expect(propose(file("README.md", ["@@ -0,0 +1 @@", "+hi"]))).rejects.toThrow(/Patch refused/);
-    await expect(propose("diff --git a/src/a.ts b/src/a.ts\nold mode 100644\nnew mode 100755\n")).rejects.toThrow(/file mode/);
-    await expect(propose("diff --git a/x b/y\nrename from x\nrename to y\n")).rejects.toThrow(/renames/);
+    await expect(propose(file("package.json", ["@@ -1,1 +1,1 @@", "-{", "+{ "]))).rejects.toThrow(
+      /Patch refused/,
+    );
+    await expect(
+      propose(file(".github/workflows/ci.yml", ["@@ -0,0 +1 @@", "+on: push"])),
+    ).rejects.toThrow(/Patch refused|does not apply/);
+    await expect(propose(file("README.md", ["@@ -0,0 +1 @@", "+hi"]))).rejects.toThrow(
+      /Patch refused/,
+    );
+    await expect(
+      propose("diff --git a/src/a.ts b/src/a.ts\nold mode 100644\nnew mode 100755\n"),
+    ).rejects.toThrow(/file mode/);
+    await expect(propose("diff --git a/x b/y\nrename from x\nrename to y\n")).rejects.toThrow(
+      /renames/,
+    );
     await expect(propose("GIT binary patch\nliteral 1\n")).rejects.toThrow(/binary/);
     await expect(propose("   \n")).rejects.toThrow(/empty/);
-    await expect(propose("this is not a diff")).rejects.toThrow(/valid unified diff|changes no files/);
+    await expect(propose("this is not a diff")).rejects.toThrow(
+      /valid unified diff|changes no files/,
+    );
     await expect(propose("x".repeat(250_000))).rejects.toThrow(/larger than/);
     // A patch for text the checkout does not have.
     const stale = file("src/a.ts", ["@@ -1,2 +1,2 @@", " something else", "-f(9);", "+f(1);"]);
@@ -306,16 +380,23 @@ describe("host-driven attempts", { timeout: 60_000 }, () => {
 
     expect(closed.status).toBe("abandoned");
     expect(existsSync(opened.worktreePath!)).toBe(false);
-    await expect(verifyAttempt({ cwd: dir, runId, attemptId: opened.attemptId }, deps())).rejects.toThrow(/abandoned/);
-    await expect(abandonAttempt({ cwd: dir, runId, attemptId: opened.attemptId })).rejects.toThrow(/abandoned/);
+    await expect(
+      verifyAttempt({ cwd: dir, runId, attemptId: opened.attemptId }, deps()),
+    ).rejects.toThrow(/abandoned/);
+    await expect(abandonAttempt({ cwd: dir, runId, attemptId: opened.attemptId })).rejects.toThrow(
+      /abandoned/,
+    );
   });
 
   it("limits how many attempts can be open at once", async () => {
     const { runId } = await plan("dep");
     const itemId = itemOf(runId, "dep");
     const opened = [] as string[];
-    for (let i = 0; i < 4; i++) opened.push((await startAttempt({ cwd: dir, runId, itemId }, deps())).attemptId);
-    await expect(startAttempt({ cwd: dir, runId, itemId }, deps())).rejects.toThrow(/4 open attempts/);
+    for (let i = 0; i < 4; i++)
+      opened.push((await startAttempt({ cwd: dir, runId, itemId }, deps())).attemptId);
+    await expect(startAttempt({ cwd: dir, runId, itemId }, deps())).rejects.toThrow(
+      /4 open attempts/,
+    );
     for (const attemptId of opened) await abandonAttempt({ cwd: dir, runId, attemptId });
   });
 
@@ -327,15 +408,21 @@ describe("host-driven attempts", { timeout: 60_000 }, () => {
     fix(opened.worktreePath!);
     setDeps(dir, { dep: "1.0.0", other: "1.0.0", extra: "1.0.0" });
 
-    await expect(finalizeAttempt({ cwd: dir, runId, attemptId: opened.attemptId }, deps_)).rejects.toThrow(/changed since/);
+    await expect(
+      finalizeAttempt({ cwd: dir, runId, attemptId: opened.attemptId }, deps_),
+    ).rejects.toThrow(/changed since/);
     await expect(startAttempt({ cwd: dir, runId, itemId }, deps_)).rejects.toThrow(/Plan again/);
     await abandonAttempt({ cwd: dir, runId, attemptId: opened.attemptId });
   });
 
   it("knows nothing it should not: unknown items and attempts, bad states", async () => {
     const { runId } = await plan("dep");
-    await expect(startAttempt({ cwd: dir, runId, itemId: "item_000000000000" }, deps())).rejects.toThrow(/no plan item/);
-    await expect(verifyAttempt({ cwd: dir, runId, attemptId: "attempt_000000000000" }, deps())).rejects.toThrow(/not found/);
+    await expect(
+      startAttempt({ cwd: dir, runId, itemId: "item_000000000000" }, deps()),
+    ).rejects.toThrow(/no plan item/);
+    await expect(
+      verifyAttempt({ cwd: dir, runId, attemptId: "attempt_000000000000" }, deps()),
+    ).rejects.toThrow(/not found/);
   });
 
   it("survives the process that started it: another can finalize the attempt", async () => {
@@ -345,7 +432,10 @@ describe("host-driven attempts", { timeout: 60_000 }, () => {
 
     vi.resetModules();
     const fresh = await import("./attempts.js");
-    const done = await fresh.finalizeAttempt({ cwd: dir, runId, attemptId: opened.attemptId }, deps());
+    const done = await fresh.finalizeAttempt(
+      { cwd: dir, runId, attemptId: opened.attemptId },
+      deps(),
+    );
 
     expect(done.finalized).toBe(true);
     expect(read("src/a.ts")).toContain("f(1);");

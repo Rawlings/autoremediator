@@ -1,4 +1,11 @@
-import { generateText, hasToolCall, type LanguageModel, type StepResult, stepCountIs, type ToolSet } from "ai";
+import {
+  generateText,
+  hasToolCall,
+  type LanguageModel,
+  type StepResult,
+  stepCountIs,
+  type ToolSet,
+} from "ai";
 
 import type {
   RepairAgent,
@@ -35,7 +42,11 @@ function promptFor(task: RepairTask): string {
   }
   if (task.memory) lines.push("", task.memory);
   if (task.previousRounds.length > 0) {
-    lines.push("", "Earlier rounds said they changed:", ...task.previousRounds.map((line, i) => `${i + 1}. ${line}`));
+    lines.push(
+      "",
+      "Earlier rounds said they changed:",
+      ...task.previousRounds.map((line, i) => `${i + 1}. ${line}`),
+    );
   }
   return lines.join("\n");
 }
@@ -56,7 +67,10 @@ function describeStep(step: StepResult<ToolSet>, index: number): TranscriptEntry
 }
 
 function totalTokens(steps: ReadonlyArray<StepResult<ToolSet>>): number {
-  return steps.reduce((sum, step) => sum + (step.usage.inputTokens ?? 0) + (step.usage.outputTokens ?? 0), 0);
+  return steps.reduce(
+    (sum, step) => sum + (step.usage.inputTokens ?? 0) + (step.usage.outputTokens ?? 0),
+    0,
+  );
 }
 
 function modelName(model: LanguageModel): string {
@@ -76,7 +90,12 @@ export function createBuiltinRepairAgent(model: LanguageModel): RepairAgent {
 
     async repair(task: RepairTask, env: RepairEnv): Promise<RepairOutcome> {
       if (env.signal.aborted) {
-        return { status: "budget-exhausted", rationale: "the attempt was cancelled", usage: [], transcript: [] };
+        return {
+          status: "budget-exhausted",
+          rationale: "the attempt was cancelled",
+          usage: [],
+          transcript: [],
+        };
       }
       const started = Date.now();
       const state: RepairState = {
@@ -108,7 +127,8 @@ export function createBuiltinRepairAgent(model: LanguageModel): RepairAgent {
             stepCountIs(env.budget.maxSteps),
             hasToolCall("submit"),
             hasToolCall("giveUp"),
-            ({ steps: done }) => maxTotalTokens !== undefined && totalTokens(done) >= maxTotalTokens,
+            ({ steps: done }) =>
+              maxTotalTokens !== undefined && totalTokens(done) >= maxTotalTokens,
           ],
         });
         steps = result.steps;

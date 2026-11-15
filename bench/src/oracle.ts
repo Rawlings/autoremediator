@@ -95,7 +95,15 @@ function withoutTarget(value: unknown, target: string): unknown {
   const entries = Object.entries(value as Record<string, unknown>)
     .filter(([key]) => key !== target)
     .map(([key, entry]): [string, unknown] => [key, withoutTarget(entry, target)])
-    .filter(([, entry]) => !(entry !== null && typeof entry === "object" && !Array.isArray(entry) && Object.keys(entry).length === 0));
+    .filter(
+      ([, entry]) =>
+        !(
+          entry !== null &&
+          typeof entry === "object" &&
+          !Array.isArray(entry) &&
+          Object.keys(entry).length === 0
+        ),
+    );
   return Object.fromEntries(entries);
 }
 
@@ -143,7 +151,8 @@ export function manifestProblems(baseline: unknown, current: unknown, target: st
     if (isObject(left) && isObject(right)) {
       // Name the entries that differ ("scripts.test"), not just the field.
       for (const name of [...new Set([...Object.keys(left), ...Object.keys(right)])].toSorted()) {
-        if (canonical(left[name]) !== canonical(right[name])) problems.push(`${key}.${name} changed`);
+        if (canonical(left[name]) !== canonical(right[name]))
+          problems.push(`${key}.${name} changed`);
       }
     } else {
       problems.push(`${key} changed`);
@@ -209,9 +218,13 @@ async function fixBattery(
       )
     : [];
   const scopeProblems = [
-    ...(outOfScope.length > 0 ? [`changed outside the allowed scope: ${outOfScope.join(", ")}`] : []),
+    ...(outOfScope.length > 0
+      ? [`changed outside the allowed scope: ${outOfScope.join(", ")}`]
+      : []),
     ...(manifest.length > 0
-      ? [`package.json changed beyond ${task.vulnerable.packageName}'s own entries: ${manifest.join(", ")}`]
+      ? [
+          `package.json changed beyond ${task.vulnerable.packageName}'s own entries: ${manifest.join(", ")}`,
+        ]
       : []),
   ];
   checks.push({

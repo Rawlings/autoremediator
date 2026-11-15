@@ -224,7 +224,12 @@ export async function runSingleCve(cveId: string, opts: CommandOptions): Promise
   }
 
   if (opts.outputFormat === "cyclonedx-vex") {
-    logJson(toCycloneDxVex(reportAsScan, { toolVersion: PACKAGE_VERSION, proofEvidence: proofEvidenceRefs(opts.cwd, opts.patchesDir) }));
+    logJson(
+      toCycloneDxVex(reportAsScan, {
+        toolVersion: PACKAGE_VERSION,
+        proofEvidence: proofEvidenceRefs(opts.cwd, opts.patchesDir),
+      }),
+    );
     if (opts.ci) {
       process.exitCode = ciExitCode(toCiSummary(reportAsScan));
     }
@@ -314,7 +319,12 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
   }
 
   if (opts.outputFormat === "cyclonedx-vex") {
-    logJson(toCycloneDxVex(report, { toolVersion: PACKAGE_VERSION, proofEvidence: proofEvidenceRefs(opts.cwd, opts.patchesDir) }));
+    logJson(
+      toCycloneDxVex(report, {
+        toolVersion: PACKAGE_VERSION,
+        proofEvidence: proofEvidenceRefs(opts.cwd, opts.patchesDir),
+      }),
+    );
     if (opts.ci) {
       process.exitCode = ciExitCode(toCiSummary(report));
     }
@@ -775,7 +785,9 @@ export async function runRunsShow(runId: string, opts: RunsOptions): Promise<voi
   const { run, plan } = details;
   process.stdout.write(`Run ${run.runId}: ${run.status}\n`);
   if (plan) {
-    process.stdout.write(`Plan ${plan.planId}: ${plan.items.length} change(s), ${plan.skipped.length} skipped\n`);
+    process.stdout.write(
+      `Plan ${plan.planId}: ${plan.items.length} change(s), ${plan.skipped.length} skipped\n`,
+    );
     for (const item of plan.items) {
       const outcome = details.items.find((candidate) => candidate.itemId === item.itemId);
       process.stdout.write(
@@ -870,7 +882,10 @@ export interface InitCliOptions {
 
 function parseHosts(value: string | undefined): AgentHost[] | undefined {
   if (!value) return undefined;
-  const hosts = value.split(",").map((host) => host.trim()).filter(Boolean);
+  const hosts = value
+    .split(",")
+    .map((host) => host.trim())
+    .filter(Boolean);
   const unknown = hosts.filter((host) => !(AGENT_HOSTS as readonly string[]).includes(host));
   if (unknown.length > 0) {
     throw new Error(`Unknown host: ${unknown.join(", ")}. Choose from ${AGENT_HOSTS.join(", ")}.`);
@@ -886,7 +901,9 @@ function describeInit(result: InitResult, header: string): string {
     `Agent hosts: ${result.hosts.join(", ") || "none found (use --hosts)"}`,
   );
   for (const change of result.changes) {
-    lines.push(`  ${change.action.padEnd(9)} ${change.path}${change.action === "conflict" ? `  (${change.reason})` : ""}`);
+    lines.push(
+      `  ${change.action.padEnd(9)} ${change.path}${change.action === "conflict" ? `  (${change.reason})` : ""}`,
+    );
   }
   return lines.join("\n");
 }
@@ -911,7 +928,8 @@ export async function runInit(opts: InitCliOptions): Promise<void> {
   };
   let result = await init({ ...base, check: opts.check, yes: opts.yes });
   const json = opts.outputFormat === "json";
-  const interactive = !json && !opts.yes && !opts.check && process.stdin.isTTY && process.stdout.isTTY;
+  const interactive =
+    !json && !opts.yes && !opts.check && process.stdin.isTTY && process.stdout.isTTY;
 
   if (!json) {
     process.stdout.write(`${describeInit(result, opts.check ? "Checking setup" : "Setup plan")}\n`);
@@ -923,7 +941,11 @@ export async function runInit(opts: InitCliOptions): Promise<void> {
   }
 
   if (interactive && result.drift) {
-    if (await confirmInteractively(`\nWrite ${result.changes.filter((c) => c.diff).length} file(s)? [y/N] `)) {
+    if (
+      await confirmInteractively(
+        `\nWrite ${result.changes.filter((c) => c.diff).length} file(s)? [y/N] `,
+      )
+    ) {
       result = await init({ ...base, yes: true });
       process.stdout.write("Done.\n");
     }
@@ -932,7 +954,8 @@ export async function runInit(opts: InitCliOptions): Promise<void> {
 
   if (json) logJson(result);
   else if (result.applied) process.stdout.write("\nWritten.\n");
-  else if (!opts.check && result.drift) process.stdout.write("\nNothing written. Run again with --yes to apply.\n");
+  else if (!opts.check && result.drift)
+    process.stdout.write("\nNothing written. Run again with --yes to apply.\n");
   else if (!result.drift) process.stdout.write("\nAlready set up.\n");
 
   if (opts.check) {
@@ -954,7 +977,10 @@ export interface HookCliOptions {
 
 function parseHookNames(value: string | undefined): HookName[] | undefined {
   if (!value) return undefined;
-  const names = value.split(",").map((name) => name.trim()).filter(Boolean);
+  const names = value
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
   const unknown = names.filter((name) => !(HOOK_NAMES as readonly string[]).includes(name));
   if (unknown.length > 0) {
     throw new Error(`Unknown hook: ${unknown.join(", ")}. Choose from ${HOOK_NAMES.join(", ")}.`);
@@ -982,7 +1008,10 @@ function describeHooks(result: HooksResult, header: string): string {
 }
 
 /** `hook install`, `hook uninstall` and `hook status`; same approval rules as `init`. */
-export async function runHook(mode: "install" | "uninstall" | "status", opts: HookCliOptions): Promise<void> {
+export async function runHook(
+  mode: "install" | "uninstall" | "status",
+  opts: HookCliOptions,
+): Promise<void> {
   const base = {
     cwd: opts.cwd,
     hooks: parseHookNames(opts.hooks),
@@ -996,7 +1025,11 @@ export async function runHook(mode: "install" | "uninstall" | "status", opts: Ho
   const interactive = !json && !check && !opts.yes && process.stdin.isTTY && process.stdout.isTTY;
 
   if (!json) {
-    const header = check ? "Hook status" : mode === "uninstall" ? "Hook removal plan" : "Hook install plan";
+    const header = check
+      ? "Hook status"
+      : mode === "uninstall"
+        ? "Hook removal plan"
+        : "Hook install plan";
     process.stdout.write(`${describeHooks(result, header)}\n`);
     if (!result.applied && !check) {
       for (const change of result.changes) {
@@ -1006,7 +1039,11 @@ export async function runHook(mode: "install" | "uninstall" | "status", opts: Ho
   }
 
   if (interactive && result.drift) {
-    if (await confirmInteractively(`\nWrite ${result.changes.filter((c) => c.diff || c.action === "update").length} file(s)? [y/N] `)) {
+    if (
+      await confirmInteractively(
+        `\nWrite ${result.changes.filter((c) => c.diff || c.action === "update").length} file(s)? [y/N] `,
+      )
+    ) {
       result = await installHooks({ ...base, yes: true });
       process.stdout.write("Done.\n");
       for (const step of result.nextSteps) process.stdout.write(`Next: ${step}\n`);
@@ -1017,9 +1054,16 @@ export async function runHook(mode: "install" | "uninstall" | "status", opts: Ho
   if (json) logJson(result);
   else {
     if (result.applied) process.stdout.write("\nWritten.\n");
-    else if (!check && result.drift) process.stdout.write("\nNothing written. Run again with --yes to apply.\n");
+    else if (!check && result.drift)
+      process.stdout.write("\nNothing written. Run again with --yes to apply.\n");
     else if (!result.drift && result.conflicts.length === 0) {
-      process.stdout.write(mode === "uninstall" ? "\nNothing to remove.\n" : check ? "\nAll hooks are installed.\n" : "\nAlready installed.\n");
+      process.stdout.write(
+        mode === "uninstall"
+          ? "\nNothing to remove.\n"
+          : check
+            ? "\nAll hooks are installed.\n"
+            : "\nAlready installed.\n",
+      );
     }
     for (const step of result.nextSteps) process.stdout.write(`Next: ${step}\n`);
   }
@@ -1046,7 +1090,9 @@ export interface GuardCliOptions {
 }
 
 function describeGuard(report: GuardReport): string {
-  const lines = [`${report.verdict.toUpperCase().padEnd(5)} ${report.spec}${report.resolvedVersion ? ` (${report.resolvedVersion})` : ""}`];
+  const lines = [
+    `${report.verdict.toUpperCase().padEnd(5)} ${report.spec}${report.resolvedVersion ? ` (${report.resolvedVersion})` : ""}`,
+  ];
   for (const finding of report.findings) {
     lines.push(`  ${finding.severity.padEnd(5)} ${finding.check}: ${finding.message}`);
   }
@@ -1072,14 +1118,20 @@ export async function runGuard(specs: string[], opts: GuardCliOptions): Promise<
     if (opts.outputFormat === "json") logJson(result);
     else {
       const head = `Dependencies added or changed since ${result.baseRef.slice(0, 12)}: ${result.checked} checked, ${result.skipped.length} skipped`;
-      const skipped = result.skipped.map((entry) => `  skip  ${entry.packageName}@${entry.version}: ${entry.reason}`);
-      process.stdout.write(`${[head, ...skipped, ...result.reports.map((entry) => describeGuard(entry))].join("\n")}\n`);
+      const skipped = result.skipped.map(
+        (entry) => `  skip  ${entry.packageName}@${entry.version}: ${entry.reason}`,
+      );
+      process.stdout.write(
+        `${[head, ...skipped, ...result.reports.map((entry) => describeGuard(entry))].join("\n")}\n`,
+      );
     }
     process.exitCode = guardExitCode(result.reports);
     return;
   }
   if (specs.length === 0) {
-    throw new Error("Name at least one package, or use --git-diff to check what changed in the working tree.");
+    throw new Error(
+      "Name at least one package, or use --git-diff to check what changed in the working tree.",
+    );
   }
   const reports = await guardPackages(specs, options);
   if (opts.outputFormat === "json") logJson(reports.length === 1 ? reports[0] : reports);
@@ -1121,7 +1173,9 @@ export function describeDiet(report: DependencyDietReport, verbose = false): str
     `Attack-surface score: ${attackSurface.score}/100 (higher means more code you did not write runs in this project)`,
   );
   for (const component of attackSurface.components) {
-    lines.push(`  ${component.points.toFixed(1).padStart(5)} / ${String(component.maxPoints).padEnd(2)}  ${component.label}: ${component.value}  [${component.formula}]`);
+    lines.push(
+      `  ${component.points.toFixed(1).padStart(5)} / ${String(component.maxPoints).padEnd(2)}  ${component.label}: ${component.value}  [${component.formula}]`,
+    );
   }
   for (const limit of attackSurface.limits) lines.push(`  note: ${limit}`);
 
@@ -1131,15 +1185,27 @@ export function describeDiet(report: DependencyDietReport, verbose = false): str
   );
 
   for (const pkg of report.packages) {
-    const shown = pkg.unused.filter((entry) => verbose || entry.classification !== "used-indirectly");
+    const shown = pkg.unused.filter(
+      (entry) => verbose || entry.classification !== "used-indirectly",
+    );
     if (shown.length === 0 && pkg.replaceable.length === 0) continue;
-    lines.push("", `${pkg.name} (${pkg.dir})${pkg.node ? `  Node ${pkg.node.range} from ${pkg.node.source}` : "  no Node minimum declared"}`);
+    lines.push(
+      "",
+      `${pkg.name} (${pkg.dir})${pkg.node ? `  Node ${pkg.node.range} from ${pkg.node.source}` : "  no Node minimum declared"}`,
+    );
     for (const entry of shown) {
-      lines.push(`  ${entry.classification.padEnd(16)} ${entry.name} (${entry.section})`, `    ${entry.reason}`);
+      lines.push(
+        `  ${entry.classification.padEnd(16)} ${entry.name} (${entry.section})`,
+        `    ${entry.reason}`,
+      );
       if (entry.evidence?.length) lines.push(`    evidence: ${entry.evidence.join(", ")}`);
     }
     for (const entry of pkg.replaceable) {
-      lines.push(`  ${entry.status.padEnd(16)} ${entry.name} -> ${entry.replacement} [${entry.fit}]`, `    ${entry.migration}`, `    ${entry.reason}`);
+      lines.push(
+        `  ${entry.status.padEnd(16)} ${entry.name} -> ${entry.replacement} [${entry.fit}]`,
+        `    ${entry.migration}`,
+        `    ${entry.reason}`,
+      );
       if (entry.caveat) lines.push(`    caveat: ${entry.caveat}`);
     }
   }
@@ -1149,17 +1215,31 @@ export function describeDiet(report: DependencyDietReport, verbose = false): str
   if (!duplicates.supported) lines.push(`Duplicates: not analysed. ${duplicates.note ?? ""}`);
   else if (duplicates.packages.length === 0) lines.push("Duplicates: none.");
   else {
-    lines.push(`Duplicates: ${duplicates.packages.length} packages installed at several versions (${duplicates.extraCopies} extra copies).`);
+    lines.push(
+      `Duplicates: ${duplicates.packages.length} packages installed at several versions (${duplicates.extraCopies} extra copies).`,
+    );
     for (const entry of duplicates.packages.slice(0, verbose ? undefined : DIET_LIST_LIMIT)) {
-      lines.push(`  ${entry.name}  ${entry.versions.map((version) => version.version).join(", ")}  [${entry.verdict}]`, `    ${entry.summary}`);
+      lines.push(
+        `  ${entry.name}  ${entry.versions.map((version) => version.version).join(", ")}  [${entry.verdict}]`,
+        `    ${entry.summary}`,
+      );
       for (const version of entry.versions) {
-        const parents = version.parents.slice(0, 4).map((parent) => `${parent.name}${parent.version ? `@${parent.version}` : ""}${parent.range ? ` (${parent.range})` : ""}`);
+        const parents = version.parents
+          .slice(0, 4)
+          .map(
+            (parent) =>
+              `${parent.name}${parent.version ? `@${parent.version}` : ""}${parent.range ? ` (${parent.range})` : ""}`,
+          );
         const more = version.parents.length > 4 ? ` and ${version.parents.length - 4} more` : "";
-        lines.push(`    ${version.version} <- ${parents.join(", ")}${more}${version.movableTo ? `  [can move to ${version.movableTo}]` : ""}`);
+        lines.push(
+          `    ${version.version} <- ${parents.join(", ")}${more}${version.movableTo ? `  [can move to ${version.movableTo}]` : ""}`,
+        );
       }
     }
     if (!verbose && duplicates.packages.length > DIET_LIST_LIMIT) {
-      lines.push(`  ... ${duplicates.packages.length - DIET_LIST_LIMIT} more (use --verbose or --output-format json)`);
+      lines.push(
+        `  ... ${duplicates.packages.length - DIET_LIST_LIMIT} more (use --verbose or --output-format json)`,
+      );
     }
   }
   for (const note of report.notes) lines.push("", `note: ${note}`);
@@ -1168,8 +1248,12 @@ export function describeDiet(report: DependencyDietReport, verbose = false): str
 
 function describeDietApply(result: DietApplyResult): string {
   const lines = [result.message];
-  for (const removal of result.removals) lines.push(`  ${result.status === "removed" ? "removed" : "would remove"} ${removal.name} (${removal.section}, ${removal.dir})`);
-  for (const check of result.verification?.checks ?? []) lines.push(`  ${check.status.padEnd(7)} ${check.name}: ${check.message}`);
+  for (const removal of result.removals)
+    lines.push(
+      `  ${result.status === "removed" ? "removed" : "would remove"} ${removal.name} (${removal.section}, ${removal.dir})`,
+    );
+  for (const check of result.verification?.checks ?? [])
+    lines.push(`  ${check.status.padEnd(7)} ${check.name}: ${check.message}`);
   return lines.join("\n");
 }
 
@@ -1178,13 +1262,19 @@ export async function runDiet(opts: DietCliOptions): Promise<void> {
     const result = await removeUnusedDependencies({
       cwd: opts.cwd,
       ...(opts.policy ? { policy: opts.policy } : {}),
-      ...(opts.packageManager ? { packageManager: opts.packageManager as "npm" | "pnpm" | "yarn" | "bun" | "deno" } : {}),
+      ...(opts.packageManager
+        ? { packageManager: opts.packageManager as "npm" | "pnpm" | "yarn" | "bun" | "deno" }
+        : {}),
       ...(opts.runTests === undefined ? {} : { runTests: opts.runTests }),
       ...(opts.typecheck === undefined ? {} : { typecheck: opts.typecheck }),
     });
     if (opts.outputFormat === "json") logJson(result);
-    else process.stdout.write(`${describeDiet(result.report, opts.verbose)}\n\n${describeDietApply(result)}\n`);
-    if (result.status === "rolled-back" || result.status === "failed") process.exitCode = EXIT_CODES.failed;
+    else
+      process.stdout.write(
+        `${describeDiet(result.report, opts.verbose)}\n\n${describeDietApply(result)}\n`,
+      );
+    if (result.status === "rolled-back" || result.status === "failed")
+      process.exitCode = EXIT_CODES.failed;
     return;
   }
   const report = await analyzeDependencies({ cwd: opts.cwd });
@@ -1192,7 +1282,12 @@ export async function runDiet(opts: DietCliOptions): Promise<void> {
   else process.stdout.write(`${describeDiet(report, opts.verbose)}\n`);
 }
 
-function describeSite(site: { file: string; line: number; text: string; confidence: string }): string {
+function describeSite(site: {
+  file: string;
+  line: number;
+  text: string;
+  confidence: string;
+}): string {
   return `${site.file}:${site.line}${site.confidence === "name-match" ? " (name match)" : ""}  ${site.text}`;
 }
 
@@ -1215,7 +1310,9 @@ export async function runAssess(
   process.stdout.write(
     `${result.packageName} ${result.fromVersion} -> ${result.toVersion}${result.upgradeLevel ? ` (${result.upgradeLevel})` : ""}\n`,
   );
-  process.stdout.write(`Breakability: ${result.breakability.toUpperCase()} (score ${result.score})\n`);
+  process.stdout.write(
+    `Breakability: ${result.breakability.toUpperCase()} (score ${result.score})\n`,
+  );
   process.stdout.write(`${result.summary}\n`);
   for (const finding of result.findings) {
     const where = finding.symbol
@@ -1228,9 +1325,12 @@ export async function runAssess(
       if (finding.before !== undefined) process.stdout.write(`  before: ${finding.before}\n`);
       if (finding.after !== undefined) process.stdout.write(`  after:  ${finding.after}\n`);
     }
-    for (const site of finding.affectedCallSites) process.stdout.write(`  - ${describeSite(site)}\n`);
+    for (const site of finding.affectedCallSites)
+      process.stdout.write(`  - ${describeSite(site)}\n`);
     if (finding.totalCallSites > finding.affectedCallSites.length) {
-      process.stdout.write(`  ... and ${finding.totalCallSites - finding.affectedCallSites.length} more\n`);
+      process.stdout.write(
+        `  ... and ${finding.totalCallSites - finding.affectedCallSites.length} more\n`,
+      );
     }
   }
   if (result.limitations.length > 0) {
@@ -1284,7 +1384,9 @@ export async function runSymbols(
     for (const reason of candidate.reasons) process.stdout.write(`    ${reason}\n`);
     if (candidate.via.length > 0) process.stdout.write(`    via: ${candidate.via.join(", ")}\n`);
     if (candidate.reachability) {
-      process.stdout.write(`    reachability: ${candidate.reachability.status} - ${candidate.reachability.reason}\n`);
+      process.stdout.write(
+        `    reachability: ${candidate.reachability.status} - ${candidate.reachability.reason}\n`,
+      );
     }
   }
   if (result.changedInternals.length > 0) {

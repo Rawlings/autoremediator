@@ -90,7 +90,11 @@ function describeCall(input: Record<string, unknown>): string {
   return parts.length > 0 ? ` (${parts.join(", ")})` : "";
 }
 
-async function confirmWithUser(server: Server, operation: Operation, input: Record<string, unknown>): Promise<boolean> {
+async function confirmWithUser(
+  server: Server,
+  operation: Operation,
+  input: Record<string, unknown>,
+): Promise<boolean> {
   if (!server.getClientCapabilities()?.elicitation) {
     throw new Error(
       "This server is set to confirm changes with the user, but the client cannot ask (no elicitation support). Set AUTOREMEDIATOR_MCP_CONFIRM=off, or use a client that supports it.",
@@ -109,7 +113,9 @@ async function confirmWithUser(server: Server, operation: Operation, input: Reco
 
 export function createMcpServer(options: McpServerOptions = {}): Server {
   const deps = options.deps ?? defaultApiDeps;
-  const confirm = options.confirm ?? (process.env["AUTOREMEDIATOR_MCP_CONFIRM"] === "mutating" ? "mutating" : "off");
+  const confirm =
+    options.confirm ??
+    (process.env["AUTOREMEDIATOR_MCP_CONFIRM"] === "mutating" ? "mutating" : "off");
 
   const server = new Server(
     { name: "autoremediator", version: PACKAGE_VERSION },
@@ -126,12 +132,17 @@ export function createMcpServer(options: McpServerOptions = {}): Server {
     return handleToolCall(name, args ?? {}, deps, {
       clientRoots: await clientRootPaths(server),
       ...(confirm === "mutating"
-        ? { confirm: (operation: Operation, input: Record<string, unknown>) => confirmWithUser(server, operation, input) }
+        ? {
+            confirm: (operation: Operation, input: Record<string, unknown>) =>
+              confirmWithUser(server, operation, input),
+          }
         : {}),
     });
   });
 
-  server.setRequestHandler(ListResourcesRequestSchema, async () => listResources({ projectDir: await projectDir() }));
+  server.setRequestHandler(ListResourcesRequestSchema, async () =>
+    listResources({ projectDir: await projectDir() }),
+  );
   server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => ({
     resourceTemplates: [...RESOURCE_TEMPLATES],
   }));

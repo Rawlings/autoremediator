@@ -22,7 +22,10 @@ describe("Claude Code plugin files", () => {
 
   it("match what is committed (run with UPDATE_PLUGINS=1 to regenerate)", () => {
     const stale = Object.entries(files)
-      .filter(([path, content]) => !existsSync(join(root, path)) || readFileSync(join(root, path), "utf8") !== content)
+      .filter(
+        ([path, content]) =>
+          !existsSync(join(root, path)) || readFileSync(join(root, path), "utf8") !== content,
+      )
       .map(([path]) => path);
     expect(stale).toEqual([]);
   });
@@ -33,7 +36,9 @@ describe("Claude Code plugin files", () => {
     };
     for (const plugin of marketplace.plugins) {
       const manifest = join(root, plugin.source, ".claude-plugin", "plugin.json");
-      expect(JSON.parse(files[`${plugin.source.replace("./", "")}/.claude-plugin/plugin.json`]!).name).toBe(plugin.name);
+      expect(
+        JSON.parse(files[`${plugin.source.replace("./", "")}/.claude-plugin/plugin.json`]!).name,
+      ).toBe(plugin.name);
       expect(Object.keys(files).some((path) => join(root, path) === manifest)).toBe(true);
     }
   });
@@ -52,7 +57,10 @@ describe("Claude Code plugin files", () => {
   it("gives every skill, command and agent frontmatter with a description", () => {
     const missing = Object.entries(files)
       .filter(([path]) => path.endsWith(".md"))
-      .filter(([, content]) => !/^description: .+$/m.test(/^---\n([\s\S]*?)\n---\n/.exec(content)?.[1] ?? ""))
+      .filter(
+        ([, content]) =>
+          !/^description: .+$/m.test(/^---\n([\s\S]*?)\n---\n/.exec(content)?.[1] ?? ""),
+      )
       .map(([path]) => path);
     expect(missing).toEqual([]);
   });
@@ -61,7 +69,8 @@ describe("Claude Code plugin files", () => {
     for (const tool of INSTRUCTED_TOOLS) expect(getOperation(tool)).toBeDefined();
     const referenced = new Set<string>();
     for (const content of Object.values(files)) {
-      for (const [, word] of content.matchAll(/`([a-z][A-Za-z]+)`/g)) if (word && getOperation(word)) referenced.add(word);
+      for (const [, word] of content.matchAll(/`([a-z][A-Za-z]+)`/g))
+        if (word && getOperation(word)) referenced.add(word);
     }
     for (const word of referenced) expect(INSTRUCTED_TOOLS as readonly string[]).toContain(word);
   });

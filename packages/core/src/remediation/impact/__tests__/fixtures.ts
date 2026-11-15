@@ -55,7 +55,10 @@ export function tgz(entries: TarEntry[]): Uint8Array {
 }
 
 /** An npm-style tarball: every path under `package/`. */
-export function packageTarball(files: Record<string, string>, manifest: Record<string, unknown>): Uint8Array {
+export function packageTarball(
+  files: Record<string, string>,
+  manifest: Record<string, unknown>,
+): Uint8Array {
   return tgz([
     { path: "package/package.json", content: JSON.stringify(manifest) },
     ...Object.entries(files).map(([path, content]) => ({ path: `package/${path}`, content })),

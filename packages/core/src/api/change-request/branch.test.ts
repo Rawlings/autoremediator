@@ -93,7 +93,9 @@ describe("commitTrailers", () => {
       /^Verified-By: autoremediator \(install, test\)$/,
     );
 
-    expect(commitTrailers([report("CVE-1")]).some((line) => line.startsWith("Verified-By:"))).toBe(false);
+    expect(commitTrailers([report("CVE-1")]).some((line) => line.startsWith("Verified-By:"))).toBe(
+      false,
+    );
     expect(
       commitTrailers([
         report("CVE-1", { validationPhases: [{ phase: "install", passed: false }] }),
@@ -103,7 +105,12 @@ describe("commitTrailers", () => {
 
   it("names only the phases every result shares", () => {
     const trailers = commitTrailers([
-      report("CVE-1", { validationPhases: [{ phase: "install", passed: true }, { phase: "test", passed: true }] }),
+      report("CVE-1", {
+        validationPhases: [
+          { phase: "install", passed: true },
+          { phase: "test", passed: true },
+        ],
+      }),
       report("CVE-2", { validationPhases: [{ phase: "install", passed: true }] }),
     ]);
     expect(trailers.find((line) => line.startsWith("Verified-By:"))).toContain("(install)");
@@ -123,4 +130,3 @@ describe("freshness steps", () => {
     expect(trailers.some((line) => line.startsWith("Fixes-CVE:"))).toBe(false);
   });
 });
-

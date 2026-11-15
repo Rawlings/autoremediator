@@ -52,7 +52,9 @@ function buildStatement(draft: DraftStatement, input: VexFileInput): OpenVexStat
     ],
     status: draft.status,
     status_notes: draft.statusNotes,
-    ...(draft.status === "not_affected" ? { justification: "vulnerable_code_not_in_execute_path" as const } : {}),
+    ...(draft.status === "not_affected"
+      ? { justification: "vulnerable_code_not_in_execute_path" as const }
+      : {}),
     ...(draft.actionStatement ? { action_statement: draft.actionStatement } : {}),
     ...(draft.status === "affected" && draft.actionStatement
       ? { action_statement_timestamp: input.now.toISOString() }
@@ -62,7 +64,13 @@ function buildStatement(draft: DraftStatement, input: VexFileInput): OpenVexStat
 
 /** The part of a statement that says something, without the bookkeeping that changes on every write. */
 function substance(statement: OpenVexStatement): string {
-  const { timestamp: _t, version: _v, last_updated: _l, action_statement_timestamp: _a, ...rest } = statement;
+  const {
+    timestamp: _t,
+    version: _v,
+    last_updated: _l,
+    action_statement_timestamp: _a,
+    ...rest
+  } = statement;
   return JSON.stringify(rest);
 }
 

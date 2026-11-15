@@ -64,8 +64,7 @@ export function getAllowedRoots(
     ?.split(",")
     .map((entry) => entry.trim())
     .filter(Boolean);
-  const roots =
-    configured && configured.length > 0 ? configured : [process.cwd(), ...extraRoots];
+  const roots = configured && configured.length > 0 ? configured : [process.cwd(), ...extraRoots];
   return roots.map((root) => realOrResolve(resolve(root)));
 }
 

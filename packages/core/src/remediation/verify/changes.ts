@@ -17,7 +17,14 @@ const LOCKFILES = new Set([
 
 const SOURCE_EXTENSIONS = /\.(?:[cm]?[jt]sx?)$/;
 
-export type PathClass = "manifest" | "lockfile" | "patch" | "install-state" | "source" | "forbidden" | "other";
+export type PathClass =
+  | "manifest"
+  | "lockfile"
+  | "patch"
+  | "install-state"
+  | "source"
+  | "forbidden"
+  | "other";
 
 /** Which kind of file a changed path is. Forbidden paths are never acceptable to change. */
 export function classifyPath(path: string): PathClass {
@@ -51,7 +58,9 @@ export async function changedFilesSince(
   try {
     stdout = (await safeExeca("git", ["status", "--porcelain=v1", "-uall"], { cwd, stdio: "pipe" }))
       .stdout;
-    root = (await safeExeca("git", ["rev-parse", "--show-prefix"], { cwd, stdio: "pipe" })).stdout.trim();
+    root = (
+      await safeExeca("git", ["rev-parse", "--show-prefix"], { cwd, stdio: "pipe" })
+    ).stdout.trim();
   } catch {
     return undefined;
   }
@@ -63,7 +72,11 @@ export async function changedFilesSince(
     const parsed = parseGitPorcelainLine(line);
     if (!parsed) continue;
     // Porcelain paths are relative to the repository root; report them relative to `cwd`.
-    paths.push(root && parsed.filePath.startsWith(root) ? parsed.filePath.slice(root.length) : parsed.filePath);
+    paths.push(
+      root && parsed.filePath.startsWith(root)
+        ? parsed.filePath.slice(root.length)
+        : parsed.filePath,
+    );
   }
   return paths.filter((path) => !ignore.includes(path) && !isRunState(path)).toSorted();
 }
@@ -96,7 +109,12 @@ export interface Declaration {
   spec: string;
 }
 
-const DEPENDENCY_SECTIONS = ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"];
+const DEPENDENCY_SECTIONS = [
+  "dependencies",
+  "devDependencies",
+  "optionalDependencies",
+  "peerDependencies",
+];
 
 /** `parent>child`, `child@<2.0.0` and `@scope/child@1` all name `child`. */
 export function overrideTarget(selector: string): string {
@@ -114,7 +132,11 @@ function addOverrides(into: Declaration[], overrides: unknown): void {
       // npm nests overrides: { parent: { child: "1.0.0" } }
       for (const [child, nested] of Object.entries(value as Record<string, unknown>)) {
         if (typeof nested === "string") {
-          into.push({ kind: "override", name: overrideTarget(child), spec: `${selector}>${child}=${nested}` });
+          into.push({
+            kind: "override",
+            name: overrideTarget(child),
+            spec: `${selector}>${child}=${nested}`,
+          });
         }
       }
     }
@@ -165,22 +187,46 @@ const valueOf = (declaration: Declaration) =>
     : declaration.spec;
 
 /** What changed between two manifests' declarations. */
-export function diffDeclarations(file: string, before: string | null, after: string | null): DeclarationChange[] {
-  const previous = new Map(readDeclarations(before).map((declaration) => [keyOf(declaration), declaration]));
-  const current = new Map(readDeclarations(after).map((declaration) => [keyOf(declaration), declaration]));
+export function diffDeclarations(
+  file: string,
+  before: string | null,
+  after: string | null,
+): DeclarationChange[] {
+  const previous = new Map(
+    readDeclarations(before).map((declaration) => [keyOf(declaration), declaration]),
+  );
+  const current = new Map(
+    readDeclarations(after).map((declaration) => [keyOf(declaration), declaration]),
+  );
   const changes: DeclarationChange[] = [];
 
   for (const [key, declaration] of current) {
     const old = previous.get(key);
     if (old === undefined) {
-      changes.push({ kind: declaration.kind, name: declaration.name, to: valueOf(declaration), file });
+      changes.push({
+        kind: declaration.kind,
+        name: declaration.name,
+        to: valueOf(declaration),
+        file,
+      });
     } else if (valueOf(old) !== valueOf(declaration)) {
-      changes.push({ kind: declaration.kind, name: declaration.name, from: valueOf(old), to: valueOf(declaration), file });
+      changes.push({
+        kind: declaration.kind,
+        name: declaration.name,
+        from: valueOf(old),
+        to: valueOf(declaration),
+        file,
+      });
     }
   }
   for (const [key, declaration] of previous) {
     if (!current.has(key)) {
-      changes.push({ kind: declaration.kind, name: declaration.name, from: valueOf(declaration), file });
+      changes.push({
+        kind: declaration.kind,
+        name: declaration.name,
+        from: valueOf(declaration),
+        file,
+      });
     }
   }
   return changes;

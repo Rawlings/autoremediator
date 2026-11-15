@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { ApiDeps } from "./api-deps.js";
 import {
   callMcpOperation,
   httpOperations,
@@ -11,7 +12,6 @@ import {
   toMcpTools,
   toOpenApiPaths,
 } from "./index.js";
-import type { ApiDeps } from "./api-deps.js";
 
 function fakeDeps(overrides: Partial<ApiDeps> = {}): ApiDeps {
   return {
@@ -99,7 +99,11 @@ describe("MCP tools generated from the catalog", () => {
 describe("calling operations over MCP", () => {
   it("passes validated input to the SDK with mcp provenance", async () => {
     const deps = fakeDeps();
-    const result = await callMcpOperation("remediate", { cveId: "CVE-2021-23337", dryRun: true }, deps);
+    const result = await callMcpOperation(
+      "remediate",
+      { cveId: "CVE-2021-23337", dryRun: true },
+      deps,
+    );
 
     expect(result.isError).toBeUndefined();
     expect(deps.remediateFn).toHaveBeenCalledWith("CVE-2021-23337", {
@@ -148,7 +152,11 @@ describe("calling operations over MCP", () => {
 
   it("refuses caller-supplied change-request credentials rather than passing them through", async () => {
     const deps = fakeDeps();
-    for (const secret of [{ tokenEnvVar: "GITHUB_TOKEN" }, { token: "ghp_x" }, { githubApiUrl: "https://evil.test" }]) {
+    for (const secret of [
+      { tokenEnvVar: "GITHUB_TOKEN" },
+      { token: "ghp_x" },
+      { githubApiUrl: "https://evil.test" },
+    ]) {
       const result = await callMcpOperation(
         "remediate",
         { cveId: "CVE-2021-23337", changeRequest: { provider: "github", ...secret } },
@@ -184,7 +192,9 @@ describe("HTTP adapter", () => {
   const op = (name: string) => OPERATIONS.find((operation) => operation.name === name)!;
 
   it("gives every HTTP operation a unique route", () => {
-    const keys = httpOperations.map((operation) => `${operation.http!.method} ${operation.http!.path}`);
+    const keys = httpOperations.map(
+      (operation) => `${operation.http!.method} ${operation.http!.path}`,
+    );
     expect(new Set(keys).size).toBe(keys.length);
     // The unauthenticated probe and spec endpoints are not operations.
     expect(keys).not.toContain("GET /health");
@@ -210,7 +220,9 @@ describe("HTTP adapter", () => {
       mapRequestToInput(op("remediate"), { cveId: "CVE-1", options: { dryRun: true } }),
     ).toEqual({ ok: true, input: { cveId: "CVE-1", dryRun: true } });
     expect(mapRequestToInput(op("listPatchArtifacts"), {})).toEqual({ ok: true, input: {} });
-    expect(mapRequestToInput(op("toVex"), { report: { a: 1 }, options: { toolVersion: "1" } })).toEqual({
+    expect(
+      mapRequestToInput(op("toVex"), { report: { a: 1 }, options: { toolVersion: "1" } }),
+    ).toEqual({
       ok: true,
       input: { toolVersion: "1", report: { a: 1 } },
     });
@@ -284,7 +296,12 @@ describe("generated OpenAPI paths", () => {
   });
 
   it("exposes the operations that previously had no HTTP route", () => {
-    for (const path of ["/reachability", "/packages/evaluate", "/delta-scan", "/patches/reconcile"]) {
+    for (const path of [
+      "/reachability",
+      "/packages/evaluate",
+      "/delta-scan",
+      "/patches/reconcile",
+    ]) {
       expect(paths[path]?.post).toBeDefined();
     }
   });
@@ -295,7 +312,14 @@ describe("run operations", () => {
   const tools = toMcpTools();
 
   it("are exposed as MCP tools and HTTP routes", () => {
-    for (const name of ["applyPlan", "verifyRun", "resumeRun", "rollbackRun", "getRun", "listRuns"]) {
+    for (const name of [
+      "applyPlan",
+      "verifyRun",
+      "resumeRun",
+      "rollbackRun",
+      "getRun",
+      "listRuns",
+    ]) {
       expect(tools.map((tool) => tool.name)).toContain(name);
       expect(byName(name).http).toBeDefined();
     }
@@ -316,7 +340,11 @@ describe("run operations", () => {
     const deps = fakeDeps({ applyPlanFn: applyPlanFn as unknown as ApiDeps["applyPlanFn"] });
     const runId = "run_" + "a".repeat(20);
 
-    await callMcpOperation("applyPlan", { runId, repair: true, model: "anthropic:claude-sonnet-5-5", maxRepairRounds: 2 }, deps);
+    await callMcpOperation(
+      "applyPlan",
+      { runId, repair: true, model: "anthropic:claude-sonnet-5-5", maxRepairRounds: 2 },
+      deps,
+    );
     expect(applyPlanFn).toHaveBeenCalledWith({
       runId,
       repair: true,
@@ -337,7 +365,11 @@ describe("run operations", () => {
     const bad = await callMcpOperation("verifyRun", { runId, checks: ["scope", "nonsense"] }, deps);
     expect(bad.isError).toBe(true);
     expect(deps.verifyRunFn).not.toHaveBeenCalled();
-    const good = await callMcpOperation("verifyRun", { runId, checks: ["scope", "vuln-gone"] }, deps);
+    const good = await callMcpOperation(
+      "verifyRun",
+      { runId, checks: ["scope", "vuln-gone"] },
+      deps,
+    );
     expect(good.isError).toBeUndefined();
     expect(deps.verifyRunFn).toHaveBeenCalledWith({ runId, checks: ["scope", "vuln-gone"] });
   });
@@ -378,7 +410,13 @@ describe("attempt operations for host agents", () => {
   const itemId = "item_" + "a".repeat(12);
 
   it("are on every surface, with roles that follow what they can do", () => {
-    for (const name of ["startAttempt", "proposePatch", "verifyAttempt", "finalizeAttempt", "abandonAttempt"]) {
+    for (const name of [
+      "startAttempt",
+      "proposePatch",
+      "verifyAttempt",
+      "finalizeAttempt",
+      "abandonAttempt",
+    ]) {
       expect(toMcpTools().map((tool) => tool.name)).toContain(name);
       expect(byName(name).http).toBeDefined();
     }
@@ -402,7 +440,9 @@ describe("attempt operations for host agents", () => {
       expect((await callMcpOperation("startAttempt", args, deps)).isError).toBe(true);
     }
     for (const bad of ["../../etc", "attempt_short", "attempt_" + "A".repeat(12)]) {
-      expect((await callMcpOperation("finalizeAttempt", { runId, attemptId: bad }, deps)).isError).toBe(true);
+      expect(
+        (await callMcpOperation("finalizeAttempt", { runId, attemptId: bad }, deps)).isError,
+      ).toBe(true);
     }
     expect(deps.startAttemptFn).not.toHaveBeenCalled();
     expect(deps.finalizeAttemptFn).not.toHaveBeenCalled();
@@ -415,7 +455,9 @@ describe("attempt operations for host agents", () => {
   it("require a diff to propose", async () => {
     const deps = fakeDeps({ proposePatchFn: vi.fn() as unknown as ApiDeps["proposePatchFn"] });
     expect((await callMcpOperation("proposePatch", { runId, attemptId }, deps)).isError).toBe(true);
-    expect((await callMcpOperation("proposePatch", { runId, attemptId, diff: "" }, deps)).isError).toBe(true);
+    expect(
+      (await callMcpOperation("proposePatch", { runId, attemptId, diff: "" }, deps)).isError,
+    ).toBe(true);
     expect(deps.proposePatchFn).not.toHaveBeenCalled();
   });
 });
@@ -438,13 +480,38 @@ describe("recipe operations", () => {
   });
 
   it("validate ids and require a recipe id before anything runs", async () => {
-    const deps = fakeDeps({ applyRecipeFn: vi.fn() as unknown as ApiDeps["applyRecipeFn"], listRecipesFn: vi.fn(() => ({ recipes: [], problems: [] })) as unknown as ApiDeps["listRecipesFn"] });
-    for (const args of [{ runId, attemptId }, { runId, attemptId, recipeId: "" }, { runId: "../x", attemptId, recipeId: "dep#abc" }, { runId, attemptId: "../../x", recipeId: "dep#abc" }]) {
+    const deps = fakeDeps({
+      applyRecipeFn: vi.fn() as unknown as ApiDeps["applyRecipeFn"],
+      listRecipesFn: vi.fn(() => ({
+        recipes: [],
+        problems: [],
+      })) as unknown as ApiDeps["listRecipesFn"],
+    });
+    for (const args of [
+      { runId, attemptId },
+      { runId, attemptId, recipeId: "" },
+      { runId: "../x", attemptId, recipeId: "dep#abc" },
+      { runId, attemptId: "../../x", recipeId: "dep#abc" },
+    ]) {
       expect((await callMcpOperation("applyRecipe", args, deps)).isError).toBe(true);
     }
     expect(deps.applyRecipeFn).not.toHaveBeenCalled();
-    expect((await callMcpOperation("applyRecipe", { runId, attemptId, recipeId: "dep#0123456789" }, deps)).isError).toBeUndefined();
-    expect(deps.applyRecipeFn).toHaveBeenCalledWith({ runId, attemptId, recipeId: "dep#0123456789" });
-    expect((await callMcpOperation("listRecipes", { packageName: "dep" }, deps)).isError).toBeUndefined();
+    expect(
+      (
+        await callMcpOperation(
+          "applyRecipe",
+          { runId, attemptId, recipeId: "dep#0123456789" },
+          deps,
+        )
+      ).isError,
+    ).toBeUndefined();
+    expect(deps.applyRecipeFn).toHaveBeenCalledWith({
+      runId,
+      attemptId,
+      recipeId: "dep#0123456789",
+    });
+    expect(
+      (await callMcpOperation("listRecipes", { packageName: "dep" }, deps)).isError,
+    ).toBeUndefined();
   });
 });

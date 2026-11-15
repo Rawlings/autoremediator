@@ -1,8 +1,7 @@
 import semver from "semver";
 
-import { parsePnpmLockDocument } from "./pnpm-lock-document.js";
-
 import type { DeltaDependencyChange } from "../platform/types.js";
+import { parsePnpmLockDocument } from "./pnpm-lock-document.js";
 
 /**
  * Extracts a map of package names to their resolved versions from a lockfile content.

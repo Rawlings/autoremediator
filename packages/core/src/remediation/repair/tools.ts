@@ -4,12 +4,12 @@ import { dirname, join } from "node:path";
 import { tool, type ToolSet } from "ai";
 import { z } from "zod";
 
-import type { RepairBudget, RepairCommands } from "../../platform/repair-agent.js";
 import {
   MAX_PROPOSALS_PER_ATTEMPT,
   type MemoryProposal,
   PROPOSAL_KINDS,
 } from "../../platform/memory/propose.js";
+import type { RepairBudget, RepairCommands } from "../../platform/repair-agent.js";
 import { runCommandCheck, tail } from "../verify/command-check.js";
 import { type ScopeGuard, ScopeViolation } from "./scope-guard.js";
 
@@ -45,7 +45,8 @@ export function hasNestedQuantifier(pattern: string): boolean {
       index += 2;
     } else if (char === "[") {
       index++;
-      while (index < pattern.length && pattern[index] !== "]") index += pattern[index] === "\\" ? 2 : 1;
+      while (index < pattern.length && pattern[index] !== "]")
+        index += pattern[index] === "\\" ? 2 : 1;
       index++;
     } else if (char === "(") {
       groups.push(false);
@@ -67,9 +68,24 @@ export function hasNestedQuantifier(pattern: string): boolean {
   return false;
 }
 const MAX_WRITE_BYTES = 400_000;
-const SKIPPED_DIRS = new Set(["node_modules", ".git", ".autoremediator", "dist", "build", "coverage", ".next"]);
+const SKIPPED_DIRS = new Set([
+  "node_modules",
+  ".git",
+  ".autoremediator",
+  "dist",
+  "build",
+  "coverage",
+  ".next",
+]);
 const PACKAGE_NAME = /^(@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/i;
-const DOC_FILES = ["CHANGELOG.md", "HISTORY.md", "CHANGES.md", "MIGRATION.md", "UPGRADING.md", "README.md"];
+const DOC_FILES = [
+  "CHANGELOG.md",
+  "HISTORY.md",
+  "CHANGES.md",
+  "MIGRATION.md",
+  "UPGRADING.md",
+  "README.md",
+];
 const MAX_DOC_BYTES = 12_000;
 
 /** Mutable record of what an agent did, shared between the tools and the loop around them. */
@@ -131,11 +147,16 @@ export function createRepairTools(context: RepairToolContext): ToolSet {
             text: z
               .string()
               .optional()
-              .describe("test-command: the command (e.g. pnpm run test:unit); flaky-test: the test; install-quirk and note: the fact"),
+              .describe(
+                "test-command: the command (e.g. pnpm run test:unit); flaky-test: the test; install-quirk and note: the fact",
+              ),
             package: z.string().optional().describe("pinned-package and rejected-upgrade"),
             fromVersion: z.string().optional().describe("rejected-upgrade"),
             toVersion: z.string().optional().describe("rejected-upgrade"),
-            reason: z.string().optional().describe("pinned-package and rejected-upgrade: why; flaky-test: an optional note"),
+            reason: z
+              .string()
+              .optional()
+              .describe("pinned-package and rejected-upgrade: why; flaky-test: an optional note"),
           }),
           execute: async (proposal) => {
             if ((state.memoryProposals ?? 0) >= MAX_PROPOSALS_PER_ATTEMPT) {
@@ -161,10 +182,15 @@ export function createRepairTools(context: RepairToolContext): ToolSet {
       execute: async ({ path, startLine, endLine }) => {
         try {
           const full = guard.assertReadable(path);
-          if (!existsSync(full) || !statSync(full).isFile()) return `Error: "${path}" is not a file`;
+          if (!existsSync(full) || !statSync(full).isFile())
+            return `Error: "${path}" is not a file`;
           const lines = readFileSync(full, "utf8").split("\n");
           const from = Math.max(1, startLine ?? 1);
-          const to = Math.min(lines.length, endLine ?? from + MAX_READ_LINES - 1, from + MAX_READ_LINES - 1);
+          const to = Math.min(
+            lines.length,
+            endLine ?? from + MAX_READ_LINES - 1,
+            from + MAX_READ_LINES - 1,
+          );
           let text = lines
             .slice(from - 1, to)
             .map((line, index) => `${from + index}\t${line}`)
@@ -178,8 +204,14 @@ export function createRepairTools(context: RepairToolContext): ToolSet {
     }),
 
     listFiles: tool({
-      description: "List the files under a directory, recursively, skipping node_modules, .git and build output.",
-      inputSchema: z.object({ dir: z.string().optional().describe("Directory relative to the project root (default: the root)") }),
+      description:
+        "List the files under a directory, recursively, skipping node_modules, .git and build output.",
+      inputSchema: z.object({
+        dir: z
+          .string()
+          .optional()
+          .describe("Directory relative to the project root (default: the root)"),
+      }),
       execute: async ({ dir }) => {
         try {
           const full = guard.assertReadable(dir ?? ".");
@@ -232,7 +264,9 @@ export function createRepairTools(context: RepairToolContext): ToolSet {
               const lines = text.split("\n");
               for (const [index, line] of lines.entries()) {
                 if (regex.test(line.slice(0, MAX_SEARCH_LINE_CHARS))) {
-                  matches.push(`${guard.relativePath(file)}:${index + 1}: ${line.trim().slice(0, 200)}`);
+                  matches.push(
+                    `${guard.relativePath(file)}:${index + 1}: ${line.trim().slice(0, 200)}`,
+                  );
                   if (matches.length >= MAX_SEARCH_MATCHES) return matches.join("\n");
                 }
               }
@@ -257,9 +291,16 @@ export function createRepairTools(context: RepairToolContext): ToolSet {
         if (!existsSync(root)) return `Error: ${packageName} is not installed`;
         const out: string[] = [];
         try {
-          const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as Record<string, unknown>;
-          const declared = [manifest["types"], manifest["typings"]].find((value) => typeof value === "string");
-          out.push(`${packageName}@${JSON.stringify(manifest["version"])} types: ${typeof declared === "string" ? declared : "(none declared)"}`);
+          const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as Record<
+            string,
+            unknown
+          >;
+          const declared = [manifest["types"], manifest["typings"]].find(
+            (value) => typeof value === "string",
+          );
+          out.push(
+            `${packageName}@${JSON.stringify(manifest["version"])} types: ${typeof declared === "string" ? declared : "(none declared)"}`,
+          );
         } catch {
           out.push(`${packageName}: package.json unreadable`);
         }
@@ -280,11 +321,13 @@ export function createRepairTools(context: RepairToolContext): ToolSet {
       execute: async ({ path, oldText, newText }) => {
         try {
           const full = guard.assertWritable(path);
-          if (!existsSync(full)) return `Error: "${path}" does not exist (use writeFile to create a file)`;
+          if (!existsSync(full))
+            return `Error: "${path}" does not exist (use writeFile to create a file)`;
           const text = readFileSync(full, "utf8");
           const first = text.indexOf(oldText);
           if (first === -1) return `Error: oldText was not found in "${path}"`;
-          if (text.indexOf(oldText, first + 1) !== -1) return `Error: oldText appears more than once in "${path}"; include more context`;
+          if (text.indexOf(oldText, first + 1) !== -1)
+            return `Error: oldText appears more than once in "${path}"; include more context`;
           const next = text.slice(0, first) + newText + text.slice(first + oldText.length);
           if (next.length > MAX_WRITE_BYTES) return "Error: the file would become too large";
           writeFileSync(full, next, "utf8");
@@ -297,7 +340,8 @@ export function createRepairTools(context: RepairToolContext): ToolSet {
     }),
 
     writeFile: tool({
-      description: "Create or overwrite a project source file (.js/.ts and variants) with the given content.",
+      description:
+        "Create or overwrite a project source file (.js/.ts and variants) with the given content.",
       inputSchema: z.object({ path: z.string(), content: z.string() }),
       execute: async ({ path, content }) => {
         try {
@@ -319,7 +363,8 @@ export function createRepairTools(context: RepairToolContext): ToolSet {
       inputSchema: z.object({ name: z.enum(["typecheck", "tests", "build"]) }),
       execute: async ({ name }) => {
         const command = commands[name];
-        if (!command || command.length === 0) return `No ${name} command is configured for this project.`;
+        if (!command || command.length === 0)
+          return `No ${name} command is configured for this project.`;
         if (state.commandRuns >= budget.maxCommandRuns) {
           return `Command limit reached (${budget.maxCommandRuns}). Submit, or give up.`;
         }

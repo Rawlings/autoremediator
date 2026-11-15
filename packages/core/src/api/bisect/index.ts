@@ -53,8 +53,16 @@ const LOCKFILES: ReadonlyArray<[file: string, manager: PackageManager]> = [
   ["bun.lockb", "bun"],
 ];
 
-async function git(cwd: string, args: string[]): Promise<{ ok: boolean; stdout: string; stderr: string }> {
-  const result = await safeExeca("git", args, { cwd, stdio: "pipe", reject: false, stripFinalNewline: false });
+async function git(
+  cwd: string,
+  args: string[],
+): Promise<{ ok: boolean; stdout: string; stderr: string }> {
+  const result = await safeExeca("git", args, {
+    cwd,
+    stdio: "pipe",
+    reject: false,
+    stripFinalNewline: false,
+  });
   return { ok: result.exitCode === 0, stdout: result.stdout, stderr: result.stderr };
 }
 
@@ -89,17 +97,25 @@ function checkRef(name: string, value: string): void {
 
 async function resolveCommit(top: string, name: string, ref: string): Promise<string> {
   const result = await git(top, ["rev-parse", "--verify", "--end-of-options", `${ref}^{commit}`]);
-  if (!result.ok) throw new Error(`${name} ref ${JSON.stringify(ref)} does not resolve to a commit in this repository.`);
+  if (!result.ok)
+    throw new Error(
+      `${name} ref ${JSON.stringify(ref)} does not resolve to a commit in this repository.`,
+    );
   return result.stdout.trim();
 }
 
-const updatedNames = (subset: readonly BisectedPackage[]): string[] => subset.map((item) => item.packageName);
+const updatedNames = (subset: readonly BisectedPackage[]): string[] =>
+  subset.map((item) => item.packageName);
 
 const describeUpdate = (item: BisectedPackage): string =>
   `${item.packageName} ${item.fromVersion} -> ${item.toVersion} (${item.dependencyScope})`;
 
 function installArgv(manager: PackageManager, frozen: boolean, ignoreScripts: boolean): string[] {
-  const argv = resolveInstallCommand(manager, { installMode: "standard", enforceFrozenLockfile: frozen }, 1);
+  const argv = resolveInstallCommand(
+    manager,
+    { installMode: "standard", enforceFrozenLockfile: frozen },
+    1,
+  );
   if (manager === "npm") argv.push("--no-audit", "--no-fund");
   if (ignoreScripts) argv.push("--ignore-scripts");
   return argv;
@@ -124,11 +140,13 @@ export async function bisectLockfile(
   checkRef("good", options.good);
   const badRef = options.bad?.trim() || "HEAD";
   checkRef("bad", badRef);
-  if (!options.command?.trim()) throw new Error("command is required: the shell command that fails at the bad ref.");
+  if (!options.command?.trim())
+    throw new Error("command is required: the shell command that fails at the bad ref.");
   const timeoutSeconds = options.timeoutSeconds ?? DEFAULT_COMMAND_TIMEOUT_SECONDS;
   const maxSteps = options.maxSteps ?? DEFAULT_MAX_STEPS;
   if (!(timeoutSeconds > 0)) throw new Error("timeoutSeconds must be greater than zero.");
-  if (!Number.isInteger(maxSteps) || maxSteps < 1) throw new Error("maxSteps must be a whole number of at least 1.");
+  if (!Number.isInteger(maxSteps) || maxSteps < 1)
+    throw new Error("maxSteps must be a whole number of at least 1.");
   if (options.packageManager && !["npm", "pnpm", "yarn"].includes(options.packageManager)) {
     throw new Error(
       `bisect supports npm, pnpm and yarn (classic) lockfiles; ${options.packageManager} is not supported.`,
@@ -143,7 +161,8 @@ export async function bisectLockfile(
 
   const goodCommit = await resolveCommit(top, "good", options.good);
   const badCommit = await resolveCommit(top, "bad", badRef);
-  if (goodCommit === badCommit) throw new Error("good and bad are the same commit: there is nothing to bisect.");
+  if (goodCommit === badCommit)
+    throw new Error("good and bad are the same commit: there is nothing to bisect.");
 
   // Which lockfile, hence which package manager.
   let lockfile: string | undefined;
@@ -162,19 +181,24 @@ export async function bisectLockfile(
     );
   }
   if (manager === "bun") {
-    throw new Error("bisect cannot read bun lockfiles yet; npm, pnpm and yarn (classic) are supported.");
+    throw new Error(
+      "bisect cannot read bun lockfiles yet; npm, pnpm and yarn (classic) are supported.",
+    );
   }
   const goodLock = await showAt(top, goodCommit, inRepo(lockfile));
   const badLock = await showAt(top, badCommit, inRepo(lockfile));
   if (goodLock === undefined) {
-    throw new Error(`${lockfile} does not exist at ${options.good}: there is no lockfile to compare against.`);
+    throw new Error(
+      `${lockfile} does not exist at ${options.good}: there is no lockfile to compare against.`,
+    );
   }
   if (badLock === undefined) throw new Error(`${lockfile} does not exist at ${badRef}.`);
   if (manager === "yarn" && (goodLock.includes("__metadata:") || badLock.includes("__metadata:"))) {
     throw new Error("bisect reads yarn classic (v1) lockfiles only; this one is from yarn berry.");
   }
   const goodManifestText = await showAt(top, goodCommit, inRepo("package.json"));
-  if (goodManifestText === undefined) throw new Error(`package.json does not exist at ${options.good}.`);
+  if (goodManifestText === undefined)
+    throw new Error(`package.json does not exist at ${options.good}.`);
   const badManifest = parseManifest(await showAt(top, badCommit, inRepo("package.json")));
 
   const { updates, skipped } = lockfileChanges(
@@ -207,7 +231,9 @@ export async function bisectLockfile(
     updates,
     skipped,
     culprits: partial.culprits ?? [],
-    ...(partial.holdingBackFixes === undefined ? {} : { holdingBackFixes: partial.holdingBackFixes }),
+    ...(partial.holdingBackFixes === undefined
+      ? {}
+      : { holdingBackFixes: partial.holdingBackFixes }),
     steps,
     stepsUsed,
     maxSteps,
@@ -218,7 +244,10 @@ export async function bisectLockfile(
     durationMs: Date.now() - started,
   });
 
-  const skippedNote = skipped.length > 0 ? ` ${skipped.length} other locked package(s) were added or removed or have several versions and cannot be tried one at a time.` : "";
+  const skippedNote =
+    skipped.length > 0
+      ? ` ${skipped.length} other locked package(s) were added or removed or have several versions and cannot be tried one at a time.`
+      : "";
   if (updates.length === 0) {
     return finish({
       status: "no-changes",
@@ -261,13 +290,21 @@ export async function bisectLockfile(
 
     for (const tree of [goodTree, badTree]) {
       if (!existsSync(join(tree.path, "package.json"))) {
-        throw new Error(`package.json does not exist in ${sub || "the repository root"} at ${tree === goodTree ? options.good : badRef}.`);
+        throw new Error(
+          `package.json does not exist in ${sub || "the repository root"} at ${tree === goodTree ? options.good : badRef}.`,
+        );
       }
     }
 
     let pnpmMajor: number | undefined;
     if (manager === "pnpm") {
-      const version = await runProcess({ argv: ["pnpm", "--version"], cwd: goodTree.path, env, timeoutMs: 60_000, signal });
+      const version = await runProcess({
+        argv: ["pnpm", "--version"],
+        cwd: goodTree.path,
+        env,
+        timeoutMs: 60_000,
+        signal,
+      });
       const major = Number.parseInt(version.output.trim().split(".")[0] ?? "", 10);
       pnpmMajor = Number.isNaN(major) ? undefined : major;
     }
@@ -286,7 +323,11 @@ export async function bisectLockfile(
       pinned: readonly BisectedPackage[] | undefined,
     ): Promise<{ step: BisectStep; verdict: Verdict }> => {
       const stepNumber = steps.length + 1;
-      const base = { step: stepNumber, kind, updated: pinned ? updatedNames(pinned) : kind === "bad-ref" ? updatedNames(updates) : [] };
+      const base = {
+        step: stepNumber,
+        kind,
+        updated: pinned ? updatedNames(pinned) : kind === "bad-ref" ? updatedNames(updates) : [],
+      };
       const done = (
         outcome: BisectStep["outcome"],
         phase: BisectStep["phase"],
@@ -302,13 +343,19 @@ export async function bisectLockfile(
       const reset = await git(tree.root, ["reset", "--hard", "--quiet", commit]);
       const clean = await git(tree.root, ["clean", "-fdxq"]);
       if (!reset.ok || !clean.ok) {
-        return done("unresolved", "install", tail(reset.stderr + clean.stderr, 600), { note: "could not reset the checkout" });
+        return done("unresolved", "install", tail(reset.stderr + clean.stderr, 600), {
+          note: "could not reset the checkout",
+        });
       }
 
       if (pinned) {
         try {
           applyPins(
-            { dir: tree.path, packageManager: activeManager, ...(pnpmMajor === undefined ? {} : { pnpmMajor }) },
+            {
+              dir: tree.path,
+              packageManager: activeManager,
+              ...(pnpmMajor === undefined ? {} : { pnpmMajor }),
+            },
             pinned.map((item) => ({ packageName: item.packageName, version: item.toVersion })),
           );
         } catch (error) {
@@ -320,15 +367,29 @@ export async function bisectLockfile(
 
       const frozen = pinned === undefined;
       const argv = installArgv(activeManager, frozen, ignoreScripts);
-      const install = await runProcess({ argv, cwd: tree.path, env, timeoutMs: installTimeoutMs, signal });
+      const install = await runProcess({
+        argv,
+        cwd: tree.path,
+        env,
+        timeoutMs: installTimeoutMs,
+        signal,
+      });
       const installRecord = record(argv.join(" "), install);
-      if (install.aborted) return done("unresolved", "install", tail(install.output, 600), { install: installRecord, note: "interrupted" });
+      if (install.aborted)
+        return done("unresolved", "install", tail(install.output, 600), {
+          install: installRecord,
+          note: "interrupted",
+        });
       if (install.exitCode !== 0) {
         // An install that fails in a state taken from a commit is a broken build. In a combination
         // we made up it only says the combination cannot be installed.
         return done(frozen ? "fail" : "unresolved", "install", tail(install.output, 1500), {
           install: installRecord,
-          note: install.timedOut ? "install timed out" : frozen ? "install failed" : "install failed in this combination of versions",
+          note: install.timedOut
+            ? "install timed out"
+            : frozen
+              ? "install failed"
+              : "install failed in this combination of versions",
         });
       }
 
@@ -336,13 +397,24 @@ export async function bisectLockfile(
         const lockPath = join(tree.path, lockName);
         const content = existsSync(lockPath) ? readFileSync(lockPath, "utf8") : undefined;
         if (content === undefined) {
-          return done("unresolved", "pins", "", { install: installRecord, note: `the install did not write ${lockName}, so the versions cannot be checked` });
+          return done("unresolved", "pins", "", {
+            install: installRecord,
+            note: `the install did not write ${lockName}, so the versions cannot be checked`,
+          });
         }
-        const mismatches = checkLockedVersions(lockName, content, updates, new Set(updatedNames(pinned)));
+        const mismatches = checkLockedVersions(
+          lockName,
+          content,
+          updates,
+          new Set(updatedNames(pinned)),
+        );
         if (mismatches.length > 0) {
           const shown = mismatches
             .slice(0, 3)
-            .map((item) => `${item.packageName} should be ${item.expected} but the lockfile has ${item.found.join(", ") || "nothing"}`)
+            .map(
+              (item) =>
+                `${item.packageName} should be ${item.expected} but the lockfile has ${item.found.join(", ") || "nothing"}`,
+            )
             .join("; ");
           return done("unresolved", "pins", "", {
             install: installRecord,
@@ -351,14 +423,27 @@ export async function bisectLockfile(
         }
       }
 
-      const run = await runProcess({ shell: options.command, cwd: tree.path, env, timeoutMs, signal });
+      const run = await runProcess({
+        shell: options.command,
+        cwd: tree.path,
+        env,
+        timeoutMs,
+        signal,
+      });
       const runRecord = record(options.command, run);
-      if (run.aborted) return done("unresolved", "command", tail(run.output, 600), { install: installRecord, run: runRecord, note: "interrupted" });
+      if (run.aborted)
+        return done("unresolved", "command", tail(run.output, 600), {
+          install: installRecord,
+          run: runRecord,
+          note: "interrupted",
+        });
       const passed = run.exitCode === 0;
       return done(passed ? "pass" : "fail", "command", tail(run.output, passed ? 400 : 1500), {
         install: installRecord,
         run: runRecord,
-        ...(run.timedOut ? { note: `the command was killed after ${timeoutSeconds}s and counts as failing` } : {}),
+        ...(run.timedOut
+          ? { note: `the command was killed after ${timeoutSeconds}s and counts as failing` }
+          : {}),
       });
     };
 
@@ -389,13 +474,19 @@ export async function bisectLockfile(
     liveRoots.delete(badTree.root);
 
     // ---- 2. every update applied to the good ref must reproduce the failure --------------------
-    const attempt = async (kind: BisectStepKind, subset: readonly BisectedPackage[]): Promise<Verdict> => {
+    const attempt = async (
+      kind: BisectStepKind,
+      subset: readonly BisectedPackage[],
+    ): Promise<Verdict> => {
       stepsUsed++;
       return (await evaluate(goodTree, kind, goodCommit, subset)).verdict;
     };
 
     const all = await attempt("all-updates", updates);
-    if (interrupted()) return incomplete("Interrupted while checking that the lockfile updates reproduce the failure.");
+    if (interrupted())
+      return incomplete(
+        "Interrupted while checking that the lockfile updates reproduce the failure.",
+      );
     if (all !== "fail") {
       const last = steps.at(-1);
       return finish({
@@ -411,26 +502,46 @@ export async function bisectLockfile(
     const reserved = maxSteps > 2 ? 1 : 0; // a step kept for the final check
     const search =
       updates.length === 1
-        ? { minimal: [...updates], evaluations: 0, complete: true as boolean, stoppedBecause: undefined as "budget" | "stopped" | undefined }
-        : await ddmin(updates, (item) => item.packageName, (subset) => attempt("subset", subset), {
-            maxEvaluations: Math.max(maxSteps - stepsUsed - reserved, 0),
-            shouldStop: interrupted,
-          });
+        ? {
+            minimal: [...updates],
+            evaluations: 0,
+            complete: true as boolean,
+            stoppedBecause: undefined as "budget" | "stopped" | undefined,
+          }
+        : await ddmin(
+            updates,
+            (item) => item.packageName,
+            (subset) => attempt("subset", subset),
+            {
+              maxEvaluations: Math.max(maxSteps - stepsUsed - reserved, 0),
+              shouldStop: interrupted,
+            },
+          );
     if (search.stoppedBecause === "budget") stopped = "max-steps";
     if (search.stoppedBecause === "stopped" || interrupted()) stopped = "interrupted";
 
     const culprits = search.minimal;
-    const names = culprits.map((item) => `${item.packageName} ${item.fromVersion} -> ${item.toVersion}`);
+    const names = culprits.map(
+      (item) => `${item.packageName} ${item.fromVersion} -> ${item.toVersion}`,
+    );
     if (!search.complete && culprits.length > 1) {
-      if (stopped === "max-steps") warnings.push(`Stopped at the limit of ${maxSteps} steps; raise maxSteps to narrow it further.`);
-      else if (stopped === undefined) warnings.push("Some combinations of versions could not be installed, so the set may not be minimal.");
+      if (stopped === "max-steps")
+        warnings.push(
+          `Stopped at the limit of ${maxSteps} steps; raise maxSteps to narrow it further.`,
+        );
+      else if (stopped === undefined)
+        warnings.push(
+          "Some combinations of versions could not be installed, so the set may not be minimal.",
+        );
       return incomplete(
         `Narrowed ${updates.length} updates down to ${culprits.length} that still fail (${names.join("; ")}), but not to a minimal set.`,
         culprits,
       );
     }
     if (!search.complete && stopped === undefined) {
-      warnings.push("Some combinations of versions could not be installed; the culprit is certain, but other updates may also break the command.");
+      warnings.push(
+        "Some combinations of versions could not be installed; the culprit is certain, but other updates may also break the command.",
+      );
     }
 
     // ---- 4. confirm that holding the culprits back is what fixes it -----------------------------
@@ -438,19 +549,26 @@ export async function bisectLockfile(
     if (culprits.length === updates.length) {
       holdingBackFixes = true; // the good ref itself, which passed
     } else if (!interrupted() && stepsUsed < maxSteps) {
-      const rest = updates.filter((item) => !culprits.some((culprit) => culprit.packageName === item.packageName));
+      const rest = updates.filter(
+        (item) => !culprits.some((culprit) => culprit.packageName === item.packageName),
+      );
       const verdict = await attempt("without-culprit", rest);
       if (verdict === "pass") holdingBackFixes = true;
       else if (verdict === "fail") {
         holdingBackFixes = false;
-        warnings.push("The command still fails with the culprits held back: other updates also break it, or the command is flaky.");
+        warnings.push(
+          "The command still fails with the culprits held back: other updates also break it, or the command is flaky.",
+        );
       } else {
         warnings.push("Could not check that holding the culprits back makes the command pass.");
       }
     }
 
     if (interrupted()) {
-      return incomplete(`Interrupted after narrowing the failure down to ${names.join("; ")}.`, culprits);
+      return incomplete(
+        `Interrupted after narrowing the failure down to ${names.join("; ")}.`,
+        culprits,
+      );
     }
 
     // ---- 5. the remedy: a plan that pins the culprits back --------------------------------------

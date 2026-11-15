@@ -35,8 +35,13 @@ describe("committed evidence files are untrusted", () => {
     })) {
       writeFileSync(join(cwd, "patches", `${name}.proof.json`), JSON.stringify(record(overrides)));
     }
-    writeFileSync(join(cwd, "patches", "ok.proof.json"), JSON.stringify(record({ aliases: ["GHSA-aaaa-bbbb-cccc"] })));
-    expect(findEvidence(cwd, "patches").map((found) => found.recordPath.split("/").at(-1))).toEqual(["ok.proof.json"]);
+    writeFileSync(
+      join(cwd, "patches", "ok.proof.json"),
+      JSON.stringify(record({ aliases: ["GHSA-aaaa-bbbb-cccc"] })),
+    );
+    expect(findEvidence(cwd, "patches").map((found) => found.recordPath.split("/").at(-1))).toEqual(
+      ["ok.proof.json"],
+    );
     expect(() => proofEvidenceRefs(cwd, "patches")).not.toThrow();
   });
 });

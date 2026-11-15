@@ -1,5 +1,4 @@
 import { parsePnpmLockDocument } from "../pnpm-lock-document.js";
-
 import { isRecord, type LockGraph, type LockNode, type LockRoot } from "./types.js";
 
 /** `{ name: ref }` of a dependency table; the ref is a string (v5, snapshots) or `{ specifier, version }` (importers). */

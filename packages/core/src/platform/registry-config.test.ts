@@ -78,10 +78,7 @@ describe("createRegistryConfig", () => {
   it("attaches bearer and basic credentials to matching URLs only", () => {
     const config = createRegistryConfig(
       parseNpmrc(
-        [
-          "//npm.example.com/:_authToken=tok",
-          "//basic.example.com/:_auth=dXNlcjpwYXNz",
-        ].join("\n"),
+        ["//npm.example.com/:_authToken=tok", "//basic.example.com/:_auth=dXNlcjpwYXNz"].join("\n"),
         {},
       ),
       {},
@@ -99,16 +96,26 @@ describe("createRegistryConfig", () => {
 
   it("prefers the longest matching credential prefix", () => {
     const config = createRegistryConfig(
-      parseNpmrc(["//host.example.com/:_authToken=root", "//host.example.com/team/:_authToken=team"].join("\n"), {}),
+      parseNpmrc(
+        ["//host.example.com/:_authToken=root", "//host.example.com/team/:_authToken=team"].join(
+          "\n",
+        ),
+        {},
+      ),
       {},
     );
-    expect(config.headersFor("https://host.example.com/team/pkg").Authorization).toBe("Bearer team");
+    expect(config.headersFor("https://host.example.com/team/pkg").Authorization).toBe(
+      "Bearer team",
+    );
     expect(config.headersFor("https://host.example.com/pkg").Authorization).toBe("Bearer root");
   });
 
   it("does not send credentials over plain http except to localhost", () => {
     const config = createRegistryConfig(
-      parseNpmrc(["//npm.example.com/:_authToken=tok", "//localhost:4873/:_authToken=local"].join("\n"), {}),
+      parseNpmrc(
+        ["//npm.example.com/:_authToken=tok", "//localhost:4873/:_authToken=local"].join("\n"),
+        {},
+      ),
       {},
     );
     expect(config.headersFor("http://npm.example.com/lodash")).toEqual({});
@@ -150,7 +157,10 @@ describe("loadRegistryConfig", () => {
     const dir = mkdtempSync(join(tmpdir(), "registry-config-"));
     try {
       const userFile = join(dir, "user.npmrc");
-      writeFileSync(userFile, "registry=https://user.example.com/\n@acme:registry=https://user-acme.example.com/\n");
+      writeFileSync(
+        userFile,
+        "registry=https://user.example.com/\n@acme:registry=https://user-acme.example.com/\n",
+      );
       const project = join(dir, "project");
       mkdirSync(project);
       writeFileSync(join(project, ".npmrc"), "registry=https://project.example.com/\n");
@@ -206,18 +216,25 @@ describe("a project .npmrc cannot send an ambient secret to a registry of its ow
     const config = load(
       `registry=https://private.example/\n//private.example/:_authToken=${envRef("NPM_TOKEN")}\n`,
     );
-    expect(config.headersFor("https://private.example/pkg")).toEqual({ Authorization: "Bearer npm_for_npm" });
+    expect(config.headersFor("https://private.example/pkg")).toEqual({
+      Authorization: "Bearer npm_for_npm",
+    });
   });
 
   it("keeps any variable for the well-known registry hosts, such as GitHub Packages", () => {
     const config = load(`//npm.pkg.github.com/:_authToken=${envRef("GITHUB_TOKEN")}\n`);
-    expect(config.headersFor("https://npm.pkg.github.com/x")).toEqual({ Authorization: "Bearer ghs_ambient" });
+    expect(config.headersFor("https://npm.pkg.github.com/x")).toEqual({
+      Authorization: "Bearer ghs_ambient",
+    });
   });
 
   it("keeps a literal credential and non-credential keys that expand variables", () => {
-    const config = load(`registry=${envRef("NPM_CONFIG_REGISTRY_BASE")}/\n//x.example/:_authToken=literal\n`, {
-      NPM_CONFIG_REGISTRY_BASE: "https://mirror.example",
-    });
+    const config = load(
+      `registry=${envRef("NPM_CONFIG_REGISTRY_BASE")}/\n//x.example/:_authToken=literal\n`,
+      {
+        NPM_CONFIG_REGISTRY_BASE: "https://mirror.example",
+      },
+    );
     expect(config.registryUrlFor("lodash")).toBe("https://mirror.example");
     expect(config.headersFor("https://x.example/p")).toEqual({ Authorization: "Bearer literal" });
   });
@@ -227,11 +244,15 @@ describe("a project .npmrc cannot send an ambient secret to a registry of its ow
     try {
       const userFile = join(dir, "user.npmrc");
       writeFileSync(userFile, `//corp.example/:_authToken=${envRef("GITHUB_TOKEN")}\n`);
-      const config = loadRegistryConfig(dir, { NPM_CONFIG_USERCONFIG: userFile, GITHUB_TOKEN: "ghs_user" });
-      expect(config.headersFor("https://corp.example/p")).toEqual({ Authorization: "Bearer ghs_user" });
+      const config = loadRegistryConfig(dir, {
+        NPM_CONFIG_USERCONFIG: userFile,
+        GITHUB_TOKEN: "ghs_user",
+      });
+      expect(config.headersFor("https://corp.example/p")).toEqual({
+        Authorization: "Bearer ghs_user",
+      });
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });
 });
-

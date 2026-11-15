@@ -119,7 +119,10 @@ export function cursorHookOutput(decision: HookDecision): string {
  */
 export function copilotHookOutput(decision: HookDecision): string | undefined {
   if (decision.decision === "allow") return undefined;
-  return JSON.stringify({ permissionDecision: decision.decision, permissionDecisionReason: decision.reason });
+  return JSON.stringify({
+    permissionDecision: decision.decision,
+    permissionDecisionReason: decision.reason,
+  });
 }
 
 /** What `host` expects on stdout for `decision`; `undefined` means print nothing. */
@@ -139,7 +142,9 @@ function objectOf(value: unknown): Record<string, unknown> | undefined {
       return undefined;
     }
   }
-  return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
 }
 
 /**
@@ -150,11 +155,15 @@ function objectOf(value: unknown): Record<string, unknown> | undefined {
  * - Copilot `preToolUse`: `{ toolName: "bash", toolArgs: "{\"command\":\"ls\"}" }` (toolArgs is a JSON
  *   string), or for the PascalCase `PreToolUse` alias `{ tool_name: "Bash", tool_input }`.
  */
-export function commandFromHookInput(host: HookHost, input: Record<string, unknown>): string | undefined {
+export function commandFromHookInput(
+  host: HookHost,
+  input: Record<string, unknown>,
+): string | undefined {
   if (host === "cursor") return typeof input.command === "string" ? input.command : undefined;
   const tool = host === "copilot" ? (input.toolName ?? input.tool_name) : input.tool_name;
   if (tool !== undefined) {
-    const shell = host === "claude-code" ? tool === "Bash" : typeof tool === "string" && SHELL_TOOLS.test(tool);
+    const shell =
+      host === "claude-code" ? tool === "Bash" : typeof tool === "string" && SHELL_TOOLS.test(tool);
     if (!shell) return undefined;
   }
   const args = host === "copilot" ? (input.toolArgs ?? input.tool_input) : input.tool_input;

@@ -11,12 +11,17 @@ import {
   lookupSnapshotCve,
 } from "../../intelligence/sources/snapshot.js";
 import { computeEscalationAction } from "../../platform/escalation.js";
-import type { PatchGenerator } from "../../platform/patch-generator.js";
 import {
   findMaintainerVex,
   readInstalledMaintainerVex,
   type MaintainerVexIndex,
 } from "../../platform/maintainer-vex/index.js";
+import {
+  loadMemoryConstraints,
+  pinnedMessage,
+  rejectedMessage,
+} from "../../platform/memory/consume.js";
+import type { PatchGenerator } from "../../platform/patch-generator.js";
 import { isPackageAllowed, loadPolicy } from "../../platform/policy.js";
 import { createProjectSnapshot } from "../../platform/rollback.js";
 import type {
@@ -27,7 +32,6 @@ import type {
   RemediationReport,
   VulnerablePackage,
 } from "../../platform/types.js";
-import { loadMemoryConstraints, pinnedMessage, rejectedMessage } from "../../platform/memory/consume.js";
 import { resolvePatchGenerator } from "../patch/resolve.js";
 import { checkInventoryTool } from "../tools/check-inventory.js";
 import { assessPackageReachability } from "../tools/check-reachability.js";

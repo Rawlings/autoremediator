@@ -1,12 +1,14 @@
 import { z } from "zod";
 
 import { stripUntrustedChangeRequestFields } from "../api/change-request/index.js";
+import { HOOK_MANAGERS, HOOK_NAMES } from "../api/hooks/types.js";
 import type {
   PortfolioTarget,
   RemediateOptions,
   ScanOptions,
   UpdateOutdatedOptions,
 } from "../api/index.js";
+import { AGENT_HOSTS } from "../api/init/types.js";
 import {
   applyPlanOptionsSchema,
   attemptQuerySchema,
@@ -31,24 +33,25 @@ import {
   updateOutdatedOptionsSchema,
   verifyRunOptionsSchema,
 } from "../platform/option-schemas.js";
-import { HOOK_MANAGERS, HOOK_NAMES } from "../api/hooks/types.js";
-import { AGENT_HOSTS } from "../api/init/types.js";
 import { PACKAGE_VERSION } from "../version.js";
-import { FRESHNESS_OPERATIONS } from "./freshness-operations.js";
+import { defineOperation, type Operation, type OperationContext } from "./define-operation.js";
 import { EVIDENCE_PACK_OPERATIONS } from "./evidence-pack-operations.js";
+import { FRESHNESS_OPERATIONS } from "./freshness-operations.js";
 import { INCIDENT_OPERATIONS } from "./incident-operations.js";
-import { POLICY_OPERATIONS } from "./policy-operations.js";
 import { MAINTAINER_VEX_OPERATIONS } from "./maintainer-vex-operations.js";
+import { MEMORY_OPERATIONS } from "./memory-operations.js";
+import { POLICY_OPERATIONS } from "./policy-operations.js";
 import { PROVE_OPERATIONS } from "./prove-operations.js";
 import { RADAR_OPERATIONS } from "./radar-operations.js";
-import { MEMORY_OPERATIONS } from "./memory-operations.js";
 import { RESPONSES } from "./responses.js";
-import { defineOperation, type Operation, type OperationContext } from "./define-operation.js";
 
 const cveId = z.string("cveId is required (string)").min(1, "cveId is required (string)");
 const exactVersion = z
   .string("an exact version is required (string)")
-  .regex(/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.+-]+)?$/, "must be an exact semver version such as 4.17.21");
+  .regex(
+    /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.+-]+)?$/,
+    "must be an exact semver version such as 4.17.21",
+  );
 const inputPath = z
   .string("inputPath is required (string)")
   .min(1, "inputPath is required (string)")
@@ -123,14 +126,27 @@ export const OPERATIONS: readonly Operation[] = [
         hosts: z
           .array(z.enum(AGENT_HOSTS))
           .optional()
-          .describe("Agent hosts to configure. Default: those found in the project, else those installed."),
-        ci: z.boolean().optional().describe("Also write a weekly remediation workflow for GitHub Actions."),
-        policy: z.boolean().optional().describe("Write the policy file when missing. Default true."),
+          .describe(
+            "Agent hosts to configure. Default: those found in the project, else those installed.",
+          ),
+        ci: z
+          .boolean()
+          .optional()
+          .describe("Also write a weekly remediation workflow for GitHub Actions."),
+        policy: z
+          .boolean()
+          .optional()
+          .describe("Write the policy file when missing. Default true."),
         guard: z
           .boolean()
           .optional()
-          .describe("Also install guard hooks for Claude Code, Cursor and Copilot, and a pnpmfile for pnpm projects, so package installs are checked first. Default false."),
-        agentsMd: z.boolean().optional().describe("Add an Autoremediator section to AGENTS.md. Default true."),
+          .describe(
+            "Also install guard hooks for Claude Code, Cursor and Copilot, and a pnpmfile for pnpm projects, so package installs are checked first. Default false.",
+          ),
+        agentsMd: z
+          .boolean()
+          .optional()
+          .describe("Add an Autoremediator section to AGENTS.md. Default true."),
         yes: z.boolean().optional().describe("Write the changes. Without it, only report them."),
         check: z.boolean().optional().describe("Report drift only; never write."),
       })
@@ -160,7 +176,9 @@ export const OPERATIONS: readonly Operation[] = [
         manager: z
           .enum(HOOK_MANAGERS)
           .optional()
-          .describe("Hook manager to write for. Default: detected (husky, lefthook, pre-commit, else git)."),
+          .describe(
+            "Hook manager to write for. Default: detected (husky, lefthook, pre-commit, else git).",
+          ),
         uninstall: z.boolean().optional().describe("Remove the hooks Autoremediator installed."),
         yes: z.boolean().optional().describe("Write the changes. Without it, only report them."),
         check: z.boolean().optional().describe("Report drift only; never write."),
@@ -187,7 +205,9 @@ export const OPERATIONS: readonly Operation[] = [
     title: "Remediate a CVE",
     description:
       "Remediate a single CVE in a Node.js project. Looks up the CVE, scans the project inventory, and applies a version bump or generates a patch file. Returns a RemediationReport.",
-    input: z.object({ cveId: cveId.describe(OPTION_DESCRIPTIONS.cveId), ...remediateOptionsSchema.shape }).strict(),
+    input: z
+      .object({ cveId: cveId.describe(OPTION_DESCRIPTIONS.cveId), ...remediateOptionsSchema.shape })
+      .strict(),
     annotations: MUTATING,
     response: RESPONSES.remediationReport,
     mcp: true,
@@ -200,7 +220,9 @@ export const OPERATIONS: readonly Operation[] = [
     title: "Preview a remediation",
     description:
       "Generate a non-mutating remediation preview for a single CVE in a Node.js project. Returns a RemediationReport with planned results.",
-    input: z.object({ cveId: cveId.describe(OPTION_DESCRIPTIONS.cveId), ...planOptionShape }).strict(),
+    input: z
+      .object({ cveId: cveId.describe(OPTION_DESCRIPTIONS.cveId), ...planOptionShape })
+      .strict(),
     annotations: PLANNING,
     response: RESPONSES.remediationReport,
     mcp: true,
@@ -253,7 +275,9 @@ export const OPERATIONS: readonly Operation[] = [
     name: "inspectPatchArtifact",
     title: "Inspect a patch artifact",
     description: "Inspect a stored .patch file and its optional manifest metadata.",
-    input: z.object({ patchFilePath: patchFilePathSchema, ...patchArtifactQuerySchema.shape }).strict(),
+    input: z
+      .object({ patchFilePath: patchFilePathSchema, ...patchArtifactQuerySchema.shape })
+      .strict(),
     annotations: READ_ONLY,
     response: RESPONSES.patchInspection,
     mcp: true,
@@ -266,7 +290,9 @@ export const OPERATIONS: readonly Operation[] = [
     title: "Validate a patch artifact",
     description:
       "Validate a stored patch artifact against its manifest and the current dependency inventory.",
-    input: z.object({ patchFilePath: patchFilePathSchema, ...patchArtifactQuerySchema.shape }).strict(),
+    input: z
+      .object({ patchFilePath: patchFilePathSchema, ...patchArtifactQuerySchema.shape })
+      .strict(),
     annotations: READ_ONLY,
     response: RESPONSES.patchValidation,
     mcp: true,
@@ -344,7 +370,12 @@ export const OPERATIONS: readonly Operation[] = [
     description:
       "Open an isolated checkout of the project with one plan item's upgrade applied and installed, so you can make the project work with it. Returns the checkout path (edit files there, or send diffs with proposePatch) and what the verifier found wrong. The project itself is not touched. Finish with finalizeAttempt, or abandonAttempt.",
     input: startAttemptOptionsSchema,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     response: RESPONSES.attemptView,
     mcp: true,
     http: { method: "POST", path: "/attempts/start", positional: ["runId", "itemId"] },
@@ -356,7 +387,12 @@ export const OPERATIONS: readonly Operation[] = [
     description:
       "Apply a unified diff to an open attempt's checkout. Only project source (.js/.ts and variants) may change, the patch must be plain text and apply cleanly. Verify with verifyAttempt afterwards.",
     input: proposePatchOptionsSchema,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     response: RESPONSES.attemptView,
     mcp: true,
     http: { method: "POST", path: "/attempts/patch", positional: ["runId", "attemptId", "diff"] },
@@ -389,9 +425,15 @@ export const OPERATIONS: readonly Operation[] = [
   defineOperation({
     name: "abandonAttempt",
     title: "Abandon an attempt",
-    description: "Throw an open attempt away: its checkout is removed and nothing reaches the project.",
+    description:
+      "Throw an open attempt away: its checkout is removed and nothing reaches the project.",
     input: attemptQuerySchema,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     response: RESPONSES.attemptView,
     mcp: true,
     http: { method: "POST", path: "/attempts/abandon", positional: ["runId", "attemptId"] },
@@ -452,7 +494,9 @@ export const OPERATIONS: readonly Operation[] = [
         specVersion: z
           .enum(["1.5", "1.6"])
           .optional()
-          .describe("CycloneDX version to emit. Default 1.5. 1.6 adds affects by purl and uses justifications the CycloneDX schema defines."),
+          .describe(
+            "CycloneDX version to emit. Default 1.5. 1.6 adds affects by purl and uses justifications the CycloneDX schema defines.",
+          ),
       })
       .strict(),
     annotations: READ_ONLY,
@@ -472,7 +516,9 @@ export const OPERATIONS: readonly Operation[] = [
     title: "Submit a remediation job",
     description:
       "Submit a single-CVE remediation as a background async job. Returns a JobHandle immediately with a jobId. Use pollJob to check status and retrieve the result.",
-    input: z.object({ cveId: cveId.describe(OPTION_DESCRIPTIONS.cveId), ...remediateOptionsSchema.shape }).strict(),
+    input: z
+      .object({ cveId: cveId.describe(OPTION_DESCRIPTIONS.cveId), ...remediateOptionsSchema.shape })
+      .strict(),
     annotations: MUTATING,
     response: RESPONSES.jobHandle,
     mcp: true,
@@ -535,12 +581,16 @@ export const OPERATIONS: readonly Operation[] = [
       "Scan project source files using oxc-parser AST call-graph tracing to check if a package or vulnerable symbol is reachable and invoked. With traceFile, adds runtime evidence from a traced test run.",
     input: z
       .object({
-        packageName: packageNameSchema.describe("Target package name to trace in project source files."),
+        packageName: packageNameSchema.describe(
+          "Target package name to trace in project source files.",
+        ),
         cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional(),
         symbol: z
           .string()
           .optional()
-          .describe("Optional specific vulnerable function or export symbol to verify in call graph."),
+          .describe(
+            "Optional specific vulnerable function or export symbol to verify in call graph.",
+          ),
         traceFile: pathField(OPTION_DESCRIPTIONS.traceFile).optional(),
       })
       .strict(),
@@ -557,7 +607,10 @@ export const OPERATIONS: readonly Operation[] = [
     description:
       "Pre-flight security evaluator for npm packages. Queries OSV, CISA KEV, and FIRST EPSS telemetry before installation.",
     input: z
-      .object({ packageName: packageNameSchema.describe("Package name to evaluate."), ...evaluatePackageOptionsSchema.shape })
+      .object({
+        packageName: packageNameSchema.describe("Package name to evaluate."),
+        ...evaluatePackageOptionsSchema.shape,
+      })
       .strict(),
     annotations: READ_ONLY_NETWORK,
     response: RESPONSES.packageEvaluation,
@@ -577,14 +630,18 @@ export const OPERATIONS: readonly Operation[] = [
           .string("spec is required (string)")
           .min(1, "spec is required (string)")
           .max(300)
-          .describe("Package to check, as you would pass it to npm install: name, name@range or @scope/name@range."),
+          .describe(
+            "Package to check, as you would pass it to npm install: name, name@range or @scope/name@range.",
+          ),
         cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional(),
         minPublishAgeHours: z
           .number()
           .min(0)
           .max(24 * 365)
           .optional()
-          .describe("Block releases younger than this many hours. Default 72; 0 turns the check off."),
+          .describe(
+            "Block releases younger than this many hours. Default 72; 0 turns the check off.",
+          ),
         offline: z.boolean().optional().describe("Skip the OSV malware and advisory lookups."),
       })
       .strict(),
@@ -627,8 +684,14 @@ export const OPERATIONS: readonly Operation[] = [
       .object({
         cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional(),
         policy: pathField(OPTION_DESCRIPTIONS.policy).optional(),
-        runTests: z.boolean().optional().describe("Run the project's tests as part of verification. Default false."),
-        typecheck: z.boolean().optional().describe("Type-check as part of verification. Default true."),
+        runTests: z
+          .boolean()
+          .optional()
+          .describe("Run the project's tests as part of verification. Default false."),
+        typecheck: z
+          .boolean()
+          .optional()
+          .describe("Type-check as part of verification. Default true."),
       })
       .strict(),
     annotations: MUTATING,
@@ -656,9 +719,24 @@ export const OPERATIONS: readonly Operation[] = [
     input: z
       .object({
         cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional(),
-        packageName: z.string().min(1).max(214).optional().describe("Only recipes for this package"),
-        fromVersion: z.string().min(1).max(100).optional().describe("With toVersion: mark which recipes apply to upgrading from this version"),
-        toVersion: z.string().min(1).max(100).optional().describe("With fromVersion: the version upgraded to"),
+        packageName: z
+          .string()
+          .min(1)
+          .max(214)
+          .optional()
+          .describe("Only recipes for this package"),
+        fromVersion: z
+          .string()
+          .min(1)
+          .max(100)
+          .optional()
+          .describe("With toVersion: mark which recipes apply to upgrading from this version"),
+        toVersion: z
+          .string()
+          .min(1)
+          .max(100)
+          .optional()
+          .describe("With fromVersion: the version upgraded to"),
         recipeId: z.string().min(1).max(300).optional().describe("Include this recipe in full"),
       })
       .strict(),
@@ -674,12 +752,25 @@ export const OPERATIONS: readonly Operation[] = [
     description:
       "Apply a recipe to an open attempt's checkout and judge it: its hunks must match the project's source exactly (no fuzz), the resulting diff goes through the same validation as proposePatch, and the verifier decides. If it does not pass, the recipe is undone and the checkout is as it was. Recipe ids come from listRecipes or startAttempt.",
     input: attemptQuerySchema.extend({
-      recipeId: z.string("recipeId is required (string)").min(1).max(300).describe("Recipe id from listRecipes or startAttempt"),
+      recipeId: z
+        .string("recipeId is required (string)")
+        .min(1)
+        .max(300)
+        .describe("Recipe id from listRecipes or startAttempt"),
     }),
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     response: RESPONSES.attemptView,
     mcp: true,
-    http: { method: "POST", path: "/attempts/recipe", positional: ["runId", "attemptId", "recipeId"] },
+    http: {
+      method: "POST",
+      path: "/attempts/recipe",
+      positional: ["runId", "attemptId", "recipeId"],
+    },
     handler: (options, context) => context.api.applyRecipeFn(options),
   }),
   defineOperation({
@@ -700,25 +791,33 @@ export const OPERATIONS: readonly Operation[] = [
           .min(1)
           .max(300)
           .optional()
-          .describe("Git ref where the command fails. Default HEAD. The committed state is used, not the working tree."),
+          .describe(
+            "Git ref where the command fails. Default HEAD. The committed state is used, not the working tree.",
+          ),
         command: z
           .string("command is required (string)")
           .min(1, "command is required (string)")
           .max(4000)
-          .describe("Shell command to run after installing; exit code 0 means pass. It runs in a checkout, never in the project directory."),
+          .describe(
+            "Shell command to run after installing; exit code 0 means pass. It runs in a checkout, never in the project directory.",
+          ),
         timeoutSeconds: z
           .number()
           .positive()
           .max(86_400)
           .optional()
-          .describe("Kill the command after this many seconds and count it as failing. Default 600."),
+          .describe(
+            "Kill the command after this many seconds and count it as failing. Default 600.",
+          ),
         maxSteps: z
           .number()
           .int()
           .min(1)
           .max(500)
           .optional()
-          .describe("Evaluate at most this many candidate states, not counting the good and bad refs. Default 30."),
+          .describe(
+            "Evaluate at most this many candidate states, not counting the good and bad refs. Default 30.",
+          ),
         packageManager: z
           .enum(["npm", "pnpm", "yarn"])
           .optional()
@@ -726,11 +825,15 @@ export const OPERATIONS: readonly Operation[] = [
         ignoreScripts: z
           .boolean()
           .optional()
-          .describe("Pass --ignore-scripts to every install so package install scripts do not run."),
+          .describe(
+            "Pass --ignore-scripts to every install so package install scripts do not run.",
+          ),
         apply: z
           .boolean()
           .optional()
-          .describe("Apply the recommended pin to the project through the run machinery. Without it the pin is only planned."),
+          .describe(
+            "Apply the recommended pin to the project through the run machinery. Without it the pin is only planned.",
+          ),
       })
       .strict(),
     annotations: {
@@ -759,7 +862,11 @@ export const OPERATIONS: readonly Operation[] = [
     annotations: READ_ONLY_NETWORK,
     response: RESPONSES.upgradeImpact,
     mcp: true,
-    http: { method: "POST", path: "/packages/assess-upgrade", positional: ["packageName", "from", "to"] },
+    http: {
+      method: "POST",
+      path: "/packages/assess-upgrade",
+      positional: ["packageName", "from", "to"],
+    },
     handler: (input, context) => context.api.assessUpgradeFn(input),
   }),
   defineOperation({
@@ -773,16 +880,37 @@ export const OPERATIONS: readonly Operation[] = [
         from: exactVersion.describe("The vulnerable version."),
         to: exactVersion.describe("The version that fixes it."),
         cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional(),
-        advisoryText: z.string().max(20_000).optional().describe("Advisory summary or details; used only to rank candidates."),
-        cwes: z.array(z.string().max(20)).max(20).optional().describe("CWE ids such as CWE-1333; used only to rank candidates."),
-        limit: z.number().int().min(1).max(200).optional().describe("Largest number of candidates to return (default 25)."),
-        checkReachability: z.boolean().optional().describe("Check each candidate against the project's source (default true)."),
+        advisoryText: z
+          .string()
+          .max(20_000)
+          .optional()
+          .describe("Advisory summary or details; used only to rank candidates."),
+        cwes: z
+          .array(z.string().max(20))
+          .max(20)
+          .optional()
+          .describe("CWE ids such as CWE-1333; used only to rank candidates."),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(200)
+          .optional()
+          .describe("Largest number of candidates to return (default 25)."),
+        checkReachability: z
+          .boolean()
+          .optional()
+          .describe("Check each candidate against the project's source (default true)."),
       })
       .strict(),
     annotations: READ_ONLY_NETWORK,
     response: RESPONSES.vulnerableSymbols,
     mcp: true,
-    http: { method: "POST", path: "/packages/vulnerable-symbols", positional: ["packageName", "from", "to"] },
+    http: {
+      method: "POST",
+      path: "/packages/vulnerable-symbols",
+      positional: ["packageName", "from", "to"],
+    },
     handler: (input, context) => context.api.findVulnerableSymbolsFn(input),
   }),
   ...INCIDENT_OPERATIONS,

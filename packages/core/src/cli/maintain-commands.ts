@@ -39,7 +39,8 @@ export function describeMaintain(result: MaintainResult): string {
   const lines = [
     `Maintaining ${result.package.name}@${result.package.version}${result.nextVersion ? ` (next release ${result.nextVersion})` : ""}`,
   ];
-  if (result.advisories.length === 0) lines.push("No advisories found for this project's dependencies.");
+  if (result.advisories.length === 0)
+    lines.push("No advisories found for this project's dependencies.");
   for (const advisory of result.advisories) {
     lines.push(
       `  ${advisory.id}${advisory.severity ? ` [${advisory.severity}]` : ""}: ${advisory.decision}`,
@@ -58,7 +59,8 @@ export function describeMaintain(result: MaintainResult): string {
       );
     }
   }
-  for (const change of result.changes) lines.push(`  ${change.action.padEnd(9)} ${change.path}: ${change.reason}`);
+  for (const change of result.changes)
+    lines.push(`  ${change.action.padEnd(9)} ${change.path}: ${change.reason}`);
   for (const note of result.notes) lines.push(`  note: ${note}`);
   return lines.join("\n");
 }
@@ -106,17 +108,26 @@ export async function runMaintain(opts: MaintainCliOptions): Promise<void> {
   }
 
   if (interactive && result.drift) {
-    if (await confirm(`\nWrite ${result.changes.filter((change) => change.diff).length} file(s)? [y/N] `)) {
+    if (
+      await confirm(
+        `\nWrite ${result.changes.filter((change) => change.diff).length} file(s)? [y/N] `,
+      )
+    ) {
       result = await maintain({ ...base, yes: true });
-      process.stdout.write("Written. Nothing was published or pushed: review, commit and release as usual.\n");
+      process.stdout.write(
+        "Written. Nothing was published or pushed: review, commit and release as usual.\n",
+      );
     }
     return;
   }
 
   if (json) logJson(result);
   else if (result.applied) {
-    process.stdout.write("\nWritten. Nothing was published or pushed: review, commit and release as usual.\n");
-  } else if (result.drift) process.stdout.write("\nNothing written. Run again with --yes to apply.\n");
+    process.stdout.write(
+      "\nWritten. Nothing was published or pushed: review, commit and release as usual.\n",
+    );
+  } else if (result.drift)
+    process.stdout.write("\nNothing written. Run again with --yes to apply.\n");
   else process.stdout.write("\nNothing to change.\n");
 
   if (result.conflicts.length > 0) process.exitCode = EXIT_CODES.failed;
@@ -128,9 +139,12 @@ export function describeVexShow(report: MaintainerVexReport): string {
     `Read ${report.scanned} installed package(s): ${report.packages.length} ship usable VEX, ${report.rejected.length} declaration(s) rejected.`,
   ];
   for (const entry of report.packages) {
-    lines.push(`${entry.name}@${entry.version}  ${entry.file}  (author ${entry.author}, ${entry.timestamp})`);
+    lines.push(
+      `${entry.name}@${entry.version}  ${entry.file}  (author ${entry.author}, ${entry.timestamp})`,
+    );
     for (const statement of entry.statements) {
-      const about = statement.subcomponents.length > 0 ? ` about ${statement.subcomponents.join(", ")}` : "";
+      const about =
+        statement.subcomponents.length > 0 ? ` about ${statement.subcomponents.join(", ")}` : "";
       lines.push(
         `  ${statement.vulnerability}${about}: ${statement.status}${statement.justification ? ` (${statement.justification})` : ""}`,
       );
@@ -139,7 +153,9 @@ export function describeVexShow(report: MaintainerVexReport): string {
     }
   }
   for (const entry of report.rejected) {
-    lines.push(`rejected ${entry.package}${entry.version ? `@${entry.version}` : ""}: ${entry.reason}`);
+    lines.push(
+      `rejected ${entry.package}${entry.version ? `@${entry.version}` : ""}: ${entry.reason}`,
+    );
   }
   if (report.own.declared) {
     lines.push(

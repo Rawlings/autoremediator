@@ -9,19 +9,13 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 
+import type { RemediationReport } from "../platform/types.js";
 import type { RepoFingerprint } from "./fingerprint.js";
 import { isAttemptId, isRunId, newRunId } from "./ids.js";
 import { Ledger } from "./ledger.js";
-import type { RemediationReport } from "../platform/types.js";
 import type { RemediationPlan } from "./plan.js";
 
-export type RunStatus =
-  | "planned"
-  | "applying"
-  | "applied"
-  | "partial"
-  | "failed"
-  | "rolled-back";
+export type RunStatus = "planned" | "applying" | "applied" | "partial" | "failed" | "rolled-back";
 
 export interface RunRecord {
   schemaVersion: 1;
@@ -175,7 +169,8 @@ export class RunStore {
 
   /** Directory of one attempt; both ids are validated. */
   attemptDir(runId: string, attemptId: string): string {
-    if (!isAttemptId(attemptId)) throw new Error(`Invalid attempt id: ${JSON.stringify(attemptId)}`);
+    if (!isAttemptId(attemptId))
+      throw new Error(`Invalid attempt id: ${JSON.stringify(attemptId)}`);
     return join(this.runDir(runId), "attempts", attemptId);
   }
 
@@ -183,7 +178,8 @@ export class RunStore {
   writeAttempt(runId: string, record: AttemptRecord, files: Record<string, string> = {}): void {
     const dir = this.attemptDir(runId, record.attemptId);
     mkdirSync(dir, { recursive: true });
-    for (const [name, content] of Object.entries(files)) writeFileSync(join(dir, name), content, "utf8");
+    for (const [name, content] of Object.entries(files))
+      writeFileSync(join(dir, name), content, "utf8");
     this.writeJson(runId, `attempts/${record.attemptId}/attempt.json`, record);
   }
 
@@ -194,7 +190,9 @@ export class RunStore {
     for (const name of readdirSync(root)) {
       if (!isAttemptId(name)) continue;
       try {
-        records.push(JSON.parse(readFileSync(join(root, name, "attempt.json"), "utf8")) as AttemptRecord);
+        records.push(
+          JSON.parse(readFileSync(join(root, name, "attempt.json"), "utf8")) as AttemptRecord,
+        );
       } catch {
         // Skip a damaged attempt rather than hiding the others.
       }

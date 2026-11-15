@@ -4,17 +4,16 @@
  * recorded plan is the approval step, and the verifier, not this module, decides whether it holds.
  */
 import type { RemediationReport } from "../../platform/types.js";
-import { assertAutonomyAllows, AutonomyRefusedError, summarizeAutonomy } from "../autonomy/index.js";
-import { createChangeRequestsForReports } from "../change-request/index.js";
-import { applyPlan, persistPlan, rollbackRun, type RunDeps } from "../runs/index.js";
-import { defaultRunDeps } from "../runs/deps.js";
-import { defaultFreshnessDeps, type FreshnessDeps } from "./deps.js";
 import {
-  assessClimbs,
-  buildClimbs,
-  gatherFreshness,
-  reportFrom,
-} from "./report.js";
+  assertAutonomyAllows,
+  AutonomyRefusedError,
+  summarizeAutonomy,
+} from "../autonomy/index.js";
+import { createChangeRequestsForReports } from "../change-request/index.js";
+import { defaultRunDeps } from "../runs/deps.js";
+import { applyPlan, persistPlan, rollbackRun, type RunDeps } from "../runs/index.js";
+import { defaultFreshnessDeps, type FreshnessDeps } from "./deps.js";
+import { assessClimbs, buildClimbs, gatherFreshness, reportFrom } from "./report.js";
 import type {
   ApplyFreshnessOptions,
   ApplyFreshnessResult,
@@ -239,10 +238,10 @@ export async function applyFreshness(
       // A refusal is not a failed step: stop here instead of recording every remaining package as failed.
       if (error instanceof AutonomyRefusedError) throw error;
       return {
-      status: "failed" as const,
-      message: error instanceof Error ? error.message : String(error),
-      items: [],
-    };
+        status: "failed" as const,
+        message: error instanceof Error ? error.message : String(error),
+        items: [],
+      };
     });
     const runSummary = { status: run.status, message: run.message };
 
@@ -300,7 +299,12 @@ export async function applyFreshness(
   const remaining = [
     ...new Set([
       ...(last?.climbs ?? [])
-        .filter((climb) => !climb.held && !failedPackages.has(climb.packageName) && !doneWith(climb.packageName, climb.steps.length))
+        .filter(
+          (climb) =>
+            !climb.held &&
+            !failedPackages.has(climb.packageName) &&
+            !doneWith(climb.packageName, climb.steps.length),
+        )
         .map((climb) => climb.packageName),
       ...awaiting,
     ]),
@@ -332,7 +336,8 @@ function summarise(
   report: FreshnessReport,
 ): string {
   if (status === "nothing-to-do") {
-    if (!report.policy) return "The policy has no `freshness` key, so there is no limit to climb towards.";
+    if (!report.policy)
+      return "The policy has no `freshness` key, so there is no limit to climb towards.";
     return report.climbs.length === 0
       ? "Every direct dependency is within the freshness policy."
       : "Every step that is due is held; see stopped.";
@@ -358,7 +363,8 @@ async function openChangeRequest(
     });
     if (result) {
       outcome.changeRequest = result;
-      if (result.error) outcome.message = `${outcome.message} Change request not created: ${result.error}`;
+      if (result.error)
+        outcome.message = `${outcome.message} Change request not created: ${result.error}`;
     }
   } catch (error) {
     outcome.message = `${outcome.message} Change request not created: ${error instanceof Error ? error.message : String(error)}`;
@@ -367,7 +373,10 @@ async function openChangeRequest(
   // so node_modules must follow the lockfile again before the next step is tried.
   if (outcome.changeRequest?.created) {
     await runDeps
-      .reinstall({ cwd, options: options.packageManager ? { packageManager: options.packageManager } : undefined })
+      .reinstall({
+        cwd,
+        options: options.packageManager ? { packageManager: options.packageManager } : undefined,
+      })
       .catch((error: unknown) => {
         outcome.message = `${outcome.message} Reinstall after returning to the base branch failed: ${error instanceof Error ? error.message : String(error)}`;
       });

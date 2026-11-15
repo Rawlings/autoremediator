@@ -14,11 +14,7 @@ import {
   routeKey,
 } from "../../catalog/index.js";
 import { isHostAllowed } from "../../platform/http-security.js";
-import {
-  confinePaths,
-  getAllowedRoots,
-  PathNotAllowedError,
-} from "../../platform/path-guard.js";
+import { confinePaths, getAllowedRoots, PathNotAllowedError } from "../../platform/path-guard.js";
 import { sendJson } from "../http-utils.js";
 import { checkRbacAuthorization } from "../rbac.js";
 import type { OpenApiServerDeps } from "../server.js";

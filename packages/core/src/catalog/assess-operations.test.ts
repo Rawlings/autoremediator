@@ -21,28 +21,52 @@ describe("assessUpgrade and findVulnerableSymbols operations", () => {
   it("are read-only network operations exposed over MCP and HTTP", () => {
     for (const name of ["assessUpgrade", "findVulnerableSymbols"]) {
       const operation = getOperation(name);
-      expect(operation?.annotations).toMatchObject({ readOnlyHint: true, destructiveHint: false, openWorldHint: true });
+      expect(operation?.annotations).toMatchObject({
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: true,
+      });
       expect(operation?.mcp).toBe(true);
       expect(toMcpTools().some((tool) => tool.name === name)).toBe(true);
       expect(roleFor(operation!)).toBe("reader");
     }
-    expect(getOperation("assessUpgrade")?.http).toMatchObject({ method: "POST", path: "/packages/assess-upgrade" });
-    expect(getOperation("findVulnerableSymbols")?.http).toMatchObject({ method: "POST", path: "/packages/vulnerable-symbols" });
+    expect(getOperation("assessUpgrade")?.http).toMatchObject({
+      method: "POST",
+      path: "/packages/assess-upgrade",
+    });
+    expect(getOperation("findVulnerableSymbols")?.http).toMatchObject({
+      method: "POST",
+      path: "/packages/vulnerable-symbols",
+    });
     expect(Object.keys(toOpenApiPaths())).toEqual(
       expect.arrayContaining(["/packages/assess-upgrade", "/packages/vulnerable-symbols"]),
     );
-    expect(matchHttpRoute("POST", "/packages/assess-upgrade")?.operation.name).toBe("assessUpgrade");
+    expect(matchHttpRoute("POST", "/packages/assess-upgrade")?.operation.name).toBe(
+      "assessUpgrade",
+    );
   });
 
   it("validates versions and passes input to the SDK", async () => {
     const api = deps();
-    const bad = await callMcpOperation("assessUpgrade", { packageName: "lodash", from: "4", to: "4.17.21" }, api);
+    const bad = await callMcpOperation(
+      "assessUpgrade",
+      { packageName: "lodash", from: "4", to: "4.17.21" },
+      api,
+    );
     expect(bad.isError).toBe(true);
     expect(api.assessUpgradeFn).not.toHaveBeenCalled();
 
-    const ok = await callMcpOperation("assessUpgrade", { packageName: "lodash", from: "4.17.20", to: "4.17.21" }, api);
+    const ok = await callMcpOperation(
+      "assessUpgrade",
+      { packageName: "lodash", from: "4.17.20", to: "4.17.21" },
+      api,
+    );
     expect(ok.isError).toBeUndefined();
-    expect(api.assessUpgradeFn).toHaveBeenCalledWith({ packageName: "lodash", from: "4.17.20", to: "4.17.21" });
+    expect(api.assessUpgradeFn).toHaveBeenCalledWith({
+      packageName: "lodash",
+      from: "4.17.20",
+      to: "4.17.21",
+    });
 
     await callMcpOperation(
       "findVulnerableSymbols",
@@ -67,6 +91,9 @@ describe("assessUpgrade and findVulnerableSymbols operations", () => {
         to: "4.17.21",
         options: { cwd: "/tmp/x" },
       }),
-    ).toEqual({ ok: true, input: { packageName: "lodash", from: "4.17.20", to: "4.17.21", cwd: "/tmp/x" } });
+    ).toEqual({
+      ok: true,
+      input: { packageName: "lodash", from: "4.17.20", to: "4.17.21", cwd: "/tmp/x" },
+    });
   });
 });

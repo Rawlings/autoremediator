@@ -16,7 +16,12 @@ import {
 import { loadRegistryConfig } from "../../platform/registry-config.js";
 import type { ReachabilityAssessment } from "../../platform/types.js";
 import { assessSymbolsReachability } from "../tools/check-reachability.js";
-import { findVulnerableSymbols, type AdvisoryHints, type FixDiff, type VulnerableSymbolCandidate } from "./fix-diff.js";
+import {
+  findVulnerableSymbols,
+  type AdvisoryHints,
+  type FixDiff,
+  type VulnerableSymbolCandidate,
+} from "./fix-diff.js";
 import { analyzeUpgrade, type UpgradeImpact } from "./impact.js";
 import { readPackageTarball } from "./tarball.js";
 import type { PackageSource } from "./types.js";
@@ -39,7 +44,9 @@ export const defaultImpactDeps: ImpactDeps = {
     const bytes = await downloadTarball(info, registry);
     const integrity = verifyTarballIntegrity(bytes, info);
     if (!integrity.ok) {
-      throw new Error(`Refusing ${packageName}@${version}: tarball failed verification (${integrity.reason})`);
+      throw new Error(
+        `Refusing ${packageName}@${version}: tarball failed verification (${integrity.reason})`,
+      );
     }
     const { files, manifest } = readPackageTarball(bytes);
     return { name: packageName, version, files, manifest, integrityVerified: integrity.verified };
@@ -90,7 +97,12 @@ export async function assessUpgrade(
     deps.loadPackage(packageName, to, cwd),
   ]);
   const usage = buildUsageIndex(cwd, packageName);
-  const impact = analyzeUpgrade({ before, after, usage, projectManifest: readProjectManifest(cwd) });
+  const impact = analyzeUpgrade({
+    before,
+    after,
+    usage,
+    projectManifest: readProjectManifest(cwd),
+  });
   return {
     ...impact,
     upgradeLevel: semver.gt(to, from) ? classifyUpgradeLevel(from, to) : undefined,
@@ -162,13 +174,18 @@ export async function findVulnerableSymbolsInUpgrade(
         status: assessment.status,
         reason: assessment.reason,
         basis: assessment.reachabilityBasis,
-        invokedIn: [...new Set((assessment.evidence ?? []).filter((item) => item.invoked).map((item) => item.filePath))].toSorted(),
+        invokedIn: [
+          ...new Set(
+            (assessment.evidence ?? []).filter((item) => item.invoked).map((item) => item.filePath),
+          ),
+        ].toSorted(),
       },
     };
   });
   return {
     ...diff,
     candidates,
-    reachableCount: candidates.filter((candidate) => candidate.reachability?.status === "reachable").length,
+    reachableCount: candidates.filter((candidate) => candidate.reachability?.status === "reachable")
+      .length,
   };
 }

@@ -22,11 +22,15 @@ export function assertSafeGitRef(name: string, value: string): void {
 /** The commit a caller-supplied ref names. Throws for an unsafe or unresolvable ref. */
 export async function resolveGitCommit(cwd: string, name: string, ref: string): Promise<string> {
   assertSafeGitRef(name, ref);
-  const result = await safeExeca("git", ["rev-parse", "--verify", "--quiet", "--end-of-options", `${ref}^{commit}`], {
-    cwd,
-    stdio: "pipe",
-    reject: false,
-  });
+  const result = await safeExeca(
+    "git",
+    ["rev-parse", "--verify", "--quiet", "--end-of-options", `${ref}^{commit}`],
+    {
+      cwd,
+      stdio: "pipe",
+      reject: false,
+    },
+  );
   const sha = result.exitCode === 0 ? result.stdout.trim() : "";
   if (!sha) {
     throw new Error(

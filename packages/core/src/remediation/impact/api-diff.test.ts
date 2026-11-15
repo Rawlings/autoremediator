@@ -6,15 +6,28 @@ import { extractDtsSurface, extractJsSurface } from "./dts-surface.js";
 import { comparePackageManifests, isSubpathExported } from "./manifest-diff.js";
 import { PackageIndex, moduleFormat } from "./package-index.js";
 
-function dtsChanges(before: string, after: string, extra: Record<string, string> = {}): ApiChange[] {
+function dtsChanges(
+  before: string,
+  after: string,
+  extra: Record<string, string> = {},
+): ApiChange[] {
   const files = (dts: string): Record<string, string> => ({ "index.d.ts": dts, ...extra });
   const a = new PackageIndex(pkg("1.0.0", files(before), { types: "index.d.ts" }));
   const b = new PackageIndex(pkg("2.0.0", files(after), { types: "index.d.ts" }));
-  return compareSurfaces("fixture-pkg", extractDtsSurface(a, "index.d.ts"), extractDtsSurface(b, "index.d.ts"));
+  return compareSurfaces(
+    "fixture-pkg",
+    extractDtsSurface(a, "index.d.ts"),
+    extractDtsSurface(b, "index.d.ts"),
+  );
 }
 
 const summary = (changes: ApiChange[]): string[] =>
-  changes.map((change) => `${change.category}:${change.symbol}${change.member ? `.${change.member}` : ""}:${change.severity}`).toSorted();
+  changes
+    .map(
+      (change) =>
+        `${change.category}:${change.symbol}${change.member ? `.${change.member}` : ""}:${change.severity}`,
+    )
+    .toSorted();
 
 describe("declaration surface comparison", () => {
   it("reports no change for reformatted declarations", () => {
@@ -28,7 +41,10 @@ describe("declaration surface comparison", () => {
       `export declare function oldName(a: string): number;\nexport declare function gone(a: string, b: string): void;`,
       `export declare function newName(a: string): number;`,
     );
-    expect(summary(changes)).toEqual(["removed-export:gone:breaking", "renamed-export:oldName:breaking"]);
+    expect(summary(changes)).toEqual([
+      "removed-export:gone:breaking",
+      "renamed-export:oldName:breaking",
+    ]);
     expect(changes.find((change) => change.symbol === "oldName")?.renamedTo).toBe("newName");
   });
 
@@ -51,7 +67,10 @@ describe("declaration surface comparison", () => {
       `export declare function f(x: string): number;`,
       `export declare function f(x: string | number): string;`,
     );
-    expect(summary(changes)).toEqual(["type-changed:f:possibly-breaking", "type-changed:f:possibly-breaking"]);
+    expect(summary(changes)).toEqual([
+      "type-changed:f:possibly-breaking",
+      "type-changed:f:possibly-breaking",
+    ]);
     expect(changes.map((change) => change.reason).join(" ")).toMatch(/string -> string \| number/);
     expect(changes.map((change) => change.reason).join(" ")).toMatch(/number -> string/);
   });
@@ -115,7 +134,10 @@ describe("declaration surface comparison", () => {
     const changes = dtsChanges(
       `export * from "./a";\nexport { b as bee } from "./b";`,
       `export * from "./a";\nexport { b as bee } from "./b";`,
-      { "a.d.ts": `export declare function a(x: string): void;`, "b.d.ts": `export declare function b(): void;` },
+      {
+        "a.d.ts": `export declare function a(x: string): void;`,
+        "b.d.ts": `export declare function b(): void;`,
+      },
     );
     expect(changes).toEqual([]);
 
@@ -135,9 +157,21 @@ describe("declaration surface comparison", () => {
   });
 
   it("reads the API from JavaScript when there are no declarations, and downgrades arity changes", () => {
-    const before = new PackageIndex(pkg("1.0.0", { "index.js": `exports.f = function (a) {};\nexports.g = function () {};\nexports.C = class { m() {} n() {} };` }));
-    const after = new PackageIndex(pkg("2.0.0", { "index.js": `exports.f = function (a, b) {};\nexports.C = class { m() {} };` }));
-    const changes = compareSurfaces("fixture-pkg", extractJsSurface(before, "index.js"), extractJsSurface(after, "index.js"));
+    const before = new PackageIndex(
+      pkg("1.0.0", {
+        "index.js": `exports.f = function (a) {};\nexports.g = function () {};\nexports.C = class { m() {} n() {} };`,
+      }),
+    );
+    const after = new PackageIndex(
+      pkg("2.0.0", {
+        "index.js": `exports.f = function (a, b) {};\nexports.C = class { m() {} };`,
+      }),
+    );
+    const changes = compareSurfaces(
+      "fixture-pkg",
+      extractJsSurface(before, "index.js"),
+      extractJsSurface(after, "index.js"),
+    );
     expect(summary(changes)).toEqual([
       "removed-export:g:breaking",
       "removed-member:C.n:breaking",
@@ -146,9 +180,17 @@ describe("declaration surface comparison", () => {
   });
 
   it("does not report a CommonJS module.exports function as removed when it becomes a default export", () => {
-    const before = new PackageIndex(pkg("1.0.0", { "index.js": `module.exports = function (a) { return a; };` }));
-    const after = new PackageIndex(pkg("2.0.0", { "index.js": `export default function (a) { return a; }` }, { type: "module" }));
-    const changes = compareSurfaces("fixture-pkg", extractJsSurface(before, "index.js"), extractJsSurface(after, "index.js"));
+    const before = new PackageIndex(
+      pkg("1.0.0", { "index.js": `module.exports = function (a) { return a; };` }),
+    );
+    const after = new PackageIndex(
+      pkg("2.0.0", { "index.js": `export default function (a) { return a; }` }, { type: "module" }),
+    );
+    const changes = compareSurfaces(
+      "fixture-pkg",
+      extractJsSurface(before, "index.js"),
+      extractJsSurface(after, "index.js"),
+    );
     expect(changes).toEqual([]);
   });
 });
@@ -161,47 +203,97 @@ describe("package manifest comparison", () => {
     const after = { engines: { node: ">=20" } };
     const unknown = comparePackageManifests(before, after, undefined, "v22.0.0");
     expect(unknown).toHaveLength(1);
-    expect(unknown[0]).toMatchObject({ category: "engines", severity: "possibly-breaking", evidence: "unresolved" });
+    expect(unknown[0]).toMatchObject({
+      category: "engines",
+      severity: "possibly-breaking",
+      evidence: "unresolved",
+    });
     expect(unknown[0]?.reason).toMatch(/Node v22.0.0 on this machine satisfies it/);
 
     const conflict = comparePackageManifests(before, after, project, "v22.0.0");
     expect(conflict[0]).toMatchObject({ severity: "breaking", evidence: "project-conflict" });
 
     // The project already requires a Node that fits: nothing to report.
-    expect(comparePackageManifests(before, after, { engines: { node: ">=22" } }, "v22.0.0")).toEqual([]);
+    expect(
+      comparePackageManifests(before, after, { engines: { node: ">=22" } }, "v22.0.0"),
+    ).toEqual([]);
     // Widening is not a break.
-    expect(comparePackageManifests({ engines: { node: ">=20" } }, { engines: { node: ">=10" } }, project)).toEqual([]);
+    expect(
+      comparePackageManifests(
+        { engines: { node: ">=20" } },
+        { engines: { node: ">=10" } },
+        project,
+      ),
+    ).toEqual([]);
   });
 
   it("detects CommonJS to ESM-only", () => {
-    const changes = comparePackageManifests({ main: "index.js" }, { type: "module", exports: "./index.js" }, undefined);
+    const changes = comparePackageManifests(
+      { main: "index.js" },
+      { type: "module", exports: "./index.js" },
+      undefined,
+    );
     expect(changes[0]).toMatchObject({ category: "module-format", affectsRequire: true });
     expect(moduleFormat({ main: "index.js" })).toBe("cjs-only");
     expect(moduleFormat({ type: "module", exports: "./index.js" })).toBe("esm-only");
     expect(moduleFormat({ exports: { import: "./i.mjs", require: "./i.cjs" } })).toBe("dual");
-    expect(comparePackageManifests({ exports: { ".": "./index.js" } }, { exports: { ".": { import: "./i.mjs", require: "./i.cjs" } } }, undefined)).toEqual([]);
+    expect(
+      comparePackageManifests(
+        { exports: { ".": "./index.js" } },
+        { exports: { ".": { import: "./i.mjs", require: "./i.cjs" } } },
+        undefined,
+      ),
+    ).toEqual([]);
   });
 
   it("detects removed exports subpaths and a newly restricted package", () => {
-    const removed = comparePackageManifests({ exports: { ".": "./a.js", "./sub": "./sub.js" } }, { exports: { ".": "./a.js" } }, undefined);
-    expect(removed[0]).toMatchObject({ category: "exports-map", severity: "breaking", removedSubpaths: ["./sub"] });
-    const restricted = comparePackageManifests({ main: "a.js" }, { main: "a.js", exports: { ".": "./a.js" } }, undefined);
+    const removed = comparePackageManifests(
+      { exports: { ".": "./a.js", "./sub": "./sub.js" } },
+      { exports: { ".": "./a.js" } },
+      undefined,
+    );
+    expect(removed[0]).toMatchObject({
+      category: "exports-map",
+      severity: "breaking",
+      removedSubpaths: ["./sub"],
+    });
+    const restricted = comparePackageManifests(
+      { main: "a.js" },
+      { main: "a.js", exports: { ".": "./a.js" } },
+      undefined,
+    );
     expect(restricted[0]).toMatchObject({ category: "exports-map", restrictsDeepImports: true });
-    expect(isSubpathExported({ exports: { ".": "./a.js", "./features/*": "./f/*.js" } }, "./features/x")).toBe(true);
+    expect(
+      isSubpathExported({ exports: { ".": "./a.js", "./features/*": "./f/*.js" } }, "./features/x"),
+    ).toBe(true);
     expect(isSubpathExported({ exports: { ".": "./a.js" } }, "./lib/x")).toBe(false);
     expect(isSubpathExported({ main: "a.js" }, "./lib/x")).toBe(true);
   });
 
   it("detects new required peer dependencies and conflicts with the project's range", () => {
     const missing = comparePackageManifests({}, { peerDependencies: { vue: "^3.0.0" } }, project);
-    expect(missing[0]).toMatchObject({ category: "peer-dependency", severity: "possibly-breaking", evidence: "unresolved" });
+    expect(missing[0]).toMatchObject({
+      category: "peer-dependency",
+      severity: "possibly-breaking",
+      evidence: "unresolved",
+    });
 
-    const conflict = comparePackageManifests({}, { peerDependencies: { react: "^19.0.0" } }, project);
+    const conflict = comparePackageManifests(
+      {},
+      { peerDependencies: { react: "^19.0.0" } },
+      project,
+    );
     expect(conflict[0]).toMatchObject({ severity: "breaking", evidence: "project-conflict" });
 
-    expect(comparePackageManifests({}, { peerDependencies: { react: "^18.0.0" } }, project)).toEqual([]);
     expect(
-      comparePackageManifests({}, { peerDependencies: { vue: "^3" }, peerDependenciesMeta: { vue: { optional: true } } }, project),
+      comparePackageManifests({}, { peerDependencies: { react: "^18.0.0" } }, project),
+    ).toEqual([]);
+    expect(
+      comparePackageManifests(
+        {},
+        { peerDependencies: { vue: "^3" }, peerDependenciesMeta: { vue: { optional: true } } },
+        project,
+      ),
     ).toEqual([]);
   });
 });

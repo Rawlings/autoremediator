@@ -174,7 +174,8 @@ export function readPackageTarball(
     // package could hide a file from the radar and the agent's view.
     if (!["x", "g", "K", "L"].includes(type) && paxNext["size"] !== undefined) {
       const declared = Number(paxNext["size"]);
-      if (!Number.isSafeInteger(declared) || declared < 0) throw new TarballError("Tarball has an invalid pax size");
+      if (!Number.isSafeInteger(declared) || declared < 0)
+        throw new TarballError("Tarball has an invalid pax size");
       size = declared;
     }
     const dataStart = offset + BLOCK;

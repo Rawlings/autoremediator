@@ -48,7 +48,10 @@ const maintainInput = z
       "A runtime trace from `trace run`; adds evidence and can only make a verdict more cautious.",
     ).optional(),
     policy: pathField(OPTION_DESCRIPTIONS.policy).optional(),
-    packageManager: z.enum(PACKAGE_MANAGER_VALUES).optional().describe(OPTION_DESCRIPTIONS.packageManager),
+    packageManager: z
+      .enum(PACKAGE_MANAGER_VALUES)
+      .optional()
+      .describe(OPTION_DESCRIPTIONS.packageManager),
     offlineIntelligence: z.boolean().optional().describe(OPTION_DESCRIPTIONS.offlineIntelligence),
     intelligenceSnapshotPath: pathField(OPTION_DESCRIPTIONS.intelligenceSnapshotPath).optional(),
     nextVersion: z

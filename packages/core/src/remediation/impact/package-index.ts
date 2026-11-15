@@ -63,9 +63,7 @@ function isSubpathMap(exportsField: Record<string, unknown>): boolean {
 }
 
 /** The `exports` field as `subpath -> target value`, or undefined when absent. */
-export function exportsMapOf(
-  manifest: Record<string, unknown>,
-): Map<string, unknown> | undefined {
+export function exportsMapOf(manifest: Record<string, unknown>): Map<string, unknown> | undefined {
   const field = manifest.exports;
   if (field === undefined || field === null) return undefined;
   const record = asRecord(field);
@@ -142,9 +140,19 @@ export function entryPoints(source: PackageSource): EntryPoint[] {
         continue;
       }
       const typesCandidate =
-        typesLeaf && /\.d\.[cm]?ts$/.test(typesLeaf) ? resolveExisting(files, typesLeaf) : undefined;
-      const file = runtimeLeaf && !/\.d\.[cm]?ts$/.test(runtimeLeaf) ? resolveExisting(files, runtimeLeaf) : undefined;
-      const manifestTypes = typeof manifest.types === "string" ? manifest.types : typeof manifest.typings === "string" ? manifest.typings : undefined;
+        typesLeaf && /\.d\.[cm]?ts$/.test(typesLeaf)
+          ? resolveExisting(files, typesLeaf)
+          : undefined;
+      const file =
+        runtimeLeaf && !/\.d\.[cm]?ts$/.test(runtimeLeaf)
+          ? resolveExisting(files, runtimeLeaf)
+          : undefined;
+      const manifestTypes =
+        typeof manifest.types === "string"
+          ? manifest.types
+          : typeof manifest.typings === "string"
+            ? manifest.typings
+            : undefined;
       entries.push({
         subpath,
         file,
@@ -213,7 +221,11 @@ export function moduleFormat(manifest: Record<string, unknown>): ModuleFormat {
       if (!record) return;
       for (const [key, nested] of Object.entries(record)) {
         if (key === "types") continue;
-        visit(nested, key === "require" || key === "import" || key === "module" ? key : condition, depth + 1);
+        visit(
+          nested,
+          key === "require" || key === "import" || key === "module" ? key : condition,
+          depth + 1,
+        );
       }
     };
     visit(rootValue, undefined, 0);
@@ -258,7 +270,9 @@ export class PackageIndex {
       ...withExtensionVariants(joined),
       ...(stripped === joined ? [] : withExtensionVariants(stripped)),
     ];
-    return candidates.find((candidate) => this.source.files.has(candidate) && !candidate.endsWith(".d.ts"));
+    return candidates.find(
+      (candidate) => this.source.files.has(candidate) && !candidate.endsWith(".d.ts"),
+    );
   }
 
   /** Effective exports of a module: its own, plus those it re-exports from other modules. */

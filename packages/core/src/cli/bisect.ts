@@ -51,7 +51,8 @@ function describeStep(step: BisectReport["steps"][number], report: BisectReport)
 
 /** The report as a person reads it: what was tried, what it showed, what to do next. */
 export function describeBisect(report: BisectReport): string {
-  const untestable = report.skipped.length > 0 ? `, ${report.skipped.length} not testable one by one` : "";
+  const untestable =
+    report.skipped.length > 0 ? `, ${report.skipped.length} not testable one by one` : "";
   const lines = [
     `Lockfile bisect ${report.good.commit.slice(0, 12)}..${report.bad.commit.slice(0, 12)}  (${report.packageManager}, ${report.updates.length} changed package version(s)${untestable})`,
     `Command: ${report.command}`,
@@ -63,17 +64,26 @@ export function describeBisect(report: BisectReport): string {
 
   const failing = report.steps.find((step) => step.kind === "bad-ref" && step.outcome === "fail");
   if (failing?.outputTail && report.status !== "not-reproducible") {
-    lines.push("", "Output of the failing run:", ...failing.outputTail.split("\n").map((line) => `  | ${line}`));
+    lines.push(
+      "",
+      "Output of the failing run:",
+      ...failing.outputTail.split("\n").map((line) => `  | ${line}`),
+    );
   }
   for (const warning of report.warnings) lines.push(`Warning: ${warning}`);
-  if (report.stopped === "max-steps") lines.push(`Stopped at ${report.maxSteps} steps; raise --max-steps to narrow it further.`);
+  if (report.stopped === "max-steps")
+    lines.push(`Stopped at ${report.maxSteps} steps; raise --max-steps to narrow it further.`);
 
   const remedy = report.remedy;
   if (remedy) {
-    for (const pin of remedy.pins) lines.push(`Pin back: ${pin.packageName}@${pin.version} (${pin.strategy})`);
-    for (const skipped of remedy.notPlanned) lines.push(`Not planned: ${skipped.packageName}: ${skipped.reason}`);
+    for (const pin of remedy.pins)
+      lines.push(`Pin back: ${pin.packageName}@${pin.version} (${pin.strategy})`);
+    for (const skipped of remedy.notPlanned)
+      lines.push(`Not planned: ${skipped.packageName}: ${skipped.reason}`);
     if (remedy.applied) {
-      lines.push(`Applied through run ${remedy.runId}: ${remedy.applied.status}. ${remedy.applied.note}`);
+      lines.push(
+        `Applied through run ${remedy.runId}: ${remedy.applied.status}. ${remedy.applied.note}`,
+      );
     } else if (remedy.runId) {
       lines.push(
         `Plan ${remedy.planId} recorded as run ${remedy.runId}; nothing was changed.`,
@@ -104,7 +114,9 @@ export async function runBisect(opts: BisectCliOptions): Promise<void> {
       ...(opts.bad ? { bad: opts.bad } : {}),
       ...(opts.timeout === undefined ? {} : { timeoutSeconds: opts.timeout }),
       ...(opts.maxSteps === undefined ? {} : { maxSteps: opts.maxSteps }),
-      ...(opts.packageManager ? { packageManager: opts.packageManager as "npm" | "pnpm" | "yarn" } : {}),
+      ...(opts.packageManager
+        ? { packageManager: opts.packageManager as "npm" | "pnpm" | "yarn" }
+        : {}),
       ...(opts.ignoreScripts ? { ignoreScripts: true } : {}),
       ...(opts.apply ? { apply: true } : {}),
       signal: controller.signal,
@@ -112,7 +124,8 @@ export async function runBisect(opts: BisectCliOptions): Promise<void> {
     if (opts.outputFormat === "json") logJson(report);
     else process.stdout.write(`${describeBisect(report)}\n`);
     const found = report.status === "culprit" || report.status === "culprit-set";
-    process.exitCode = report.stopped === "interrupted" ? 130 : found ? EXIT_CODES.ok : EXIT_CODES.failed;
+    process.exitCode =
+      report.stopped === "interrupted" ? 130 : found ? EXIT_CODES.ok : EXIT_CODES.failed;
   } finally {
     process.off("SIGINT", interrupt);
     process.off("SIGTERM", interrupt);

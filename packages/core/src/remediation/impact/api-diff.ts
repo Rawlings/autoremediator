@@ -50,7 +50,11 @@ function arityOf(signature: Signature): { min: number; max: number } {
 }
 
 function describeArity(arity: { min: number; max: number }): string {
-  return arity.max === Number.POSITIVE_INFINITY ? `${arity.min}+` : arity.min === arity.max ? `${arity.min}` : `${arity.min}-${arity.max}`;
+  return arity.max === Number.POSITIVE_INFINITY
+    ? `${arity.min}+`
+    : arity.min === arity.max
+      ? `${arity.min}`
+      : `${arity.min}-${arity.max}`;
 }
 
 interface SignatureFinding {
@@ -97,7 +101,11 @@ function comparePair(before: Signature, after: Signature, typed: boolean): Signa
     const oldParam = before.params[index];
     const newParam = after.params[index];
     if (!oldParam || !newParam) continue;
-    if (oldParam.type !== undefined && newParam.type !== undefined && oldParam.type !== newParam.type) {
+    if (
+      oldParam.type !== undefined &&
+      newParam.type !== undefined &&
+      oldParam.type !== newParam.type
+    ) {
       typeChanges.push(`\`${newParam.name}\`: ${oldParam.type} -> ${newParam.type}`);
     }
     if (oldParam.optional && !newParam.optional && !findings.some((finding) => finding.arity)) {
@@ -120,7 +128,11 @@ function comparePair(before: Signature, after: Signature, typed: boolean): Signa
       after: after.text,
     });
   }
-  if (before.returns !== after.returns && before.returns !== undefined && after.returns !== undefined) {
+  if (
+    before.returns !== after.returns &&
+    before.returns !== undefined &&
+    after.returns !== undefined
+  ) {
     findings.push({
       category: "type-changed",
       severity: "possibly-breaking",
@@ -181,9 +193,21 @@ export function compareSignatures(
 }
 
 function shapeOf(symbol: ApiSymbol): string {
-  if (symbol.kind === "function") return `function:${symbol.signatures.map((s) => s.text).toSorted().join("|")}`;
-  if (symbol.kind === "class" || symbol.kind === "interface" || symbol.kind === "namespace" || symbol.kind === "enum") {
-    return `${symbol.kind}:${[...symbol.members.values()].map((m) => `${m.key}/${m.kind}/${m.signatures.map((s) => s.text).join(",")}/${m.type ?? ""}`).toSorted().join(";")}`;
+  if (symbol.kind === "function")
+    return `function:${symbol.signatures
+      .map((s) => s.text)
+      .toSorted()
+      .join("|")}`;
+  if (
+    symbol.kind === "class" ||
+    symbol.kind === "interface" ||
+    symbol.kind === "namespace" ||
+    symbol.kind === "enum"
+  ) {
+    return `${symbol.kind}:${[...symbol.members.values()]
+      .map((m) => `${m.key}/${m.kind}/${m.signatures.map((s) => s.text).join(",")}/${m.type ?? ""}`)
+      .toSorted()
+      .join(";")}`;
   }
   return `${symbol.kind}:${symbol.type ?? ""}`;
 }
@@ -200,23 +224,46 @@ function memberChanges(
   typed: boolean,
 ): ApiChange[] {
   const changes: ApiChange[] = [];
-  const memberOf = before.kind === "variable" ? "object" : before.kind === "class" || before.kind === "interface" || before.kind === "namespace" || before.kind === "enum" ? before.kind : undefined;
+  const memberOf =
+    before.kind === "variable"
+      ? "object"
+      : before.kind === "class" ||
+          before.kind === "interface" ||
+          before.kind === "namespace" ||
+          before.kind === "enum"
+        ? before.kind
+        : undefined;
   const removed = [...before.members.values()].filter((member) => !after.members.has(member.key));
   const added = [...after.members.values()].filter((member) => !before.members.has(member.key));
   const claimed = new Set<string>();
 
   for (const member of removed) {
-    const twin = added.find((candidate) => !claimed.has(candidate.key) && memberShape(candidate) === memberShape(member) && candidate.static === member.static);
+    const twin = added.find(
+      (candidate) =>
+        !claimed.has(candidate.key) &&
+        memberShape(candidate) === memberShape(member) &&
+        candidate.static === member.static,
+    );
     if (twin) {
       claimed.add(twin.key);
       changes.push({
-        specifier, symbol: name, member: member.key, memberOf, category: "renamed-member", severity: "breaking",
+        specifier,
+        symbol: name,
+        member: member.key,
+        memberOf,
+        category: "renamed-member",
+        severity: "breaking",
         reason: `\`${member.name}\` is gone; \`${twin.name}\` has the same shape (probable rename)`,
         renamedTo: twin.name,
       });
     } else {
       changes.push({
-        specifier, symbol: name, member: member.key, memberOf, category: "removed-member", severity: "breaking",
+        specifier,
+        symbol: name,
+        member: member.key,
+        memberOf,
+        category: "removed-member",
+        severity: "breaking",
         reason: `member \`${member.name}\` was removed`,
         before: member.signatures[0]?.text ?? member.type,
       });
@@ -228,30 +275,60 @@ function memberChanges(
     if (!next) continue;
     if (member.kind !== next.kind) {
       changes.push({
-        specifier, symbol: name, member: member.key, memberOf, category: "member-changed", severity: "breaking",
+        specifier,
+        symbol: name,
+        member: member.key,
+        memberOf,
+        category: "member-changed",
+        severity: "breaking",
         reason: `member \`${member.name}\` changed from ${member.kind} to ${next.kind}`,
       });
       continue;
     }
     for (const finding of compareSignatures(member.signatures, next.signatures, typed)) {
-      changes.push({ specifier, symbol: name, member: member.key, memberOf, ...finding, category: "member-changed" });
+      changes.push({
+        specifier,
+        symbol: name,
+        member: member.key,
+        memberOf,
+        ...finding,
+        category: "member-changed",
+      });
     }
     if (member.type !== undefined && next.type !== undefined && member.type !== next.type) {
       changes.push({
-        specifier, symbol: name, member: member.key, memberOf, category: "member-changed", severity: "possibly-breaking",
+        specifier,
+        symbol: name,
+        member: member.key,
+        memberOf,
+        category: "member-changed",
+        severity: "possibly-breaking",
         reason: `type of \`${member.name}\` changed (${member.type} -> ${next.type})`,
-        before: member.type, after: next.type,
+        before: member.type,
+        after: next.type,
       });
     }
     if (member.optional !== next.optional) {
       changes.push({
-        specifier, symbol: name, member: member.key, memberOf, category: "member-changed", severity: "possibly-breaking",
-        reason: next.optional ? `\`${member.name}\` became optional (may now be undefined)` : `\`${member.name}\` became required`,
+        specifier,
+        symbol: name,
+        member: member.key,
+        memberOf,
+        category: "member-changed",
+        severity: "possibly-breaking",
+        reason: next.optional
+          ? `\`${member.name}\` became optional (may now be undefined)`
+          : `\`${member.name}\` became required`,
       });
     }
     if (!member.readonly && next.readonly) {
       changes.push({
-        specifier, symbol: name, member: member.key, memberOf, category: "member-changed", severity: "possibly-breaking",
+        specifier,
+        symbol: name,
+        member: member.key,
+        memberOf,
+        category: "member-changed",
+        severity: "possibly-breaking",
         reason: `\`${member.name}\` became readonly`,
       });
     }
@@ -261,7 +338,12 @@ function memberChanges(
     for (const member of added) {
       if (claimed.has(member.key) || member.optional || member.kind === "index") continue;
       changes.push({
-        specifier, symbol: name, member: member.key, memberOf, category: "added-required-member", severity: "possibly-breaking",
+        specifier,
+        symbol: name,
+        member: member.key,
+        memberOf,
+        category: "added-required-member",
+        severity: "possibly-breaking",
         reason: `new required member \`${member.name}\` (breaks code that implements or constructs this interface)`,
       });
     }
@@ -284,10 +366,13 @@ function compareSymbol(
   const changes: ApiChange[] = [];
   if (before.kind !== after.kind) {
     changes.push({
-      specifier, symbol: name, category: "kind-changed",
+      specifier,
+      symbol: name,
+      category: "kind-changed",
       severity: typeLike(before.kind) && typeLike(after.kind) ? "possibly-breaking" : "breaking",
       reason: `export changed from ${before.kind} to ${after.kind}`,
-      before: before.kind, after: after.kind,
+      before: before.kind,
+      after: after.kind,
     });
     return changes;
   }
@@ -297,28 +382,51 @@ function compareSymbol(
     }
   }
   const hasMembers = before.members.size > 0 || after.members.size > 0;
-  if (before.kind === "class" || before.kind === "interface" || before.kind === "namespace" || before.kind === "enum" || (before.kind === "variable" && hasMembers)) {
+  if (
+    before.kind === "class" ||
+    before.kind === "interface" ||
+    before.kind === "namespace" ||
+    before.kind === "enum" ||
+    (before.kind === "variable" && hasMembers)
+  ) {
     changes.push(...memberChanges(specifier, name, before, after, typed));
     if ((before.extends ?? "") !== (after.extends ?? "")) {
       changes.push({
-        specifier, symbol: name, category: "extends-changed", severity: "possibly-breaking",
+        specifier,
+        symbol: name,
+        category: "extends-changed",
+        severity: "possibly-breaking",
         reason: `base type changed (${before.extends ?? "none"} -> ${after.extends ?? "none"})`,
-        before: before.extends, after: after.extends,
+        before: before.extends,
+        after: after.extends,
       });
     }
   }
-  if ((before.kind === "type" || before.kind === "variable") && before.type !== undefined && after.type !== undefined && before.type !== after.type) {
+  if (
+    (before.kind === "type" || before.kind === "variable") &&
+    before.type !== undefined &&
+    after.type !== undefined &&
+    before.type !== after.type
+  ) {
     changes.push({
-      specifier, symbol: name, category: "type-changed", severity: "possibly-breaking",
+      specifier,
+      symbol: name,
+      category: "type-changed",
+      severity: "possibly-breaking",
       reason: `${before.kind === "type" ? "type definition" : "variable type"} changed`,
-      before: before.type, after: after.type,
+      before: before.type,
+      after: after.type,
     });
   }
   return changes;
 }
 
 /** Changes between two surfaces of the same entry point. */
-export function compareSurfaces(specifier: string, before: ApiSurface, after: ApiSurface): ApiChange[] {
+export function compareSurfaces(
+  specifier: string,
+  before: ApiSurface,
+  after: ApiSurface,
+): ApiChange[] {
   const typed = before.source === "types" && after.source === "types";
   const changes: ApiChange[] = [];
   const removed = [...before.symbols.values()].filter((symbol) => !after.symbols.has(symbol.name));
@@ -326,17 +434,28 @@ export function compareSurfaces(specifier: string, before: ApiSurface, after: Ap
   const claimed = new Set<string>();
 
   for (const symbol of removed) {
-    const twin = added.find((candidate) => !claimed.has(candidate.name) && candidate.kind === symbol.kind && shapeOf(candidate) === shapeOf(symbol));
+    const twin = added.find(
+      (candidate) =>
+        !claimed.has(candidate.name) &&
+        candidate.kind === symbol.kind &&
+        shapeOf(candidate) === shapeOf(symbol),
+    );
     if (twin && symbol.name !== "default") {
       claimed.add(twin.name);
       changes.push({
-        specifier, symbol: symbol.name, category: "renamed-export", severity: "breaking",
+        specifier,
+        symbol: symbol.name,
+        category: "renamed-export",
+        severity: "breaking",
         reason: `\`${symbol.name}\` is gone; \`${twin.name}\` has the same shape (probable rename)`,
         renamedTo: twin.name,
       });
     } else {
       changes.push({
-        specifier, symbol: symbol.name, category: "removed-export", severity: "breaking",
+        specifier,
+        symbol: symbol.name,
+        category: "removed-export",
+        severity: "breaking",
         reason: `\`${symbol.name}\` is no longer exported`,
         before: symbol.signatures[0]?.text ?? symbol.type ?? symbol.kind,
       });

@@ -11,8 +11,8 @@
 import { readFileSync, statSync } from "node:fs";
 import { relative } from "node:path";
 
-import { lineOf, lineStarts, parseSource, propertyName, walk, type AstNode } from "./ast.js";
 import { walkSourceFiles } from "../tools/check-reachability.js";
+import { lineOf, lineStarts, parseSource, propertyName, walk, type AstNode } from "./ast.js";
 import type { CallSite, CallSiteKind } from "./types.js";
 
 export interface UsageIndex {
@@ -52,7 +52,12 @@ function push<K, V>(map: Map<K, V[]>, key: K, value: V): void {
   else if (list.length < MAX_SITES_PER_KEY) list.push(value);
 }
 
-function nested<V>(map: Map<string, Map<string, V[]>>, outer: string, inner: string, value: V): void {
+function nested<V>(
+  map: Map<string, Map<string, V[]>>,
+  outer: string,
+  inner: string,
+  value: V,
+): void {
   let innerMap = map.get(outer);
   if (!innerMap) {
     innerMap = new Map();
@@ -65,13 +70,18 @@ function nested<V>(map: Map<string, Map<string, V[]>>, outer: string, inner: str
 export function specifierOfSource(source: string, packageName: string): string | undefined {
   if (source === packageName) return packageName;
   if (!source.startsWith(`${packageName}/`)) return undefined;
-  const rest = source.slice(packageName.length + 1).replace(/\.[cm]?js$/, "").replace(/\/index$/, "");
+  const rest = source
+    .slice(packageName.length + 1)
+    .replace(/\.[cm]?js$/, "")
+    .replace(/\/index$/, "");
   return rest === "" ? packageName : `${packageName}/${rest}`;
 }
 
 function literalString(node: unknown): string | undefined {
   const candidate = node as AstNode | undefined;
-  return candidate?.type === "Literal" && typeof candidate.value === "string" ? candidate.value : undefined;
+  return candidate?.type === "Literal" && typeof candidate.value === "string"
+    ? candidate.value
+    : undefined;
 }
 
 /** The module specifier of `require("x")` / `import("x")`, if the node is one. */
@@ -83,7 +93,13 @@ function loadSpecifier(node: AstNode): string | undefined {
   return literalString((node.arguments as unknown[] | undefined)?.[0]);
 }
 
-const TRANSPARENT = new Set(["AwaitExpression", "ChainExpression", "TSAsExpression", "TSNonNullExpression", "TSSatisfiesExpression"]);
+const TRANSPARENT = new Set([
+  "AwaitExpression",
+  "ChainExpression",
+  "TSAsExpression",
+  "TSNonNullExpression",
+  "TSSatisfiesExpression",
+]);
 
 export function buildUsageIndex(cwd: string, packageName: string): UsageIndex {
   const index: UsageIndex = {
@@ -185,7 +201,9 @@ function scanFile(index: UsageIndex, file: string, code: string): void {
       return false;
     }
     if (node.type === "ExportNamedDeclaration" || node.type === "ExportAllDeclaration") {
-      const specifier = sourceSpecifier((node.source as { value?: unknown } | null | undefined)?.value);
+      const specifier = sourceSpecifier(
+        (node.source as { value?: unknown } | null | undefined)?.value,
+      );
       if (!specifier) return true;
       usesPackage = true;
       index.specifiers.add(specifier);
@@ -215,7 +233,11 @@ function scanFile(index: UsageIndex, file: string, code: string): void {
     // Climb through `await`, `as` and optional chains to where the value goes.
     let value: AstNode = node;
     let parentIndex = ancestors.length - 1;
-    for (let current = ancestors[parentIndex]; current && TRANSPARENT.has(current.type); current = ancestors[parentIndex]) {
+    for (
+      let current = ancestors[parentIndex];
+      current && TRANSPARENT.has(current.type);
+      current = ancestors[parentIndex]
+    ) {
       value = current;
       parentIndex--;
     }
@@ -240,7 +262,8 @@ function scanFile(index: UsageIndex, file: string, code: string): void {
           const local =
             target?.type === "Identifier"
               ? String(target.name)
-              : target?.type === "AssignmentPattern" && (target.left as AstNode | undefined)?.type === "Identifier"
+              : target?.type === "AssignmentPattern" &&
+                  (target.left as AstNode | undefined)?.type === "Identifier"
                 ? String((target.left as AstNode).name)
                 : undefined;
           if (name === undefined) {
@@ -262,7 +285,11 @@ function scanFile(index: UsageIndex, file: string, code: string): void {
         return true;
       }
       // `const x = require("p").x`: x is a named binding.
-      if (container?.type === "VariableDeclarator" && container.init === valueParent && (container.id as AstNode | undefined)?.type === "Identifier") {
+      if (
+        container?.type === "VariableDeclarator" &&
+        container.init === valueParent &&
+        (container.id as AstNode | undefined)?.type === "Identifier"
+      ) {
         bindings.set(String((container.id as AstNode).name), { specifier, mode: "named", name });
       }
       if (container?.type === "CallExpression" && container.callee === valueParent) {
@@ -273,11 +300,19 @@ function scanFile(index: UsageIndex, file: string, code: string): void {
       return true;
     }
     if (valueParent.type === "CallExpression" && valueParent.callee === value) {
-      useExport(specifier, "default", site(valueParent, "call", { argCount: argCountOf(valueParent) }));
+      useExport(
+        specifier,
+        "default",
+        site(valueParent, "call", { argCount: argCountOf(valueParent) }),
+      );
       return true;
     }
     if (valueParent.type === "ExpressionStatement") return true;
-    if (valueParent.type === "AssignmentExpression" && valueParent.right === value && (valueParent.left as AstNode | undefined)?.type === "Identifier") {
+    if (
+      valueParent.type === "AssignmentExpression" &&
+      valueParent.right === value &&
+      (valueParent.left as AstNode | undefined)?.type === "Identifier"
+    ) {
       bindings.set(String((valueParent.left as AstNode).name), { specifier, mode: "object" });
       return true;
     }
@@ -293,7 +328,10 @@ function scanFile(index: UsageIndex, file: string, code: string): void {
     if (node.type === "ImportDeclaration") return false;
     if (node.type === "MemberExpression" && node.computed !== true) {
       const name = propertyName(node.property, false);
-      const objectName = (node.object as AstNode | undefined)?.type === "Identifier" ? String((node.object as AstNode).name) : undefined;
+      const objectName =
+        (node.object as AstNode | undefined)?.type === "Identifier"
+          ? String((node.object as AstNode).name)
+          : undefined;
       const bound = objectName ? bindings.get(objectName) : undefined;
       if (name !== undefined && bound?.mode !== "object") {
         const entry = site(node, "member", { confidence: "name-match" });
@@ -307,16 +345,29 @@ function scanFile(index: UsageIndex, file: string, code: string): void {
 
     // Declarations and property names are not uses.
     if (parent.type === "VariableDeclarator" && parent.id === node) return true;
-    if (parent.type === "MemberExpression" && parent.property === node && parent.computed !== true) return true;
+    if (parent.type === "MemberExpression" && parent.property === node && parent.computed !== true)
+      return true;
     if (
-      (parent.type === "Property" || parent.type === "MethodDefinition" || parent.type === "PropertyDefinition" || parent.type === "TSPropertySignature") &&
+      (parent.type === "Property" ||
+        parent.type === "MethodDefinition" ||
+        parent.type === "PropertyDefinition" ||
+        parent.type === "TSPropertySignature") &&
       parent.key === node &&
       parent.computed !== true
     ) {
       return true;
     }
-    if ((parent.type === "FunctionDeclaration" || parent.type === "ClassDeclaration") && parent.id === node) return true;
-    if (parent.type === "ImportSpecifier" || parent.type === "ImportDefaultSpecifier" || parent.type === "ImportNamespaceSpecifier") return true;
+    if (
+      (parent.type === "FunctionDeclaration" || parent.type === "ClassDeclaration") &&
+      parent.id === node
+    )
+      return true;
+    if (
+      parent.type === "ImportSpecifier" ||
+      parent.type === "ImportDefaultSpecifier" ||
+      parent.type === "ImportNamespaceSpecifier"
+    )
+      return true;
 
     const grand = ancestors.at(-2);
     const exportName = binding.mode === "named" ? (binding.name ?? "default") : "default";
@@ -325,7 +376,10 @@ function scanFile(index: UsageIndex, file: string, code: string): void {
     };
 
     if (parent.type === "MemberExpression" && parent.object === node) {
-      const member = parent.computed === true ? literalString(parent.property) : propertyName(parent.property, false);
+      const member =
+        parent.computed === true
+          ? literalString(parent.property)
+          : propertyName(parent.property, false);
       if (member === undefined) {
         if (binding.mode === "object") markOpaque(binding.specifier, site(node, "reference"));
         else record("reference");
@@ -377,14 +431,24 @@ function scanFile(index: UsageIndex, file: string, code: string): void {
 }
 
 /** Sites using an export of a specifier; `default` and `module.exports` are the same thing. */
-export function sitesForExport(index: UsageIndex, specifier: string, exportName: string): CallSite[] {
+export function sitesForExport(
+  index: UsageIndex,
+  specifier: string,
+  exportName: string,
+): CallSite[] {
   const byName = index.exportUses.get(specifier);
   if (!byName) return [];
-  const names = exportName === "default" || exportName === "module.exports" ? ["default"] : [exportName];
+  const names =
+    exportName === "default" || exportName === "module.exports" ? ["default"] : [exportName];
   return names.flatMap((name) => byName.get(name) ?? []);
 }
 
-export function sitesForStaticMember(index: UsageIndex, specifier: string, exportName: string, member: string): CallSite[] {
+export function sitesForStaticMember(
+  index: UsageIndex,
+  specifier: string,
+  exportName: string,
+  member: string,
+): CallSite[] {
   return index.staticMemberUses.get(specifier)?.get(exportName)?.get(member) ?? [];
 }
 

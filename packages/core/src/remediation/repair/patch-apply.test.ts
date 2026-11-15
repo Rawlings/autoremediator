@@ -19,7 +19,7 @@ beforeEach(() => {
   writeFileSync(join(dir, "b.js"), "module.exports = 1;\n");
   symlinkSync("b.js", join(dir, "a.js"));
   git("add -A");
-  git('commit -q -m init');
+  git("commit -q -m init");
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 

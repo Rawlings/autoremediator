@@ -16,7 +16,9 @@ export {
 const ROUTE_ROLE_REQUIREMENTS: Record<string, Role> = {
   "GET /health": "reader",
   "GET /openapi.json": "reader",
-  ...Object.fromEntries(httpOperations.map((operation) => [operationRouteKey(operation), roleFor(operation)])),
+  ...Object.fromEntries(
+    httpOperations.map((operation) => [operationRouteKey(operation), roleFor(operation)]),
+  ),
 };
 
 /**

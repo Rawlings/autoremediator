@@ -1,4 +1,3 @@
-import { assertAutonomyAllows } from "../autonomy/index.js";
 import {
   detectPackageManager,
   resolveInstallCommand,
@@ -10,6 +9,7 @@ import { LONG_RUNNING_TIMEOUT_MS } from "../../platform/timeouts.js";
 import type { PackageManager } from "../../platform/types.js";
 import type { VerificationResult, VerifyRequest } from "../../remediation/verify/types.js";
 import { verify } from "../../remediation/verify/verifier.js";
+import { assertAutonomyAllows } from "../autonomy/index.js";
 import { analyzeDependencies } from "./analyze.js";
 import type {
   DietApplyResult,
@@ -46,12 +46,20 @@ export function removeCommand(
 ): string[] {
   // Names come from package.json keys; one that looks like an option must never reach the package manager.
   for (const name of names) {
-    if (!PACKAGE_NAME.test(name)) throw new Error(`Refusing to remove "${name.slice(0, 60)}": not a valid package name.`);
+    if (!PACKAGE_NAME.test(name))
+      throw new Error(`Refusing to remove "${name.slice(0, 60)}": not a valid package name.`);
   }
   if (packageManager === "pnpm") {
     // `--ignore-scripts`: removing a package must not run anyone's lifecycle scripts.
     return dir === "."
-      ? ["pnpm", "remove", ...(workspace ? ["--workspace-root"] : []), "--ignore-scripts", "--", ...names]
+      ? [
+          "pnpm",
+          "remove",
+          ...(workspace ? ["--workspace-root"] : []),
+          "--ignore-scripts",
+          "--",
+          ...names,
+        ]
       : ["pnpm", "--filter", `./${dir}`, "remove", "--ignore-scripts", "--", ...names];
   }
   return [
@@ -121,7 +129,12 @@ export async function removeUnusedDependenciesWith(
   deps: DietDeps,
 ): Promise<DietApplyResult> {
   // Earned autonomy: removing dependencies changes the project, so it is gated like any other apply.
-  assertAutonomyAllows(options.cwd ?? process.cwd(), options.policy, "apply", "removeUnusedDependencies");
+  assertAutonomyAllows(
+    options.cwd ?? process.cwd(),
+    options.policy,
+    "apply",
+    "removeUnusedDependencies",
+  );
   const report = await analyzeDependencies({ cwd: options.cwd });
   const { removals, byDirectory } = certainRemovals(report.packages);
   if (removals.length === 0) {

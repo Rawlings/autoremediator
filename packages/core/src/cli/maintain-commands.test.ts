@@ -1,4 +1,12 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -41,16 +49,36 @@ describe("autoremediator vex show", () => {
         ]),
       },
     });
-    installFake(dir, { name: "broken", version: "1.0.0", vex: true, files: { "vex.openvex.json": "{" } });
+    installFake(dir, {
+      name: "broken",
+      version: "1.0.0",
+      vex: true,
+      files: { "vex.openvex.json": "{" },
+    });
 
     await run("vex", "show", "--cwd", dir);
     expect(stdout).toContain("lib@2.0.0");
-    expect(stdout).toContain("CVE-2026-1111 about bad-dep: not_affected (vulnerable_code_not_in_execute_path)");
+    expect(stdout).toContain(
+      "CVE-2026-1111 about bad-dep: not_affected (vulnerable_code_not_in_execute_path)",
+    );
     expect(stdout).toContain("rejected broken@1.0.0");
 
     stdout = "";
-    await run("vex", "show", "--cwd", dir, "--advisory", "CVE-2026-9999", "--output-format", "json");
-    const report = JSON.parse(stdout) as { packages: unknown[]; rejected: unknown[]; scanned: number };
+    await run(
+      "vex",
+      "show",
+      "--cwd",
+      dir,
+      "--advisory",
+      "CVE-2026-9999",
+      "--output-format",
+      "json",
+    );
+    const report = JSON.parse(stdout) as {
+      packages: unknown[];
+      rejected: unknown[];
+      scanned: number;
+    };
     expect(report.packages).toEqual([]);
     expect(report.rejected).toHaveLength(1);
     expect(report.scanned).toBe(3);
@@ -61,7 +89,12 @@ describe("autoremediator maintain", () => {
   function project(): void {
     for (const [path, content] of Object.entries({
       "package.json": JSON.stringify(
-        { name: "demo-lib", version: "1.0.0", files: ["src"], dependencies: { "bad-dep": "^1.0.0" } },
+        {
+          name: "demo-lib",
+          version: "1.0.0",
+          files: ["src"],
+          dependencies: { "bad-dep": "^1.0.0" },
+        },
         null,
         2,
       ),
@@ -103,10 +136,15 @@ describe("autoremediator maintain", () => {
     await run(...args("--assert-not-affected", "--yes"));
     expect(stdout).toContain("Nothing was published or pushed");
     expect(process.exitCode).toBeUndefined();
-    const manifest = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as { vex: string; files: string[] };
+    const manifest = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
+      vex: string;
+      files: string[];
+    };
     expect(manifest.vex).toBe("vex.openvex.json");
     expect(manifest.files).toEqual(["src", "vex.openvex.json"]);
-    expect(readdirSync(join(dir, ".changeset")).filter((name) => name.startsWith("maintain-"))).toHaveLength(1);
+    expect(
+      readdirSync(join(dir, ".changeset")).filter((name) => name.startsWith("maintain-")),
+    ).toHaveLength(1);
 
     stdout = "";
     await run(...args("--assert-not-affected", "--yes"));
@@ -116,7 +154,11 @@ describe("autoremediator maintain", () => {
   it("prints JSON", async () => {
     project();
     await run(...args("--output-format", "json"));
-    const result = JSON.parse(stdout) as { advisories: Array<{ decision: string }>; drift: boolean; applied: boolean };
+    const result = JSON.parse(stdout) as {
+      advisories: Array<{ decision: string }>;
+      drift: boolean;
+      applied: boolean;
+    };
     expect(result.advisories[0]?.decision).toBe("under_investigation");
     expect(result.drift).toBe(true);
     expect(result.applied).toBe(false);
@@ -124,7 +166,11 @@ describe("autoremediator maintain", () => {
 
   it("refuses an offline run that names no advisories, and a bad id", async () => {
     project();
-    await expect(run("maintain", "--cwd", dir, "--offline")).rejects.toThrow(/Audit needs the network/);
-    await expect(run("maintain", "--cwd", dir, "--advisories", "nope")).rejects.toThrow(/Not a CVE or GHSA id/);
+    await expect(run("maintain", "--cwd", dir, "--offline")).rejects.toThrow(
+      /Audit needs the network/,
+    );
+    await expect(run("maintain", "--cwd", dir, "--advisories", "nope")).rejects.toThrow(
+      /Not a CVE or GHSA id/,
+    );
   });
 });

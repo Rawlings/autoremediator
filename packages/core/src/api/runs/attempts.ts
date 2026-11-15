@@ -7,14 +7,14 @@
 import { rmSync } from "node:fs";
 import { join } from "node:path";
 
-import { createProjectSnapshot } from "../../platform/rollback.js";
 import type { RepairFailure } from "../../platform/repair-agent.js";
+import { createProjectSnapshot } from "../../platform/rollback.js";
+import type { RecipeEntry } from "../../recipes/discover.js";
 import {
   attemptVerifyRequest,
   defaultAttemptDeps,
   failureOf,
 } from "../../remediation/repair/attempt.js";
-import type { RecipeEntry } from "../../recipes/discover.js";
 import { validateAndApplyPatch } from "../../remediation/repair/patch-apply.js";
 import type { CheckName, VerificationResult } from "../../remediation/verify/types.js";
 import { fingerprintRepo, sameInputs } from "../../runs/fingerprint.js";
@@ -25,9 +25,14 @@ import { loadSnapshot, saveSnapshot } from "../../runs/snapshot-store.js";
 import { discardWorktree } from "../../runs/worktree.js";
 import { assertAutonomyAllows } from "../autonomy/index.js";
 import { type MemoryForHost, memoryForHost } from "../memory/index.js";
-import { passedTestCommands, recordMemory, rejectedUpgradeEntry, testCommandEntry } from "./memory-events.js";
 import { finalizeEvent, recordOutcomes } from "./autonomy-events.js";
 import { defaultRunDeps, type RunDeps } from "./deps.js";
+import {
+  passedTestCommands,
+  recordMemory,
+  rejectedUpgradeEntry,
+  testCommandEntry,
+} from "./memory-events.js";
 import { APPLICABLE_STATUSES, ensureRunSnapshot, promoteChange } from "./repair.js";
 
 const MAX_OPEN_ATTEMPTS = 4;
@@ -85,7 +90,11 @@ export interface AttemptView {
   message: string;
 }
 
-export function viewOf(record: AttemptRecord, runId: string, extra: Partial<AttemptView> = {}): AttemptView {
+export function viewOf(
+  record: AttemptRecord,
+  runId: string,
+  extra: Partial<AttemptView> = {},
+): AttemptView {
   return {
     runId,
     attemptId: record.attemptId,
@@ -109,11 +118,17 @@ export function context(options: { cwd?: string; runId: string }) {
   return { cwd, store: new RunStore(cwd) };
 }
 
-export function loadOpen(store: RunStore, runId: string, attemptId: string): AttemptRecord & { worktreePath: string } {
+export function loadOpen(
+  store: RunStore,
+  runId: string,
+  attemptId: string,
+): AttemptRecord & { worktreePath: string } {
   const record = store.listAttempts(runId).find((candidate) => candidate.attemptId === attemptId);
   if (!record) throw new Error(`Attempt not found: ${attemptId}`);
   if (record.status !== "open" || !record.worktreePath) {
-    throw new Error(`Attempt ${attemptId} is ${record.status}; only an open attempt can be changed.`);
+    throw new Error(
+      `Attempt ${attemptId} is ${record.status}; only an open attempt can be changed.`,
+    );
   }
   return record as AttemptRecord & { worktreePath: string };
 }
@@ -159,7 +174,9 @@ export async function startAttempt(
   if (applied.has(item.itemId)) throw new Error(`Item ${item.itemId} is already applied.`);
   const open = store.listAttempts(run.runId).filter((attempt) => attempt.status === "open");
   if (open.length >= MAX_OPEN_ATTEMPTS) {
-    throw new Error(`Run ${run.runId} has ${open.length} open attempts; abandon or finalize one first.`);
+    throw new Error(
+      `Run ${run.runId} has ${open.length} open attempts; abandon or finalize one first.`,
+    );
   }
   if (!sameInputs(await fingerprintRepo(cwd, plan.options.policy), run.after ?? run.base)) {
     throw new Error(`The project changed since run ${run.runId}'s plan or last step. Plan again.`);
@@ -169,7 +186,10 @@ export async function startAttempt(
   const attemptId = newAttemptId();
   const attemptDir = store.attemptDir(run.runId, attemptId);
   const checkout = await ad.createWorktree(cwd, attemptId);
-  const packageManager = (plan.options.packageManager as Parameters<typeof attemptVerifyRequest>[0]["packageManager"] | undefined) ?? "npm";
+  const packageManager =
+    (plan.options.packageManager as
+      | Parameters<typeof attemptVerifyRequest>[0]["packageManager"]
+      | undefined) ?? "npm";
 
   let verification: VerificationResult;
   try {
@@ -185,7 +205,9 @@ export async function startAttempt(
         packageManager,
         options: plan.options,
         before,
-        advisories: store.readReport(run.runId)?.cveDetails ? [store.readReport(run.runId)!.cveDetails!] : [],
+        advisories: store.readReport(run.runId)?.cveDetails
+          ? [store.readReport(run.runId)!.cveDetails!]
+          : [],
         expectedRemaining: expectedRemaining(plan, item, applied),
       }),
     );
@@ -229,13 +251,22 @@ export async function startAttempt(
     startedAt: now,
     endedAt: now,
   };
-  store.writeAttempt(run.runId, record, { "verification.json": `${JSON.stringify(verification, null, 2)}\n` });
-  store.ledger(run.runId).append("attempt.start", { attemptId, itemId: item.itemId, agent: "host" });
+  store.writeAttempt(run.runId, record, {
+    "verification.json": `${JSON.stringify(verification, null, 2)}\n`,
+  });
+  store
+    .ledger(run.runId)
+    .append("attempt.start", { attemptId, itemId: item.itemId, agent: "host" });
   const memory = memoryForHost(cwd, item.packageName);
   return viewOf(record, run.runId, {
     ...withVerification(verification),
     ...(memory.entries.length > 0 || memory.problem ? { memory } : {}),
-    ...(recipes.length > 0 ? { recipes, message: `${record.reason} ${recipes.length} recipe(s) apply to this upgrade: try applyRecipe before editing.` } : {}),
+    ...(recipes.length > 0
+      ? {
+          recipes,
+          message: `${record.reason} ${recipes.length} recipe(s) apply to this upgrade: try applyRecipe before editing.`,
+        }
+      : {}),
   });
 }
 
@@ -268,17 +299,23 @@ export async function verifyAttempt(
   const run = store.load(options.runId);
   const plan = store.readPlan(run.runId);
   const item = plan?.items.find((candidate) => candidate.itemId === record.itemId);
-  if (!plan || !item) throw new Error(`Attempt ${record.attemptId} refers to a plan item that no longer exists.`);
+  if (!plan || !item)
+    throw new Error(`Attempt ${record.attemptId} refers to a plan item that no longer exists.`);
 
   const before = loadSnapshot(join(store.attemptDir(run.runId, record.attemptId), "before"));
   const ad = deps.attemptDeps ?? defaultAttemptDeps;
   const verification = await ad.verify(
     attemptVerifyRequest({
       checkout: record.worktreePath,
-      packageManager: (plan.options.packageManager as Parameters<typeof attemptVerifyRequest>[0]["packageManager"] | undefined) ?? "npm",
+      packageManager:
+        (plan.options.packageManager as
+          | Parameters<typeof attemptVerifyRequest>[0]["packageManager"]
+          | undefined) ?? "npm",
       options: plan.options,
       before,
-      advisories: store.readReport(run.runId)?.cveDetails ? [store.readReport(run.runId)!.cveDetails!] : [],
+      advisories: store.readReport(run.runId)?.cveDetails
+        ? [store.readReport(run.runId)!.cveDetails!]
+        : [],
       expectedRemaining: expectedRemaining(plan, item, appliedItems(store, run.runId)),
       ...(options.checks ? { checks: options.checks } : {}),
     }),
@@ -286,11 +323,15 @@ export async function verifyAttempt(
 
   const updated: AttemptRecord = {
     ...record,
-    reason: verification.passed ? "Verified: finalize it." : `Not yet: ${verification.failedCheck} fails.`,
+    reason: verification.passed
+      ? "Verified: finalize it."
+      : `Not yet: ${verification.failedCheck} fails.`,
     changedFiles: verification.changedFiles ?? record.changedFiles,
     endedAt: new Date().toISOString(),
   };
-  store.writeAttempt(run.runId, updated, { "verification.json": `${JSON.stringify(verification, null, 2)}\n` });
+  store.writeAttempt(run.runId, updated, {
+    "verification.json": `${JSON.stringify(verification, null, 2)}\n`,
+  });
   store.ledger(run.runId).append("attempt.verify", {
     attemptId: record.attemptId,
     passed: verification.passed,
@@ -313,8 +354,10 @@ export async function finalizeAttempt(
   const run = store.load(options.runId);
   const plan = store.readPlan(run.runId);
   const item = plan?.items.find((candidate) => candidate.itemId === record.itemId);
-  if (!plan || !item) throw new Error(`Attempt ${record.attemptId} refers to a plan item that no longer exists.`);
-  if (!APPLICABLE_STATUSES.has(run.status)) throw new Error(`Run ${run.runId} is ${run.status}; nothing can be finalized.`);
+  if (!plan || !item)
+    throw new Error(`Attempt ${record.attemptId} refers to a plan item that no longer exists.`);
+  if (!APPLICABLE_STATUSES.has(run.status))
+    throw new Error(`Run ${run.runId} is ${run.status}; nothing can be finalized.`);
   // Earned autonomy (opt-in via the policy): below L2 nothing is put in the project.
   assertAutonomyAllows(cwd, plan.options.policy, "apply", `Finalizing attempt ${record.attemptId}`);
   const applied = appliedItems(store, run.runId);
@@ -325,7 +368,11 @@ export async function finalizeAttempt(
 
   const checked = await verifyAttempt(options, deps);
   if (!checked.verification?.passed) {
-    return { ...checked, finalized: false, message: `Not finalized: ${checked.verification?.failedCheck} fails. Fix it and verify again.` };
+    return {
+      ...checked,
+      finalized: false,
+      message: `Not finalized: ${checked.verification?.failedCheck} fails. Fix it and verify again.`,
+    };
   }
 
   const ad = deps.attemptDeps ?? defaultAttemptDeps;
@@ -338,10 +385,15 @@ export async function finalizeAttempt(
       runDir: store.runDir(run.runId),
       diff: await ad.diff(record.worktreePath),
       policy: plan.options.policy,
-      packageManager: plan.options.packageManager as Parameters<typeof attemptVerifyRequest>[0]["packageManager"],
+      packageManager: plan.options.packageManager as Parameters<
+        typeof attemptVerifyRequest
+      >[0]["packageManager"],
       advisories: advisories ? [advisories] : [],
       expectedRemaining: expectedRemaining(plan, item, applied),
-      deps: { verify: deps.verify, reinstall: () => deps.reinstall({ cwd, options: plan.options }) },
+      deps: {
+        verify: deps.verify,
+        reinstall: () => deps.reinstall({ cwd, options: plan.options }),
+      },
     });
 
     const ledger = store.ledger(run.runId);
@@ -354,9 +406,15 @@ export async function finalizeAttempt(
     delete closed.worktreePath;
     store.writeAttempt(run.runId, closed);
     await discardWorktree(cwd, record.worktreePath);
-    ledger.append("attempt.done", { attemptId: record.attemptId, itemId: item.itemId, status: closed.status, rounds: 0 });
+    ledger.append("attempt.done", {
+      attemptId: record.attemptId,
+      itemId: item.itemId,
+      status: closed.status,
+      rounds: 0,
+    });
 
-    const recordProblem = (problem: string) => ledger.append("autonomy.record-failed", { message: problem });
+    const recordProblem = (problem: string) =>
+      ledger.append("autonomy.record-failed", { message: problem });
     // What the verifier established is what memory may keep: the tests ran in the checkout, and a
     // rejection in the project is the verifier's own finding.
     await recordMemory(
@@ -368,13 +426,32 @@ export async function finalizeAttempt(
       (problem) => ledger.append("memory.record-failed", { message: problem }),
     );
     if (!promoted.ok) {
-      await recordOutcomes(cwd, plan.options.policy, [finalizeEvent(run, item.itemId, item.packageName, { promoted: false, message: promoted.message })], recordProblem);
-      return viewOf(closed, run.runId, { finalized: false, verification: promoted.verification ?? checked.verification });
+      await recordOutcomes(
+        cwd,
+        plan.options.policy,
+        [
+          finalizeEvent(run, item.itemId, item.packageName, {
+            promoted: false,
+            message: promoted.message,
+          }),
+        ],
+        recordProblem,
+      );
+      return viewOf(closed, run.runId, {
+        finalized: false,
+        verification: promoted.verification ?? checked.verification,
+      });
     }
     await recordOutcomes(
       cwd,
       plan.options.policy,
-      [finalizeEvent(run, item.itemId, item.packageName, { promoted: true, message: "", verification: checked.verification })],
+      [
+        finalizeEvent(run, item.itemId, item.packageName, {
+          promoted: true,
+          message: "",
+          verification: checked.verification,
+        }),
+      ],
       recordProblem,
     );
 
@@ -391,9 +468,15 @@ export async function finalizeAttempt(
     store.update(run.runId, {
       after,
       allowSourceEdits: true,
-      status: plan.items.every((candidate) => applied.has(candidate.itemId)) ? "applied" : "partial",
+      status: plan.items.every((candidate) => applied.has(candidate.itemId))
+        ? "applied"
+        : "partial",
     });
-    return viewOf(closed, run.runId, { finalized: true, verification: promoted.verification ?? checked.verification, message: "Applied to the project." });
+    return viewOf(closed, run.runId, {
+      finalized: true,
+      verification: promoted.verification ?? checked.verification,
+      message: "Applied to the project.",
+    });
   } finally {
     release();
   }
@@ -412,7 +495,11 @@ export async function abandonAttempt(options: AttemptQuery): Promise<AttemptView
   };
   delete closed.worktreePath;
   store.writeAttempt(options.runId, closed);
-  store.ledger(options.runId).append("attempt.done", { attemptId: record.attemptId, itemId: record.itemId, status: "abandoned", rounds: 0 });
+  store.ledger(options.runId).append("attempt.done", {
+    attemptId: record.attemptId,
+    itemId: record.itemId,
+    status: "abandoned",
+    rounds: 0,
+  });
   return viewOf(closed, options.runId);
 }
-

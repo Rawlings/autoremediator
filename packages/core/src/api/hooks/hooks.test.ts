@@ -421,9 +421,9 @@ describe("installHooks: plain git hooks", () => {
     chmodSync(join(dir, ".git/hooks/pre-push"), 0o644);
     const result = await installHooks({ cwd: dir, yes: true });
     expect(result.conflicts).toEqual([".git/hooks/pre-push"]);
-    expect(result.changes.find((change) => change.path === ".git/hooks/pre-push")?.reason).toContain(
-      "not executable",
-    );
+    expect(
+      result.changes.find((change) => change.path === ".git/hooks/pre-push")?.reason,
+    ).toContain("not executable");
     expect(read(".git/hooks/pre-push")).toBe(original);
     expect(statSync(join(dir, ".git/hooks/pre-push")).mode & 0o111).toBe(0);
     // The other hook is unaffected.
