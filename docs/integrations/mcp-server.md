@@ -90,8 +90,9 @@ Streamable HTTP at `POST http://127.0.0.1:3001/mcp`, stateless: every request st
 no sessions, and nothing carries over. It listens on loopback only, checks the `Host` header, and
 uses the same bearer tokens and roles as the [HTTP API](http-server.md#authentication). Reading
 (`tools/list`, resources, prompts, read-only tools) needs `reader`; each tool needs the role its
-annotations imply: tools that work in a checkout `operator`, tools that can change the project
-`admin`. Without tokens configured every request is refused, unless
+annotations imply: planning and analysis tools `operator`, tools that can change the project or run
+its code (installs, tests, a reproduction script: `verifyRun`, `startAttempt`, `proposePatch`,
+`verifyAttempt`, `applyRecipe`) `admin`. Without tokens configured every request is refused, unless
 `AUTOREMEDIATOR_INSECURE_NO_AUTH=1` (local development only). Path arguments are confined as over
 stdio. Client roots and elicitation need a session, so they are not available over HTTP.
 

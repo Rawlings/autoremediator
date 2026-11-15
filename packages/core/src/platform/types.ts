@@ -629,6 +629,11 @@ export interface RemediationConstraints {
   installMode?: "standard" | "prefer-offline" | "deterministic";
   installPreferOffline?: boolean;
   enforceFrozenLockfile?: boolean;
+  /**
+   * Whether lifecycle scripts (preinstall/install/postinstall) of dependencies run during installs
+   * this tool starts. Default "none". Read from the policy file only; never accepted from a caller.
+   */
+  installScripts?: "none" | "all";
   workspace?: string;
   typecheck?: boolean;
   supplyChainPolicy?: SupplyChainPolicy;

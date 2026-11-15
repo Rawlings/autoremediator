@@ -4,8 +4,8 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import type { SandboxResult } from "../../platform/sandbox.js";
 import { createHarness, type Harness } from "./harness.js";
-import type { SandboxResult } from "./sandbox.js";
 
 /** A package with one function, `sanitize`, that the vulnerable version leaves unescaped. */
 const VULNERABLE = `exports.sanitize = (input) => String(input);\nexports.version = "1.0.0";\n`;

@@ -15,6 +15,14 @@ const LOCKFILES = new Set([
   "deno.lock",
 ]);
 
+/** Files that configure git, the package manager or the shell: never changed by remediation. */
+const FORBIDDEN_NAMES =
+  /^(?:\.pnpmfile\.[cm]?js|\.yarnrc(?:\.yml)?|\.npmrc|\.envrc|\.gitattributes|\.gitmodules|\.gitconfig|\.env(?:\..+)?|lefthook\.ya?ml|\.pre-commit-config\.ya?ml)$/i;
+
+/** `*.config.js`, `.eslintrc.js`, `jest.setup.ts`: run by the build, the linter or the test runner. */
+const TOOLING_NAMES =
+  /(?:\.config\.[cm]?[jt]s|^\.?(?:babelrc|eslintrc|mocharc|prettierrc|lintstagedrc)(?:\..+)?|\.(?:setup|globalsetup|globalteardown)\.[cm]?[jt]sx?|^(?:setupTests|jest\.setup|vitest\.setup)\.[cm]?[jt]sx?)$/i;
+
 const SOURCE_EXTENSIONS = /\.(?:[cm]?[jt]sx?)$/;
 
 export type PathClass =
@@ -23,6 +31,8 @@ export type PathClass =
   | "patch"
   | "install-state"
   | "source"
+  /** Build, lint and test configuration: code that runs when the project is built or tested. */
+  | "tooling"
   | "forbidden"
   | "other";
 
@@ -33,14 +43,18 @@ export function classifyPath(path: string): PathClass {
 
   if (normal.startsWith(".git/") || normal.includes("/.git/")) return "forbidden";
   if (normal.startsWith("node_modules/") || normal.includes("/node_modules/")) return "forbidden";
-  if (normal.startsWith(".github/workflows/")) return "forbidden";
-  if (/^\.github\/autoremediator\.ya?ml$/.test(normal)) return "forbidden";
+  // Everything that is run by something other than the project's own code: CI, git hooks, package
+  // manager and git configuration. A change here is code execution outside the tests.
+  if (normal.startsWith(".github/") || normal.includes("/.github/")) return "forbidden";
+  if (normal.startsWith(".husky/") || normal.includes("/.husky/")) return "forbidden";
   if (normal.startsWith(".autoremediator/")) return "forbidden";
+  if (FORBIDDEN_NAMES.test(name)) return "forbidden";
 
   if (name === "package.json" || name === "deno.json" || name === "deno.jsonc") return "manifest";
   if (LOCKFILES.has(name)) return "lockfile";
   if (normal.endsWith(".patch")) return "patch";
   if (normal.startsWith(".yarn/") || /^\.pnp\.[cm]?js$/.test(name)) return "install-state";
+  if (TOOLING_NAMES.test(name)) return "tooling";
   if (SOURCE_EXTENSIONS.test(name)) return "source";
   return "other";
 }

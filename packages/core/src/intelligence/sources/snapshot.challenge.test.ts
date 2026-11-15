@@ -22,6 +22,18 @@ describe("offline intelligence snapshots", () => {
     return path;
   }
 
+  it("does not echo the content of a file that is not JSON", () => {
+    const path = write("not-json.txt", "ghp_thisIsNotASnapshotButASecretToken1234567890");
+    let message = "";
+    try {
+      loadIntelligenceSnapshot(path);
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message).toMatch(/is not valid JSON/);
+    expect(message).not.toContain("ghp_");
+  });
+
   it("resolves a full entry nested under `cves`, regardless of query casing", () => {
     const snapshot = loadIntelligenceSnapshot(
       write("nested.json", {

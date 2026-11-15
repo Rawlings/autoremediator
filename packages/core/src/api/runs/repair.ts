@@ -10,6 +10,8 @@ import { safeExeca } from "../../platform/safe-exec.js";
 import type { CveDetails, LlmUsageMetrics } from "../../platform/types.js";
 import { recipeId, serializeRecipe } from "../../recipes/schema.js";
 import type { AttemptRequest, AttemptResult } from "../../remediation/repair/attempt.js";
+import { assertPlainTextPatch } from "../../remediation/repair/patch-apply.js";
+import { classifyPath } from "../../remediation/verify/changes.js";
 import type { VerificationResult, VerifyRequest } from "../../remediation/verify/types.js";
 import { newAttemptId } from "../../runs/ids.js";
 import type { PlanItem, RemediationPlan } from "../../runs/plan.js";
@@ -91,6 +93,23 @@ export async function promoteChange(params: {
 
   const files = await patchFiles(root, diff).catch(() => undefined);
   if (!files) return { ok: false, message: "the verified change is not a valid patch" };
+  // The same rules the attempt was held to, checked again where the change reaches the project: the
+  // diff comes from a checkout that ran the project's code, so it is not trusted for having passed.
+  try {
+    assertPlainTextPatch(diff);
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : String(error) };
+  }
+  const refused = files.filter((file) => {
+    const kind = classifyPath(relative(resolve(cwd), resolve(root, file)));
+    return !["manifest", "lockfile", "patch", "install-state", "source"].includes(kind);
+  });
+  if (refused.length > 0) {
+    return {
+      ok: false,
+      message: `the change touches files that remediation may not change: ${refused.join(", ")}`,
+    };
+  }
   const absolute = files.map((file) => resolve(root, file));
   const outside = absolute.filter((file) => relative(resolve(cwd), file).startsWith(".."));
   if (outside.length > 0) {

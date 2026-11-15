@@ -81,8 +81,11 @@ describe("requiredRole", () => {
     expect(requiredRole({ method: "initialize" }).role).toBe("reader");
     expect(requiredRole({ method: "resources/read", params: { uri: "x" } }).role).toBe("reader");
     expect(requiredRole({ method: "tools/call", params: { name: "getRun" } }).role).toBe("reader");
-    expect(requiredRole({ method: "tools/call", params: { name: "startAttempt" } }).role).toBe(
+    expect(requiredRole({ method: "tools/call", params: { name: "abandonAttempt" } }).role).toBe(
       "operator",
+    );
+    expect(requiredRole({ method: "tools/call", params: { name: "startAttempt" } }).role).toBe(
+      "admin",
     );
     expect(requiredRole({ method: "tools/call", params: { name: "applyPlan" } })).toEqual({
       role: "admin",

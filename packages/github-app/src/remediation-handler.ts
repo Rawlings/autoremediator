@@ -6,6 +6,7 @@ import { isAbsolute, join, relative, resolve as resolvePath } from "node:path";
 import { remediateFromScan, type CveSeverity, type ScanReport } from "autoremediator";
 
 import { codeScanningAlertTarget, dependabotAlertTarget } from "./alerts.js";
+import { childEnvironment, gitAuthEnvironment } from "./child-env.js";
 import { HELP_TEXT, parseComment } from "./commands.js";
 import { collectCheckRunLogs } from "./diagnostics/check-run-logs.js";
 import { parseCheckRunLogs } from "./diagnostics/log-parser.js";
@@ -254,9 +255,9 @@ export function createDefaultRemediationHandler(
       };
 
       const token = context.installationToken;
-      const cloneUrl = token
-        ? `https://x-access-token:${token}@github.com/${repoRef.owner}/${repoRef.repo}.git`
-        : `https://github.com/${repoRef.owner}/${repoRef.repo}.git`;
+      // No token in the URL: it would be in the process list and in the clone's .git/config, which
+      // the repository's own install scripts and tests can read.
+      const cloneUrl = `https://github.com/${repoRef.owner}/${repoRef.repo}.git`;
       const cloneArgs = ["clone", "--depth", "1"];
       if (targetRef) {
         cloneArgs.push("--branch", targetRef);
@@ -264,7 +265,12 @@ export function createDefaultRemediationHandler(
       cloneArgs.push(cloneUrl, tempRepoDir);
 
       try {
-        const cloneRes = await runCommand("git", cloneArgs, tempRepoDir);
+        const cloneRes = await runCommand(
+          "git",
+          cloneArgs,
+          tempRepoDir,
+          token ? gitAuthEnvironment(token) : {},
+        );
         if (cloneRes.exitCode !== 0) {
           throw new Error(`git clone failed (code ${cloneRes.exitCode}): ${cloneRes.output}`);
         }
@@ -854,10 +860,12 @@ async function runCommand(
   command: string,
   args: string[],
   cwd: string,
+  extraEnv: Record<string, string> = {},
 ): Promise<{ output: string; exitCode: number }> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd,
+      env: childEnvironment(extraEnv),
       stdio: ["ignore", "pipe", "pipe"],
       shell: false,
     });

@@ -43,6 +43,8 @@ export function resolveConstraints(options: RemediateOptions, cwd: string): Reme
     enforceFrozenLockfile:
       options.constraints?.enforceFrozenLockfile ?? policy.constraints?.enforceFrozenLockfile,
     workspace: options.constraints?.workspace ?? policy.constraints?.workspace,
+    // Policy file only: a caller must not be able to turn dependency install scripts back on.
+    installScripts: policy.installScripts ?? "none",
     typecheck: options.typecheck ?? options.constraints?.typecheck ?? policy.constraints?.typecheck,
     requireProofOfFix:
       options.requireProofOfFix ??

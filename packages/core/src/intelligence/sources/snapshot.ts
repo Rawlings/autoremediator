@@ -64,7 +64,17 @@ const shorthandEntry = z.object({
 export type IntelligenceSnapshot = Readonly<Record<string, unknown>>;
 
 export function loadIntelligenceSnapshot(filePath: string): IntelligenceSnapshot {
-  const parsed: unknown = JSON.parse(readFileSync(filePath, "utf8"));
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(filePath, "utf8"));
+  } catch (error) {
+    // JSON.parse quotes the text it choked on; for a wrong file that is the file's content.
+    if (error instanceof SyntaxError) {
+      // eslint-disable-next-line preserve-caught-error -- the cause would carry that content.
+      throw new Error(`Intelligence snapshot at ${filePath} is not valid JSON.`);
+    }
+    throw error;
+  }
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
     throw new Error(`Intelligence snapshot at ${filePath} must be a JSON object keyed by CVE ID.`);
   }

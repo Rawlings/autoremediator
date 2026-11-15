@@ -74,6 +74,13 @@ export function verifyJwtRole(token: string, secret: string): Role | undefined {
   return undefined;
 }
 
+/** Compares two secrets in constant time (over digests, so their lengths do not show either). */
+const sha256Digest = (value: string): Buffer => createHash("sha256").update(value).digest();
+
+function sameSecret(a: string, b: string): boolean {
+  return timingSafeEqual(sha256Digest(a), sha256Digest(b));
+}
+
 /**
  * Parses configured tokens from environment or explicit map (JWT or static pre-shared key).
  */
@@ -95,10 +102,13 @@ export function getRoleForToken(
       .map((s) => s.trim())
       .filter(Boolean);
     for (const pair of pairs) {
-      const [role, secret] = pair.split(":");
+      // Split at the first colon only: a secret may itself contain one.
+      const colon = pair.indexOf(":");
+      const role = colon === -1 ? "" : pair.slice(0, colon);
+      const secret = colon === -1 ? "" : pair.slice(colon + 1);
       if (
         secret &&
-        secret === token &&
+        sameSecret(secret, token) &&
         (role === "admin" || role === "operator" || role === "reader")
       ) {
         return role;

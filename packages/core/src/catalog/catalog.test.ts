@@ -328,8 +328,8 @@ describe("run operations", () => {
   it("need the right role: reading a run is a read, changing the project is admin", () => {
     expect(roleFor(byName("getRun"))).toBe("reader");
     expect(roleFor(byName("listRuns"))).toBe("reader");
-    // Verifying installs and runs the project's tests, but changes nothing it was asked to protect.
-    expect(roleFor(byName("verifyRun"))).toBe("operator");
+    // Verifying installs and runs the project's tests, which see every secret the server holds.
+    expect(roleFor(byName("verifyRun"))).toBe("admin");
     for (const name of ["applyPlan", "resumeRun", "rollbackRun"]) {
       expect(roleFor(byName(name))).toBe("admin");
     }
@@ -420,10 +420,12 @@ describe("attempt operations for host agents", () => {
       expect(toMcpTools().map((tool) => tool.name)).toContain(name);
       expect(byName(name).http).toBeDefined();
     }
-    // Working in a checkout needs operator; changing the project needs admin.
-    for (const name of ["startAttempt", "proposePatch", "verifyAttempt", "abandonAttempt"]) {
-      expect(roleFor(byName(name))).toBe("operator");
+    // Anything that installs, runs the project's code or edits files that get run needs admin.
+    for (const name of ["startAttempt", "proposePatch", "verifyAttempt"]) {
+      expect(roleFor(byName(name))).toBe("admin");
     }
+    // Abandoning only discards a checkout.
+    expect(roleFor(byName("abandonAttempt"))).toBe("operator");
     expect(roleFor(byName("finalizeAttempt"))).toBe("admin");
   });
 
@@ -475,8 +477,8 @@ describe("recipe operations", () => {
     expect(byName("listRecipes").http).toMatchObject({ path: "/recipes/list" });
     expect(byName("applyRecipe").http).toMatchObject({ path: "/attempts/recipe" });
     expect(roleFor(byName("listRecipes"))).toBe("reader");
-    // Like proposePatch: it changes a checkout, never the project.
-    expect(roleFor(byName("applyRecipe"))).toBe("operator");
+    // Like proposePatch: it edits a checkout and verifies it, which runs the project's code.
+    expect(roleFor(byName("applyRecipe"))).toBe("admin");
   });
 
   it("validate ids and require a recipe id before anything runs", async () => {

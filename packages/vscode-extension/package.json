@@ -76,5 +76,11 @@
   ],
   "engines": {
     "vscode": "^1.146.0"
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Autoremediator runs the project's package manager and its own CLI, which execute code from the workspace."
+    }
   }
 }

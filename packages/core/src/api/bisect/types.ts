@@ -19,7 +19,7 @@ export interface BisectOptions {
   maxSteps?: number;
   /** Package manager (default: from the lockfile). npm and pnpm are supported; yarn classic is not exercised. */
   packageManager?: PackageManager;
-  /** Pass `--ignore-scripts` to every install, so package install scripts do not run. */
+  /** Pass `--ignore-scripts` to every install, so package install scripts do not run. Default true. */
   ignoreScripts?: boolean;
   /** Apply the recommended pin to the project through the run machinery instead of only planning it. */
   apply?: boolean;

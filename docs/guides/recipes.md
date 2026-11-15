@@ -87,7 +87,6 @@ checkout and verifies it, undoing it if the verifier rejects it. `listRecipes` s
 | ------ | ----- | ----------- |
 | This project | `.autoremediator/recipes/<package>/*.json`, committed | Any package. Reviewed like any other file in the repository. |
 | A recipes package you name | `recipes: { packages: [...] }` in `.github/autoremediator.yml`; the package's `recipes/**/*.json` (or `autoremediator-recipes/`) | Any package. Naming it is you choosing to trust it. |
-| The package being upgraded | `node_modules/<package>/autoremediator-recipes/**/*.json` | Only that same package. A dependency may ship migration recipes for itself, and cannot change how you adopt a different one. |
 
 ```yaml
 # .github/autoremediator.yml
@@ -99,10 +98,11 @@ recipes:
 A recipe file that fails validation is reported (`recipes list` shows it as unusable) and never
 used; it does not hide the valid ones.
 
-Limits to know about: a package's own recipes are read from the isolated checkout, where the new
+A dependency that ships recipes is not a source by itself: a recipe edits your own source files, and
+the version being installed is the least trusted code around. Name the package under
+`recipes.packages` to use what it ships. Recipes are read from the isolated checkout, where the new
 version is installed, so they are tried whenever an attempt runs (a model is configured, or the
-project already has a matching recipe from its own directory or a named recipes package). Only the
-top level of `node_modules` is searched for packages that ship their own.
+project already has a matching recipe from its own directory or a named recipes package).
 
 ## Capturing a recipe
 
@@ -161,7 +161,8 @@ npm publish --access public
 the package and name it in their policy, as above.
 
 A package that wants to ship migration recipes for itself puts them in `autoremediator-recipes/` at its
-root (and lists that directory in `files`).
+root (and lists that directory in `files`). Consumers use them by naming the package under
+`recipes.packages`.
 
 ## Surfaces
 

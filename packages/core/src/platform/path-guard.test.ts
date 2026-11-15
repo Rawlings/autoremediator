@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -113,13 +113,30 @@ describe("assertPathsConfined", () => {
     ).not.toThrow();
   });
 
-  it("treats a multi-line value as inline content, not a path", () => {
-    expect(() =>
-      check({ cwd: root, reproductionTest: "const a = 1;\nprocess.exit(a);" })(),
-    ).not.toThrow();
-    expect(() => check({ cwd: root, policy: "---\nallowMajorBumps: false\n" })()).not.toThrow();
-    expect(() => check({ cwd: root, policy: '{\n"allowMajorBumps": false\n}' })()).not.toThrow();
+  it("refuses inline scripts and inline policy from a remote caller", () => {
+    expect(check({ cwd: root, reproductionTest: "const a = 1;\nprocess.exit(a);" })).toThrow(
+      /inline scripts are not accepted/,
+    );
+    expect(check({ cwd: root, policy: "---\nallowMajorBumps: false\n" })).toThrow(
+      /inline policy is not accepted/,
+    );
+    expect(check({ cwd: root, policy: '{"allowMajorBumps": true}' })).toThrow(
+      /inline policy is not accepted/,
+    );
     expect(check({ cwd: root, reproductionTest: join(outside, "test.js") })).toThrow(forbidden);
+  });
+
+  it("accepts a reproduction test only as an existing file inside the roots", () => {
+    // A one-line "script" used to resolve to a path in the project and be written out and run.
+    expect(check({ cwd: root, reproductionTest: "process.exit(1)" })).toThrow(
+      /must be the path of an existing file/,
+    );
+    const file = join(root, "repro.cjs");
+    writeFileSync(file, "process.exit(1)\n");
+    expect(() => check({ cwd: root, reproductionTest: file })()).not.toThrow();
+    expect(() => check({ cwd: root, reproductionTest: "repro.cjs" })()).not.toThrow();
+    // A directory is not a script.
+    expect(check({ cwd: root, reproductionTest: root })).toThrow(/existing file/);
   });
 
   it("names the offending field", () => {
@@ -131,7 +148,6 @@ describe("assertPathsConfined", () => {
     for (const field of ["cwd", "outDir", "signingKeyPath", "traceFile", "inputPath"]) {
       expect(() => check({ cwd: root, [field]: hostile })()).toThrow(PathNotAllowedError);
     }
-    // `policy` only gets the exemption when the value reads as inline YAML or JSON.
     expect(() => check({ cwd: root, policy: hostile })()).toThrow(PathNotAllowedError);
   });
 });
@@ -157,16 +173,13 @@ describe("confinePaths", () => {
     expect(out.targets[0]?.cwd).toBe(join(root, "a"));
   });
 
-  it("leaves inline content untouched and does not mutate its input", () => {
-    const input = {
-      cwd: root,
-      policy: "---\nallowMajorBumps: false\n",
-      reproductionTest: "process.exit(1)",
-    };
+  it("does not mutate its input", () => {
+    const file = join(root, "repro.cjs");
+    writeFileSync(file, "process.exit(1)\n");
+    const input = { cwd: root, policy: "policy.yml", reproductionTest: file };
     const copy = structuredClone(input);
     const out = confinePaths(schema, input, [root], root);
-    expect(out.policy).toBe(input.policy);
-    expect(out.reproductionTest).toBe("process.exit(1)");
+    expect(out.reproductionTest).toBe(file);
     expect(input).toEqual(copy);
   });
 

@@ -38,4 +38,50 @@ describe("safeExeca environment isolation (real child process)", () => {
     );
     expect(result.stdout).toBe("undefined");
   });
+
+  it("removes credentials from the child's environment", async () => {
+    process.env.AUTOREMEDIATOR_JWT_SECRET = "jwt";
+    process.env.AUTOREMEDIATOR_API_TOKENS = "admin:abc";
+    process.env.AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY = "pem";
+    process.env.GITHUB_TOKEN = "ghs_x";
+    process.env.GH_TOKEN = "ghs_y";
+    process.env.ANTHROPIC_API_KEY = "sk-ant-x";
+    process.env.OPENAI_API_KEY = "sk-x";
+    process.env.AWS_SECRET_ACCESS_KEY = "aws";
+    process.env.MY_SERVICE_PASSWORD = "pw";
+    for (const name of [
+      "AUTOREMEDIATOR_JWT_SECRET",
+      "AUTOREMEDIATOR_API_TOKENS",
+      "AUTOREMEDIATOR_GITHUB_APP_PRIVATE_KEY",
+      "GITHUB_TOKEN",
+      "GH_TOKEN",
+      "ANTHROPIC_API_KEY",
+      "OPENAI_API_KEY",
+      "AWS_SECRET_ACCESS_KEY",
+      "MY_SERVICE_PASSWORD",
+    ]) {
+      expect([name, (await probe(name)).stdout]).toEqual([name, "<unset>"]);
+    }
+  });
+
+  it("keeps registry auth variables and non-secret switches", async () => {
+    process.env.NPM_TOKEN = "npm";
+    process.env.NODE_AUTH_TOKEN = "node";
+    process.env.AUTOREMEDIATOR_ALLOWED_ROOTS = "/tmp";
+    process.env.AUTOREMEDIATOR_TRACE_FILE = "/tmp/trace.jsonl";
+    expect((await probe("NPM_TOKEN")).stdout).toBe("npm");
+    expect((await probe("NODE_AUTH_TOKEN")).stdout).toBe("node");
+    expect((await probe("AUTOREMEDIATOR_ALLOWED_ROOTS")).stdout).toBe("/tmp");
+    expect((await probe("AUTOREMEDIATOR_TRACE_FILE")).stdout).toBe("/tmp/trace.jsonl");
+  });
+
+  it("passes a named secret through only when the caller opts in", async () => {
+    process.env.DATABASE_PASSWORD = "db";
+    const result = await safeExeca(
+      process.execPath,
+      ["-e", "process.stdout.write(process.env.DATABASE_PASSWORD ?? '<unset>')"],
+      { passEnv: ["DATABASE_PASSWORD"] },
+    );
+    expect(result.stdout).toBe("db");
+  });
 });

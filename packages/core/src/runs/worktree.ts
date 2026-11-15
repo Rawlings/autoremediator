@@ -8,8 +8,9 @@ import {
   rmdirSync,
 } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join, relative } from "node:path";
+import { dirname, isAbsolute, join, relative } from "node:path";
 
+import { realOrResolve } from "../platform/path-guard.js";
 import { safeExeca } from "../platform/safe-exec.js";
 import { sha256 } from "./hash.js";
 
@@ -35,10 +36,26 @@ async function gitPatch(cwd: string, args: string[]): Promise<string> {
   return (await safeExeca("git", args, { cwd, stdio: "pipe", stripFinalNewline: false })).stdout;
 }
 
+/** The directory every worktree this tool makes lives under. */
+export function worktreesCacheRoot(env: NodeJS.ProcessEnv = process.env): string {
+  return join(env["XDG_CACHE_HOME"] ?? join(homedir(), ".cache"), "autoremediator", "worktrees");
+}
+
+/**
+ * Throws unless `path` is inside the worktree cache. An attempt record names its checkout by path,
+ * and the record sits in the project, where a cloned repository could have planted one that points
+ * at a directory worth deleting.
+ */
+export function assertManagedWorktree(path: string, env: NodeJS.ProcessEnv = process.env): void {
+  const rel = relative(realOrResolve(worktreesCacheRoot(env)), realOrResolve(path));
+  if (rel === "" || rel.startsWith("..") || isAbsolute(rel)) {
+    throw new Error(`Refusing to use "${path}": it is not a checkout made by autoremediator.`);
+  }
+}
+
 /** Where worktrees live: outside the project, so tests, tsc and workspace globs never see them. */
 export function worktreeRoot(cwd: string, env: NodeJS.ProcessEnv = process.env): string {
-  const cache = env["XDG_CACHE_HOME"] ?? join(homedir(), ".cache");
-  return join(cache, "autoremediator", "worktrees", sha256(cwd).slice(0, 16));
+  return join(worktreesCacheRoot(env), sha256(cwd).slice(0, 16));
 }
 
 /**
@@ -144,6 +161,7 @@ export async function worktreeDiff(worktree: string): Promise<string> {
  * process that created it). Safe to call for a checkout that is already gone.
  */
 export async function discardWorktree(projectCwd: string, checkoutPath: string): Promise<void> {
+  assertManagedWorktree(checkoutPath);
   const root = (await git(projectCwd, ["rev-parse", "--show-toplevel"]).catch(() => "")).trim();
   if (!root) return;
   const top = existsSync(checkoutPath)

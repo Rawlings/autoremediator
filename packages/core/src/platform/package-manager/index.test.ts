@@ -76,11 +76,13 @@ describe("resolveInstallCommand", () => {
     expect(resolveInstallCommand("bun", { installMode: "deterministic" })).toEqual([
       "bun",
       "install",
+      "--ignore-scripts",
     ]);
     expect(resolveInstallCommand("bun", { enforceFrozenLockfile: true })).toEqual([
       "bun",
       "install",
       "--frozen-lockfile",
+      "--ignore-scripts",
     ]);
   });
 

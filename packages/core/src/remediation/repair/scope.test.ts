@@ -73,11 +73,36 @@ describe("ScopeGuard", () => {
       "keys/server.pem",
       "id_rsa",
       ".autoremediator/runs/x",
+      ".netrc",
+      ".git-credentials",
+      ".envrc",
+      ".yarnrc",
+      "infra/prod.tfvars",
+      "config/serviceAccount-prod.json",
+      "credentials",
     ]) {
       expect(() => guard.assertReadable(secret)).toThrow(ScopeViolation);
     }
     expect(guard.assertReadable("src/a.ts")).toBe(join(root, "src/a.ts"));
     expect(guard.assertReadable("node_modules/dep/index.d.ts")).toContain("index.d.ts");
+  });
+
+  it("does not let an agent plant code that something else runs", () => {
+    const guard = new ScopeGuard(root);
+    // Build and test configuration, git hooks, package manager hooks and CI actions all run code.
+    for (const path of [
+      "vitest.config.ts",
+      "eslint.config.mjs",
+      ".pnpmfile.cjs",
+      ".husky/pre-commit",
+      ".github/actions/setup/index.js",
+    ]) {
+      expect(() => guard.assertWritable(path)).toThrow(ScopeViolation);
+    }
+    // A new test file runs with the project's privileges; an existing one may still be repaired.
+    expect(() => guard.assertWritable("src/new.test.ts")).toThrow(/new test file/);
+    write("src/a.test.ts", "export {};\n");
+    expect(guard.assertWritable("src/a.test.ts")).toBe(join(root, "src/a.test.ts"));
   });
 
   it("lets an agent write project source, and nothing else", () => {

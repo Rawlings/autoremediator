@@ -16,8 +16,12 @@ export function routeKey(operation: Operation): string {
   return `${method} ${path.replace(/\/:[^/]+$/, "")}`;
 }
 
-/** Minimum role: read-only operations need `reader`, anything that edits the project `admin`. */
+/**
+ * Minimum role: read-only operations need `reader`, anything that edits the project or runs its
+ * code `admin`. `operator` is for the rest: planning and analysis that only write evidence.
+ */
 export function roleFor(operation: Operation): HttpRole {
+  if (operation.runsProjectCode) return "admin";
   if (operation.annotations.readOnlyHint) return "reader";
   return operation.annotations.destructiveHint ? "admin" : "operator";
 }

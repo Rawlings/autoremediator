@@ -19,6 +19,24 @@ describe("redactSecrets", () => {
     );
   });
 
+  it("hides recognisable tokens and private keys wherever they appear", () => {
+    const text = [
+      "token ghp_abcdefghijklmnopqrstuvwxyz0123456789",
+      "key sk-ant-api03-abcdefghijklmnopqrstuvwxyz",
+      "aws AKIAABCDEFGHIJKLMNOP",
+      "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBg\n-----END PRIVATE KEY-----",
+    ].join("\n");
+    const out = redactSecrets(text, {});
+    expect(out).not.toMatch(/ghp_|sk-ant|AKIA|MIIEvQ/);
+    expect(out).toContain("token ***");
+  });
+
+  it("hides the value of a secret environment variable, even in a format it does not know", () => {
+    const env = { MY_SERVICE_PASSWORD: "correct-horse-battery", PATH: "/usr/bin" };
+    const out = redactSecrets("db said correct-horse-battery was wrong; PATH=/usr/bin", env);
+    expect(out).toBe("db said *** was wrong; PATH=/usr/bin");
+  });
+
   it("leaves ordinary text alone", () => {
     expect(redactSecrets("push rejected (non-fast-forward)")).toBe(
       "push rejected (non-fast-forward)",

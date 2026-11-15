@@ -179,6 +179,18 @@ describe("findLoosenings: keys that used to be missed", () => {
       keys: ["trustMaintainerVex"],
     },
     {
+      name: "running dependency install scripts again",
+      before: "{}",
+      after: "installScripts: all",
+      keys: ["installScripts"],
+    },
+    {
+      name: "turning install scripts off again is tighter",
+      before: "installScripts: all",
+      after: "{}",
+      keys: [],
+    },
+    {
       name: "no longer trusting maintainer VEX is tighter",
       before: "trustMaintainerVex: true",
       after: "{}",
@@ -399,6 +411,7 @@ describe("POLICY_KEY_COVERAGE", () => {
     "sla.low": ["sla: { low: 24 }", "{}"],
     skipUnreachable: ["{}", "skipUnreachable: true"],
     trustMaintainerVex: ["{}", "trustMaintainerVex: true"],
+    installScripts: ["{}", "installScripts: all"],
     "dispositionPolicy.minConfidenceForAutoApply": [
       "{}",
       "dispositionPolicy: { minConfidenceForAutoApply: 0.1 }",

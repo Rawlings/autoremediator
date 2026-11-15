@@ -207,7 +207,9 @@ runs:
       env:
         INPUT_PACKAGE: ${{ inputs.package }}
         BUNDLED_VERSION: ${{ steps.autoremediator-version.outputs.version }}
-      run: npm install -g "${INPUT_PACKAGE:-autoremediator@$BUNDLED_VERSION}"
+      # No lifecycle scripts: neither this package nor its dependencies need one, and a hijacked
+      # dependency release would otherwise run here with the job's token in the environment.
+      run: npm install -g --ignore-scripts "${INPUT_PACKAGE:-autoremediator@$BUNDLED_VERSION}"
 
     - name: Remediate single CVE
       if: ${{ inputs.cve-id != '' }}

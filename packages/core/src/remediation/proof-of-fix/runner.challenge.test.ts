@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -21,6 +22,62 @@ describe("Proof-of-Fix Runner Adversarial White-Box Challenges", () => {
 
   afterEach(async () => {
     await rm(testDir, { recursive: true, force: true });
+  });
+
+  describe.skipIf(process.platform === "win32")("the script runs in the sandbox", () => {
+    const run = async (script: string) => {
+      const testFile = join(testDir, "repro.cjs");
+      await writeFile(testFile, script, "utf8");
+      return runProofOfFixPhase({ stage: "positive", testFilePath: testFile, cwd: testDir });
+    };
+
+    it("cannot write a file, start a process or reach the network", async () => {
+      const result = await run(`
+const fs = require("node:fs");
+const denied = [];
+try { fs.writeFileSync(__dirname + "/pwned.txt", "x"); } catch (e) { denied.push(e.code); }
+try { require("node:child_process").execSync("echo hi"); } catch (e) { denied.push(e.code); }
+if (denied.length !== 2 || denied.some((code) => code !== "ERR_ACCESS_DENIED")) {
+  console.error("ESCAPED " + JSON.stringify(denied));
+  process.exit(1);
+}
+`);
+      expect(result.passed).toBe(true);
+      expect(existsSync(join(testDir, "pwned.txt"))).toBe(false);
+    });
+
+    it("sees none of the caller's secrets", async () => {
+      process.env["GITHUB_TOKEN"] = "ghs_proof_test_token";
+      process.env["AUTOREMEDIATOR_JWT_SECRET"] = "proof_test_secret";
+      try {
+        const result = await run(`
+const leaked = Object.keys(process.env).filter((name) => /TOKEN|SECRET|KEY|PASSWORD/i.test(name));
+if (leaked.length > 0) { console.error("LEAKED " + leaked.join(",")); process.exit(1); }
+`);
+        expect(result.passed).toBe(true);
+      } finally {
+        delete process.env["GITHUB_TOKEN"];
+        delete process.env["AUTOREMEDIATOR_JWT_SECRET"];
+      }
+    });
+
+    it("refuses a script outside the project instead of running it", async () => {
+      const outside = await mkdtemp(join(tmpdir(), "runner-outside-"));
+      try {
+        const file = join(outside, "repro.cjs");
+        await writeFile(file, "process.exit(0)", "utf8");
+        const result = await runProofOfFixPhase({
+          stage: "positive",
+          testFilePath: file,
+          cwd: testDir,
+        });
+        expect(result.passed).toBe(false);
+        expect(result.harnessFailure).toBe(true);
+        expect(result.error).toMatch(/must be inside the project/);
+      } finally {
+        await rm(outside, { recursive: true, force: true });
+      }
+    });
   });
 
   describe("Real Node process execution & quality guardrails", () => {

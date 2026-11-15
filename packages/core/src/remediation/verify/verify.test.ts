@@ -102,9 +102,35 @@ describe("path and declaration helpers", () => {
       "node_modules/x/index.js",
       ".git/config",
       ".autoremediator/runs/x",
+      // Run by CI, git, the shell or the package manager, not by the project's own code.
+      ".github/actions/setup/index.js",
+      ".husky/pre-commit",
+      ".pnpmfile.cjs",
+      "packages/a/.pnpmfile.cjs",
+      ".yarnrc.yml",
+      ".npmrc",
+      ".envrc",
+      ".gitattributes",
+      "lefthook.yml",
     ]) {
       expect(classifyPath(forbidden)).toBe("forbidden");
     }
+  });
+
+  it("separates build and test configuration, which runs code, from source", () => {
+    for (const tooling of [
+      "vitest.config.ts",
+      "jest.config.js",
+      "eslint.config.mjs",
+      "packages/a/webpack.config.cjs",
+      ".eslintrc.js",
+      "test/setup.setup.ts",
+      "jest.setup.ts",
+    ]) {
+      expect(classifyPath(tooling)).toBe("tooling");
+    }
+    expect(classifyPath("src/config.ts")).toBe("source");
+    expect(classifyPath("src/a.test.ts")).toBe("source");
   });
 
   it("reads declarations, including nested and aliased overrides", () => {
@@ -274,7 +300,7 @@ describe("command checks", () => {
   it("runs a frozen install and reports its output tail on failure", async () => {
     run.mockResolvedValueOnce({ passed: false, output: "a\nb\nnpm ERR! lock out of sync" });
     const result = await verify(request({ checks: ["install"] }));
-    expect(run.mock.calls[0]?.[0]).toEqual(["npm", "ci", "--prefer-offline"]);
+    expect(run.mock.calls[0]?.[0]).toEqual(["npm", "ci", "--prefer-offline", "--ignore-scripts"]);
     expect(result).toMatchObject({ failedCheck: "install" });
     expect(result.checks[0]?.details?.at(-1)).toBe("npm ERR! lock out of sync");
   });

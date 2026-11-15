@@ -1,6 +1,7 @@
 import type { z } from "zod";
 
 import { confinePaths, getAllowedRoots, PathNotAllowedError } from "../../platform/path-guard.js";
+import { redactSecrets } from "../../platform/redact.js";
 import { type ApiDeps, defaultApiDeps } from "../api-deps.js";
 import type { Operation } from "../define-operation.js";
 import { OPERATIONS } from "../operations.js";
@@ -95,7 +96,8 @@ export interface CallOptions {
 
 /** An operation that edits the project unless it is told not to. */
 export const changesProject = (operation: Operation): boolean =>
-  !operation.annotations.readOnlyHint && operation.annotations.destructiveHint;
+  !operation.annotations.readOnlyHint &&
+  (operation.annotations.destructiveHint || operation.runsProjectCode === true);
 
 const errorResult = (message: string): McpToolResult => ({
   content: [{ type: "text", text: message }],
@@ -152,6 +154,6 @@ export async function callMcpOperation(
     });
     return success(operation, result);
   } catch (err) {
-    return errorResult(err instanceof Error ? err.message : String(err));
+    return errorResult(redactSecrets(err instanceof Error ? err.message : String(err)));
   }
 }

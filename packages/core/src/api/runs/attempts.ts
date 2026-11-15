@@ -22,7 +22,7 @@ import { newAttemptId } from "../../runs/ids.js";
 import type { PlanItem, RemediationPlan } from "../../runs/plan.js";
 import { type AttemptRecord, type AttemptStatus, RunStore } from "../../runs/run-store.js";
 import { loadSnapshot, saveSnapshot } from "../../runs/snapshot-store.js";
-import { discardWorktree } from "../../runs/worktree.js";
+import { assertManagedWorktree, discardWorktree } from "../../runs/worktree.js";
 import { assertAutonomyAllows } from "../autonomy/index.js";
 import { type MemoryForHost, memoryForHost } from "../memory/index.js";
 import { finalizeEvent, recordOutcomes } from "./autonomy-events.js";
@@ -130,6 +130,7 @@ export function loadOpen(
       `Attempt ${attemptId} is ${record.status}; only an open attempt can be changed.`,
     );
   }
+  assertManagedWorktree(record.worktreePath);
   return record as AttemptRecord & { worktreePath: string };
 }
 

@@ -28,8 +28,8 @@ authentication scheme, never a token. It advertises:
 | Skill id | Role needed |
 | -------- | ----------- |
 | `guardPackage`, `evaluatePackage`, `scanDelta`, `checkReachability`, `getRun`, `listRuns`, `toVex` | `reader` |
-| `planRemediation`, `verifyRun` | `operator` |
-| `remediate`, `remediateFromScan` | `admin` |
+| `planRemediation` | `operator` |
+| `verifyRun`, `remediate`, `remediateFromScan` | `admin` (`verifyRun` runs the project's installs and tests) |
 
 The role is part of each skill's description. Attempts, rollback, portfolio runs and jobs stay on the
 HTTP API and MCP.

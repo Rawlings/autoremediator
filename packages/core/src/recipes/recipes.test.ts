@@ -319,7 +319,7 @@ describe("discovering recipes", () => {
   const put = (path: string, recipe: unknown) =>
     write(path, typeof recipe === "string" ? recipe : serializeRecipe(recipe as Recipe));
 
-  it("reads the project's committed recipes, policy recipe packages and the packages' own", () => {
+  it("reads the project's committed recipes and the recipe packages the policy names", () => {
     put(".autoremediator/recipes/dep/1-to-2.json", dropArgument);
     const other = recipeSchema.parse({
       ...base,
@@ -332,6 +332,8 @@ describe("discovering recipes", () => {
       package: "shipper",
       hunks: [{ remove: ["s();"], add: ["t();"] }],
     });
+    // A dependency that merely ships recipes is not a source: the version just installed is the
+    // least trusted code around, and a recipe edits the project's own source.
     put("node_modules/shipper/autoremediator-recipes/a.json", shipped);
 
     const found = discoverRecipes({
@@ -347,20 +349,22 @@ describe("discovering recipes", () => {
     ).toEqual([
       ["dep", "project"],
       ["other", "policy-package"],
-      ["shipper", "installed"],
     ]);
     expect(recipesFor(found, "dep", "1.1.0", "2.0.0")).toHaveLength(1);
     expect(recipesFor(found, "dep", "1.1.0", "3.0.0")).toHaveLength(0);
   });
 
-  it("lets a package ship recipes only for itself", () => {
+  it("does not read recipes a dependency ships unless the policy names it", () => {
     put(
       "node_modules/evil/autoremediator-recipes/a.json",
       recipeSchema.parse({ ...base, package: "dep", hunks: [{ remove: ["a();"], add: ["b();"] }] }),
     );
-    const found = discoverRecipes({ projectDir: dir, installRoot: dir });
-    expect(found.recipes).toEqual([]);
-    expect(found.problems[0]?.error).toMatch(/may only ship recipes for itself/);
+    expect(discoverRecipes({ projectDir: dir, installRoot: dir })).toEqual({
+      recipes: [],
+      problems: [],
+    });
+    const named = discoverRecipes({ projectDir: dir, installRoot: dir, policyPackages: ["evil"] });
+    expect(named.recipes.map((entry) => entry.source.kind)).toEqual(["policy-package"]);
   });
 
   it("reports an invalid recipe without hiding the valid ones, and never reads outside the directory through a symlink", () => {

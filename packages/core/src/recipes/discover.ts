@@ -28,10 +28,7 @@ export const PACKAGE_RECIPES_DIR = "recipes";
 const MAX_DEPTH = 4;
 const MAX_FILES_PER_SOURCE = 500;
 
-export type RecipeSource =
-  | { kind: "project" }
-  | { kind: "policy-package"; package: string }
-  | { kind: "installed"; package: string };
+export type RecipeSource = { kind: "project" } | { kind: "policy-package"; package: string };
 
 export interface RecipeEntry {
   id: string;
@@ -133,29 +130,6 @@ function packageDir(installRoot: string, name: string): string | undefined {
   }
 }
 
-function installedPackageNames(installRoot: string): string[] {
-  const modules = join(installRoot, "node_modules");
-  let top;
-  try {
-    top = readdirSync(modules, { withFileTypes: true });
-  } catch {
-    return [];
-  }
-  const names: string[] = [];
-  for (const entry of top) {
-    if (entry.name.startsWith(".")) continue;
-    if (entry.name.startsWith("@")) {
-      try {
-        for (const inner of readdirSync(join(modules, entry.name)))
-          names.push(`${entry.name}/${inner}`);
-      } catch {
-        // An unreadable scope directory has no recipes to offer.
-      }
-    } else names.push(entry.name);
-  }
-  return names.filter((name) => NPM_PACKAGE_NAME.test(name)).toSorted();
-}
-
 export function discoverRecipes(options: DiscoverOptions): Discovery {
   const found: Discovery = { recipes: [], problems: [] };
 
@@ -190,22 +164,7 @@ export function discoverRecipes(options: DiscoverOptions): Discovery {
     }
   }
 
-  for (const name of installRoot ? installedPackageNames(installRoot) : []) {
-    const dir = installRoot ? packageDir(installRoot, name) : undefined;
-    if (!dir) continue;
-    collect(
-      join(dir, INSTALLED_RECIPES_DIR),
-      `${name}/${INSTALLED_RECIPES_DIR}`,
-      { kind: "installed", package: name },
-      (recipe) =>
-        recipe.package === name
-          ? undefined
-          : `ignored: ${name} may only ship recipes for itself, this one is for ${recipe.package}`,
-      found,
-    );
-  }
-
-  // The first source wins when the same recipe is found twice (project, then policy, then installed).
+  // The first source wins when the same recipe is found twice (project, then policy).
   const seen = new Set<string>();
   found.recipes = found.recipes.filter((entry) => !seen.has(entry.id) && seen.add(entry.id));
   return found;

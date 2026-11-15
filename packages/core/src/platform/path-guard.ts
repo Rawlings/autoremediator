@@ -5,7 +5,7 @@
  * keyword (see `pathField` in `option-schemas.ts`); this module walks an input alongside that
  * schema, so a new path option is guarded the moment it is tagged.
  */
-import { realpathSync } from "node:fs";
+import { realpathSync, statSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 export const PATH_KEYWORD = "x-path";
@@ -21,8 +21,8 @@ export interface PathGuardSchema {
 export class PathNotAllowedError extends Error {
   readonly field: string;
 
-  constructor(field: string) {
-    super(`Path not allowed for "${field}": outside the allowed roots`);
+  constructor(field: string, reason = "outside the allowed roots") {
+    super(`Path not allowed for "${field}": ${reason}`);
     this.name = "PathNotAllowedError";
     this.field = field;
   }
@@ -68,14 +68,20 @@ export function getAllowedRoots(
   return roots.map((root) => realOrResolve(resolve(root)));
 }
 
-/**
- * Throws `PathNotAllowedError` when any path-valued field of `input` points outside `roots`.
-/** Fields that take either a path or inline content, and what inline content looks like for each. */
-function isInlineContent(key: string, value: string): boolean {
-  if (key === "policy") return /^\s*(\{|---)/.test(value);
-  return key === "reproductionTest";
+const INLINE_POLICY = /^\s*(\{|---)/;
+
+/** A path to an existing regular file. */
+function isFile(path: string): boolean {
+  try {
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
 }
 
+/**
+ * Throws `PathNotAllowedError` when any path-valued field of `input` points outside `roots`.
+ */
 export function assertPathsConfined(
   schema: PathGuardSchema,
   input: unknown,
@@ -116,20 +122,33 @@ export function confinePaths<T>(
   for (const [key, child] of Object.entries(schema.properties ?? {})) {
     const value = record[key];
     if (child[PATH_KEYWORD] && typeof value === "string" && value.length > 0) {
-      if (value.includes("\n")) {
-        // Only fields that accept inline content may carry a newline, and only when it reads as
-        // content. Anywhere else a newline hides a `..` segment from the check but not from the
-        // file system, so it is refused.
-        if (isInlineContent(key, value)) continue;
-        throw new PathNotAllowedError(key);
+      // Content is never accepted from a remote caller. An inline reproduction test is code that
+      // would run on this machine, and an inline policy replaces the project's own. A newline in
+      // any path hides a `..` segment from the check but not from the file system.
+      if (key === "policy" && INLINE_POLICY.test(value)) {
+        throw new PathNotAllowedError(
+          key,
+          "inline policy is not accepted from a remote caller; pass the path of a policy file",
+        );
       }
-      // Inline YAML or JSON in `policy` is content, not a path.
-      if (key === "policy" && /^\s*(\{|---)/.test(value)) continue;
+      if (value.includes("\n")) {
+        throw new PathNotAllowedError(
+          key,
+          key === "reproductionTest"
+            ? "inline scripts are not accepted from a remote caller; pass the path of an existing file"
+            : "a path cannot contain a newline",
+        );
+      }
       const absolute = resolve(key === "cwd" ? base : ownBase, value);
       const full = realOrResolve(absolute);
       if (!roots.some((root) => isInside(root, full))) throw new PathNotAllowedError(key);
-      // `reproductionTest` is a path or a short inline script; the value is left as given.
-      if (key !== "reproductionTest") out[key] = absolute;
+      if (key === "reproductionTest" && !isFile(full)) {
+        throw new PathNotAllowedError(
+          key,
+          "must be the path of an existing file inside the allowed roots; inline scripts are not accepted from a remote caller",
+        );
+      }
+      out[key] = absolute;
     } else if (typeof value === "object" && value !== null) {
       out[key] = confinePaths(child, value, roots, ownBase, depth + 1);
     }

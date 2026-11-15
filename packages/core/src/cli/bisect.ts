@@ -11,6 +11,7 @@ export interface BisectCliOptions {
   maxSteps?: number;
   packageManager?: string;
   ignoreScripts?: boolean;
+  runScripts?: boolean;
   apply?: boolean;
   outputFormat: OutputFormat;
 }
@@ -117,7 +118,11 @@ export async function runBisect(opts: BisectCliOptions): Promise<void> {
       ...(opts.packageManager
         ? { packageManager: opts.packageManager as "npm" | "pnpm" | "yarn" }
         : {}),
-      ...(opts.ignoreScripts ? { ignoreScripts: true } : {}),
+      ...(opts.runScripts
+        ? { ignoreScripts: false }
+        : opts.ignoreScripts
+          ? { ignoreScripts: true }
+          : {}),
       ...(opts.apply ? { apply: true } : {}),
       signal: controller.signal,
     });

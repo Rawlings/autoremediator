@@ -1,3 +1,4 @@
+import { PACKAGE_VERSION } from "../../version.js";
 /**
  * Files of the Claude Code plugin and marketplace that ship in this repository under
  * `plugins/` and `.claude-plugin/`. Generated from the same text `init` writes, so the plugin
@@ -70,14 +71,14 @@ export function claudeCodePluginFiles(): Record<string, string> {
       keywords: ["security", "npm", "cve", "dependencies", "remediation"],
     }),
     "plugins/claude-code/.mcp.json": json({
-      mcpServers: { autoremediator: mcpServerEntry("latest") },
+      mcpServers: { autoremediator: mcpServerEntry(PACKAGE_VERSION) },
     }),
     "plugins/claude-code/hooks/hooks.json": json({
       hooks: {
         PreToolUse: [
           {
             matcher: "Bash",
-            hooks: [{ type: "command", command: guardHookCommand("latest"), timeout: 30 }],
+            hooks: [{ type: "command", command: guardHookCommand(PACKAGE_VERSION), timeout: 30 }],
           },
         ],
       },

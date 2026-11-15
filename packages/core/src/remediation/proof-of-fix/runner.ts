@@ -10,12 +10,12 @@ import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 
-import { safeExeca } from "../../platform/safe-exec.js";
 import type {
   ProofOfFixPhaseResult,
   ProofOfFixStatus,
   ProofOfFixVerification,
 } from "../../platform/types.js";
+import { execProofScript, ProofSandboxError } from "./exec.js";
 
 export interface RunProofOfFixPhaseOptions {
   stage: "negative" | "positive";
@@ -246,14 +246,9 @@ export async function runProofOfFixPhase(
   const started = Date.now();
 
   const isTs = testFilePath.endsWith(".ts");
-  const nodeArgs = isTs ? ["--experimental-strip-types", testFilePath] : [testFilePath];
 
   try {
-    const result = await safeExeca("node", nodeArgs, {
-      cwd,
-      timeoutMs,
-      stdio: "pipe",
-    });
+    const result = await execProofScript({ testFilePath, cwd, timeoutMs, isTs });
 
     const durationMs = Date.now() - started;
     const stdout = result.stdout ?? "";
@@ -283,6 +278,18 @@ export async function runProofOfFixPhase(
     };
   } catch (err: unknown) {
     const durationMs = Date.now() - started;
+    if (err instanceof ProofSandboxError) {
+      // Never a pass, in either stage: a script that did not run proves nothing.
+      return {
+        executed: false,
+        passed: false,
+        harnessFailure: true,
+        exitCode: 1,
+        output: err.message,
+        durationMs,
+        error: err.message,
+      };
+    }
     const execaErr = err as {
       exitCode?: number;
       stdout?: string;

@@ -832,8 +832,9 @@ export function createProgram(): Command {
     .option("--package-manager <name>", "npm|pnpm|yarn (default: from the lockfile)")
     .option(
       "--ignore-scripts",
-      "Pass --ignore-scripts to every install so package install scripts do not run",
+      "Pass --ignore-scripts to every install so package install scripts do not run (default)",
     )
+    .option("--run-scripts", "Let package install scripts run during the bisect installs")
     .option(
       "--apply",
       "Apply the recommended pin through the run machinery instead of only planning it",

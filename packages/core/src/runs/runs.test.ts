@@ -162,6 +162,40 @@ describe("snapshot store", () => {
     writeFileSync(join(dir, "snap", "blobs", blob), "tampered");
     expect(() => loadSnapshot(join(dir, "snap"))).toThrow(/corrupt/);
   });
+
+  it("refuses a snapshot that names a path outside the project", () => {
+    // A cloned repository can carry its own .autoremediator/runs; a rollback writes these paths.
+    for (const hostile of [
+      "../../.ssh/authorized_keys",
+      "/etc/cron.d/x",
+      "a/../../b",
+      String.raw`C:\x`,
+    ]) {
+      saveSnapshot(join(dir, "snap"), {
+        cwd: "/p",
+        isGit: false,
+        fileSnapshots: new Map(),
+      });
+      const manifestPath = join(dir, "snap", "snapshot.json");
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+        files: Record<string, string | null>;
+      };
+      manifest.files[hostile] = null;
+      writeFileSync(manifestPath, JSON.stringify(manifest));
+      expect(() => loadSnapshot(join(dir, "snap"))).toThrow(/outside the project/);
+    }
+  });
+
+  it("refuses a blob reference that is not a content hash", () => {
+    saveSnapshot(join(dir, "snap"), { cwd: "/p", isGit: false, fileSnapshots: new Map() });
+    const manifestPath = join(dir, "snap", "snapshot.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+      files: Record<string, string | null>;
+    };
+    manifest.files["package.json"] = "../../../../etc/passwd";
+    writeFileSync(manifestPath, JSON.stringify(manifest));
+    expect(() => loadSnapshot(join(dir, "snap"))).toThrow(/invalid blob reference/);
+  });
 });
 
 describe("RunStore", () => {

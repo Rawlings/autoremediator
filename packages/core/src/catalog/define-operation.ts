@@ -49,6 +49,12 @@ export interface Operation {
   /** Flat input object. HTTP nests everything outside `http.positional` under `options`. */
   input: z.ZodObject;
   annotations: OperationAnnotations;
+  /**
+   * The operation runs code that belongs to the project or a dependency (installs, the project's
+   * tests, a reproduction script) or edits files that get run. Such a call can read every secret
+   * the server holds, so it needs the `admin` role whatever its annotations say.
+   */
+  runsProjectCode?: boolean;
   /** What a successful call returns, as the OpenAPI document describes it. */
   response: ResponseSpec;
   /** Expose as an MCP tool. */

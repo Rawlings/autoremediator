@@ -67,6 +67,13 @@ export interface SandboxOptions {
   maxOutputBytes: number;
   /** V8 old-space limit in MiB. */
   maxHeapMb?: number;
+  /** Extra `node` flags placed before the script (for example `--experimental-strip-types`). */
+  nodeArgs?: readonly string[];
+  /**
+   * Where the preload file is written, when `dir` is a project that should stay untouched. It is
+   * readable by the script, like `dir`. Default: `dir`.
+   */
+  preloadDir?: string;
 }
 
 export interface SandboxResult {
@@ -97,7 +104,8 @@ export function runSandboxed(options: SandboxOptions): Promise<SandboxResult> {
   }
   const { script, timeoutMs, maxOutputBytes, maxHeapMb = 256 } = options;
   const dir = realpathSync(options.dir);
-  writeFileSync(join(dir, PRELOAD_NAME), PRELOAD, "utf8");
+  const preloadDir = options.preloadDir ? realpathSync(options.preloadDir) : dir;
+  writeFileSync(join(preloadDir, PRELOAD_NAME), PRELOAD, "utf8");
 
   return new Promise((resolve, reject) => {
     const started = Date.now();
@@ -106,9 +114,11 @@ export function runSandboxed(options: SandboxOptions): Promise<SandboxResult> {
       [
         "--permission",
         `--allow-fs-read=${dir}`,
+        ...(preloadDir === dir ? [] : [`--allow-fs-read=${preloadDir}`]),
         `--max-old-space-size=${maxHeapMb}`,
+        ...(options.nodeArgs ?? []),
         "--require",
-        join(dir, PRELOAD_NAME),
+        join(preloadDir, PRELOAD_NAME),
         join(dir, script),
       ],
       {

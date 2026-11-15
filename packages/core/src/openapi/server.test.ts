@@ -364,3 +364,14 @@ describe("openapi server", () => {
     });
   });
 });
+
+describe("static token parsing", () => {
+  it("keeps a colon inside the secret and does not accept a prefix of it", async () => {
+    const { getRoleForToken } = await import("./rbac.js");
+    const envTokens = "admin:abc:def,reader:plain";
+    expect(getRoleForToken("abc:def", envTokens)).toBe("admin");
+    expect(getRoleForToken("abc", envTokens)).toBeUndefined();
+    expect(getRoleForToken("plain", envTokens)).toBe("reader");
+    expect(getRoleForToken("", envTokens)).toBeUndefined();
+  });
+});

@@ -7,6 +7,7 @@ import {
   type ToolSet,
 } from "ai";
 
+import { redactSecrets } from "../../platform/redact.js";
 import type {
   RepairAgent,
   RepairEnv,
@@ -53,14 +54,17 @@ function promptFor(task: RepairTask): string {
 
 function describeStep(step: StepResult<ToolSet>, index: number): TranscriptEntry[] {
   const entries: TranscriptEntry[] = [];
-  if (step.text.trim()) entries.push({ step: index, text: step.text.trim().slice(0, 2000) });
+  if (step.text.trim())
+    entries.push({ step: index, text: redactSecrets(step.text.trim().slice(0, 2000)) });
   const results = new Map(step.toolResults.map((result) => [result.toolCallId, result.output]));
   for (const call of step.toolCalls) {
     const output = results.get(call.toolCallId);
     const shown = typeof output === "string" ? output : JSON.stringify(output ?? "");
     entries.push({
       step: index,
-      text: `${call.toolName}(${JSON.stringify(call.input).slice(0, 400)}) -> ${shown.slice(0, 600)}`,
+      text: redactSecrets(
+        `${call.toolName}(${JSON.stringify(call.input).slice(0, 400)}) -> ${shown.slice(0, 600)}`,
+      ),
     });
   }
   return entries;

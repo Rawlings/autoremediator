@@ -17,6 +17,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { getModelSpec } from "../../platform/config.js";
+import { SANDBOX_ENV, type SandboxReport, verifySandbox } from "../../platform/sandbox.js";
 import { findVulnerableSymbols } from "../../remediation/impact/fix-diff.js";
 import { resolveLanguageModel } from "../../remediation/patch/model.js";
 import { isAdvisoryId } from "../incident/target.js";
@@ -38,7 +39,6 @@ import {
 } from "./evidence.js";
 import { CONFIRM_RUNS, createHarness, sha256 } from "./harness.js";
 import { fetchVerifiedPackage, installFetchedPackage, listPublishedVersions } from "./install.js";
-import { SANDBOX_ENV, type SandboxReport, verifySandbox } from "./sandbox.js";
 import type {
   AdvisoryContext,
   AdvisoryLookup,
@@ -65,7 +65,7 @@ export {
   SandboxUnavailableError,
   verifySandbox,
   type SandboxReport,
-} from "./sandbox.js";
+} from "../../platform/sandbox.js";
 export type {
   AdvisoryContext,
   JudgedRun,

@@ -242,6 +242,11 @@ export async function restoreProjectSnapshot(snapshot: ProjectSnapshot): Promise
   // 1. In-memory exact file restoration for all tracked and dynamically touched files
   for (const [relPath, previousContent] of snapshot.fileSnapshots.entries()) {
     const fullPath = join(snapshot.cwd, relPath);
+    // A snapshot can come from a file the project carries; never write or delete outside it.
+    const escape = relative(snapshot.cwd, fullPath);
+    if (escape.startsWith("..") || isAbsolute(escape)) {
+      throw new Error(`Refusing to restore "${relPath}": it is outside the project.`);
+    }
     if (previousContent === null) {
       if (existsSync(fullPath)) {
         try {

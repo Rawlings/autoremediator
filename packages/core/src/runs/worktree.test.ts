@@ -13,7 +13,13 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { createWorktree, worktreeDiff, worktreeRoot } from "./worktree.js";
+import {
+  assertManagedWorktree,
+  createWorktree,
+  discardWorktree,
+  worktreeDiff,
+  worktreeRoot,
+} from "./worktree.js";
 
 let dir: string;
 let cache: string;
@@ -166,5 +172,26 @@ describe("worktreeDiff", () => {
     } finally {
       await wt.remove();
     }
+  });
+});
+
+describe("managed worktrees", () => {
+  it("refuses to use or delete a directory that is not in the worktree cache", async () => {
+    const victim = mkdtempSync(join(tmpdir(), "victim-"));
+    writeFileSync(join(victim, "keep.txt"), "important");
+    try {
+      expect(() => assertManagedWorktree(victim)).toThrow(/not a checkout made by autoremediator/);
+      await expect(discardWorktree(dir, victim)).rejects.toThrow(/not a checkout/);
+      expect(existsSync(join(victim, "keep.txt"))).toBe(true);
+    } finally {
+      rmSync(victim, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts a path under the cache, and not the cache itself", () => {
+    const root = join(cache, "autoremediator", "worktrees");
+    expect(() => assertManagedWorktree(join(root, "abc", "attempt-1"), env)).not.toThrow();
+    expect(() => assertManagedWorktree(root, env)).toThrow();
+    expect(() => assertManagedWorktree(join(root, "..", "elsewhere"), env)).toThrow();
   });
 });

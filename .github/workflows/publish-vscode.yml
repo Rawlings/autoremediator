@@ -3,7 +3,6 @@ name: Publish VS Code extension
 on:
   push:
     branches:
-      - main
       - master
     paths:
       - packages/vscode-extension/**
@@ -15,16 +14,20 @@ permissions:
 
 jobs:
   verify:
+    if: github.ref == 'refs/heads/master'
     uses: ./.github/workflows/ci.yml
     permissions:
       contents: read
 
   publish:
     needs: verify
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5
@@ -46,4 +49,6 @@ jobs:
         working-directory: packages/vscode-extension
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: npx @vscode/vsce@3.3.2 publish --no-dependencies --pat "$VSCE_PAT"
+        # The locked vsce from the workspace, not an `npx` download with its own unlocked tree
+        # next to the marketplace token.
+        run: pnpm exec vsce publish --no-dependencies --pat "$VSCE_PAT"

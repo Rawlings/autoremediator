@@ -9,6 +9,7 @@ import {
   type MemoryProposal,
   PROPOSAL_KINDS,
 } from "../../platform/memory/propose.js";
+import { redactSecrets } from "../../platform/redact.js";
 import type { RepairBudget, RepairCommands } from "../../platform/repair-agent.js";
 import { runCommandCheck, tail } from "../verify/command-check.js";
 import { type ScopeGuard, ScopeViolation } from "./scope-guard.js";
@@ -287,8 +288,14 @@ export function createRepairTools(context: RepairToolContext): ToolSet {
       inputSchema: z.object({ packageName: z.string() }),
       execute: async ({ packageName }) => {
         if (!PACKAGE_NAME.test(packageName)) return `Error: "${packageName}" is not a package name`;
-        const root = join(guard.root, "node_modules", packageName);
+        let root = join(guard.root, "node_modules", packageName);
         if (!existsSync(root)) return `Error: ${packageName} is not installed`;
+        try {
+          // A linked dependency can point anywhere; its docs are only read from inside the checkout.
+          root = guard.resolveInside(root);
+        } catch (error) {
+          return refuse(error);
+        }
         const out: string[] = [];
         try {
           const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as Record<
@@ -305,8 +312,13 @@ export function createRepairTools(context: RepairToolContext): ToolSet {
           out.push(`${packageName}: package.json unreadable`);
         }
         for (const name of DOC_FILES) {
-          const file = join(root, name);
+          let file = join(root, name);
           if (!existsSync(file)) continue;
+          try {
+            file = guard.resolveInside(file);
+          } catch {
+            continue;
+          }
           out.push(`--- ${name} ---\n${readFileSync(file, "utf8").slice(0, MAX_DOC_BYTES)}`);
           if (name !== "README.md") break;
         }
@@ -372,7 +384,7 @@ export function createRepairTools(context: RepairToolContext): ToolSet {
         const outcome = await runCommandCheck(command, guard.root);
         return outcome.passed
           ? `${name}: passed`
-          : `${name}: FAILED\n${tail(outcome.output, 40).join("\n")}`;
+          : `${name}: FAILED\n${redactSecrets(tail(outcome.output, 40).join("\n"))}`;
       },
     }),
 

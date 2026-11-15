@@ -8,6 +8,8 @@ import { promisify } from "node:util";
 
 import type { DeltaScanReport, ReachabilityAssessment, ScanReport } from "autoremediator";
 
+import { CLI_VERSION } from "./cli-version.js";
+
 const execFileAsync = promisify(execFile);
 
 /** Same advisory ids the CLI accepts: CVE ids and GitHub advisory (GHSA) ids. */
@@ -36,7 +38,7 @@ function detectPackageManager(cwd: string): "npm" | "pnpm" | "yarn" {
 function findBin(cwd: string): { bin: string; extraArgs: string[] } {
   const local = join(cwd, "node_modules", ".bin", "autoremediator");
   if (existsSync(local)) return { bin: local, extraArgs: [] };
-  return { bin: "npx", extraArgs: ["-y", "autoremediator"] };
+  return { bin: "npx", extraArgs: ["-y", `autoremediator@${CLI_VERSION}`] };
 }
 
 // In-memory debounce / scan cache keyed by cwd

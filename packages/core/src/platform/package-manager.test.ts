@@ -65,10 +65,14 @@ describe("package-manager commands", () => {
 describe("resolveInstallCommand", () => {
   // Installs run after the manifest changed, so the lockfile must be allowed to change.
   it.each([
-    ["npm", {}, ["npm", "install", "--prefer-offline"]],
-    ["pnpm", {}, ["pnpm", "install", "--no-frozen-lockfile", "--prefer-offline"]],
-    ["yarn", {}, ["yarn", "install"]],
-    ["bun", {}, ["bun", "install"]],
+    ["npm", {}, ["npm", "install", "--prefer-offline", "--ignore-scripts"]],
+    [
+      "pnpm",
+      {},
+      ["pnpm", "install", "--no-frozen-lockfile", "--prefer-offline", "--ignore-scripts"],
+    ],
+    ["yarn", {}, ["yarn", "install", "--ignore-scripts"]],
+    ["bun", {}, ["bun", "install", "--ignore-scripts"]],
     ["deno", {}, ["deno", "install"]],
   ] as const)("never freezes the lockfile by default (%s)", (pm, constraints, expected) => {
     expect(resolveInstallCommand(pm, constraints)).toEqual(expected);
@@ -81,33 +85,51 @@ describe("resolveInstallCommand", () => {
   });
 
   it("only uses prefer-offline when the mode or override asks for it", () => {
-    expect(resolveInstallCommand("npm", { installMode: "standard" })).toEqual(["npm", "install"]);
+    expect(resolveInstallCommand("npm", { installMode: "standard" })).toEqual([
+      "npm",
+      "install",
+      "--ignore-scripts",
+    ]);
     expect(resolveInstallCommand("pnpm", { installMode: "standard" })).toEqual([
       "pnpm",
       "install",
       "--no-frozen-lockfile",
+      "--ignore-scripts",
     ]);
     expect(
       resolveInstallCommand("npm", { installMode: "standard", installPreferOffline: true }),
-    ).toEqual(["npm", "install", "--prefer-offline"]);
+    ).toEqual(["npm", "install", "--prefer-offline", "--ignore-scripts"]);
     expect(resolveInstallCommand("pnpm", { installPreferOffline: false })).toEqual([
       "pnpm",
       "install",
       "--no-frozen-lockfile",
+      "--ignore-scripts",
     ]);
   });
 
   it("freezes only when explicitly enforced, using each manager's own flag", () => {
     const frozen = { enforceFrozenLockfile: true, installMode: "standard" as const };
-    expect(resolveInstallCommand("npm", frozen)).toEqual(["npm", "ci"]);
-    expect(resolveInstallCommand("pnpm", frozen)).toEqual(["pnpm", "install", "--frozen-lockfile"]);
+    expect(resolveInstallCommand("npm", frozen)).toEqual(["npm", "ci", "--ignore-scripts"]);
+    expect(resolveInstallCommand("pnpm", frozen)).toEqual([
+      "pnpm",
+      "install",
+      "--frozen-lockfile",
+      "--ignore-scripts",
+    ]);
     expect(resolveInstallCommand("yarn", frozen, 1)).toEqual([
       "yarn",
       "install",
       "--frozen-lockfile",
+      "--ignore-scripts",
     ]);
+    // Yarn Berry has no flag: safeExeca turns scripts off through YARN_ENABLE_SCRIPTS.
     expect(resolveInstallCommand("yarn", frozen, 4)).toEqual(["yarn", "install", "--immutable"]);
-    expect(resolveInstallCommand("bun", frozen)).toEqual(["bun", "install", "--frozen-lockfile"]);
+    expect(resolveInstallCommand("bun", frozen)).toEqual([
+      "bun",
+      "install",
+      "--frozen-lockfile",
+      "--ignore-scripts",
+    ]);
     expect(resolveInstallCommand("deno", frozen)).toEqual(["deno", "install", "--frozen"]);
   });
 
@@ -118,14 +140,23 @@ describe("resolveInstallCommand", () => {
   it("scopes installs to a workspace", () => {
     expect(
       resolveInstallCommand("npm", { workspace: "packages/app", installMode: "standard" }),
-    ).toEqual(["npm", "install", "--workspace", "packages/app"]);
+    ).toEqual(["npm", "install", "--ignore-scripts", "--workspace", "packages/app"]);
     expect(resolveInstallCommand("pnpm", { workspace: "app", installMode: "standard" })).toEqual([
       "pnpm",
       "--filter",
       "app",
       "install",
       "--no-frozen-lockfile",
+      "--ignore-scripts",
     ]);
+  });
+
+  it("skips dependency lifecycle scripts unless the policy file turns them on", () => {
+    expect(resolveInstallCommand("npm", { installMode: "standard" })).toContain("--ignore-scripts");
+    expect(
+      resolveInstallCommand("npm", { installMode: "standard", installScripts: "all" }),
+    ).not.toContain("--ignore-scripts");
+    expect(resolveInstallCommand("bun", { installScripts: "all" })).toEqual(["bun", "install"]);
   });
 });
 

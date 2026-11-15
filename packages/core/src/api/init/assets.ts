@@ -216,12 +216,14 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          node-version: 22
+          persist-credentials: false
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 26
       - name: Remediate known vulnerabilities
-        run: npx -y autoremediator@^${PACKAGE_VERSION} --audit --ci --create-change-request --output-format json
+        run: npx -y --ignore-scripts autoremediator@${PACKAGE_VERSION} --audit --ci --create-change-request --output-format json
         env:
           GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
 `;

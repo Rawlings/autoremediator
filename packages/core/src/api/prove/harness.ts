@@ -13,12 +13,12 @@ import { createHash } from "node:crypto";
 import { realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { runSandboxed, type SandboxOptions, type SandboxResult } from "../../platform/sandbox.js";
 import {
   isAssertionFailure,
   sanitizePathLeakage,
   stripStackTraceFrames,
 } from "../../remediation/proof-of-fix/runner.js";
-import { runSandboxed, type SandboxOptions, type SandboxResult } from "./sandbox.js";
 import { screenScript } from "./screen.js";
 import type { JudgedRun, RunRecord, TrialResult } from "./types.js";
 

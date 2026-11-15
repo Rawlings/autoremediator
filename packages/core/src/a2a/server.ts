@@ -20,6 +20,7 @@ import {
 import { authorizeRole, callerIdentity, type Role } from "../platform/http-auth.js";
 import { HttpError, readBody, sendJson } from "../platform/http-security.js";
 import { confinePaths, getAllowedRoots, PathNotAllowedError } from "../platform/path-guard.js";
+import { redactSecrets } from "../platform/redact.js";
 import { PACKAGE_VERSION } from "../version.js";
 import {
   A2A_PROTOCOL_VERSION,
@@ -317,7 +318,7 @@ async function sendMessage(
       ],
     };
   } catch (error) {
-    const text = error instanceof Error ? error.message : String(error);
+    const text = redactSecrets(error instanceof Error ? error.message : String(error));
     task = {
       ...base,
       status: {

@@ -13,7 +13,10 @@ export class ScopeViolation extends Error {
 
 /** Files that hold credentials: an agent has no reason to read them, and its context goes to a provider. */
 const SECRET_NAMES =
-  /^(\.env(\..*)?|\.npmrc|\.yarnrc\.yml|\.pypirc|id_rsa.*|id_ed25519.*|.*\.(pem|key|p12|pfx))$/i;
+  /^(\.env(\..*)?|\.envrc|\.npmrc|\.yarnrc(\.yml)?|\.netrc|_netrc|\.git-credentials|\.pypirc|\.dev\.vars|credentials(\..*)?|.*serviceaccount.*\.json|.*\.tfvars|id_rsa.*|id_ed25519.*|.*\.(pem|key|p12|pfx))$/i;
+
+/** A test file the agent would be creating: it could hold anything, and `runCheck` runs it. */
+const TEST_FILE = /(?:\.|\/)(?:test|spec)\.[cm]?[jt]sx?$|(?:^|\/)__tests__\//i;
 
 /**
  * What an agent working in a checkout may read and write. Everything is confined to the checkout
@@ -60,6 +63,14 @@ export class ScopeGuard {
     if (rel === "") throw new ScopeViolation("cannot write to the project root itself");
     const kind = classifyPath(rel);
     if (kind === "forbidden") throw new ScopeViolation(`"${rel}" is never changed by remediation`);
+    if (kind === "tooling") {
+      throw new ScopeViolation(`"${rel}" is build or test configuration, which runs code`);
+    }
+    if (kind === "source" && !existsSync(full) && TEST_FILE.test(rel)) {
+      throw new ScopeViolation(
+        `"${rel}" would be a new test file: only existing tests may be edited, because tests run with the project's privileges`,
+      );
+    }
     if (kind !== "source") {
       throw new ScopeViolation(
         `"${rel}" is not project source: only JavaScript and TypeScript files may be edited (dependency files change through the upgrade itself)`,

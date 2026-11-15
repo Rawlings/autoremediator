@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { jobRegistry } from "../../platform/jobs.js";
 import type { AsyncRemediationJob, JobHandle } from "../../platform/jobs.js";
+import { redactSecrets } from "../../platform/redact.js";
 import type {
   RemediateOptions,
   PortfolioTarget,
@@ -38,7 +39,7 @@ async function executeJob(job: AsyncRemediationJob, work: () => Promise<unknown>
     job.completedAt = new Date().toISOString();
   } catch (error: unknown) {
     job.status = "failed";
-    job.error = error instanceof Error ? error.message : String(error);
+    job.error = redactSecrets(error instanceof Error ? error.message : String(error));
     job.completedAt = new Date().toISOString();
   }
 }

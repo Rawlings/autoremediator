@@ -87,10 +87,13 @@ The self-test result is recorded in the evidence (`sandbox.denied`).
   not control, run it in a container.
 - Windows: the sandbox needs process groups and is not available there.
 
-**A kept script later runs outside this sandbox.** `--proof-of-fix` and `--require-proof-of-fix` run
-the script in your project with `node`, as they always have. That is why the screen exists, why the
-script is short and written where you can review it, and why you should review it. The harness has
-proven it behaved in the sandbox, not that it is harmless in your project.
+**A kept script runs in the same sandbox later.** `--proof-of-fix` and `--require-proof-of-fix` run
+the script (yours, or one `prove` kept) under the same permission model: no network, no child
+processes, no writes, an empty environment, reads limited to the project. The sandbox is self-tested
+once per process; if it does not hold on this machine the proof phase is a harness failure, never a
+pass. The script must be inside the project. On Windows there is no sandbox, and the script runs with
+plain `node` in your project, so review it there. Reading is still allowed inside the project, and
+the output goes into the run's evidence, so a script can print what it reads: review what you keep.
 
 ## Where things are written
 

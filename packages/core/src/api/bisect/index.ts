@@ -113,11 +113,14 @@ const describeUpdate = (item: BisectedPackage): string =>
 function installArgv(manager: PackageManager, frozen: boolean, ignoreScripts: boolean): string[] {
   const argv = resolveInstallCommand(
     manager,
-    { installMode: "standard", enforceFrozenLockfile: frozen },
+    {
+      installMode: "standard",
+      enforceFrozenLockfile: frozen,
+      installScripts: ignoreScripts ? "none" : "all",
+    },
     1,
   );
   if (manager === "npm") argv.push("--no-audit", "--no-fund");
-  if (ignoreScripts) argv.push("--ignore-scripts");
   return argv;
 }
 
@@ -267,7 +270,7 @@ export async function bisectLockfile(
 
   const timeoutMs = Math.round(timeoutSeconds * 1000);
   const installTimeoutMs = Math.max(LONG_RUNNING_TIMEOUT_MS, timeoutMs);
-  const ignoreScripts = options.ignoreScripts === true;
+  const ignoreScripts = options.ignoreScripts !== false;
   const paths: Array<[string, string]> = [];
 
   const tail = (text: string, max: number) => sanitizeOutput(text, { env, paths, maxChars: max });

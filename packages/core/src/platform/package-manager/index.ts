@@ -83,10 +83,19 @@ export function resolveInstallCommand(
   const installMode = constraints?.installMode ?? "deterministic";
   const frozen = constraints?.enforceFrozenLockfile === true;
   const workspace = constraints?.workspace;
+  // The version being installed is one this tool just chose, so its lifecycle scripts are not run
+  // unless the policy file says so. Yarn Berry has no flag for it; `safeExeca` sets the
+  // environment switch for `yarn install` instead.
+  const ignoreScripts = (constraints?.installScripts ?? "none") !== "all";
 
   if (pm === "bun") {
     return withWorkspace(
-      ["bun", "install", ...(frozen ? ["--frozen-lockfile"] : [])],
+      [
+        "bun",
+        "install",
+        ...(frozen ? ["--frozen-lockfile"] : []),
+        ...(ignoreScripts ? ["--ignore-scripts"] : []),
+      ],
       pm,
       workspace,
     );
@@ -113,6 +122,9 @@ export function resolveInstallCommand(
 
   const preferOffline = constraints?.installPreferOffline ?? installMode !== "standard";
   if (preferOffline && pm !== "yarn") command.push("--prefer-offline");
+  if (ignoreScripts && (pm === "npm" || pm === "pnpm" || (pm === "yarn" && (yarnMajor ?? 1) < 2))) {
+    command.push("--ignore-scripts");
+  }
 
   return withWorkspace(command, pm, workspace);
 }

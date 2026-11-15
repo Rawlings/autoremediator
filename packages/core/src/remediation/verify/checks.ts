@@ -123,6 +123,8 @@ const scope: CheckFn = async (context) => {
     if (kind === "forbidden") violations.push(`${file}: never changed by remediation`);
     else if (kind === "source" && !context.options.allowSourceEdits) {
       violations.push(`${file}: project source, but this change may only touch dependency files`);
+    } else if (kind === "tooling") {
+      violations.push(`${file}: build or test configuration, which runs code`);
     } else if (kind === "other") violations.push(`${file}: not a dependency file`);
   }
   return violations.length > 0

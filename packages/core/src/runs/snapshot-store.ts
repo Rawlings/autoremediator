@@ -1,5 +1,5 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 
 import type { ProjectSnapshot } from "../platform/rollback.js";
 import { sha256 } from "./hash.js";
@@ -48,10 +48,31 @@ export function saveSnapshot(dir: string, snapshot: ProjectSnapshot): void {
   writeFileSync(join(dir, "snapshot.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 }
 
+/**
+ * A snapshot lives in `.autoremediator/runs`, inside the project, so a cloned repository can carry
+ * one of its own. A rollback writes and deletes the paths in it: they must stay inside the project.
+ */
+export function assertProjectRelativePath(path: string): void {
+  const segments = path.replaceAll("\\", "/").split("/");
+  if (
+    path === "" ||
+    path.includes("\0") ||
+    isAbsolute(path) ||
+    /^[a-zA-Z]:/.test(path) ||
+    segments.includes("..")
+  ) {
+    throw new Error(`Snapshot names a path outside the project: "${path}".`);
+  }
+}
+
 export function loadSnapshot(dir: string): ProjectSnapshot {
   const manifest = JSON.parse(readFileSync(join(dir, "snapshot.json"), "utf8")) as SnapshotManifest;
   const fileSnapshots = new Map<string, string | null>();
   for (const [path, hash] of Object.entries(manifest.files)) {
+    assertProjectRelativePath(path);
+    if (hash !== null && !/^[0-9a-f]{64}$/.test(hash)) {
+      throw new Error(`Snapshot has an invalid blob reference for "${path}".`);
+    }
     if (hash === null) {
       fileSnapshots.set(path, null);
       continue;

@@ -42,9 +42,7 @@ const action =
   };
 
 const sourceLabel = (source: { kind: string; package?: string }): string =>
-  source.kind === "project"
-    ? "this project"
-    : `${source.kind === "installed" ? "shipped by" : "recipes package"} ${source.package}`;
+  source.kind === "project" ? "this project" : `recipes package ${source.package}`;
 
 export function addRecipesCommand(program: Command): void {
   const recipes = program

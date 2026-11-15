@@ -354,6 +354,7 @@ export const OPERATIONS: readonly Operation[] = [
   }),
   defineOperation({
     name: "verifyRun",
+    runsProjectCode: true,
     title: "Verify a run",
     description:
       "Judge a run's project as it is now with deterministic checks, cheapest first, stopping at the first failure: scope (only dependency files changed), policy, supply-chain gate, frozen install, advisories no longer matching installed packages, then type check, tests and the reproduction test when requested. No model is consulted. The result is stored with the run.",
@@ -366,6 +367,7 @@ export const OPERATIONS: readonly Operation[] = [
   }),
   defineOperation({
     name: "startAttempt",
+    runsProjectCode: true,
     title: "Start an attempt",
     description:
       "Open an isolated checkout of the project with one plan item's upgrade applied and installed, so you can make the project work with it. Returns the checkout path (edit files there, or send diffs with proposePatch) and what the verifier found wrong. The project itself is not touched. Finish with finalizeAttempt, or abandonAttempt.",
@@ -383,6 +385,7 @@ export const OPERATIONS: readonly Operation[] = [
   }),
   defineOperation({
     name: "proposePatch",
+    runsProjectCode: true,
     title: "Apply a patch to an attempt",
     description:
       "Apply a unified diff to an open attempt's checkout. Only project source (.js/.ts and variants) may change, the patch must be plain text and apply cleanly. Verify with verifyAttempt afterwards.",
@@ -400,6 +403,7 @@ export const OPERATIONS: readonly Operation[] = [
   }),
   defineOperation({
     name: "verifyAttempt",
+    runsProjectCode: true,
     title: "Verify an attempt",
     description:
       "Run the verifier on an open attempt's checkout: scope, policy, supply chain, advisories, and the project's type check, tests and reproduction test when requested. Returns what is wrong, if anything, so you can fix it. It is the same judge that decides finalizeAttempt.",
@@ -748,6 +752,7 @@ export const OPERATIONS: readonly Operation[] = [
   }),
   defineOperation({
     name: "applyRecipe",
+    runsProjectCode: true,
     title: "Apply a recipe to an attempt",
     description:
       "Apply a recipe to an open attempt's checkout and judge it: its hunks must match the project's source exactly (no fuzz), the resulting diff goes through the same validation as proposePatch, and the verifier decides. If it does not pass, the recipe is undone and the checkout is as it was. Recipe ids come from listRecipes or startAttempt.",
@@ -777,7 +782,7 @@ export const OPERATIONS: readonly Operation[] = [
     name: "bisectLockfile",
     title: "Bisect a lockfile change",
     description:
-      "Find which package update in the lockfile difference between a good and a bad git ref makes a shell command fail (a dependency published a bad release, CI broke with no code change). Installs both refs and subsets of the updates in isolated git worktrees, runs the command in them, narrows down with delta debugging, and returns the culprit (or the smallest set that fails only together) with the evidence and a plan that pins it back. Runs the given shell command with the caller's privileges, and package install scripts unless ignoreScripts is set. Command line and SDK only.",
+      "Find which package update in the lockfile difference between a good and a bad git ref makes a shell command fail (a dependency published a bad release, CI broke with no code change). Installs both refs and subsets of the updates in isolated git worktrees, runs the command in them, narrows down with delta debugging, and returns the culprit (or the smallest set that fails only together) with the evidence and a plan that pins it back. Runs the given shell command with the caller's privileges, and package install scripts only when ignoreScripts is false. Command line and SDK only.",
     input: z
       .object({
         cwd: pathField(OPTION_DESCRIPTIONS.cwd).optional(),
@@ -826,7 +831,7 @@ export const OPERATIONS: readonly Operation[] = [
           .boolean()
           .optional()
           .describe(
-            "Pass --ignore-scripts to every install so package install scripts do not run.",
+            "Pass --ignore-scripts to every install so package install scripts do not run. Default true; false lets them run.",
           ),
         apply: z
           .boolean()

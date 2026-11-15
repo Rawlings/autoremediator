@@ -91,6 +91,7 @@ export const POLICY_KEY_COVERAGE: Readonly<
   "sla.low": { kind: "loosening" },
   skipUnreachable: { kind: "loosening" },
   trustMaintainerVex: { kind: "loosening" },
+  installScripts: { kind: "loosening" },
   "dispositionPolicy.minConfidenceForAutoApply": { kind: "loosening" },
   "dispositionPolicy.holdForTransitive": { kind: "loosening" },
   "dispositionPolicy.escalateOnKev": { kind: "loosening" },
@@ -273,6 +274,12 @@ export function findLoosenings(
     });
   }
 
+  if ((before.installScripts ?? "none") !== "all" && after.installScripts === "all") {
+    out.push({
+      key: "installScripts",
+      description: "Dependency install scripts run during installs again.",
+    });
+  }
   if (before.trustMaintainerVex !== true && after.trustMaintainerVex === true) {
     out.push({
       key: "trustMaintainerVex",

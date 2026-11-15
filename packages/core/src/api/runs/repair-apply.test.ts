@@ -388,7 +388,7 @@ describe("applyPlan with agent repair", () => {
     );
     expect(notApplicable.items[0]?.message).toMatch(/no longer applies/);
 
-    // A patch that applies but touches a CI workflow: the in-place verification rejects it.
+    // A patch that applies but touches a CI workflow: refused before it is applied to the project.
     const workflow = [
       "diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml",
       "new file mode 100644",
@@ -403,7 +403,9 @@ describe("applyPlan with agent repair", () => {
       { cwd: dir, runId: second.runId, repairAgent: agent },
       deps(breaksTheProject(), { attempt: attemptReturning(workflow) }),
     );
-    expect(rejected.items[0]?.message).toMatch(/failed verification in the project \(scope\)/);
+    expect(rejected.items[0]?.message).toMatch(
+      /files that remediation may not change: .*\.github\/workflows\/ci\.yml/,
+    );
     expect(existsSync(join(dir, ".github/workflows/ci.yml"))).toBe(false);
     expect(git("status", "--porcelain").trim()).toBe("");
     expect(getRun({ cwd: dir, runId: second.runId }).attempts[0]?.status).toBe("promotion-failed");

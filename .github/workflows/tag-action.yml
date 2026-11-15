@@ -3,7 +3,6 @@ name: Publish GitHub Action release
 on:
   push:
     branches:
-      - main
       - master
     paths:
       - action.yml
@@ -17,6 +16,8 @@ permissions:
 
 jobs:
   release:
+    # A tag made from another branch would move `v0` to unreviewed code.
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

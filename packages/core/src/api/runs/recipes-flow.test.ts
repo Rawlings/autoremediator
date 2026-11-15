@@ -338,8 +338,8 @@ describe("recipes in applyPlan", { timeout: 60_000 }, () => {
     expect(read(dir, "src/a.ts")).toBe("import { f } from 'dep';\nf(1, 2);\n");
   });
 
-  it("reads a policy recipes package and a package's own recipes from the checkout, and refuses a stranger's", async () => {
-    // The package being upgraded ships its own recipe; it only exists in the checkout once the new version is installed.
+  it("reads a policy recipes package, and ignores recipes a dependency ships for itself", async () => {
+    // A dependency can ship a recipe; it is not read unless the policy names the package.
     const shipped = (root: string, name: string, recipe: Recipe) => {
       const file = join(root, "node_modules", name, "autoremediator-recipes", "r.json");
       mkdirSync(dirname(file), { recursive: true });
@@ -366,13 +366,11 @@ describe("recipes in applyPlan", { timeout: 60_000 }, () => {
     expect(outcome.items[0]).toMatchObject({ status: "applied", repair: { status: "promoted" } });
     expect(getRun({ cwd: dir, runId }).attempts[0]?.agentId).toMatch(/^recipe:dep#/);
 
-    // A dependency that is not the package being upgraded cannot ship a recipe for it.
+    // Neither the package being upgraded nor any other dependency is a source by shipping one.
     const stranger = makeProject();
+    shipped(stranger, "dep", fixRecipe);
     shipped(stranger, "evil-dep", fixRecipe);
-    expect(listRecipes({ cwd: stranger }).recipes).toEqual([]);
-    expect(listRecipes({ cwd: stranger }).problems[0]?.error).toMatch(
-      /may only ship recipes for itself/,
-    );
+    expect(listRecipes({ cwd: stranger })).toMatchObject({ recipes: [], problems: [] });
   });
 });
 

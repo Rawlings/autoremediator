@@ -36,6 +36,11 @@ export interface AutoremediatorPolicy {
   suppressions?: VexSuppression[];
   sla?: SlaPolicy;
   skipUnreachable?: boolean;
+  /**
+   * Run dependency lifecycle scripts during installs this tool starts. Default "none": the version
+   * it just picked is the least trusted code on the machine. Policy file only.
+   */
+  installScripts?: "none" | "all";
   /** Treat a maintainer's shipped `not_affected` VEX statement as a suppression. Default false: it is shown as evidence only. */
   trustMaintainerVex?: boolean;
   dispositionPolicy?: DispositionPolicy;
@@ -105,6 +110,7 @@ export const policyFileSchema = z
       .optional(),
     skipUnreachable: z.boolean().default(false),
     trustMaintainerVex: z.boolean().default(false),
+    installScripts: z.enum(["none", "all"]).optional(),
     dispositionPolicy: dispositionPolicySchema.optional(),
     containmentMode: z.boolean().default(false),
     escalationGraph: escalationGraphSchema.optional(),

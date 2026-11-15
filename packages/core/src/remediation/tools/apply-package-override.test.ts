@@ -29,6 +29,21 @@ vi.mock("node:fs", () => ({
   rmSync: vi.fn(),
 }));
 
+// The reproduction script normally runs in the permission-model sandbox; these tests are about the
+// tool's own flow, so it runs through the mocked process runner instead.
+vi.mock("../proof-of-fix/exec.js", async () => {
+  const { safeExeca } = await import("../../platform/safe-exec.js");
+  return {
+    ProofSandboxError: class ProofSandboxError extends Error {},
+    execProofScript: (params: { testFilePath: string; cwd: string; timeoutMs: number }) =>
+      safeExeca("node", [params.testFilePath], {
+        cwd: params.cwd,
+        timeoutMs: params.timeoutMs,
+        stdio: "pipe",
+      }),
+  };
+});
+
 vi.mock("execa", () => ({
   execa: mocked.execa,
 }));

@@ -24,7 +24,7 @@ import {
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
-import type { SandboxReport } from "./sandbox.js";
+import type { SandboxReport } from "../../platform/sandbox.js";
 import type { JudgedRun } from "./types.js";
 
 export const PAYLOAD_TYPE = "application/vnd.autoremediator.proof-of-fix+json";
