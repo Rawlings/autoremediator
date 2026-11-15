@@ -1,6 +1,9 @@
 import { stdin as defaultInput, stdout as defaultOutput } from "node:process";
 import * as readline from "node:readline/promises";
 
+import type { Command } from "commander";
+
+import { OPTION_DESCRIPTIONS } from "../../../api/index.js";
 import { evaluatePackage } from "../../../features/intelligence/evaluate/index.js";
 import { remediate } from "../../../features/remediate/index.js";
 import {
@@ -214,4 +217,19 @@ export async function runInteractiveTriage(
     outStream.write(`Suppressed:     ${suppressedCount}\n`);
     outStream.write(`Skipped:        ${skippedCount}\n\n`);
   }
+}
+
+export function registerTriageCommand(program: Command): void {
+  program
+    .command("triage [input]")
+    .description("Interactively triage discovered vulnerabilities step-by-step")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
+    .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
+    .option("--format <format>", OPTION_DESCRIPTIONS.format, "auto")
+    .option("--run-tests", OPTION_DESCRIPTIONS.runTests)
+    .option("--policy <path>", OPTION_DESCRIPTIONS.policy)
+    .action(async (inputArg: string | undefined, opts: CommandOptions) => {
+      await runInteractiveTriage(inputArg ? inputArg : opts, opts);
+    });
 }

@@ -1,13 +1,17 @@
+import type { Command } from "commander";
+
 import {
   EXIT_CODES,
   init,
   AGENT_HOSTS,
   type AgentHost,
   type InitResult,
+  OPTION_DESCRIPTIONS,
 } from "../../../api/index.js";
 import { logJson } from "../output.js";
 import { confirmInteractively } from "../prompt.js";
 import type { OutputFormat } from "../types.js";
+import { validateOutputFormat } from "../validators.js";
 
 export interface InitCliOptions {
   cwd: string;
@@ -96,4 +100,29 @@ export async function runInit(opts: InitCliOptions): Promise<void> {
     // Changes are waiting for a yes that this run could not get.
     process.exitCode = EXIT_CODES.needsApproval;
   }
+}
+
+export function registerInitCommand(program: Command): void {
+  program
+    .command("init")
+    .description("Set up the project: policy file, agent MCP configuration and instructions")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option(
+      "--hosts <list>",
+      "Agent hosts to configure, comma-separated: claude-code,cursor,vscode,codex,gemini,copilot",
+    )
+    .option("--ci", "Also write a weekly remediation workflow (GitHub Actions)")
+    .option(
+      "--guard",
+      "Also install guard hooks (Claude Code, Cursor, Copilot) and a pnpmfile (pnpm projects) that check package installs",
+    )
+    .option("--no-policy", "Do not write the policy file")
+    .option("--no-agents-md", "Do not add a section to AGENTS.md")
+    .option("--yes", "Write the changes without asking")
+    .option("--check", "Report what is out of date and exit 1 if anything is; writes nothing")
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(async (opts: Parameters<typeof runInit>[0]) => {
+      validateOutputFormat(opts.outputFormat, ["text", "json"], "init");
+      await runInit(opts);
+    });
 }

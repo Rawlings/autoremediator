@@ -1,18 +1,23 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
 
+import { z } from "zod";
+
 import type { ProjectSnapshot } from "../../infra/rollback/rollback.js";
 import { sha256 } from "../../shared/hash.js";
+import { readJsonFileSync } from "../../shared/json.js";
 
-interface SnapshotManifest {
-  version: 1;
-  cwd: string;
-  isGit: boolean;
-  gitRoot?: string;
-  gitStatusBefore?: string[];
+const snapshotManifestSchema = z.object({
+  version: z.literal(1),
+  cwd: z.string(),
+  isGit: z.boolean(),
+  gitRoot: z.string().optional(),
+  gitStatusBefore: z.array(z.string()).optional(),
   /** Relative path -> blob hash, or null when the file did not exist. */
-  files: Record<string, string | null>;
-}
+  files: z.record(z.string(), z.string().nullable()),
+});
+
+type SnapshotManifest = z.infer<typeof snapshotManifestSchema>;
 
 /** Content is kept as latin1 in memory (byte-exact for any file); store the bytes themselves. */
 const toBytes = (content: string) => Buffer.from(content, "latin1");
@@ -66,7 +71,7 @@ export function assertProjectRelativePath(path: string): void {
 }
 
 export function loadSnapshot(dir: string): ProjectSnapshot {
-  const manifest = JSON.parse(readFileSync(join(dir, "snapshot.json"), "utf8")) as SnapshotManifest;
+  const manifest = readJsonFileSync(join(dir, "snapshot.json"), snapshotManifestSchema);
   const fileSnapshots = new Map<string, string | null>();
   for (const [path, hash] of Object.entries(manifest.files)) {
     assertProjectRelativePath(path);
@@ -96,7 +101,7 @@ export function loadSnapshot(dir: string): ProjectSnapshot {
  */
 export function addToSnapshot(dir: string, files: ReadonlyMap<string, string | null>): void {
   const manifestPath = join(dir, "snapshot.json");
-  const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as SnapshotManifest;
+  const manifest = readJsonFileSync(manifestPath, snapshotManifestSchema);
   const blobs = join(dir, "blobs");
   mkdirSync(blobs, { recursive: true });
   for (const [path, content] of files) {

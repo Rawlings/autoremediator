@@ -1,3 +1,5 @@
+import type { Command } from "commander";
+
 import {
   guardPackages,
   guardGitDiff,
@@ -5,9 +7,12 @@ import {
   runHostHook,
   type HookHost,
   type GuardReport,
+  OPTION_DESCRIPTIONS,
 } from "../../../api/index.js";
+import { HOOK_HOSTS } from "../../../features/guard/hook.js";
 import { logJson } from "../output.js";
 import type { OutputFormat } from "../types.js";
+import { validateOutputFormat } from "../validators.js";
 
 export interface GuardCliOptions {
   cwd: string;
@@ -80,4 +85,52 @@ async function readStdin(): Promise<string> {
 export async function runGuardHook(host: HookHost = "claude-code"): Promise<void> {
   const output = await runHostHook(host, await readStdin());
   if (output) process.stdout.write(`${output}\n`);
+}
+
+export function registerGuardCommand(program: Command): void {
+  program
+    .command("guard [packages...]")
+    .description(
+      "Judge npm packages before installing them: existence, malware, look-alike names, release age, install scripts, provenance, vulnerabilities. Exits 0 clear, 3 check first, 4 blocked",
+    )
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option(
+      "--min-age-hours <hours>",
+      "Block releases younger than this (default 72, 0 turns it off)",
+      (value: string) => Number.parseFloat(value),
+    )
+    .option("--offline", "Skip the OSV malware and advisory lookups")
+    .option(
+      "--git-diff",
+      "Check the dependencies added or changed in package.json since --base instead of naming packages",
+    )
+    .option(
+      "--base <ref>",
+      "With --git-diff: git ref to compare with (default HEAD; a branch is compared at the merge base)",
+    )
+    .option("--include-transitive", "With --git-diff: also check packages only the lockfile gained")
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(async (packages: string[], opts: Parameters<typeof runGuard>[1]) => {
+      validateOutputFormat(opts.outputFormat, ["text", "json"], "guard");
+      await runGuard(packages, opts);
+    });
+}
+
+export function registerGuardHookCommand(program: Command): void {
+  program
+    .command("guard-hook")
+    .description(
+      "Agent pre-command hook (Claude Code, Cursor, Copilot): reads the hook JSON on stdin and answers allow, ask or deny for package installs",
+    )
+    .option(
+      "--host <host>",
+      `Agent host whose hook format to speak: ${HOOK_HOSTS.join("|")}`,
+      "claude-code",
+    )
+    .action(async (opts: { host: string }) => {
+      if (!HOOK_HOSTS.includes(opts.host as HookHost)) {
+        throw new Error(`Unknown host "${opts.host}". Use one of: ${HOOK_HOSTS.join(", ")}.`);
+      }
+      await runGuardHook(opts.host as HookHost);
+    });
 }

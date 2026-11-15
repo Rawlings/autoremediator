@@ -1,5 +1,13 @@
-import { checkReachability, evaluatePackage, scanDelta } from "../../../api/index.js";
+import type { Command } from "commander";
+
+import {
+  checkReachability,
+  evaluatePackage,
+  scanDelta,
+  OPTION_DESCRIPTIONS,
+} from "../../../api/index.js";
 import { logJson } from "../output.js";
+import { validateOutputFormat } from "../validators.js";
 
 export async function runReachability(opts: {
   cwd?: string;
@@ -113,4 +121,84 @@ export async function runDiffAudit(opts: {
   if (opts.ci) {
     process.exitCode = report.netRiskVerdict === "degraded" ? 1 : 0;
   }
+}
+
+export function registerReachabilityCommand(program: Command): void {
+  program
+    .command("reachability")
+    .description("Perform AST call-graph reachability analysis for a package or vulnerable symbol")
+    .requiredOption("--package <name>", "Target package name to search")
+    .option("--symbol <name>", "Optional specific vulnerable function or export symbol to check")
+    .option("--trace-file <path>", OPTION_DESCRIPTIONS.traceFile)
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(
+      async (opts: {
+        cwd?: string;
+        package: string;
+        symbol?: string;
+        traceFile?: string;
+        outputFormat?: string;
+      }) => {
+        validateOutputFormat(
+          (opts.outputFormat ?? "text") as "text" | "json",
+          ["text", "json"],
+          "reachability",
+        );
+        await runReachability(opts);
+      },
+    );
+}
+
+export function registerEvaluateCommand(program: Command): void {
+  program
+    .command("evaluate <package>")
+    .description(
+      "Pre-flight security evaluator for npm packages before installation (e.g. evaluate express@4.18.2)",
+    )
+    .option("--pkg-version <version>", "Package version to evaluate")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(
+      async (pkg: string, opts: { cwd?: string; pkgVersion?: string; outputFormat?: string }) => {
+        validateOutputFormat(
+          (opts.outputFormat ?? "text") as "text" | "json",
+          ["text", "json"],
+          "evaluate",
+        );
+        let targetName = pkg;
+        let targetVersion = opts.pkgVersion;
+
+        // Handle scoped and unscoped package@version syntax: e.g. "express@4.18.2" or "@types/node@20.0.0"
+        const lastAt = pkg.lastIndexOf("@");
+        if (lastAt > 0 && !targetVersion) {
+          targetName = pkg.slice(0, lastAt);
+          targetVersion = pkg.slice(lastAt + 1);
+        }
+
+        await runEvaluate(targetName, {
+          cwd: opts.cwd,
+          version: targetVersion,
+          outputFormat: opts.outputFormat,
+        });
+      },
+    );
+}
+
+export function registerDiffCommand(program: Command): void {
+  program
+    .command("diff")
+    .description("Git-aware delta vulnerability scan against base git reference or working tree")
+    .option("--base <ref>", "Git base reference (default: HEAD)", "HEAD")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--ci", "Enable CI exit code behavior on degraded security posture")
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(async (opts: { cwd?: string; base?: string; outputFormat?: string; ci?: boolean }) => {
+      validateOutputFormat(
+        (opts.outputFormat ?? "text") as "text" | "json",
+        ["text", "json"],
+        "diff",
+      );
+      await runDiffAudit(opts);
+    });
 }

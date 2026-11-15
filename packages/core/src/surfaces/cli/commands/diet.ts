@@ -1,11 +1,15 @@
+import type { Command } from "commander";
+
 import {
   analyzeDependencies,
   removeUnusedDependencies,
   type DependencyDietReport,
   type DietApplyResult,
   EXIT_CODES,
+  OPTION_DESCRIPTIONS,
 } from "../../../api/index.js";
 import { logJson } from "../output.js";
+import { validateOutputFormat } from "../validators.js";
 
 export interface DietCliOptions {
   cwd?: string;
@@ -140,4 +144,35 @@ export async function runDiet(opts: DietCliOptions): Promise<void> {
   const report = await analyzeDependencies({ cwd: opts.cwd });
   if (opts.outputFormat === "json") logJson(report);
   else process.stdout.write(`${describeDiet(report, opts.verbose)}\n`);
+}
+
+export function registerDietCommand(program: Command): void {
+  program
+    .command("diet")
+    .description(
+      "Report what the project could stop depending on: unused dependencies, micro-packages a Node built-in replaces, duplicate versions, and an attack-surface score. With --apply, remove only the certainly-unused dependencies, verify, and roll back on any failure",
+    )
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option(
+      "--apply",
+      "Remove the certainly-unused dependencies through npm or pnpm, then verify and roll back if any check fails",
+    )
+    .option("--run-tests", "With --apply: also run the project's tests during verification")
+    .option("--no-typecheck", "With --apply: skip the type check during verification")
+    .option("--policy <path>", OPTION_DESCRIPTIONS.policy)
+    .option(
+      "--package-manager <name>",
+      "With --apply: package manager to use (auto-detected from the lockfile)",
+    )
+    .option("--verbose", "List every duplicate and every indirectly used dependency")
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(async (opts: DietCliOptions) => {
+      validateOutputFormat(opts.outputFormat as "text" | "json", ["text", "json"], "diet");
+      if (!opts.apply && (opts.runTests || opts.typecheck === false || opts.packageManager)) {
+        throw new Error(
+          "--run-tests, --no-typecheck and --package-manager only apply with --apply.",
+        );
+      }
+      await runDiet(opts);
+    });
 }

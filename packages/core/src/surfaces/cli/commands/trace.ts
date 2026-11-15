@@ -1,8 +1,11 @@
 import { constants } from "node:os";
 import { relative } from "node:path";
 
-import { traceRun, type TraceReport } from "../../../api/index.js";
+import type { Command } from "commander";
+
+import { traceRun, type TraceReport, OPTION_DESCRIPTIONS } from "../../../api/index.js";
 import { logJson } from "../output.js";
+import { validateOutputFormat } from "../validators.js";
 
 export interface TraceRunCommandOptions {
   cwd?: string;
@@ -96,4 +99,34 @@ export async function runTraceCommand(
   );
   for (const line of summarizeTrace(result.report)) process.stdout.write(`${line}\n`);
   process.stdout.write(`Trace written to ${shown}\n`);
+}
+
+export function registerTraceCommands(program: Command): void {
+  const trace = program
+    .command("trace")
+    .description("Record which dependencies a command, usually your tests, loads and calls")
+    .enablePositionalOptions();
+  trace
+    .command("run")
+    .description(
+      "Run a command with the trace hook in every Node.js process it starts, then write the trace (use -- before the command)",
+    )
+    .argument("<command...>", "The command to run, for example: node --test")
+    .passThroughOptions()
+    .option("--packages <list>", "Packages to watch, comma-separated (required with --calls)")
+    .option("--calls", "Count calls to the exported functions of --packages (adds overhead)")
+    .option("--out <path>", "Where to write the trace (default: .autoremediator/trace.json)")
+    .option("--timeout <seconds>", "Stop the command after this many seconds", (value: string) =>
+      Number.parseInt(value, 10),
+    )
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(async (command: string[], opts: TraceRunCommandOptions) => {
+      validateOutputFormat(
+        (opts.outputFormat ?? "text") as "text" | "json",
+        ["text", "json"],
+        "trace run",
+      );
+      await runTraceCommand(command, opts);
+    });
 }

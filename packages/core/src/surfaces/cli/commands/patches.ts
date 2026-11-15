@@ -1,11 +1,16 @@
+import type { Command } from "commander";
+
 import {
   inspectPatchArtifact,
   listPatchArtifacts,
   validatePatchArtifact,
   reconcilePatchArtifacts,
+  OPTION_DESCRIPTIONS,
 } from "../../../api/index.js";
+import { mergeCommandOptions } from "../options.js";
 import { logJson } from "../output.js";
 import type { CommandOptions } from "../types.js";
+import { validateOutputFormat } from "../validators.js";
 
 function assertPatchOutputFormat(format: string): void {
   if (format !== "text" && format !== "json") {
@@ -148,4 +153,114 @@ export async function runReconcilePatches(
       process.stdout.write(`  Reason: ${item.reason}\n`);
     }
   }
+}
+
+function registerListPatches(patches: Command): void {
+  patches
+    .command("list")
+    .description("List patch artifacts in the configured patches directory")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(
+      async (
+        _opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">,
+        command: Command,
+      ) => {
+        const merged = mergeCommandOptions(command) as Pick<
+          CommandOptions,
+          "cwd" | "patchesDir" | "outputFormat"
+        >;
+        validateOutputFormat(merged.outputFormat, ["text", "json"], "patches list");
+        await runListPatches(merged);
+      },
+    );
+}
+
+function registerInspectPatches(patches: Command): void {
+  patches
+    .command("inspect")
+    .description("Inspect a patch artifact and its manifest metadata")
+    .argument("<patchPath>", "Path to the .patch file to inspect")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(
+      async (
+        patchPath: string,
+        _opts: Pick<CommandOptions, "cwd" | "patchesDir" | "outputFormat">,
+        command: Command,
+      ) => {
+        const merged = mergeCommandOptions(command) as Pick<
+          CommandOptions,
+          "cwd" | "patchesDir" | "outputFormat"
+        >;
+        validateOutputFormat(merged.outputFormat, ["text", "json"], "patches inspect");
+        await runInspectPatch(patchPath, merged);
+      },
+    );
+}
+
+function registerValidatePatches(patches: Command): void {
+  patches
+    .command("validate")
+    .description(
+      "Validate a patch artifact against its manifest and the current dependency inventory",
+    )
+    .argument("<patchPath>", "Path to the .patch file to validate")
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
+    .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(
+      async (
+        patchPath: string,
+        _opts: Pick<CommandOptions, "cwd" | "patchesDir" | "packageManager" | "outputFormat">,
+        command: Command,
+      ) => {
+        const merged = mergeCommandOptions(command) as Pick<
+          CommandOptions,
+          "cwd" | "patchesDir" | "packageManager" | "outputFormat"
+        >;
+        validateOutputFormat(merged.outputFormat, ["text", "json"], "patches validate");
+        await runValidatePatch(patchPath, merged);
+      },
+    );
+}
+
+function registerReconcilePatches(patches: Command): void {
+  patches
+    .command("reconcile")
+    .description(
+      "Reconcile active patch artifacts against upstream registries to retire obsolete patches",
+    )
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--patches-dir <path>", OPTION_DESCRIPTIONS.patchesDir)
+    .option("--auto-apply", "Automatically upgrade packages and remove retired patch artifacts")
+    .option("--run-tests", OPTION_DESCRIPTIONS.runTests)
+    .option("--package-manager <name>", OPTION_DESCRIPTIONS.packageManager)
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(
+      async (
+        _opts: Pick<
+          CommandOptions,
+          "cwd" | "patchesDir" | "packageManager" | "runTests" | "outputFormat"
+        > & { autoApply?: boolean },
+        command: Command,
+      ) => {
+        const merged = mergeCommandOptions(command);
+        validateOutputFormat(merged.outputFormat ?? "text", ["text", "json"], "patches reconcile");
+        await runReconcilePatches(merged);
+      },
+    );
+}
+
+export function registerPatchesCommands(program: Command): void {
+  const patches = program
+    .command("patches")
+    .description("Inspect and validate stored patch artifacts");
+  registerListPatches(patches);
+  registerInspectPatches(patches);
+  registerValidatePatches(patches);
+  registerReconcilePatches(patches);
 }

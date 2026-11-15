@@ -1,6 +1,14 @@
-import { bisectLockfile, EXIT_CODES, type BisectReport } from "../../../api/index.js";
+import type { Command } from "commander";
+
+import {
+  bisectLockfile,
+  EXIT_CODES,
+  type BisectReport,
+  OPTION_DESCRIPTIONS,
+} from "../../../api/index.js";
 import { logJson } from "../output.js";
 import type { OutputFormat } from "../types.js";
+import { validateOutputFormat } from "../validators.js";
 
 export interface BisectCliOptions {
   cwd: string;
@@ -135,4 +143,47 @@ export async function runBisect(opts: BisectCliOptions): Promise<void> {
     process.off("SIGINT", interrupt);
     process.off("SIGTERM", interrupt);
   }
+}
+
+export function registerBisectCommand(program: Command): void {
+  program
+    .command("bisect")
+    .description(
+      "Find which package update in the lockfile diff between a good and a bad git ref breaks a command, in isolated worktrees. Runs --command with your privileges. Exits 0 when a culprit is found, 1 otherwise",
+    )
+    .requiredOption("--good <ref>", "Git ref (commit, tag, branch) where the command passes")
+    .option(
+      "--bad <ref>",
+      "Git ref where the command fails (default: HEAD; committed state, not the working tree)",
+    )
+    .requiredOption(
+      "--command <command>",
+      "Shell command to run after installing; exit code 0 means pass",
+    )
+    .option(
+      "--timeout <seconds>",
+      "Kill the command after this long and count it as failing (default: 600)",
+      (value: string) => Number.parseFloat(value),
+    )
+    .option(
+      "--max-steps <n>",
+      "Evaluate at most this many candidate states (default: 30)",
+      (value: string) => Number.parseInt(value, 10),
+    )
+    .option("--package-manager <name>", "npm|pnpm|yarn (default: from the lockfile)")
+    .option(
+      "--ignore-scripts",
+      "Pass --ignore-scripts to every install so package install scripts do not run (default)",
+    )
+    .option("--run-scripts", "Let package install scripts run during the bisect installs")
+    .option(
+      "--apply",
+      "Apply the recommended pin through the run machinery instead of only planning it",
+    )
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option("--output-format <format>", "Output format: text|json", "text")
+    .action(async (opts: BisectCliOptions) => {
+      validateOutputFormat(opts.outputFormat, ["text", "json"], "bisect");
+      await runBisect(opts);
+    });
 }

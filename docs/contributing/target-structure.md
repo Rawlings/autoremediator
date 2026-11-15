@@ -2,8 +2,9 @@
 
 **Status: applied through Phase 3 step 4 (code quality turnaround), partly beyond.** Done: the layer
 folders now live in `shared/`, `infra/`, `features/` and `surfaces/`; `types.ts` is split by owner;
-the CLI has one command file per feature and one `emitScanReport`; `apply-package-override` is a
-transaction plus two writers; run records and the ledger are parsed against schemas; typed errors and
+the CLI has one command file per feature (each registers its own commands; `createProgram` only
+calls them), one `emitScanReport` and shared option helpers in `options.ts`; `apply-package-override` is a
+transaction plus two writers; run records, the ledger and snapshot manifests are parsed against schemas; typed errors and
 `errorMessage` exist in `shared/`. Still open, in order of value:
 
 1. **The 14-feature dependency loop** (remediate, runs, patch, repair, verify, upgrade, change-request,

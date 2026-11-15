@@ -1,3 +1,5 @@
+import type { Command } from "commander";
+
 import {
   EXIT_CODES,
   installHooks,
@@ -6,10 +8,13 @@ import {
   type HookManager,
   type HookName,
   type HooksResult,
+  OPTION_DESCRIPTIONS,
 } from "../../../api/index.js";
+import { mergeCommandOptions } from "../options.js";
 import { logJson } from "../output.js";
 import { confirmInteractively } from "../prompt.js";
 import type { OutputFormat } from "../types.js";
+import { validateOutputFormat } from "../validators.js";
 
 export interface HookCliOptions {
   cwd: string;
@@ -120,4 +125,56 @@ export async function runHook(
   } else if (result.conflicts.length > 0) {
     process.exitCode = EXIT_CODES.failed;
   }
+}
+
+const hookOptions = (command: Command): Command =>
+  command
+    .option("--cwd <path>", OPTION_DESCRIPTIONS.cwd, process.cwd())
+    .option(
+      "--hooks <list>",
+      "Hooks to handle, comma-separated: pre-push,post-merge (default both)",
+    )
+    .option(
+      "--manager <name>",
+      "Hook manager to write for: husky|lefthook|pre-commit|git (default: detected)",
+    )
+    .option(
+      "--allow-shared-hooks-path",
+      "Write into a hooks folder outside the repository (a global core.hooksPath shared with other repositories)",
+    )
+    .option("--output-format <format>", "Output format: text|json", "text");
+
+const hookAction =
+  (mode: "install" | "uninstall" | "status") =>
+  async (...received: unknown[]) => {
+    const merged = mergeCommandOptions(received.at(-1) as Command) as unknown as Parameters<
+      typeof runHook
+    >[1];
+    validateOutputFormat(merged.outputFormat, ["text", "json"], `hook ${mode}`);
+    await runHook(mode, merged);
+  };
+
+export function registerHookCommands(program: Command): void {
+  const hook = program
+    .command("hook")
+    .description(
+      "Install git hooks that check dependency changes: pre-push blocks a risky push, post-merge advises",
+    );
+  hookOptions(
+    hook
+      .command("install")
+      .description("Add the hooks (reports a diff; writes only with --yes or after you confirm)")
+      .option("--yes", "Write the changes without asking"),
+  ).action(hookAction("install"));
+  hookOptions(
+    hook
+      .command("uninstall")
+      .description("Remove only the blocks and entries Autoremediator wrote")
+      .option("--yes", "Write the changes without asking"),
+  ).action(hookAction("uninstall"));
+  hookOptions(
+    hook
+      .command("status")
+      .description("Report installed, missing or modified hooks; exits 1 on drift"),
+  ).action(hookAction("status"));
 }

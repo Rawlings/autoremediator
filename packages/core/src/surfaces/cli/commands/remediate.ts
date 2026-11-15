@@ -1,4 +1,6 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+
+import type { Command } from "commander";
 
 import {
   EXIT_CODES,
@@ -14,14 +16,18 @@ import {
   type ScanReport,
   toCiSummary,
   updateOutdated,
+  OPTION_DESCRIPTIONS,
 } from "../../../api/index.js";
 import type { ChangeRequestProvider } from "../../../features/change-request/types.js";
 import { errorMessage } from "../../../shared/errors.js";
 import { emitScanReport } from "../emit.js";
+import { mergeCommandOptions, addSharedOptions } from "../options.js";
 import { formatCountMap, logJson } from "../output.js";
 import { formatResultLines } from "../result-lines.js";
 import { patchGeneratedLines, slaBreachLines, transitiveLines } from "../summary-lines.js";
 import type { CommandOptions } from "../types.js";
+import { isCveId } from "../types.js";
+import { validateOutputFormat, validateSharedCommandOptions } from "../validators.js";
 import { formatAutonomyLine } from "./autonomy.js";
 import { runInteractiveTriage } from "./triage.js";
 
@@ -304,4 +310,127 @@ export async function runPlan(cveId: string, opts: CommandOptions): Promise<void
     process.stdout.write(`Plan: ${report.planId}\nRun:  ${report.runId}\n`);
     process.stdout.write(`Apply it with: autoremediator runs apply ${report.runId}\n`);
   }
+}
+
+export function registerRemediateCommands(program: Command): void {
+  addSharedOptions(
+    program
+      .command("cve")
+      .description("Remediate a single CVE ID")
+      .argument("<cveId>", OPTION_DESCRIPTIONS.cveId),
+    false,
+  ).action(async (cveId: string, _opts: CommandOptions, command: Command) => {
+    const merged = mergeCommandOptions(command);
+    validateSharedCommandOptions(merged);
+    validateOutputFormat(merged.outputFormat, ["text", "json", "sarif", "cyclonedx-vex"], "cve");
+    await runSingleCve(cveId, merged);
+  });
+  addSharedOptions(
+    program
+      .command("scan")
+      .description(
+        "Remediate vulnerabilities from scanner output (npm/pnpm/yarn/bun audit JSON or SARIF)",
+      )
+      .option("--input <path>", OPTION_DESCRIPTIONS.inputPath)
+      .option("--format <type>", OPTION_DESCRIPTIONS.format, "auto")
+      .option("--summary-file <path>", "Write machine-readable scan summary JSON to path"),
+    false,
+  ).action(async (_opts: CommandOptions, command: Command) => {
+    const merged = mergeCommandOptions(command);
+
+    validateSharedCommandOptions(merged);
+    validateOutputFormat(merged.outputFormat, ["text", "json", "sarif", "cyclonedx-vex"], "scan");
+
+    if (!merged.audit && !merged.input) {
+      throw new Error("scan mode requires --input unless --audit is enabled.");
+    }
+    await runScanInput(merged.input ?? "", merged);
+  });
+  addSharedOptions(
+    program
+      .command("update-outdated")
+      .description("Bump all outdated npm packages to their latest versions")
+      .option("--include-transitive", OPTION_DESCRIPTIONS.includeTransitive),
+    false,
+    false,
+  ).action(async (_opts: CommandOptions, command: Command) => {
+    const merged = mergeCommandOptions(command);
+    if (merged.simulationMode) {
+      throw new Error("--simulation-mode is not supported by update-outdated.");
+    }
+    validateSharedCommandOptions(merged);
+    validateOutputFormat(merged.outputFormat, ["text", "json"], "update-outdated");
+    await runUpdateOutdated(merged);
+  });
+  addSharedOptions(
+    program
+      .command("portfolio")
+      .description("Run CVE or scan remediation across multiple repository targets")
+      .requiredOption("--targets-file <path>", "Path to portfolio targets JSON file"),
+    false,
+  ).action(async (_opts: CommandOptions, command: Command) => {
+    const merged = mergeCommandOptions(command);
+
+    validateSharedCommandOptions(merged);
+    validateOutputFormat(merged.outputFormat, ["text", "json"], "portfolio");
+
+    await runPortfolio(merged.targetsFile!, merged);
+  });
+  addSharedOptions(
+    program
+      .command("plan")
+      .description("Preview the fix for a CVE and record it as a plan you can apply later")
+      .argument("<cveId>", OPTION_DESCRIPTIONS.cveId),
+    false,
+  ).action(async (cveId: string, _opts: CommandOptions, command: Command) => {
+    const merged = mergeCommandOptions(command);
+    validateSharedCommandOptions(merged);
+    validateOutputFormat(merged.outputFormat, ["text", "json"], "plan");
+    await runPlan(cveId, merged);
+  });
+}
+
+export function registerDefaultCommand(program: Command): void {
+  addSharedOptions(
+    program
+      .argument("[target]", "Scanner output file path (or CVE ID fallback)")
+      .option("--format <type>", OPTION_DESCRIPTIONS.format, "auto")
+      .option("--summary-file <path>", "Write machine-readable scan summary JSON to path"),
+    true,
+  ).action(async (target: string | undefined, opts: CommandOptions) => {
+    validateSharedCommandOptions(opts);
+    validateOutputFormat(opts.outputFormat, ["text", "json", "sarif"], "default");
+
+    if (opts.interactive) {
+      await runInteractiveTriage(opts.input ?? target ?? opts, opts);
+      return;
+    }
+
+    if (opts.audit) {
+      await runScanInput(opts.input ?? target ?? "", opts);
+      return;
+    }
+
+    if (opts.input) {
+      await runScanInput(opts.input, opts);
+      return;
+    }
+
+    if (!target) {
+      program.outputHelp();
+      return;
+    }
+
+    if (isCveId(target)) {
+      await runSingleCve(target, opts);
+      return;
+    }
+
+    if (existsSync(target)) {
+      await runScanInput(target, opts);
+      return;
+    }
+
+    throw new Error(`Target "${target}" is neither a valid CVE ID nor an existing scan file path.`);
+  });
 }
