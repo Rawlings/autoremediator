@@ -28,10 +28,13 @@ const DISPOSITION_DEFAULTS = {
 };
 const AUTONOMY_DEFAULTS = {
   minVerifiedRuns: 5,
+  window: 20,
   minSuccessRate: 0.9,
   cooldownDays: 7,
   requireTestCoverage: true,
 };
+/** The patch confidence a generated patch needs by risk level when the policy sets none (see `DEFAULT_CONFIDENCE_THRESHOLDS`). */
+const CONFIDENCE_DEFAULTS = { low: 0.65, medium: 0.7, high: 0.8 } as const;
 /** With no `autonomy` key the feature is off; a repository then acts like one capped at L2 (pull requests, no auto-merge signal). */
 const IMPLICIT_CEILING: AutonomyLevel = "L2";
 
@@ -41,6 +44,71 @@ type BooleanConstraint =
   | "enforceFrozenLockfile"
   | "typecheck"
   | "requireProofOfFix";
+
+/**
+ * Every key of the policy file, and whether `findLoosenings` looks at it. A key ending in `.*` stands
+ * for everything under it. `policy-loosening.test.ts` walks `policyFileSchema` and fails when a key
+ * is missing here (or listed here but gone from the schema), so a new policy key has to be
+ * classified, and a "loosening" one given a check, before it can ship.
+ */
+export const POLICY_KEY_COVERAGE: Readonly<
+  Record<string, { kind: "loosening" } | { kind: "not-a-loosening"; reason: string }>
+> = {
+  allowMajorBumps: { kind: "loosening" },
+  denyPackages: { kind: "loosening" },
+  allowPackages: { kind: "loosening" },
+  "constraints.directDependenciesOnly": { kind: "loosening" },
+  "constraints.preferVersionBump": { kind: "loosening" },
+  "constraints.installMode": {
+    kind: "not-a-loosening",
+    reason: "How dependencies are installed (offline or fresh); every mode verifies the same way.",
+  },
+  "constraints.installPreferOffline": {
+    kind: "not-a-loosening",
+    reason: "A cache preference for installs; it does not change what may be changed.",
+  },
+  "constraints.enforceFrozenLockfile": { kind: "loosening" },
+  "constraints.workspace": {
+    kind: "not-a-loosening",
+    reason: "Scopes a run to one workspace package; it picks a target, not a safety rule.",
+  },
+  "constraints.typecheck": { kind: "loosening" },
+  "constraints.requireProofOfFix": { kind: "loosening" },
+  "constraints.enableBreakingChangeRefactor": { kind: "loosening" },
+  "constraints.supplyChainPolicy.minPublishAgeHours": { kind: "loosening" },
+  "constraints.supplyChainPolicy.blockInstallScripts": { kind: "loosening" },
+  "constraints.supplyChainPolicy.requireProvenance": { kind: "loosening" },
+  "patchConfidenceThresholds.low": { kind: "loosening" },
+  "patchConfidenceThresholds.medium": { kind: "loosening" },
+  "patchConfidenceThresholds.high": { kind: "loosening" },
+  "exploitSignalOverride.kev.mandatory": { kind: "loosening" },
+  "exploitSignalOverride.epss.mandatory": { kind: "loosening" },
+  "exploitSignalOverride.epss.threshold": { kind: "loosening" },
+  suppressions: { kind: "loosening" },
+  "sla.critical": { kind: "loosening" },
+  "sla.high": { kind: "loosening" },
+  "sla.medium": { kind: "loosening" },
+  "sla.low": { kind: "loosening" },
+  skipUnreachable: { kind: "loosening" },
+  trustMaintainerVex: { kind: "loosening" },
+  "dispositionPolicy.minConfidenceForAutoApply": { kind: "loosening" },
+  "dispositionPolicy.holdForTransitive": { kind: "loosening" },
+  "dispositionPolicy.escalateOnKev": { kind: "loosening" },
+  "dispositionPolicy.escalateOnSlaBreachSeverities": { kind: "loosening" },
+  containmentMode: { kind: "loosening" },
+  "escalationGraph.*": { kind: "loosening" },
+  "recipes.packages": { kind: "loosening" },
+  "autonomy.ceiling": { kind: "loosening" },
+  "autonomy.minVerifiedRuns": { kind: "loosening" },
+  "autonomy.window": { kind: "loosening" },
+  "autonomy.minSuccessRate": { kind: "loosening" },
+  "autonomy.cooldownDays": { kind: "loosening" },
+  "autonomy.requireTestCoverage": { kind: "loosening" },
+  "freshness.maxMajorsBehind": { kind: "loosening" },
+  "freshness.maxMinorsBehind": { kind: "loosening" },
+  "freshness.maxAgeDays": { kind: "loosening" },
+  "freshness.ignore": { kind: "loosening" },
+};
 
 const levelIndex = (level: AutonomyLevel): number => AUTONOMY_LEVEL_VALUES.indexOf(level);
 
@@ -205,6 +273,25 @@ export function findLoosenings(
     });
   }
 
+  if (before.trustMaintainerVex !== true && after.trustMaintainerVex === true) {
+    out.push({
+      key: "trustMaintainerVex",
+      description:
+        "A maintainer's shipped not_affected VEX statement now suppresses a vulnerability.",
+    });
+  }
+
+  for (const risk of ["low", "medium", "high"] as const) {
+    const was = before.patchConfidenceThresholds?.[risk] ?? CONFIDENCE_DEFAULTS[risk];
+    const now = after.patchConfidenceThresholds?.[risk] ?? CONFIDENCE_DEFAULTS[risk];
+    if (now < was) {
+      out.push({
+        key: `patchConfidenceThresholds.${risk}`,
+        description: `A ${risk}-risk patch is accepted at lower confidence (${was} becomes ${now}).`,
+      });
+    }
+  }
+
   const bd = { ...DISPOSITION_DEFAULTS, ...before.dispositionPolicy };
   const ad = { ...DISPOSITION_DEFAULTS, ...after.dispositionPolicy };
   if (ad.minConfidenceForAutoApply < bd.minConfidenceForAutoApply) {
@@ -273,7 +360,12 @@ export function findLoosenings(
     const was = { ...AUTONOMY_DEFAULTS, ...ba };
     const now = { ...AUTONOMY_DEFAULTS, ...aa };
     if (ba) {
-      for (const field of ["minVerifiedRuns", "minSuccessRate", "cooldownDays"] as const) {
+      for (const field of [
+        "minVerifiedRuns",
+        "window",
+        "minSuccessRate",
+        "cooldownDays",
+      ] as const) {
         if (now[field] < was[field]) {
           out.push({
             key: `autonomy.${field}`,
@@ -287,6 +379,32 @@ export function findLoosenings(
           description: "Autonomy no longer needs runs whose tests passed.",
         });
       }
+    }
+  }
+
+  const bf = before.freshness;
+  const af = after.freshness;
+  if (bf) {
+    for (const limit of ["maxMajorsBehind", "maxMinorsBehind", "maxAgeDays"] as const) {
+      const was = bf[limit];
+      const now = af?.[limit];
+      if (was !== undefined && (now === undefined || now > was)) {
+        out.push({
+          key: `freshness.${limit}`,
+          description:
+            now === undefined
+              ? `The ${limit} limit is removed.`
+              : `The ${limit} limit rises from ${was} to ${now}.`,
+        });
+      }
+    }
+    const ignored = new Set(bf.ignore);
+    const added = (af?.ignore ?? []).filter((entry) => !ignored.has(entry));
+    if (added.length > 0) {
+      out.push({
+        key: "freshness.ignore",
+        description: `${added.map((entry) => `"${entry}"`).join(", ")} no longer counts towards freshness.`,
+      });
     }
   }
 
