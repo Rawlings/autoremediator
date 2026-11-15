@@ -9,6 +9,7 @@ import { join } from "node:path";
 
 import semver from "semver";
 
+import { resolveGitCommit } from "../platform/git-ref.js";
 import { safeExeca } from "../platform/safe-exec.js";
 import type {
   DeltaDependencyChange,
@@ -233,8 +234,10 @@ async function getFileContentAtRef(
  */
 export async function collectDependencyChanges(
   cwd: string,
-  baseRef: string,
+  ref: string,
 ): Promise<{ changedManifests: string[]; dependencyChanges: DeltaDependencyChange[] }> {
+  // The ref comes from the caller: resolve it to a commit id before it reaches `git diff` or `git show`.
+  const baseRef = await resolveGitCommit(cwd, "baseRef", ref);
   const changedManifests = await getChangedManifestPaths(cwd, baseRef);
   const changedLockfiles = await getChangedLockfilePaths(cwd, baseRef);
   const dependencyChanges: DeltaDependencyChange[] = [];

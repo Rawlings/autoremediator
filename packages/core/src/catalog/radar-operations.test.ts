@@ -35,14 +35,14 @@ describe("radar on every surface", () => {
     expect(radar.http).toEqual({ method: "POST", path: "/radar", positional: [] });
     expect(matchHttpRoute("POST", "/radar")?.operation.name).toBe("radar");
     expect(Object.keys(toOpenApiPaths())).toContain("/radar");
-    // It downloads package data but changes nothing: a reader may call it.
+    // It changes nothing, but it can spend model tokens and download up to a 256 MB tarball budget: not a reader's call.
     expect(radar.annotations).toEqual({
-      readOnlyHint: true,
+      readOnlyHint: false,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: true,
     });
-    expect(roleFor(radar)).toBe("reader");
+    expect(roleFor(radar)).toBe("operator");
   });
 
   it("describes itself without claiming a vulnerability exists", () => {

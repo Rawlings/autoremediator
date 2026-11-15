@@ -12,6 +12,8 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
+import { assertValidPackageName } from "./package-name.js";
+
 export const DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org";
 
 export interface RegistryConfig {
@@ -190,5 +192,7 @@ export const defaultRegistryConfig: RegistryConfig = createRegistryConfig(new Ma
 
 /** URL of a package's packument (`/<name>`; scoped names keep the `@` and encode the `/`). */
 export function packumentUrl(config: RegistryConfig, packageName: string): string {
+  // The name becomes a path segment of an authenticated request: only a real package name may.
+  assertValidPackageName(packageName);
   return `${config.registryUrlFor(packageName)}/${packageName.replace("/", "%2F")}`;
 }

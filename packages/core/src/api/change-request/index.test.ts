@@ -155,6 +155,10 @@ describe("createChangeRequestsForReports", () => {
       if (cmd === "git" && args[0] === "diff" && args[1] === "--cached") {
         return { stdout: "package.json" };
       }
+      // The header goes only to an https remote on a host that belongs to the provider.
+      if (cmd === "git" && args[0] === "config" && args[2] === "remote.origin.url") {
+        return { stdout: "https://github.com/org/repo.git" };
+      }
       return { stdout: "" };
     });
 

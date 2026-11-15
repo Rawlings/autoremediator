@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import type http from "node:http";
 
 export type Role = "admin" | "operator" | "reader";
@@ -113,6 +113,33 @@ export function getRoleForToken(
   return undefined;
 }
 
+
+/**
+ * Who a request comes from, for binding stored results to their caller: the `sub` of a verified JWT
+ * (so a refreshed token is the same caller), otherwise a digest of the bearer token. Never the token
+ * itself. Requests without a token (only possible with authentication switched off) share one identity.
+ */
+export function callerIdentity(
+  req: http.IncomingMessage,
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  const header = req.headers.authorization;
+  const token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length).trim() : undefined;
+  if (!token) return "anonymous";
+  const secret = env["AUTOREMEDIATOR_JWT_SECRET"];
+  if (secret && token.includes(".") && verifyJwtRole(token, secret)) {
+    try {
+      const body = token.split(".")[1] ?? "";
+      const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as JwtPayload;
+      if (typeof payload.sub === "string" && payload.sub !== "") {
+        return `sub:${createHash("sha256").update(payload.sub).digest("hex")}`;
+      }
+    } catch {
+      // Verified a moment ago, so this cannot normally happen; fall back to the token digest.
+    }
+  }
+  return `token:${createHash("sha256").update(token).digest("hex")}`;
+}
 
 function isTruthy(value: string | undefined): boolean {
   return value === "1" || value?.toLowerCase() === "true";

@@ -3,6 +3,8 @@ import type { LockGraph, LockNode, LockRoot, ManifestDeps } from "./types.js";
 interface Block {
   descriptors: string[];
   version?: string;
+  /** Berry's `resolution:`, e.g. `bar@npm:1.0.0`: the package actually installed. */
+  resolution?: string;
   dependencies: Array<[string, string]>;
   requiresBuild: boolean;
 }
@@ -31,6 +33,25 @@ function nameOfDescriptor(descriptor: string): string | undefined {
   return at > 0 ? descriptor.slice(0, at) : undefined;
 }
 
+/**
+ * The package a block installs. Berry records it in `resolution:` (`bar@npm:1.0.0`). Classic has only
+ * descriptors, where an alias reads `foo@npm:bar@^1.0.0`: the name is the part after `npm:`, so the
+ * real package (`bar`) is the node and `foo`, which exists only in this project's manifest, is not.
+ */
+function installedName(block: Block): string | undefined {
+  if (block.resolution) {
+    const fromResolution = nameOfDescriptor(block.resolution);
+    if (fromResolution) return fromResolution;
+  }
+  const first = block.descriptors[0];
+  if (first === undefined) return undefined;
+  const declared = nameOfDescriptor(first);
+  if (declared === undefined) return undefined;
+  const range = first.slice(declared.length + 1);
+  if (range.startsWith("npm:")) return nameOfDescriptor(range.slice(4)) ?? declared;
+  return declared;
+}
+
 function parseBlocks(content: string): Block[] {
   const blocks: Block[] = [];
   let current: Block | undefined;
@@ -54,6 +75,8 @@ function parseBlocks(content: string): Block[] {
       section = /^(?:dependencies|optionalDependencies):?$/.test(line) ? "dependencies" : "other";
       const version = /^version:?\s+"?([^"\s]+)"?$/.exec(line);
       if (version?.[1]) current.version = version[1];
+      const resolution = /^resolution:\s+"?([^"\s]+)"?$/.exec(line);
+      if (resolution?.[1]) current.resolution = resolution[1];
       if (/^requiresBuild:\s*true$/.test(line)) current.requiresBuild = true;
       continue;
     }
@@ -74,8 +97,7 @@ export function parseYarnLock(content: string, manifest: ManifestDeps = {}): Loc
   const pending: Array<{ id: string; deps: Array<[string, string]> }> = [];
 
   for (const block of blocks) {
-    const first = block.descriptors[0];
-    const name = first === undefined ? undefined : nameOfDescriptor(first);
+    const name = installedName(block);
     // Berry lists the workspaces themselves as entries; they are not installed packages.
     if (
       !name ||

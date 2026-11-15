@@ -896,6 +896,52 @@ describe("buildEvidencePack", () => {
     expect(verifyEvidencePack(out).ok).toBe(true);
   });
 
+  it("does not treat someone else's manifest.json as an earlier pack", async () => {
+    mkdirSync(join(out, "assets"), { recursive: true });
+    const extensionManifest = JSON.stringify({ manifest_version: 3, name: "my extension", version: "1.0" });
+    writeFileSync(join(out, "manifest.json"), extensionManifest);
+    writeFileSync(join(out, "background.js"), "console.log('mine');");
+    await expect(buildEvidencePack({ cwd: dir, outDir: out }, { now: () => NOW, env: {} })).rejects.toThrow(
+      /manifest\.json is not an autoremediator evidence pack manifest/,
+    );
+    expect(readFileSync(join(out, "manifest.json"), "utf8")).toBe(extensionManifest);
+    expect(readFileSync(join(out, "background.js"), "utf8")).toBe("console.log('mine');");
+    expect(existsSync(join(out, "assets"))).toBe(true);
+  });
+
+  it("does not treat a manifest.json that is not JSON as an earlier pack", async () => {
+    mkdirSync(out, { recursive: true });
+    writeFileSync(join(out, "manifest.json"), "not json");
+    await expect(buildEvidencePack({ cwd: dir, outDir: out }, { now: () => NOW, env: {} })).rejects.toThrow(
+      /not an autoremediator evidence pack manifest/,
+    );
+    expect(readFileSync(join(out, "manifest.json"), "utf8")).toBe("not json");
+  });
+
+  it("replaces an earlier pack but leaves what is not the pack's: other files and directories", async () => {
+    await buildEvidencePack({ cwd: dir, outDir: out }, { now: () => NOW, env: {} });
+    mkdirSync(join(out, "my-empty-dir"));
+    mkdirSync(join(out, "vex"), { recursive: true });
+    writeFileSync(join(out, "vex", "my-notes.txt"), "keep me");
+    writeFileSync(join(out, "background.js"), "keep me too");
+    await buildEvidencePack({ cwd: dir, outDir: out }, { now: () => NOW, env: {} });
+    expect(existsSync(join(out, "my-empty-dir"))).toBe(true);
+    expect(readFileSync(join(out, "vex", "my-notes.txt"), "utf8")).toBe("keep me");
+    expect(readFileSync(join(out, "background.js"), "utf8")).toBe("keep me too");
+    expect(existsSync(join(out, "manifest.json"))).toBe(true);
+  });
+
+  it("refuses to replace a pack whose files were changed since it was written, and deletes nothing", async () => {
+    await buildEvidencePack({ cwd: dir, outDir: out }, { now: () => NOW, env: {} });
+    writeFileSync(join(out, "README.md"), "my edits");
+    await expect(buildEvidencePack({ cwd: dir, outDir: out }, { now: () => NOW, env: {} })).rejects.toThrow(
+      /changed since the pack was written: README\.md/,
+    );
+    expect(readFileSync(join(out, "README.md"), "utf8")).toBe("my edits");
+    expect(existsSync(join(out, "sbom", "sbom.cdx.json"))).toBe(true);
+    expect(existsSync(join(out, "manifest.json"))).toBe(true);
+  });
+
   it("falls back to the report SBOM, with a note, when there is no lockfile", async () => {
     rmSync(join(dir, "package-lock.json"));
     const built = await buildEvidencePack({ cwd: dir, outDir: out }, { now: () => NOW, env: {} });

@@ -127,6 +127,10 @@ describe("guardGitDiff", () => {
   it("refuses a ref that does not exist instead of guarding everything", async () => {
     await expect(guardGitDiff({ cwd: dir, baseRef: "no-such-ref" }, deps())).rejects.toThrow(/not a commit/);
   });
+
+  it("refuses a ref that git would read as an option", async () => {
+    await expect(guardGitDiff({ cwd: dir, baseRef: "--git-dir=/tmp" }, deps())).rejects.toThrow(/not a valid git ref/);
+  });
 });
 
 describe("minAgeHoursFor", () => {

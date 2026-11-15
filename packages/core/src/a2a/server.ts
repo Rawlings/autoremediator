@@ -17,7 +17,7 @@ import {
   type ApiDeps,
   type Operation,
 } from "../catalog/index.js";
-import { authorizeRole, type Role } from "../platform/http-auth.js";
+import { authorizeRole, callerIdentity, type Role } from "../platform/http-auth.js";
 import { HttpError, readBody, sendJson } from "../platform/http-security.js";
 import {
   confinePaths,
@@ -33,6 +33,7 @@ import {
   type AgentCard,
 } from "./agent-card.js";
 import { signAgentCard, signingKeyFromEnv } from "./sign.js";
+import { TaskStore, truncateMessage } from "./task-store.js";
 
 const JSON_MEDIA_TYPE = "application/json";
 
@@ -115,26 +116,38 @@ export function handleAgentCardRequest(req: http.IncomingMessage, res: http.Serv
 // Tasks
 // ---------------------------------------------------------------------------
 
-const MAX_TASKS = 500;
 const TASK_TTL_MS = 60 * 60 * 1000;
+/** One result larger than this is returned to its caller but not kept (4 MB). */
+const MAX_TASK_BYTES = 4 * 1024 * 1024;
 
-interface StoredTask {
-  task: A2aTask;
-  /** The role that ran it: reading the result needs the same. */
-  role: Role;
-  storedAt: number;
-}
+/** Finished tasks, in memory. Lost on restart; bounded by count, age and total size (64 MB). */
+const tasks = new TaskStore<A2aTask>({
+  maxTasks: 500,
+  maxBytes: 64 * 1024 * 1024,
+  ttlMs: TASK_TTL_MS,
+});
 
-/** Finished tasks, in memory. Lost on restart; bounded by count and age. */
-const tasks = new Map<string, StoredTask>();
-
-function rememberTask(task: A2aTask, role: Role): void {
-  const now = Date.now();
-  for (const [id, stored] of tasks) {
-    if (now - stored.storedAt > TASK_TTL_MS || tasks.size >= MAX_TASKS) tasks.delete(id);
-    else break;
+/**
+ * Keep a finished task for `GetTask`, for the caller that ran it only. The record holds a short copy
+ * of the caller's message, not the message, and a result too big to keep is replaced by a notice.
+ */
+function rememberTask(task: A2aTask, role: Role, owner: string): void {
+  const kept: A2aTask = {
+    ...task,
+    ...(task.history ? { history: task.history.map((message) => truncateMessage(message)) } : {}),
+  };
+  if (Buffer.byteLength(JSON.stringify(kept)) > MAX_TASK_BYTES && kept.artifacts) {
+    kept.artifacts = kept.artifacts.map((artifact) => ({
+      ...artifact,
+      parts: [
+        {
+          data: { omitted: "The result was too large to keep; it was returned by SendMessage." },
+          mediaType: JSON_MEDIA_TYPE,
+        },
+      ],
+    }));
   }
-  tasks.set(task.id, { task, role, storedAt: now });
+  tasks.remember(kept, role, owner);
 }
 
 function trimHistory(task: A2aTask, historyLength: unknown): A2aTask {
@@ -325,7 +338,7 @@ async function sendMessage(
     };
   }
 
-  rememberTask(task, role);
+  rememberTask(task, role, callerIdentity(req));
   const configuration = isRecord(params["configuration"]) ? params["configuration"] : {};
   sendJson(res, 200, {
     jsonrpc: "2.0",
@@ -344,10 +357,12 @@ function getTask(
     return rpcError(res, id, ERROR.invalidParams, "params.id is required (string)");
   }
   const stored = tasks.get(params["id"]);
-  if (!stored || Date.now() - stored.storedAt > TASK_TTL_MS) {
+  if (!stored) return rpcError(res, id, ERROR.taskNotFound, "Task not found");
+  if (!authorize(req, res, stored.role, "A2A GetTask")) return;
+  // Someone else's task looks the same as one that does not exist.
+  if (stored.owner !== callerIdentity(req)) {
     return rpcError(res, id, ERROR.taskNotFound, "Task not found");
   }
-  if (!authorize(req, res, stored.role, "A2A GetTask")) return;
   sendJson(res, 200, {
     jsonrpc: "2.0",
     id,

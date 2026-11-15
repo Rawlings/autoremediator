@@ -46,8 +46,9 @@ export const POLICY_OPERATIONS: readonly Operation[] = [
     description:
       "Turn plain-language rules into a validated change to the policy file (.github/autoremediator.yml), for a person to review. A model proposes a patch over an allowlist of policy keys; deterministic code applies it with comments preserved, validates it with the policy loader, requires every change to be explained by words of the request, lists what could not be expressed (for example a rule scoped to a directory), and refuses any loosening (a major-bump allowance, a removed deny entry, a suppression, a higher autonomy ceiling, a disabled protection) that the request does not ask for or that allowLoosening does not accept. Returns the diff and the proposed file; this operation never writes the file. Needs a model (model or AUTOREMEDIATOR_MODEL); the policy and the request are sent to that model's provider. The CLI and SDK can write it after review.",
     input: compileInput,
+    // Writes nothing, but spends model tokens and sends the policy to a provider the caller names: not a reader's call.
     annotations: {
-      readOnlyHint: true,
+      readOnlyHint: false,
       destructiveHint: false,
       idempotentHint: false,
       openWorldHint: true,

@@ -8,7 +8,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 
 import { loadPolicy } from "../../platform/policy.js";
 import type { SbomEntry } from "../../platform/types.js";
@@ -95,29 +95,69 @@ function jsonText(value: unknown): string {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
+const record = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
 /** Remove what an earlier pack wrote, so a regenerated pack never mixes old and new files. */
 function clearEarlierPack(outDir: string): void {
-  const manifestPath = join(outDir, "manifest.json");
-  const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
-    files?: Array<{ path?: unknown }>;
-  };
-  const listed = (manifest.files ?? []).flatMap((entry) =>
-    typeof entry.path === "string" ? [entry.path] : [],
-  );
-  for (const path of [...listed, ...PACK_STATEMENT_FILES, "manifest.json"]) {
-    if (path.includes("..") || path.startsWith("/")) continue;
-    rmSync(join(outDir, path), { force: true });
+  const notAPack = (why: string): Error =>
+    new Error(
+      `outDir "${outDir}" is not empty and its manifest.json is not an autoremediator evidence pack manifest (${why}). Nothing was removed. Choose an empty or new directory.`,
+    );
+  let manifest: unknown;
+  try {
+    manifest = JSON.parse(readFileSync(join(outDir, "manifest.json"), "utf8"));
+  } catch {
+    throw notAPack("it is not JSON");
   }
-  const prune = (dir: string): void => {
-    for (const name of readdirSync(dir)) {
-      const full = join(dir, name);
-      if (statSync(full).isDirectory()) {
-        prune(full);
-        if (readdirSync(full).length === 0) rmdirSync(full);
-      }
+  if (!record(manifest)) throw notAPack("it is not an object");
+  const generator = manifest["generator"];
+  if (manifest["schemaVersion"] !== "1" || !record(generator) || generator["name"] !== "autoremediator") {
+    throw notAPack("it was not written by autoremediator");
+  }
+  const entries = manifest["files"];
+  if (!Array.isArray(entries)) throw notAPack("it lists no files");
+
+  // Only the files the manifest lists, by relative path inside outDir, with the digest it recorded.
+  const root = resolve(outDir);
+  const listed: Array<{ path: string; sha256: string }> = [];
+  for (const entry of entries as unknown[]) {
+    const path = record(entry) ? entry["path"] : undefined;
+    const digest = record(entry) ? entry["sha256"] : undefined;
+    if (typeof path !== "string" || typeof digest !== "string") throw notAPack("a file entry is malformed");
+    const target = resolve(root, path);
+    if (
+      path === "" ||
+      isAbsolute(path) ||
+      path === "manifest.json" ||
+      !target.startsWith(`${root}${sep}`)
+    ) {
+      throw notAPack(`it lists a path outside the pack: ${JSON.stringify(path)}`);
     }
-  };
-  prune(outDir);
+    listed.push({ path, sha256: digest });
+  }
+
+  const changed = listed.flatMap(({ path, sha256: digest }) => {
+    const full = join(outDir, path);
+    return existsSync(full) && sha256(readFileSync(full, "utf8")) !== digest ? [path] : [];
+  });
+  if (changed.length > 0) {
+    throw new Error(
+      `outDir "${outDir}" holds an evidence pack whose files changed since the pack was written: ${changed.toSorted().join(", ")}. Nothing was removed. Move or restore them, or choose a new directory.`,
+    );
+  }
+
+  const removed = [...listed.map(({ path }) => path), ...PACK_STATEMENT_FILES, "manifest.json"];
+  const directories = new Set<string>();
+  for (const path of removed) {
+    rmSync(join(outDir, path), { force: true });
+    for (let dir = dirname(path); dir !== "." && dir !== "/"; dir = dirname(dir)) directories.add(dir);
+  }
+  // Remove only the directories the pack itself made, deepest first, and only when nothing else is in them.
+  for (const dir of [...directories].toSorted((a, b) => b.length - a.length)) {
+    const full = join(outDir, dir);
+    if (existsSync(full) && readdirSync(full).length === 0) rmdirSync(full);
+  }
 }
 
 function prepareOutDir(outDir: string): void {
