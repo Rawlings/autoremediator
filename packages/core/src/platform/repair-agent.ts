@@ -1,4 +1,7 @@
+import type { MemoryProposal } from "./memory/propose.js";
 import type { LlmUsageMetrics } from "./types.js";
+
+export type { MemoryProposal };
 
 /** Limits on one repair attempt. There is deliberately no money figure: that would need a price table. */
 export interface RepairBudget {
@@ -43,6 +46,11 @@ export interface RepairTask {
   failure: RepairFailure;
   /** What earlier rounds said they changed, oldest first. */
   previousRounds: string[];
+  /**
+   * What the repository's memory holds about this upgrade, already quoted as data (see
+   * `renderMemoryForAgent`). Undefined when memory has nothing to say.
+   */
+  memory?: string;
 }
 
 /** Commands an agent may run inside the worktree; each is the project's own, never free-form. */
@@ -58,6 +66,11 @@ export interface RepairEnv {
   budget: RepairBudget;
   signal: AbortSignal;
   commands: RepairCommands;
+  /**
+   * Propose a memory entry. It is stored as `proposed` and changes nothing until a person accepts it;
+   * the answer says what happened. Absent when the host does not want proposals.
+   */
+  proposeMemory?: (proposal: MemoryProposal) => Promise<string>;
 }
 
 export interface TranscriptEntry {

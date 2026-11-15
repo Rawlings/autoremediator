@@ -64,6 +64,7 @@ export interface CommandOptions {
   requireProofOfFix?: boolean;
   reproductionTest?: string;
   breakingChangeRefactor?: boolean;
+  ignoreMemory?: boolean;
 }
 
 export function isCveId(value: string): boolean {

@@ -11,6 +11,7 @@ import {
 import { DEFAULT_POLICY, isPackageAllowed, loadPolicy } from "../../platform/policy.js";
 import type { AutoremediatorPolicy } from "../../platform/policy.js";
 import { loadRegistryConfig } from "../../platform/registry-config.js";
+import { MEMORY_PATH } from "../../platform/memory/path.js";
 import { TRACK_RECORD_PATH } from "../../platform/track-record-path.js";
 import { verifyPackageTrust } from "../../platform/supply-chain.js";
 import type { InventoryPackage, PackageManager } from "../../platform/types.js";
@@ -30,6 +31,7 @@ export interface CheckOutcome {
   status: CheckStatus;
   message: string;
   details?: string[];
+  command?: string[];
 }
 
 /** Shared, lazily computed facts about the change, so checks do not repeat the work. */
@@ -77,7 +79,7 @@ export function createCheckContext(request: VerifyRequest): CheckContext {
       (files ??= changedFilesSince(
         request.cwd,
         request.statusBefore,
-        options.ignoreTrackRecord ? [TRACK_RECORD_PATH] : [],
+        options.ignoreTrackRecord ? [TRACK_RECORD_PATH, MEMORY_PATH] : [],
       )),
     changes: () => (changes ??= manifestChanges(request.cwd, request.baseFiles)),
     inventory: () =>
@@ -225,9 +227,9 @@ const typecheck: CheckFn = async (context) => {
 
 const tests: CheckFn = async (context) => {
   if (!context.options.runTests) return skip("not requested");
-  const command = resolveTestCommand(context.packageManager, constraintsOf(context));
+  const command = resolveTestCommand(context.packageManager, constraintsOf(context), context.request.cwd);
   const outcome = await runCommandCheck(command, context.request.cwd);
-  return outcome.passed ? pass(`${command.join(" ")} passed`) : fail(`${command.join(" ")} failed`, tail(outcome.output));
+  return outcome.passed ? { ...pass(`${command.join(" ")} passed`), command } : fail(`${command.join(" ")} failed`, tail(outcome.output));
 };
 
 /** The reproduction test, run now, passes. (That it failed before is established when it is written.) */

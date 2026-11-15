@@ -117,7 +117,7 @@ export const applyPackageOverrideTool = defineTool({
     };
     const yarnMajor = pm === "yarn" ? await getYarnMajorVersion(cwd) : undefined;
     const installCommand = resolveInstallCommand(pm, commandConstraints, yarnMajor);
-    const testCommand = resolveTestCommand(pm, commandConstraints);
+    const testCommand = resolveTestCommand(pm, commandConstraints, cwd);
     const dedupeCommand = resolveDedupeCommand(pm, commandConstraints);
     const overrideSelector = selector?.trim() || packageName;
 

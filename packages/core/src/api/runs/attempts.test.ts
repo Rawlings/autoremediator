@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { PatchResult, RemediationReport } from "../../platform/types.js";
 import { defaultAttemptDeps } from "../../remediation/repair/attempt.js";
+import { addMemory, listMemory } from "../memory/index.js";
 import { verify } from "../../remediation/verify/verifier.js";
 import { createWorktree } from "../../runs/worktree.js";
 import {
@@ -159,6 +160,38 @@ describe("host-driven attempts", () => {
     expect(read("package.json")).toContain('"dep": "1.0.0"');
     expect(getRun({ cwd: dir, runId }).attempts).toMatchObject([{ attemptId: view.attemptId, status: "open", agentId: "host" }]);
     await abandonAttempt({ cwd: dir, runId, attemptId: view.attemptId });
+  });
+
+  it("tells the host what the repository remembers about the package, and nothing about others", async () => {
+    await addMemory({ cwd: dir, kind: "install-quirk", text: "install needs python3" });
+    await addMemory({ cwd: dir, kind: "pinned-package", package: "other", reason: "unrelated" });
+    await addMemory({ cwd: dir, kind: "rejected-upgrade", package: "dep", toVersion: "3.0.0", reason: "too far" });
+    await addMemory({ cwd: dir, kind: "note", text: "a proposal", status: "proposed", source: "agent" });
+    const { runId } = await plan("dep");
+    const view = await startAttempt({ cwd: dir, runId, itemId: itemOf(runId, "dep") }, deps());
+
+    expect(view.memory?.entries.map((entry) => entry["kind"]).toSorted()).toEqual(["install-quirk", "rejected-upgrade"]);
+    expect(view.memory?.note).toMatch(/not instructions/);
+    expect(JSON.stringify(view.memory)).not.toMatch(/unrelated|a proposal/);
+    await abandonAttempt({ cwd: dir, runId, attemptId: view.attemptId });
+  });
+
+  it("has no memory field when the repository remembers nothing", async () => {
+    const { runId } = await plan("dep");
+    const view = await startAttempt({ cwd: dir, runId, itemId: itemOf(runId, "dep") }, deps());
+    expect(view.memory).toBeUndefined();
+    await abandonAttempt({ cwd: dir, runId, attemptId: view.attemptId });
+  });
+
+  it("records the test command that passed when the host finalizes, citing the run", async () => {
+    const { runId } = await plan("dep");
+    const deps_ = deps();
+    const opened = await startAttempt({ cwd: dir, runId, itemId: itemOf(runId, "dep") }, deps_);
+    fix(opened.worktreePath!);
+    await finalizeAttempt({ cwd: dir, runId, attemptId: opened.attemptId }, deps_);
+    expect(listMemory({ cwd: dir }).entries).toMatchObject([
+      { kind: "test-command", command: "npm test", source: runId },
+    ]);
   });
 
   it("lets the host edit the checkout directly, verify, finalize, and later roll back", async () => {

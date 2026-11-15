@@ -40,6 +40,11 @@ import {
   validatePatchArtifact,
   verifyAttempt,
   verifyRun,
+  acceptMemory,
+  addMemory,
+  listMemory,
+  pruneMemory,
+  removeMemory,
 } from "../api/index.js";
 
 /** The SDK functions operations call. Injectable so tests and embedders can substitute them. */
@@ -86,6 +91,11 @@ export interface ApiDeps {
   findVulnerableSymbolsFn: typeof findVulnerableSymbols;
   incidentFn: typeof incident;
   premortemFn: typeof premortem;
+  listMemoryFn: typeof listMemory;
+  addMemoryFn: typeof addMemory;
+  acceptMemoryFn: typeof acceptMemory;
+  removeMemoryFn: typeof removeMemory;
+  pruneMemoryFn: typeof pruneMemory;
 }
 
 export const defaultApiDeps: ApiDeps = {
@@ -131,4 +141,9 @@ export const defaultApiDeps: ApiDeps = {
   findVulnerableSymbolsFn: findVulnerableSymbols,
   incidentFn: incident,
   premortemFn: premortem,
+  listMemoryFn: listMemory,
+  addMemoryFn: addMemory,
+  acceptMemoryFn: acceptMemory,
+  removeMemoryFn: removeMemory,
+  pruneMemoryFn: pruneMemory,
 };

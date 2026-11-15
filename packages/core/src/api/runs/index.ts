@@ -23,6 +23,13 @@ import { applyEvents, autonomyForReport, recordOutcomes, rollbackEvent, verifyEv
 import { defaultRunDeps, type RunDeps } from "./deps.js";
 import { hasRecipeFor } from "./recipes.js";
 import {
+  appliedTestCommand,
+  passedTestCommands,
+  recordMemory,
+  rejectedUpgradeEntry,
+  testCommandEntry,
+} from "./memory-events.js";
+import {
   APPLICABLE_STATUSES,
   ensureRunSnapshot,
   repairItem,
@@ -522,6 +529,23 @@ export async function applyPlan(
     await recordOutcomes(cwd, plan.options.policy, applyEvents(run, plan.options, outcomes), (problem) =>
       ledger.append("autonomy.record-failed", { message: problem }),
     );
+    // What this run established for the repository's memory: upgrades the verifier rejected, and how tests ran.
+    const testCommands = new Set(
+      outcomes.flatMap((outcome) => {
+        const ran = passedTestCommands(outcome.verification);
+        if (ran.length > 0 || outcome.status !== "applied") return ran;
+        return [appliedTestCommand(cwd, plan.options)].filter((command) => command !== undefined);
+      }),
+    );
+    await recordMemory(
+      cwd,
+      runId,
+      [
+        ...outcomes.map((outcome) => rejectedUpgradeEntry(outcome, outcome.verification)),
+        ...[...testCommands].map((command) => testCommandEntry(command)),
+      ],
+      (problem) => ledger.append("memory.record-failed", { message: problem }),
+    );
     const autonomy = autonomyForReport(cwd, plan.options.policy, status, outcomes, plan, levelBefore);
 
     return {
@@ -759,6 +783,12 @@ export async function verifyRun(
   });
   await recordOutcomes(cwd, plan.options.policy, verifyEvents(run, plan, applied.size, result), (problem) =>
     store.ledger(runId).append("autonomy.record-failed", { message: problem }),
+  );
+  await recordMemory(
+    cwd,
+    runId,
+    passedTestCommands(result).map((command) => testCommandEntry(command)),
+    (problem) => store.ledger(runId).append("memory.record-failed", { message: problem }),
   );
   return { runId, ...result };
 }

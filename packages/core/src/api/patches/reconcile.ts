@@ -220,7 +220,7 @@ export async function reconcilePatchArtifacts(
 
       // Execute tests truthfully if requested
       if (options.runTests) {
-        const testCmd = resolveTestCommand(pm);
+        const testCmd = resolveTestCommand(pm, undefined, cwd);
         try {
           await safeExecaCommand(testCmd, {
             timeoutMs: LONG_RUNNING_TIMEOUT_MS,

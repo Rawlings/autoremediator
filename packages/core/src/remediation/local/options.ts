@@ -35,6 +35,7 @@ export interface LocalRunOptions {
   proofOfFix?: boolean | string;
   requireProofOfFix?: boolean;
   breakingChangeRefactor?: boolean;
+  ignoreMemory: boolean;
 }
 
 export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptions {
@@ -91,5 +92,6 @@ export function resolveLocalRunOptions(options: RemediateOptions): LocalRunOptio
     requireProofOfFix: options.requireProofOfFix ?? constraints.requireProofOfFix,
     breakingChangeRefactor:
       options.breakingChangeRefactor ?? constraints.enableBreakingChangeRefactor,
+    ignoreMemory: options.ignoreMemory ?? false,
   };
 }

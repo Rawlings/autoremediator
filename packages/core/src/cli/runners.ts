@@ -180,6 +180,7 @@ export function toRemediateOptions(opts: CommandOptions): RemediateOptions {
     requireProofOfFix: opts.requireProofOfFix,
     reproductionTest: opts.reproductionTest,
     breakingChangeRefactor: opts.breakingChangeRefactor,
+    ignoreMemory: opts.ignoreMemory,
   };
 }
 

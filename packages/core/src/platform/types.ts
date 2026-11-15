@@ -692,6 +692,11 @@ export interface RemediateOptions extends CorrelationContext {
   reproductionTest?: string;
   /** If true, attempt agentic call-site refactoring when major version upgrades introduce breaking API changes. */
   breakingChangeRefactor?: boolean;
+  /**
+   * SDK and CLI only (not accepted over MCP or HTTP, so an agent cannot lift a person's constraint):
+   * plan as if the repository's memory were empty, ignoring pinned packages and rejected upgrades.
+   */
+  ignoreMemory?: boolean;
 }
 
 export type SbomStatus = "patched" | "unpatched" | "skipped" | "suppressed";

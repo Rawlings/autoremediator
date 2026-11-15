@@ -10,6 +10,25 @@ import { applyPackageOverrideTool } from "../tools/apply-package-override/index.
 import { applyVersionBumpTool } from "../tools/apply-version-bump.js";
 import { describeSkipped, selectUpgradeTarget } from "./select-target.js";
 
+/** Every fixed version was rejected in an earlier run: nothing to propose until a person says otherwise. */
+function memoryBlocked(
+  pkg: VulnerablePackage["installed"],
+  target: { version: string; reason: string },
+  dryRun: boolean,
+  vulnerable: VulnerablePackage,
+): PatchResult {
+  return {
+    packageName: pkg.name,
+    strategy: "none",
+    fromVersion: pkg.version,
+    applied: false,
+    dryRun,
+    unresolvedReason: "constraint-blocked",
+    vulnerableRange: vulnerable.affected.vulnerableRange,
+    message: `Remediation memory blocks every fixed version of "${pkg.name}": ${target.reason}. Remove the entry with \`autoremediator memory remove\`, or pass --ignore-memory.`,
+  };
+}
+
 export async function resolvePrimaryResult(params: {
   vulnerable: VulnerablePackage;
   cwd: string;
@@ -24,6 +43,8 @@ export async function resolvePrimaryResult(params: {
   patchesDir?: string;
   /** Offline intelligence runs skip the advisory lookup on candidate versions. */
   offlineIntelligence?: boolean;
+  /** Versions of this package remediation memory says were rejected, with why. */
+  rejectedVersions?: ReadonlyMap<string, string>;
 }): Promise<{ result: PatchResult }> {
   const {
     vulnerable,
@@ -38,6 +59,7 @@ export async function resolvePrimaryResult(params: {
     reproductionTest,
     patchesDir,
     offlineIntelligence,
+    rejectedVersions,
   } = params;
   const pkg = vulnerable.installed;
   const firstPatchedVersion = vulnerable.affected.firstPatchedVersion;
@@ -96,7 +118,10 @@ export async function resolvePrimaryResult(params: {
       registry,
       supplyChainPolicy: withCooldown(constraints.supplyChainPolicy, cooldown, pkg.name),
       offline: offlineIntelligence,
+      rejected: rejectedVersions,
     });
+
+    if (target.status === "memory-blocked") return { result: memoryBlocked(pkg, target, dryRun, vulnerable) };
 
     if (target.status === "no-safe-version") {
       return {
@@ -179,7 +204,10 @@ export async function resolvePrimaryResult(params: {
     registry,
     supplyChainPolicy: withCooldown(constraints.supplyChainPolicy, cooldown, pkg.name),
     offline: offlineIntelligence,
+    rejected: rejectedVersions,
   });
+
+  if (target.status === "memory-blocked") return { result: memoryBlocked(pkg, target, dryRun, vulnerable) };
 
   if (target.status === "no-safe-version") {
     return {
