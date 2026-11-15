@@ -14,24 +14,26 @@ user-invocable: true
 
 ## Scope
 
-**Contributor tooling.** This skill governs the MCP tool surface — what tools are registered, their schemas, and how they map to the SDK API. Read it when extending or modifying `packages/core/src/mcp/server.ts`. It does not govern how the underlying remediation logic works; for that, use the runtime skills.
+**Contributor tooling.** MCP tools, HTTP routes and A2A skills are all generated from one list of operations in the catalog (`packages/core/src/catalog/`). Read this when adding or changing an operation, its schema or its description. You do not edit `mcp/server.ts` to add a tool. It does not govern how the underlying remediation logic works; for that, use the runtime skills.
 
 ## When to Use
 
-- Adding a new tool to `packages/core/src/mcp/server.ts`.
+- Adding a new operation to the catalog (it becomes an MCP tool, an HTTP route and, if listed, an A2A skill).
 - Renaming or deprecating an existing MCP tool.
 - Changing a tool's input schema or result shape.
 - Synchronizing MCP tool surface with the agent tool map.
 
 ## Inputs
 
-- Existing tool definitions in `packages/core/src/remediation/tools/`.
-- MCP server registration in `packages/core/src/mcp/server.ts`.
+- Existing operations in `packages/core/src/catalog/` (one `<feature>-operations.ts` per feature, built with `define-operation.ts`) and the shared `responses.ts`.
+- The MCP adapter in `packages/core/src/catalog/adapters/mcp.ts` and the HTTP adapter beside it.
 - Tool contracts in `.github/instructions/tool-contracts.instructions.md`.
 
 ## Outputs
 
-- Updated `packages/core/src/mcp/server.ts` tool registrations.
+- The operation defined once in the feature's `*-operations.ts` file; use the shared annotations and `RESPONSES`, not local copies.
+- `A2A_SKILL_NAMES` in `packages/core/src/a2a/agent-card.ts` only when the operation should be an A2A skill (it is a curated list).
+- `docs/reference/modes.md` entries for Mode 4 (MCP) and Mode 5 (HTTP).
 - Updated tool contracts when signatures change.
 - Verified parity with SDK exports, CLI option exposure, OpenAPI schemas, and docs references for the same operation.
 
@@ -47,7 +49,7 @@ MCP tools use stable API-facing names that map to exported SDK entry points:
 
 ## Guardrails
 
-- MCP tool names must exactly match registered names in `packages/core/src/mcp/server.ts` and documented public behavior.
+- Tool names are the catalog operation names and must match documented public behavior.
 - MCP tool parameter fields must remain aligned with the underlying API option contracts.
 - MCP tool descriptions must be precise enough for an LLM to select the correct tool without reading source code.
 - Never expose internal implementation details (model names, file paths) in MCP tool descriptions.
@@ -58,5 +60,5 @@ MCP tools use stable API-facing names that map to exported SDK entry points:
 
 - MCP tool list contains `remediate`, `planRemediation`, and `remediateFromScan`.
 - Each tool's parameter schema is aligned with the underlying public API option contracts.
-- MCP server starts without errors (`node dist/mcp/server.js`).
-- Running `autoremediator-mcp` registers all tools with the MCP host.
+- The catalog tests pass and the MCP server starts without errors (`node dist/mcp/server.js`).
+- Running `autoremediator-mcp` registers the new tool; the generated OpenAPI document contains the route.

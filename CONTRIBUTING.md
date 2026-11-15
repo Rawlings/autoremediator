@@ -49,7 +49,7 @@ network, and should mock at module boundaries.
 - Update the documentation in the same pull request. [`docs/README.md`](docs/README.md) is the index;
   the change-to-docs mapping is in
   [`documentation-governance.instructions.md`](.github/instructions/documentation-governance.instructions.md).
-- Keep names consistent across the SDK, CLI, MCP and HTTP surfaces. The naming rules are in
+- Keep names consistent across the SDK, CLI, MCP and HTTP surfaces. The naming rules and the wanted state for how code is written are in
   [`AGENTS.md`](AGENTS.md).
 
 ## Principles

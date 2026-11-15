@@ -11,7 +11,7 @@ Feature changes require matching tests. Tests should verify behavior, safety gat
 
 ## Placement
 
-- Keep unit tests colocated with implementation files (`*.test.ts`).
+- Keep unit tests colocated with implementation files as `<name>.test.ts`. Do not invent new suffixes; real-process or real-git tests are marked in their describe title, not in the file name. Test helpers live in `testing/` next to the feature, or in `shared/testing/` when two features use them (see `code-structure`).
 - Add integration-style tests in the owning surface module (API, CLI, MCP, OpenAPI) when contracts change.
 - Keep scanner/intelligence fixtures near adapter/source tests.
 

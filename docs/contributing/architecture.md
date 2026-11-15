@@ -1,7 +1,12 @@
 # Architecture
 
-For contributors. Read [AGENTS.md](../../AGENTS.md) for the public naming canon and fallback rules,
-and [CONTRIBUTING.md](../../CONTRIBUTING.md) for the workflow. The behavior these modules
+For contributors. Read [AGENTS.md](../../AGENTS.md) for the wanted state and the public naming canon,
+[Modes and runtime behaviour](../reference/modes.md) for fallback rules and precedence, and
+[CONTRIBUTING.md](../../CONTRIBUTING.md) for the workflow.
+
+This page describes the layout as it is today. The code is moving to a feature-folder layout; the
+plan and the mapping are in [Target structure](target-structure.md). Update this page in each
+change that moves a folder. The behavior these modules
 implement is described in [How it works](../how-it-works.md).
 
 ## Layout (`packages/core/src`)

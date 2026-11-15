@@ -61,9 +61,11 @@ AGENTS.md
 .github/skills/safety-validation-gates/SKILL.md
 .github/skills/scanner-parser-integration/SKILL.md
 .github/skills/evidence-ci-reporting/SKILL.md
-.github/skills/architecture-conventions/SKILL.md
+.github/skills/code-structure/SKILL.md
+.github/skills/code-style/SKILL.md
+.github/skills/boundaries-and-errors/SKILL.md
+.github/skills/public-api-governance/SKILL.md
 .github/skills/mcp-tool-registration/SKILL.md
-.github/skills/api-surface/SKILL.md
 .github/skills/feature-implementation/SKILL.md
 .github/skills/test-governance/SKILL.md
 .github/skills/governance-check/SKILL.md
@@ -77,6 +79,7 @@ CONTRIBUTING.md
 AGENTS.md
 llms.txt
 docs/README.md
+docs/reference/modes.md
 docs/reference/cli.md
 docs/reference/sdk.md
 docs/reference/policy-file.md

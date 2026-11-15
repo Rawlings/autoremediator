@@ -2,19 +2,26 @@
   "name": "autoremediator-rawlings",
   "displayName": "Node CVE Remediator",
   "version": "0.3.2",
-  "description": "VS Code extension for risk-aware Node.js CVE diagnostics and remediation using OSV, CISA KEV, and FIRST EPSS signals",
+  "description": "Find vulnerable Node.js dependencies in VS Code, ranked by real-world exploit risk (OSV, CISA KEV, EPSS), and fix them with Autoremediator's verified, agentic remediation",
   "categories": [
     "Linters",
     "Other"
   ],
   "keywords": [
+    "agentic-remediation",
+    "autofix",
     "cve",
+    "dependabot-alternative",
     "dependency",
+    "npm",
     "npm-audit",
     "remediation",
+    "safe-upgrades",
+    "sca",
     "security",
     "supply-chain",
-    "vulnerability"
+    "vulnerability",
+    "vulnerable-dependencies"
   ],
   "homepage": "https://github.com/Rawlings/autoremediator#readme",
   "bugs": {

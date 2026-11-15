@@ -1,8 +1,9 @@
 name: Autoremediator
 description: >
-  CVE remediation for Node.js dependencies. Applies version bumps and overrides
-  for scanner output or a single CVE ID, with an optional model-generated patch
-  fallback when no safe version exists.
+  Agentic remediation for Node.js dependencies. Fixes what your audit, a scanner
+  report or a single CVE ID finds with the smallest safe change, tests it, and
+  rolls back what fails. Optionally repairs code an upgrade breaks and drafts a
+  patch when no fixed version exists.
 author: rawlings
 
 branding:

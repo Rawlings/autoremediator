@@ -60,6 +60,7 @@ import type { ChangeRequestProvider } from "../platform/types.js";
 import { PACKAGE_VERSION } from "../version.js";
 import { formatAutonomyLine } from "./autonomy.js";
 import { formatCountMap, logJson } from "./output.js";
+import { formatResultLines } from "./result-lines.js";
 import { runInteractiveTriage } from "./triage.js";
 import type { CommandOptions, OutputFormat } from "./types.js";
 
@@ -339,6 +340,9 @@ export async function runScanInput(inputPath: string, opts: CommandOptions): Pro
     return;
   }
 
+  for (const line of formatResultLines(report.reports.flatMap((r) => r.results))) {
+    process.stdout.write(`${line}\n`);
+  }
   process.stdout.write(`CVEs found: ${report.cveIds.length}\n`);
   process.stdout.write(`Remediation reports: ${report.reports.length}\n`);
   process.stdout.write(`Successful remediations: ${report.successCount}\n`);

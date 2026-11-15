@@ -1,75 +1,27 @@
 ---
 description: Public API stability and cross-surface contract rules for SDK, CLI, MCP, and OpenAPI.
-applyTo: packages/core/src/{api,cli,mcp,openapi,platform}/**/*.ts
+applyTo: packages/core/src/{api,cli,mcp,openapi,catalog,a2a,platform}/**/*.ts
 ---
 
 # API Surface Instructions
 
-## Public Entry Points
+Naming, parity and compatibility rules are in the `public-api-governance` skill; adding or changing
+an operation is in the `mcp-tool-registration` skill. The SDK entry points and their options are in
+`docs/reference/sdk.md`. This file keeps only the stability promises.
 
-The package exposes primary remediation and patch lifecycle programmatic entry points:
+## Stability
 
-```ts
-import {
-  remediate,
-  planRemediation,
-  remediateFromScan,
-  listPatchArtifacts,
-  inspectPatchArtifact,
-  validatePatchArtifact,
-} from "autoremediator";
-```
+- Report types carry `schemaVersion: "1.0"`. Do not change it without a migration and a changeset.
+- The SDK root export list is the public API. Everything not exported from it is internal and must
+  not be imported by consumers, including `remediation/tools/`, `intelligence/sources/` and
+  anything under `platform/` or `infra/`.
+- The CLI (`autoremediator` bin) is a stable interface: option names, exit codes and
+  `--output-format json` shapes change only with a changeset. Patch lifecycle commands
+  (`patches list`, `patches inspect`, `patches validate`) stay machine-readable.
+- MCP, OpenAPI and A2A wrap the stable API through the catalog. They do not reach into internals.
 
-- `remediate(cveId, options?)` — remediates a single CVE in a target project.
-- `planRemediation(cveId, options?)` — runs a non-mutating remediation preview for a single CVE.
-- `remediateFromScan(inputPath, options?)` — parses a scanner output file and remediates all discovered CVEs.
-- `listPatchArtifacts(options?)` — lists stored patch artifacts and manifest metadata.
-- `inspectPatchArtifact(patchFilePath, options?)` — inspects a patch artifact and unified-diff validity.
-- `validatePatchArtifact(patchFilePath, options?)` — validates manifest presence and dependency drift.
+## Parity
 
-## Type Naming
-
-| Old name (< 0.2)     | Current name          |
-| -------------------- | --------------------- |
-| `HealOptions`        | `RemediateOptions`    |
-| `HealReport`         | `RemediationReport`   |
-| `heal()`             | `remediate()`         |
-| `healFromScanFile()` | `remediateFromScan()` |
-
-## Schema Versioning
-
-All report types carry `schemaVersion: "1.0"`. Do not increment this value without a formal migration strategy and CHANGELOG entry.
-
-## Stability Guarantees
-
-The following are stable public API:
-
-- `remediate`, `planRemediation`, `remediateFromScan`, `listPatchArtifacts`, `inspectPatchArtifact`, `validatePatchArtifact`, `toCiSummary`, `ciExitCode`
-- `RemediateOptions`, `RemediationReport`, `ScanOptions`, `ScanReport`, `CiSummary`
-- All types re-exported from `packages/core/src/platform/types.ts`
-
-The following are **internal** and must not be imported by consumers:
-
-- Anything under `packages/core/src/remediation/tools/`
-- Anything under `packages/core/src/intelligence/sources/`
-- `packages/core/src/platform/config.ts` (use `RemediateOptions.llmProvider` instead)
-
-## MCP and OpenAPI Surfaces
-
-The MCP server (`packages/core/src/mcp/server.ts`) and OpenAPI server (`packages/core/src/openapi/server.ts`) wrap the stable API only. They must not bypass `api/index.ts` to call internal modules directly.
-
-When adding a new public operation, keep naming and request/response shape aligned across SDK, CLI JSON, MCP, and OpenAPI in the same change set.
-
-Public-operation reviews must also verify adjacent delivery surfaces when applicable:
-
-- GitHub action/reusable workflow option forwarding for CLI/API-exposed options
-- GitHub App repository-config bridge and runtime forwarding
-- Docs, llms, and AGENTS references for the changed contract
-
-Do not assume an untouched surface is unaffected; explicitly verify and document why.
-
-## CLI Compatibility
-
-The CLI (`autoremediator` bin) is a stable interface. Option names and exit codes must not change without a CHANGELOG note.
-
-Patch lifecycle CLI commands (`patches list`, `patches inspect`, `patches validate`) are part of the public automation contract and must remain machine-readable with `--output-format json`.
+A public change ships on every surface that exposes it, in one change set: SDK, CLI, MCP, OpenAPI,
+policy schema, GitHub Action and GitHub App forwarding where they expose it, docs, `llms.txt` and
+`docs/reference/modes.md`. Do not assume an untouched surface is unaffected; verify and record why.

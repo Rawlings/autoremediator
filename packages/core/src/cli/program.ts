@@ -232,7 +232,7 @@ export function createProgram(): Command {
 
   program
     .name("autoremediator")
-    .description("Scanner-first Node.js vulnerability auto-remediation tool")
+    .description("Agentic remediation for Node.js dependencies: plan the fix, repair what it breaks, verify, roll back on failure")
     .version(PACKAGE_VERSION)
     // Root options are only valid before a subcommand. Without this, the root swallows flags such as
     // `--cwd` and `--output-format` typed after `reachability`/`diff`/`patches`, and the subcommand

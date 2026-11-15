@@ -1,7 +1,7 @@
 ---
 name: public-api-governance
-argument-hint: Describe the public API naming or schema change and affected surfaces.
-description: Use when defining or changing canonical public API terminology, option naming, report field naming, and cross-surface consistency across SDK, CLI, MCP, OpenAPI, and docs.
+argument-hint: Describe the public API change and which surfaces it touches.
+description: Use when adding, renaming or reshaping anything callers see: SDK exports and types, option and report fields, CLI flags, MCP tool schemas, HTTP routes and their docs. Covers naming, schema shape, parity across surfaces and compatibility.
 disable-model-invocation: false
 license: MIT
 metadata:
@@ -10,65 +10,55 @@ metadata:
 user-invocable: true
 ---
 
-# Public API Governance
+# Public API governance
 
-## Scope
+Contributor tooling for the public contract: SDK exports and types, CLI flags and output, MCP tool
+schemas, OpenAPI routes, and the docs that describe them. It does not cover how remediation runs
+internally; for that use the runtime skills. For adding an operation to the catalog, use
+`mcp-tool-registration`.
 
-Contributor tooling for the public contract. This skill governs naming, schema shape, and growth strategy for all user-facing API surfaces:
+## The wanted state
 
-- SDK exports and option/report types
-- CLI flags and output contracts
-- MCP tool input schemas
-- OpenAPI request/response schemas
-- User and contributor documentation
+- **One concept, one name, everywhere.** The same term in the SDK, CLI, MCP, OpenAPI and docs. The
+  canonical terms are in `AGENTS.md`; do not add synonyms or aliases.
+- **One definition.** An operation, its option schema and its descriptions are declared once, in
+  the catalog. MCP, HTTP and A2A are generated from it; the CLI reuses its schema and descriptions
+  rather than retyping them.
+- **A small, deliberate surface.** The root export list (`src/index.ts`) is curated. Internals, test
+  seams and constants a caller never needs are not exported. Add an export only when a caller needs
+  it and it is ready to be documented unchanged.
+- **Results are unions, not bags.** A result with a `status` is a discriminated union; fields that
+  only apply to some statuses exist only on those variants (see `boundaries-and-errors`).
 
-This skill does not govern remediation pipeline step order or internal tool algorithm details.
+## Naming
 
-## Canonical Naming Rules
+- camelCase for SDK fields and JSON properties; kebab-case for CLI flags that map to a field.
+- Positive booleans (`runTests`, `evidence`), never inverted names.
+- Group before you grow: related options go under a domain object (`changeRequest`, `constraints`,
+  `provenance`), not as new root fields. Use the protocol's own term when one exists (`head`/`base`).
+- One verb per concept across exported functions (`plan*`, `apply*`, `assess*`, `list*`, `get*`).
+  The CLI command name may be friendlier, but its mapping to the function is documented.
+- Think one version ahead: pick the name that survives the next likely extension.
 
-- Use one canonical term per concept across all public surfaces.
-- Use positive boolean semantics (`runTests`, `evidence`) and avoid inverted naming.
-- Use camelCase for SDK fields and JSON properties.
-- Use kebab-case for CLI flags that map directly to canonical SDK fields.
-- Keep concept families aligned:
-  - policy: `policy`
-  - tests: `runTests`
-  - evidence: `evidence`
-  - patch summaries: `patchCount`, `patchesDir`
-  - remediation aggregates: `strategyCounts`, `dependencyScopeCounts`, `unresolvedByReason`
+## Parity in the same change
 
-## Extensibility Rules
+A new or changed field ships on every surface that exposes it, in one change: catalog schema (and
+so MCP, HTTP, A2A), CLI flag and mapping, SDK type, policy-file key if it is configurable, GitHub
+Action and GitHub App inputs if they forward it, tests, docs, and `llms.txt`. Partial rollout is a
+defect. Where a surface does not expose it, record why in the change.
 
-- **Group before you grow.** Related options must be grouped under a domain object (`changeRequest`, `constraints`, `provenance`) rather than added as new root fields. A flat root field is only acceptable for a standalone concept with no plausible siblings.
-- **Name the concept, not the implementation.** Use the term the underlying API or protocol uses when it already exists (e.g., `head`/`base` from GitHub's PR API, not `headBranch`/`baseBranch`). Do not invent synonyms for established terms.
-- **Stable enough to document.** Add a field only when the concept is user-visible, fully named, and ready to appear in docs unchanged.
-- **No synonym growth.** If a canonical field name exists, all surfaces must use it. Do not introduce aliased or abbreviated versions.
-- **Parity in the same changeset.** Any new field must be introduced with exact naming parity across SDK, CLI, MCP, OpenAPI, and docs in one atomic change. Partial rollout is a governance defect.
-- **Think one version ahead.** Before finalizing a name, ask whether it can accommodate the next likely extension without a rename. If it cannot, find a better name now.
+## Compatibility
 
-## Required Update Set
+- Breaking changes are allowed before 1.0 but must be intentional: a `minor` changeset with a
+  migration section that lists every renamed or removed name.
+- Keep `schemaVersion: "1.0"` unless a schema migration is approved.
+- `ciExitCode` and report builders stay pure.
+- Never expose internal module paths, model names or file paths in public descriptions.
 
-For any public API naming/schema change, update all of the following:
+## Checklist
 
-1. `packages/core/src/platform/types.ts`
-2. `packages/core/src/api/index.ts` (and any affected `packages/core/src/api/*.ts` modules)
-3. `packages/core/src/cli/index.ts` and `packages/core/src/cli/*.ts`
-4. `packages/core/src/mcp/server.ts`
-5. `packages/core/src/openapi/server.ts`
-6. Relevant tests under `packages/core/src/**/*.test.ts`
-7. All affected markdown docs in the repository
-
-## Guardrails
-
-- Do not leave mixed terminology in the same release.
-- Do not add compatibility aliases unless explicitly requested.
-- Preserve `schemaVersion: "1.0"` unless a formal schema migration is approved.
-- Keep MCP and OpenAPI surfaces wrapped around stable API entry points from `api/index.ts`.
-
-## Verification Checklist
-
-- `pnpm typecheck`
-- `pnpm test`
-- `pnpm build`
-- `pnpm docs:build`
-- Repo-wide grep confirms no stale public names remain.
+- `pnpm typecheck:all && pnpm test:all && pnpm build:all` pass.
+- Repo-wide search finds no stale name from a rename (code, docs, `llms.txt`, e2e).
+- Catalog, CLI, SDK types, policy schema, docs and changeset agree; the CLI parity test covers the
+  command.
+- The changeset states the public impact first.

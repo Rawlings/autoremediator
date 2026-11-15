@@ -16,7 +16,7 @@ import {
 
 const REPOSITORY = "https://github.com/Rawlings/autoremediator";
 const DESCRIPTION =
-  "Fix vulnerable npm dependencies safely: plan, apply with verification, repair upgrades that break the project, roll back.";
+  "Agentic remediation for vulnerable npm dependencies: plan, apply with verification, repair upgrades that break the project, roll back.";
 
 const json = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`;
 

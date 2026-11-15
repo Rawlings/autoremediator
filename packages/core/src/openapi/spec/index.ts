@@ -7,7 +7,7 @@ export const OPENAPI_SPEC = {
   info: {
     title: "autoremediator",
     version: PACKAGE_VERSION,
-    description: "Agentic CVE remediation for Node.js dependency projects",
+    description: "Agentic CVE remediation for Node.js dependency projects: plan, fix, repair, verify, roll back on failure",
   },
   servers: [
     {

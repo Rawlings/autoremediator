@@ -2,7 +2,7 @@
   "name": "@autoremediator/github-app",
   "version": "0.5.0",
   "private": true,
-  "description": "GitHub App MVP foundation for autoremediator",
+  "description": "GitHub App that runs Autoremediator's agentic remediation across the repositories it is installed on",
   "files": [
     "dist"
   ],
