@@ -1,6 +1,5 @@
 packages:
   - packages/*
-  - bench
 
 allowBuilds:
   "@vscode/vsce-sign": false

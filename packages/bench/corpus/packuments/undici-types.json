@@ -1,0 +1,337 @@
+{
+  "name": "undici-types",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "8.12.4"
+  },
+  "versions": {
+    "8.9.0": {
+      "name": "undici-types",
+      "version": "8.9.0",
+      "license": "MIT",
+      "_id": "undici-types@8.9.0",
+      "homepage": "https://undici.nodejs.org",
+      "bugs": {
+        "url": "https://github.com/nodejs/undici/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/undici-types/-/undici-types-8.9.0.tgz",
+        "integrity": "sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==",
+        "shasum": "e240d97c8b5d85e5347ce73d25865c7906c1ec9f",
+        "fileCount": 48,
+        "unpackedSize": 120779
+      },
+      "types": "index.d.ts",
+      "gitHead": "21a8e1ed1843e74c3004a2926c12bb0ceaca6b71",
+      "repository": {
+        "url": "git+https://github.com/nodejs/undici.git",
+        "type": "git"
+      },
+      "description": "A stand-alone types package for Undici",
+      "directories": {},
+      "_hasShrinkwrap": false
+    },
+    "8.10.0": {
+      "name": "undici-types",
+      "version": "8.10.0",
+      "license": "MIT",
+      "_id": "undici-types@8.10.0",
+      "homepage": "https://undici.nodejs.org",
+      "bugs": {
+        "url": "https://github.com/nodejs/undici/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/undici-types/-/undici-types-8.10.0.tgz",
+        "integrity": "sha512-ibvdovq3nCFs8Msrd95BW+zUOq+aOVbT+wpHUoPWhztbHEoPc6oof51iFDB6Es8lTKvNvVW9jNSAB8dwrKTMGg==",
+        "shasum": "345466f95636cce5b526e319c1e61a837c82af0b",
+        "fileCount": 48,
+        "unpackedSize": 122255
+      },
+      "types": "index.d.ts",
+      "gitHead": "c8d80e6b2dcfab282557b08f51352937bc9e5692",
+      "repository": {
+        "url": "git+https://github.com/nodejs/undici.git",
+        "type": "git"
+      },
+      "description": "A stand-alone types package for Undici",
+      "directories": {},
+      "_hasShrinkwrap": false
+    },
+    "8.10.1": {
+      "name": "undici-types",
+      "version": "8.10.1",
+      "license": "MIT",
+      "_id": "undici-types@8.10.1",
+      "homepage": "https://undici.nodejs.org",
+      "bugs": {
+        "url": "https://github.com/nodejs/undici/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/undici-types/-/undici-types-8.10.1.tgz",
+        "integrity": "sha512-ZpkgovMu+ALwfuo6Bgys8H82gHJ25d4ARMB51FD2BeLnUCDRgY6N3caWk3N6CtKR77gHmRKYHnLF723owNYPNA==",
+        "shasum": "b8cb89fa1f45668b9b09af262227f88d427aa40d",
+        "fileCount": 48,
+        "unpackedSize": 122574
+      },
+      "types": "index.d.ts",
+      "gitHead": "ede2a74e73ed0c26c43f3ecf5f245655e3738319",
+      "repository": {
+        "url": "git+https://github.com/nodejs/undici.git",
+        "type": "git"
+      },
+      "description": "A stand-alone types package for Undici",
+      "directories": {},
+      "_hasShrinkwrap": false
+    },
+    "8.10.2": {
+      "name": "undici-types",
+      "version": "8.10.2",
+      "license": "MIT",
+      "_id": "undici-types@8.10.2",
+      "homepage": "https://undici.nodejs.org",
+      "bugs": {
+        "url": "https://github.com/nodejs/undici/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/undici-types/-/undici-types-8.10.2.tgz",
+        "integrity": "sha512-7/+aSjzkUoLc92hV22bTW4aGanXf800zbwguhcICs0OAoCF9wDOE4wkopQ+SqfhXZm8mCK8gHpdTs7pZUWzK3w==",
+        "shasum": "5609f53dc7beefb4779b2ea0c08fb5eaddccc69f",
+        "fileCount": 48,
+        "unpackedSize": 122924
+      },
+      "types": "index.d.ts",
+      "gitHead": "5e541e0b9df7563e5766bbd469fbfe383d9ae6ca",
+      "repository": {
+        "url": "git+https://github.com/nodejs/undici.git",
+        "type": "git"
+      },
+      "description": "A stand-alone types package for Undici",
+      "directories": {},
+      "_hasShrinkwrap": false
+    },
+    "8.11.0": {
+      "name": "undici-types",
+      "version": "8.11.0",
+      "license": "MIT",
+      "_id": "undici-types@8.11.0",
+      "homepage": "https://undici.nodejs.org",
+      "bugs": {
+        "url": "https://github.com/nodejs/undici/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/undici-types/-/undici-types-8.11.0.tgz",
+        "integrity": "sha512-Ophcodxps+mlNdcccUrHXy+Pp8X7Q0ycBk3QelSNl+jBAPMh6cEB/5xs9xDL3PJVnVs2Cp//nnsJySuD9D2WFA==",
+        "shasum": "737069f0c7aa89f2b900bdb16735776ffc08dfdd",
+        "fileCount": 48,
+        "unpackedSize": 123213
+      },
+      "types": "index.d.ts",
+      "gitHead": "6e48f4873a677ed6a13fa3e3571b032f00244bdf",
+      "repository": {
+        "url": "git+https://github.com/nodejs/undici.git",
+        "type": "git"
+      },
+      "description": "A stand-alone types package for Undici",
+      "directories": {},
+      "_hasShrinkwrap": false
+    },
+    "8.11.1": {
+      "name": "undici-types",
+      "version": "8.11.1",
+      "license": "MIT",
+      "_id": "undici-types@8.11.1",
+      "homepage": "https://undici.nodejs.org",
+      "bugs": {
+        "url": "https://github.com/nodejs/undici/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/undici-types/-/undici-types-8.11.1.tgz",
+        "integrity": "sha512-FCcNDAVbRolmDljnTj1MzxJ3rQfUHzGnJwsUxN7P332XtqxuhBpp0+fgdB4jSfgLEYft+t2IK40x0nKR6WUorw==",
+        "shasum": "448ab8f995564b3a8d905ed74a9bb57d1c2a1176",
+        "fileCount": 48,
+        "unpackedSize": 123213
+      },
+      "types": "index.d.ts",
+      "gitHead": "5e0a2f8e02be8f1155feab2c52f55731d3bb84a4",
+      "repository": {
+        "url": "git+https://github.com/nodejs/undici.git",
+        "type": "git"
+      },
+      "description": "A stand-alone types package for Undici",
+      "directories": {},
+      "_hasShrinkwrap": false
+    },
+    "8.11.2": {
+      "name": "undici-types",
+      "version": "8.11.2",
+      "license": "MIT",
+      "_id": "undici-types@8.11.2",
+      "homepage": "https://undici.nodejs.org",
+      "bugs": {
+        "url": "https://github.com/nodejs/undici/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/undici-types/-/undici-types-8.11.2.tgz",
+        "integrity": "sha512-iMVNmWZ0leK/goS6eXMizSzmm9CDWtyphwbaCms3DNLqRxDL+mMoNVcZMTyyVgXP0N+Z8neAMzDoUOUJL8veKg==",
+        "shasum": "16d301d79df8676887848cfc76da7d181eb978b2",
+        "fileCount": 48,
+        "unpackedSize": 123213
+      },
+      "types": "index.d.ts",
+      "gitHead": "7e016ad7e5bd6540170069a9a28b1e633b29664f",
+      "repository": {
+        "url": "git+https://github.com/nodejs/undici.git",
+        "type": "git"
+      },
+      "description": "A stand-alone types package for Undici",
+      "directories": {},
+      "_hasShrinkwrap": false
+    },
+    "8.12.0": {
+      "name": "undici-types",
+      "version": "8.12.0",
+      "license": "MIT",
+      "_id": "undici-types@8.12.0",
+      "homepage": "https://undici.nodejs.org",
+      "bugs": {
+        "url": "https://github.com/nodejs/undici/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/undici-types/-/undici-types-8.12.0.tgz",
+        "integrity": "sha512-wGq3jFVfQULYgEx85BeHgITCQY3++8s+8X79v0PcLzez/cv+uOFdMR9VsX7KOrfO1CErXgfnVID2KMd8GfsvxA==",
+        "shasum": "051af7327f748f04223f4f8e6293b729cbcaba31",
+        "fileCount": 48,
+        "unpackedSize": 124544
+      },
+      "types": "index.d.ts",
+      "gitHead": "6f98fcc7c601e199d6edbb8eae1fff3f26a1ac90",
+      "repository": {
+        "url": "git+https://github.com/nodejs/undici.git",
+        "type": "git"
+      },
+      "description": "A stand-alone types package for Undici",
+      "directories": {},
+      "_hasShrinkwrap": false
+    },
+    "8.12.1": {
+      "name": "undici-types",
+      "version": "8.12.1",
+      "license": "MIT",
+      "_id": "undici-types@8.12.1",
+      "homepage": "https://undici.nodejs.org",
+      "bugs": {
+        "url": "https://github.com/nodejs/undici/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/undici-types/-/undici-types-8.12.1.tgz",
+        "integrity": "sha512-nCiEcIx87oMw9u3Yzj2DuRBzv6p0e7akhy4HUPtpBiVWmAY3o6Phznst8QhmY1oLMttLgJ2tlAvsKuzCgBSoAw==",
+        "shasum": "13a97fbf2c11035c9fc72573e874066bbf290c4a",
+        "fileCount": 48,
+        "unpackedSize": 124544
+      },
+      "types": "index.d.ts",
+      "gitHead": "a65ec32e4e396f8f1a5e4e2887611c43839bde65",
+      "repository": {
+        "url": "git+https://github.com/nodejs/undici.git",
+        "type": "git"
+      },
+      "description": "A stand-alone types package for Undici",
+      "directories": {},
+      "_hasShrinkwrap": false
+    },
+    "8.12.2": {
+      "name": "undici-types",
+      "version": "8.12.2",
+      "license": "MIT",
+      "_id": "undici-types@8.12.2",
+      "homepage": "https://undici.nodejs.org",
+      "bugs": {
+        "url": "https://github.com/nodejs/undici/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/undici-types/-/undici-types-8.12.2.tgz",
+        "integrity": "sha512-VoMeD2O0KdHhcn+oPqOrpivN+7aDOklVSwOLD7JNjbzV1CboAFek9IFOXnreoufTUtAsCsOK0iETiERPNR/fDA==",
+        "shasum": "18ba9a05e0205d7070197cad058c4a1240f2a777",
+        "fileCount": 48,
+        "unpackedSize": 124823
+      },
+      "types": "index.d.ts",
+      "gitHead": "bb6cc0ae9b6827ed273ed5ba344148273629638f",
+      "repository": {
+        "url": "git+https://github.com/nodejs/undici.git",
+        "type": "git"
+      },
+      "description": "A stand-alone types package for Undici",
+      "directories": {},
+      "_hasShrinkwrap": false
+    },
+    "8.12.3": {
+      "name": "undici-types",
+      "version": "8.12.3",
+      "license": "MIT",
+      "_id": "undici-types@8.12.3",
+      "homepage": "https://undici.nodejs.org",
+      "bugs": {
+        "url": "https://github.com/nodejs/undici/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/undici-types/-/undici-types-8.12.3.tgz",
+        "integrity": "sha512-EXE4ydL3S76dFb27UFjNVZHTyv/TLdATj/KUe29ptdcg6qXL48J2tZ3126E5kICj5jn781OR+XlVH1N6Mz8jbA==",
+        "shasum": "f58ee96cf9bed5809a14550edf483c979ab0bea7",
+        "fileCount": 48,
+        "unpackedSize": 124822
+      },
+      "types": "index.d.ts",
+      "gitHead": "ff9cc5e8556f488c045c884b4de367c5faed8522",
+      "repository": {
+        "url": "git+https://github.com/nodejs/undici.git",
+        "type": "git"
+      },
+      "description": "A stand-alone types package for Undici",
+      "directories": {},
+      "_hasShrinkwrap": false
+    },
+    "8.12.4": {
+      "name": "undici-types",
+      "version": "8.12.4",
+      "license": "MIT",
+      "_id": "undici-types@8.12.4",
+      "homepage": "https://undici.nodejs.org",
+      "bugs": {
+        "url": "https://github.com/nodejs/undici/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/undici-types/-/undici-types-8.12.4.tgz",
+        "integrity": "sha512-GNCQH3MbVGB8OAVAoTiLH8pu4wx5Ni3DWKpnBzGj3WDsi8EwmK0aOVBooNEt+g5YL1eHPxcS9XUTouwFU6j1kQ==",
+        "shasum": "e474b79d8b8555a56d73c33ae0e362f4c3980dbf",
+        "fileCount": 48,
+        "unpackedSize": 124845
+      },
+      "types": "index.d.ts",
+      "gitHead": "779ee3e12cb8c1f365f6e69ee34b088159402d2f",
+      "repository": {
+        "url": "git+https://github.com/nodejs/undici.git",
+        "type": "git"
+      },
+      "description": "A stand-alone types package for Undici",
+      "directories": {},
+      "_hasShrinkwrap": false
+    }
+  },
+  "time": {
+    "created": "2026-07-24T12:32:56.109Z",
+    "modified": "2026-11-05T08:55:41.494Z",
+    "8.9.0": "2026-07-24T12:32:56.109Z",
+    "8.10.0": "2026-08-03T15:08:45.322Z",
+    "8.10.1": "2026-08-31T13:17:38.463Z",
+    "8.10.2": "2026-09-04T13:59:21.570Z",
+    "8.11.0": "2026-09-22T06:53:17.921Z",
+    "8.11.1": "2026-09-24T08:32:16.248Z",
+    "8.11.2": "2026-09-24T08:41:03.829Z",
+    "8.12.0": "2026-10-14T09:03:58.808Z",
+    "8.12.1": "2026-10-14T09:26:36.575Z",
+    "8.12.2": "2026-10-15T15:07:07.852Z",
+    "8.12.3": "2026-10-19T14:07:58.069Z",
+    "8.12.4": "2026-11-05T08:55:41.494Z"
+  }
+}

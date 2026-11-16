@@ -55,13 +55,13 @@ export function claudeCodePluginFiles(): Record<string, string> {
       plugins: [
         {
           name: "autoremediator",
-          source: "./plugins/claude-code",
+          source: "./integrations/claude-code",
           description: DESCRIPTION,
           category: "security",
         },
       ],
     }),
-    "plugins/claude-code/.claude-plugin/plugin.json": json({
+    "integrations/claude-code/.claude-plugin/plugin.json": json({
       name: "autoremediator",
       description: DESCRIPTION,
       author: { name: "Rawlings" },
@@ -70,10 +70,10 @@ export function claudeCodePluginFiles(): Record<string, string> {
       license: "MIT",
       keywords: ["security", "npm", "cve", "dependencies", "remediation"],
     }),
-    "plugins/claude-code/.mcp.json": json({
+    "integrations/claude-code/.mcp.json": json({
       mcpServers: { autoremediator: mcpServerEntry(PACKAGE_VERSION) },
     }),
-    "plugins/claude-code/hooks/hooks.json": json({
+    "integrations/claude-code/hooks/hooks.json": json({
       hooks: {
         PreToolUse: [
           {
@@ -83,12 +83,12 @@ export function claudeCodePluginFiles(): Record<string, string> {
         ],
       },
     }),
-    "plugins/claude-code/commands/remediate.md": REMEDIATE_COMMAND,
-    "plugins/claude-code/commands/vet.md": VET_COMMAND,
-    "plugins/claude-code/agents/dependency-remediator.md": SUBAGENT,
+    "integrations/claude-code/commands/remediate.md": REMEDIATE_COMMAND,
+    "integrations/claude-code/commands/vet.md": VET_COMMAND,
+    "integrations/claude-code/agents/dependency-remediator.md": SUBAGENT,
   };
   for (const skill of SKILLS) {
-    files[`plugins/claude-code/skills/${skill.name}/SKILL.md`] = renderSkill(skill);
+    files[`integrations/claude-code/skills/${skill.name}/SKILL.md`] = renderSkill(skill);
   }
   return files;
 }

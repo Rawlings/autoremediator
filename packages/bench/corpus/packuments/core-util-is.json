@@ -1,0 +1,113 @@
+{
+  "name": "core-util-is",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "1.0.3"
+  },
+  "versions": {
+    "1.0.2": {
+      "name": "core-util-is",
+      "version": "1.0.2",
+      "description": "The `util.is*` functions introduced in Node v0.12.",
+      "main": "lib/util.js",
+      "repository": {
+        "type": "git",
+        "url": "git://github.com/isaacs/core-util-is.git"
+      },
+      "keywords": [
+        "util",
+        "isBuffer",
+        "isArray",
+        "isNumber",
+        "isString",
+        "isRegExp",
+        "isThis",
+        "isThat",
+        "polyfill"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me",
+        "url": "http://blog.izs.me/"
+      },
+      "license": "MIT",
+      "bugs": {
+        "url": "https://github.com/isaacs/core-util-is/issues"
+      },
+      "scripts": {
+        "test": "tap test.js"
+      },
+      "devDependencies": {
+        "tap": "^2.3.0"
+      },
+      "gitHead": "a177da234df5638b363ddc15fa324619a38577c8",
+      "homepage": "https://github.com/isaacs/core-util-is#readme",
+      "_id": "core-util-is@1.0.2",
+      "_shasum": "b5fd54220aa2bc5ab57aab7140c940754503c1a7",
+      "_from": ".",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/core-util-is/-/core-util-is-1.0.2.tgz",
+        "integrity": "sha512-3lqz5YjWTYnW6dlDa5TLaTCcShfar1e40rmcJVwCBJC6mWlFuj0eCHIElmG1g5kyuJ/GD+8Wn4FFCcz4gJPfaQ==",
+        "shasum": "b5fd54220aa2bc5ab57aab7140c940754503c1a7"
+      },
+      "directories": {}
+    },
+    "1.0.3": {
+      "name": "core-util-is",
+      "version": "1.0.3",
+      "description": "The `util.is*` functions introduced in Node v0.12.",
+      "main": "lib/util.js",
+      "repository": {
+        "type": "git",
+        "url": "git://github.com/isaacs/core-util-is.git"
+      },
+      "keywords": [
+        "util",
+        "isBuffer",
+        "isArray",
+        "isNumber",
+        "isString",
+        "isRegExp",
+        "isThis",
+        "isThat",
+        "polyfill"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me",
+        "url": "http://blog.izs.me/"
+      },
+      "license": "MIT",
+      "bugs": {
+        "url": "https://github.com/isaacs/core-util-is/issues"
+      },
+      "scripts": {
+        "test": "tap test.js",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prepublishOnly": "git push origin --follow-tags"
+      },
+      "devDependencies": {
+        "tap": "^15.0.9"
+      },
+      "gitHead": "85f4620829d1b6079fd7b351f040b6ea7e184970",
+      "homepage": "https://github.com/isaacs/core-util-is#readme",
+      "_id": "core-util-is@1.0.3",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/core-util-is/-/core-util-is-1.0.3.tgz",
+        "integrity": "sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==",
+        "shasum": "a6042d3634c2b27e9328f837b965fac83808db85",
+        "fileCount": 4,
+        "unpackedSize": 4982
+      },
+      "directories": {},
+      "_hasShrinkwrap": false
+    }
+  },
+  "time": {
+    "created": "2015-11-20T00:37:33.081Z",
+    "modified": "2021-08-31T14:35:36.995Z",
+    "1.0.2": "2015-11-20T00:37:33.081Z",
+    "1.0.3": "2021-08-31T14:35:36.995Z"
+  }
+}

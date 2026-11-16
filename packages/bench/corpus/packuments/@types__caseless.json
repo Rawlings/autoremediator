@@ -1,0 +1,60 @@
+{
+  "name": "@types/caseless",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "ts5.8": "0.12.5",
+    "ts6.0": "0.12.5",
+    "ts5.7": "0.12.5",
+    "latest": "0.12.5",
+    "ts4.5": "0.12.5",
+    "ts4.6": "0.12.5",
+    "ts4.7": "0.12.5",
+    "ts4.8": "0.12.5",
+    "ts4.9": "0.12.5",
+    "ts5.0": "0.12.5",
+    "ts5.1": "0.12.5",
+    "ts5.2": "0.12.5",
+    "ts5.3": "0.12.5",
+    "ts5.4": "0.12.5",
+    "ts5.5": "0.12.5",
+    "ts5.9": "0.12.5",
+    "ts5.6": "0.12.5",
+    "ts7.0": "0.12.5",
+    "ts7.1": "0.12.5"
+  },
+  "versions": {
+    "0.12.5": {
+      "name": "@types/caseless",
+      "version": "0.12.5",
+      "license": "MIT",
+      "_id": "@types/caseless@0.12.5",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/caseless",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/caseless/-/caseless-0.12.5.tgz",
+        "integrity": "sha512-hWtVTC2q7hc7xZ/RLbxapMvDMgUnDvKvMOpKal4DrMyfGBUfB1oKaZlIRr6mJL+If3bAP6sV/QneGzF6tJjZDg==",
+        "shasum": "db9468cb1b1b5a925b8f34822f1669df0c5472f5",
+        "fileCount": 5,
+        "unpackedSize": 4720
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/caseless"
+      },
+      "description": "TypeScript definitions for caseless",
+      "directories": {},
+      "dependencies": {},
+      "_hasShrinkwrap": false,
+      "typeScriptVersion": "4.5",
+      "typesPublisherContentHash": "89139c26e367c4adc78c0db606bf3e7b208f60498430b2c167551f7169d0b81c"
+    }
+  },
+  "time": {
+    "created": "2023-11-07T00:21:20.176Z",
+    "modified": "2023-11-07T00:21:20.176Z",
+    "0.12.5": "2023-11-07T00:21:20.176Z"
+  }
+}

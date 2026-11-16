@@ -15,6 +15,6 @@ scratch/
 packages/core/README.md
 packages/core/llms.txt
 # Dagger module codegen
-dagger/sdk/
-dagger/node_modules/
-dagger/package-lock.json
+integrations/dagger/sdk/
+integrations/dagger/node_modules/
+integrations/dagger/package-lock.json

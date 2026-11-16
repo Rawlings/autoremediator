@@ -5,7 +5,7 @@
 Only the latest published version receives security fixes. This covers every artifact built from
 this repository: the `autoremediator` npm package, `@autoremediator/github-app`, the Docker image on
 `ghcr.io`, the GitHub Action (`@v0` and the exact tags), the VS Code extension and the Claude Code
-plugin under `plugins/`.
+plugin under `integrations/`.
 
 ## Reporting a vulnerability
 

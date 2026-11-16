@@ -1,0 +1,13 @@
+{
+  "id": "06-major-removed-arg",
+  "title": "Major bump that removes positional arguments",
+  "description": "The only fix is a major release (allowed by policy) whose retry takes an options object. The call site has to change; the old call silently makes one attempt.",
+  "advisory": "CVE-2099-10006",
+  "dimension": "source-repair",
+  "expect": {
+    "outcome": "fixed",
+    "sourceEdits": [
+      "src/"
+    ]
+  }
+}

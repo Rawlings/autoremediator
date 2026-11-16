@@ -4,11 +4,11 @@
   "ignorePatterns": [
     ".agents/**",
     "e2e/**",
-    "bench/tasks/**",
-    "bench/registry/**",
-    "bench/.work/**",
-    // Needs the SDK that `dagger develop` generates into dagger/sdk, so it cannot be type-checked here.
-    "dagger/**",
+    "packages/bench/tasks/**",
+    "packages/bench/registry/**",
+    "packages/bench/.work/**",
+    // Needs the SDK that `dagger develop` generates into integrations/dagger/sdk, so it cannot be type-checked here.
+    "integrations/dagger/**",
     "**/dist/**",
     "**/coverage/**"
   ],
@@ -244,8 +244,8 @@
     {
       // Baseline: functions over 80 lines. Shrink only; delete a path once its file is fixed.
       "files": [
-        "bench/src/cli.ts",
-        "bench/src/oracle.ts",
+        "packages/bench/src/cli.ts",
+        "packages/bench/src/oracle.ts",
         "packages/core/src/surfaces/a2a/server.ts",
         "packages/core/src/features/bisect/index.ts",
         "packages/core/src/features/bisect/remedy.ts",
@@ -343,10 +343,9 @@
     {
       // Baseline: nested ternaries. Shrink only; delete a path once its file is fixed.
       "files": [
-        "bench/src/exec.ts",
-        "bench/src/oracle.ts",
-        "bench/src/report.ts",
-        "bench/src/runner.ts",
+        "packages/bench/src/exec.ts",
+        "packages/bench/src/oracle.ts",
+        "packages/bench/src/runner.ts",
         "packages/core/src/features/autonomy/index.ts",
         "packages/core/src/features/bisect/changes.ts",
         "packages/core/src/features/bisect/index.ts",
@@ -418,13 +417,13 @@
     {
       // Baseline: multi-line if/loops without braces. Shrink only; delete a path once its file is fixed.
       "files": [
-        "bench/src/modes/controls.ts",
-        "bench/src/modes/host-scripted.ts",
-        "bench/src/modes/plan.ts",
-        "bench/src/oracle.ts",
-        "bench/src/results.ts",
-        "bench/src/task.ts",
-        "bench/src/workspace.ts",
+        "packages/bench/src/modes/controls.ts",
+        "packages/bench/src/modes/host-scripted.ts",
+        "packages/bench/src/modes/plan.ts",
+        "packages/bench/src/oracle.ts",
+        "packages/bench/src/results.ts",
+        "packages/bench/src/task.ts",
+        "packages/bench/src/workspace.ts",
         "packages/core/src/features/autonomy/index.ts",
         "packages/core/src/features/bisect/changes.ts",
         "packages/core/src/features/bisect/index.ts",

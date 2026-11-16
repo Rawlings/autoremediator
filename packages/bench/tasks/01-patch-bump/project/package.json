@@ -1,0 +1,13 @@
+{
+  "name": "bench-app-01-patch-bump",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "node \"$BENCH_TSC\" -p tsconfig.json",
+    "test": "node --permission --allow-fs-read=\"$PWD\" --test-isolation=none --test test/*.test.ts"
+  },
+  "dependencies": {
+    "bench-slugify": "1.2.0"
+  }
+}

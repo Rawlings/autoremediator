@@ -1,0 +1,4261 @@
+{
+  "name": "ajv",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "beta": "8.11.1",
+    "latest": "8.20.0",
+    "legacy": "6.15.0"
+  },
+  "versions": {
+    "6.15.0": {
+      "name": "ajv",
+      "version": "6.15.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@6.15.0",
+      "homepage": "https://github.com/ajv-validator/ajv",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-6.15.0.tgz",
+        "integrity": "sha512-fgFx7Hfoq60ytK2c7DhnF8jIvzYgOMxfugjLOSMHjLIPgenqa7S7oaagATUq99mV6IYvN2tRmC0wnTYX6iPbMw==",
+        "shasum": "07e982c74626167aa7a2495c53817892d7139492",
+        "fileCount": 92,
+        "unpackedSize": 938206
+      },
+      "main": "lib/ajv.js",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "184bc32745d9d33b2322949b9f3cb5f7609bf5ec",
+      "scripts": {
+        "lint": "npm run jshint && npm run eslint",
+        "test": "npm run lint && npm run build && npm run test-all",
+        "build": "del-cli lib/dotjs/*.js \"!lib/dotjs/index.js\" && node scripts/compile-dots.js",
+        "watch": "watch \"npm run build\" ./lib/dot",
+        "bundle": "del-cli dist && node ./scripts/bundle.js . Ajv pure_getters",
+        "eslint": "eslint lib/{compile/,}*.js spec/{**/,}*.js scripts --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "jshint": "jshint lib/{compile/,}*.js",
+        "test-ts": "tsc --target ES5 --noImplicitAny --noEmit spec/typescript/index.ts",
+        "test-all": "npm run test-cov && if-node-version 10 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "test-fast": "AJV_FAST_TEST=true npm run test-spec",
+        "test-spec": "mocha spec/{**/,}*.spec.js -R spec",
+        "prepublish": "npm run build && npm run bundle",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "del-cli .browser && npm run bundle && scripts/prepare-tests && npm run test-karma",
+        "bundle-beautify": "node ./scripts/bundle.js js-beautify"
+      },
+      "typings": "lib/ajv.d.ts",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "json-schema-traverse": "^0.4.1",
+        "fast-json-stable-stringify": "^2.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "dot": "^1.0.3",
+        "nyc": "^15.0.0",
+        "re2": "^1.21.4",
+        "brfs": "^2.0.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "karma": "^5.0.0",
+        "mocha": "^8.0.1",
+        "watch": "^1.0.0",
+        "eslint": "^7.3.1",
+        "jshint": "^2.10.2",
+        "del-cli": "^3.0.0",
+        "bluebird": "^3.5.3",
+        "ajv-async": "^1.0.0",
+        "coveralls": "^3.0.1",
+        "uglify-js": "^3.6.9",
+        "browserify": "^16.2.0",
+        "pre-commit": "^1.1.1",
+        "typescript": "^3.9.5",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "if-node-version": "^1.0.0",
+        "require-globify": "^1.3.0",
+        "json-schema-test": "^2.0.0",
+        "gh-pages-generator": "^0.2.3",
+        "karma-sauce-launcher": "^4.1.3",
+        "karma-chrome-launcher": "^3.0.0"
+      },
+      "tonicExampleFilename": ".tonic_example.js"
+    },
+    "8.0.3": {
+      "name": "ajv",
+      "version": "8.0.3",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.0.3",
+      "homepage": "https://github.com/ajv-validator/ajv",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.0.3.tgz",
+        "integrity": "sha512-Df6NAivu9KpZw+q8ySijAgLvr1mUA5ihkRvCLCxpdYR21ann5yIuN+PpFxmweSj7i3yjJ0x5LN5KVs0RRzskAQ==",
+        "shasum": "81f1b07003b329f000b7912e59a24f52392867b6",
+        "fileCount": 467,
+        "unpackedSize": 986930
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "f16edb153976fcb2541144715d309d4f9e94d8ee",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" scripts --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot -g \\(.recursiveRef.with.no..recursiveAnchor\\|.dynamicRef.with.no..dynamicAnchor\\).in.the.initial.target.schema.resource -i",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^5.0.9",
+        "karma": "^5.0.0",
+        "mocha": "^8.0.1",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "terser": "^5.2.1",
+        "ts-node": "^9.0.0",
+        "prettier": "^2.0.5",
+        "vuepress": "^1.8.2",
+        "cross-env": "^7.0.2",
+        "browserify": "^17.0.0",
+        "node-fetch": "^2.6.1",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^14.0.27",
+        "ajv-formats": "^2.0.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^10.2.11",
+        "@types/mocha": "^8.0.3",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "@vuepress/shared-utils": "^1.8.2",
+        "eslint-config-prettier": "^7.0.0",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "tonicExampleFilename": ".tonic_example.js"
+    },
+    "8.0.4": {
+      "name": "ajv",
+      "version": "8.0.4",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.0.4",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.0.4.tgz",
+        "integrity": "sha512-v1qwknPv7rNGqtiaC4ywb3OZ3LNrEjbJL5igAe8eTbXOj8ye0XVul2pFRulwl/j3QfUKdQ/J9HZaYfQCnR7cvA==",
+        "shasum": "7dc77632eb5dcde646b3aa18dd3bfe0d8965f379",
+        "fileCount": 335,
+        "unpackedSize": 657421
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "facbb231b726ba4cb5b879432f3dc9a9d9750acb",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" scripts --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot -g \\(.recursiveRef.with.no..recursiveAnchor\\|.dynamicRef.with.no..dynamicAnchor\\).in.the.initial.target.schema.resource -i",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^6.0.0",
+        "karma": "^5.0.0",
+        "mocha": "^8.0.1",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "terser": "^5.2.1",
+        "ts-node": "^9.0.0",
+        "prettier": "^2.0.5",
+        "vuepress": "^1.8.2",
+        "cross-env": "^7.0.2",
+        "browserify": "^17.0.0",
+        "node-fetch": "^2.6.1",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^14.0.27",
+        "ajv-formats": "^2.0.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^10.2.11",
+        "@types/mocha": "^8.0.3",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "@vuepress/shared-utils": "^1.8.2",
+        "eslint-config-prettier": "^7.0.0",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.0.5": {
+      "name": "ajv",
+      "version": "8.0.5",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.0.5",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.0.5.tgz",
+        "integrity": "sha512-RkiLa/AeJx7+9OvniQ/qeWu0w74A8DiPPBclQ6ji3ZQkv5KamO+QGpqmi7O4JIw3rHGUXZ6CoP9tsAkn3gyazg==",
+        "shasum": "f07d6fdeffcdbb80485570ce3f1bc845fcc812b9",
+        "fileCount": 458,
+        "unpackedSize": 979565
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "b5642ea8655c3922de7f2403cc99d668871d35fb",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" scripts --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot -g \\(.recursiveRef.with.no..recursiveAnchor\\|.dynamicRef.with.no..dynamicAnchor\\).in.the.initial.target.schema.resource -i",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^6.0.0",
+        "karma": "^5.0.0",
+        "mocha": "^8.0.1",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "terser": "^5.2.1",
+        "ts-node": "^9.0.0",
+        "prettier": "^2.0.5",
+        "vuepress": "^1.8.2",
+        "cross-env": "^7.0.2",
+        "browserify": "^17.0.0",
+        "node-fetch": "^2.6.1",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^14.0.27",
+        "ajv-formats": "^2.0.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^10.2.11",
+        "@types/mocha": "^8.0.3",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "@vuepress/shared-utils": "^1.8.2",
+        "eslint-config-prettier": "^7.0.0",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.1.0": {
+      "name": "ajv",
+      "version": "8.1.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.1.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.1.0.tgz",
+        "integrity": "sha512-B/Sk2Ix7A36fs/ZkuGLIR86EdjbgR6fsAcbx9lOP/QBSXujDNbVmIS/U4Itz5k8fPFDeVZl/zQ/gJW4Jrq6XjQ==",
+        "shasum": "45d5d3d36c7cdd808930cc3e603cf6200dbeb736",
+        "fileCount": 458,
+        "unpackedSize": 980522
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "df07f668131c6670e9ed624f60d6419a4da9a3c8",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" scripts --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot -g \\(.recursiveRef.with.no..recursiveAnchor\\|.dynamicRef.with.no..dynamicAnchor\\).in.the.initial.target.schema.resource -i",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^6.0.0",
+        "karma": "^5.0.0",
+        "mocha": "^8.0.1",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "terser": "^5.2.1",
+        "ts-node": "^9.0.0",
+        "prettier": "^2.0.5",
+        "vuepress": "^1.8.2",
+        "cross-env": "^7.0.2",
+        "browserify": "^17.0.0",
+        "node-fetch": "^2.6.1",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^14.0.27",
+        "ajv-formats": "^2.0.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^10.2.11",
+        "@types/mocha": "^8.0.3",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "@vuepress/shared-utils": "^1.8.2",
+        "eslint-config-prettier": "^7.0.0",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.2.0": {
+      "name": "ajv",
+      "version": "8.2.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.2.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.2.0.tgz",
+        "integrity": "sha512-WSNGFuyWd//XO8n/m/EaOlNLtO0yL8EXT/74LqT4khdhpZjP7lkj/kT5uwRmGitKEVp/Oj7ZUHeGfPtgHhQ5CA==",
+        "shasum": "c89d3380a784ce81b2085f48811c4c101df4c602",
+        "fileCount": 458,
+        "unpackedSize": 985073
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "2123bf28c9ce9a948c32301ef5b2ed33359e3742",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && rollup -c",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" scripts --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot -g \\(.recursiveRef.with.no..recursiveAnchor\\|.dynamicRef.with.no..dynamicAnchor\\).in.the.initial.target.schema.resource -i",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^6.0.0",
+        "karma": "^5.0.0",
+        "mocha": "^8.0.1",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^9.0.0",
+        "prettier": "^2.0.5",
+        "vuepress": "^1.8.2",
+        "cross-env": "^7.0.2",
+        "node-fetch": "^2.6.1",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^14.0.27",
+        "ajv-formats": "^2.0.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^10.2.11",
+        "@types/mocha": "^8.0.3",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "@vuepress/shared-utils": "^1.8.2",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^18.0.0",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^11.2.1",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.3.0": {
+      "name": "ajv",
+      "version": "8.3.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.3.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.3.0.tgz",
+        "integrity": "sha512-RYE7B5An83d7eWnDR8kbdaIFqmKCNsP16ay1hDbJEU+sa0e3H9SebskCt0Uufem6cfAVu7Col6ubcn/W+Sm8/Q==",
+        "shasum": "25ee7348e32cdc4a1dbb38256bf6bdc451dd577c",
+        "fileCount": 458,
+        "unpackedSize": 988475
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "dec89097def11e48d2de94e3e214405f18658986",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && rollup -c",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" scripts --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot -g \\(.recursiveRef.with.no..recursiveAnchor\\|.dynamicRef.with.no..dynamicAnchor\\).in.the.initial.target.schema.resource -i",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^6.0.0",
+        "karma": "^5.0.0",
+        "mocha": "^8.0.1",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^9.0.0",
+        "prettier": "^2.0.5",
+        "vuepress": "^1.8.2",
+        "cross-env": "^7.0.2",
+        "node-fetch": "^2.6.1",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^15.0.2",
+        "ajv-formats": "^2.0.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^10.2.11",
+        "@types/mocha": "^8.0.3",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "@vuepress/shared-utils": "^1.8.2",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^18.0.0",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^13.0.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.4.0": {
+      "name": "ajv",
+      "version": "8.4.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.4.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.4.0.tgz",
+        "integrity": "sha512-7QD2l6+KBSLwf+7MuYocbWvRPdOu63/trReTLu2KFwkgctnub1auoF+Y1WYcm09CTM7quuscrzqmASaLHC/K4Q==",
+        "shasum": "48984fdb2ce225cab15795f0772a8d85669075e4",
+        "fileCount": 458,
+        "unpackedSize": 990584
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "84abab262528969bc19879f86039be116df10964",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && rollup -c",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" scripts --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot -g \\(.recursiveRef.with.no..recursiveAnchor\\|.dynamicRef.with.no..dynamicAnchor\\).in.the.initial.target.schema.resource -i",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^6.0.0",
+        "karma": "^6.0.0",
+        "mocha": "^8.0.1",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^9.0.0",
+        "prettier": "^2.0.5",
+        "vuepress": "^1.8.2",
+        "cross-env": "^7.0.2",
+        "node-fetch": "^2.6.1",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^15.0.2",
+        "ajv-formats": "^2.0.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^10.2.11",
+        "@types/mocha": "^8.0.3",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "@vuepress/shared-utils": "^1.8.2",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^18.0.0",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^13.0.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.5.0": {
+      "name": "ajv",
+      "version": "8.5.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.5.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.5.0.tgz",
+        "integrity": "sha512-Y2l399Tt1AguU3BPRP9Fn4eN+Or+StUGWCUpbnFyXSo8NZ9S4uj+AG2pjs5apK+ZMOwYOz1+a+VKvKH7CudXgQ==",
+        "shasum": "695528274bcb5afc865446aa275484049a18ae4b",
+        "fileCount": 458,
+        "unpackedSize": 993887
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "be07d3d8c0aac8fffe68378d25bdd892c61ba2e5",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && rollup -c",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" scripts --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot -g \\(.recursiveRef.with.no..recursiveAnchor\\|.dynamicRef.with.no..dynamicAnchor\\).in.the.initial.target.schema.resource -i",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^6.0.0",
+        "karma": "^6.0.0",
+        "mocha": "^8.0.1",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^9.0.0",
+        "prettier": "^2.0.5",
+        "vuepress": "^1.8.2",
+        "cross-env": "^7.0.2",
+        "node-fetch": "^2.6.1",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^15.0.2",
+        "ajv-formats": "^2.0.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^10.2.11",
+        "@types/mocha": "^8.0.3",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "@vuepress/shared-utils": "^1.8.2",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^18.0.0",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^13.0.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.6.0": {
+      "name": "ajv",
+      "version": "8.6.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.6.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.6.0.tgz",
+        "integrity": "sha512-cnUG4NSBiM4YFBxgZIj/In3/6KX+rQ2l2YPRVcvAMQGWEPKuXoPIhxzwqh31jA3IPbI4qEOp/5ILI4ynioXsGQ==",
+        "shasum": "60cc45d9c46a477d80d92c48076d972c342e5720",
+        "fileCount": 458,
+        "unpackedSize": 997144
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "f8708387a5be62fbd0becc0cedfc580021a5c5da",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && rollup -c",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" scripts --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot -g \\(.recursiveRef.with.no..recursiveAnchor\\|.dynamicRef.with.no..dynamicAnchor\\).in.the.initial.target.schema.resource -i",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^6.0.0",
+        "karma": "^6.0.0",
+        "mocha": "^8.0.1",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^10.0.0",
+        "prettier": "^2.3.1",
+        "vuepress": "^1.8.2",
+        "cross-env": "^7.0.2",
+        "node-fetch": "^2.6.1",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^15.0.2",
+        "ajv-formats": "^2.0.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^11.0.0",
+        "@types/mocha": "^8.0.3",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "@vuepress/shared-utils": "^1.8.2",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^19.0.0",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^13.0.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.6.1": {
+      "name": "ajv",
+      "version": "8.6.1",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.6.1",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.6.1.tgz",
+        "integrity": "sha512-42VLtQUOLefAvKFAQIxIZDaThq6om/PrfP0CYk3/vn+y4BMNkKnbli8ON2QCiHov4KkzOSJ/xSoBJdayiiYvVQ==",
+        "shasum": "ae65764bf1edde8cd861281cda5057852364a295",
+        "fileCount": 458,
+        "unpackedSize": 997724
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "9166e38f9ee7e125e283890c60a594d18bb63614",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && rollup -c",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" scripts --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot -g \\(.recursiveRef.with.no..recursiveAnchor\\|.dynamicRef.with.no..dynamicAnchor\\).in.the.initial.target.schema.resource -i",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^6.0.0",
+        "karma": "^6.0.0",
+        "mocha": "^8.0.1",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^10.0.0",
+        "prettier": "^2.3.1",
+        "vuepress": "^1.8.2",
+        "cross-env": "^7.0.2",
+        "node-fetch": "^2.6.1",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^15.0.2",
+        "ajv-formats": "^2.0.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^11.0.0",
+        "@types/mocha": "^8.0.3",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "@vuepress/shared-utils": "^1.8.2",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^19.0.0",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^13.0.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.6.2": {
+      "name": "ajv",
+      "version": "8.6.2",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.6.2",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.6.2.tgz",
+        "integrity": "sha512-9807RlWAgT564wT+DjeyU5OFMPjmzxVobvDFmNAhY+5zD6A2ly3jDp6sgnfyDtlIQ+7H97oc/DGCzzfu9rjw9w==",
+        "shasum": "2fb45e0e5fcbc0813326c1c3da535d1881bb0571",
+        "fileCount": 458,
+        "unpackedSize": 997742
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "a04657014022c9ecb9ae0738b2ac07cb0d76cf3f",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && rollup -c",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" scripts --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot -g \\(.recursiveRef.with.no..recursiveAnchor\\|.dynamicRef.with.no..dynamicAnchor\\).in.the.initial.target.schema.resource -i",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^7.0.1",
+        "karma": "^6.0.0",
+        "mocha": "^8.0.1",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^10.0.0",
+        "prettier": "^2.3.1",
+        "vuepress": "^1.8.2",
+        "cross-env": "^7.0.2",
+        "node-fetch": "^2.6.1",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^16.3.2",
+        "ajv-formats": "^2.0.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^11.0.0",
+        "@types/mocha": "^8.0.3",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "@vuepress/shared-utils": "^1.8.2",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^19.0.0",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^13.0.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.6.3": {
+      "name": "ajv",
+      "version": "8.6.3",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.6.3",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.6.3.tgz",
+        "integrity": "sha512-SMJOdDP6LqTkD0Uq8qLi+gMwSt0imXLSV080qFVwJCpH9U6Mb+SUGHAXM0KNbcBPguytWyvFxcHgMLe2D2XSpw==",
+        "shasum": "11a66527761dc3e9a3845ea775d2d3c0414e8764",
+        "fileCount": 458,
+        "unpackedSize": 1005628
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "760fd100cd36df29c7fda41a23aad0ed537dfa58",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && rollup -c",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" scripts --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot -g \\(.recursiveRef.with.no..recursiveAnchor\\|.dynamicRef.with.no..dynamicAnchor\\).in.the.initial.target.schema.resource -i",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^7.0.1",
+        "karma": "^6.0.0",
+        "mocha": "^9.0.2",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^10.0.0",
+        "prettier": "^2.3.1",
+        "vuepress": "^1.8.2",
+        "cross-env": "^7.0.2",
+        "node-fetch": "^3.0.0",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^16.3.2",
+        "ajv-formats": "^2.0.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^11.0.0",
+        "@types/mocha": "^9.0.0",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "@vuepress/shared-utils": "^1.8.2",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^20.0.0",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^13.0.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.7.0": {
+      "name": "ajv",
+      "version": "8.7.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.7.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.7.0.tgz",
+        "integrity": "sha512-fX9/Yiy9YwnP/QB/4zqBpTavtL4YuXpiHlXlkE0y2itGcO++ixFIg+NFk1l0TfHjt11EDDhHAhLVe0rFgTBaGA==",
+        "shasum": "643a9dd10bcaf6b084162f9d1f551091dd6650aa",
+        "fileCount": 458,
+        "unpackedSize": 1006454
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "da46e38a0d4bc85e1c891dcc3ab526fc28961d18",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && rollup -c",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^7.0.1",
+        "karma": "^6.0.0",
+        "mocha": "^9.0.2",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^10.0.0",
+        "prettier": "^2.3.1",
+        "cross-env": "^7.0.2",
+        "node-fetch": "^3.0.0",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^16.3.2",
+        "ajv-formats": "^3.0.0-rc.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^11.0.0",
+        "@types/mocha": "^9.0.0",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^21.0.0",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^13.0.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.7.1": {
+      "name": "ajv",
+      "version": "8.7.1",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.7.1",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.7.1.tgz",
+        "integrity": "sha512-gPpOObTO1QjbnN1sVMjJcp1TF9nggMfO4MBR5uQl6ZVTOaEPq5i4oq/6R9q2alMMPB3eg53wFv1RuJBLuxf3Hw==",
+        "shasum": "52be6f1736b076074798124293618f132ad07a7e",
+        "fileCount": 458,
+        "unpackedSize": 1006454
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "8fccddb4161cfe4d63f2b8987d58f6c10a6bf005",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && rollup -c",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^7.0.1",
+        "karma": "^6.0.0",
+        "mocha": "^9.0.2",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^10.0.0",
+        "prettier": "^2.3.1",
+        "cross-env": "^7.0.2",
+        "node-fetch": "^3.0.0",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^16.3.2",
+        "ajv-formats": "^3.0.0-rc.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^11.0.0",
+        "@types/mocha": "^9.0.0",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^21.0.0",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^13.0.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.8.0": {
+      "name": "ajv",
+      "version": "8.8.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.8.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.8.0.tgz",
+        "integrity": "sha512-L+cJ/+pkdICMueKR6wIx3VP2fjIx3yAhuvadUv/osv9yFD7OVZy442xFF+Oeu3ZvmhBGQzoF6mTSt+LUWBmGQg==",
+        "shasum": "c501f10df72914bb77a458919e79fc73e4a2f9ef",
+        "fileCount": 462,
+        "unpackedSize": 1009069
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "62048a170893d51451d10b05eb13587a5a27a562",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js 2020 ajv2020 ajv2020 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "rollup": "rm -rf bundle && rollup -c",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "re2": "^1.16.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^7.0.1",
+        "karma": "^6.0.0",
+        "mocha": "^9.0.2",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^10.0.0",
+        "prettier": "^2.3.1",
+        "cross-env": "^7.0.2",
+        "browserify": "^17.0.0",
+        "node-fetch": "^3.0.0",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^16.3.2",
+        "ajv-formats": "^3.0.0-rc.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^11.0.0",
+        "@types/mocha": "^9.0.0",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^21.0.0",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^13.0.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.8.1": {
+      "name": "ajv",
+      "version": "8.8.1",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.8.1",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.8.1.tgz",
+        "integrity": "sha512-6CiMNDrzv0ZR916u2T+iRunnD60uWmNn8SkdB44/6stVORUg0aAkWO7PkOhpCmjmW8f2I/G/xnowD66fxGyQJg==",
+        "shasum": "e73dd88eeb4b10bbcd82bee136e6fbe801664d18",
+        "fileCount": 462,
+        "unpackedSize": 1009069
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "4cc0cad069a42ef110b8ac01be20c887cc876623",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js 2020 ajv2020 ajv2020 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "rollup": "rm -rf bundle && rollup -c",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "re2": "^1.16.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^7.0.1",
+        "karma": "^6.0.0",
+        "mocha": "^9.0.2",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^10.0.0",
+        "prettier": "^2.3.1",
+        "cross-env": "^7.0.2",
+        "browserify": "^17.0.0",
+        "node-fetch": "^3.0.0",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^16.3.2",
+        "ajv-formats": "^3.0.0-rc.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^11.0.0",
+        "@types/mocha": "^9.0.0",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^21.0.0",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^13.0.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.8.2": {
+      "name": "ajv",
+      "version": "8.8.2",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.8.2",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.8.2.tgz",
+        "integrity": "sha512-x9VuX+R/jcFj1DHo/fCp99esgGDWiHENrKxaCENuCxpoMCmAt/COCGVDwA7kleEpEzJjDnvh3yGoOuLu0Dtllw==",
+        "shasum": "01b4fef2007a28bf75f0b7fc009f62679de4abbb",
+        "fileCount": 462,
+        "unpackedSize": 1009162
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "b2bf7504bab515db60ad276dc015b9c14f775607",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js 2020 ajv2020 ajv2020 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "rollup": "rm -rf bundle && rollup -c",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "re2": "^1.16.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^7.0.1",
+        "karma": "^6.0.0",
+        "mocha": "^9.0.2",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^10.0.0",
+        "prettier": "^2.3.1",
+        "cross-env": "^7.0.2",
+        "browserify": "^17.0.0",
+        "node-fetch": "^3.0.0",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^16.3.2",
+        "ajv-formats": "^3.0.0-rc.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^11.0.0",
+        "@types/mocha": "^9.0.0",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^21.0.0",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^13.0.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.9.0": {
+      "name": "ajv",
+      "version": "8.9.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.9.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.9.0.tgz",
+        "integrity": "sha512-qOKJyNj/h+OWx7s5DePL6Zu1KeM9jPZhwBqs+7DzP6bGOvqzVCSf0xueYmVuaC/oQ/VtS2zLMLHdQFbkka+XDQ==",
+        "shasum": "738019146638824dea25edcf299dcba1b0e7eb18",
+        "fileCount": 462,
+        "unpackedSize": 1012740
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "979d46b1585a92e4343bf9e4505f61139c3eecf8",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js 2020 ajv2020 ajv2020 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "rollup": "rm -rf bundle && rollup -c",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "re2": "^1.16.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^7.0.1",
+        "karma": "^6.0.0",
+        "mocha": "^9.0.2",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^10.0.0",
+        "prettier": "^2.3.1",
+        "cross-env": "^7.0.2",
+        "browserify": "^17.0.0",
+        "node-fetch": "^3.0.0",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^17.0.0",
+        "ajv-formats": "^3.0.0-rc.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^12.1.1",
+        "@types/mocha": "^9.0.0",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "module-from-string": "^3.1.3",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^21.0.0",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^13.0.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.10.0": {
+      "name": "ajv",
+      "version": "8.10.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.10.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.10.0.tgz",
+        "integrity": "sha512-bzqAEZOjkrUMl2afH8dknrq5KEk2SrwdBROR+vH1EKVQTqaUbJVPdc/gEdggTMM0Se+s+Ja4ju4TlNcStKl2Hw==",
+        "shasum": "e573f719bd3af069017e3b66538ab968d040e54d",
+        "fileCount": 466,
+        "unpackedSize": 1016629
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "a27f78264ab1c3951d5131f27181d0a50e54aed0",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js 2020 ajv2020 ajv2020 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "rollup": "rm -rf bundle && rollup -c",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "re2": "^1.16.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^7.0.1",
+        "karma": "^6.0.0",
+        "mocha": "^9.0.2",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^10.0.0",
+        "fast-uri": "^1.0.0",
+        "prettier": "^2.3.1",
+        "cross-env": "^7.0.2",
+        "browserify": "^17.0.0",
+        "node-fetch": "^3.0.0",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^17.0.0",
+        "ajv-formats": "^3.0.0-rc.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^12.1.1",
+        "@types/mocha": "^9.0.0",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "module-from-string": "^3.1.3",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^21.0.0",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^13.0.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.11.0": {
+      "name": "ajv",
+      "version": "8.11.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.11.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.11.0.tgz",
+        "integrity": "sha512-wGgprdCvMalC0BztXvitD2hC04YffAvtsUn93JbGXYLAtCUO4xd17mCCZQxUOItiBwZvJScWo8NIvQMQ71rdpg==",
+        "shasum": "977e91dd96ca669f54a11e23e378e33b884a565f",
+        "fileCount": 466,
+        "unpackedSize": 1016907
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "c067d6d9c3285054ea4c0a2d2adbbc8b5d631935",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js 2020 ajv2020 ajv2020 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "rollup": "rm -rf bundle && rollup -c",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "re2": "^1.16.0",
+        "chai": "^4.0.1",
+        "glob": "^7.0.0",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^7.0.1",
+        "karma": "^6.0.0",
+        "mocha": "^9.0.2",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^10.0.0",
+        "fast-uri": "^1.0.0",
+        "prettier": "^2.3.1",
+        "cross-env": "^7.0.2",
+        "browserify": "^17.0.0",
+        "node-fetch": "^3.0.0",
+        "typescript": "^4.2.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^17.0.0",
+        "ajv-formats": "^3.0.0-rc.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^12.1.1",
+        "@types/mocha": "^9.0.0",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "module-from-string": "^3.1.3",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^21.0.0",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^13.0.0",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.11.1": {
+      "name": "ajv",
+      "version": "8.11.1",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.11.1",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.11.1.tgz",
+        "integrity": "sha512-hTXUQ/hG+UjV4LdRdaaXBqjXg1w0DOT7VhCeWRZxt6QKLZy7T+aMQ0pZQkMn3QcWi52q7Zo/8EvW9Eg8htad5Q==",
+        "shasum": "4c3fd464000b36609195c767c88f20f23f372058",
+        "fileCount": 466,
+        "unpackedSize": 1021810
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "92e5a1e82f76123712194a01c46e1fc0e77026ce",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js 2020 ajv2020 ajv2020 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "rollup": "rm -rf bundle && rollup -c",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "re2": "^1.16.0",
+        "chai": "^4.0.1",
+        "glob": "^8.0.2",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^8.0.2",
+        "karma": "^6.0.0",
+        "mocha": "^10.0.0",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^10.0.0",
+        "fast-uri": "^2.1.0",
+        "prettier": "^2.3.1",
+        "cross-env": "^7.0.2",
+        "browserify": "^17.0.0",
+        "node-fetch": "^3.0.0",
+        "typescript": "^4.8.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^18.11.9",
+        "ajv-formats": "^3.0.0-rc.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^13.0.3",
+        "@types/mocha": "^9.0.0",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "module-from-string": "^3.1.3",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^23.0.2",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^15.0.1",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.11.2": {
+      "name": "ajv",
+      "version": "8.11.2",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.11.2",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.11.2.tgz",
+        "integrity": "sha512-E4bfmKAhGiSTvMfL1Myyycaub+cUEU2/IvpylXkUu7CHBkBj1f/ikdzbD7YQ6FKUbixDxeYvB/xY4fvyroDlQg==",
+        "shasum": "aecb20b50607acf2569b6382167b65a96008bb78",
+        "fileCount": 466,
+        "unpackedSize": 1021810
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "1f83903975b8a3bb8dbce079d9292f26895114f1",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js 2020 ajv2020 ajv2020 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "rollup": "rm -rf bundle && rollup -c",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "re2": "^1.16.0",
+        "chai": "^4.0.1",
+        "glob": "^8.0.2",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^8.0.2",
+        "karma": "^6.0.0",
+        "mocha": "^10.0.0",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^10.0.0",
+        "fast-uri": "^2.1.0",
+        "prettier": "^2.3.1",
+        "cross-env": "^7.0.2",
+        "browserify": "^17.0.0",
+        "node-fetch": "^3.0.0",
+        "typescript": "^4.8.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^18.11.9",
+        "ajv-formats": "^3.0.0-rc.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^13.0.3",
+        "@types/mocha": "^9.0.0",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "module-from-string": "^3.1.3",
+        "@rollup/plugin-json": "^4.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^23.0.2",
+        "@rollup/plugin-typescript": "^8.2.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^15.0.1",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.12.0": {
+      "name": "ajv",
+      "version": "8.12.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.12.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.12.0.tgz",
+        "integrity": "sha512-sRu1kpcO9yLtYxBKvqfTeh9KzZEwO3STyX1HT+4CaDzC6HpTGYhIhPIzj9XuKU7KYDwnaeh5hcOwjy1QuJzBPA==",
+        "shasum": "d1a0527323e22f53562c567c00991577dfbe19d1",
+        "fileCount": 466,
+        "unpackedSize": 1024047
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "bf1266a5cc13ab4ead21d5b810da48b49e932a49",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js 2020 ajv2020 ajv2020 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "rollup": "rm -rf bundle && rollup -c",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.2.2",
+        "fast-deep-equal": "^3.1.1",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.0.0",
+        "re2": "^1.16.0",
+        "chai": "^4.0.1",
+        "glob": "^8.0.2",
+        "jimp": "^0.16.1",
+        "dayjs": "^1.10.4",
+        "husky": "^8.0.2",
+        "karma": "^6.0.0",
+        "mocha": "^10.0.0",
+        "tsify": "^5.0.2",
+        "eslint": "^7.8.1",
+        "rollup": "^2.44.0",
+        "ts-node": "^10.0.0",
+        "fast-uri": "^2.1.0",
+        "prettier": "^2.3.1",
+        "cross-env": "^7.0.2",
+        "browserify": "^17.0.0",
+        "node-fetch": "^3.0.0",
+        "typescript": "^4.8.0",
+        "@types/chai": "^4.2.12",
+        "@types/node": "^18.11.9",
+        "ajv-formats": "^3.0.0-rc.0",
+        "js-beautify": "^1.7.3",
+        "karma-mocha": "^2.0.0",
+        "lint-staged": "^13.0.3",
+        "@types/mocha": "^10.0.0",
+        "if-node-version": "^1.0.0",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "module-from-string": "^3.1.3",
+        "@rollup/plugin-json": "^6.0.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.3.0",
+        "karma-chrome-launcher": "^3.0.0",
+        "eslint-config-prettier": "^7.0.0",
+        "@rollup/plugin-commonjs": "^24.0.0",
+        "@rollup/plugin-typescript": "^10.0.1",
+        "@typescript-eslint/parser": "^3.8.0",
+        "@types/require-from-string": "^1.2.0",
+        "@rollup/plugin-node-resolve": "^15.0.1",
+        "@typescript-eslint/eslint-plugin": "^3.8.0"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.13.0": {
+      "name": "ajv",
+      "version": "8.13.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.13.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.13.0.tgz",
+        "integrity": "sha512-PRA911Blj99jR5RMeTunVbNXMF6Lp4vZXnk5GQjcnUWUTsrXtekg/pnmFFI2u/I36Y/2bITGS30GZCXei6uNkA==",
+        "shasum": "a3939eaec9fb80d217ddf0c3376948c023f28c91",
+        "fileCount": 466,
+        "unpackedSize": 1030239
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "857ecac1e652c833bf6e1249f93b3864f90c13e1",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js 2020 ajv2020 ajv2020 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "rollup": "rm -rf bundle && rollup -c",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.4.1",
+        "fast-deep-equal": "^3.1.3",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.1.0",
+        "re2": "^1.20.9",
+        "chai": "^4.4.1",
+        "glob": "^10.3.10",
+        "jimp": "^0.22.10",
+        "dayjs": "^1.11.10",
+        "husky": "^9.0.11",
+        "karma": "^6.4.2",
+        "mocha": "^10.3.0",
+        "tsify": "^5.0.4",
+        "eslint": "^8.57.0",
+        "rollup": "^2.79.1",
+        "ts-node": "^10.9.2",
+        "fast-uri": "^2.3.0",
+        "prettier": "3.0.3",
+        "cross-env": "^7.0.3",
+        "browserify": "^17.0.0",
+        "node-fetch": "^3.3.2",
+        "typescript": "5.3.3",
+        "@types/chai": "^4.3.11",
+        "@types/node": "^20.11.30",
+        "ajv-formats": "^3.0.1",
+        "js-beautify": "^1.15.1",
+        "karma-mocha": "^2.0.1",
+        "lint-staged": "^15.2.2",
+        "@types/mocha": "^10.0.6",
+        "if-node-version": "^1.1.1",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "module-from-string": "^3.3.0",
+        "@rollup/plugin-json": "^6.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.5.0",
+        "karma-chrome-launcher": "^3.2.0",
+        "eslint-config-prettier": "^9.1.0",
+        "@rollup/plugin-commonjs": "^25.0.7",
+        "@rollup/plugin-typescript": "^11.1.6",
+        "@typescript-eslint/parser": "^7.3.1",
+        "@types/require-from-string": "^1.2.3",
+        "@rollup/plugin-node-resolve": "^15.2.3",
+        "@typescript-eslint/eslint-plugin": "^7.3.1"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.14.0": {
+      "name": "ajv",
+      "version": "8.14.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.14.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.14.0.tgz",
+        "integrity": "sha512-oYs1UUtO97ZO2lJ4bwnWeQW8/zvOIQLGKcvPTsWmvc2SYgBb+upuNS5NxoLaMU4h8Ju3Nbj6Cq8mD2LQoqVKFA==",
+        "shasum": "f514ddfd4756abb200e1704414963620a625ebbb",
+        "fileCount": 466,
+        "unpackedSize": 1030755
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "9e266399cac65e487d57ec0f50b9eb4005261622",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js 2020 ajv2020 ajv2020 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "rollup": "rm -rf bundle && rollup -c",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.4.1",
+        "fast-deep-equal": "^3.1.3",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.1.0",
+        "re2": "^1.20.9",
+        "chai": "^4.4.1",
+        "glob": "^10.3.10",
+        "jimp": "^0.22.10",
+        "dayjs": "^1.11.10",
+        "husky": "^9.0.11",
+        "karma": "^6.4.2",
+        "mocha": "^10.3.0",
+        "tsify": "^5.0.4",
+        "eslint": "^8.57.0",
+        "rollup": "^2.79.1",
+        "ts-node": "^10.9.2",
+        "fast-uri": "^2.3.0",
+        "prettier": "3.0.3",
+        "cross-env": "^7.0.3",
+        "browserify": "^17.0.0",
+        "node-fetch": "^3.3.2",
+        "typescript": "5.3.3",
+        "@types/chai": "^4.3.11",
+        "@types/node": "^20.11.30",
+        "ajv-formats": "^3.0.1",
+        "js-beautify": "^1.15.1",
+        "karma-mocha": "^2.0.1",
+        "lint-staged": "^15.2.2",
+        "@types/mocha": "^10.0.6",
+        "if-node-version": "^1.1.1",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "module-from-string": "^3.3.0",
+        "@rollup/plugin-json": "^6.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.5.0",
+        "karma-chrome-launcher": "^3.2.0",
+        "eslint-config-prettier": "^9.1.0",
+        "@rollup/plugin-commonjs": "^25.0.7",
+        "@rollup/plugin-typescript": "^11.1.6",
+        "@typescript-eslint/parser": "^7.3.1",
+        "@types/require-from-string": "^1.2.3",
+        "@rollup/plugin-node-resolve": "^15.2.3",
+        "@typescript-eslint/eslint-plugin": "^7.3.1"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.15.0": {
+      "name": "ajv",
+      "version": "8.15.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.15.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.15.0.tgz",
+        "integrity": "sha512-15BTtQUOsSrmHCy+B4VnAiJAJxJ8IFgu6fcjFQF3jQYZ78nLSQthlFg4ehp+NLIyfvFgOlxNsjKIEhydtFPVHQ==",
+        "shasum": "d918c661e3e820bbbc65a320e182ee56a1aa978a",
+        "fileCount": 466,
+        "unpackedSize": 1030771
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "accd9f3ee5e0e688244c1accf7bb13745b513177",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js 2020 ajv2020 ajv2020 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "rollup": "rm -rf bundle && rollup -c",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "fast-uri": "^2.3.0",
+        "fast-deep-equal": "^3.1.3",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.1.0",
+        "re2": "^1.20.9",
+        "chai": "^4.4.1",
+        "glob": "^10.3.10",
+        "jimp": "^0.22.10",
+        "dayjs": "^1.11.10",
+        "husky": "^9.0.11",
+        "karma": "^6.4.2",
+        "mocha": "^10.3.0",
+        "tsify": "^5.0.4",
+        "eslint": "^8.57.0",
+        "rollup": "^2.79.1",
+        "uri-js": "^4.4.1",
+        "ts-node": "^10.9.2",
+        "prettier": "3.0.3",
+        "cross-env": "^7.0.3",
+        "browserify": "^17.0.0",
+        "node-fetch": "^3.3.2",
+        "typescript": "5.3.3",
+        "@types/chai": "^4.3.11",
+        "@types/node": "^20.11.30",
+        "ajv-formats": "^3.0.1",
+        "js-beautify": "^1.15.1",
+        "karma-mocha": "^2.0.1",
+        "lint-staged": "^15.2.2",
+        "@types/mocha": "^10.0.6",
+        "if-node-version": "^1.1.1",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "module-from-string": "^3.3.0",
+        "@rollup/plugin-json": "^6.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.5.0",
+        "karma-chrome-launcher": "^3.2.0",
+        "eslint-config-prettier": "^9.1.0",
+        "@rollup/plugin-commonjs": "^25.0.7",
+        "@rollup/plugin-typescript": "^11.1.6",
+        "@typescript-eslint/parser": "^7.3.1",
+        "@types/require-from-string": "^1.2.3",
+        "@rollup/plugin-node-resolve": "^15.2.3",
+        "@typescript-eslint/eslint-plugin": "^7.3.1"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.16.0": {
+      "name": "ajv",
+      "version": "8.16.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.16.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.16.0.tgz",
+        "integrity": "sha512-F0twR8U1ZU67JIEtekUcLkXkoO5mMMmgGD8sK/xUFzJ805jxHQl92hImFAqqXMyMYjSPOyUPAwHYhB72g5sTXw==",
+        "shasum": "22e2a92b94f005f7e0f9c9d39652ef0b8f6f0cb4",
+        "fileCount": 466,
+        "unpackedSize": 1030755
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "c8b37f448f77448656222a5a5e279432857f7e9f",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js 2020 ajv2020 ajv2020 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "rollup": "rm -rf bundle && rollup -c",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "uri-js": "^4.4.1",
+        "fast-deep-equal": "^3.1.3",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.1.0",
+        "re2": "^1.20.9",
+        "chai": "^4.4.1",
+        "glob": "^10.3.10",
+        "jimp": "^0.22.10",
+        "dayjs": "^1.11.10",
+        "husky": "^9.0.11",
+        "karma": "^6.4.2",
+        "mocha": "^10.3.0",
+        "tsify": "^5.0.4",
+        "eslint": "^8.57.0",
+        "rollup": "^2.79.1",
+        "ts-node": "^10.9.2",
+        "fast-uri": "^2.3.0",
+        "prettier": "3.0.3",
+        "cross-env": "^7.0.3",
+        "browserify": "^17.0.0",
+        "node-fetch": "^3.3.2",
+        "typescript": "5.3.3",
+        "@types/chai": "^4.3.11",
+        "@types/node": "^20.11.30",
+        "ajv-formats": "^3.0.1",
+        "js-beautify": "^1.15.1",
+        "karma-mocha": "^2.0.1",
+        "lint-staged": "^15.2.2",
+        "@types/mocha": "^10.0.6",
+        "if-node-version": "^1.1.1",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "module-from-string": "^3.3.0",
+        "@rollup/plugin-json": "^6.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.5.0",
+        "karma-chrome-launcher": "^3.2.0",
+        "eslint-config-prettier": "^9.1.0",
+        "@rollup/plugin-commonjs": "^25.0.7",
+        "@rollup/plugin-typescript": "^11.1.6",
+        "@typescript-eslint/parser": "^7.3.1",
+        "@types/require-from-string": "^1.2.3",
+        "@rollup/plugin-node-resolve": "^15.2.3",
+        "@typescript-eslint/eslint-plugin": "^7.3.1"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.17.1": {
+      "name": "ajv",
+      "version": "8.17.1",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.17.1",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.17.1.tgz",
+        "integrity": "sha512-B/gBuNg5SiMTrPkC+A2+cW0RszwxYmn6VYxB/inlBStS5nx6xHIt/ehKRhIMhqusl7a8LjQoZnjCs5vhwxOQ1g==",
+        "shasum": "37d9a5c776af6bc92d7f4f9510eba4c0a60d11a6",
+        "fileCount": 466,
+        "unpackedSize": 1030888
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "9050ba1359fb87cd7c143f3c79513ea7624ea443",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js 2020 ajv2020 ajv2020 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "rollup": "rm -rf bundle && rollup -c",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "dependencies": {
+        "fast-uri": "^3.0.1",
+        "fast-deep-equal": "^3.1.3",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.1.0",
+        "re2": "^1.20.9",
+        "chai": "^4.4.1",
+        "glob": "^10.3.10",
+        "jimp": "^0.22.10",
+        "dayjs": "^1.11.10",
+        "husky": "^9.0.11",
+        "karma": "^6.4.2",
+        "mocha": "^10.3.0",
+        "tsify": "^5.0.4",
+        "eslint": "^8.57.0",
+        "rollup": "^2.79.1",
+        "uri-js": "^4.4.1",
+        "ts-node": "^10.9.2",
+        "prettier": "3.0.3",
+        "cross-env": "^7.0.3",
+        "browserify": "^17.0.0",
+        "node-fetch": "^3.3.2",
+        "typescript": "5.3.3",
+        "@types/chai": "^4.3.11",
+        "@types/node": "^20.11.30",
+        "ajv-formats": "^3.0.1",
+        "js-beautify": "^1.15.1",
+        "karma-mocha": "^2.0.1",
+        "lint-staged": "^15.2.2",
+        "@types/mocha": "^10.0.6",
+        "if-node-version": "^1.1.1",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "module-from-string": "^3.3.0",
+        "@rollup/plugin-json": "^6.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.5.0",
+        "karma-chrome-launcher": "^3.2.0",
+        "eslint-config-prettier": "^9.1.0",
+        "@rollup/plugin-commonjs": "^25.0.7",
+        "@rollup/plugin-typescript": "^11.1.6",
+        "@typescript-eslint/parser": "^7.3.1",
+        "@types/require-from-string": "^1.2.3",
+        "@rollup/plugin-node-resolve": "^15.2.3",
+        "@typescript-eslint/eslint-plugin": "^7.3.1"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.18.0": {
+      "name": "ajv",
+      "version": "8.18.0",
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "_id": "ajv@8.18.0",
+      "homepage": "https://ajv.js.org",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.18.0.tgz",
+        "integrity": "sha512-PlXPeEWMXMZ7sPYOHqmDyCJzcfNrUr3fGNKtezX14ykXOEIvyK81d+qydx89KY5O71FKMPaQ2vBfBFI5NHR63A==",
+        "shasum": "8864186b6738d003eb3a933172bb3833e10cefbc",
+        "fileCount": 466,
+        "unpackedSize": 1033513
+      },
+      "main": "dist/ajv.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "types": "dist/ajv.d.ts",
+      "funding": {
+        "url": "https://github.com/sponsors/epoberezkin",
+        "type": "github"
+      },
+      "gitHead": "142ce84b807c4fe66e619c22480a28d0e4bd50fa",
+      "scripts": {
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js 2020 ajv2020 ajv2020 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "rollup": "rm -rf bundle && rollup -c",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "test-all": "npm run test-cov && if-node-version 12 npm run test-browser",
+        "test-cov": "nyc npm run test-spec",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "docs:build": "./scripts/prepare-site && vuepress build docs",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "prepublish": "npm run build",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\""
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "collective": {
+        "url": "https://opencollective.com/ajv",
+        "type": "opencollective"
+      },
+      "repository": {
+        "url": "git+https://github.com/ajv-validator/ajv.git",
+        "type": "git"
+      },
+      "description": "Another JSON Schema Validator",
+      "directories": {},
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "sideEffects": false,
+      "dependencies": {
+        "fast-uri": "^3.0.1",
+        "fast-deep-equal": "^3.1.3",
+        "require-from-string": "^2.0.2",
+        "json-schema-traverse": "^1.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.1.0",
+        "re2": "^1.20.9",
+        "chai": "^4.4.1",
+        "glob": "^10.3.10",
+        "jimp": "^0.22.10",
+        "dayjs": "^1.11.10",
+        "husky": "^9.0.11",
+        "karma": "^6.4.2",
+        "mocha": "^10.3.0",
+        "tsify": "^5.0.4",
+        "eslint": "^8.57.0",
+        "rollup": "^2.79.1",
+        "uri-js": "^4.4.1",
+        "ts-node": "^10.9.2",
+        "prettier": "3.0.3",
+        "cross-env": "^7.0.3",
+        "browserify": "^17.0.0",
+        "node-fetch": "^3.3.2",
+        "typescript": "5.3.3",
+        "@types/chai": "^4.3.11",
+        "@types/node": "^20.11.30",
+        "ajv-formats": "^3.0.1",
+        "js-beautify": "^1.15.1",
+        "karma-mocha": "^2.0.1",
+        "lint-staged": "^15.2.2",
+        "@types/mocha": "^10.0.6",
+        "if-node-version": "^1.1.1",
+        "dayjs-plugin-utc": "^0.1.2",
+        "json-schema-test": "^2.0.0",
+        "module-from-string": "^3.3.0",
+        "@rollup/plugin-json": "^6.1.0",
+        "rollup-plugin-terser": "^7.0.2",
+        "@ajv-validator/config": "^0.5.0",
+        "karma-chrome-launcher": "^3.2.0",
+        "eslint-config-prettier": "^9.1.0",
+        "@rollup/plugin-commonjs": "^25.0.7",
+        "@rollup/plugin-typescript": "^11.1.6",
+        "@typescript-eslint/parser": "^7.3.1",
+        "@types/require-from-string": "^1.2.3",
+        "@rollup/plugin-node-resolve": "^15.2.3",
+        "@typescript-eslint/eslint-plugin": "^7.3.1"
+      },
+      "runkitExampleFilename": ".runkit_example.js"
+    },
+    "8.20.0": {
+      "name": "ajv",
+      "version": "8.20.0",
+      "description": "Another JSON Schema Validator",
+      "main": "dist/ajv.js",
+      "types": "dist/ajv.d.ts",
+      "sideEffects": false,
+      "scripts": {
+        "eslint": "eslint \"lib/**/*.ts\" \"spec/**/*.*s\" --ignore-pattern spec/JSON-Schema-Test-Suite",
+        "prettier:write": "prettier --write \"./**/*.{json,yaml,js,ts}\"",
+        "prettier:check": "prettier --list-different \"./**/*.{json,yaml,js,ts}\"",
+        "test-spec": "cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register \"spec/**/*.spec.{ts,js}\" -R dot",
+        "test-codegen": "nyc cross-env TS_NODE_PROJECT=spec/tsconfig.json mocha -r ts-node/register 'spec/codegen.spec.ts' -R spec",
+        "test-debug": "npm run test-spec -- --inspect-brk",
+        "test-cov": "nyc npm run test-spec",
+        "rollup": "rm -rf bundle && rollup -c",
+        "bundle": "rm -rf bundle && node ./scripts/bundle.js ajv ajv7 ajv7 && node ./scripts/bundle.js 2019 ajv2019 ajv2019 && node ./scripts/bundle.js 2020 ajv2020 ajv2020 && node ./scripts/bundle.js jtd ajvJTD ajvJTD",
+        "build": "rm -rf dist && tsc && cp -r lib/refs dist && rm dist/refs/json-schema-2019-09/index.ts && rm dist/refs/json-schema-2020-12/index.ts && rm dist/refs/jtd-schema.ts",
+        "json-tests": "rm -rf spec/_json/*.js && node scripts/jsontests",
+        "test-karma": "karma start",
+        "test-browser": "rm -rf .browser && npm run bundle && scripts/prepare-tests && karma start",
+        "test-all": "npm run test-cov",
+        "test": "npm run json-tests && npm run prettier:check && npm run eslint && npm link && npm link --legacy-peer-deps ajv && npm run test-cov",
+        "test-ci": "AJV_FULL_TEST=true npm test",
+        "prepublish": "npm run build",
+        "benchmark": "npm i && npm run build && npm link && cd ./benchmark && npm link --legacy-peer-deps ajv && npm i && node ./jtd",
+        "docs:dev": "./scripts/prepare-site && vuepress dev docs",
+        "docs:build": "./scripts/prepare-site && vuepress build docs"
+      },
+      "nyc": {
+        "exclude": [
+          "**/spec/**",
+          "node_modules"
+        ],
+        "reporter": [
+          "lcov",
+          "text-summary"
+        ]
+      },
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ajv-validator/ajv.git"
+      },
+      "keywords": [
+        "JSON",
+        "schema",
+        "validator",
+        "validation",
+        "jsonschema",
+        "json-schema",
+        "json-schema-validator",
+        "json-schema-validation"
+      ],
+      "author": {
+        "name": "Evgeny Poberezkin"
+      },
+      "license": "MIT",
+      "bugs": {
+        "url": "https://github.com/ajv-validator/ajv/issues"
+      },
+      "homepage": "https://ajv.js.org",
+      "runkitExampleFilename": ".runkit_example.js",
+      "dependencies": {
+        "fast-deep-equal": "^3.1.3",
+        "fast-uri": "^3.0.1",
+        "json-schema-traverse": "^1.0.0",
+        "require-from-string": "^2.0.2"
+      },
+      "devDependencies": {
+        "@ajv-validator/config": "^0.5.0",
+        "@rollup/plugin-commonjs": "^25.0.7",
+        "@rollup/plugin-json": "^6.1.0",
+        "@rollup/plugin-node-resolve": "^15.2.3",
+        "@rollup/plugin-typescript": "^11.1.6",
+        "@types/chai": "^4.3.11",
+        "@types/mocha": "^10.0.6",
+        "@types/node": "^20.11.30",
+        "@types/require-from-string": "^1.2.3",
+        "@typescript-eslint/eslint-plugin": "^7.3.1",
+        "@typescript-eslint/parser": "^7.3.1",
+        "ajv-formats": "^3.0.1",
+        "browserify": "^17.0.0",
+        "chai": "^4.4.1",
+        "cross-env": "^7.0.3",
+        "dayjs": "^1.11.10",
+        "dayjs-plugin-utc": "^0.1.2",
+        "eslint": "^8.57.0",
+        "eslint-config-prettier": "^9.1.0",
+        "glob": "^10.3.10",
+        "husky": "^9.0.11",
+        "jimp": "^0.22.10",
+        "js-beautify": "^1.15.1",
+        "json-schema-test": "^2.0.0",
+        "karma": "^6.4.2",
+        "karma-chrome-launcher": "^3.2.0",
+        "karma-mocha": "^2.0.1",
+        "lint-staged": "^15.2.2",
+        "mocha": "^10.3.0",
+        "module-from-string": "^3.3.0",
+        "node-fetch": "^3.3.2",
+        "nyc": "^15.1.0",
+        "prettier": "3.0.3",
+        "re2": "^1.20.9",
+        "rollup": "^2.79.1",
+        "rollup-plugin-terser": "^7.0.2",
+        "ts-node": "^10.9.2",
+        "tsify": "^5.0.4",
+        "typescript": "5.3.3",
+        "uri-js": "^4.4.1"
+      },
+      "collective": {
+        "type": "opencollective",
+        "url": "https://opencollective.com/ajv"
+      },
+      "funding": {
+        "type": "github",
+        "url": "https://github.com/sponsors/epoberezkin"
+      },
+      "prettier": "@ajv-validator/config/prettierrc.json",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged && npm test"
+        }
+      },
+      "lint-staged": {
+        "*.{json,yaml,js,ts}": "prettier --write"
+      },
+      "_id": "ajv@8.20.0",
+      "gitHead": "0fba0b8e649909613cfce0999b149cd08f4a4987",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz",
+        "integrity": "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==",
+        "shasum": "304b3636add88ba7d936760dd50ece006dea95f9",
+        "fileCount": 466,
+        "unpackedSize": 1033496
+      },
+      "directories": {},
+      "_hasShrinkwrap": false
+    }
+  },
+  "time": {
+    "created": "2021-04-01T07:04:36.577Z",
+    "modified": "2026-04-24T15:22:16.529Z",
+    "6.15.0": "2026-04-23T14:59:24.089Z",
+    "8.0.3": "2021-04-01T07:04:36.577Z",
+    "8.0.4": "2021-04-02T12:53:50.841Z",
+    "8.0.5": "2021-04-02T15:54:03.688Z",
+    "8.1.0": "2021-04-11T16:52:16.351Z",
+    "8.2.0": "2021-04-27T15:08:54.921Z",
+    "8.3.0": "2021-05-09T11:34:27.503Z",
+    "8.4.0": "2021-05-14T20:12:08.622Z",
+    "8.5.0": "2021-05-20T13:33:43.755Z",
+    "8.6.0": "2021-06-06T14:57:32.555Z",
+    "8.6.1": "2021-07-04T09:53:17.921Z",
+    "8.6.2": "2021-07-15T20:13:15.677Z",
+    "8.6.3": "2021-09-12T18:20:44.787Z",
+    "8.7.0": "2021-11-08T20:15:34.210Z",
+    "8.7.1": "2021-11-08T21:12:31.739Z",
+    "8.8.0": "2021-11-13T18:33:04.967Z",
+    "8.8.1": "2021-11-16T20:20:05.393Z",
+    "8.8.2": "2021-11-21T19:07:14.945Z",
+    "8.9.0": "2022-01-15T13:01:00.296Z",
+    "8.10.0": "2022-02-04T18:22:26.875Z",
+    "8.11.0": "2022-03-22T22:19:15.886Z",
+    "8.11.1": "2022-11-13T22:05:10.470Z",
+    "8.11.2": "2022-11-13T22:16:35.050Z",
+    "8.12.0": "2023-01-03T14:19:23.766Z",
+    "8.13.0": "2024-04-29T23:33:52.673Z",
+    "8.14.0": "2024-05-25T22:02:57.640Z",
+    "8.15.0": "2024-06-03T20:36:10.806Z",
+    "8.16.0": "2024-06-04T19:11:12.200Z",
+    "8.17.1": "2024-07-12T20:42:13.485Z",
+    "8.18.0": "2026-02-14T15:41:17.656Z",
+    "8.20.0": "2026-04-24T15:22:16.529Z"
+  }
+}

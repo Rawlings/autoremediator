@@ -1,0 +1,49 @@
+{
+  "name": "lodash.once",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "4.1.1"
+  },
+  "versions": {
+    "4.1.1": {
+      "name": "lodash.once",
+      "version": "4.1.1",
+      "description": "The lodash method `_.once` exported as a module.",
+      "homepage": "https://lodash.com/",
+      "icon": "https://lodash.com/icon.svg",
+      "license": "MIT",
+      "keywords": [
+        "lodash-modularized",
+        "once"
+      ],
+      "author": {
+        "name": "John-David Dalton",
+        "email": "john.david.dalton@gmail.com",
+        "url": "http://allyoucanleet.com/"
+      },
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/lodash/lodash.git"
+      },
+      "scripts": {
+        "test": "echo \"See https://travis-ci.org/lodash/lodash-cli for testing details.\""
+      },
+      "bugs": {
+        "url": "https://github.com/lodash/lodash/issues"
+      },
+      "_id": "lodash.once@4.1.1",
+      "_shasum": "0dd3971213c7c56df880977d504c88fb471a97ac",
+      "_from": ".",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lodash.once/-/lodash.once-4.1.1.tgz",
+        "integrity": "sha512-Sb487aTOCr9drQVL8pIxOzVhafOjZN9UU54hiN8PU3uAiSV7lx1yYNpbNmex2PK6dSJoNTSJUUswT651yww3Mg==",
+        "shasum": "0dd3971213c7c56df880977d504c88fb471a97ac"
+      }
+    }
+  },
+  "time": {
+    "created": "2016-08-13T17:42:47.106Z",
+    "modified": "2016-08-13T17:42:47.106Z",
+    "4.1.1": "2016-08-13T17:42:47.106Z"
+  }
+}

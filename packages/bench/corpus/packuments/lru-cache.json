@@ -1,0 +1,4173 @@
+{
+  "name": "lru-cache",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "legacy-v10": "10.4.3",
+    "latest": "11.5.3"
+  },
+  "versions": {
+    "6.0.0": {
+      "name": "lru-cache",
+      "version": "6.0.0",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "ISC",
+      "_id": "lru-cache@6.0.0",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-6.0.0.tgz",
+        "integrity": "sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==",
+        "shasum": "6d6fe6570ebd96aaf90fcad1dafa3b2566db3a94",
+        "fileCount": 4,
+        "unpackedSize": 15643
+      },
+      "main": "index.js",
+      "engines": {
+        "node": ">=10"
+      },
+      "gitHead": "a71e08008f2d25442426d0d26e8133dccc2ca9a5",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prepublishOnly": "git push origin --follow-tags"
+      },
+      "repository": {
+        "url": "git://github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "dependencies": {
+        "yallist": "^4.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^14.10.7",
+        "benchmark": "^2.1.4"
+      }
+    },
+    "10.3.0": {
+      "name": "lru-cache",
+      "version": "10.3.0",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "ISC",
+      "_id": "lru-cache@10.3.0",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-10.3.0.tgz",
+        "integrity": "sha512-CQl19J/g+Hbjbv4Y3mFNNXFEL/5t/KCg8POCuUqd4rMKjGG+j1ybER83hxV58zL+dFI1PTkt3GNFSHRt+d8qEQ==",
+        "shasum": "4a4aaf10c84658ab70f79a85a9a3f1e1fb11196b",
+        "fileCount": 17,
+        "unpackedSize": 804323
+      },
+      "main": "./dist/commonjs/index.js",
+      "tshy": {
+        "exports": {
+          ".": "./src/index.ts",
+          "./min": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          }
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "engines": {
+        "node": "14 || >=16.14"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        },
+        "./min": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        }
+      },
+      "gitHead": "d71af85ef2c0604bf93357315097b52d6f17240c",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "prettier": {
+        "semi": false,
+        "useTabs": false,
+        "tabWidth": 2,
+        "endOfLine": "lf",
+        "printWidth": 70,
+        "arrowParens": "avoid",
+        "singleQuote": true,
+        "jsxSingleQuote": false,
+        "bracketSameLine": true
+      },
+      "repository": {
+        "url": "git://github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^18.5.7",
+        "tshy": "^1.8.0",
+        "tslib": "^2.4.0",
+        "marked": "^4.2.12",
+        "mkdirp": "^2.1.5",
+        "esbuild": "^0.17.11",
+        "typedoc": "^0.25.3",
+        "prettier": "^2.6.2",
+        "benchmark": "^2.1.4",
+        "@types/tap": "^15.0.6",
+        "clock-mock": "^2.0.2",
+        "typescript": "^5.2.2",
+        "@types/node": "^20.2.5",
+        "@tapjs/clock": "^1.1.16",
+        "eslint-config-prettier": "^8.5.0"
+      }
+    },
+    "10.3.1": {
+      "name": "lru-cache",
+      "version": "10.3.1",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "ISC",
+      "_id": "lru-cache@10.3.1",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-10.3.1.tgz",
+        "integrity": "sha512-9/8QXrtbGeMB6LxwQd4x1tIMnsmUxMvIH/qWGsccz6bt9Uln3S+sgAaqfQNhbGA8ufzs2fHuP/yqapGgP9Hh2g==",
+        "shasum": "a37050586f84ccfdb570148a253bf1632a29ef44",
+        "fileCount": 17,
+        "unpackedSize": 804363
+      },
+      "main": "./dist/commonjs/index.js",
+      "tshy": {
+        "exports": {
+          ".": "./src/index.ts",
+          "./min": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          }
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "engines": {
+        "node": ">=18"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "source": "./src/index.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "source": "./src/index.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        },
+        "./min": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        }
+      },
+      "gitHead": "3edad217ce3a4b6535baf03957882d8afff82532",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "prettier": {
+        "semi": false,
+        "useTabs": false,
+        "tabWidth": 2,
+        "endOfLine": "lf",
+        "printWidth": 70,
+        "arrowParens": "avoid",
+        "singleQuote": true,
+        "jsxSingleQuote": false,
+        "bracketSameLine": true
+      },
+      "repository": {
+        "url": "git://github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^20.0.3",
+        "tshy": "^1.17.0",
+        "tslib": "^2.4.0",
+        "marked": "^4.2.12",
+        "mkdirp": "^2.1.5",
+        "esbuild": "^0.17.11",
+        "typedoc": "^0.25.3",
+        "prettier": "^2.6.2",
+        "benchmark": "^2.1.4",
+        "@types/tap": "^15.0.6",
+        "typescript": "^5.2.2",
+        "@types/node": "^20.2.5",
+        "eslint-config-prettier": "^8.5.0"
+      }
+    },
+    "10.4.0": {
+      "name": "lru-cache",
+      "version": "10.4.0",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "ISC",
+      "_id": "lru-cache@10.4.0",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-10.4.0.tgz",
+        "integrity": "sha512-bfJaPTuEiTYBu+ulDaeQ0F+uLmlfFkMgXj4cbwfuMSjgObGMzb55FMMbDvbRU0fAHZ4sLGkz2mKwcMg8Dvm8Ww==",
+        "shasum": "cb29b4b2dd55b22e4a729cdb096093d7f85df02d",
+        "fileCount": 17,
+        "unpackedSize": 804290
+      },
+      "main": "./dist/commonjs/index.js",
+      "tshy": {
+        "exports": {
+          ".": "./src/index.ts",
+          "./min": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          }
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "engines": {
+        "node": ">=18"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        },
+        "./min": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        }
+      },
+      "gitHead": "52c9cb00034799257a4e08d9b7f037e409e00dbb",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "prettier": {
+        "semi": false,
+        "useTabs": false,
+        "tabWidth": 2,
+        "endOfLine": "lf",
+        "printWidth": 70,
+        "arrowParens": "avoid",
+        "singleQuote": true,
+        "jsxSingleQuote": false,
+        "bracketSameLine": true
+      },
+      "repository": {
+        "url": "git://github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^20.0.3",
+        "tshy": "^2.0.0",
+        "tslib": "^2.4.0",
+        "marked": "^4.2.12",
+        "mkdirp": "^2.1.5",
+        "esbuild": "^0.17.11",
+        "typedoc": "^0.25.3",
+        "prettier": "^2.6.2",
+        "benchmark": "^2.1.4",
+        "@types/tap": "^15.0.6",
+        "typescript": "^5.2.2",
+        "@types/node": "^20.2.5",
+        "eslint-config-prettier": "^8.5.0"
+      }
+    },
+    "10.4.1": {
+      "name": "lru-cache",
+      "version": "10.4.1",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "ISC",
+      "_id": "lru-cache@10.4.1",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-10.4.1.tgz",
+        "integrity": "sha512-8h/JsUc/2+Dm9RPJnBAmObGnUqTMmsIKThxixMLOkrebSihRhTV0wLD/8BSk6OU6Pbj8hiDTbsI3fLjBJSlhDg==",
+        "shasum": "da9a9cb51aec89fda9b485f5a12b2fdb8f6dbe88",
+        "fileCount": 17,
+        "unpackedSize": 804340
+      },
+      "main": "./dist/commonjs/index.js",
+      "tshy": {
+        "exports": {
+          ".": "./src/index.ts",
+          "./min": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          }
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "engines": {
+        "node": "14 >= 14.21 || 16 >= 16.20 || 18 >=18.20 || 20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        },
+        "./min": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        }
+      },
+      "gitHead": "e01135c4270941ac54d00a6b96eefdca31f3a6f6",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "prettier": {
+        "semi": false,
+        "useTabs": false,
+        "tabWidth": 2,
+        "endOfLine": "lf",
+        "printWidth": 70,
+        "arrowParens": "avoid",
+        "singleQuote": true,
+        "jsxSingleQuote": false,
+        "bracketSameLine": true
+      },
+      "repository": {
+        "url": "git://github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^20.0.3",
+        "tshy": "^2.0.0",
+        "tslib": "^2.4.0",
+        "marked": "^4.2.12",
+        "mkdirp": "^2.1.5",
+        "esbuild": "^0.17.11",
+        "typedoc": "^0.25.3",
+        "prettier": "^2.6.2",
+        "benchmark": "^2.1.4",
+        "@types/tap": "^15.0.6",
+        "typescript": "^5.2.2",
+        "@types/node": "^20.2.5",
+        "eslint-config-prettier": "^8.5.0"
+      }
+    },
+    "10.4.2": {
+      "name": "lru-cache",
+      "version": "10.4.2",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "ISC",
+      "_id": "lru-cache@10.4.2",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-10.4.2.tgz",
+        "integrity": "sha512-voV4dDrdVZVNz84n39LFKDaRzfwhdzJ7akpyXfTMxCgRUp07U3lcJUXRlhTKP17rgt09sUzLi5iCitpEAr+6ug==",
+        "shasum": "78c38f194b747174cff90e60afabcae40c3619f2",
+        "fileCount": 17,
+        "unpackedSize": 804364
+      },
+      "main": "./dist/commonjs/index.js",
+      "tshy": {
+        "exports": {
+          ".": "./src/index.ts",
+          "./min": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          }
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "engines": {
+        "node": "14 || 16 || 18 || 20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        },
+        "./min": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        }
+      },
+      "gitHead": "f7e9f2ad98dda229cb0b99f44bd1d32be86d74bc",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "prettier": {
+        "semi": false,
+        "useTabs": false,
+        "tabWidth": 2,
+        "endOfLine": "lf",
+        "printWidth": 70,
+        "arrowParens": "avoid",
+        "singleQuote": true,
+        "jsxSingleQuote": false,
+        "bracketSameLine": true
+      },
+      "repository": {
+        "url": "git://github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "publishConfig": {
+        "tag": "legacy-v10"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^20.0.3",
+        "tshy": "^2.0.0",
+        "tslib": "^2.4.0",
+        "marked": "^4.2.12",
+        "mkdirp": "^2.1.5",
+        "esbuild": "^0.17.11",
+        "typedoc": "^0.25.3",
+        "prettier": "^2.6.2",
+        "benchmark": "^2.1.4",
+        "@types/tap": "^15.0.6",
+        "typescript": "^5.2.2",
+        "@types/node": "^20.2.5",
+        "eslint-config-prettier": "^8.5.0"
+      }
+    },
+    "10.4.3": {
+      "name": "lru-cache",
+      "version": "10.4.3",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "ISC",
+      "_id": "lru-cache@10.4.3",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-10.4.3.tgz",
+        "integrity": "sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==",
+        "shasum": "410fc8a17b70e598013df257c2446b7f3383f119",
+        "fileCount": 17,
+        "unpackedSize": 804301
+      },
+      "main": "./dist/commonjs/index.js",
+      "tshy": {
+        "exports": {
+          ".": "./src/index.ts",
+          "./min": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          }
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        },
+        "./min": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        }
+      },
+      "gitHead": "228d71964978ad71a7dcea664c494468c780b956",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "prettier": {
+        "semi": false,
+        "useTabs": false,
+        "tabWidth": 2,
+        "endOfLine": "lf",
+        "printWidth": 70,
+        "arrowParens": "avoid",
+        "singleQuote": true,
+        "jsxSingleQuote": false,
+        "bracketSameLine": true
+      },
+      "repository": {
+        "url": "git://github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "publishConfig": {
+        "tag": "legacy-v10"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^20.0.3",
+        "tshy": "^2.0.0",
+        "tslib": "^2.4.0",
+        "marked": "^4.2.12",
+        "mkdirp": "^2.1.5",
+        "esbuild": "^0.17.11",
+        "typedoc": "^0.25.3",
+        "prettier": "^2.6.2",
+        "benchmark": "^2.1.4",
+        "@types/tap": "^15.0.6",
+        "typescript": "^5.2.2",
+        "@types/node": "^20.2.5",
+        "eslint-config-prettier": "^8.5.0"
+      }
+    },
+    "11.0.0": {
+      "name": "lru-cache",
+      "version": "11.0.0",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "ISC",
+      "_id": "lru-cache@11.0.0",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.0.0.tgz",
+        "integrity": "sha512-Qv32eSV1RSCfhY3fpPE2GNZ8jgM9X7rdAfemLWqTUxwiyIC4jJ6Sy0fZ8H+oLWevO6i4/bizg7c8d8i6bxrzbA==",
+        "shasum": "15d93a196f189034d7166caf9fe55e7384c98a21",
+        "fileCount": 17,
+        "unpackedSize": 804296
+      },
+      "main": "./dist/commonjs/index.js",
+      "tshy": {
+        "exports": {
+          ".": "./src/index.ts",
+          "./min": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          }
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        },
+        "./min": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        }
+      },
+      "gitHead": "e1981d1719accbcb2c3604303bb4b7a8a6cc267a",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "prettier": {
+        "semi": false,
+        "useTabs": false,
+        "tabWidth": 2,
+        "endOfLine": "lf",
+        "printWidth": 70,
+        "arrowParens": "avoid",
+        "singleQuote": true,
+        "jsxSingleQuote": false,
+        "bracketSameLine": true
+      },
+      "repository": {
+        "url": "git://github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^20.0.3",
+        "tshy": "^2.0.0",
+        "tslib": "^2.4.0",
+        "marked": "^4.2.12",
+        "mkdirp": "^2.1.5",
+        "esbuild": "^0.17.11",
+        "typedoc": "^0.25.3",
+        "prettier": "^2.6.2",
+        "benchmark": "^2.1.4",
+        "@types/tap": "^15.0.6",
+        "typescript": "^5.2.2",
+        "@types/node": "^20.2.5",
+        "eslint-config-prettier": "^8.5.0"
+      }
+    },
+    "11.0.1": {
+      "name": "lru-cache",
+      "version": "11.0.1",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "ISC",
+      "_id": "lru-cache@11.0.1",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.0.1.tgz",
+        "integrity": "sha512-CgeuL5uom6j/ZVrg7G/+1IXqRY8JXX4Hghfy5YE0EhoYQWvndP1kufu58cmZLNIDKnRhZrXfdS9urVWx98AipQ==",
+        "shasum": "3a732fbfedb82c5ba7bca6564ad3f42afcb6e147",
+        "fileCount": 17,
+        "unpackedSize": 807826
+      },
+      "main": "./dist/commonjs/index.js",
+      "tshy": {
+        "exports": {
+          ".": "./src/index.ts",
+          "./min": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          }
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        },
+        "./min": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        }
+      },
+      "gitHead": "cbdd1d0eff9d1a4d89dfe756678ca92a27d1551c",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "prettier": {
+        "semi": false,
+        "useTabs": false,
+        "tabWidth": 2,
+        "endOfLine": "lf",
+        "printWidth": 70,
+        "arrowParens": "avoid",
+        "singleQuote": true,
+        "jsxSingleQuote": false,
+        "bracketSameLine": true
+      },
+      "repository": {
+        "url": "git://github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.0.1",
+        "tshy": "^3.0.2",
+        "tslib": "^2.4.0",
+        "marked": "^4.2.12",
+        "mkdirp": "^2.1.5",
+        "esbuild": "^0.17.11",
+        "typedoc": "^0.26.6",
+        "prettier": "^2.6.2",
+        "benchmark": "^2.1.4",
+        "@types/tap": "^15.0.6",
+        "@types/node": "^22.5.4",
+        "eslint-config-prettier": "^8.5.0"
+      }
+    },
+    "11.0.2": {
+      "name": "lru-cache",
+      "version": "11.0.2",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "ISC",
+      "_id": "lru-cache@11.0.2",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.0.2.tgz",
+        "integrity": "sha512-123qHRfJBmo2jXDbo/a5YOQrJoHF/GNQTLzQ5+IdK5pWpceK17yRc6ozlWd25FxvGKQbIUs91fDFkXmDHTKcyA==",
+        "shasum": "fbd8e7cf8211f5e7e5d91905c415a3f55755ca39",
+        "fileCount": 17,
+        "unpackedSize": 807860
+      },
+      "main": "./dist/commonjs/index.js",
+      "tshy": {
+        "exports": {
+          ".": "./src/index.ts",
+          "./min": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          }
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        },
+        "./min": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        }
+      },
+      "gitHead": "65c9971e3fef123ff0f17d67add53b2d99b461b0",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "prettier": {
+        "semi": false,
+        "useTabs": false,
+        "tabWidth": 2,
+        "endOfLine": "lf",
+        "printWidth": 70,
+        "arrowParens": "avoid",
+        "singleQuote": true,
+        "jsxSingleQuote": false,
+        "bracketSameLine": true
+      },
+      "repository": {
+        "url": "git://github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.0.1",
+        "tshy": "^3.0.2",
+        "tslib": "^2.4.0",
+        "marked": "^4.2.12",
+        "mkdirp": "^2.1.5",
+        "esbuild": "^0.17.11",
+        "typedoc": "^0.26.6",
+        "prettier": "^2.6.2",
+        "benchmark": "^2.1.4",
+        "@types/tap": "^15.0.6",
+        "@types/node": "^22.5.4",
+        "eslint-config-prettier": "^8.5.0"
+      }
+    },
+    "11.1.0": {
+      "name": "lru-cache",
+      "version": "11.1.0",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "ISC",
+      "_id": "lru-cache@11.1.0",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.1.0.tgz",
+        "integrity": "sha512-QIXZUBJUx+2zHUdQujWejBkcD9+cs94tLn0+YL8UrCh+D5sCXZ4c7LaEH48pNwRY3MLDgqUFyhlCyjJPf1WP0A==",
+        "shasum": "afafb060607108132dbc1cf8ae661afb69486117",
+        "fileCount": 17,
+        "unpackedSize": 819995
+      },
+      "main": "./dist/commonjs/index.js",
+      "tshy": {
+        "exports": {
+          ".": "./src/index.ts",
+          "./min": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          }
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        },
+        "./min": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        }
+      },
+      "gitHead": "44e56735e5da8582a63b2f0a41af8b5f9d4a069b",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "prettier": {
+        "semi": false,
+        "useTabs": false,
+        "tabWidth": 2,
+        "endOfLine": "lf",
+        "printWidth": 70,
+        "arrowParens": "avoid",
+        "singleQuote": true,
+        "jsxSingleQuote": false,
+        "bracketSameLine": true
+      },
+      "repository": {
+        "url": "git://github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.1.0",
+        "tshy": "^3.0.2",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "esbuild": "^0.25.1",
+        "typedoc": "^0.28.1",
+        "prettier": "^3.5.3",
+        "benchmark": "^2.1.4",
+        "@types/node": "^22.5.4"
+      }
+    },
+    "11.2.0": {
+      "name": "lru-cache",
+      "version": "11.2.0",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "ISC",
+      "_id": "lru-cache@11.2.0",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.2.0.tgz",
+        "integrity": "sha512-1oZqnd6TxE/NZyRZ21u+10DKV5sMqT0rJFlPbytSH/0UaXLvE/EurTrd2nDnHif6E1l8N9mothtWs/Um3RijjA==",
+        "shasum": "ceefc006a9c200c70146b6f2dbf7d19a5d51d78d",
+        "fileCount": 17,
+        "unpackedSize": 827407
+      },
+      "main": "./dist/commonjs/index.js",
+      "tshy": {
+        "exports": {
+          ".": "./src/index.ts",
+          "./min": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          }
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        },
+        "./min": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        }
+      },
+      "gitHead": "7169becb79935904b49c35224c15be65f2d3e6fa",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "prettier": {
+        "semi": false,
+        "useTabs": false,
+        "tabWidth": 2,
+        "endOfLine": "lf",
+        "printWidth": 70,
+        "arrowParens": "avoid",
+        "singleQuote": true,
+        "jsxSingleQuote": false,
+        "bracketSameLine": true,
+        "experimentalTernaries": true
+      },
+      "repository": {
+        "url": "git://github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "dependencies": {
+        "esbuild": "^0.25.9"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.1.0",
+        "tshy": "^3.0.2",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "typedoc": "^0.28.12",
+        "prettier": "^3.6.2",
+        "benchmark": "^2.1.4",
+        "@types/node": "^24.3.0"
+      }
+    },
+    "11.2.1": {
+      "name": "lru-cache",
+      "version": "11.2.1",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "ISC",
+      "_id": "lru-cache@11.2.1",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.2.1.tgz",
+        "integrity": "sha512-r8LA6i4LP4EeWOhqBaZZjDWwehd1xUJPCJd9Sv300H0ZmcUER4+JPh7bqqZeqs1o5pgtgvXm+d9UGrB5zZGDiQ==",
+        "shasum": "d426ac471521729c6c1acda5f7a633eadaa28db2",
+        "fileCount": 17,
+        "unpackedSize": 827383
+      },
+      "main": "./dist/commonjs/index.js",
+      "tshy": {
+        "exports": {
+          ".": "./src/index.ts",
+          "./min": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          }
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        },
+        "./min": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        }
+      },
+      "gitHead": "fa211ba816196d026c8bdd2962e4cbe76910c567",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "prettier": {
+        "semi": false,
+        "useTabs": false,
+        "tabWidth": 2,
+        "endOfLine": "lf",
+        "printWidth": 70,
+        "arrowParens": "avoid",
+        "singleQuote": true,
+        "jsxSingleQuote": false,
+        "bracketSameLine": true,
+        "experimentalTernaries": true
+      },
+      "repository": {
+        "url": "git://github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.1.0",
+        "tshy": "^3.0.2",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "esbuild": "^0.25.9",
+        "typedoc": "^0.28.12",
+        "prettier": "^3.6.2",
+        "benchmark": "^2.1.4",
+        "@types/node": "^24.3.0"
+      }
+    },
+    "11.2.2": {
+      "name": "lru-cache",
+      "version": "11.2.2",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "ISC",
+      "_id": "lru-cache@11.2.2",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.2.2.tgz",
+        "integrity": "sha512-F9ODfyqML2coTIsQpSkRHnLSZMtkU8Q+mSfcaIyKwy58u+8k5nvAYeiNhsyMARvzNcXJ9QfWVrcPsC9e9rAxtg==",
+        "shasum": "40fd37edffcfae4b2940379c0722dc6eeaa75f24",
+        "fileCount": 17,
+        "unpackedSize": 829503
+      },
+      "main": "./dist/commonjs/index.js",
+      "tshy": {
+        "exports": {
+          ".": "./src/index.ts",
+          "./min": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          }
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        },
+        "./min": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        }
+      },
+      "gitHead": "375406d360c9fb87e101c505b8fe26a1336e3f48",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "prettier": {
+        "semi": false,
+        "useTabs": false,
+        "tabWidth": 2,
+        "endOfLine": "lf",
+        "printWidth": 70,
+        "arrowParens": "avoid",
+        "singleQuote": true,
+        "jsxSingleQuote": false,
+        "bracketSameLine": true,
+        "experimentalTernaries": true
+      },
+      "repository": {
+        "url": "git://github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.1.0",
+        "tshy": "^3.0.2",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "esbuild": "^0.25.9",
+        "typedoc": "^0.28.12",
+        "prettier": "^3.6.2",
+        "benchmark": "^2.1.4",
+        "@types/node": "^24.3.0"
+      }
+    },
+    "11.2.3": {
+      "name": "lru-cache",
+      "version": "11.2.3",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "BlueOak-1.0.0",
+      "_id": "lru-cache@11.2.3",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.2.3.tgz",
+        "integrity": "sha512-eWW5D5OnsHVARgBXa+qftkrkZWB50nr9JJfSG+CaNW4Hj5ECB2BzGSAWqNzuQ9SY6pbxWZI5vuG5Fe333O/yHg==",
+        "shasum": "a0d7f008806b152b0c6b8c096de29c6fcfe123d9",
+        "fileCount": 17,
+        "unpackedSize": 837194
+      },
+      "main": "./dist/commonjs/index.js",
+      "tshy": {
+        "exports": {
+          ".": "./src/index.ts",
+          "./min": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          }
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        },
+        "./min": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        }
+      },
+      "gitHead": "05d673bb0b86ec1efa7cdd652135c14da6b9ff35",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "prettier": {
+        "semi": false,
+        "useTabs": false,
+        "tabWidth": 2,
+        "endOfLine": "lf",
+        "printWidth": 70,
+        "arrowParens": "avoid",
+        "singleQuote": true,
+        "jsxSingleQuote": false,
+        "bracketSameLine": true,
+        "experimentalTernaries": true
+      },
+      "repository": {
+        "url": "git://github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.1.0",
+        "tshy": "^3.0.2",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "esbuild": "^0.25.9",
+        "typedoc": "^0.28.12",
+        "prettier": "^3.6.2",
+        "benchmark": "^2.1.4",
+        "@types/node": "^24.3.0"
+      }
+    },
+    "11.2.4": {
+      "name": "lru-cache",
+      "version": "11.2.4",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "BlueOak-1.0.0",
+      "_id": "lru-cache@11.2.4",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.2.4.tgz",
+        "integrity": "sha512-B5Y16Jr9LB9dHVkh6ZevG+vAbOsNOYCX+sXvFWFu7B3Iz5mijW3zdbMyhsh8ANd2mSWBYdJgnqi+mL7/LrOPYg==",
+        "shasum": "ecb523ebb0e6f4d837c807ad1abaea8e0619770d",
+        "fileCount": 17,
+        "unpackedSize": 837860
+      },
+      "main": "./dist/commonjs/index.js",
+      "tshy": {
+        "exports": {
+          ".": "./src/index.ts",
+          "./min": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          }
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        },
+        "./min": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        }
+      },
+      "gitHead": "e4ea6c8ca5ef1eae05d11cce4ec92a15585c3f0b",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "repository": {
+        "url": "git://github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.1.0",
+        "tshy": "^3.0.2",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "esbuild": "^0.25.9",
+        "typedoc": "^0.28.12",
+        "prettier": "^3.6.2",
+        "benchmark": "^2.1.4",
+        "@types/node": "^24.3.0"
+      }
+    },
+    "11.2.5": {
+      "name": "lru-cache",
+      "version": "11.2.5",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "BlueOak-1.0.0",
+      "_id": "lru-cache@11.2.5",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.2.5.tgz",
+        "integrity": "sha512-vFrFJkWtJvJnD5hg+hJvVE8Lh/TcMzKnTgCWmtBipwI5yLX/iX+5UB2tfuyODF5E7k9xEzMdYgGqaSb1c0c5Yw==",
+        "shasum": "6811ae01652ae5d749948cdd80bcc22218c6744f",
+        "fileCount": 17,
+        "unpackedSize": 841205
+      },
+      "main": "./dist/commonjs/index.js",
+      "tshy": {
+        "exports": {
+          ".": "./src/index.ts",
+          "./min": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          }
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        },
+        "./min": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        }
+      },
+      "gitHead": "b89badbbafe1ddbda64400d0313ccf5ffb9b0d89",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "repository": {
+        "url": "git+ssh://git@github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.1.0",
+        "tshy": "^3.0.2",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "esbuild": "^0.25.9",
+        "typedoc": "^0.28.12",
+        "prettier": "^3.6.2",
+        "benchmark": "^2.1.4",
+        "@types/node": "^24.3.0"
+      }
+    },
+    "11.2.6": {
+      "name": "lru-cache",
+      "version": "11.2.6",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "BlueOak-1.0.0",
+      "_id": "lru-cache@11.2.6",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "tap": {
+        "plugin": [
+          "@tapjs/clock"
+        ],
+        "node-arg": [
+          "--expose-gc"
+        ]
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.2.6.tgz",
+        "integrity": "sha512-ESL2CrkS/2wTPfuend7Zhkzo2u0daGJ/A2VucJOgQ/C48S/zB8MMeMHSGKYpXhIjbPxfuezITkaBH1wqv00DDQ==",
+        "shasum": "356bf8a29e88a7a2945507b31f6429a65a192c58",
+        "fileCount": 17,
+        "unpackedSize": 841213
+      },
+      "main": "./dist/commonjs/index.min.js",
+      "tshy": {
+        "exports": {
+          ".": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          },
+          "./raw": "./src/index.ts"
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.min.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        },
+        "./raw": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        }
+      },
+      "gitHead": "ad9c097fad2c8654bf9a64558925bdd27cfedc79",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "repository": {
+        "url": "git+ssh://git@github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.1.0",
+        "tshy": "^3.0.2",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "esbuild": "^0.25.9",
+        "typedoc": "^0.28.12",
+        "prettier": "^3.6.2",
+        "benchmark": "^2.1.4",
+        "@types/node": "^24.3.0"
+      }
+    },
+    "11.2.7": {
+      "name": "lru-cache",
+      "version": "11.2.7",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "BlueOak-1.0.0",
+      "_id": "lru-cache@11.2.7",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.2.7.tgz",
+        "integrity": "sha512-aY/R+aEsRelme17KGQa/1ZSIpLpNYYrhcrepKTZgE+W3WM16YMCaPwOHLHsmopZHELU0Ojin1lPVxKR0MihncA==",
+        "shasum": "9127402617f34cd6767b96daee98c28e74458d35",
+        "fileCount": 17,
+        "unpackedSize": 844139
+      },
+      "main": "./dist/commonjs/index.min.js",
+      "tshy": {
+        "exports": {
+          ".": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          },
+          "./raw": "./src/index.ts"
+        }
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.min.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        },
+        "./raw": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        }
+      },
+      "gitHead": "e787b9f77770d696328dca3e964b85e7f8e8aac1",
+      "scripts": {
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash fixup.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "repository": {
+        "url": "git+ssh://git@github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.1.0",
+        "tshy": "^3.0.2",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "esbuild": "^0.25.9",
+        "typedoc": "^0.28.12",
+        "prettier": "^3.6.2",
+        "benchmark": "^2.1.4",
+        "@types/node": "^24.3.0"
+      }
+    },
+    "11.3.0": {
+      "name": "lru-cache",
+      "version": "11.3.0",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "BlueOak-1.0.0",
+      "_id": "lru-cache@11.3.0",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.3.0.tgz",
+        "integrity": "sha512-sr8xPKE25m6vJVcrdn6NxtC0fVfuPowbscLypegRgOm0yXSqr5JNHCAY3hnusdJ7HRBW04j6Ip4khvHU778DuQ==",
+        "shasum": "c1fb0c77eae4962f326d6118c73471010a6f4f95",
+        "fileCount": 25,
+        "unpackedSize": 900136
+      },
+      "main": "./dist/commonjs/index.min.js",
+      "tshy": {
+        "exports": {
+          ".": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          },
+          "./raw": "./src/index.ts"
+        },
+        "selfLink": false
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.min.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        },
+        "./raw": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        }
+      },
+      "gitHead": "9e87326074e85fa585cad18f5542dc7a45b12dca",
+      "scripts": {
+        "lint": "oxlint --fix src test",
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash scripts/build.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "postlint": "npm run format",
+        "postsnap": "npm run lint",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "repository": {
+        "url": "git+ssh://git@github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.6.3",
+        "tshy": "^4.1.1",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "oxlint": "^1.58.0",
+        "esbuild": "^0.25.9",
+        "typedoc": "^0.28.18",
+        "prettier": "^3.8.1",
+        "benchmark": "^2.1.4",
+        "oxlint-tsgolint": "^0.19.0"
+      }
+    },
+    "11.3.1": {
+      "name": "lru-cache",
+      "version": "11.3.1",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "BlueOak-1.0.0",
+      "_id": "lru-cache@11.3.1",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.3.1.tgz",
+        "integrity": "sha512-Y71HWT4hydF1IAG/2OPync4dgQ/J2iWye7eg6CuzJHI+E97tvqFPlADzxiNnjH6WSljg8ecfXMr9k6bfFuqA5w==",
+        "shasum": "ed2e369003d1ef9d178fe4d1918bc1a37f068008",
+        "fileCount": 25,
+        "unpackedSize": 902736
+      },
+      "main": "./dist/commonjs/index.min.js",
+      "tshy": {
+        "exports": {
+          ".": {
+            "import": {
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          },
+          "./raw": "./src/index.ts"
+        },
+        "selfLink": false
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.min.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        },
+        "./raw": {
+          "import": {
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        }
+      },
+      "gitHead": "4d6d1b3cd2ae925bdf1d11ad78fafe51d417cb73",
+      "scripts": {
+        "lint": "oxlint --fix src test",
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash scripts/build.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "postlint": "npm run format",
+        "postsnap": "npm run lint",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "repository": {
+        "url": "git+ssh://git@github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.6.3",
+        "tshy": "^4.1.1",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "oxlint": "^1.58.0",
+        "esbuild": "^0.25.9",
+        "typedoc": "^0.28.18",
+        "prettier": "^3.8.1",
+        "benchmark": "^2.1.4",
+        "oxlint-tsgolint": "^0.19.0"
+      }
+    },
+    "11.3.2": {
+      "name": "lru-cache",
+      "version": "11.3.2",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "BlueOak-1.0.0",
+      "_id": "lru-cache@11.3.2",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.3.2.tgz",
+        "integrity": "sha512-wgWa6FWQ3QRRJbIjbsldRJZxdxYngT/dO0I5Ynmlnin8qy7tC6xYzbcJjtN4wHLXtkbVwHzk0C+OejVw1XM+DQ==",
+        "shasum": "349669d2a9eeb10cc706a9edb10d93bc7080a892",
+        "fileCount": 35,
+        "unpackedSize": 1343268
+      },
+      "main": "./dist/commonjs/index.min.js",
+      "tshy": {
+        "exports": {
+          ".": {
+            "import": {
+              "node": {
+                "types": "./dist/esm/node/index.d.ts",
+                "default": "./dist/esm/node/index.min.js"
+              },
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          },
+          "./raw": "./src/index.ts"
+        },
+        "selfLink": false,
+        "esmDialects": [
+          "node"
+        ]
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.min.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.min.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        },
+        "./raw": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        }
+      },
+      "gitHead": "005e560f14e1d26285532724c7179f0b5845dc38",
+      "scripts": {
+        "lint": "oxlint --fix src test",
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash scripts/build.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "postlint": "npm run format",
+        "postsnap": "npm run lint",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "repository": {
+        "url": "git+ssh://git@github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.6.3",
+        "tshy": "^4.1.1",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "oxlint": "^1.58.0",
+        "esbuild": "^0.25.9",
+        "typedoc": "^0.28.18",
+        "prettier": "^3.8.1",
+        "benchmark": "^2.1.4",
+        "oxlint-tsgolint": "^0.19.0"
+      }
+    },
+    "11.3.3": {
+      "name": "lru-cache",
+      "version": "11.3.3",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "BlueOak-1.0.0",
+      "_id": "lru-cache@11.3.3",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.3.3.tgz",
+        "integrity": "sha512-JvNw9Y81y33E+BEYPr0U7omo+U9AySnsMsEiXgwT6yqd31VQWTLNQqmT4ou5eqPFUrTfIDFta2wKhB1hyohtAQ==",
+        "shasum": "d6c633c2a9657760fd30594d8d98da65330d9d78",
+        "fileCount": 35,
+        "unpackedSize": 1342880
+      },
+      "main": "./dist/commonjs/index.min.js",
+      "tshy": {
+        "exports": {
+          ".": {
+            "import": {
+              "node": {
+                "types": "./dist/esm/node/index.d.ts",
+                "default": "./dist/esm/node/index.min.js"
+              },
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          },
+          "./raw": "./src/index.ts"
+        },
+        "selfLink": false,
+        "esmDialects": [
+          "node"
+        ]
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.min.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.min.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        },
+        "./raw": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        }
+      },
+      "gitHead": "21db42b6a6f5765d93a51897d53cf15464ae8662",
+      "scripts": {
+        "lint": "oxlint --fix src test",
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash scripts/build.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "postlint": "npm run format",
+        "postsnap": "npm run lint",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "repository": {
+        "url": "git+ssh://git@github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.6.3",
+        "tshy": "^4.1.1",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "oxlint": "^1.58.0",
+        "esbuild": "^0.25.9",
+        "typedoc": "^0.28.18",
+        "prettier": "^3.8.1",
+        "benchmark": "^2.1.4",
+        "oxlint-tsgolint": "^0.19.0"
+      }
+    },
+    "11.3.4": {
+      "name": "lru-cache",
+      "version": "11.3.4",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "BlueOak-1.0.0",
+      "_id": "lru-cache@11.3.4",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.3.4.tgz",
+        "integrity": "sha512-ysVTXR2AtduoU+XfgKgAm9Rw7wHxfgnHm0zVzLqD4eAyJAvvirBIxw422a3aRnOL8OQhCd0gL6X0Z3w9uMiljg==",
+        "shasum": "9a5ef707e8acc380d1a98186b0b03c204302729e",
+        "fileCount": 43,
+        "unpackedSize": 1632092
+      },
+      "main": "./dist/commonjs/index.min.js",
+      "tshy": {
+        "exports": {
+          ".": {
+            "import": {
+              "node": {
+                "types": "./dist/esm/node/index.d.ts",
+                "default": "./dist/esm/node/index.min.js"
+              },
+              "types": "./dist/esm/index.d.ts",
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          },
+          "./raw": "./src/index.ts"
+        },
+        "selfLink": false,
+        "esmDialects": [
+          "node",
+          "browser"
+        ]
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.min.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.min.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        },
+        "./raw": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "browser": {
+              "types": "./dist/esm/browser/index.d.ts",
+              "default": "./dist/esm/browser/index.js"
+            },
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        }
+      },
+      "gitHead": "1723a959fce5d9068ccdbd4e54dafddfb59416f6",
+      "scripts": {
+        "lint": "oxlint --fix src test",
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash scripts/build.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "postlint": "npm run format",
+        "postsnap": "npm run lint",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "repository": {
+        "url": "git+ssh://git@github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.6.3",
+        "tshy": "^4.1.1",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "oxlint": "^1.58.0",
+        "esbuild": "^0.25.9",
+        "typedoc": "^0.28.18",
+        "prettier": "^3.8.1",
+        "benchmark": "^2.1.4",
+        "oxlint-tsgolint": "^0.19.0"
+      }
+    },
+    "11.3.5": {
+      "name": "lru-cache",
+      "version": "11.3.5",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "BlueOak-1.0.0",
+      "_id": "lru-cache@11.3.5",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.3.5.tgz",
+        "integrity": "sha512-NxVFwLAnrd9i7KUBxC4DrUhmgjzOs+1Qm50D3oF1/oL+r1NpZ4gA7xvG0/zJ8evR7zIKn4vLf7qTNduWFtCrRw==",
+        "shasum": "29047d348c0b2793e3112a01c739bb7c6d855637",
+        "fileCount": 45,
+        "unpackedSize": 1782529
+      },
+      "main": "./dist/commonjs/index.min.js",
+      "tshy": {
+        "exports": {
+          ".": {
+            "import": {
+              "node": {
+                "types": "./dist/esm/node/index.d.ts",
+                "default": "./dist/esm/node/index.min.js"
+              },
+              "types": "./dist/esm/index.d.ts",
+              "browser": {
+                "types": "./dist/esm/browser/index.d.ts",
+                "default": "./dist/esm/browser/index.min.js"
+              },
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "types": "./dist/commonjs/index.d.ts",
+              "default": "./dist/commonjs/index.min.js"
+            }
+          },
+          "./raw": "./src/index.ts"
+        },
+        "selfLink": false,
+        "esmDialects": [
+          "node",
+          "browser"
+        ]
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.min.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.min.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "browser": {
+              "types": "./dist/esm/browser/index.d.ts",
+              "default": "./dist/esm/browser/index.min.js"
+            },
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.min.js"
+          }
+        },
+        "./raw": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "browser": {
+              "types": "./dist/esm/browser/index.d.ts",
+              "default": "./dist/esm/browser/index.js"
+            },
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "types": "./dist/commonjs/index.d.ts",
+            "default": "./dist/commonjs/index.js"
+          }
+        }
+      },
+      "gitHead": "ad10607e0f9e9563f0cd8fb91f186bb3bf42bece",
+      "scripts": {
+        "lint": "oxlint --fix src test",
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash scripts/build.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "postlint": "npm run format",
+        "postsnap": "npm run lint",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "repository": {
+        "url": "git+ssh://git@github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.6.3",
+        "tshy": "^4.1.1",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "oxlint": "^1.58.0",
+        "esbuild": "^0.25.9",
+        "typedoc": "^0.28.18",
+        "prettier": "^3.8.1",
+        "benchmark": "^2.1.4",
+        "oxlint-tsgolint": "^0.19.0"
+      }
+    },
+    "11.3.6": {
+      "name": "lru-cache",
+      "version": "11.3.6",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "BlueOak-1.0.0",
+      "_id": "lru-cache@11.3.6",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.3.6.tgz",
+        "integrity": "sha512-Gf/KoL3C/MlI7Bt0PGI9I+TeTC/I6r/csU58N4BSNc4lppLBeKsOdFYkK+dX0ABDUMJNfCHTyPpzwwO21Awd3A==",
+        "shasum": "f0306ad6e9f0a5dc25b16aeba4e8f57b7ec2df55",
+        "fileCount": 89,
+        "unpackedSize": 2673707
+      },
+      "main": "./dist/commonjs/index.min.js",
+      "tshy": {
+        "exports": {
+          ".": {
+            "import": {
+              "node": {
+                "types": "./dist/esm/node/index.d.ts",
+                "default": "./dist/esm/node/index.min.js"
+              },
+              "types": "./dist/esm/index.d.ts",
+              "browser": {
+                "types": "./dist/esm/browser/index.d.ts",
+                "default": "./dist/esm/browser/index.min.js"
+              },
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "node": {
+                "types": "./dist/commonjs/node/index.d.ts",
+                "default": "./dist/commonjs/node/index.min.js"
+              },
+              "types": "./dist/commonjs/index.d.ts",
+              "browser": {
+                "types": "./dist/commonjs/browser/index.d.ts",
+                "default": "./dist/commonjs/browser/index.min.js"
+              },
+              "default": "./dist/commonjs/index.min.js"
+            }
+          },
+          "./raw": "./src/index.ts"
+        },
+        "selfLink": false,
+        "esmDialects": [
+          "browser",
+          "node"
+        ],
+        "commonjsDialects": [
+          "browser",
+          "node"
+        ]
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.min.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.min.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "browser": {
+              "types": "./dist/esm/browser/index.d.ts",
+              "default": "./dist/esm/browser/index.min.js"
+            },
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "node": {
+              "types": "./dist/commonjs/node/index.d.ts",
+              "default": "./dist/commonjs/node/index.min.js"
+            },
+            "types": "./dist/commonjs/index.d.ts",
+            "browser": {
+              "types": "./dist/commonjs/browser/index.d.ts",
+              "default": "./dist/commonjs/browser/index.min.js"
+            },
+            "default": "./dist/commonjs/index.min.js"
+          }
+        },
+        "./raw": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "browser": {
+              "types": "./dist/esm/browser/index.d.ts",
+              "default": "./dist/esm/browser/index.js"
+            },
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "node": {
+              "types": "./dist/commonjs/node/index.d.ts",
+              "default": "./dist/commonjs/node/index.js"
+            },
+            "types": "./dist/commonjs/index.d.ts",
+            "browser": {
+              "types": "./dist/commonjs/browser/index.d.ts",
+              "default": "./dist/commonjs/browser/index.js"
+            },
+            "default": "./dist/commonjs/index.js"
+          }
+        }
+      },
+      "gitHead": "c6eafb2e1b3c78651dc425c28bf6ef9cd2574ec5",
+      "scripts": {
+        "lint": "oxlint --fix src test",
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash scripts/build.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "postlint": "npm run format",
+        "postsnap": "npm run lint",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "repository": {
+        "url": "git+ssh://git@github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.7.2",
+        "tshy": "^4.1.1",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "oxlint": "^1.58.0",
+        "esbuild": "^0.25.9",
+        "typedoc": "^0.28.18",
+        "prettier": "^3.8.1",
+        "benchmark": "^2.1.4",
+        "oxlint-tsgolint": "^0.19.0"
+      }
+    },
+    "11.4.0": {
+      "name": "lru-cache",
+      "version": "11.4.0",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "BlueOak-1.0.0",
+      "_id": "lru-cache@11.4.0",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.4.0.tgz",
+        "integrity": "sha512-W+R+kFL4HgVxONq2bhXPi3bGpzGe/yEhVOp233qw9wCRtgncJ15P3bC+e4zZMu4Cq7d+WAJjXGW0uUkifhcatA==",
+        "shasum": "87a577bfa71f7c94dfd71692874b859d1ca41a28",
+        "fileCount": 89,
+        "unpackedSize": 2704472
+      },
+      "main": "./dist/commonjs/index.min.js",
+      "tshy": {
+        "exports": {
+          ".": {
+            "import": {
+              "node": {
+                "types": "./dist/esm/node/index.d.ts",
+                "default": "./dist/esm/node/index.min.js"
+              },
+              "types": "./dist/esm/index.d.ts",
+              "browser": {
+                "types": "./dist/esm/browser/index.d.ts",
+                "default": "./dist/esm/browser/index.min.js"
+              },
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "node": {
+                "types": "./dist/commonjs/node/index.d.ts",
+                "default": "./dist/commonjs/node/index.min.js"
+              },
+              "types": "./dist/commonjs/index.d.ts",
+              "browser": {
+                "types": "./dist/commonjs/browser/index.d.ts",
+                "default": "./dist/commonjs/browser/index.min.js"
+              },
+              "default": "./dist/commonjs/index.min.js"
+            }
+          },
+          "./raw": "./src/index.ts"
+        },
+        "selfLink": false,
+        "esmDialects": [
+          "browser",
+          "node"
+        ],
+        "commonjsDialects": [
+          "browser",
+          "node"
+        ]
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.min.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.min.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "browser": {
+              "types": "./dist/esm/browser/index.d.ts",
+              "default": "./dist/esm/browser/index.min.js"
+            },
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "node": {
+              "types": "./dist/commonjs/node/index.d.ts",
+              "default": "./dist/commonjs/node/index.min.js"
+            },
+            "types": "./dist/commonjs/index.d.ts",
+            "browser": {
+              "types": "./dist/commonjs/browser/index.d.ts",
+              "default": "./dist/commonjs/browser/index.min.js"
+            },
+            "default": "./dist/commonjs/index.min.js"
+          }
+        },
+        "./raw": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "browser": {
+              "types": "./dist/esm/browser/index.d.ts",
+              "default": "./dist/esm/browser/index.js"
+            },
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "node": {
+              "types": "./dist/commonjs/node/index.d.ts",
+              "default": "./dist/commonjs/node/index.js"
+            },
+            "types": "./dist/commonjs/index.d.ts",
+            "browser": {
+              "types": "./dist/commonjs/browser/index.d.ts",
+              "default": "./dist/commonjs/browser/index.js"
+            },
+            "default": "./dist/commonjs/index.js"
+          }
+        }
+      },
+      "gitHead": "c440996b4ef1395d9f21fd7cde7332cf9377db5f",
+      "scripts": {
+        "lint": "oxlint --fix src test",
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash scripts/build.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "postlint": "npm run format",
+        "postsnap": "npm run lint",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "repository": {
+        "url": "git+ssh://git@github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.7.4",
+        "tshy": "^4.1.2",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "oxlint": "^1.65.0",
+        "esbuild": "^0.28.0",
+        "typedoc": "^0.28.19",
+        "prettier": "^3.8.3",
+        "benchmark": "^2.1.4",
+        "oxlint-tsgolint": "^0.22.1"
+      }
+    },
+    "11.5.0": {
+      "name": "lru-cache",
+      "version": "11.5.0",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "BlueOak-1.0.0",
+      "_id": "lru-cache@11.5.0",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.5.0.tgz",
+        "integrity": "sha512-5YgH9UJd7wVb9hIouI2adWpgqrrICkt070Dnj8EUY1+B4B2P9eRLPAkAAo6NICA7CEhOIeBHl46u9zSNpNu7zA==",
+        "shasum": "14117229fd25bc9c67936e32de90ca047488c97a",
+        "fileCount": 89,
+        "unpackedSize": 2731388
+      },
+      "main": "./dist/commonjs/index.min.js",
+      "tshy": {
+        "exports": {
+          ".": {
+            "import": {
+              "node": {
+                "types": "./dist/esm/node/index.d.ts",
+                "default": "./dist/esm/node/index.min.js"
+              },
+              "types": "./dist/esm/index.d.ts",
+              "browser": {
+                "types": "./dist/esm/browser/index.d.ts",
+                "default": "./dist/esm/browser/index.min.js"
+              },
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "node": {
+                "types": "./dist/commonjs/node/index.d.ts",
+                "default": "./dist/commonjs/node/index.min.js"
+              },
+              "types": "./dist/commonjs/index.d.ts",
+              "browser": {
+                "types": "./dist/commonjs/browser/index.d.ts",
+                "default": "./dist/commonjs/browser/index.min.js"
+              },
+              "default": "./dist/commonjs/index.min.js"
+            }
+          },
+          "./raw": "./src/index.ts"
+        },
+        "selfLink": false,
+        "esmDialects": [
+          "browser",
+          "node"
+        ],
+        "commonjsDialects": [
+          "browser",
+          "node"
+        ]
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.min.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.min.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "browser": {
+              "types": "./dist/esm/browser/index.d.ts",
+              "default": "./dist/esm/browser/index.min.js"
+            },
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "node": {
+              "types": "./dist/commonjs/node/index.d.ts",
+              "default": "./dist/commonjs/node/index.min.js"
+            },
+            "types": "./dist/commonjs/index.d.ts",
+            "browser": {
+              "types": "./dist/commonjs/browser/index.d.ts",
+              "default": "./dist/commonjs/browser/index.min.js"
+            },
+            "default": "./dist/commonjs/index.min.js"
+          }
+        },
+        "./raw": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "browser": {
+              "types": "./dist/esm/browser/index.d.ts",
+              "default": "./dist/esm/browser/index.js"
+            },
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "node": {
+              "types": "./dist/commonjs/node/index.d.ts",
+              "default": "./dist/commonjs/node/index.js"
+            },
+            "types": "./dist/commonjs/index.d.ts",
+            "browser": {
+              "types": "./dist/commonjs/browser/index.d.ts",
+              "default": "./dist/commonjs/browser/index.js"
+            },
+            "default": "./dist/commonjs/index.js"
+          }
+        }
+      },
+      "gitHead": "0adc7a5294db4a28f141b7e1edc90f0c4a2472a7",
+      "scripts": {
+        "lint": "oxlint --fix src test",
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash scripts/build.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "postlint": "npm run format",
+        "postsnap": "npm run lint",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "repository": {
+        "url": "git+ssh://git@github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.7.4",
+        "tshy": "^4.1.2",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "oxlint": "^1.65.0",
+        "esbuild": "^0.28.0",
+        "typedoc": "^0.28.19",
+        "prettier": "^3.8.3",
+        "benchmark": "^2.1.4",
+        "oxlint-tsgolint": "^0.22.1"
+      }
+    },
+    "11.5.1": {
+      "name": "lru-cache",
+      "version": "11.5.1",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "BlueOak-1.0.0",
+      "_id": "lru-cache@11.5.1",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.5.1.tgz",
+        "integrity": "sha512-RPimw/7aMdv2oqRrxKwvZXcPfwBrn/JZ2xYcY9Hus/6LaS3VOAKVWKWgNLCFSiOm1ESXinjsDlidVU7JlnCN2A==",
+        "shasum": "f3daa3540847b9737ebc02499ddb36765e54db4a",
+        "fileCount": 89,
+        "unpackedSize": 2731124
+      },
+      "main": "./dist/commonjs/index.min.js",
+      "tshy": {
+        "exports": {
+          ".": {
+            "import": {
+              "node": {
+                "types": "./dist/esm/node/index.d.ts",
+                "default": "./dist/esm/node/index.min.js"
+              },
+              "types": "./dist/esm/index.d.ts",
+              "browser": {
+                "types": "./dist/esm/browser/index.d.ts",
+                "default": "./dist/esm/browser/index.min.js"
+              },
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "node": {
+                "types": "./dist/commonjs/node/index.d.ts",
+                "default": "./dist/commonjs/node/index.min.js"
+              },
+              "types": "./dist/commonjs/index.d.ts",
+              "browser": {
+                "types": "./dist/commonjs/browser/index.d.ts",
+                "default": "./dist/commonjs/browser/index.min.js"
+              },
+              "default": "./dist/commonjs/index.min.js"
+            }
+          },
+          "./raw": "./src/index.ts"
+        },
+        "selfLink": false,
+        "esmDialects": [
+          "browser",
+          "node"
+        ],
+        "commonjsDialects": [
+          "browser",
+          "node"
+        ]
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.min.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.min.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "browser": {
+              "types": "./dist/esm/browser/index.d.ts",
+              "default": "./dist/esm/browser/index.min.js"
+            },
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "node": {
+              "types": "./dist/commonjs/node/index.d.ts",
+              "default": "./dist/commonjs/node/index.min.js"
+            },
+            "types": "./dist/commonjs/index.d.ts",
+            "browser": {
+              "types": "./dist/commonjs/browser/index.d.ts",
+              "default": "./dist/commonjs/browser/index.min.js"
+            },
+            "default": "./dist/commonjs/index.min.js"
+          }
+        },
+        "./raw": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "browser": {
+              "types": "./dist/esm/browser/index.d.ts",
+              "default": "./dist/esm/browser/index.js"
+            },
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "node": {
+              "types": "./dist/commonjs/node/index.d.ts",
+              "default": "./dist/commonjs/node/index.js"
+            },
+            "types": "./dist/commonjs/index.d.ts",
+            "browser": {
+              "types": "./dist/commonjs/browser/index.d.ts",
+              "default": "./dist/commonjs/browser/index.js"
+            },
+            "default": "./dist/commonjs/index.js"
+          }
+        }
+      },
+      "gitHead": "cd9806503c7abc9873fa1cc46a9ab7b43393a39c",
+      "scripts": {
+        "lint": "oxlint --fix src test",
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash scripts/build.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "postlint": "npm run format",
+        "postsnap": "npm run lint",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "repository": {
+        "url": "git+ssh://git@github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.7.4",
+        "tshy": "^4.1.2",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "oxlint": "^1.65.0",
+        "esbuild": "^0.28.0",
+        "typedoc": "^0.28.19",
+        "prettier": "^3.8.3",
+        "benchmark": "^2.1.4",
+        "oxlint-tsgolint": "^0.22.1"
+      }
+    },
+    "11.5.2": {
+      "name": "lru-cache",
+      "version": "11.5.2",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "license": "BlueOak-1.0.0",
+      "_id": "lru-cache@11.5.2",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.5.2.tgz",
+        "integrity": "sha512-4pfM1Ff0x50o0tQwb5ucw/RzNyD0/YJME6IVcStalZuMWxdt3sR3huStTtxz4PUmvZfRguvDejasvQ2kifR11g==",
+        "shasum": "00e16665c90c620fba14a3c368732a976493f760",
+        "fileCount": 89,
+        "unpackedSize": 2737736
+      },
+      "main": "./dist/commonjs/index.min.js",
+      "tshy": {
+        "exports": {
+          ".": {
+            "import": {
+              "node": {
+                "types": "./dist/esm/node/index.d.ts",
+                "default": "./dist/esm/node/index.min.js"
+              },
+              "types": "./dist/esm/index.d.ts",
+              "browser": {
+                "types": "./dist/esm/browser/index.d.ts",
+                "default": "./dist/esm/browser/index.min.js"
+              },
+              "default": "./dist/esm/index.min.js"
+            },
+            "require": {
+              "node": {
+                "types": "./dist/commonjs/node/index.d.ts",
+                "default": "./dist/commonjs/node/index.min.js"
+              },
+              "types": "./dist/commonjs/index.d.ts",
+              "browser": {
+                "types": "./dist/commonjs/browser/index.d.ts",
+                "default": "./dist/commonjs/browser/index.min.js"
+              },
+              "default": "./dist/commonjs/index.min.js"
+            }
+          },
+          "./raw": "./src/index.ts"
+        },
+        "selfLink": false,
+        "esmDialects": [
+          "browser",
+          "node"
+        ],
+        "commonjsDialects": [
+          "browser",
+          "node"
+        ]
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "module": "./dist/esm/index.min.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.min.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "browser": {
+              "types": "./dist/esm/browser/index.d.ts",
+              "default": "./dist/esm/browser/index.min.js"
+            },
+            "default": "./dist/esm/index.min.js"
+          },
+          "require": {
+            "node": {
+              "types": "./dist/commonjs/node/index.d.ts",
+              "default": "./dist/commonjs/node/index.min.js"
+            },
+            "types": "./dist/commonjs/index.d.ts",
+            "browser": {
+              "types": "./dist/commonjs/browser/index.d.ts",
+              "default": "./dist/commonjs/browser/index.min.js"
+            },
+            "default": "./dist/commonjs/index.min.js"
+          }
+        },
+        "./raw": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "browser": {
+              "types": "./dist/esm/browser/index.d.ts",
+              "default": "./dist/esm/browser/index.js"
+            },
+            "default": "./dist/esm/index.js"
+          },
+          "require": {
+            "node": {
+              "types": "./dist/commonjs/node/index.d.ts",
+              "default": "./dist/commonjs/node/index.js"
+            },
+            "types": "./dist/commonjs/index.d.ts",
+            "browser": {
+              "types": "./dist/commonjs/browser/index.d.ts",
+              "default": "./dist/commonjs/browser/index.js"
+            },
+            "default": "./dist/commonjs/index.js"
+          }
+        }
+      },
+      "gitHead": "16b3a916662ab449d496b7b4b4f04132565d1d28",
+      "scripts": {
+        "lint": "oxlint --fix src test",
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash scripts/build.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "postlint": "npm run format",
+        "postsnap": "npm run lint",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "repository": {
+        "url": "git+ssh://git@github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.7.4",
+        "tshy": "^4.1.2",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "oxlint": "^1.65.0",
+        "esbuild": "^0.28.0",
+        "typedoc": "^0.28.19",
+        "prettier": "^3.8.3",
+        "benchmark": "^2.1.4",
+        "oxlint-tsgolint": "^0.22.1"
+      }
+    },
+    "11.5.3": {
+      "_id": "lru-cache@11.5.3",
+      "bugs": {
+        "url": "https://github.com/isaacs/node-lru-cache/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lru-cache/-/lru-cache-11.5.3.tgz",
+        "integrity": "sha512-U4N8FgzmWxc8k1VH8Kr6lQg18U7Fjvby6wXHVRX/ZZ7IwWbRMgrRbP0Wrb5q5NVinryp4SQampHKdvtecItxUg==",
+        "shasum": "a7767b4034e35269562d2b9da2b185b5df70c421",
+        "fileCount": 113,
+        "unpackedSize": 3334485
+      },
+      "main": "./dist/commonjs/index.min.js",
+      "name": "lru-cache",
+      "tshy": {
+        "exports": {
+          ".": {
+            "import": {
+              "node": {
+                "types": "./dist/esm/node/index.d.ts",
+                "default": "./dist/esm/node/index.min.js"
+              },
+              "types": "./dist/esm/index.d.ts",
+              "browser": {
+                "types": "./dist/esm/browser/index.d.ts",
+                "default": "./dist/esm/browser/index.min.js"
+              },
+              "default": "./dist/esm/index.min.js",
+              "react-native": {
+                "types": "./dist/esm/react-native/index.d.ts",
+                "default": "./dist/esm/react-native/index.min.js"
+              }
+            },
+            "require": {
+              "node": {
+                "types": "./dist/commonjs/node/index.d.ts",
+                "default": "./dist/commonjs/node/index.min.js"
+              },
+              "types": "./dist/commonjs/index.d.ts",
+              "browser": {
+                "types": "./dist/commonjs/browser/index.d.ts",
+                "default": "./dist/commonjs/browser/index.min.js"
+              },
+              "default": "./dist/commonjs/index.min.js",
+              "react-native": {
+                "types": "./dist/commonjs/react-native/index.d.ts",
+                "default": "./dist/commonjs/react-native/index.min.js"
+              }
+            }
+          },
+          "./raw": "./src/index.ts"
+        },
+        "selfLink": false,
+        "esmDialects": [
+          "browser",
+          "react-native",
+          "node"
+        ],
+        "commonjsDialects": [
+          "browser",
+          "react-native",
+          "node"
+        ]
+      },
+      "type": "module",
+      "types": "./dist/commonjs/index.d.ts",
+      "author": {
+        "name": "Isaac Z. Schlueter",
+        "email": "i@izs.me"
+      },
+      "module": "./dist/esm/index.min.js",
+      "engines": {
+        "node": "20 || >=22"
+      },
+      "exports": {
+        ".": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.min.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "browser": {
+              "types": "./dist/esm/browser/index.d.ts",
+              "default": "./dist/esm/browser/index.min.js"
+            },
+            "default": "./dist/esm/index.min.js",
+            "react-native": {
+              "types": "./dist/esm/react-native/index.d.ts",
+              "default": "./dist/esm/react-native/index.min.js"
+            }
+          },
+          "require": {
+            "node": {
+              "types": "./dist/commonjs/node/index.d.ts",
+              "default": "./dist/commonjs/node/index.min.js"
+            },
+            "types": "./dist/commonjs/index.d.ts",
+            "browser": {
+              "types": "./dist/commonjs/browser/index.d.ts",
+              "default": "./dist/commonjs/browser/index.min.js"
+            },
+            "default": "./dist/commonjs/index.min.js",
+            "react-native": {
+              "types": "./dist/commonjs/react-native/index.d.ts",
+              "default": "./dist/commonjs/react-native/index.min.js"
+            }
+          }
+        },
+        "./raw": {
+          "import": {
+            "node": {
+              "types": "./dist/esm/node/index.d.ts",
+              "default": "./dist/esm/node/index.js"
+            },
+            "types": "./dist/esm/index.d.ts",
+            "browser": {
+              "types": "./dist/esm/browser/index.d.ts",
+              "default": "./dist/esm/browser/index.js"
+            },
+            "default": "./dist/esm/index.js",
+            "react-native": {
+              "types": "./dist/esm/react-native/index.d.ts",
+              "default": "./dist/esm/react-native/index.js"
+            }
+          },
+          "require": {
+            "node": {
+              "types": "./dist/commonjs/node/index.d.ts",
+              "default": "./dist/commonjs/node/index.js"
+            },
+            "types": "./dist/commonjs/index.d.ts",
+            "browser": {
+              "types": "./dist/commonjs/browser/index.d.ts",
+              "default": "./dist/commonjs/browser/index.js"
+            },
+            "default": "./dist/commonjs/index.js",
+            "react-native": {
+              "types": "./dist/commonjs/react-native/index.d.ts",
+              "default": "./dist/commonjs/react-native/index.js"
+            }
+          }
+        }
+      },
+      "gitHead": "7e71a1f3babdc68dfbadde91f28eaeea919dad9b",
+      "license": "BlueOak-1.0.0",
+      "scripts": {
+        "lint": "oxlint --fix src test",
+        "snap": "tap",
+        "test": "tap",
+        "build": "npm run prepare",
+        "format": "prettier --write .",
+        "prepare": "tshy && bash scripts/build.sh",
+        "presnap": "npm run prepare",
+        "pretest": "npm run prepare",
+        "profile": "make -C benchmark profile",
+        "typedoc": "typedoc --tsconfig ./.tshy/esm.json ./src/*.ts",
+        "postlint": "npm run format",
+        "postsnap": "npm run lint",
+        "benchmark": "make -C benchmark",
+        "preprofile": "npm run prepare",
+        "preversion": "npm test",
+        "postversion": "npm publish",
+        "prebenchmark": "npm run prepare",
+        "prepublishOnly": "git push origin --follow-tags",
+        "benchmark-results-typedoc": "bash scripts/benchmark-results-typedoc.sh"
+      },
+      "version": "11.5.3",
+      "homepage": "https://github.com/isaacs/node-lru-cache#readme",
+      "keywords": [
+        "mru",
+        "lru",
+        "cache"
+      ],
+      "repository": {
+        "url": "git+ssh://git@github.com/isaacs/node-lru-cache.git",
+        "type": "git"
+      },
+      "description": "A cache object that deletes the least-recently-used items.",
+      "directories": {},
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tap": "^21.7.4",
+        "tshy": "^4.1.2",
+        "marked": "^4.2.12",
+        "mkdirp": "^3.0.1",
+        "oxlint": "^1.65.0",
+        "esbuild": "^0.28.0",
+        "typedoc": "^0.28.19",
+        "prettier": "^3.8.3",
+        "benchmark": "^2.1.4",
+        "oxlint-tsgolint": "^0.22.1"
+      }
+    }
+  },
+  "time": {
+    "created": "2020-07-11T00:59:07.352Z",
+    "modified": "2026-09-18T23:46:33.023Z",
+    "6.0.0": "2020-07-11T00:59:07.352Z",
+    "10.3.0": "2024-06-28T02:01:02.016Z",
+    "10.3.1": "2024-07-06T04:14:39.428Z",
+    "10.4.0": "2024-07-08T00:05:06.577Z",
+    "10.4.1": "2024-07-08T21:53:13.080Z",
+    "10.4.2": "2024-07-09T02:54:48.371Z",
+    "10.4.3": "2024-07-09T17:20:52.211Z",
+    "11.0.0": "2024-07-08T21:54:07.840Z",
+    "11.0.1": "2024-09-06T03:17:19.396Z",
+    "11.0.2": "2024-10-31T17:51:20.390Z",
+    "11.1.0": "2025-03-24T15:14:18.553Z",
+    "11.2.0": "2025-09-03T19:01:26.016Z",
+    "11.2.1": "2025-09-03T21:36:56.818Z",
+    "11.2.2": "2025-09-23T17:02:13.583Z",
+    "11.2.3": "2025-11-30T23:09:53.647Z",
+    "11.2.4": "2025-11-30T23:29:17.076Z",
+    "11.2.5": "2026-01-26T00:23:31.313Z",
+    "11.2.6": "2026-02-10T16:21:10.947Z",
+    "11.2.7": "2026-03-13T15:44:21.508Z",
+    "11.3.0": "2026-04-06T00:03:59.923Z",
+    "11.3.1": "2026-04-06T17:16:33.809Z",
+    "11.3.2": "2026-04-06T20:54:44.739Z",
+    "11.3.3": "2026-04-08T15:20:53.559Z",
+    "11.3.4": "2026-04-13T08:10:19.849Z",
+    "11.3.5": "2026-04-13T08:28:34.649Z",
+    "11.3.6": "2026-05-04T15:35:22.273Z",
+    "11.4.0": "2026-05-18T06:58:37.107Z",
+    "11.5.0": "2026-05-19T23:13:36.156Z",
+    "11.5.1": "2026-05-27T15:04:12.732Z",
+    "11.5.2": "2026-07-07T23:27:14.327Z",
+    "11.5.3": "2026-09-18T23:46:33.023Z"
+  }
+}

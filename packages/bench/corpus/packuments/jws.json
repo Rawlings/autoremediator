@@ -1,0 +1,160 @@
+{
+  "name": "jws",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "4.0.1"
+  },
+  "versions": {
+    "3.2.3": {
+      "name": "jws",
+      "version": "3.2.3",
+      "keywords": [
+        "jws",
+        "json",
+        "web",
+        "signatures"
+      ],
+      "author": {
+        "name": "Brian J Brennan"
+      },
+      "license": "MIT",
+      "_id": "jws@3.2.3",
+      "homepage": "https://github.com/brianloveswords/node-jws#readme",
+      "bugs": {
+        "url": "https://github.com/brianloveswords/node-jws/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/jws/-/jws-3.2.3.tgz",
+        "integrity": "sha512-byiJ0FLRdLdSVSReO/U4E7RoEyOCKnEnEPMjq3HxWtvzLsV08/i5RQKsFVNkCldrCaPr2vDNAOMsfs8T/Hze7g==",
+        "shasum": "5ac0690b460900a27265de24520526853c0b8ca1",
+        "fileCount": 9,
+        "unpackedSize": 18457
+      },
+      "main": "index.js",
+      "gitHead": "c0f6b27bcea5a2ad2e304d91c2e842e4076a6b03",
+      "scripts": {
+        "test": "make test"
+      },
+      "repository": {
+        "url": "git://github.com/brianloveswords/node-jws.git",
+        "type": "git"
+      },
+      "description": "Implementation of JSON Web Signatures",
+      "directories": {
+        "test": "test"
+      },
+      "dependencies": {
+        "jwa": "^1.4.2",
+        "safe-buffer": "^5.0.1"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tape": "~2.14.0",
+        "semver": "^5.1.0"
+      }
+    },
+    "4.0.0": {
+      "name": "jws",
+      "version": "4.0.0",
+      "keywords": [
+        "jws",
+        "json",
+        "web",
+        "signatures"
+      ],
+      "author": {
+        "name": "Brian J Brennan"
+      },
+      "license": "MIT",
+      "_id": "jws@4.0.0",
+      "homepage": "https://github.com/brianloveswords/node-jws#readme",
+      "bugs": {
+        "url": "https://github.com/brianloveswords/node-jws/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/jws/-/jws-4.0.0.tgz",
+        "integrity": "sha512-KDncfTmOZoOMTFG4mBlG0qUIOlc03fmzH+ru6RgYVZhPkyiy/92Owlt/8UEN+a4TXR1FQetfIpJE8ApdvdVxTg==",
+        "shasum": "2d4e8cf6a318ffaa12615e9dec7e86e6c97310f4",
+        "fileCount": 9,
+        "unpackedSize": 17682
+      },
+      "main": "index.js",
+      "gitHead": "c0f6b27bcea5a2ad2e304d91c2e842e4076a6b03",
+      "scripts": {
+        "test": "make test"
+      },
+      "repository": {
+        "url": "git://github.com/brianloveswords/node-jws.git",
+        "type": "git"
+      },
+      "description": "Implementation of JSON Web Signatures",
+      "directories": {
+        "test": "test"
+      },
+      "dependencies": {
+        "jwa": "^2.0.0",
+        "safe-buffer": "^5.0.1"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tape": "~2.14.0",
+        "semver": "^5.1.0"
+      }
+    },
+    "4.0.1": {
+      "name": "jws",
+      "version": "4.0.1",
+      "keywords": [
+        "jws",
+        "json",
+        "web",
+        "signatures"
+      ],
+      "author": {
+        "name": "Brian J Brennan"
+      },
+      "license": "MIT",
+      "_id": "jws@4.0.1",
+      "homepage": "https://github.com/brianloveswords/node-jws#readme",
+      "bugs": {
+        "url": "https://github.com/brianloveswords/node-jws/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/jws/-/jws-4.0.1.tgz",
+        "integrity": "sha512-EKI/M/yqPncGUUh44xz0PxSidXFr/+r0pA70+gIYhjv+et7yxM+s29Y+VGDkovRofQem0fs7Uvf4+YmAdyRduA==",
+        "shasum": "07edc1be8fac20e677b283ece261498bd38f0690",
+        "fileCount": 10,
+        "unpackedSize": 18822
+      },
+      "main": "index.js",
+      "gitHead": "c0f6b27bcea5a2ad2e304d91c2e842e4076a6b03",
+      "scripts": {
+        "test": "make test"
+      },
+      "repository": {
+        "url": "git://github.com/brianloveswords/node-jws.git",
+        "type": "git"
+      },
+      "description": "Implementation of JSON Web Signatures",
+      "directories": {
+        "test": "test"
+      },
+      "dependencies": {
+        "jwa": "^2.0.1",
+        "safe-buffer": "^5.0.1"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tape": "~2.14.0",
+        "semver": "^5.1.0"
+      }
+    }
+  },
+  "time": {
+    "created": "2019-12-16T17:22:34.743Z",
+    "modified": "2025-12-04T08:52:29.218Z",
+    "3.2.3": "2025-12-04T08:47:11.733Z",
+    "4.0.0": "2019-12-16T17:22:34.743Z",
+    "4.0.1": "2025-12-04T08:52:29.218Z"
+  }
+}

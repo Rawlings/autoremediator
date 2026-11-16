@@ -1,0 +1,64 @@
+{
+  "name": "@types/node",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "ts7.0": "26.6.6",
+    "ts6.0": "26.6.6",
+    "ts5.9": "26.6.6",
+    "ts5.7": "26.6.6",
+    "ts5.8": "26.6.6",
+    "ts5.6": "26.6.6",
+    "ts7.1": "26.6.6",
+    "latest": "26.6.6"
+  },
+  "versions": {
+    "26.6.6": {
+      "_id": "@types/node@26.6.6",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/node/-/node-26.6.6.tgz",
+        "integrity": "sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog==",
+        "shasum": "9ed7b5817e728ed9216ef7c5b7d373fe3b777104",
+        "fileCount": 109,
+        "unpackedSize": 2586357
+      },
+      "main": "",
+      "name": "@types/node",
+      "types": "index.d.ts",
+      "license": "MIT",
+      "scripts": {},
+      "version": "26.6.6",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node",
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/node"
+      },
+      "description": "TypeScript definitions for node",
+      "directories": {},
+      "dependencies": {
+        "undici-types": "~8.9.0"
+      },
+      "typesVersions": {
+        "<=5.6": {
+          "*": [
+            "ts5.6/*"
+          ]
+        },
+        "<=5.7": {
+          "*": [
+            "ts5.7/*"
+          ]
+        }
+      },
+      "_hasShrinkwrap": false,
+      "peerDependencies": {},
+      "typeScriptVersion": "5.6",
+      "typesPublisherContentHash": "53beb6693c262ca57af67f961a0fd8dbb7ffa495737a63f1676f34d45ddaa189"
+    }
+  },
+  "time": {
+    "created": "2026-10-28T18:36:36.455Z",
+    "modified": "2026-10-28T18:36:36.455Z",
+    "26.6.6": "2026-10-28T18:36:36.455Z"
+  }
+}

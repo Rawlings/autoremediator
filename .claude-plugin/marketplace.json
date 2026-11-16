@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "autoremediator",
-      "source": "./plugins/claude-code",
+      "source": "./integrations/claude-code",
       "description": "Agentic remediation for vulnerable npm dependencies: plan, apply with verification, repair upgrades that break the project, roll back.",
       "category": "security"
     }

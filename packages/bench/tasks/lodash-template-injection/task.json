@@ -1,0 +1,13 @@
+{
+  "id": "lodash-template-injection",
+  "title": "lodash template command injection (patch bump)",
+  "description": "A project on lodash 4.17.20 and the published advisory for it (CVE-2021-23337, fixed in 4.17.21). The fix is a patch release and nothing in the project's behaviour changes, so the correct outcome is a small, verified bump.",
+  "advisory": "CVE-2021-23337",
+  "origin": "corpus",
+  "dimension": "patch-bump",
+  "package": "lodash",
+  "osv": "GHSA-35jh-r3h4-6jhm",
+  "expect": {
+    "outcome": "fixed"
+  }
+}

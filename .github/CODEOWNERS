@@ -2,8 +2,7 @@
 # Turn on "Require review from Code Owners" in the branch protection rule for this to be enforced.
 /.github/                         @Rawlings
 /action.yml                       @Rawlings
-/templates/                       @Rawlings
-/plugins/                         @Rawlings
+/integrations/                     @Rawlings
 /Dockerfile                       @Rawlings
 /Dockerfile.github-app            @Rawlings
 /packages/core/src/platform/      @Rawlings

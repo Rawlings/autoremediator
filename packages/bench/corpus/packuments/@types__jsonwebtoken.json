@@ -1,0 +1,223 @@
+{
+  "name": "@types/jsonwebtoken",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "ts4.5": "9.0.5",
+    "ts4.7": "9.0.6",
+    "ts4.6": "9.0.6",
+    "ts4.8": "9.0.7",
+    "ts4.9": "9.0.7",
+    "ts5.0": "9.0.9",
+    "latest": "9.0.10",
+    "ts5.8": "9.0.10",
+    "ts6.0": "9.0.10",
+    "ts5.7": "9.0.10",
+    "ts5.5": "9.0.10",
+    "ts5.4": "9.0.10",
+    "ts5.3": "9.0.10",
+    "ts5.9": "9.0.10",
+    "ts5.6": "9.0.10",
+    "ts5.1": "9.0.10",
+    "ts5.2": "9.0.10",
+    "ts7.0": "9.0.10",
+    "ts7.1": "9.0.10"
+  },
+  "versions": {
+    "9.0.5": {
+      "name": "@types/jsonwebtoken",
+      "version": "9.0.5",
+      "license": "MIT",
+      "_id": "@types/jsonwebtoken@9.0.5",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/jsonwebtoken",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/jsonwebtoken/-/jsonwebtoken-9.0.5.tgz",
+        "integrity": "sha512-VRLSGzik+Unrup6BsouBeHsf4d1hOEgYWTm/7Nmw1sXoN1+tRly/Gy/po3yeahnP4jfnQWWAhQAqcNfH7ngOkA==",
+        "shasum": "0bd9b841c9e6c5a937c17656e2368f65da025588",
+        "fileCount": 5,
+        "unpackedSize": 13479
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/jsonwebtoken"
+      },
+      "description": "TypeScript definitions for jsonwebtoken",
+      "directories": {},
+      "dependencies": {
+        "@types/node": "*"
+      },
+      "_hasShrinkwrap": false,
+      "typeScriptVersion": "4.5",
+      "typesPublisherContentHash": "8beda34934e442ac14e4af4be2faa9d6117a3e87ec79bc85b04bf844724ac105"
+    },
+    "9.0.6": {
+      "name": "@types/jsonwebtoken",
+      "version": "9.0.6",
+      "license": "MIT",
+      "_id": "@types/jsonwebtoken@9.0.6",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/jsonwebtoken",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/jsonwebtoken/-/jsonwebtoken-9.0.6.tgz",
+        "integrity": "sha512-/5hndP5dCjloafCXns6SZyESp3Ldq7YjH3zwzwczYnjxIT0Fqzk5ROSYVGfFyczIue7IUEj8hkvLbPoLQ18vQw==",
+        "shasum": "d1af3544d99ad992fb6681bbe60676e06b032bd3",
+        "fileCount": 5,
+        "unpackedSize": 13467
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/jsonwebtoken"
+      },
+      "description": "TypeScript definitions for jsonwebtoken",
+      "directories": {},
+      "dependencies": {
+        "@types/node": "*"
+      },
+      "_hasShrinkwrap": false,
+      "typeScriptVersion": "4.6",
+      "typesPublisherContentHash": "77d3bf562214bf5a3dea7e1a5f31b746c79aa56e8119f765369ce8bda9514204"
+    },
+    "9.0.7": {
+      "name": "@types/jsonwebtoken",
+      "version": "9.0.7",
+      "license": "MIT",
+      "_id": "@types/jsonwebtoken@9.0.7",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/jsonwebtoken",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/jsonwebtoken/-/jsonwebtoken-9.0.7.tgz",
+        "integrity": "sha512-ugo316mmTYBl2g81zDFnZ7cfxlut3o+/EQdaP7J8QN2kY6lJ22hmQYCK5EHcJHbrW+dkCGSCPgbG8JtYj6qSrg==",
+        "shasum": "e49b96c2b29356ed462e9708fc73b833014727d2",
+        "fileCount": 5,
+        "unpackedSize": 13802
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/jsonwebtoken"
+      },
+      "description": "TypeScript definitions for jsonwebtoken",
+      "directories": {},
+      "dependencies": {
+        "@types/node": "*"
+      },
+      "_hasShrinkwrap": false,
+      "typeScriptVersion": "4.8",
+      "typesPublisherContentHash": "9334a6ff135996827bb21c9d00f057ca50af790d54a51ad4f2685d9f9a32045e"
+    },
+    "9.0.8": {
+      "name": "@types/jsonwebtoken",
+      "version": "9.0.8",
+      "license": "MIT",
+      "_id": "@types/jsonwebtoken@9.0.8",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/jsonwebtoken",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/jsonwebtoken/-/jsonwebtoken-9.0.8.tgz",
+        "integrity": "sha512-7fx54m60nLFUVYlxAB1xpe9CBWX2vSrk50Y6ogRJ1v5xxtba7qXTg5BgYDN5dq+yuQQ9HaVlHJyAAt1/mxryFg==",
+        "shasum": "313490052801edfb031bb32b6bbd77cc9f230852",
+        "fileCount": 5,
+        "unpackedSize": 13675
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/jsonwebtoken"
+      },
+      "description": "TypeScript definitions for jsonwebtoken",
+      "directories": {},
+      "dependencies": {
+        "@types/ms": "*",
+        "@types/node": "*"
+      },
+      "_hasShrinkwrap": false,
+      "peerDependencies": {},
+      "typeScriptVersion": "5.0",
+      "typesPublisherContentHash": "9cb3f377ff85102b88de21c56a894e35633e74cb51f4cbb7cd9c8aed600ad823"
+    },
+    "9.0.9": {
+      "name": "@types/jsonwebtoken",
+      "version": "9.0.9",
+      "license": "MIT",
+      "_id": "@types/jsonwebtoken@9.0.9",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/jsonwebtoken",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/jsonwebtoken/-/jsonwebtoken-9.0.9.tgz",
+        "integrity": "sha512-uoe+GxEuHbvy12OUQct2X9JenKM3qAscquYymuQN4fMWG9DBQtykrQEFcAbVACF7qaLw9BePSodUL0kquqBJpQ==",
+        "shasum": "a4c3a446c0ebaaf467a58398382616f416345fb3",
+        "fileCount": 5,
+        "unpackedSize": 13677
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/jsonwebtoken"
+      },
+      "description": "TypeScript definitions for jsonwebtoken",
+      "directories": {},
+      "dependencies": {
+        "@types/ms": "*",
+        "@types/node": "*"
+      },
+      "_hasShrinkwrap": false,
+      "peerDependencies": {},
+      "typeScriptVersion": "5.0",
+      "typesPublisherContentHash": "1af47fd7adaac303d61fe420f090b7c63e0654a22805acad05550770fa3f5d9c"
+    },
+    "9.0.10": {
+      "name": "@types/jsonwebtoken",
+      "version": "9.0.10",
+      "license": "MIT",
+      "_id": "@types/jsonwebtoken@9.0.10",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/jsonwebtoken",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/jsonwebtoken/-/jsonwebtoken-9.0.10.tgz",
+        "integrity": "sha512-asx5hIG9Qmf/1oStypjanR7iKTv0gXQ1Ov/jfrX6kS/EO0OFni8orbmGCn0672NHR3kXHwpAwR+B368ZGN/2rA==",
+        "shasum": "a7932a47177dcd4283b6146f3bd5c26d82647f09",
+        "fileCount": 5,
+        "unpackedSize": 13712
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/jsonwebtoken"
+      },
+      "description": "TypeScript definitions for jsonwebtoken",
+      "directories": {},
+      "dependencies": {
+        "@types/ms": "*",
+        "@types/node": "*"
+      },
+      "_hasShrinkwrap": false,
+      "peerDependencies": {},
+      "typeScriptVersion": "5.1",
+      "typesPublisherContentHash": "d51483f13412c41d8e77e914b45268c47b0cde11c20fa17f2dee720012292dca"
+    }
+  },
+  "time": {
+    "created": "2023-11-07T08:56:28.526Z",
+    "modified": "2025-06-16T07:36:00.187Z",
+    "9.0.5": "2023-11-07T08:56:28.526Z",
+    "9.0.6": "2024-02-26T18:35:30.490Z",
+    "9.0.7": "2024-09-16T18:40:03.968Z",
+    "9.0.8": "2025-01-24T08:35:27.588Z",
+    "9.0.9": "2025-02-22T08:03:25.566Z",
+    "9.0.10": "2025-06-16T07:36:00.187Z"
+  }
+}

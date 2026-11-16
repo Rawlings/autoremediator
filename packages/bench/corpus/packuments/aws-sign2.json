@@ -1,0 +1,49 @@
+{
+  "name": "aws-sign2",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "0.7.0"
+  },
+  "versions": {
+    "0.7.0": {
+      "author": {
+        "name": "Mikeal Rogers",
+        "email": "mikeal.rogers@gmail.com",
+        "url": "http://www.futurealoof.com"
+      },
+      "name": "aws-sign2",
+      "description": "AWS signing. Originally pulled from LearnBoost/knox, maintained as vendor in request, now a standalone module.",
+      "version": "0.7.0",
+      "repository": {
+        "url": "git+https://github.com/mikeal/aws-sign.git"
+      },
+      "license": "Apache-2.0",
+      "main": "index.js",
+      "dependencies": {},
+      "devDependencies": {},
+      "optionalDependencies": {},
+      "engines": {
+        "node": "*"
+      },
+      "gitHead": "a0cdf4b61f80ca669cd1ed8482f978d908f0dd2b",
+      "bugs": {
+        "url": "https://github.com/mikeal/aws-sign/issues"
+      },
+      "homepage": "https://github.com/mikeal/aws-sign#readme",
+      "_id": "aws-sign2@0.7.0",
+      "scripts": {},
+      "_shasum": "b46e890934a9591f2d2f6f86d7e6a9f1b3fe76a8",
+      "_from": ".",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/aws-sign2/-/aws-sign2-0.7.0.tgz",
+        "integrity": "sha512-08kcGqnYf/YmjoRhfxyu+CLxBjUtHLXLXX/vUfx9l2LYzG3c1m61nrpyFUZI6zeS+Li/wWMMidD9KgrqtGq3mA==",
+        "shasum": "b46e890934a9591f2d2f6f86d7e6a9f1b3fe76a8"
+      }
+    }
+  },
+  "time": {
+    "created": "2017-04-12T19:08:50.725Z",
+    "modified": "2017-04-12T19:08:50.725Z",
+    "0.7.0": "2017-04-12T19:08:50.725Z"
+  }
+}

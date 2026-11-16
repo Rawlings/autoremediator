@@ -1,0 +1,32 @@
+{
+  "CVE-2021-3807": {
+    "id": "CVE-2021-3807",
+    "summary": "Inefficient Regular Expression Complexity in chalk/ansi-regex",
+    "severity": "HIGH",
+    "publishedAt": "2021-09-20T20:20:09Z",
+    "references": [
+      "https://nvd.nist.gov/vuln/detail/CVE-2021-3807",
+      "https://github.com/chalk/ansi-regex/issues/38#issuecomment-924086311",
+      "https://github.com/chalk/ansi-regex/issues/38#issuecomment-925924774",
+      "https://github.com/chalk/ansi-regex/commit/419250fa510bf31b4cc672e76537a64f9332e1f1",
+      "https://github.com/chalk/ansi-regex/commit/75a657da7af875b2e2724fd6331bf0a4b23d3c9a",
+      "https://github.com/chalk/ansi-regex/commit/8d1d7cdb586269882c4bdc1b7325d0c58c8f76f9",
+      "https://github.com/chalk/ansi-regex/commit/c3c0b3f2736b9c01feec0fef33980c43720dcde8",
+      "https://app.snyk.io/vuln/SNYK-JS-ANSIREGEX-1583908",
+      "https://github.com/chalk/ansi-regex",
+      "https://github.com/chalk/ansi-regex/releases/tag/v6.0.1",
+      "https://huntr.dev/bounties/5b3cf33b-ede0-4398-9974-800876dfd994",
+      "https://security.netapp.com/advisory/ntap-20221014-0002",
+      "https://www.oracle.com/security-alerts/cpuapr2022.html"
+    ],
+    "affectedPackages": [
+      {
+        "name": "ansi-regex",
+        "ecosystem": "npm",
+        "vulnerableRange": ">=6.0.0 <6.0.1 || >=5.0.0 <5.0.1 || >=4.0.0 <4.1.1 || >=3.0.0 <3.0.1",
+        "firstPatchedVersion": "3.0.1",
+        "source": "osv"
+      }
+    ]
+  }
+}

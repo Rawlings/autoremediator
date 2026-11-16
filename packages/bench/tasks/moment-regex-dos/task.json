@@ -1,0 +1,13 @@
+{
+  "id": "moment-regex-dos",
+  "title": "moment regular expression DoS (patch bump)",
+  "description": "A project on moment 2.29.3 and the published advisory CVE-2022-31129 (fixed in 2.29.4). A patch release with no behaviour change for this project.",
+  "advisory": "CVE-2022-31129",
+  "origin": "corpus",
+  "dimension": "patch-bump",
+  "package": "moment",
+  "osv": "GHSA-wc69-rhjr-hc9g",
+  "expect": {
+    "outcome": "fixed"
+  }
+}

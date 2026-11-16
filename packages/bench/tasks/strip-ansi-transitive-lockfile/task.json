@@ -1,0 +1,16 @@
+{
+  "id": "strip-ansi-transitive-lockfile",
+  "title": "ansi-regex under strip-ansi: the range already allows the fix",
+  "description": "A project that depends on strip-ansi 5.2.0, whose lockfile was written in August 2021 and so holds ansi-regex 4.1.0, which the published advisory CVE-2021-3807 covers. strip-ansi accepts ^4.1.0, so the fix (4.1.1) needs no change to package.json: only the lockfile or an override has to move.",
+  "advisory": "CVE-2021-3807",
+  "origin": "corpus",
+  "dimension": "transitive-lockfile",
+  "package": "ansi-regex",
+  "osv": "GHSA-93q8-gq69-wqmw",
+  "baseline": {
+    "before": "2021-09-01"
+  },
+  "expect": {
+    "outcome": "fixed"
+  }
+}

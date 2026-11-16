@@ -13,6 +13,7 @@
   <a href="#try-it-on-your-project">Try it</a> ·
   <a href="docs/getting-started.md">Getting started</a> ·
   <a href="docs/how-it-works.md">How it works</a> ·
+  <a href="packages/bench/RESULTS.md">Results</a> ·
   <a href="docs/integrations/github-action.md">GitHub Action</a> ·
   <a href="docs/README.md">Docs</a>
 </p>
@@ -64,6 +65,19 @@ instead of `--audit`.
 | It can't be fixed safely        | Changes nothing and reports the exact reason                          |
 
 Works with npm, pnpm, Yarn, Bun and Deno projects, detected from your lockfile.
+
+## Measured, not claimed
+
+<!-- benchmark:start -->
+Measured with no model on 10 tasks built from published npm packages and their published advisories:
+
+- **7/8** vulnerable dependencies fixed and verified by an independent oracle.
+- **2/2** cases with no safe fix handled honestly: left untouched, with the reason reported.
+- **0** fixes claimed that were not real, and **0** projects left broken.
+- Tasks that need an edit to your own source are rolled back untouched without a model; with an agent attached it attempts the repair and the verifier decides.
+
+See the [full results](packages/bench/RESULTS.md) for each kind of problem, what is not yet covered, and how to reproduce them.
+<!-- benchmark:end -->
 
 ## An agent you can give the keys to
 

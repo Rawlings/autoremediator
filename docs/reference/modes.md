@@ -23,7 +23,7 @@ route lists in the Mode 4 and Mode 5 entries).
 
 - Trigger: `autoremediator init [--hosts a,b] [--ci] [--yes|--check]` or `init(options)` (CLI and SDK only; deliberately not an MCP tool or HTTP route, because it writes configuration)
 - Behavior: detects package manager, git host, CI and agent hosts; merges the MCP server entry into each host's config, writes the policy file, `.gitignore` entry, agent skills/rules/custom agent and an `AGENTS.md` section; never replaces an existing `autoremediator` entry; needs `--yes` when not interactive (otherwise exits `3`)
-- Source: `packages/core/src/features/init/`; the Claude Code plugin under `plugins/claude-code/` is generated from the same text (`UPDATE_PLUGINS=1 pnpm --filter autoremediator test plugin-files`)
+- Source: `packages/core/src/features/init/`; the Claude Code plugin under `integrations/claude-code/` is generated from the same text (`UPDATE_PLUGINS=1 pnpm --filter autoremediator test plugin-files`)
 
 ### Guard: `autoremediator guard <pkg...>`
 
@@ -81,7 +81,7 @@ route lists in the Mode 4 and Mode 5 entries).
 
 ### Benchmark: `pnpm bench`
 
-- `bench/` (private workspace package) runs fixture tasks offline against a local registry in `deterministic`, `agent-scripted`, `host-scripted` modes (and a documented real-model mode that has never been run); results in `bench/RESULTS.md`; scripted modes measure the harness, not model quality. See `docs/contributing/benchmark.md`.
+- `packages/bench/` (private workspace package) runs tasks offline against a local registry, built from published packages and advisories plus purpose-built fixtures, in `deterministic`, `agent-scripted`, `host-scripted` modes (and a documented real-model mode that has never been run); results in `packages/bench/RESULTS.md`; scripted modes measure the harness, not model quality. See `docs/contributing/benchmark.md`.
 
 ### Evidence pack: `autoremediator evidence-pack`
 

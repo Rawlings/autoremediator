@@ -1,0 +1,64 @@
+{
+  "name": "performance-now",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "2.1.0"
+  },
+  "versions": {
+    "2.1.0": {
+      "name": "performance-now",
+      "description": "Implements performance.now (based on process.hrtime).",
+      "keywords": [],
+      "version": "2.1.0",
+      "author": {
+        "name": "Braveg1rl",
+        "email": "braveg1rl@outlook.com"
+      },
+      "license": "MIT",
+      "homepage": "https://github.com/braveg1rl/performance-now",
+      "bugs": {
+        "url": "https://github.com/braveg1rl/performance-now/issues"
+      },
+      "repository": {
+        "type": "git",
+        "url": "git://github.com/braveg1rl/performance-now.git"
+      },
+      "private": false,
+      "dependencies": {},
+      "devDependencies": {
+        "bluebird": "^3.4.7",
+        "call-delayed": "^1.0.0",
+        "chai": "^3.5.0",
+        "chai-increasing": "^1.2.0",
+        "coffee-script": "~1.12.2",
+        "mocha": "~3.2.0",
+        "pre-commit": "^1.2.2"
+      },
+      "optionalDependencies": {},
+      "main": "lib/performance-now.js",
+      "scripts": {
+        "build": "mkdir -p lib && rm -rf lib/* && node_modules/.bin/coffee --compile -m --output lib/ src/",
+        "prepublish": "npm test",
+        "pretest": "npm run build",
+        "test": "mocha",
+        "watch": "coffee --watch --compile --output lib/ src/"
+      },
+      "typings": "src/index.d.ts",
+      "gitHead": "107bb703494cc5a8071cdf45a87e53f248a5e0f3",
+      "_id": "performance-now@2.1.0",
+      "_shasum": "6309f4e0e5fa913ec1c69307ae364b4b377c9e7b",
+      "_from": ".",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/performance-now/-/performance-now-2.1.0.tgz",
+        "integrity": "sha512-7EAHlyLHI56VEIdK57uwHdHKIaAGbnXPiw0yWbarQZOKaKpvUIgW0jWRVLiatnM+XXlSwsanIBH/hzGMJulMow==",
+        "shasum": "6309f4e0e5fa913ec1c69307ae364b4b377c9e7b"
+      },
+      "directories": {}
+    }
+  },
+  "time": {
+    "created": "2017-02-19T14:28:49.939Z",
+    "modified": "2017-02-19T14:28:49.939Z",
+    "2.1.0": "2017-02-19T14:28:49.939Z"
+  }
+}

@@ -1,5 +1,5 @@
 /**
- * Text that `init` writes into a project, and that the plugin packages under `plugins/` ship.
+ * Text that `init` writes into a project, and that the plugin packages under `integrations/` ship.
  * One source, so a skill, a Copilot agent and a Cursor rule cannot tell an agent different things.
  * Every tool named here must exist in the operation catalog (a test checks).
  */
