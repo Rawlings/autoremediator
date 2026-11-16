@@ -18,6 +18,20 @@ import { z } from "zod";
 const here = dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_TASKS_DIR = join(here, "..", "tasks");
 
+/**
+ * How a corpus task stores its consumer project's manifest. Its dependencies are deliberately
+ * vulnerable, so under the name `package.json` GitHub's dependency graph, Dependabot and dependency
+ * review would treat them as this repository's own. The harness restores the name when it builds the
+ * project (see `workspace.ts`).
+ */
+export const FIXTURE_MANIFEST = "package.json.fixture";
+
+/** The committed manifest of a task's consumer project, under either name. */
+export function projectManifestPath(projectDir: string): string {
+  const fixture = join(projectDir, FIXTURE_MANIFEST);
+  return existsSync(fixture) ? fixture : join(projectDir, "package.json");
+}
+
 export const MODE_NAMES = [
   "deterministic",
   "agent-scripted",

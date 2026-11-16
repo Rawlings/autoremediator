@@ -18,6 +18,7 @@ import { z } from "zod";
 
 import { run } from "../exec.ts";
 import { screenTarball } from "../screen.ts";
+import { projectManifestPath } from "../task.ts";
 import {
   assertAllowedUrl,
   fetchJson,
@@ -66,7 +67,7 @@ export async function resolveTree(
 ): Promise<Map<string, string[]>> {
   const scratch = mkdtempSync(join(tmpdir(), "bench-resolve-"));
   try {
-    const manifest = JSON.parse(readFileSync(join(projectDir, "package.json"), "utf8")) as Record<
+    const manifest = JSON.parse(readFileSync(projectManifestPath(projectDir), "utf8")) as Record<
       string,
       unknown
     >;

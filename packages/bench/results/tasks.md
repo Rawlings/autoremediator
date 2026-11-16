@@ -10,7 +10,7 @@ OSV publishes them and the packages are served with the registry's own integrity
 | Task | Kind | Package | Advisory | Vulnerable | First fixed | Correct outcome |
 | --- | --- | --- | --- | --- | --- | --- |
 | [json5-two-majors](#json5-two-majors) | Several copies or majors of the package in one tree | `json5` | [CVE-2022-46175](https://github.com/advisories/GHSA-9c47-m6qq-7p4h) | `>=2.0.0 <2.2.2 || >=0.0.0 <1.0.2` | `1.0.2` | fixed |
-| [jsonwebtoken-key-size](#jsonwebtoken-key-size) | The fix breaks the project's own code | `jsonwebtoken` | [CVE-2022-23540](https://github.com/advisories/GHSA-qwph-4952-7xr6) | `>=0.0.0 <9.0.0` | `9.0.0` | fixed |
+| [jsonwebtoken-key-type](#jsonwebtoken-key-type) | The fix breaks the project's own code | `jsonwebtoken` | [CVE-2022-23540](https://github.com/advisories/GHSA-qwph-4952-7xr6) | `>=0.0.0 <9.0.0` | `9.0.0` | fixed |
 | [jsonwebtoken-major-blocked](#jsonwebtoken-major-blocked) | A fix exists but the policy forbids it | `jsonwebtoken` | [CVE-2022-23540](https://github.com/advisories/GHSA-qwph-4952-7xr6) | `>=0.0.0 <9.0.0` | `9.0.0` | refused (major-bump-required) |
 | [lodash-template-injection](#lodash-template-injection) | A patch or minor release fixes it | `lodash` | [CVE-2021-23337](https://github.com/advisories/GHSA-35jh-r3h4-6jhm) | `>=0.0.0 <4.17.21` | `4.17.21` | fixed |
 | [minimist-prototype-pollution](#minimist-prototype-pollution) | A patch or minor release fixes it | `minimist` | [CVE-2021-44906](https://github.com/advisories/GHSA-xvch-5gv4-984h) | `>=1.0.0 <1.2.6 || >=0.0.0 <0.2.4` | `0.2.4` | fixed |
@@ -26,15 +26,15 @@ OSV publishes them and the packages are served with the registry's own integrity
 
 The project's lockfile is resolved as of 2022-12-01.
 
-### jsonwebtoken-key-size
+### jsonwebtoken-key-type
 
-**jsonwebtoken major upgrade that rejects small keys.** A project on jsonwebtoken 8.5.1 and the published advisory CVE-2022-23540 (fixed in 9.0.0). The fix is a major release, which the policy allows. Version 9 refuses RSA keys under 2048 bits, and the project's development keys are 1024 bits, so the fix needs an edit to the project's own source.
+**jsonwebtoken major upgrade that rejects the project's key type.** A project on jsonwebtoken 8.5.1 and the published advisory CVE-2022-23540 (fixed in 9.0.0). The fix is a major release, which the policy allows. Version 9 refuses to sign with an RSA-PSS key under RS256, and the project's development keys are RSA-PSS keys, so the fix needs an edit to the project's own source.
 
 A correct fix may edit: `src/`.
 
 ### jsonwebtoken-major-blocked
 
-**jsonwebtoken fix is a major release the policy forbids.** The same project and advisory as jsonwebtoken-key-size, with a policy that does not allow major version bumps. The only fix is a major release, so the correct outcome is to change nothing and say why.
+**jsonwebtoken fix is a major release the policy forbids.** The same project and advisory as jsonwebtoken-key-type, with a policy that does not allow major version bumps. The only fix is a major release, so the correct outcome is to change nothing and say why.
 
 ### lodash-template-injection
 

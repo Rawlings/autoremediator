@@ -5,9 +5,11 @@
  */
 import {
   cpSync,
+  existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -17,7 +19,7 @@ import { join } from "node:path";
 import semver from "semver";
 
 import { mustRun, run } from "./exec.ts";
-import type { LoadedTask } from "./task.ts";
+import { FIXTURE_MANIFEST, type LoadedTask } from "./task.ts";
 
 export interface Project {
   dir: string;
@@ -94,6 +96,9 @@ export async function materialize(
   rmSync(workDir, { recursive: true, force: true });
   mkdirSync(workDir, { recursive: true });
   cpSync(task.projectDir, dir, { recursive: true });
+  if (existsSync(join(dir, FIXTURE_MANIFEST))) {
+    renameSync(join(dir, FIXTURE_MANIFEST), join(dir, "package.json"));
+  }
   writeFileSync(
     join(dir, ".npmrc"),
     NPMRC(registryUrl, { ignoreScripts: task.expect.canary === undefined }),

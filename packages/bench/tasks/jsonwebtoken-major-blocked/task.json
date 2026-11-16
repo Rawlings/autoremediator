@@ -1,7 +1,7 @@
 {
   "id": "jsonwebtoken-major-blocked",
   "title": "jsonwebtoken fix is a major release the policy forbids",
-  "description": "The same project and advisory as jsonwebtoken-key-size, with a policy that does not allow major version bumps. The only fix is a major release, so the correct outcome is to change nothing and say why.",
+  "description": "The same project and advisory as jsonwebtoken-key-type, with a policy that does not allow major version bumps. The only fix is a major release, so the correct outcome is to change nothing and say why.",
   "advisory": "CVE-2022-23540",
   "origin": "corpus",
   "dimension": "policy-refusal",

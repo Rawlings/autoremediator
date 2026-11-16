@@ -8,7 +8,7 @@ import { readLock } from "./corpus/lock.ts";
 import { loadFixturePackages } from "./registry.ts";
 import { SANDBOXED_TEST_SCRIPT } from "./safety.ts";
 import { scriptFor } from "./script.ts";
-import { loadTask, loadTasks, type LoadedTask } from "./task.ts";
+import { loadTask, loadTasks, projectManifestPath, type LoadedTask } from "./task.ts";
 
 const fixtures = new Map(
   loadFixturePackages().map((pkg) => [pkg.name, pkg.versions.map((v) => v.version)]),
@@ -24,7 +24,7 @@ function servedVersions(name: string): string[] | undefined {
 const ordinary = tasks.filter((task) => !task.control);
 
 function dependenciesOf(task: LoadedTask): Record<string, string> {
-  const manifest = JSON.parse(readFileSync(join(task.projectDir, "package.json"), "utf8")) as {
+  const manifest = JSON.parse(readFileSync(projectManifestPath(task.projectDir), "utf8")) as {
     dependencies: Record<string, string>;
     devDependencies?: Record<string, string>;
   };
@@ -125,7 +125,7 @@ describe("benchmark tasks", () => {
 describe("consumer projects", () => {
   it("run their tests in the sandbox, so library code cannot write, spawn or reach the network", () => {
     for (const task of ordinary) {
-      const manifest = JSON.parse(readFileSync(join(task.projectDir, "package.json"), "utf8")) as {
+      const manifest = JSON.parse(readFileSync(projectManifestPath(task.projectDir), "utf8")) as {
         scripts: Record<string, string>;
       };
       expect({ task: task.id, script: manifest.scripts["test"] }).toEqual({

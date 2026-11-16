@@ -1,5 +1,5 @@
 {
-  "name": "bench-app-jsonwebtoken-key-size",
+  "name": "bench-app-jsonwebtoken-key-type",
   "version": "1.0.0",
   "private": true,
   "type": "module",

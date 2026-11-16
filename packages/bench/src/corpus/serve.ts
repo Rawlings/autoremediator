@@ -11,7 +11,14 @@ import { existsSync, readFileSync } from "node:fs";
 import { z } from "zod";
 
 import { LOCK_PATH, readLock, type CorpusLock } from "./lock.ts";
-import { CACHE_DIR, packumentPath, PACKUMENT_DIR, tarballCachePath } from "./paths.ts";
+import {
+  CACHE_DIR,
+  isPackageName,
+  isVersion,
+  packumentPath,
+  PACKUMENT_DIR,
+  tarballCachePath,
+} from "./paths.ts";
 
 export type TarballResult = { ok: true; data: Buffer } | { ok: false; reason: string };
 
@@ -36,12 +43,17 @@ export function loadCorpus(
   if (!lock) return undefined;
   const verified = new Map<string, Buffer>();
 
+  /** Whether the lock pins this package. Request paths reach here, so the name is checked first. */
+  const pinned = (name: string): boolean =>
+    isPackageName(name) && Object.hasOwn(lock.packages, name);
+
   return {
-    has: (name) => lock.packages[name] !== undefined,
+    has: pinned,
 
     packument(name, baseUrl) {
+      if (!pinned(name)) return undefined;
       const file = packumentPath(name, options.packumentDir ?? PACKUMENT_DIR);
-      if (lock.packages[name] === undefined || !existsSync(file)) return undefined;
+      if (!existsSync(file)) return undefined;
       const stored = storedPackument.parse(JSON.parse(readFileSync(file, "utf8")));
       const base = name.slice(name.lastIndexOf("/") + 1);
       for (const [version, manifest] of Object.entries(stored.versions)) {
@@ -52,8 +64,9 @@ export function loadCorpus(
     },
 
     tarball(name, version) {
-      const pinned = lock.packages[name]?.versions[version];
-      if (!pinned) return { ok: false, reason: `${name}@${version} is not in the corpus lock` };
+      const pin =
+        pinned(name) && isVersion(version) ? lock.packages[name]?.versions[version] : undefined;
+      if (!pin) return { ok: false, reason: `${name}@${version} is not in the corpus lock` };
       const key = `${name}@${version}`;
       const known = verified.get(key);
       if (known) return { ok: true, data: known };
@@ -65,7 +78,7 @@ export function loadCorpus(
         };
       }
       const data = readFileSync(path);
-      if (integrityOf(data) !== pinned.integrity) {
+      if (integrityOf(data) !== pin.integrity) {
         return { ok: false, reason: `${key} does not match its pin in corpus/lock.json` };
       }
       verified.set(key, data);

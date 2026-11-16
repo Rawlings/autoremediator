@@ -45,7 +45,7 @@ export async function fetchJson(get: FetchBytes, url: string): Promise<unknown> 
 
 /** `@scope/name` is requested as `@scope%2Fname`. */
 export function registryUrl(name: string): string {
-  return `https://registry.npmjs.org/${name.replace("/", "%2F")}`;
+  return `https://registry.npmjs.org/${name.replaceAll("/", "%2F")}`;
 }
 
 export function osvUrl(id: string): string {

@@ -2,8 +2,8 @@
   "schemaVersion": 2,
   "mode": "agent-scripted",
   "date": "2026-11-16",
-  "startedAt": "2026-11-16T18:24:21.740Z",
-  "commit": "34fa20be9f42",
+  "startedAt": "2026-11-16T19:07:15.471Z",
+  "commit": "218a1cd639fd",
   "dirty": true,
   "autoremediatorVersion": "0.23.0",
   "node": "v26.12.1",
@@ -18,7 +18,7 @@
       "expected": "fixed",
       "outcome": "fixed",
       "score": "PASS",
-      "durationMs": 1430,
+      "durationMs": 2525,
       "steps": 0,
       "changedFiles": 2,
       "pipelineClaimedSuccess": true,
@@ -63,7 +63,7 @@
       "expected": "fixed",
       "outcome": "fixed",
       "score": "PASS",
-      "durationMs": 1784,
+      "durationMs": 2245,
       "steps": 0,
       "changedFiles": 2,
       "pipelineClaimedSuccess": true,
@@ -108,7 +108,7 @@
       "expected": "fixed",
       "outcome": "fixed",
       "score": "PASS",
-      "durationMs": 4290,
+      "durationMs": 5589,
       "steps": 6,
       "changedFiles": 3,
       "pipelineClaimedSuccess": true,
@@ -143,7 +143,7 @@
       "notes": [
         "plan: bench-money version-bump -> 1.5.0",
         "apply: applied: 1 applied, 0 failed of 1 attempted (1 in plan).",
-        "attempt attempt_07ac88l3oywo: promoted after 1 round(s): Adapted the project's source to the new API of the upgraded dependency."
+        "attempt attempt_obvxtlxmalwz: promoted after 1 round(s): Adapted the project's source to the new API of the upgraded dependency."
       ]
     },
     {
@@ -155,7 +155,7 @@
       "expected": "fixed",
       "outcome": "fixed",
       "score": "PASS",
-      "durationMs": 3733,
+      "durationMs": 3778,
       "steps": 6,
       "changedFiles": 3,
       "pipelineClaimedSuccess": true,
@@ -190,7 +190,7 @@
       "notes": [
         "plan: bench-config version-bump -> 1.2.0",
         "apply: applied: 1 applied, 0 failed of 1 attempted (1 in plan).",
-        "attempt attempt_rym0z49svbh3: promoted after 1 round(s): Adapted the project's source to the new API of the upgraded dependency."
+        "attempt attempt_k8vswj756aon: promoted after 1 round(s): Adapted the project's source to the new API of the upgraded dependency."
       ]
     },
     {
@@ -202,7 +202,7 @@
       "expected": "fixed",
       "outcome": "fixed",
       "score": "PASS",
-      "durationMs": 3731,
+      "durationMs": 3443,
       "steps": 6,
       "changedFiles": 3,
       "pipelineClaimedSuccess": true,
@@ -237,7 +237,7 @@
       "notes": [
         "plan: bench-validate version-bump -> 2.0.0",
         "apply: applied: 1 applied, 0 failed of 1 attempted (1 in plan).",
-        "attempt attempt_00qp2iu3wulc: promoted after 1 round(s): Adapted the project's source to the new API of the upgraded dependency."
+        "attempt attempt_0feqs3hxrk0u: promoted after 1 round(s): Adapted the project's source to the new API of the upgraded dependency."
       ]
     },
     {
@@ -249,7 +249,7 @@
       "expected": "fixed",
       "outcome": "fixed",
       "score": "PASS",
-      "durationMs": 3461,
+      "durationMs": 3546,
       "steps": 6,
       "changedFiles": 3,
       "pipelineClaimedSuccess": true,
@@ -284,7 +284,7 @@
       "notes": [
         "plan: bench-retry version-bump -> 2.0.0",
         "apply: applied: 1 applied, 0 failed of 1 attempted (1 in plan).",
-        "attempt attempt_27o92ti48r1d: promoted after 1 round(s): Adapted the project's source to the new API of the upgraded dependency."
+        "attempt attempt_pwo6g8ua2ezo: promoted after 1 round(s): Adapted the project's source to the new API of the upgraded dependency."
       ]
     },
     {
@@ -296,7 +296,7 @@
       "expected": "unresolved",
       "outcome": "unresolved",
       "score": "PASS",
-      "durationMs": 322,
+      "durationMs": 315,
       "steps": 0,
       "changedFiles": 0,
       "pipelineClaimedSuccess": false,
@@ -336,7 +336,7 @@
       "expected": "refused",
       "outcome": "refused",
       "score": "PASS",
-      "durationMs": 324,
+      "durationMs": 308,
       "steps": 0,
       "changedFiles": 0,
       "pipelineClaimedSuccess": false,
@@ -381,7 +381,7 @@
       "expected": "refused",
       "outcome": "refused",
       "score": "PASS",
-      "durationMs": 324,
+      "durationMs": 353,
       "steps": 0,
       "changedFiles": 0,
       "pipelineClaimedSuccess": false,
@@ -421,7 +421,7 @@
       "expected": "refused",
       "outcome": "refused",
       "score": "PASS",
-      "durationMs": 329,
+      "durationMs": 298,
       "steps": 0,
       "changedFiles": 0,
       "pipelineClaimedSuccess": false,
@@ -462,7 +462,7 @@
       "outcome": "unresolved",
       "score": "FAIL",
       "controlCaught": true,
-      "durationMs": 4022,
+      "durationMs": 3803,
       "steps": 4,
       "changedFiles": 0,
       "pipelineClaimedSuccess": false,
@@ -478,7 +478,7 @@
         "plan: bench-money version-bump -> 1.5.0",
         "apply: partial: 0 applied, 1 failed of 1 attempted (1 in plan).",
         "apply: bench-money not applied: npm test failed after upgrading \"bench-money\" to 1.5.0. Rolled back to 1.4.0. Error: \n> bench-app-03-minor-breaks-test@1.0.0 test\n> node --permission --allow-fs-read=\"$PWD\" --test-isolation=none --test test/*.test.ts\n\n✖ formats a total with",
-        "attempt attempt_59x5xti7bekn: rejected after 3 round(s): the verifier still rejects it after 3 round(s): tests: npm test failed"
+        "attempt attempt_stnzy4qoasfl: rejected after 3 round(s): the verifier still rejects it after 3 round(s): tests: npm test failed"
       ]
     },
     {
@@ -491,7 +491,7 @@
       "outcome": "false-claim",
       "score": "FAIL",
       "controlCaught": true,
-      "durationMs": 235,
+      "durationMs": 223,
       "steps": 0,
       "changedFiles": 3,
       "pipelineClaimedSuccess": true,
@@ -535,7 +535,7 @@
       "expected": "fixed",
       "outcome": "fixed",
       "score": "PASS",
-      "durationMs": 2223,
+      "durationMs": 2026,
       "steps": 0,
       "changedFiles": 2,
       "pipelineClaimedSuccess": true,
@@ -574,15 +574,15 @@
       ]
     },
     {
-      "id": "jsonwebtoken-key-size",
-      "title": "jsonwebtoken major upgrade that rejects small keys",
+      "id": "jsonwebtoken-key-type",
+      "title": "jsonwebtoken major upgrade that rejects the project's key type",
       "control": false,
       "origin": "corpus",
       "dimension": "source-repair",
       "expected": "fixed",
       "outcome": "fixed",
       "score": "PASS",
-      "durationMs": 4666,
+      "durationMs": 5630,
       "steps": 6,
       "changedFiles": 3,
       "pipelineClaimedSuccess": true,
@@ -617,7 +617,7 @@
       "notes": [
         "plan: jsonwebtoken version-bump -> 9.0.0",
         "apply: applied: 1 applied, 0 failed of 1 attempted (1 in plan).",
-        "attempt attempt_qiniyp773r75: promoted after 1 round(s): Adapted the project's source to the new API of the upgraded dependency."
+        "attempt attempt_252o4dpesx9g: promoted after 1 round(s): Adapted the project's source to the new API of the upgraded dependency."
       ]
     },
     {
@@ -629,7 +629,7 @@
       "expected": "refused",
       "outcome": "refused",
       "score": "PASS",
-      "durationMs": 337,
+      "durationMs": 662,
       "steps": 0,
       "changedFiles": 0,
       "pipelineClaimedSuccess": false,
@@ -669,7 +669,7 @@
       "expected": "fixed",
       "outcome": "fixed",
       "score": "PASS",
-      "durationMs": 1587,
+      "durationMs": 2442,
       "steps": 0,
       "changedFiles": 2,
       "pipelineClaimedSuccess": true,
@@ -714,7 +714,7 @@
       "expected": "fixed",
       "outcome": "fixed",
       "score": "PASS",
-      "durationMs": 1342,
+      "durationMs": 1913,
       "steps": 0,
       "changedFiles": 2,
       "pipelineClaimedSuccess": true,
@@ -759,7 +759,7 @@
       "expected": "fixed",
       "outcome": "fixed",
       "score": "PASS",
-      "durationMs": 1422,
+      "durationMs": 2262,
       "steps": 0,
       "changedFiles": 2,
       "pipelineClaimedSuccess": true,
@@ -804,7 +804,7 @@
       "expected": "unresolved",
       "outcome": "unresolved",
       "score": "PASS",
-      "durationMs": 341,
+      "durationMs": 502,
       "steps": 0,
       "changedFiles": 0,
       "pipelineClaimedSuccess": false,
@@ -844,7 +844,7 @@
       "expected": "fixed",
       "outcome": "fixed",
       "score": "PASS",
-      "durationMs": 1738,
+      "durationMs": 2520,
       "steps": 0,
       "changedFiles": 2,
       "pipelineClaimedSuccess": true,
@@ -889,7 +889,7 @@
       "expected": "fixed",
       "outcome": "fixed",
       "score": "PASS",
-      "durationMs": 1429,
+      "durationMs": 1896,
       "steps": 0,
       "changedFiles": 2,
       "pipelineClaimedSuccess": true,
@@ -934,7 +934,7 @@
       "expected": "fixed",
       "outcome": "fixed",
       "score": "PASS",
-      "durationMs": 1685,
+      "durationMs": 2182,
       "steps": 0,
       "changedFiles": 2,
       "pipelineClaimedSuccess": true,
@@ -994,6 +994,6 @@
       "total": 2,
       "caught": 2
     },
-    "totalDurationMs": 40755
+    "totalDurationMs": 48461
   }
 }

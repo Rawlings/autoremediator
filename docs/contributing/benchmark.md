@@ -46,7 +46,7 @@ Results keep the two apart, and the headline figures use corpus tasks whenever t
 | ---- | ------- |
 | `task.json` | Title, advisory id, `origin` (`corpus` or `harness`), `dimension` (the kind of problem), and the correct outcome (`expect`), validated on load. A corpus task also names its `package` and its `osv` record, and may set `baseline.before` to resolve its lockfile as it would have been on that date |
 | `intel.json` | The advisory as an [offline snapshot](../guides/offline.md) (`--offline --intelligence-snapshot`). For a corpus task it is generated from the stored OSV record by `pnpm bench:corpus freeze`, and a test fails if it differs |
-| `project/` | The consumer project: `package.json` with exact pins, `tsconfig.json`, source, `node:test` tests, a policy file. No `node_modules`, no lockfile, no `.npmrc` (all generated per run) |
+| `project/` | The consumer project: `package.json` with exact pins (stored as `package.json.fixture` for a corpus task: its dependencies are deliberately vulnerable, and under the name `package.json` GitHub's dependency graph, Dependabot and dependency review would treat them as this repository's own; the harness restores the name when it builds the project), `tsconfig.json`, source, `node:test` tests, a policy file. No `node_modules`, no lockfile, no `.npmrc` (all generated per run) |
 | `oracle/files/` | For tasks that need a source repair: the known-good replacement files |
 
 Harness tasks take their dependencies from `packages/bench/registry/<name>/<version>/`, package directories
@@ -76,7 +76,7 @@ Corpus tasks (the full list, with advisories and ranges, is in the [task catalog
 | `strip-ansi-transitive-lockfile` | fixed | `ansi-regex` buried under `strip-ansi`, in a lockfile resolved as of September 2021; the existing range allows the fix |
 | `json5-two-majors` | fixed | two copies of json5 in one tree, one on each major, resolved as of December 2022 |
 | `request-tough-cookie-override` | fixed | `tough-cookie` pinned by `request` to another major than the fix; an override |
-| `jsonwebtoken-key-size` | fixed (source edit) | the fix is a major release that rejects the project's 1024-bit development keys |
+| `jsonwebtoken-key-type` | fixed (source edit) | the fix is a major release that refuses to sign with the project's RSA-PSS development key under RS256 |
 | `jsonwebtoken-major-blocked` | refused (`major-bump-required`) | the same fix with a policy that forbids major bumps |
 | `request-ssrf-no-fix` | unresolved (`no-safe-version`) | the advisory has no fixed version and the package is deprecated |
 

@@ -7,10 +7,10 @@ export interface SigningKeys {
   publicKey: string;
 }
 
-/** Ephemeral RS256 keys for local development. */
+/** Ephemeral signing keys for local development. */
 export function createDevKeys(): SigningKeys {
   const { privateKey, publicKey } = generateKeyPairSync("rsa", {
-    modulusLength: 1024,
+    modulusLength: 2048,
     privateKeyEncoding: { type: "pkcs8", format: "pem" },
     publicKeyEncoding: { type: "spki", format: "pem" },
   });

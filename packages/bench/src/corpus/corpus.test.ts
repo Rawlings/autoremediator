@@ -17,6 +17,7 @@ import {
   vulnerableRangeOf,
 } from "./osv.ts";
 import { parsePackument, trimPackument, versionsAsOf } from "./packument.ts";
+import { isPackageName, isVersion, packumentPath, tarballCachePath } from "./paths.ts";
 import { loadCorpus } from "./serve.ts";
 import { verifyCorpus } from "./verify.ts";
 
@@ -255,5 +256,58 @@ describe("the committed corpus", () => {
     const report = verifyCorpus({ tasksDir: DEFAULT_TASKS_DIR });
     expect(report.problems).toEqual([]);
     expect(report.versions).toBeGreaterThan(0);
+  });
+});
+
+describe("corpus paths", () => {
+  it("accept npm package names and nothing that can climb out of a directory", () => {
+    for (const name of ["lodash", "@types/node", "JSONStream", "a.b-c_d", "@scope/a.b"]) {
+      expect([name, isPackageName(name)]).toEqual([name, true]);
+    }
+    for (const name of [
+      "",
+      "..",
+      "../x",
+      "a/b",
+      "@scope",
+      "@scope/",
+      "/etc/passwd",
+      ".hidden",
+      String.raw`a\b`,
+      "a\0b",
+      "x".repeat(215),
+    ]) {
+      expect([name, isPackageName(name)]).toEqual([name, false]);
+    }
+  });
+
+  it("accept semver versions only", () => {
+    expect(isVersion("1.2.3")).toBe(true);
+    expect(isVersion("1.2.3-beta.1+build.5")).toBe(true);
+    for (const version of ["", "1.2", "../1.2.3", "1.2.3/../../x", "constructor"]) {
+      expect([version, isVersion(version)]).toEqual([version, false]);
+    }
+  });
+
+  it("refuse to build a path for a name or version that fails the check", () => {
+    expect(() => packumentPath("../escape")).toThrow(/Not a package name/);
+    expect(() => tarballCachePath("lodash", "../../x")).toThrow(/Not a version/);
+    expect(packumentPath("@types/node")).toMatch(/@types__node\.json$/);
+  });
+
+  it("do not serve names that only exist on every object, or that traverse", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "bench-corpus-paths-"));
+    made.push(dir);
+    writeFileSync(
+      join(dir, "lock.json"),
+      JSON.stringify({ snapshotDate: "2026-01-01T00:00:00Z", packages: {} }),
+    );
+    const corpus = loadCorpus({ lockPath: join(dir, "lock.json") });
+    for (const name of ["constructor", "__proto__", "toString", "../x", "a/b"]) {
+      expect(corpus?.has(name)).toBe(false);
+      expect(corpus?.packument(name, "http://127.0.0.1:1")).toBeUndefined();
+      expect(corpus?.tarball(name, "1.0.0").ok).toBe(false);
+    }
+    expect(corpus?.tarball("lodash", "../../1.0.0").ok).toBe(false);
   });
 });
