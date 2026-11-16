@@ -1,0 +1,74 @@
+{
+  "name": "punycode",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "2.3.1"
+  },
+  "versions": {
+    "2.3.1": {
+      "name": "punycode",
+      "version": "2.3.1",
+      "keywords": [
+        "punycode",
+        "unicode",
+        "idn",
+        "idna",
+        "dns",
+        "url",
+        "domain"
+      ],
+      "author": {
+        "url": "https://mathiasbynens.be/",
+        "name": "Mathias Bynens"
+      },
+      "license": "MIT",
+      "_id": "punycode@2.3.1",
+      "homepage": "https://mths.be/punycode",
+      "bugs": {
+        "url": "https://github.com/mathiasbynens/punycode.js/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/punycode/-/punycode-2.3.1.tgz",
+        "integrity": "sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==",
+        "shasum": "027422e2faec0b25e1549c3e1bd8309b9133b6e5",
+        "fileCount": 5,
+        "unpackedSize": 33514
+      },
+      "jspm": {
+        "map": {
+          "./punycode.js": {
+            "node": "@node/punycode"
+          }
+        }
+      },
+      "main": "punycode.js",
+      "module": "punycode.es6.js",
+      "engines": {
+        "node": ">=6"
+      },
+      "gitHead": "9e1b2cda98d215d3a73fcbfe93c62e021f4ba768",
+      "scripts": {
+        "test": "mocha tests",
+        "build": "node scripts/prepublish.js"
+      },
+      "repository": {
+        "url": "git+https://github.com/mathiasbynens/punycode.js.git",
+        "type": "git"
+      },
+      "description": "A robust Punycode converter that fully complies to RFC 3492 and RFC 5891, and works on nearly all JavaScript platforms.",
+      "directories": {},
+      "jsnext:main": "punycode.es6.js",
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^15.1.0",
+        "mocha": "^10.2.0",
+        "codecov": "^3.8.3"
+      }
+    }
+  },
+  "time": {
+    "created": "2023-10-30T18:28:32.512Z",
+    "modified": "2023-10-30T18:28:32.512Z",
+    "2.3.1": "2023-10-30T18:28:32.512Z"
+  }
+}

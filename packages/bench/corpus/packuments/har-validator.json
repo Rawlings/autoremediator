@@ -1,0 +1,70 @@
+{
+  "name": "har-validator",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "5.1.5"
+  },
+  "versions": {
+    "5.1.5": {
+      "version": "5.1.5",
+      "name": "har-validator",
+      "description": "Extremely fast HTTP Archive (HAR) validator using JSON Schema",
+      "author": {
+        "name": "Ahmad Nassri",
+        "email": "ahmad@ahmadnassri.com",
+        "url": "https://www.ahmadnassri.com/"
+      },
+      "homepage": "https://github.com/ahmadnassri/node-har-validator",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ahmadnassri/node-har-validator.git"
+      },
+      "license": "MIT",
+      "main": "lib/promise.js",
+      "keywords": [
+        "har",
+        "cli",
+        "ajv",
+        "http",
+        "archive",
+        "validate",
+        "validator"
+      ],
+      "engines": {
+        "node": ">=6"
+      },
+      "bugs": {
+        "url": "https://github.com/ahmadnassri/node-har-validator/issues"
+      },
+      "scripts": {
+        "lint": "npx run-p lint:*",
+        "test": "tap test --no-coverage",
+        "test:coverage": "tap test --coverage-report=lcov --no-browser"
+      },
+      "devDependencies": {
+        "tap": "^14.10.8"
+      },
+      "dependencies": {
+        "ajv": "^6.12.3",
+        "har-schema": "^2.0.0"
+      },
+      "gitHead": "b77cdcbaf3443af59bc7dc8ef2cffb437201134e",
+      "_id": "har-validator@5.1.5",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/har-validator/-/har-validator-5.1.5.tgz",
+        "integrity": "sha512-nmT2T0lljbxdQZfspsno9hgrG3Uir6Ks5afism62poxqBM6sDnMEuPmzTq8XN0OEwqKLLdh1jQI3qyE66Nzb3w==",
+        "shasum": "1f0803b9f8cb20c0fa13822df1ecddb36bde1efd",
+        "fileCount": 6,
+        "unpackedSize": 8220
+      },
+      "directories": {},
+      "_hasShrinkwrap": false,
+      "deprecated": "this library is no longer supported"
+    }
+  },
+  "time": {
+    "created": "2020-07-30T04:42:33.615Z",
+    "modified": "2020-07-30T04:42:33.615Z",
+    "5.1.5": "2020-07-30T04:42:33.615Z"
+  }
+}

@@ -1,0 +1,214 @@
+{
+  "name": "lodash",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "4.18.1"
+  },
+  "versions": {
+    "4.17.20": {
+      "name": "lodash",
+      "version": "4.17.20",
+      "keywords": [
+        "modules",
+        "stdlib",
+        "util"
+      ],
+      "author": {
+        "name": "John-David Dalton",
+        "email": "john.david.dalton@gmail.com"
+      },
+      "license": "MIT",
+      "_id": "lodash@4.17.20",
+      "homepage": "https://lodash.com/",
+      "bugs": {
+        "url": "https://github.com/lodash/lodash/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lodash/-/lodash-4.17.20.tgz",
+        "integrity": "sha512-PlhdFcillOINfeV7Ni6oF1TAEayyZBoZ8bcshTHqOYJYlrqzRK5hagpagky5o4HfCzzd1TRkXPMFq6cKk9rGmA==",
+        "shasum": "b44a9b6297bcb698f1c51a3545a2b3b368d59c52",
+        "fileCount": 1049,
+        "unpackedSize": 1406354
+      },
+      "icon": "https://lodash.com/icon.svg",
+      "main": "lodash.js",
+      "gitHead": "f2e7063ee409ff40a60b14370c58dceee1a2efd4",
+      "scripts": {
+        "test": "echo \"See https://travis-ci.org/lodash-archive/lodash-cli for testing details.\""
+      },
+      "repository": {
+        "url": "git+https://github.com/lodash/lodash.git",
+        "type": "git"
+      },
+      "description": "Lodash modular utilities.",
+      "directories": {},
+      "_hasShrinkwrap": false
+    },
+    "4.17.21": {
+      "name": "lodash",
+      "version": "4.17.21",
+      "keywords": [
+        "modules",
+        "stdlib",
+        "util"
+      ],
+      "author": {
+        "name": "John-David Dalton",
+        "email": "john.david.dalton@gmail.com"
+      },
+      "license": "MIT",
+      "_id": "lodash@4.17.21",
+      "homepage": "https://lodash.com/",
+      "bugs": {
+        "url": "https://github.com/lodash/lodash/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
+        "integrity": "sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==",
+        "shasum": "679591c564c3bffaae8454cf0b3df370c3d6911c",
+        "fileCount": 1054,
+        "unpackedSize": 1412415
+      },
+      "icon": "https://lodash.com/icon.svg",
+      "main": "lodash.js",
+      "gitHead": "c6e281b878b315c7a10d90f9c2af4cdb112d9625",
+      "scripts": {
+        "test": "echo \"See https://travis-ci.org/lodash-archive/lodash-cli for testing details.\""
+      },
+      "repository": {
+        "url": "git+https://github.com/lodash/lodash.git",
+        "type": "git"
+      },
+      "description": "Lodash modular utilities.",
+      "directories": {},
+      "_hasShrinkwrap": false
+    },
+    "4.17.23": {
+      "name": "lodash",
+      "version": "4.17.23",
+      "keywords": [
+        "modules",
+        "stdlib",
+        "util"
+      ],
+      "author": {
+        "name": "John-David Dalton",
+        "email": "john.david.dalton@gmail.com"
+      },
+      "license": "MIT",
+      "_id": "lodash@4.17.23",
+      "homepage": "https://lodash.com/",
+      "bugs": {
+        "url": "https://github.com/lodash/lodash/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lodash/-/lodash-4.17.23.tgz",
+        "integrity": "sha512-LgVTMpQtIopCi79SJeDiP0TfWi5CNEc/L/aRdTh3yIvmZXTnheWpKjSZhnvMl8iXbC1tFg9gdHHDMLoV7CnG+w==",
+        "shasum": "f113b0378386103be4f6893388c73d0bde7f2c5a",
+        "fileCount": 1051,
+        "unpackedSize": 1411664
+      },
+      "icon": "https://lodash.com/icon.svg",
+      "main": "lodash.js",
+      "gitHead": "835a537f36ee2fd5fb7f524e213ff9ba2d8698f8",
+      "scripts": {
+        "test": "echo \"See https://travis-ci.org/lodash-archive/lodash-cli for testing details.\""
+      },
+      "repository": {
+        "url": "git+https://github.com/lodash/lodash.git",
+        "type": "git"
+      },
+      "description": "Lodash modular utilities.",
+      "directories": {},
+      "_hasShrinkwrap": false
+    },
+    "4.18.0": {
+      "name": "lodash",
+      "version": "4.18.0",
+      "keywords": [
+        "modules",
+        "stdlib",
+        "util"
+      ],
+      "author": {
+        "name": "John-David Dalton",
+        "email": "john.david.dalton@gmail.com"
+      },
+      "license": "MIT",
+      "_id": "lodash@4.18.0",
+      "homepage": "https://lodash.com/",
+      "bugs": {
+        "url": "https://github.com/lodash/lodash/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lodash/-/lodash-4.18.0.tgz",
+        "integrity": "sha512-l1mfj2atMqndAHI3ls7XqPxEjV2J9ZkcNyHpoZA3r2T1LLwDB69jgkMWh71YKwhBbK0G2f4WSn05ahmQXVxupA==",
+        "shasum": "dfd726f07ab2e39dd763de28fcf66e395c03e440",
+        "fileCount": 1051,
+        "unpackedSize": 1413943
+      },
+      "icon": "https://lodash.com/icon.svg",
+      "main": "lodash.js",
+      "gitHead": "0c9b60c1ae2656ef0d605e6726d72307eb5c31ff",
+      "scripts": {
+        "test": "echo \"See https://travis-ci.org/lodash-archive/lodash-cli for testing details.\""
+      },
+      "deprecated": "Bad release. Please use lodash@4.17.21 instead.",
+      "repository": {
+        "url": "git+https://github.com/lodash/lodash.git",
+        "type": "git"
+      },
+      "description": "Lodash modular utilities.",
+      "directories": {},
+      "_hasShrinkwrap": false
+    },
+    "4.18.1": {
+      "name": "lodash",
+      "version": "4.18.1",
+      "keywords": [
+        "modules",
+        "stdlib",
+        "util"
+      ],
+      "author": {
+        "name": "John-David Dalton",
+        "email": "john.david.dalton@gmail.com"
+      },
+      "license": "MIT",
+      "_id": "lodash@4.18.1",
+      "homepage": "https://lodash.com/",
+      "bugs": {
+        "url": "https://github.com/lodash/lodash/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lodash/-/lodash-4.18.1.tgz",
+        "integrity": "sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==",
+        "shasum": "ff2b66c1f6326d59513de2407bf881439812771c",
+        "fileCount": 1051,
+        "unpackedSize": 1413741
+      },
+      "icon": "https://lodash.com/icon.svg",
+      "main": "lodash.js",
+      "gitHead": "4f0b76e2eca13de1c1fe8b4305abc1f7d63f4b86",
+      "scripts": {
+        "test": "echo \"See https://travis-ci.org/lodash-archive/lodash-cli for testing details.\""
+      },
+      "repository": {
+        "url": "git+https://github.com/lodash/lodash.git",
+        "type": "git"
+      },
+      "description": "Lodash modular utilities.",
+      "directories": {},
+      "_hasShrinkwrap": false
+    }
+  },
+  "time": {
+    "created": "2020-08-13T16:53:54.152Z",
+    "modified": "2026-04-01T21:01:20.458Z",
+    "4.17.20": "2020-08-13T16:53:54.152Z",
+    "4.17.21": "2021-02-20T15:42:16.891Z",
+    "4.17.23": "2026-01-21T17:29:52.831Z",
+    "4.18.0": "2026-03-31T18:18:42.717Z",
+    "4.18.1": "2026-04-01T21:01:20.458Z"
+  }
+}

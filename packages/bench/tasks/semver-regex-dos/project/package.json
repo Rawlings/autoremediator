@@ -1,0 +1,16 @@
+{
+  "name": "bench-app-semver-regex-dos",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "node \"$BENCH_TSC\" -p tsconfig.json",
+    "test": "node --permission --allow-fs-read=\"$PWD\" --test-isolation=none --test test/*.test.ts"
+  },
+  "dependencies": {
+    "semver": "7.3.7"
+  },
+  "devDependencies": {
+    "@types/semver": "7.5.8"
+  }
+}

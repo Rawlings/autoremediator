@@ -1,0 +1,53 @@
+{
+  "name": "aws4",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "1.13.2"
+  },
+  "versions": {
+    "1.13.2": {
+      "name": "aws4",
+      "version": "1.13.2",
+      "author": {
+        "url": "https://github.com/mhart",
+        "name": "Michael Hart",
+        "email": "michael.hart.au@gmail.com"
+      },
+      "license": "MIT",
+      "_id": "aws4@1.13.2",
+      "homepage": "https://github.com/mhart/aws4#readme",
+      "bugs": {
+        "url": "https://github.com/mhart/aws4/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/aws4/-/aws4-1.13.2.tgz",
+        "integrity": "sha512-lHe62zvbTB5eEABUVi/AwVh0ZKY9rMMDhmm+eeyuuUQbQ3+J+fONVQOZyj+DdrvD4BY33uYniyRJ4UJIaSKAfw==",
+        "shasum": "0aa167216965ac9474ccfa83892cfb6b3e1e52ef",
+        "fileCount": 5,
+        "unpackedSize": 23399
+      },
+      "main": "aws4.js",
+      "gitHead": "2bc7517338d86620709554845a437d174f48093a",
+      "scripts": {
+        "test": "mocha ./test/fast.js -R list",
+        "integration": "node ./test/slow.js"
+      },
+      "repository": {
+        "url": "git+https://github.com/mhart/aws4.git",
+        "type": "git"
+      },
+      "description": "Signs and prepares requests using AWS Signature Version 4",
+      "directories": {},
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "mocha": "^10.7.3",
+        "should": "^13.2.3"
+      }
+    }
+  },
+  "time": {
+    "created": "2024-08-28T07:43:50.865Z",
+    "modified": "2024-08-28T07:43:50.865Z",
+    "1.13.2": "2024-08-28T07:43:50.865Z"
+  }
+}

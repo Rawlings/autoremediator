@@ -1,0 +1,60 @@
+{
+  "name": "@types/minimist",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "ts5.8": "1.2.5",
+    "ts6.0": "1.2.5",
+    "ts5.7": "1.2.5",
+    "latest": "1.2.5",
+    "ts4.5": "1.2.5",
+    "ts4.6": "1.2.5",
+    "ts4.7": "1.2.5",
+    "ts4.8": "1.2.5",
+    "ts4.9": "1.2.5",
+    "ts5.0": "1.2.5",
+    "ts5.1": "1.2.5",
+    "ts5.2": "1.2.5",
+    "ts5.3": "1.2.5",
+    "ts5.4": "1.2.5",
+    "ts5.5": "1.2.5",
+    "ts5.9": "1.2.5",
+    "ts5.6": "1.2.5",
+    "ts7.0": "1.2.5",
+    "ts7.1": "1.2.5"
+  },
+  "versions": {
+    "1.2.5": {
+      "name": "@types/minimist",
+      "version": "1.2.5",
+      "license": "MIT",
+      "_id": "@types/minimist@1.2.5",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/minimist",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/minimist/-/minimist-1.2.5.tgz",
+        "integrity": "sha512-hov8bUuiLiyFPGyFPE1lwWhmzYbirOXQNNo40+y3zow8aFVTeyn3VWL0VFFfdNddA8S4Vf0Tc062rzyNr7Paag==",
+        "shasum": "ec10755e871497bcd83efe927e43ec46e8c0747e",
+        "fileCount": 5,
+        "unpackedSize": 6267
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/minimist"
+      },
+      "description": "TypeScript definitions for minimist",
+      "directories": {},
+      "dependencies": {},
+      "_hasShrinkwrap": false,
+      "typeScriptVersion": "4.5",
+      "typesPublisherContentHash": "e7dad9991b8f1cc7aae482ae6c4009a6a44645234b6f94524e2a76425cda2822"
+    }
+  },
+  "time": {
+    "created": "2023-11-07T11:11:21.661Z",
+    "modified": "2023-11-07T11:11:21.661Z",
+    "1.2.5": "2023-11-07T11:11:21.661Z"
+  }
+}

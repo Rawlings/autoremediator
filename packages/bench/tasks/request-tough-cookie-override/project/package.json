@@ -1,0 +1,16 @@
+{
+  "name": "bench-app-request-tough-cookie-override",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "node \"$BENCH_TSC\" -p tsconfig.json",
+    "test": "node --permission --allow-fs-read=\"$PWD\" --test-isolation=none --test test/*.test.ts"
+  },
+  "dependencies": {
+    "request": "2.88.2"
+  },
+  "devDependencies": {
+    "@types/request": "2.48.12"
+  }
+}

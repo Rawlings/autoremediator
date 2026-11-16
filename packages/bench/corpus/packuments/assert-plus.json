@@ -1,0 +1,55 @@
+{
+  "name": "assert-plus",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "1.0.0"
+  },
+  "versions": {
+    "1.0.0": {
+      "name": "assert-plus",
+      "version": "1.0.0",
+      "author": {
+        "name": "Mark Cavage",
+        "email": "mcavage@gmail.com"
+      },
+      "license": "MIT",
+      "_id": "assert-plus@1.0.0",
+      "homepage": "https://github.com/mcavage/node-assert-plus#readme",
+      "bugs": {
+        "url": "https://github.com/mcavage/node-assert-plus/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/assert-plus/-/assert-plus-1.0.0.tgz",
+        "integrity": "sha512-NfJ4UzBCcQGLDlQq7nHxH+tv3kyZ0hHQqF5BO6J7tNJeP5do1llPr8dZ8zHonfhAu0PHAdMkSo+8o0wxg9lZWw==",
+        "shasum": "f12e0f3c5d77b0b1cdd9146942e4e96c1e4dd525"
+      },
+      "main": "./assert.js",
+      "_from": "assert-plus-1.0.0.tgz",
+      "_shasum": "f12e0f3c5d77b0b1cdd9146942e4e96c1e4dd525",
+      "engines": {
+        "node": ">=0.8"
+      },
+      "scripts": {
+        "test": "tape tests/*.js | ./node_modules/.bin/faucet"
+      },
+      "_resolved": "file:assert-plus-1.0.0.tgz",
+      "repository": {
+        "url": "git+https://github.com/mcavage/node-assert-plus.git",
+        "type": "git"
+      },
+      "description": "Extra assertions on top of node's assert module",
+      "directories": {},
+      "dependencies": {},
+      "devDependencies": {
+        "tape": "4.2.2",
+        "faucet": "0.0.1"
+      },
+      "optionalDependencies": {}
+    }
+  },
+  "time": {
+    "created": "2016-01-27T19:03:38.091Z",
+    "modified": "2016-01-27T19:03:38.091Z",
+    "1.0.0": "2016-01-27T19:03:38.091Z"
+  }
+}

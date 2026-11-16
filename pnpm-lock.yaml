@@ -200,7 +200,7 @@ importers:
         specifier: ^7.0.2007
         version: 7.0.2007
 
-  bench:
+  packages/bench:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.2
@@ -210,7 +210,7 @@ importers:
         version: 7.0.172(zod@4.6.7)
       autoremediator:
         specifier: workspace:*
-        version: link:../packages/core
+        version: link:../core
       semver:
         specifier: ^7.8.6
         version: 7.8.6

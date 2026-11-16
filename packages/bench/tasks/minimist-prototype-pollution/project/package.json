@@ -1,0 +1,16 @@
+{
+  "name": "bench-app-minimist-prototype-pollution",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "node \"$BENCH_TSC\" -p tsconfig.json",
+    "test": "node --permission --allow-fs-read=\"$PWD\" --test-isolation=none --test test/*.test.ts"
+  },
+  "dependencies": {
+    "minimist": "1.2.5"
+  },
+  "devDependencies": {
+    "@types/minimist": "1.2.5"
+  }
+}

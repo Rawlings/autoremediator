@@ -1,0 +1,100 @@
+{
+  "name": "@types/request",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "ts4.6": "2.48.12",
+    "ts4.7": "2.48.12",
+    "ts4.8": "2.48.12",
+    "ts4.5": "2.48.12",
+    "ts4.9": "2.48.12",
+    "ts5.0": "2.48.12",
+    "ts5.5": "2.48.13",
+    "ts5.4": "2.48.13",
+    "latest": "2.48.13",
+    "ts5.3": "2.48.13",
+    "ts5.2": "2.48.13",
+    "ts5.1": "2.48.13",
+    "ts5.7": "2.48.13",
+    "ts6.0": "2.48.13",
+    "ts5.8": "2.48.13",
+    "ts7.0": "2.48.13",
+    "ts5.6": "2.48.13",
+    "ts5.9": "2.48.13",
+    "ts7.1": "2.48.13"
+  },
+  "versions": {
+    "2.48.12": {
+      "name": "@types/request",
+      "version": "2.48.12",
+      "license": "MIT",
+      "_id": "@types/request@2.48.12",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/request",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/request/-/request-2.48.12.tgz",
+        "integrity": "sha512-G3sY+NpsA9jnwm0ixhAFQSJ3Q9JkpLZpJbI3GMv0mIAT0y3mRabYeINzal5WOChIiaTEGQYlHOKgkaM9EisWHw==",
+        "shasum": "0f590f615a10f87da18e9790ac94c29ec4c5ef30",
+        "fileCount": 5,
+        "unpackedSize": 19780
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/request"
+      },
+      "description": "TypeScript definitions for request",
+      "directories": {},
+      "dependencies": {
+        "form-data": "^2.5.0",
+        "@types/node": "*",
+        "@types/caseless": "*",
+        "@types/tough-cookie": "*"
+      },
+      "_hasShrinkwrap": false,
+      "typeScriptVersion": "4.5",
+      "typesPublisherContentHash": "e9c04d3b683d01018fb09988f703e7c4ec1db60010fc82e89c708a8f39706785"
+    },
+    "2.48.13": {
+      "name": "@types/request",
+      "version": "2.48.13",
+      "license": "MIT",
+      "_id": "@types/request@2.48.13",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/request",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/request/-/request-2.48.13.tgz",
+        "integrity": "sha512-FGJ6udDNUCjd19pp0Q3iTiDkwhYup7J8hpMW9c4k53NrccQFFWKRho6hvtPPEhnXWKvukfwAlB6DbDz4yhH5Gg==",
+        "shasum": "abdf4256524e801ea8fdda54320f083edb5a6b80",
+        "fileCount": 5,
+        "unpackedSize": 19808
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/request"
+      },
+      "description": "TypeScript definitions for request",
+      "directories": {},
+      "dependencies": {
+        "form-data": "^2.5.5",
+        "@types/node": "*",
+        "@types/caseless": "*",
+        "@types/tough-cookie": "*"
+      },
+      "_hasShrinkwrap": false,
+      "peerDependencies": {},
+      "typeScriptVersion": "5.1",
+      "typesPublisherContentHash": "73ed61b08c05b6d6694d81e9999b5d72488d6fb3575e5d68ecc912a03e8ae928"
+    }
+  },
+  "time": {
+    "created": "2023-11-07T15:25:36.800Z",
+    "modified": "2025-07-28T22:02:22.810Z",
+    "2.48.12": "2023-11-07T15:25:36.800Z",
+    "2.48.13": "2025-07-28T22:02:22.810Z"
+  }
+}

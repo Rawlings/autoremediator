@@ -1,0 +1,111 @@
+{
+  "name": "@types/json5",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "2.2.0",
+    "ts2.0": "0.0.30",
+    "ts2.1": "0.0.30",
+    "ts2.2": "0.0.30",
+    "ts2.3": "0.0.30",
+    "ts2.4": "0.0.30",
+    "ts2.5": "0.0.30",
+    "ts2.6": "0.0.30",
+    "ts2.7": "0.0.30",
+    "ts2.8": "0.0.30",
+    "ts2.9": "0.0.30",
+    "ts3.0": "0.0.30",
+    "ts3.1": "0.0.30",
+    "ts3.2": "0.0.30",
+    "ts3.3": "0.0.30",
+    "ts3.4": "0.0.30",
+    "ts3.5": "0.0.30",
+    "ts3.6": "0.0.30",
+    "ts3.7": "0.0.30",
+    "ts3.8": "0.0.30",
+    "ts3.9": "0.0.30",
+    "ts4.0": "0.0.30",
+    "ts4.1": "0.0.30",
+    "ts4.2": "0.0.30"
+  },
+  "versions": {
+    "0.0.29": {
+      "name": "@types/json5",
+      "version": "0.0.29",
+      "description": "TypeScript definitions for JSON5",
+      "license": "MIT",
+      "author": "Jason Swearingen <https://jasonswearingen.github.io>",
+      "main": "",
+      "repository": {
+        "type": "git",
+        "url": "https://www.github.com/DefinitelyTyped/DefinitelyTyped.git"
+      },
+      "scripts": {},
+      "dependencies": {},
+      "typings": "index.d.ts",
+      "typesPublisherContentHash": "1ed77f2bfd59d290798abf89db281c36565f4a78d97d4e9caab25319d54c6331",
+      "_id": "@types/json5@0.0.29",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/json5/-/json5-0.0.29.tgz",
+        "integrity": "sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==",
+        "shasum": "ee28707ae94e11d2b827bcbe5270bcea7f3e71ee"
+      },
+      "directories": {}
+    },
+    "0.0.30": {
+      "name": "@types/json5",
+      "version": "0.0.30",
+      "description": "TypeScript definitions for JSON5",
+      "license": "MIT",
+      "main": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git"
+      },
+      "scripts": {},
+      "dependencies": {},
+      "typesPublisherContentHash": "731c5be92e0a26e32524b0be140aa3ae99eecb2c702c1625afe2f35908283dd4",
+      "typeScriptVersion": "2.0",
+      "_id": "@types/json5@0.0.30",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/json5/-/json5-0.0.30.tgz",
+        "integrity": "sha512-sqm9g7mHlPY/43fcSNrCYfOeX9zkTTK+euO5E6+CVijSMm5tTjkVdwdqRkY3ljjIAf8679vps5jKUoJBCLsMDA==",
+        "shasum": "44cb52f32a809734ca562e685c6473b5754a7818",
+        "fileCount": 4,
+        "unpackedSize": 4250
+      },
+      "directories": {},
+      "_hasShrinkwrap": false
+    },
+    "2.2.0": {
+      "name": "@types/json5",
+      "version": "2.2.0",
+      "typings": null,
+      "description": "Stub TypeScript definitions entry for json5, which provides its own types definitions",
+      "main": "",
+      "scripts": {},
+      "author": "",
+      "license": "MIT",
+      "dependencies": {
+        "json5": "*"
+      },
+      "_id": "@types/json5@2.2.0",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/json5/-/json5-2.2.0.tgz",
+        "integrity": "sha512-NrVug5woqbvNZ0WX+Gv4R+L4TGddtmFek2u8RtccAgFZWtS9QXF2xCXY22/M4nzkaKF0q9Fc6M/5rxLDhfwc/A==",
+        "shasum": "afff29abf9182a7d4a7e39105ca051f11c603d13",
+        "fileCount": 3,
+        "unpackedSize": 1602
+      },
+      "directories": {},
+      "_hasShrinkwrap": false,
+      "deprecated": "This is a stub types definition. json5 provides its own type definitions, so you do not need this installed."
+    }
+  },
+  "time": {
+    "created": "2016-09-19T17:44:46.965Z",
+    "modified": "2021-02-01T20:00:41.991Z",
+    "0.0.29": "2016-09-19T17:44:46.965Z",
+    "0.0.30": "2018-08-21T16:29:23.329Z",
+    "2.2.0": "2021-02-01T20:00:41.991Z"
+  }
+}

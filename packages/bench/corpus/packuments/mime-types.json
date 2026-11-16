@@ -1,0 +1,230 @@
+{
+  "name": "mime-types",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "next": "3.0.0",
+    "latest": "3.0.2"
+  },
+  "versions": {
+    "2.1.35": {
+      "name": "mime-types",
+      "version": "2.1.35",
+      "keywords": [
+        "mime",
+        "types"
+      ],
+      "license": "MIT",
+      "_id": "mime-types@2.1.35",
+      "homepage": "https://github.com/jshttp/mime-types#readme",
+      "bugs": {
+        "url": "https://github.com/jshttp/mime-types/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/mime-types/-/mime-types-2.1.35.tgz",
+        "integrity": "sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw==",
+        "shasum": "381a871b62a734450660ae3deee44813f70d959a",
+        "fileCount": 5,
+        "unpackedSize": 18272
+      },
+      "engines": {
+        "node": ">= 0.6"
+      },
+      "gitHead": "ef932231c20e716ec27ea159c082322c3c485b66",
+      "scripts": {
+        "lint": "eslint .",
+        "test": "mocha --reporter spec test/test.js",
+        "test-ci": "nyc --reporter=lcov --reporter=text npm test",
+        "test-cov": "nyc --reporter=html --reporter=text npm test"
+      },
+      "repository": {
+        "url": "git+https://github.com/jshttp/mime-types.git",
+        "type": "git"
+      },
+      "description": "The ultimate javascript content-type utility.",
+      "directories": {},
+      "dependencies": {
+        "mime-db": "1.52.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "15.1.0",
+        "mocha": "9.2.2",
+        "eslint": "7.32.0",
+        "eslint-plugin-node": "11.1.0",
+        "eslint-plugin-import": "2.25.4",
+        "eslint-plugin-promise": "5.2.0",
+        "eslint-config-standard": "14.1.1",
+        "eslint-plugin-markdown": "2.2.1",
+        "eslint-plugin-standard": "4.1.0"
+      }
+    },
+    "3.0.0": {
+      "name": "mime-types",
+      "version": "3.0.0",
+      "keywords": [
+        "mime",
+        "types"
+      ],
+      "license": "MIT",
+      "_id": "mime-types@3.0.0",
+      "homepage": "https://github.com/jshttp/mime-types#readme",
+      "bugs": {
+        "url": "https://github.com/jshttp/mime-types/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/mime-types/-/mime-types-3.0.0.tgz",
+        "integrity": "sha512-XqoSHeCGjVClAmoGFG3lVFqQFRIrTVw2OH3axRqAcfaw+gHWIfnASS92AV+Rl/mk0MupgZTRHQOjxY6YVnzK5w==",
+        "shasum": "148453a900475522d095a445355c074cca4f5217",
+        "fileCount": 6,
+        "unpackedSize": 22277
+      },
+      "engines": {
+        "node": ">= 0.6"
+      },
+      "gitHead": "4b3ae3831b18e1ce72af9ee75f691701aef8432f",
+      "scripts": {
+        "lint": "eslint .",
+        "test": "mocha --reporter spec test/test.js",
+        "test-ci": "nyc --reporter=lcov --reporter=text npm test",
+        "test-cov": "nyc --reporter=html --reporter=text npm test"
+      },
+      "repository": {
+        "url": "git+https://github.com/jshttp/mime-types.git",
+        "type": "git"
+      },
+      "description": "The ultimate javascript content-type utility.",
+      "directories": {},
+      "dependencies": {
+        "mime-db": "^1.53.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "15.1.0",
+        "mocha": "10.2.0",
+        "eslint": "8.33.0",
+        "eslint-plugin-node": "11.1.0",
+        "eslint-plugin-import": "2.27.5",
+        "eslint-plugin-promise": "6.1.1",
+        "eslint-config-standard": "14.1.1",
+        "eslint-plugin-markdown": "3.0.0",
+        "eslint-plugin-standard": "4.1.0"
+      }
+    },
+    "3.0.1": {
+      "name": "mime-types",
+      "version": "3.0.1",
+      "keywords": [
+        "mime",
+        "types"
+      ],
+      "license": "MIT",
+      "_id": "mime-types@3.0.1",
+      "homepage": "https://github.com/jshttp/mime-types#readme",
+      "bugs": {
+        "url": "https://github.com/jshttp/mime-types/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/mime-types/-/mime-types-3.0.1.tgz",
+        "integrity": "sha512-xRc4oEhT6eaBpU1XF7AjpOFD+xQmXNB5OVKwp4tqCuBpHLS/ZbBDrc07mYTDqVMg6PfxUjjNp85O6Cd2Z/5HWA==",
+        "shasum": "b1d94d6997a9b32fd69ebaed0db73de8acb519ce",
+        "fileCount": 6,
+        "unpackedSize": 22341
+      },
+      "engines": {
+        "node": ">= 0.6"
+      },
+      "gitHead": "64e03d9d532c8967ebf611efc8ddd55f445ac9e5",
+      "scripts": {
+        "lint": "eslint .",
+        "test": "mocha --reporter spec test/test.js",
+        "test-ci": "nyc --reporter=lcov --reporter=text npm test",
+        "test-cov": "nyc --reporter=html --reporter=text npm test"
+      },
+      "repository": {
+        "url": "git+https://github.com/jshttp/mime-types.git",
+        "type": "git"
+      },
+      "description": "The ultimate javascript content-type utility.",
+      "directories": {},
+      "dependencies": {
+        "mime-db": "^1.54.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "15.1.0",
+        "mocha": "10.2.0",
+        "eslint": "8.33.0",
+        "eslint-plugin-node": "11.1.0",
+        "eslint-plugin-import": "2.27.5",
+        "eslint-plugin-promise": "6.1.1",
+        "eslint-config-standard": "14.1.1",
+        "eslint-plugin-markdown": "3.0.0",
+        "eslint-plugin-standard": "4.1.0"
+      }
+    },
+    "3.0.2": {
+      "name": "mime-types",
+      "description": "The ultimate javascript content-type utility.",
+      "version": "3.0.2",
+      "license": "MIT",
+      "keywords": [
+        "mime",
+        "types"
+      ],
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/jshttp/mime-types.git"
+      },
+      "funding": {
+        "type": "opencollective",
+        "url": "https://opencollective.com/express"
+      },
+      "dependencies": {
+        "mime-db": "^1.54.0"
+      },
+      "devDependencies": {
+        "eslint": "8.33.0",
+        "eslint-config-standard": "14.1.1",
+        "eslint-plugin-import": "2.32.0",
+        "eslint-plugin-markdown": "3.0.1",
+        "eslint-plugin-node": "11.1.0",
+        "eslint-plugin-promise": "6.6.0",
+        "eslint-plugin-standard": "4.1.0",
+        "mocha": "10.8.2",
+        "nyc": "15.1.0"
+      },
+      "engines": {
+        "node": ">=18"
+      },
+      "scripts": {
+        "lint": "eslint .",
+        "test": "mocha --reporter spec test/test.js",
+        "test-ci": "nyc --reporter=lcov --reporter=text npm test",
+        "test-cov": "nyc --reporter=html --reporter=text npm test"
+      },
+      "_id": "mime-types@3.0.2",
+      "gitHead": "29a0302d799933a45384892df0722f3c5bb1b033",
+      "bugs": {
+        "url": "https://github.com/jshttp/mime-types/issues"
+      },
+      "homepage": "https://github.com/jshttp/mime-types#readme",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/mime-types/-/mime-types-3.0.2.tgz",
+        "integrity": "sha512-Lbgzdk0h4juoQ9fCKXW4by0UJqj+nOOrI9MJ1sSj4nI8aI2eo1qmvQEie4VD1glsS250n15LsWsYtCugiStS5A==",
+        "shasum": "39002d4182575d5af036ffa118100f2524b2e2ab",
+        "fileCount": 6,
+        "unpackedSize": 22871
+      },
+      "directories": {},
+      "_hasShrinkwrap": false
+    }
+  },
+  "time": {
+    "created": "2022-03-12T18:04:43.042Z",
+    "modified": "2025-11-20T11:12:29.693Z",
+    "2.1.35": "2022-03-12T18:04:43.042Z",
+    "3.0.0": "2024-08-31T13:57:14.134Z",
+    "3.0.1": "2025-03-26T22:53:47.851Z",
+    "3.0.2": "2025-11-20T11:12:29.693Z"
+  }
+}

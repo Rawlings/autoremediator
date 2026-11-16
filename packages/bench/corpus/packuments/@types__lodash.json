@@ -1,0 +1,265 @@
+{
+  "name": "@types/lodash",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "ts5.1": "4.17.20",
+    "ts5.5": "4.17.24",
+    "ts5.4": "4.17.24",
+    "ts5.3": "4.17.24",
+    "ts5.2": "4.17.24",
+    "ts7.0": "4.17.27",
+    "latest": "4.17.27",
+    "ts5.6": "4.17.27",
+    "ts6.0": "4.17.27",
+    "ts5.8": "4.17.27",
+    "ts5.9": "4.17.27",
+    "ts5.7": "4.17.27",
+    "ts7.1": "4.17.27"
+  },
+  "versions": {
+    "4.17.20": {
+      "name": "@types/lodash",
+      "version": "4.17.20",
+      "license": "MIT",
+      "_id": "@types/lodash@4.17.20",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/lodash",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/lodash/-/lodash-4.17.20.tgz",
+        "integrity": "sha512-H3MHACvFUEiujabxhaI/ImO6gUrd8oOurg7LQtS7mbwIXA/cUqWrvBsaeJ23aZEPk1TAYkurjfMbSELfoCXlGA==",
+        "shasum": "1ca77361d7363432d29f5e55950d9ec1e1c6ea93",
+        "fileCount": 707,
+        "unpackedSize": 869050
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/lodash"
+      },
+      "description": "TypeScript definitions for lodash",
+      "directories": {},
+      "dependencies": {},
+      "_hasShrinkwrap": false,
+      "peerDependencies": {},
+      "typeScriptVersion": "5.1",
+      "typesPublisherContentHash": "965f926f13027c7e00359bf3899ec168b333c7e871110fa4d25af188bdcf5f08"
+    },
+    "4.17.21": {
+      "name": "@types/lodash",
+      "version": "4.17.21",
+      "license": "MIT",
+      "_id": "@types/lodash@4.17.21",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/lodash",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/lodash/-/lodash-4.17.21.tgz",
+        "integrity": "sha512-FOvQ0YPD5NOfPgMzJihoT+Za5pdkDJWcbpuj1DjaKZIr/gxodQjY/uWEFlTNqW2ugXHUiL8lRQgw63dzKHZdeQ==",
+        "shasum": "b806831543d696b14f8112db600ea9d3a1df6ea4",
+        "fileCount": 707,
+        "unpackedSize": 869481
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/lodash"
+      },
+      "description": "TypeScript definitions for lodash",
+      "directories": {},
+      "dependencies": {},
+      "_hasShrinkwrap": false,
+      "peerDependencies": {},
+      "typeScriptVersion": "5.2",
+      "typesPublisherContentHash": "262ec0cf23acf06f09c8d1c50a22c7fb7947e11fcaefe36187c657c5f438e04c"
+    },
+    "4.17.22": {
+      "name": "@types/lodash",
+      "version": "4.17.22",
+      "license": "MIT",
+      "_id": "@types/lodash@4.17.22",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/lodash",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/lodash/-/lodash-4.17.22.tgz",
+        "integrity": "sha512-46Wh9Pr5XQloXkIDyfIJ3garzam+jG4m2Vb2bG84chuLsPbX1BG9W25JEkplrz5hN7I3F5NU/keGlL+MrkTkDA==",
+        "shasum": "5fc090fbd92c59312cecff582ac0492217c6bcc0",
+        "fileCount": 707,
+        "unpackedSize": 869382
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/lodash"
+      },
+      "description": "TypeScript definitions for lodash",
+      "directories": {},
+      "dependencies": {},
+      "_hasShrinkwrap": false,
+      "peerDependencies": {},
+      "typeScriptVersion": "5.2",
+      "typesPublisherContentHash": "79603be9c422e70c74d5503a6eeaca0659fe855bd841ca38c21d78c0b80489ad"
+    },
+    "4.17.23": {
+      "name": "@types/lodash",
+      "version": "4.17.23",
+      "license": "MIT",
+      "_id": "@types/lodash@4.17.23",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/lodash",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/lodash/-/lodash-4.17.23.tgz",
+        "integrity": "sha512-RDvF6wTulMPjrNdCoYRC8gNR880JNGT8uB+REUpC2Ns4pRqQJhGz90wh7rgdXDPpCczF3VGktDuFGVnz8zP7HA==",
+        "shasum": "c1bb06db218acc8fc232da0447473fc2fb9d9841",
+        "fileCount": 707,
+        "unpackedSize": 869356
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/lodash"
+      },
+      "description": "TypeScript definitions for lodash",
+      "directories": {},
+      "dependencies": {},
+      "_hasShrinkwrap": false,
+      "peerDependencies": {},
+      "typeScriptVersion": "5.2",
+      "typesPublisherContentHash": "4e6b7244f8813f1ce6f4daf4db6e5ba8e50619aebcdb439ee653b18f5c7c919a"
+    },
+    "4.17.24": {
+      "name": "@types/lodash",
+      "version": "4.17.24",
+      "license": "MIT",
+      "_id": "@types/lodash@4.17.24",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/lodash",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/lodash/-/lodash-4.17.24.tgz",
+        "integrity": "sha512-gIW7lQLZbue7lRSWEFql49QJJWThrTFFeIMJdp3eH4tKoxm1OvEPg02rm4wCCSHS0cL3/Fizimb35b7k8atwsQ==",
+        "shasum": "4ae334fc62c0e915ca8ed8e35dcc6d4eeb29215f",
+        "fileCount": 707,
+        "unpackedSize": 869945
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/lodash"
+      },
+      "description": "TypeScript definitions for lodash",
+      "directories": {},
+      "dependencies": {},
+      "_hasShrinkwrap": false,
+      "peerDependencies": {},
+      "typeScriptVersion": "5.2",
+      "typesPublisherContentHash": "6d5f9d074e23fea95ae8ef8f188116218dbc1b67c538bd01d89810cceb550268"
+    },
+    "4.17.25": {
+      "name": "@types/lodash",
+      "version": "4.17.25",
+      "license": "MIT",
+      "_id": "@types/lodash@4.17.25",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/lodash",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/lodash/-/lodash-4.17.25.tgz",
+        "integrity": "sha512-+K1NIO8I+F9/wNulfVvu23QYd0Pe9/OCqRrim4NoYIf1VoEDL90Ve4ClzpyqBLc7NpGGWRvYNCKZ1BE/Jpf8dQ==",
+        "shasum": "69765ac7bcddb0eb072961cf292524a8f5b3c2c0",
+        "fileCount": 711,
+        "unpackedSize": 870175
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/lodash"
+      },
+      "description": "TypeScript definitions for lodash",
+      "directories": {},
+      "dependencies": {},
+      "_hasShrinkwrap": false,
+      "peerDependencies": {},
+      "typeScriptVersion": "5.6",
+      "typesPublisherContentHash": "5b89763740a3523d5295cc411a286fab1b0799800b598f81ec76d2f90a1ffce3"
+    },
+    "4.17.26": {
+      "name": "@types/lodash",
+      "version": "4.17.26",
+      "license": "MIT",
+      "_id": "@types/lodash@4.17.26",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/lodash",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/lodash/-/lodash-4.17.26.tgz",
+        "integrity": "sha512-48NWfiY6oNcKOh47Z4h+sIvwcQR91h6KPhaYKgeMIrkT2jV82Gy90SErj60vW8jQbeMSOSbhIv3bZ7JoqPPVhA==",
+        "shasum": "7f83594d70359fc4b2707e344aed9a59138d024c",
+        "fileCount": 711,
+        "unpackedSize": 870155
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/lodash"
+      },
+      "description": "TypeScript definitions for lodash",
+      "directories": {},
+      "dependencies": {},
+      "_hasShrinkwrap": false,
+      "peerDependencies": {},
+      "typeScriptVersion": "5.6",
+      "typesPublisherContentHash": "6488776ff9c3cb2d800cac726b9b82a7e7c52985e87b5a164b532d574944e6b3"
+    },
+    "4.17.27": {
+      "_id": "@types/lodash@4.17.27",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/lodash/-/lodash-4.17.27.tgz",
+        "integrity": "sha512-VenMRv/eKNrspX9v3H4dbmjsrnCOYdYBG3kxXKk3dG6X+urBGcj2Prww3xw1U5K4FV/mE4h5GbWd0szEKf+9ew==",
+        "shasum": "15fb73275b64dbfe49e2ae8376bb469b352a47a7",
+        "fileCount": 711,
+        "unpackedSize": 870498
+      },
+      "main": "",
+      "name": "@types/lodash",
+      "types": "index.d.ts",
+      "license": "MIT",
+      "scripts": {},
+      "version": "4.17.27",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/lodash",
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/lodash"
+      },
+      "description": "TypeScript definitions for lodash",
+      "directories": {},
+      "dependencies": {},
+      "_hasShrinkwrap": false,
+      "peerDependencies": {},
+      "typeScriptVersion": "5.6",
+      "typesPublisherContentHash": "6eaaed9342b9e6d6eb113fda86357b6033dbb99baae76552027cf91b3d66a5b5"
+    }
+  },
+  "time": {
+    "created": "2025-07-01T20:02:53.216Z",
+    "modified": "2026-10-21T15:41:18.542Z",
+    "4.17.20": "2025-07-01T20:02:53.216Z",
+    "4.17.21": "2025-11-22T15:33:03.554Z",
+    "4.17.22": "2026-01-10T07:34:06.693Z",
+    "4.17.23": "2026-01-10T11:33:14.669Z",
+    "4.17.24": "2026-02-23T05:30:28.313Z",
+    "4.17.25": "2026-08-01T03:45:21.615Z",
+    "4.17.26": "2026-10-09T18:46:42.671Z",
+    "4.17.27": "2026-10-21T15:41:18.542Z"
+  }
+}

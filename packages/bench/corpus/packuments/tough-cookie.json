@@ -1,0 +1,1355 @@
+{
+  "name": "tough-cookie",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "6.1.0"
+  },
+  "versions": {
+    "2.5.0": {
+      "name": "tough-cookie",
+      "version": "2.5.0",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "license": "BSD-3-Clause",
+      "_id": "tough-cookie@2.5.0",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-2.5.0.tgz",
+        "integrity": "sha512-nlLsUzgm1kfLXSXfRZMc1KLAugd4hqJHDTvc2hDIwS3mZAfMEuMbc03SujMF+GEcpaX/qboeycw6iO8JwVv2+g==",
+        "shasum": "cd9fb2a0aa1d5a12b473bd9fb96fa3dcff65ade2",
+        "fileCount": 10,
+        "unpackedSize": 86644
+      },
+      "main": "./lib/cookie",
+      "engines": {
+        "node": ">=0.8"
+      },
+      "gitHead": "7c1fdf1322cbd1442b0bfb161aef2ac6554af19d",
+      "scripts": {
+        "test": "vows test/*_test.js",
+        "cover": "nyc --reporter=lcov --reporter=html vows test/*_test.js",
+        "version": "genversion lib/version.js && git add lib/version.js"
+      },
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "psl": "^1.1.28",
+        "punycode": "^2.1.1"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^11.6.0",
+        "vows": "^0.8.2",
+        "async": "^1.4.2",
+        "genversion": "^2.1.0",
+        "string.prototype.repeat": "^0.2.0"
+      }
+    },
+    "3.0.0": {
+      "name": "tough-cookie",
+      "version": "3.0.0",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "license": "BSD-3-Clause",
+      "_id": "tough-cookie@3.0.0",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-3.0.0.tgz",
+        "integrity": "sha512-LHMvg+RBP/mAVNqVbOX8t+iJ+tqhBA/t49DuI7+IDAWHrASnesqSu1vWbKB7UrE2yk+HMFUBMadRGMkB4VCfog==",
+        "shasum": "d2bceddebde633153ff20a52fa844a0dc71dacef",
+        "fileCount": 10,
+        "unpackedSize": 87070
+      },
+      "main": "./lib/cookie",
+      "engines": {
+        "node": ">=6"
+      },
+      "gitHead": "05b47134f8d62916c5a9f5ac0ad39a45ffd47ab4",
+      "scripts": {
+        "test": "vows test/*_test.js",
+        "cover": "nyc --reporter=lcov --reporter=html vows test/*_test.js",
+        "version": "genversion lib/version.js && git add lib/version.js"
+      },
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "psl": "^1.1.28",
+        "ip-regex": "^3.0.0",
+        "punycode": "^2.1.1"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^11.6.0",
+        "vows": "^0.8.2",
+        "async": "^1.4.2",
+        "genversion": "^2.1.0",
+        "string.prototype.repeat": "^0.2.0"
+      }
+    },
+    "3.0.1": {
+      "name": "tough-cookie",
+      "version": "3.0.1",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "license": "BSD-3-Clause",
+      "_id": "tough-cookie@3.0.1",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-3.0.1.tgz",
+        "integrity": "sha512-yQyJ0u4pZsv9D4clxO69OEjLWYw+jbgspjTue4lTQZLfV0c5l1VmK2y1JK8E9ahdpltPOaAThPcp5nKPUgSnsg==",
+        "shasum": "9df4f57e739c26930a018184887f4adb7dca73b2",
+        "fileCount": 10,
+        "unpackedSize": 87070
+      },
+      "main": "./lib/cookie",
+      "engines": {
+        "node": ">=6"
+      },
+      "gitHead": "43507052a70751501d52aad38bd837bb2edfedd8",
+      "scripts": {
+        "test": "vows test/*_test.js",
+        "cover": "nyc --reporter=lcov --reporter=html vows test/*_test.js",
+        "version": "genversion lib/version.js && git add lib/version.js"
+      },
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "psl": "^1.1.28",
+        "ip-regex": "^2.1.0",
+        "punycode": "^2.1.1"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^11.6.0",
+        "vows": "^0.8.2",
+        "async": "^1.4.2",
+        "genversion": "^2.1.0",
+        "string.prototype.repeat": "^0.2.0"
+      }
+    },
+    "4.0.0": {
+      "name": "tough-cookie",
+      "version": "4.0.0",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "license": "BSD-3-Clause",
+      "_id": "tough-cookie@4.0.0",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-4.0.0.tgz",
+        "integrity": "sha512-tHdtEpQCMrc1YLrMaqXXcj6AxhYi/xgit6mZu1+EDWUn+qhUf8wMQoFIy9NXuq23zAwtcB0t/MjACGR18pcRbg==",
+        "shasum": "d822234eeca882f991f0f908824ad2622ddbece4",
+        "fileCount": 10,
+        "unpackedSize": 98591
+      },
+      "main": "./lib/cookie",
+      "engines": {
+        "node": ">=6"
+      },
+      "gitHead": "2524513d49b7fab37639dfb7c6b87994c2bd7791",
+      "scripts": {
+        "test": "vows test/*_test.js",
+        "cover": "nyc --reporter=lcov --reporter=html vows test/*_test.js",
+        "eslint": "eslint --env node --ext .js .",
+        "format": "npm run eslint -- --fix",
+        "version": "genversion lib/version.js && git add lib/version.js",
+        "prettier": "prettier '**/*.{json,ts,yaml,md}'"
+      },
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "psl": "^1.1.33",
+        "punycode": "^2.1.1",
+        "universalify": "^0.1.2"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^14.0.0",
+        "vows": "^0.8.2",
+        "async": "^2.6.2",
+        "eslint": "^5.16.0",
+        "prettier": "^1.17.0",
+        "genversion": "^2.1.0",
+        "eslint-config-prettier": "^4.2.0",
+        "eslint-plugin-prettier": "^3.0.1"
+      }
+    },
+    "4.1.0": {
+      "name": "tough-cookie",
+      "version": "4.1.0",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "license": "BSD-3-Clause",
+      "_id": "tough-cookie@4.1.0",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-4.1.0.tgz",
+        "integrity": "sha512-IVX6AagLelGwl6F0E+hoRpXzuD192cZhAcmT7/eoLr0PnsB1wv2E5c+A2O+V8xth9FlL2p0OstFsWn0bZpVn4w==",
+        "shasum": "039b203b2ad95cd9d2a2aae07b238cb83adc46c7",
+        "fileCount": 12,
+        "unpackedSize": 110945
+      },
+      "main": "./lib/cookie",
+      "engines": {
+        "node": ">=6"
+      },
+      "gitHead": "b0e46d17e9f84f29e5961455c251e58bf32e1318",
+      "scripts": {
+        "test": "vows test/*_test.js && npm run eslint",
+        "cover": "nyc --reporter=lcov --reporter=html vows test/*_test.js",
+        "eslint": "eslint --env node --ext .js .",
+        "format": "npm run eslint -- --fix",
+        "version": "genversion lib/version.js && git add lib/version.js",
+        "prettier": "prettier '**/*.{json,ts,yaml,md}'"
+      },
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "psl": "^1.1.33",
+        "punycode": "^2.1.1",
+        "url-parse": "^1.5.3",
+        "universalify": "^0.2.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^14.0.0",
+        "vows": "^0.8.2",
+        "async": "^2.6.2",
+        "eslint": "^5.16.0",
+        "prettier": "^1.17.0",
+        "genversion": "^2.1.0",
+        "eslint-config-prettier": "^4.2.0",
+        "eslint-plugin-prettier": "^3.0.1"
+      }
+    },
+    "4.1.1": {
+      "name": "tough-cookie",
+      "version": "4.1.1",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "license": "BSD-3-Clause",
+      "_id": "tough-cookie@4.1.1",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-4.1.1.tgz",
+        "integrity": "sha512-Ns3k8QxkEzIfLZbRwLOrMPDqRa1BEAl4BzNNAOYY4BhBmEkf+HvP467F4NrD9loK3NcYflWOpUH3LJg0ehq/rQ==",
+        "shasum": "3600960f1e1c83545f130ac80043b9de8e5d488b",
+        "fileCount": 12,
+        "unpackedSize": 111023
+      },
+      "main": "./lib/cookie",
+      "engines": {
+        "node": ">=6"
+      },
+      "gitHead": "ec707966e68a48199e646e2fa6b3055df6a280f0",
+      "scripts": {
+        "test": "vows test/*_test.js && npm run eslint",
+        "cover": "nyc --reporter=lcov --reporter=html vows test/*_test.js",
+        "eslint": "eslint --env node --ext .js .",
+        "format": "npm run eslint -- --fix",
+        "version": "genversion lib/version.js && git add lib/version.js",
+        "prettier": "prettier '**/*.{json,ts,yaml,md}'"
+      },
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "psl": "^1.1.33",
+        "punycode": "^2.1.1",
+        "url-parse": "^1.5.3",
+        "universalify": "^0.2.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^14.0.0",
+        "vows": "^0.8.2",
+        "async": "^2.6.2",
+        "eslint": "^5.16.0",
+        "prettier": "^1.17.0",
+        "genversion": "^2.1.0",
+        "eslint-config-prettier": "^4.2.0",
+        "eslint-plugin-prettier": "^3.0.1"
+      }
+    },
+    "4.1.2": {
+      "name": "tough-cookie",
+      "version": "4.1.2",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "license": "BSD-3-Clause",
+      "_id": "tough-cookie@4.1.2",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-4.1.2.tgz",
+        "integrity": "sha512-G9fqXWoYFZgTc2z8Q5zaHy/vJMjm+WV0AkAeHxVCQiEB1b+dGvWzFW6QV07cY5jQ5gRkeid2qIkzkxUnmoQZUQ==",
+        "shasum": "e53e84b85f24e0b65dd526f46628db6c85f6b874",
+        "fileCount": 12,
+        "unpackedSize": 111265
+      },
+      "main": "./lib/cookie",
+      "engines": {
+        "node": ">=6"
+      },
+      "gitHead": "b1a8898ee3f8af52c6c1c355555d9f50ebe626ce",
+      "scripts": {
+        "test": "vows test/*_test.js && npm run eslint",
+        "cover": "nyc --reporter=lcov --reporter=html vows test/*_test.js",
+        "eslint": "eslint --env node --ext .js .",
+        "format": "npm run eslint -- --fix",
+        "version": "genversion lib/version.js && git add lib/version.js",
+        "prettier": "prettier '**/*.{json,ts,yaml,md}'"
+      },
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "psl": "^1.1.33",
+        "punycode": "^2.1.1",
+        "url-parse": "^1.5.3",
+        "universalify": "^0.2.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^14.0.0",
+        "vows": "^0.8.2",
+        "async": "^2.6.2",
+        "eslint": "^5.16.0",
+        "prettier": "^1.17.0",
+        "genversion": "^2.1.0",
+        "eslint-config-prettier": "^4.2.0",
+        "eslint-plugin-prettier": "^3.0.1"
+      }
+    },
+    "4.1.3": {
+      "name": "tough-cookie",
+      "version": "4.1.3",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "license": "BSD-3-Clause",
+      "_id": "tough-cookie@4.1.3",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-4.1.3.tgz",
+        "integrity": "sha512-aX/y5pVRkfRnfmuX+OdbSdXvPe6ieKX/G2s7e98f4poJHnqH3281gDPm/metm6E/WRamfx7WC4HUqkWHfQHprw==",
+        "shasum": "97b9adb0728b42280aa3d814b6b999b2ff0318bf",
+        "fileCount": 12,
+        "unpackedSize": 111456
+      },
+      "main": "./lib/cookie",
+      "engines": {
+        "node": ">=6"
+      },
+      "gitHead": "4ff4d29f6cefd279a412b8d62a21142ebd410b36",
+      "scripts": {
+        "test": "vows test/*_test.js && npm run eslint",
+        "cover": "nyc --reporter=lcov --reporter=html vows test/*_test.js",
+        "eslint": "eslint --env node --ext .js .",
+        "format": "npm run eslint -- --fix",
+        "version": "genversion lib/version.js && git add lib/version.js",
+        "prettier": "prettier '**/*.{json,ts,yaml,md}'"
+      },
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "psl": "^1.1.33",
+        "punycode": "^2.1.1",
+        "url-parse": "^1.5.3",
+        "universalify": "^0.2.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^14.0.0",
+        "vows": "^0.8.2",
+        "async": "^2.6.2",
+        "eslint": "^5.16.0",
+        "prettier": "^1.17.0",
+        "genversion": "^2.1.0",
+        "eslint-config-prettier": "^4.2.0",
+        "eslint-plugin-prettier": "^3.0.1"
+      }
+    },
+    "4.1.4": {
+      "name": "tough-cookie",
+      "version": "4.1.4",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "license": "BSD-3-Clause",
+      "_id": "tough-cookie@4.1.4",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-4.1.4.tgz",
+        "integrity": "sha512-Loo5UUvLD9ScZ6jh8beX1T6sO1w2/MpCRpEP7V280GKMVUQ0Jzar2U3UJPsrdbziLEMMhu3Ujnq//rhiFuIeag==",
+        "shasum": "945f1461b45b5a8c76821c33ea49c3ac192c1b36",
+        "fileCount": 12,
+        "unpackedSize": 111787
+      },
+      "main": "./lib/cookie",
+      "engines": {
+        "node": ">=6"
+      },
+      "gitHead": "cacbc37936bd4824693d885e1e65dca626ed3c8c",
+      "scripts": {
+        "test": "vows test/*_test.js && npm run eslint",
+        "cover": "nyc --reporter=lcov --reporter=html vows test/*_test.js",
+        "eslint": "eslint --env node --ext .js .",
+        "format": "npm run eslint -- --fix",
+        "version": "genversion lib/version.js && git add lib/version.js",
+        "prettier": "prettier '**/*.{json,ts,yaml,md}'"
+      },
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "psl": "^1.1.33",
+        "punycode": "^2.1.1",
+        "url-parse": "^1.5.3",
+        "universalify": "^0.2.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "nyc": "^14.0.0",
+        "vows": "^0.8.2",
+        "async": "^2.6.2",
+        "eslint": "^5.16.0",
+        "prettier": "^1.17.0",
+        "genversion": "^2.1.0",
+        "eslint-config-prettier": "^4.2.0",
+        "eslint-plugin-prettier": "^3.0.1"
+      }
+    },
+    "5.0.0": {
+      "name": "tough-cookie",
+      "version": "5.0.0",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "license": "BSD-3-Clause",
+      "_id": "tough-cookie@5.0.0",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "//": "We only support node 18+, but v16 still works. We won't block v16 until it becomes a burden.",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-5.0.0.tgz",
+        "integrity": "sha512-FRKsF7cz96xIIeMZ82ehjC3xW2E+O2+v11udrDYewUbszngYhsGa8z6YUMMzO9QJZzzyd0nGGXnML/TReX6W8Q==",
+        "shasum": "6b6518e2b5c070cf742d872ee0f4f92d69eac1af",
+        "fileCount": 41,
+        "unpackedSize": 224687
+      },
+      "main": "./dist/cookie/index.js",
+      "types": "./dist/cookie/index.d.ts",
+      "engines": {
+        "node": ">=16"
+      },
+      "gitHead": "7ed1b8a8ee8fd650da9507b25ebbf99bc1b36111",
+      "scripts": {
+        "lint": "eslint .",
+        "test": "npm run test:ts && npm run test:legacy",
+        "build": "npm run clean && tsc",
+        "clean": "rm -rf dist",
+        "cover": "jest --coverage",
+        "eslint": "eslint .",
+        "format": "npm run eslint -- --fix",
+        "api:dev": "npm run build && npm run api:extract -- --local && npm run api:docs",
+        "test:ts": "jest",
+        "version": "genversion --template version-template.ejs --force lib/version.ts && git add lib/version.ts",
+        "api:docs": "api-documenter markdown --input-folder ./tmp --output-folder ./api/docs",
+        "prettier": "prettier '**/*.{json,ts,yaml,md}'",
+        "typecheck": "tsc --noEmit",
+        "api:extract": "api-extractor run --verbose",
+        "test:legacy": "npm run build -- --declaration false && ./test/scripts/vows.js test/*_test.js"
+      },
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "tldts": "^6.1.32"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "^29.7.0",
+        "vows": "^0.8.3",
+        "async": "3.2.6",
+        "eslint": "^9.9.1",
+        "globals": "^15.8.0",
+        "ts-jest": "^29.2.2",
+        "ts-node": "^10.9.2",
+        "prettier": "^3.3.3",
+        "@eslint/js": "^9.7.0",
+        "genversion": "^3.2.0",
+        "typescript": "5.5.3",
+        "@types/jest": "^29.5.12",
+        "@types/node": "^16.18.101",
+        "typescript-eslint": "^8.0.1",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-prettier": "^5.2.1",
+        "@microsoft/api-extractor": "^7.47.2",
+        "@microsoft/api-documenter": "^7.25.7"
+      }
+    },
+    "5.1.0": {
+      "name": "tough-cookie",
+      "version": "5.1.0",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "license": "BSD-3-Clause",
+      "_id": "tough-cookie@5.1.0",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "//": "We only support node 18+, but v16 still works. We won't block v16 until it becomes a burden.",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-5.1.0.tgz",
+        "integrity": "sha512-rvZUv+7MoBYTiDmFPBrhL7Ujx9Sk+q9wwm22x8c8T5IJaR+Wsyc7TNxbVxo84kZoRJZZMazowFLqpankBEQrGg==",
+        "shasum": "0667b0f2fbb5901fe6f226c3e0b710a9a4292f87",
+        "fileCount": 41,
+        "unpackedSize": 227531
+      },
+      "main": "./dist/cookie/index.js",
+      "types": "./dist/cookie/index.d.ts",
+      "engines": {
+        "node": ">=16"
+      },
+      "gitHead": "f27648d488efb746046a8631c41c70eb7c84c0df",
+      "scripts": {
+        "lint": "npm run _lint:check",
+        "test": "npm run build && npm run _test:ts && npm run _test:legacy",
+        "build": "npm run _build:clean && npm run _build:compile",
+        "prepack": "npm run build",
+        "version": "npm run _version:generate && npm run prepare-pr && git add --renormalize .",
+        "_test:ts": "jest",
+        "_docs:fix": "prettier ./api/docs --write",
+        "_lint:fix": "eslint . --fix",
+        "_api:check": "api-extractor run --verbose",
+        "prepare-pr": "npm test && npm run _api:update && npm run _docs:generate && npm run _format:fix && npm run _lint:fix",
+        "_api:update": "api-extractor run --verbose --local",
+        "_format:fix": "prettier . --write",
+        "_lint:check": "eslint .",
+        "_build:clean": "rm -rf dist",
+        "_test:legacy": "./test/scripts/vows.js test/*_test.js",
+        "_format:check": "prettier . --check",
+        "_build:compile": "tsc",
+        "_docs:generate": "api-documenter markdown --input-folder ./tmp --output-folder ./api/docs",
+        "_version:generate": "genversion --template version-template.ejs --force lib/version.ts"
+      },
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "tldts": "^6.1.32"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "^29.7.0",
+        "vows": "^0.8.3",
+        "async": "3.2.6",
+        "eslint": "^9.9.1",
+        "globals": "^15.8.0",
+        "ts-jest": "^29.2.2",
+        "ts-node": "^10.9.2",
+        "prettier": "^3.3.3",
+        "@eslint/js": "^9.7.0",
+        "genversion": "^3.2.0",
+        "typescript": "5.5.3",
+        "@types/jest": "^29.5.12",
+        "@types/node": "^16.18.101",
+        "typescript-eslint": "^8.0.1",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-prettier": "^5.2.1",
+        "@microsoft/api-extractor": "^7.47.2",
+        "@microsoft/api-documenter": "^7.25.7"
+      }
+    },
+    "5.1.1": {
+      "name": "tough-cookie",
+      "version": "5.1.1",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "license": "BSD-3-Clause",
+      "_id": "tough-cookie@5.1.1",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "//": "We only support node 18+, but v16 still works. We won't block v16 until it becomes a burden.",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-5.1.1.tgz",
+        "integrity": "sha512-Ek7HndSVkp10hmHP9V4qZO1u+pn1RU5sI0Fw+jCU3lyvuMZcgqsNgc6CmJJZyByK4Vm/qotGRJlfgAX8q+4JiA==",
+        "shasum": "4641c1fdbf024927e29c5532edb7b6e5377ea1f2",
+        "fileCount": 41,
+        "unpackedSize": 227729
+      },
+      "main": "./dist/cookie/index.js",
+      "types": "./dist/cookie/index.d.ts",
+      "engines": {
+        "node": ">=16"
+      },
+      "gitHead": "28993365a0049b0025d9d67f6b11224c68d8476c",
+      "scripts": {
+        "lint": "npm run _lint:check",
+        "test": "npm run build && npm run _test:ts && npm run _test:legacy",
+        "build": "npm run _build:clean && npm run _build:compile",
+        "prepack": "npm run build",
+        "version": "npm run _version:generate && npm run prepare-pr && git add --renormalize .",
+        "_test:ts": "jest",
+        "_docs:fix": "prettier ./api/docs --write",
+        "_lint:fix": "eslint . --fix",
+        "_api:check": "api-extractor run --verbose",
+        "prepare-pr": "npm test && npm run _api:update && npm run _docs:generate && npm run _format:fix && npm run _lint:fix",
+        "_api:update": "api-extractor run --verbose --local",
+        "_format:fix": "prettier . --write",
+        "_lint:check": "eslint .",
+        "_build:clean": "rm -rf dist",
+        "_test:legacy": "./test/scripts/vows.js test/*_test.js",
+        "_format:check": "prettier . --check",
+        "_build:compile": "tsc",
+        "_docs:generate": "api-documenter markdown --input-folder ./tmp --output-folder ./api/docs",
+        "_version:generate": "genversion --template version-template.ejs --force lib/version.ts"
+      },
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "tldts": "^6.1.32"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "^29.7.0",
+        "vows": "^0.8.3",
+        "async": "3.2.6",
+        "eslint": "^9.9.1",
+        "globals": "^15.8.0",
+        "ts-jest": "^29.2.2",
+        "ts-node": "^10.9.2",
+        "prettier": "^3.3.3",
+        "@eslint/js": "^9.7.0",
+        "genversion": "^3.2.0",
+        "typescript": "5.5.3",
+        "@types/jest": "^29.5.12",
+        "@types/node": "^16.18.101",
+        "typescript-eslint": "^8.0.1",
+        "eslint-plugin-import": "^2.31.0",
+        "eslint-config-prettier": "^10.0.1",
+        "eslint-plugin-prettier": "^5.2.1",
+        "@microsoft/api-extractor": "^7.47.2",
+        "@microsoft/api-documenter": "^7.25.7",
+        "eslint-import-resolver-typescript": "^3.7.0"
+      }
+    },
+    "5.1.2": {
+      "name": "tough-cookie",
+      "version": "5.1.2",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "license": "BSD-3-Clause",
+      "_id": "tough-cookie@5.1.2",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "//": "We only support node 18+, but v16 still works. We won't block v16 until it becomes a burden.",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-5.1.2.tgz",
+        "integrity": "sha512-FVDYdxtnj0G6Qm/DhNPSb8Ju59ULcup3tuJxkFb5K8Bv2pUXILbf0xZWU8PX8Ov19OXljbUyveOFwRMwkXzO+A==",
+        "shasum": "66d774b4a1d9e12dc75089725af3ac75ec31bed7",
+        "fileCount": 41,
+        "unpackedSize": 227724
+      },
+      "main": "./dist/cookie/index.js",
+      "types": "./dist/cookie/index.d.ts",
+      "engines": {
+        "node": ">=16"
+      },
+      "gitHead": "a2c72efe202a2050e9e201d5a911680fb7e1a19c",
+      "scripts": {
+        "lint": "npm run _lint:check",
+        "test": "npm run build && npm run _test:ts && npm run _test:legacy",
+        "build": "npm run _build:clean && npm run _build:compile",
+        "prepack": "npm run build",
+        "version": "npm run _version:generate && npm run prepare-pr && git add --renormalize .",
+        "_test:ts": "jest",
+        "_docs:fix": "prettier ./api/docs --write",
+        "_lint:fix": "eslint . --fix",
+        "_api:check": "api-extractor run --verbose",
+        "prepare-pr": "npm test && npm run _api:update && npm run _docs:generate && npm run _format:fix && npm run _lint:fix",
+        "_api:update": "api-extractor run --verbose --local",
+        "_format:fix": "prettier . --write",
+        "_lint:check": "eslint .",
+        "_build:clean": "rm -rf dist",
+        "_test:legacy": "./test/scripts/vows.js test/*_test.js",
+        "_format:check": "prettier . --check",
+        "_build:compile": "tsc",
+        "_docs:generate": "api-documenter markdown --input-folder ./tmp --output-folder ./api/docs",
+        "_version:generate": "genversion --template version-template.ejs --force lib/version.ts"
+      },
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "tldts": "^6.1.32"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "^29.7.0",
+        "vows": "^0.8.3",
+        "async": "3.2.6",
+        "eslint": "^9.9.1",
+        "globals": "^15.8.0",
+        "ts-jest": "^29.2.2",
+        "ts-node": "^10.9.2",
+        "prettier": "^3.3.3",
+        "@eslint/js": "^9.7.0",
+        "genversion": "^3.2.0",
+        "typescript": "5.5.3",
+        "@types/jest": "^29.5.12",
+        "@types/node": "^16.18.101",
+        "typescript-eslint": "^8.0.1",
+        "eslint-plugin-import": "^2.31.0",
+        "eslint-config-prettier": "^10.0.1",
+        "eslint-plugin-prettier": "^5.2.1",
+        "@microsoft/api-extractor": "^7.47.2",
+        "@microsoft/api-documenter": "^7.25.7",
+        "eslint-import-resolver-typescript": "^3.7.0"
+      }
+    },
+    "6.0.0": {
+      "name": "tough-cookie",
+      "version": "6.0.0",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "license": "BSD-3-Clause",
+      "_id": "tough-cookie@6.0.0",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "//": "We only support node LTS versions, but v16 still works. We won't block v16 until it becomes a burden.",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-6.0.0.tgz",
+        "integrity": "sha512-kXuRi1mtaKMrsLUxz3sQYvVl37B0Ns6MzfrtV5DvJceE9bPyspOqk9xxv7XbZWcfLWbFmm997vl83qUWVJA64w==",
+        "shasum": "11e418b7864a2c0d874702bc8ce0f011261940e5",
+        "fileCount": 9,
+        "unpackedSize": 760171
+      },
+      "main": "./dist/index.cjs",
+      "type": "module",
+      "types": "./dist/index.d.ts",
+      "module": "./dist/index.js",
+      "engines": {
+        "node": ">=16"
+      },
+      "exports": {
+        "import": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js"
+        },
+        "require": {
+          "types": "./dist/index.d.cts",
+          "require": "./dist/index.cjs"
+        }
+      },
+      "gitHead": "62be1e4693fc786b54dd526eddbcd6f07de1ebf6",
+      "scripts": {
+        "lint": "npm run _lint:check",
+        "test": "vitest",
+        "build": "tsup lib/cookie/index.ts --format cjs,esm --dts --clean --sourcemap",
+        "prepack": "npm run build",
+        "version": "npm run _version:generate && npm run prepare-pr && git add --renormalize .",
+        "_docs:fix": "prettier ./api/docs --write",
+        "_lint:fix": "eslint . --fix",
+        "_api:check": "api-extractor run --verbose",
+        "prepare-pr": "npm run build && npm test -- run && npm run _api:update && npm run _docs:generate && npm run _format:fix && npm run _lint:fix && npm run _lint:types",
+        "_api:update": "api-extractor run --verbose --local",
+        "_format:fix": "prettier . --write",
+        "_lint:check": "eslint .",
+        "_lint:types": "attw --pack .",
+        "_format:check": "prettier . --check",
+        "_docs:generate": "api-documenter markdown --input-folder ./tmp --output-folder ./api/docs",
+        "_version:generate": "genversion --template version-template.ejs --force lib/version.ts"
+      },
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "tldts": "^7.0.5"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tsup": "^8.5.0",
+        "eslint": "^9.24.0",
+        "vitest": "^3.1.1",
+        "globals": "^16.0.0",
+        "prettier": "^3.5.3",
+        "@eslint/js": "^9.24.0",
+        "genversion": "^3.2.0",
+        "typescript": "5.5.3",
+        "@types/node": "^20.19.6",
+        "typescript-eslint": "^8.29.1",
+        "eslint-plugin-import": "^2.31.0",
+        "@arethetypeswrong/cli": "^0.18.2",
+        "@vitest/eslint-plugin": "^1.1.40",
+        "eslint-config-prettier": "^10.1.2",
+        "eslint-plugin-prettier": "^5.2.6",
+        "@microsoft/api-extractor": "^7.52.3",
+        "@microsoft/api-documenter": "^7.26.20",
+        "eslint-import-resolver-typescript": "^4.3.2"
+      }
+    },
+    "6.0.1": {
+      "name": "tough-cookie",
+      "version": "6.0.1",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "license": "BSD-3-Clause",
+      "_id": "tough-cookie@6.0.1",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "//": "We only support node LTS versions, but v16 still works. We won't block v16 until it becomes a burden.",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-6.0.1.tgz",
+        "integrity": "sha512-LktZQb3IeoUWB9lqR5EWTHgW/VTITCXg4D21M+lvybRVdylLrRMnqaIONLVb5mav8vM19m44HIcGq4qASeu2Qw==",
+        "shasum": "a495f833836609ed983c19bc65639cfbceb54c76",
+        "fileCount": 9,
+        "unpackedSize": 755359
+      },
+      "main": "./dist/index.cjs",
+      "type": "module",
+      "types": "./dist/index.d.ts",
+      "module": "./dist/index.js",
+      "engines": {
+        "node": ">=16"
+      },
+      "exports": {
+        "import": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js"
+        },
+        "require": {
+          "types": "./dist/index.d.cts",
+          "require": "./dist/index.cjs"
+        }
+      },
+      "gitHead": "3a4fae64d144765798b2254905e1d1d7f8c3d278",
+      "scripts": {
+        "lint": "npm run _lint:check",
+        "test": "vitest",
+        "build": "tsup lib/cookie/index.ts --format cjs,esm --dts --clean --sourcemap",
+        "prepack": "npm run build",
+        "version": "npm run _version:generate && npm run prepare-pr && git add --renormalize .",
+        "_lint:fix": "eslint . --fix",
+        "_api:check": "api-extractor run --verbose",
+        "prepare-pr": "npm run build && npm test -- run && npm run _api:update && npm run _docs:generate && npm run _format:fix && npm run _lint:fix && npm run _lint:types",
+        "_api:update": "api-extractor run --verbose --local",
+        "_format:fix": "prettier . --write",
+        "_lint:check": "eslint .",
+        "_lint:types": "attw --pack .",
+        "_format:check": "prettier . --check",
+        "_docs:generate": "api-documenter generate --input-folder ./tmp --output-folder ./api/docs",
+        "_version:generate": "genversion --template version-template.ejs --force lib/version.ts"
+      },
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "tldts": "^7.0.5"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tsup": "^8.5.0",
+        "eslint": "^9.39.1",
+        "vitest": "^4.0.7",
+        "globals": "^16.0.0",
+        "prettier": "^3.5.3",
+        "@eslint/js": "^9.24.0",
+        "genversion": "^3.2.0",
+        "typescript": "5.5.3",
+        "@types/node": "^20.19.6",
+        "typescript-eslint": "^8.46.3",
+        "eslint-plugin-import": "^2.31.0",
+        "@arethetypeswrong/cli": "^0.18.2",
+        "@vitest/eslint-plugin": "^1.1.40",
+        "eslint-config-prettier": "^10.1.2",
+        "eslint-plugin-prettier": "^5.2.6",
+        "@microsoft/api-extractor": "^7.52.3",
+        "@microsoft/api-documenter": "^7.26.20",
+        "eslint-import-resolver-typescript": "^4.3.2"
+      }
+    },
+    "6.0.2": {
+      "name": "tough-cookie",
+      "version": "6.0.2",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "license": "BSD-3-Clause",
+      "_id": "tough-cookie@6.0.2",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "//": "We only support node LTS versions, but v16 still works. We won't block v16 until it becomes a burden.",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-6.0.2.tgz",
+        "integrity": "sha512-exgYmnmL/sJpR3upZfXG5PoatXQii55xAiXGXzY+sROLZ/Y+SLcp9PgJNI9Vz37HpQ74WvDcLT8eqm+kV3FzrA==",
+        "shasum": "7b1f22fcf2daf06c4ff9d53ec1845f44c6627062",
+        "fileCount": 9,
+        "unpackedSize": 759679
+      },
+      "main": "./dist/index.cjs",
+      "type": "module",
+      "types": "./dist/index.d.ts",
+      "module": "./dist/index.js",
+      "engines": {
+        "node": ">=16"
+      },
+      "exports": {
+        "import": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js"
+        },
+        "require": {
+          "types": "./dist/index.d.cts",
+          "require": "./dist/index.cjs"
+        }
+      },
+      "gitHead": "40708dd809cfb1dd658270dc85597bf9f68a6ccc",
+      "scripts": {
+        "lint": "npm run _lint:check",
+        "test": "vitest",
+        "build": "tsup lib/cookie/index.ts --format cjs,esm --dts --clean --sourcemap",
+        "prepack": "npm run build",
+        "version": "npm run _version:generate && npm run prepare-pr && git add --renormalize .",
+        "_lint:fix": "eslint . --fix",
+        "_api:check": "api-extractor run --verbose",
+        "prepare-pr": "npm run build && npm test -- run && npm run _api:update && npm run _docs:generate && npm run _format:fix && npm run _lint:fix && npm run _lint:types",
+        "_api:update": "api-extractor run --verbose --local",
+        "_format:fix": "prettier . --write",
+        "_lint:check": "eslint .",
+        "_lint:types": "attw --pack .",
+        "_format:check": "prettier . --check",
+        "_docs:generate": "api-documenter generate --input-folder ./tmp --output-folder ./api/docs",
+        "_version:generate": "genversion --template version-template.ejs --force lib/version.ts"
+      },
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "tldts": "^7.0.5"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tsup": "^8.5.0",
+        "eslint": "^10.0.0",
+        "vitest": "^4.0.7",
+        "globals": "^17.4.0",
+        "prettier": "^3.5.3",
+        "@eslint/js": "^10.0.0",
+        "genversion": "^3.2.0",
+        "typescript": "5.5.3",
+        "@types/node": "^20.19.6",
+        "typescript-eslint": "^8.46.3",
+        "@arethetypeswrong/cli": "^0.18.2",
+        "@vitest/eslint-plugin": "^1.1.40",
+        "eslint-config-prettier": "^10.1.2",
+        "eslint-plugin-import-x": "^4.16.2",
+        "eslint-plugin-prettier": "^5.2.6",
+        "@microsoft/api-extractor": "^7.52.3",
+        "@microsoft/api-documenter": "^7.26.20",
+        "eslint-import-resolver-typescript": "^4.4.4"
+      }
+    },
+    "6.1.0": {
+      "//": "We only support node LTS versions, but v16 still works. We won't block v16 until it becomes a burden.",
+      "_id": "tough-cookie@6.1.0",
+      "bugs": {
+        "url": "https://github.com/salesforce/tough-cookie/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tough-cookie/-/tough-cookie-6.1.0.tgz",
+        "integrity": "sha512-FTxc8u8Kl2tz0Lat1u8ksvcy8bwHRyEMawwTWybo51JqaC6O7SvfuhAKg+Ld6VqyIe2QRJBzY9HA7y2WyFRT2w==",
+        "shasum": "eafa6e331d2b948cdd73d75ee1190cb5a8f0df0d",
+        "fileCount": 9,
+        "unpackedSize": 778977
+      },
+      "main": "./dist/index.cjs",
+      "name": "tough-cookie",
+      "type": "module",
+      "types": "./dist/index.d.ts",
+      "author": {
+        "name": "Jeremy Stashewsky",
+        "email": "jstash@gmail.com"
+      },
+      "module": "./dist/index.js",
+      "engines": {
+        "node": ">=16"
+      },
+      "exports": {
+        "import": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js"
+        },
+        "require": {
+          "types": "./dist/index.d.cts",
+          "require": "./dist/index.cjs"
+        }
+      },
+      "gitHead": "f5dd87132e409ccdd3d7047c7f3217efc671a429",
+      "license": "BSD-3-Clause",
+      "scripts": {
+        "lint": "npm run _lint:check",
+        "test": "vitest",
+        "build": "tsup lib/cookie/index.ts --format cjs,esm --dts --clean --sourcemap",
+        "prepack": "npm run build",
+        "version": "npm run _version:generate && npm run prepare-pr && git add --renormalize .",
+        "_lint:fix": "eslint . --fix",
+        "_api:check": "api-extractor run --verbose",
+        "prepare-pr": "npm run build && npm test -- run && npm run _api:update && npm run _docs:generate && npm run _format:fix && npm run _lint:fix && npm run _lint:types",
+        "_api:update": "api-extractor run --verbose --local",
+        "_format:fix": "prettier . --write",
+        "_lint:check": "eslint .",
+        "_lint:types": "tsc --noEmit && attw --pack .",
+        "_format:check": "prettier . --check",
+        "_docs:generate": "api-documenter generate --input-folder ./tmp --output-folder ./api/docs",
+        "_version:generate": "genversion --template version-template.ejs --force lib/version.ts"
+      },
+      "version": "6.1.0",
+      "homepage": "https://github.com/salesforce/tough-cookie",
+      "keywords": [
+        "HTTP",
+        "cookie",
+        "cookies",
+        "set-cookie",
+        "cookiejar",
+        "jar",
+        "RFC6265",
+        "RFC2965"
+      ],
+      "repository": {
+        "url": "git://github.com/salesforce/tough-cookie.git",
+        "type": "git"
+      },
+      "description": "RFC6265 Cookies and Cookie Jar for node.js",
+      "directories": {},
+      "dependencies": {
+        "tldts": "^7.0.5"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tsup": "^9.0.0",
+        "eslint": "^10.0.0",
+        "vitest": "^5.0.5",
+        "globals": "^17.4.0",
+        "prettier": "^3.5.3",
+        "@eslint/js": "^10.0.0",
+        "genversion": "^3.2.0",
+        "typescript": "5.5.3",
+        "@types/node": "^20.19.6",
+        "typescript-eslint": "^8.46.3",
+        "@arethetypeswrong/cli": "^0.18.2",
+        "@vitest/eslint-plugin": "^1.1.40",
+        "eslint-config-prettier": "^10.1.2",
+        "eslint-plugin-import-x": "^4.16.2",
+        "eslint-plugin-prettier": "^5.2.6",
+        "@microsoft/api-extractor": "^7.52.3",
+        "@microsoft/api-documenter": "^7.26.20",
+        "eslint-import-resolver-typescript": "^4.4.4"
+      }
+    }
+  },
+  "time": {
+    "created": "2018-11-26T22:58:46.850Z",
+    "modified": "2026-11-06T17:26:01.430Z",
+    "2.5.0": "2018-11-26T22:58:46.850Z",
+    "3.0.0": "2019-01-08T19:52:41.586Z",
+    "3.0.1": "2019-02-05T03:09:45.657Z",
+    "4.0.0": "2020-03-19T19:20:25.746Z",
+    "4.1.0": "2022-08-22T17:35:51.223Z",
+    "4.1.1": "2022-08-24T19:38:25.911Z",
+    "4.1.2": "2022-08-25T18:51:07.208Z",
+    "4.1.3": "2023-06-05T17:32:41.498Z",
+    "4.1.4": "2024-04-29T14:11:42.984Z",
+    "5.0.0": "2024-09-09T16:40:28.848Z",
+    "5.1.0": "2025-01-09T15:36:56.870Z",
+    "5.1.1": "2025-02-07T17:32:26.842Z",
+    "5.1.2": "2025-02-28T18:27:49.925Z",
+    "6.0.0": "2025-08-14T19:56:05.417Z",
+    "6.0.1": "2026-03-12T18:39:28.318Z",
+    "6.0.2": "2026-07-07T18:32:22.813Z",
+    "6.1.0": "2026-11-06T17:26:01.430Z"
+  }
+}

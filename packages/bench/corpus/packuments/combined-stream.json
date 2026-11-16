@@ -1,0 +1,57 @@
+{
+  "name": "combined-stream",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "1.0.8"
+  },
+  "versions": {
+    "1.0.8": {
+      "author": {
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com",
+        "url": "http://debuggable.com/"
+      },
+      "name": "combined-stream",
+      "description": "A stream that emits multiple other streams one after another.",
+      "version": "1.0.8",
+      "homepage": "https://github.com/felixge/node-combined-stream",
+      "repository": {
+        "type": "git",
+        "url": "git://github.com/felixge/node-combined-stream.git"
+      },
+      "main": "./lib/combined_stream",
+      "scripts": {
+        "test": "node test/run.js"
+      },
+      "engines": {
+        "node": ">= 0.8"
+      },
+      "dependencies": {
+        "delayed-stream": "~1.0.0"
+      },
+      "devDependencies": {
+        "far": "~0.0.7"
+      },
+      "license": "MIT",
+      "gitHead": "5298bece5aba2cf4d2f5ec84c4fc128572c41cee",
+      "bugs": {
+        "url": "https://github.com/felixge/node-combined-stream/issues"
+      },
+      "_id": "combined-stream@1.0.8",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/combined-stream/-/combined-stream-1.0.8.tgz",
+        "integrity": "sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==",
+        "shasum": "c3d45a8b34fd730631a110a8a2520682b31d5a7f",
+        "fileCount": 5,
+        "unpackedSize": 11514
+      },
+      "directories": {},
+      "_hasShrinkwrap": false
+    }
+  },
+  "time": {
+    "created": "2019-05-12T17:49:45.337Z",
+    "modified": "2019-05-12T17:49:45.337Z",
+    "1.0.8": "2019-05-12T17:49:45.337Z"
+  }
+}

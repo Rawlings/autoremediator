@@ -1,0 +1,56 @@
+{
+  "name": "oauth-sign",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "0.9.0"
+  },
+  "versions": {
+    "0.9.0": {
+      "author": {
+        "name": "Mikeal Rogers",
+        "email": "mikeal.rogers@gmail.com",
+        "url": "http://www.futurealoof.com"
+      },
+      "name": "oauth-sign",
+      "description": "OAuth 1 signing. Formerly a vendor lib in mikeal/request, now a standalone module.",
+      "version": "0.9.0",
+      "license": "Apache-2.0",
+      "repository": {
+        "url": "git+https://github.com/mikeal/oauth-sign.git"
+      },
+      "main": "index.js",
+      "files": [
+        "index.js"
+      ],
+      "dependencies": {},
+      "devDependencies": {},
+      "optionalDependencies": {},
+      "engines": {
+        "node": "*"
+      },
+      "scripts": {
+        "test": "node test.js"
+      },
+      "gitHead": "18a2513da6ba7a2c0cd8179170d7c296c7625137",
+      "bugs": {
+        "url": "https://github.com/mikeal/oauth-sign/issues"
+      },
+      "homepage": "https://github.com/mikeal/oauth-sign#readme",
+      "_id": "oauth-sign@0.9.0",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/oauth-sign/-/oauth-sign-0.9.0.tgz",
+        "integrity": "sha512-fexhUFFPTGV8ybAtSIGbV6gOkSv8UtRbDBnAyLQw4QPKkgNlsH2ByPGtMUqdWkos6YCRmAqViwgZrJc/mRDzZQ==",
+        "shasum": "47a7b016baa68b5fa0ecf3dee08a85c679ac6455",
+        "fileCount": 4,
+        "unpackedSize": 13805
+      },
+      "directories": {},
+      "_hasShrinkwrap": false
+    }
+  },
+  "time": {
+    "created": "2018-08-02T18:03:51.602Z",
+    "modified": "2018-08-02T18:03:51.602Z",
+    "0.9.0": "2018-08-02T18:03:51.602Z"
+  }
+}

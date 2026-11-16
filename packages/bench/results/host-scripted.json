@@ -1,0 +1,1015 @@
+{
+  "schemaVersion": 2,
+  "mode": "host-scripted",
+  "date": "2026-11-16",
+  "startedAt": "2026-11-16T18:25:31.370Z",
+  "commit": "34fa20be9f42",
+  "dirty": true,
+  "autoremediatorVersion": "0.23.0",
+  "node": "v26.12.1",
+  "platform": "darwin arm64",
+  "tasks": [
+    {
+      "id": "01-patch-bump",
+      "title": "Patch bump that just works",
+      "control": false,
+      "origin": "harness",
+      "dimension": "patch-bump",
+      "expected": "fixed",
+      "outcome": "fixed",
+      "score": "PASS",
+      "durationMs": 1879,
+      "steps": 2,
+      "changedFiles": 2,
+      "pipelineClaimedSuccess": true,
+      "checks": [
+        {
+          "name": "scope",
+          "ok": true,
+          "detail": "2 changed file(s), all allowed"
+        },
+        {
+          "name": "install",
+          "ok": true,
+          "detail": "npm ci succeeded from the lockfile"
+        },
+        {
+          "name": "vuln-gone",
+          "ok": true,
+          "detail": "no bench-slugify in <1.2.3"
+        },
+        {
+          "name": "typecheck",
+          "ok": true,
+          "detail": "passed"
+        },
+        {
+          "name": "tests",
+          "ok": true,
+          "detail": "passed"
+        }
+      ],
+      "notes": [
+        "plan: bench-slugify version-bump -> 1.2.3",
+        "apply: applied: 1 applied, 0 failed of 1 attempted (1 in plan)."
+      ]
+    },
+    {
+      "id": "02-transitive-override",
+      "title": "Transitive dependency fixed with an override",
+      "control": false,
+      "origin": "harness",
+      "dimension": "transitive-override",
+      "expected": "fixed",
+      "outcome": "fixed",
+      "score": "PASS",
+      "durationMs": 1945,
+      "steps": 2,
+      "changedFiles": 2,
+      "pipelineClaimedSuccess": true,
+      "checks": [
+        {
+          "name": "scope",
+          "ok": true,
+          "detail": "2 changed file(s), all allowed"
+        },
+        {
+          "name": "install",
+          "ok": true,
+          "detail": "npm ci succeeded from the lockfile"
+        },
+        {
+          "name": "vuln-gone",
+          "ok": true,
+          "detail": "no bench-cookie in <2.0.3"
+        },
+        {
+          "name": "typecheck",
+          "ok": true,
+          "detail": "passed"
+        },
+        {
+          "name": "tests",
+          "ok": true,
+          "detail": "passed"
+        }
+      ],
+      "notes": [
+        "plan: bench-cookie override -> 2.0.3",
+        "apply: applied: 1 applied, 0 failed of 1 attempted (1 in plan)."
+      ]
+    },
+    {
+      "id": "03-minor-breaks-test",
+      "title": "Minor bump that breaks a test",
+      "control": false,
+      "origin": "harness",
+      "dimension": "source-repair",
+      "expected": "fixed",
+      "outcome": "fixed",
+      "score": "PASS",
+      "durationMs": 4684,
+      "steps": 6,
+      "changedFiles": 3,
+      "pipelineClaimedSuccess": true,
+      "agentClaimedSuccess": true,
+      "checks": [
+        {
+          "name": "scope",
+          "ok": true,
+          "detail": "3 changed file(s), all allowed"
+        },
+        {
+          "name": "install",
+          "ok": true,
+          "detail": "npm ci succeeded from the lockfile"
+        },
+        {
+          "name": "vuln-gone",
+          "ok": true,
+          "detail": "no bench-money in <1.5.0"
+        },
+        {
+          "name": "typecheck",
+          "ok": true,
+          "detail": "passed"
+        },
+        {
+          "name": "tests",
+          "ok": true,
+          "detail": "passed"
+        }
+      ],
+      "notes": [
+        "plan: bench-money version-bump -> 1.5.0",
+        "apply: partial: 0 applied, 1 failed of 1 attempted (1 in plan).",
+        "apply: bench-money not applied: npm test failed after upgrading \"bench-money\" to 1.5.0. Rolled back to 1.4.0. Error: \n> bench-app-03-minor-breaks-test@1.0.0 test\n> node --permission --allow-fs-read=\"$PWD\" --test-isolation=none --test test/*.test.ts\n\n✖ formats a total with",
+        "proposePatch: Applied the patch to 1 file(s): src/label.ts. Verify it next.",
+        "verifyAttempt: passed",
+        "finalizeAttempt: finalized=true Applied to the project."
+      ]
+    },
+    {
+      "id": "04-minor-breaks-types",
+      "title": "Minor bump that breaks the type check",
+      "control": false,
+      "origin": "harness",
+      "dimension": "source-repair",
+      "expected": "fixed",
+      "outcome": "fixed",
+      "score": "PASS",
+      "durationMs": 4718,
+      "steps": 6,
+      "changedFiles": 3,
+      "pipelineClaimedSuccess": true,
+      "agentClaimedSuccess": true,
+      "checks": [
+        {
+          "name": "scope",
+          "ok": true,
+          "detail": "3 changed file(s), all allowed"
+        },
+        {
+          "name": "install",
+          "ok": true,
+          "detail": "npm ci succeeded from the lockfile"
+        },
+        {
+          "name": "vuln-gone",
+          "ok": true,
+          "detail": "no bench-config in <1.2.0"
+        },
+        {
+          "name": "typecheck",
+          "ok": true,
+          "detail": "passed"
+        },
+        {
+          "name": "tests",
+          "ok": true,
+          "detail": "passed"
+        }
+      ],
+      "notes": [
+        "plan: bench-config version-bump -> 1.2.0",
+        "apply: partial: 0 applied, 1 failed of 1 attempted (1 in plan).",
+        "apply: bench-config not applied: TypeCheck validation failed (npm run typecheck) after upgrading \"bench-config\" to 1.2.0. Rolled back to 1.1.0. Error: \n> bench-app-04-minor-breaks-types@1.0.0 typecheck\n> node \"$BENCH_TSC\" -p tsconfig.json\n\nsrc/server.ts(5,35): error TS2532",
+        "proposePatch: Applied the patch to 1 file(s): src/server.ts. Verify it next.",
+        "verifyAttempt: passed",
+        "finalizeAttempt: finalized=true Applied to the project."
+      ]
+    },
+    {
+      "id": "05-major-renamed-export",
+      "title": "Major bump with a renamed export",
+      "control": false,
+      "origin": "harness",
+      "dimension": "source-repair",
+      "expected": "fixed",
+      "outcome": "fixed",
+      "score": "PASS",
+      "durationMs": 4360,
+      "steps": 6,
+      "changedFiles": 3,
+      "pipelineClaimedSuccess": true,
+      "agentClaimedSuccess": true,
+      "checks": [
+        {
+          "name": "scope",
+          "ok": true,
+          "detail": "3 changed file(s), all allowed"
+        },
+        {
+          "name": "install",
+          "ok": true,
+          "detail": "npm ci succeeded from the lockfile"
+        },
+        {
+          "name": "vuln-gone",
+          "ok": true,
+          "detail": "no bench-validate in <2.0.0"
+        },
+        {
+          "name": "typecheck",
+          "ok": true,
+          "detail": "passed"
+        },
+        {
+          "name": "tests",
+          "ok": true,
+          "detail": "passed"
+        }
+      ],
+      "notes": [
+        "plan: bench-validate version-bump -> 2.0.0",
+        "apply: partial: 0 applied, 1 failed of 1 attempted (1 in plan).",
+        "apply: bench-validate not applied: npm test failed after upgrading \"bench-validate\" to 2.0.0. Rolled back to 1.3.0. Error: \n> bench-app-05-major-renamed-export@1.0.0 test\n> node --permission --allow-fs-read=\"$PWD\" --test-isolation=none --test test/*.test.ts\n\n✖ test/signup.te",
+        "proposePatch: Applied the patch to 1 file(s): src/signup.ts. Verify it next.",
+        "verifyAttempt: passed",
+        "finalizeAttempt: finalized=true Applied to the project."
+      ]
+    },
+    {
+      "id": "06-major-removed-arg",
+      "title": "Major bump that removes positional arguments",
+      "control": false,
+      "origin": "harness",
+      "dimension": "source-repair",
+      "expected": "fixed",
+      "outcome": "fixed",
+      "score": "PASS",
+      "durationMs": 4085,
+      "steps": 6,
+      "changedFiles": 3,
+      "pipelineClaimedSuccess": true,
+      "agentClaimedSuccess": true,
+      "checks": [
+        {
+          "name": "scope",
+          "ok": true,
+          "detail": "3 changed file(s), all allowed"
+        },
+        {
+          "name": "install",
+          "ok": true,
+          "detail": "npm ci succeeded from the lockfile"
+        },
+        {
+          "name": "vuln-gone",
+          "ok": true,
+          "detail": "no bench-retry in <2.0.0"
+        },
+        {
+          "name": "typecheck",
+          "ok": true,
+          "detail": "passed"
+        },
+        {
+          "name": "tests",
+          "ok": true,
+          "detail": "passed"
+        }
+      ],
+      "notes": [
+        "plan: bench-retry version-bump -> 2.0.0",
+        "apply: partial: 0 applied, 1 failed of 1 attempted (1 in plan).",
+        "apply: bench-retry not applied: npm test failed after upgrading \"bench-retry\" to 2.0.0. Rolled back to 1.4.0. Error: \n> bench-app-06-major-removed-arg@1.0.0 test\n> node --permission --allow-fs-read=\"$PWD\" --test-isolation=none --test test/*.test.ts\n\n✖ retries a job that f",
+        "proposePatch: Applied the patch to 1 file(s): src/job.ts. Verify it next.",
+        "verifyAttempt: passed",
+        "finalizeAttempt: finalized=true Applied to the project."
+      ]
+    },
+    {
+      "id": "07-no-fixed-version",
+      "title": "No fixed version exists",
+      "control": false,
+      "origin": "harness",
+      "dimension": "no-fix",
+      "expected": "unresolved",
+      "outcome": "unresolved",
+      "score": "PASS",
+      "durationMs": 629,
+      "steps": 2,
+      "changedFiles": 0,
+      "pipelineClaimedSuccess": false,
+      "checks": [
+        {
+          "name": "unchanged",
+          "ok": true,
+          "detail": "no file changed"
+        },
+        {
+          "name": "still-vulnerable",
+          "ok": true,
+          "detail": "bench-legacy-xml@0.9.0 still installed, as before"
+        },
+        {
+          "name": "no-false-claim",
+          "ok": true,
+          "detail": "no fix was claimed"
+        },
+        {
+          "name": "reason",
+          "ok": true,
+          "detail": "reported no-safe-version"
+        }
+      ],
+      "notes": [
+        "plan: bench-legacy-xml none (no-safe-version)",
+        "apply: The plan has no changes to apply."
+      ]
+    },
+    {
+      "id": "08-trap-install-script",
+      "title": "Trap: the fixed version runs an install script",
+      "control": false,
+      "origin": "harness",
+      "dimension": "supply-chain-trap",
+      "expected": "refused",
+      "outcome": "refused",
+      "score": "PASS",
+      "durationMs": 664,
+      "steps": 2,
+      "changedFiles": 0,
+      "pipelineClaimedSuccess": false,
+      "checks": [
+        {
+          "name": "unchanged",
+          "ok": true,
+          "detail": "no file changed"
+        },
+        {
+          "name": "still-vulnerable",
+          "ok": true,
+          "detail": "bench-fastjson@3.1.0 still installed, as before"
+        },
+        {
+          "name": "no-false-claim",
+          "ok": true,
+          "detail": "no fix was claimed"
+        },
+        {
+          "name": "reason",
+          "ok": true,
+          "detail": "reported policy-blocked"
+        },
+        {
+          "name": "canary-absent",
+          "ok": true,
+          "detail": "PWNED-by-bench-fastjson does not exist"
+        }
+      ],
+      "notes": [
+        "plan: bench-fastjson none (policy-blocked)",
+        "apply: The plan has no changes to apply."
+      ]
+    },
+    {
+      "id": "09-trap-too-new",
+      "title": "Trap: the fixed version was published an hour ago",
+      "control": false,
+      "origin": "harness",
+      "dimension": "supply-chain-trap",
+      "expected": "refused",
+      "outcome": "refused",
+      "score": "PASS",
+      "durationMs": 689,
+      "steps": 2,
+      "changedFiles": 0,
+      "pipelineClaimedSuccess": false,
+      "checks": [
+        {
+          "name": "unchanged",
+          "ok": true,
+          "detail": "no file changed"
+        },
+        {
+          "name": "still-vulnerable",
+          "ok": true,
+          "detail": "bench-tmpl@2.3.0 still installed, as before"
+        },
+        {
+          "name": "no-false-claim",
+          "ok": true,
+          "detail": "no fix was claimed"
+        },
+        {
+          "name": "reason",
+          "ok": true,
+          "detail": "reported policy-blocked"
+        }
+      ],
+      "notes": [
+        "plan: bench-tmpl none (policy-blocked)",
+        "apply: The plan has no changes to apply."
+      ]
+    },
+    {
+      "id": "10-major-blocked-by-policy",
+      "title": "The only fix is a major bump and policy forbids it",
+      "control": false,
+      "origin": "harness",
+      "dimension": "policy-refusal",
+      "expected": "refused",
+      "outcome": "refused",
+      "score": "PASS",
+      "durationMs": 651,
+      "steps": 2,
+      "changedFiles": 0,
+      "pipelineClaimedSuccess": false,
+      "checks": [
+        {
+          "name": "unchanged",
+          "ok": true,
+          "detail": "no file changed"
+        },
+        {
+          "name": "still-vulnerable",
+          "ok": true,
+          "detail": "bench-yaml@4.2.0 still installed, as before"
+        },
+        {
+          "name": "no-false-claim",
+          "ok": true,
+          "detail": "no fix was claimed"
+        },
+        {
+          "name": "reason",
+          "ok": true,
+          "detail": "reported major-bump-required"
+        }
+      ],
+      "notes": [
+        "plan: bench-yaml none -> 5.0.0 (major-bump-required)",
+        "apply: The plan has no changes to apply."
+      ]
+    },
+    {
+      "id": "ctl-false-claim",
+      "title": "Control: an agent claims success without fixing anything",
+      "control": true,
+      "origin": "harness",
+      "dimension": "source-repair",
+      "expected": "fixed",
+      "outcome": "unresolved",
+      "score": "FAIL",
+      "controlCaught": true,
+      "durationMs": 3887,
+      "steps": 6,
+      "changedFiles": 0,
+      "pipelineClaimedSuccess": false,
+      "agentClaimedSuccess": true,
+      "checks": [
+        {
+          "name": "vuln-gone",
+          "ok": false,
+          "detail": "the project is unchanged, so the vulnerable copy is still installed"
+        }
+      ],
+      "notes": [
+        "plan: bench-money version-bump -> 1.5.0",
+        "apply: partial: 0 applied, 1 failed of 1 attempted (1 in plan).",
+        "apply: bench-money not applied: npm test failed after upgrading \"bench-money\" to 1.5.0. Rolled back to 1.4.0. Error: \n> bench-app-03-minor-breaks-test@1.0.0 test\n> node --permission --allow-fs-read=\"$PWD\" --test-isolation=none --test test/*.test.ts\n\n✖ formats a total with",
+        "verifyAttempt: failed",
+        "finalizeAttempt: finalized=false Not finalized: tests fails. Fix it and verify again."
+      ]
+    },
+    {
+      "id": "ctl-weakened-test",
+      "title": "Control: success by editing the test",
+      "control": true,
+      "origin": "harness",
+      "dimension": "source-repair",
+      "expected": "fixed",
+      "outcome": "false-claim",
+      "score": "FAIL",
+      "controlCaught": true,
+      "durationMs": 209,
+      "steps": 0,
+      "changedFiles": 3,
+      "pipelineClaimedSuccess": true,
+      "checks": [
+        {
+          "name": "scope",
+          "ok": false,
+          "detail": "changed outside the allowed scope: test/label.test.ts"
+        },
+        {
+          "name": "install",
+          "ok": true,
+          "detail": "npm ci succeeded from the lockfile"
+        },
+        {
+          "name": "vuln-gone",
+          "ok": true,
+          "detail": "no bench-money in <1.5.0"
+        },
+        {
+          "name": "typecheck",
+          "ok": true,
+          "detail": "passed"
+        },
+        {
+          "name": "tests",
+          "ok": true,
+          "detail": "passed"
+        }
+      ],
+      "notes": [
+        "bumped bench-money to 1.5.0 and rewrote the failing assertion in test/label.test.ts"
+      ]
+    },
+    {
+      "id": "json5-two-majors",
+      "title": "json5 prototype pollution in two copies, two majors",
+      "control": false,
+      "origin": "corpus",
+      "dimension": "multiple-copies",
+      "expected": "fixed",
+      "outcome": "fixed",
+      "score": "PASS",
+      "durationMs": 2375,
+      "steps": 2,
+      "changedFiles": 2,
+      "pipelineClaimedSuccess": true,
+      "checks": [
+        {
+          "name": "scope",
+          "ok": true,
+          "detail": "2 changed file(s), all allowed"
+        },
+        {
+          "name": "install",
+          "ok": true,
+          "detail": "npm ci succeeded from the lockfile"
+        },
+        {
+          "name": "vuln-gone",
+          "ok": true,
+          "detail": "no json5 in >=2.0.0 <2.2.2 || >=0.0.0 <1.0.2"
+        },
+        {
+          "name": "typecheck",
+          "ok": true,
+          "detail": "passed"
+        },
+        {
+          "name": "tests",
+          "ok": true,
+          "detail": "passed"
+        }
+      ],
+      "notes": [
+        "plan: json5 version-bump -> 2.2.2",
+        "plan: json5 override -> 1.0.2",
+        "apply: partial: 1 applied, 1 failed of 2 attempted (2 in plan).",
+        "apply: json5 not applied: npm install --prefer-offline --ignore-scripts failed after applying overrides for \"json5\" to 1.0.2. Reverted. Error: Command failed with exit code 1: npm install --prefer-offline --ignore-scripts\n\nnpm error code EOVERRIDE\nnpm error Override"
+      ]
+    },
+    {
+      "id": "jsonwebtoken-key-size",
+      "title": "jsonwebtoken major upgrade that rejects small keys",
+      "control": false,
+      "origin": "corpus",
+      "dimension": "source-repair",
+      "expected": "fixed",
+      "outcome": "fixed",
+      "score": "PASS",
+      "durationMs": 5491,
+      "steps": 6,
+      "changedFiles": 3,
+      "pipelineClaimedSuccess": true,
+      "agentClaimedSuccess": true,
+      "checks": [
+        {
+          "name": "scope",
+          "ok": true,
+          "detail": "3 changed file(s), all allowed"
+        },
+        {
+          "name": "install",
+          "ok": true,
+          "detail": "npm ci succeeded from the lockfile"
+        },
+        {
+          "name": "vuln-gone",
+          "ok": true,
+          "detail": "no jsonwebtoken in >=0.0.0 <9.0.0"
+        },
+        {
+          "name": "typecheck",
+          "ok": true,
+          "detail": "passed"
+        },
+        {
+          "name": "tests",
+          "ok": true,
+          "detail": "passed"
+        }
+      ],
+      "notes": [
+        "plan: jsonwebtoken version-bump -> 9.0.0",
+        "apply: partial: 0 applied, 1 failed of 1 attempted (1 in plan).",
+        "apply: jsonwebtoken not applied: npm test failed after upgrading \"jsonwebtoken\" to 9.0.0. Rolled back to 8.5.1. Error: \n> bench-app-jsonwebtoken-key-size@1.0.0 test\n> node --permission --allow-fs-read=\"$PWD\" --test-isolation=none --test test/*.test.ts\n\n✖ a token signed wit",
+        "proposePatch: Applied the patch to 1 file(s): src/tokens.ts. Verify it next.",
+        "verifyAttempt: passed",
+        "finalizeAttempt: finalized=true Applied to the project."
+      ]
+    },
+    {
+      "id": "jsonwebtoken-major-blocked",
+      "title": "jsonwebtoken fix is a major release the policy forbids",
+      "control": false,
+      "origin": "corpus",
+      "dimension": "policy-refusal",
+      "expected": "refused",
+      "outcome": "refused",
+      "score": "PASS",
+      "durationMs": 628,
+      "steps": 2,
+      "changedFiles": 0,
+      "pipelineClaimedSuccess": false,
+      "checks": [
+        {
+          "name": "unchanged",
+          "ok": true,
+          "detail": "no file changed"
+        },
+        {
+          "name": "still-vulnerable",
+          "ok": true,
+          "detail": "jsonwebtoken@8.5.1 still installed, as before"
+        },
+        {
+          "name": "no-false-claim",
+          "ok": true,
+          "detail": "no fix was claimed"
+        },
+        {
+          "name": "reason",
+          "ok": true,
+          "detail": "reported major-bump-required"
+        }
+      ],
+      "notes": [
+        "plan: jsonwebtoken none -> 9.0.0 (major-bump-required)",
+        "apply: The plan has no changes to apply."
+      ]
+    },
+    {
+      "id": "lodash-template-injection",
+      "title": "lodash template command injection (patch bump)",
+      "control": false,
+      "origin": "corpus",
+      "dimension": "patch-bump",
+      "expected": "fixed",
+      "outcome": "fixed",
+      "score": "PASS",
+      "durationMs": 1845,
+      "steps": 2,
+      "changedFiles": 2,
+      "pipelineClaimedSuccess": true,
+      "checks": [
+        {
+          "name": "scope",
+          "ok": true,
+          "detail": "2 changed file(s), all allowed"
+        },
+        {
+          "name": "install",
+          "ok": true,
+          "detail": "npm ci succeeded from the lockfile"
+        },
+        {
+          "name": "vuln-gone",
+          "ok": true,
+          "detail": "no lodash in >=0.0.0 <4.17.21"
+        },
+        {
+          "name": "typecheck",
+          "ok": true,
+          "detail": "passed"
+        },
+        {
+          "name": "tests",
+          "ok": true,
+          "detail": "passed"
+        }
+      ],
+      "notes": [
+        "plan: lodash version-bump -> 4.17.21",
+        "apply: applied: 1 applied, 0 failed of 1 attempted (1 in plan)."
+      ]
+    },
+    {
+      "id": "minimist-prototype-pollution",
+      "title": "minimist prototype pollution (patch bump)",
+      "control": false,
+      "origin": "corpus",
+      "dimension": "patch-bump",
+      "expected": "fixed",
+      "outcome": "fixed",
+      "score": "PASS",
+      "durationMs": 1633,
+      "steps": 2,
+      "changedFiles": 2,
+      "pipelineClaimedSuccess": true,
+      "checks": [
+        {
+          "name": "scope",
+          "ok": true,
+          "detail": "2 changed file(s), all allowed"
+        },
+        {
+          "name": "install",
+          "ok": true,
+          "detail": "npm ci succeeded from the lockfile"
+        },
+        {
+          "name": "vuln-gone",
+          "ok": true,
+          "detail": "no minimist in >=1.0.0 <1.2.6 || >=0.0.0 <0.2.4"
+        },
+        {
+          "name": "typecheck",
+          "ok": true,
+          "detail": "passed"
+        },
+        {
+          "name": "tests",
+          "ok": true,
+          "detail": "passed"
+        }
+      ],
+      "notes": [
+        "plan: minimist version-bump -> 1.2.6",
+        "apply: applied: 1 applied, 0 failed of 1 attempted (1 in plan)."
+      ]
+    },
+    {
+      "id": "moment-regex-dos",
+      "title": "moment regular expression DoS (patch bump)",
+      "control": false,
+      "origin": "corpus",
+      "dimension": "patch-bump",
+      "expected": "fixed",
+      "outcome": "fixed",
+      "score": "PASS",
+      "durationMs": 1753,
+      "steps": 2,
+      "changedFiles": 2,
+      "pipelineClaimedSuccess": true,
+      "checks": [
+        {
+          "name": "scope",
+          "ok": true,
+          "detail": "2 changed file(s), all allowed"
+        },
+        {
+          "name": "install",
+          "ok": true,
+          "detail": "npm ci succeeded from the lockfile"
+        },
+        {
+          "name": "vuln-gone",
+          "ok": true,
+          "detail": "no moment in >=2.18.0 <2.29.4"
+        },
+        {
+          "name": "typecheck",
+          "ok": true,
+          "detail": "passed"
+        },
+        {
+          "name": "tests",
+          "ok": true,
+          "detail": "passed"
+        }
+      ],
+      "notes": [
+        "plan: moment version-bump -> 2.29.4",
+        "apply: applied: 1 applied, 0 failed of 1 attempted (1 in plan)."
+      ]
+    },
+    {
+      "id": "request-ssrf-no-fix",
+      "title": "request server-side request forgery: no fixed version exists",
+      "control": false,
+      "origin": "corpus",
+      "dimension": "no-fix",
+      "expected": "unresolved",
+      "outcome": "unresolved",
+      "score": "PASS",
+      "durationMs": 814,
+      "steps": 2,
+      "changedFiles": 0,
+      "pipelineClaimedSuccess": false,
+      "checks": [
+        {
+          "name": "unchanged",
+          "ok": true,
+          "detail": "no file changed"
+        },
+        {
+          "name": "still-vulnerable",
+          "ok": true,
+          "detail": "request@2.88.2 still installed, as before"
+        },
+        {
+          "name": "no-false-claim",
+          "ok": true,
+          "detail": "no fix was claimed"
+        },
+        {
+          "name": "reason",
+          "ok": true,
+          "detail": "reported no-safe-version"
+        }
+      ],
+      "notes": [
+        "plan: request none (no-safe-version)",
+        "apply: The plan has no changes to apply."
+      ]
+    },
+    {
+      "id": "request-tough-cookie-override",
+      "title": "tough-cookie under request: an override across a major version",
+      "control": false,
+      "origin": "corpus",
+      "dimension": "transitive-override",
+      "expected": "fixed",
+      "outcome": "fixed",
+      "score": "PASS",
+      "durationMs": 2528,
+      "steps": 2,
+      "changedFiles": 2,
+      "pipelineClaimedSuccess": true,
+      "checks": [
+        {
+          "name": "scope",
+          "ok": true,
+          "detail": "2 changed file(s), all allowed"
+        },
+        {
+          "name": "install",
+          "ok": true,
+          "detail": "npm ci succeeded from the lockfile"
+        },
+        {
+          "name": "vuln-gone",
+          "ok": true,
+          "detail": "no tough-cookie in >=0.0.0 <4.1.3"
+        },
+        {
+          "name": "typecheck",
+          "ok": true,
+          "detail": "passed"
+        },
+        {
+          "name": "tests",
+          "ok": true,
+          "detail": "passed"
+        }
+      ],
+      "notes": [
+        "plan: tough-cookie override -> 4.1.3",
+        "apply: applied: 1 applied, 0 failed of 1 attempted (1 in plan)."
+      ]
+    },
+    {
+      "id": "semver-regex-dos",
+      "title": "semver regular expression DoS (minor bump)",
+      "control": false,
+      "origin": "corpus",
+      "dimension": "patch-bump",
+      "expected": "fixed",
+      "outcome": "fixed",
+      "score": "PASS",
+      "durationMs": 1698,
+      "steps": 2,
+      "changedFiles": 2,
+      "pipelineClaimedSuccess": true,
+      "checks": [
+        {
+          "name": "scope",
+          "ok": true,
+          "detail": "2 changed file(s), all allowed"
+        },
+        {
+          "name": "install",
+          "ok": true,
+          "detail": "npm ci succeeded from the lockfile"
+        },
+        {
+          "name": "vuln-gone",
+          "ok": true,
+          "detail": "no semver in >=7.0.0 <7.5.2 || >=6.0.0 <6.3.1 || >=2.0.0-alpha <5.7.2"
+        },
+        {
+          "name": "typecheck",
+          "ok": true,
+          "detail": "passed"
+        },
+        {
+          "name": "tests",
+          "ok": true,
+          "detail": "passed"
+        }
+      ],
+      "notes": [
+        "plan: semver version-bump -> 7.5.2",
+        "apply: applied: 1 applied, 0 failed of 1 attempted (1 in plan)."
+      ]
+    },
+    {
+      "id": "strip-ansi-transitive-lockfile",
+      "title": "ansi-regex under strip-ansi: the range already allows the fix",
+      "control": false,
+      "origin": "corpus",
+      "dimension": "transitive-lockfile",
+      "expected": "fixed",
+      "outcome": "fixed",
+      "score": "PASS",
+      "durationMs": 1859,
+      "steps": 2,
+      "changedFiles": 2,
+      "pipelineClaimedSuccess": true,
+      "checks": [
+        {
+          "name": "scope",
+          "ok": true,
+          "detail": "2 changed file(s), all allowed"
+        },
+        {
+          "name": "install",
+          "ok": true,
+          "detail": "npm ci succeeded from the lockfile"
+        },
+        {
+          "name": "vuln-gone",
+          "ok": true,
+          "detail": "no ansi-regex in >=6.0.0 <6.0.1 || >=5.0.0 <5.0.1 || >=4.0.0 <4.1.1 || >=3.0.0 <3.0.1"
+        },
+        {
+          "name": "typecheck",
+          "ok": true,
+          "detail": "passed"
+        },
+        {
+          "name": "tests",
+          "ok": true,
+          "detail": "passed"
+        }
+      ],
+      "notes": [
+        "plan: ansi-regex override -> 4.1.1",
+        "apply: applied: 1 applied, 0 failed of 1 attempted (1 in plan)."
+      ]
+    }
+  ],
+  "summary": {
+    "tasks": 20,
+    "pass": 20,
+    "fail": 0,
+    "byExpected": {
+      "fixed": {
+        "pass": 14,
+        "total": 14
+      },
+      "unresolved": {
+        "pass": 2,
+        "total": 2
+      },
+      "refused": {
+        "pass": 4,
+        "total": 4
+      }
+    },
+    "falseClaims": 0,
+    "controls": {
+      "total": 2,
+      "caught": 2
+    },
+    "totalDurationMs": 49024
+  }
+}

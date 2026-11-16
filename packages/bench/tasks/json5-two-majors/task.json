@@ -1,0 +1,16 @@
+{
+  "id": "json5-two-majors",
+  "title": "json5 prototype pollution in two copies, two majors",
+  "description": "A project on json5 2.2.1 that also uses tsconfig-paths 3.14.1, whose json5 ^1.0.1 range resolved to 1.0.1 when the lockfile was written in November 2022. The published advisory CVE-2022-46175 covers both copies and is fixed in 1.0.2 and in 2.2.2, so each copy needs the fix of its own major.",
+  "advisory": "CVE-2022-46175",
+  "origin": "corpus",
+  "dimension": "multiple-copies",
+  "package": "json5",
+  "osv": "GHSA-9c47-m6qq-7p4h",
+  "baseline": {
+    "before": "2022-12-01"
+  },
+  "expect": {
+    "outcome": "fixed"
+  }
+}

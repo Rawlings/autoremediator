@@ -1,0 +1,34 @@
+{
+  "CVE-2021-44906": {
+    "id": "CVE-2021-44906",
+    "summary": "Prototype Pollution in minimist",
+    "severity": "CRITICAL",
+    "publishedAt": "2022-03-18T00:01:09Z",
+    "references": [
+      "https://nvd.nist.gov/vuln/detail/CVE-2021-44906",
+      "https://github.com/minimistjs/minimist/issues/11",
+      "https://github.com/substack/minimist/issues/164",
+      "https://github.com/minimistjs/minimist/pull/24",
+      "https://github.com/minimistjs/minimist/commit/34e20b8461118608703d6485326abbb8e35e1703",
+      "https://github.com/minimistjs/minimist/commit/bc8ecee43875261f4f17eb20b1243d3ed15e70eb",
+      "https://github.com/minimistjs/minimist/commit/c2b981977fa834b223b408cfb860f933c9811e4d",
+      "https://github.com/minimistjs/minimist/commit/ef9153fc52b6cea0744b2239921c5dcae4697f11",
+      "https://github.com/Marynk/JavaScript-vulnerability-detection/blob/main/minimist%20PoC.zip",
+      "https://github.com/minimistjs/minimist/commits/v0.2.4",
+      "https://github.com/substack/minimist",
+      "https://github.com/substack/minimist/blob/master/index.js#L69",
+      "https://security.netapp.com/advisory/ntap-20240621-0006",
+      "https://snyk.io/vuln/SNYK-JS-MINIMIST-559764",
+      "https://stackoverflow.com/questions/8588563/adding-custom-properties-to-a-function/20278068#20278068"
+    ],
+    "affectedPackages": [
+      {
+        "name": "minimist",
+        "ecosystem": "npm",
+        "vulnerableRange": ">=1.0.0 <1.2.6 || >=0.0.0 <0.2.4",
+        "firstPatchedVersion": "0.2.4",
+        "source": "osv"
+      }
+    ]
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "name": "json-schema",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "0.4.0"
+  },
+  "versions": {
+    "0.4.0": {
+      "name": "json-schema",
+      "version": "0.4.0",
+      "author": {
+        "name": "Kris Zyp"
+      },
+      "description": "JSON Schema validation and specifications",
+      "keywords": [
+        "json",
+        "schema"
+      ],
+      "license": "(AFL-2.1 OR BSD-3-Clause)",
+      "repository": {
+        "type": "git",
+        "url": "git+ssh://git@github.com/kriszyp/json-schema.git"
+      },
+      "directories": {
+        "lib": "./lib"
+      },
+      "main": "./lib/validate.js",
+      "devDependencies": {
+        "vows": "*"
+      },
+      "scripts": {
+        "test": "vows --spec test/*.js"
+      },
+      "gitHead": "f6f6a3b02d667aa4ba2d5d50cc19208c4462abfa",
+      "bugs": {
+        "url": "https://github.com/kriszyp/json-schema/issues"
+      },
+      "homepage": "https://github.com/kriszyp/json-schema#readme",
+      "_id": "json-schema@0.4.0",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/json-schema/-/json-schema-0.4.0.tgz",
+        "integrity": "sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==",
+        "shasum": "f7de4cf6efab838ebaeb3236474cbba5a1930ab5",
+        "fileCount": 5,
+        "unpackedSize": 26079
+      },
+      "_hasShrinkwrap": false
+    }
+  },
+  "time": {
+    "created": "2021-11-09T02:04:08.632Z",
+    "modified": "2021-11-09T02:04:08.632Z",
+    "0.4.0": "2021-11-09T02:04:08.632Z"
+  }
+}

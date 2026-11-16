@@ -1,0 +1,14 @@
+{
+  "id": "request-ssrf-no-fix",
+  "title": "request server-side request forgery: no fixed version exists",
+  "description": "A project on request 2.88.2 and the published advisory CVE-2023-28155. The package is deprecated and no release fixes the advisory, so the correct outcome is to change nothing and report that no safe version exists.",
+  "advisory": "CVE-2023-28155",
+  "origin": "corpus",
+  "dimension": "no-fix",
+  "package": "request",
+  "osv": "GHSA-p8p7-x288-28g6",
+  "expect": {
+    "outcome": "unresolved",
+    "reason": "no-safe-version"
+  }
+}

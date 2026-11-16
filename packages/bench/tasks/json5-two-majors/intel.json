@@ -1,0 +1,29 @@
+{
+  "CVE-2022-46175": {
+    "id": "CVE-2022-46175",
+    "summary": "Prototype Pollution in JSON5 via Parse Method",
+    "severity": "HIGH",
+    "publishedAt": "2022-12-29T01:51:03Z",
+    "references": [
+      "https://github.com/json5/json5/security/advisories/GHSA-9c47-m6qq-7p4h",
+      "https://nvd.nist.gov/vuln/detail/CVE-2022-46175",
+      "https://github.com/json5/json5/issues/199",
+      "https://github.com/json5/json5/issues/295",
+      "https://github.com/json5/json5/pull/298",
+      "https://github.com/json5/json5/commit/62a65408408d40aeea14c7869ed327acead12972",
+      "https://github.com/json5/json5/commit/7774c1097993bc3ce9f0ac4b722a32bf7d6871c8",
+      "https://github.com/json5/json5",
+      "https://lists.debian.org/debian-lts-announce/2023/11/msg00021.html",
+      "https://lists.fedoraproject.org/archives/list/package-announce@lists.fedoraproject.org/message/3S26TLPLVFAJTUN3VIXFDEBEXDYO22CE"
+    ],
+    "affectedPackages": [
+      {
+        "name": "json5",
+        "ecosystem": "npm",
+        "vulnerableRange": ">=2.0.0 <2.2.2 || >=0.0.0 <1.0.2",
+        "firstPatchedVersion": "1.0.2",
+        "source": "osv"
+      }
+    ]
+  }
+}

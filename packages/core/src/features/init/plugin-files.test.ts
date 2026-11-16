@@ -44,7 +44,7 @@ describe("Claude Code plugin files", () => {
   });
 
   it("starts the MCP server that the package ships", () => {
-    const mcp = JSON.parse(files["plugins/claude-code/.mcp.json"]!) as {
+    const mcp = JSON.parse(files["integrations/claude-code/.mcp.json"]!) as {
       mcpServers: { autoremediator: { command: string; args: string[] } };
     };
     expect(mcp.mcpServers.autoremediator.args).toContain("autoremediator-mcp");

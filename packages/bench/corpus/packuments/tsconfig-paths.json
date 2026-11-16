@@ -1,0 +1,649 @@
+{
+  "name": "tsconfig-paths",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "4.2.0"
+  },
+  "versions": {
+    "3.14.1": {
+      "name": "tsconfig-paths",
+      "version": "3.14.1",
+      "author": {
+        "name": "Jonas Kello"
+      },
+      "license": "MIT",
+      "_id": "tsconfig-paths@3.14.1",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tsconfig-paths/-/tsconfig-paths-3.14.1.tgz",
+        "integrity": "sha512-fxDhWnFSLt3VuTwtvJt5fpwxBHg5AdKWMsgcPOOIilyjymcYVZoCQF8fvFRezCNfblEXmi+PcM1eYHeOAgXCOQ==",
+        "shasum": "ba0734599e8ea36c862798e920bcf163277b137a",
+        "fileCount": 85,
+        "unpackedSize": 203206
+      },
+      "main": "lib/index.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged"
+        }
+      },
+      "types": "lib/index.d.ts",
+      "scripts": {
+        "lint": "tslint './{src,tests}/**/*.ts{,x}'",
+        "test": "jest",
+        "build": "rimraf lib && tsc -p .",
+        "start": "cd src && ts-node index.ts",
+        "verify": "yarn build && yarn lint && yarn test-coverage",
+        "preversion": "yarn verify",
+        "example:api": "cd example/api && ts-node main.ts",
+        "postversion": "git push --tags && yarn publish --new-version $npm_package_version && git push && echo \"Successfully released version $npm_package_version!\"",
+        "example:node": "yarn build && cd ./example/node && ts-node -r ../register.js main.ts",
+        "example:perf": "cd example/perf && ts-node main.ts",
+        "test-coverage": "jest --coverage",
+        "example:project": "yarn build && ts-node -r ./register.js -P ./example/project/tsconfig.json ./example/project/main.ts"
+      },
+      "repository": {
+        "url": "https://github.com/dividab/tsconfig-paths",
+        "type": "git"
+      },
+      "description": "Load node modules according to tsconfig paths, in run-time or via API.",
+      "directories": {},
+      "licenseText": "The MIT License (MIT)\n\nCopyright (c) 2016 Jonas Kello\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
+      "lint-staged": {
+        "*.{ts,tsx}": "tslint",
+        "*.{ts,tsx,json,css}": [
+          "prettier --write",
+          "git add"
+        ]
+      },
+      "dependencies": {
+        "json5": "^1.0.1",
+        "minimist": "^1.2.6",
+        "strip-bom": "^3.0.0",
+        "@types/json5": "^0.0.29"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "^27.3.1",
+        "husky": "^4.2.5",
+        "rimraf": "^2.6.2",
+        "tslint": "^5.8.0",
+        "ts-jest": "^27.0.7",
+        "ts-node": "^10.7.0",
+        "prettier": "^2.0.5",
+        "typescript": "^4.5.2",
+        "@types/jest": "^27.0.3",
+        "@types/node": "^6.0.54",
+        "lint-staged": "^10.2.11",
+        "@types/minimist": "^1.2.2",
+        "@types/strip-bom": "^3.0.0",
+        "@types/strip-json-comments": "^0.0.30"
+      }
+    },
+    "3.14.2": {
+      "name": "tsconfig-paths",
+      "version": "3.14.2",
+      "author": {
+        "name": "Jonas Kello"
+      },
+      "license": "MIT",
+      "_id": "tsconfig-paths@3.14.2",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tsconfig-paths/-/tsconfig-paths-3.14.2.tgz",
+        "integrity": "sha512-o/9iXgCYc5L/JxCHPe3Hvh8Q/2xm5Z+p18PESBU6Ff33695QnCHBEjcytY2q19ua7Mbl/DavtBOLq+oG0RCL+g==",
+        "shasum": "6e32f1f79412decd261f92d633a9dc1cfa99f088",
+        "fileCount": 85,
+        "unpackedSize": 203206
+      },
+      "main": "lib/index.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged"
+        }
+      },
+      "types": "lib/index.d.ts",
+      "scripts": {
+        "lint": "tslint './{src,tests}/**/*.ts{,x}'",
+        "test": "jest",
+        "build": "rimraf lib && tsc -p .",
+        "start": "cd src && ts-node index.ts",
+        "verify": "yarn build && yarn lint && yarn test-coverage",
+        "preversion": "yarn verify",
+        "example:api": "cd example/api && ts-node main.ts",
+        "postversion": "git push --tags && yarn publish --new-version $npm_package_version && git push && echo \"Successfully released version $npm_package_version!\"",
+        "example:node": "yarn build && cd ./example/node && ts-node -r ../register.js main.ts",
+        "example:perf": "cd example/perf && ts-node main.ts",
+        "test-coverage": "jest --coverage",
+        "example:project": "yarn build && ts-node -r ./register.js -P ./example/project/tsconfig.json ./example/project/main.ts"
+      },
+      "repository": {
+        "url": "https://github.com/dividab/tsconfig-paths",
+        "type": "git"
+      },
+      "description": "Load node modules according to tsconfig paths, in run-time or via API.",
+      "directories": {},
+      "licenseText": "The MIT License (MIT)\n\nCopyright (c) 2016 Jonas Kello\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
+      "lint-staged": {
+        "*.{ts,tsx}": "tslint",
+        "*.{ts,tsx,json,css}": [
+          "prettier --write",
+          "git add"
+        ]
+      },
+      "dependencies": {
+        "json5": "^1.0.2",
+        "minimist": "^1.2.6",
+        "strip-bom": "^3.0.0",
+        "@types/json5": "^0.0.29"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "^27.3.1",
+        "husky": "^4.2.5",
+        "rimraf": "^2.6.2",
+        "tslint": "^5.8.0",
+        "ts-jest": "^27.0.7",
+        "ts-node": "^10.7.0",
+        "prettier": "^2.0.5",
+        "typescript": "^4.5.2",
+        "@types/jest": "^27.0.3",
+        "@types/node": "^6.0.54",
+        "lint-staged": "^10.2.11",
+        "@types/minimist": "^1.2.2",
+        "@types/strip-bom": "^3.0.0",
+        "@types/strip-json-comments": "^0.0.30"
+      }
+    },
+    "3.15.0": {
+      "name": "tsconfig-paths",
+      "version": "3.15.0",
+      "author": {
+        "name": "Jonas Kello"
+      },
+      "license": "MIT",
+      "_id": "tsconfig-paths@3.15.0",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tsconfig-paths/-/tsconfig-paths-3.15.0.tgz",
+        "integrity": "sha512-2Ac2RgzDe/cn48GvOe3M+o82pEFewD3UPbyoUHHdKasHwJKjds4fLXWf/Ux5kATBKN20oaFGu+jbElp1pos0mg==",
+        "shasum": "5299ec605e55b1abb23ec939ef15edaf483070d4",
+        "fileCount": 85,
+        "unpackedSize": 215892
+      },
+      "main": "lib/index.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged"
+        }
+      },
+      "types": "lib/index.d.ts",
+      "scripts": {
+        "lint": "tslint './{src,tests}/**/*.ts{,x}'",
+        "test": "jest",
+        "build": "rimraf lib && tsc -p .",
+        "start": "cd src && ts-node index.ts",
+        "verify": "yarn build && yarn lint && yarn test-coverage",
+        "preversion": "yarn verify",
+        "example:api": "cd example/api && ts-node main.ts",
+        "postversion": "git push --tags && yarn publish --new-version $npm_package_version && git push && echo \"Successfully released version $npm_package_version!\"",
+        "example:node": "yarn build && cd ./example/node && ts-node -r ../register.js main.ts",
+        "example:perf": "cd example/perf && ts-node main.ts",
+        "test-coverage": "jest --coverage",
+        "example:project": "yarn build && ts-node -r ./register.js -P ./example/project/tsconfig.json ./example/project/main.ts"
+      },
+      "repository": {
+        "url": "https://github.com/dividab/tsconfig-paths",
+        "type": "git"
+      },
+      "description": "Load node modules according to tsconfig paths, in run-time or via API.",
+      "directories": {},
+      "licenseText": "The MIT License (MIT)\n\nCopyright (c) 2016 Jonas Kello\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
+      "lint-staged": {
+        "*.{ts,tsx}": "tslint",
+        "*.{ts,tsx,json,css}": [
+          "prettier --write",
+          "git add"
+        ]
+      },
+      "dependencies": {
+        "json5": "^1.0.2",
+        "minimist": "^1.2.6",
+        "strip-bom": "^3.0.0",
+        "@types/json5": "^0.0.29"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "^27.3.1",
+        "husky": "^4.2.5",
+        "rimraf": "^2.6.2",
+        "tslint": "^5.8.0",
+        "ts-jest": "^27.0.7",
+        "ts-node": "^10.7.0",
+        "prettier": "^2.0.5",
+        "typescript": "^4.5.2",
+        "@types/jest": "^27.0.3",
+        "@types/node": "^6.0.54",
+        "lint-staged": "^10.2.11",
+        "@types/minimist": "^1.2.2",
+        "@types/strip-bom": "^3.0.0",
+        "@types/strip-json-comments": "^0.0.30"
+      }
+    },
+    "4.0.0": {
+      "name": "tsconfig-paths",
+      "version": "4.0.0",
+      "author": {
+        "name": "Jonas Kello"
+      },
+      "license": "MIT",
+      "_id": "tsconfig-paths@4.0.0",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tsconfig-paths/-/tsconfig-paths-4.0.0.tgz",
+        "integrity": "sha512-SLBg2GBKlR6bVtMgJJlud/o3waplKtL7skmLkExomIiaAtLGtVsoXIqP3SYdjbcH9lq/KVv7pMZeCBpLYOit6Q==",
+        "shasum": "1082f5d99fd127b72397eef4809e4dd06d229b64",
+        "fileCount": 81,
+        "unpackedSize": 199078
+      },
+      "main": "lib/index.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged"
+        }
+      },
+      "types": "lib/index.d.ts",
+      "scripts": {
+        "lint": "eslint \"./{src,tests}/**/*.ts{,x}\" --ext .js,.ts,.tsx -f visualstudio",
+        "test": "jest",
+        "build": "rimraf lib && tsc -p .",
+        "start": "cd src && ts-node index.ts",
+        "verify": "yarn build && yarn lint && yarn test-coverage",
+        "preversion": "yarn verify",
+        "example:api": "cd example/api && ts-node main.ts",
+        "postversion": "git push --tags && yarn publish --new-version $npm_package_version && git push && echo \"Successfully released version $npm_package_version!\"",
+        "example:node": "yarn build && cd ./example/node && ts-node -r ../../register.js main.ts",
+        "example:perf": "cd example/perf && ts-node main.ts",
+        "test-coverage": "jest --coverage",
+        "example:project": "yarn build && ts-node -r ./register.js -P ./example/project/tsconfig.json ./example/project/main.ts"
+      },
+      "repository": {
+        "url": "https://github.com/dividab/tsconfig-paths",
+        "type": "git"
+      },
+      "description": "Load node modules according to tsconfig paths, in run-time or via API.",
+      "directories": {},
+      "licenseText": "The MIT License (MIT)\n\nCopyright (c) 2016 Jonas Kello\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
+      "lint-staged": {
+        "*.{ts,tsx}": "eslint",
+        "*.{ts,tsx,json,css}": [
+          "prettier --write",
+          "git add"
+        ]
+      },
+      "dependencies": {
+        "json5": "^2.2.1",
+        "minimist": "^1.2.6",
+        "strip-bom": "^3.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "^27.3.1",
+        "husky": "^4.2.5",
+        "eslint": "^8.14.0",
+        "rimraf": "^2.6.2",
+        "ts-jest": "^27.0.7",
+        "ts-node": "^10.7.0",
+        "prettier": "^2.0.5",
+        "typescript": "^4.5.2",
+        "@types/jest": "^27.0.3",
+        "@types/node": "^6.0.54",
+        "lint-staged": "^10.2.11",
+        "@types/minimist": "^1.2.2",
+        "@types/strip-bom": "^3.0.0",
+        "eslint-plugin-jsdoc": "^39.2.9",
+        "eslint-plugin-import": "^2.26.0",
+        "eslint-config-prettier": "^8.5.0",
+        "@typescript-eslint/parser": "^5.22.0",
+        "@types/strip-json-comments": "^0.0.30",
+        "@typescript-eslint/eslint-plugin": "^5.22.0"
+      }
+    },
+    "4.1.0": {
+      "name": "tsconfig-paths",
+      "version": "4.1.0",
+      "author": {
+        "name": "Jonas Kello"
+      },
+      "license": "MIT",
+      "_id": "tsconfig-paths@4.1.0",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tsconfig-paths/-/tsconfig-paths-4.1.0.tgz",
+        "integrity": "sha512-AHx4Euop/dXFC+Vx589alFba8QItjF+8hf8LtmuiCwHyI4rHXQtOOENaM8kvYf5fR0dRChy3wzWIZ9WbB7FWow==",
+        "shasum": "f8ef7d467f08ae3a695335bf1ece088c5538d2c1",
+        "fileCount": 81,
+        "unpackedSize": 203861
+      },
+      "main": "lib/index.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged"
+        }
+      },
+      "types": "lib/index.d.ts",
+      "engines": {
+        "node": ">=6"
+      },
+      "scripts": {
+        "lint": "eslint \"./{src,tests}/**/*.ts{,x}\" --ext .js,.ts,.tsx -f visualstudio",
+        "test": "jest",
+        "build": "rimraf lib && tsc -p .",
+        "start": "cd src && ts-node index.ts",
+        "verify": "yarn build && yarn lint && yarn test-coverage",
+        "preversion": "yarn verify",
+        "example:api": "cd example/api && ts-node main.ts",
+        "postversion": "git push --tags && yarn publish --new-version $npm_package_version && git push && echo \"Successfully released version $npm_package_version!\"",
+        "example:node": "yarn build && cd ./example/node && ts-node -r ../../register.js main.ts",
+        "example:perf": "cd example/perf && ts-node main.ts",
+        "test-coverage": "jest --coverage",
+        "example:project": "yarn build && ts-node -r ./register.js -P ./example/project/tsconfig.json ./example/project/main.ts"
+      },
+      "repository": {
+        "url": "https://github.com/dividab/tsconfig-paths",
+        "type": "git"
+      },
+      "description": "Load node modules according to tsconfig paths, in run-time or via API.",
+      "directories": {},
+      "licenseText": "The MIT License (MIT)\n\nCopyright (c) 2016 Jonas Kello\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
+      "lint-staged": {
+        "*.{ts,tsx}": "eslint",
+        "*.{ts,tsx,json,css}": [
+          "prettier --write",
+          "git add"
+        ]
+      },
+      "dependencies": {
+        "json5": "^2.2.1",
+        "minimist": "^1.2.6",
+        "strip-bom": "^3.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "^27.3.1",
+        "husky": "^4.2.5",
+        "eslint": "^8.14.0",
+        "rimraf": "^2.6.2",
+        "ts-jest": "^27.0.7",
+        "ts-node": "^10.7.0",
+        "prettier": "^2.0.5",
+        "typescript": "^4.5.2",
+        "@types/jest": "^27.0.3",
+        "@types/node": "^6.0.54",
+        "lint-staged": "^10.2.11",
+        "@types/minimist": "^1.2.2",
+        "@types/strip-bom": "^3.0.0",
+        "eslint-plugin-jsdoc": "^39.2.9",
+        "eslint-plugin-import": "^2.26.0",
+        "eslint-config-prettier": "^8.5.0",
+        "@typescript-eslint/parser": "^5.22.0",
+        "@types/strip-json-comments": "^0.0.30",
+        "@typescript-eslint/eslint-plugin": "^5.22.0"
+      }
+    },
+    "4.1.1": {
+      "name": "tsconfig-paths",
+      "version": "4.1.1",
+      "author": {
+        "name": "Jonas Kello"
+      },
+      "license": "MIT",
+      "_id": "tsconfig-paths@4.1.1",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tsconfig-paths/-/tsconfig-paths-4.1.1.tgz",
+        "integrity": "sha512-VgPrtLKpRgEAJsMj5Q/I/mXouC6A/7eJ/X4Nuk6o0cRPwBtznYxTCU4FodbexbzH9somBPEXYi0ZkUViUpJ21Q==",
+        "shasum": "7f23094ce897fcf4a93f67c4776e813003e48b75",
+        "fileCount": 81,
+        "unpackedSize": 204506
+      },
+      "main": "lib/index.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged"
+        }
+      },
+      "types": "lib/index.d.ts",
+      "engines": {
+        "node": ">=6"
+      },
+      "scripts": {
+        "lint": "eslint \"./{src,tests}/**/*.ts{,x}\" --ext .js,.ts,.tsx -f visualstudio",
+        "test": "jest",
+        "build": "rimraf lib && tsc -p .",
+        "start": "cd src && ts-node index.ts",
+        "verify": "yarn build && yarn lint && yarn test-coverage",
+        "preversion": "yarn verify",
+        "example:api": "cd example/api && ts-node main.ts",
+        "postversion": "git push --tags && yarn publish --new-version $npm_package_version && git push && echo \"Successfully released version $npm_package_version!\"",
+        "example:node": "yarn build && cd ./example/node && ts-node -r ../../register.js main.ts",
+        "example:perf": "cd example/perf && ts-node main.ts",
+        "test-coverage": "jest --coverage",
+        "example:project": "yarn build && ts-node -r ./register.js -P ./example/project/tsconfig.json ./example/project/main.ts"
+      },
+      "repository": {
+        "url": "https://github.com/dividab/tsconfig-paths",
+        "type": "git"
+      },
+      "description": "Load node modules according to tsconfig paths, in run-time or via API.",
+      "directories": {},
+      "licenseText": "The MIT License (MIT)\n\nCopyright (c) 2016 Jonas Kello\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
+      "lint-staged": {
+        "*.{ts,tsx}": "eslint",
+        "*.{ts,tsx,json,css}": [
+          "prettier --write",
+          "git add"
+        ]
+      },
+      "dependencies": {
+        "json5": "^2.2.1",
+        "minimist": "^1.2.6",
+        "strip-bom": "^3.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "^27.3.1",
+        "husky": "^4.2.5",
+        "eslint": "^8.14.0",
+        "rimraf": "^2.6.2",
+        "ts-jest": "^27.0.7",
+        "ts-node": "^10.7.0",
+        "prettier": "^2.0.5",
+        "typescript": "^4.5.2",
+        "@types/jest": "^27.0.3",
+        "@types/node": "^6.0.54",
+        "lint-staged": "^10.2.11",
+        "@types/minimist": "^1.2.2",
+        "@types/strip-bom": "^3.0.0",
+        "eslint-plugin-jsdoc": "^39.2.9",
+        "eslint-plugin-import": "^2.26.0",
+        "eslint-config-prettier": "^8.5.0",
+        "@typescript-eslint/parser": "^5.22.0",
+        "@types/strip-json-comments": "^0.0.30",
+        "@typescript-eslint/eslint-plugin": "^5.22.0"
+      }
+    },
+    "4.1.2": {
+      "name": "tsconfig-paths",
+      "version": "4.1.2",
+      "author": {
+        "name": "Jonas Kello"
+      },
+      "license": "MIT",
+      "_id": "tsconfig-paths@4.1.2",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tsconfig-paths/-/tsconfig-paths-4.1.2.tgz",
+        "integrity": "sha512-uhxiMgnXQp1IR622dUXI+9Ehnws7i/y6xvpZB9IbUVOPy0muvdvgXeZOn88UcGPiT98Vp3rJPTa8bFoalZ3Qhw==",
+        "shasum": "4819f861eef82e6da52fb4af1e8c930a39ed979a",
+        "fileCount": 81,
+        "unpackedSize": 204734
+      },
+      "main": "lib/index.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged"
+        }
+      },
+      "types": "lib/index.d.ts",
+      "engines": {
+        "node": ">=6"
+      },
+      "scripts": {
+        "lint": "eslint \"./{src,tests}/**/*.ts{,x}\" --ext .js,.ts,.tsx -f visualstudio",
+        "test": "jest",
+        "build": "rimraf lib && tsc -p .",
+        "start": "cd src && ts-node index.ts",
+        "verify": "yarn build && yarn lint && yarn test-coverage",
+        "preversion": "yarn verify",
+        "example:api": "cd example/api && ts-node main.ts",
+        "postversion": "git push --tags && yarn publish --new-version $npm_package_version && git push && echo \"Successfully released version $npm_package_version!\"",
+        "example:node": "yarn build && cd ./example/node && ts-node -r ../../register.js main.ts",
+        "example:perf": "cd example/perf && ts-node main.ts",
+        "test-coverage": "jest --coverage",
+        "example:project": "yarn build && ts-node -r ./register.js -P ./example/project/tsconfig.json ./example/project/main.ts"
+      },
+      "repository": {
+        "url": "https://github.com/dividab/tsconfig-paths",
+        "type": "git"
+      },
+      "description": "Load node modules according to tsconfig paths, in run-time or via API.",
+      "directories": {},
+      "licenseText": "The MIT License (MIT)\n\nCopyright (c) 2016 Jonas Kello\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
+      "lint-staged": {
+        "*.{ts,tsx}": "eslint",
+        "*.{ts,tsx,json,css}": [
+          "prettier --write",
+          "git add"
+        ]
+      },
+      "dependencies": {
+        "json5": "^2.2.2",
+        "minimist": "^1.2.6",
+        "strip-bom": "^3.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "^27.3.1",
+        "husky": "^4.2.5",
+        "eslint": "^8.14.0",
+        "rimraf": "^2.6.2",
+        "ts-jest": "^27.0.7",
+        "ts-node": "^10.7.0",
+        "prettier": "^2.0.5",
+        "typescript": "^4.5.2",
+        "@types/jest": "^27.0.3",
+        "@types/node": "^6.0.54",
+        "lint-staged": "^10.2.11",
+        "@types/minimist": "^1.2.2",
+        "@types/strip-bom": "^3.0.0",
+        "eslint-plugin-jsdoc": "^39.2.9",
+        "eslint-plugin-import": "^2.26.0",
+        "eslint-config-prettier": "^8.5.0",
+        "@typescript-eslint/parser": "^5.22.0",
+        "@types/strip-json-comments": "^0.0.30",
+        "@typescript-eslint/eslint-plugin": "^5.22.0"
+      }
+    },
+    "4.2.0": {
+      "name": "tsconfig-paths",
+      "version": "4.2.0",
+      "author": {
+        "name": "Jonas Kello"
+      },
+      "license": "MIT",
+      "_id": "tsconfig-paths@4.2.0",
+      "homepage": "https://github.com/dividab/tsconfig-paths#readme",
+      "bugs": {
+        "url": "https://github.com/dividab/tsconfig-paths/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/tsconfig-paths/-/tsconfig-paths-4.2.0.tgz",
+        "integrity": "sha512-NoZ4roiN7LnbKn9QqE1amc9DJfzvZXxF4xDavcOWt1BPkdx+m+0gJuPM+S0vCe7zTJMYUP0R8pO2XMr+Y8oLIg==",
+        "shasum": "ef78e19039133446d244beac0fd6a1632e2d107c",
+        "fileCount": 74,
+        "unpackedSize": 216221
+      },
+      "main": "lib/index.js",
+      "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged"
+        }
+      },
+      "types": "lib/index.d.ts",
+      "engines": {
+        "node": ">=6"
+      },
+      "gitHead": "11b774d994b897c6c8e87dda57375a285813731d",
+      "scripts": {
+        "lint": "eslint \"./{src,tests}/**/*.ts{,x}\" --ext .js,.ts,.tsx -f visualstudio",
+        "test": "jest",
+        "build": "rimraf lib && tsc -p .",
+        "start": "cd src && ts-node index.ts",
+        "verify": "yarn build && yarn lint && yarn test-coverage",
+        "preversion": "yarn verify",
+        "example:api": "cd example/api && ts-node main.ts",
+        "postversion": "git push --tags && yarn publish --new-version $npm_package_version && git push && echo \"Successfully released version $npm_package_version!\"",
+        "example:node": "yarn build && cd ./example/node && ts-node -r ../../register.js main.ts",
+        "example:perf": "cd example/perf && ts-node main.ts",
+        "test-coverage": "jest --coverage",
+        "example:project": "yarn build && ts-node -r ./register.js -P ./example/project/tsconfig.json ./example/project/main.ts"
+      },
+      "repository": {
+        "url": "git+https://github.com/dividab/tsconfig-paths.git",
+        "type": "git"
+      },
+      "description": "Load node modules according to tsconfig paths, in run-time or via API.",
+      "directories": {},
+      "lint-staged": {
+        "*.{ts,tsx}": "eslint",
+        "*.{ts,tsx,json,css}": [
+          "prettier --write",
+          "git add"
+        ]
+      },
+      "dependencies": {
+        "json5": "^2.2.2",
+        "minimist": "^1.2.6",
+        "strip-bom": "^3.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "^27.3.1",
+        "husky": "^4.2.5",
+        "eslint": "^8.14.0",
+        "rimraf": "^2.6.2",
+        "ts-jest": "^27.0.7",
+        "ts-node": "^10.7.0",
+        "prettier": "^2.0.5",
+        "typescript": "^4.5.2",
+        "@types/jest": "^27.0.3",
+        "@types/node": "^6.0.54",
+        "lint-staged": "^10.2.11",
+        "@types/minimist": "^1.2.2",
+        "@types/strip-bom": "^3.0.0",
+        "eslint-plugin-jsdoc": "^39.2.9",
+        "eslint-plugin-import": "^2.26.0",
+        "eslint-config-prettier": "^8.5.0",
+        "@typescript-eslint/parser": "^5.22.0",
+        "@types/strip-json-comments": "^0.0.30",
+        "@typescript-eslint/eslint-plugin": "^5.22.0"
+      }
+    }
+  },
+  "time": {
+    "created": "2022-03-22T19:07:02.889Z",
+    "modified": "2023-12-14T14:37:09.465Z",
+    "3.14.1": "2022-03-22T19:07:02.889Z",
+    "3.14.2": "2023-02-25T10:30:31.062Z",
+    "3.15.0": "2023-12-14T14:37:09.465Z",
+    "4.0.0": "2022-05-02T19:46:14.587Z",
+    "4.1.0": "2022-08-06T09:24:26.355Z",
+    "4.1.1": "2022-11-30T20:18:46.510Z",
+    "4.1.2": "2023-01-01T23:31:55.769Z",
+    "4.2.0": "2023-03-29T20:47:10.433Z"
+  }
+}

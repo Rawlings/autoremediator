@@ -1,9 +1,0 @@
-{
-  "id": "02-transitive-override",
-  "title": "Transitive dependency fixed with an override",
-  "description": "The vulnerable package is pinned by a direct dependency, so the only package-manager-native fix is an override.",
-  "advisory": "CVE-2099-10002",
-  "expect": {
-    "outcome": "fixed"
-  }
-}

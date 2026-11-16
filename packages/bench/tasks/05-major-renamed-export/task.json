@@ -1,0 +1,13 @@
+{
+  "id": "05-major-renamed-export",
+  "title": "Major bump with a renamed export",
+  "description": "The only fix is a major release (allowed by policy) that renames check to validate. The project fails to type check and to load until its import is renamed.",
+  "advisory": "CVE-2099-10005",
+  "dimension": "source-repair",
+  "expect": {
+    "outcome": "fixed",
+    "sourceEdits": [
+      "src/"
+    ]
+  }
+}

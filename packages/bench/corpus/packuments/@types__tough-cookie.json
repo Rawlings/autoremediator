@@ -1,0 +1,55 @@
+{
+  "name": "@types/tough-cookie",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "ts5.6": "4.0.5",
+    "latest": "4.0.5",
+    "ts4.5": "4.0.5",
+    "ts4.6": "4.0.5",
+    "ts4.7": "4.0.5",
+    "ts4.8": "4.0.5",
+    "ts4.9": "4.0.5",
+    "ts5.0": "4.0.5",
+    "ts5.1": "4.0.5",
+    "ts5.2": "4.0.5",
+    "ts5.3": "4.0.5",
+    "ts5.4": "4.0.5",
+    "ts5.5": "4.0.5",
+    "ts5.7": "4.0.5"
+  },
+  "versions": {
+    "4.0.5": {
+      "name": "@types/tough-cookie",
+      "version": "4.0.5",
+      "license": "MIT",
+      "_id": "@types/tough-cookie@4.0.5",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/tough-cookie",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/tough-cookie/-/tough-cookie-4.0.5.tgz",
+        "integrity": "sha512-/Ad8+nIOV7Rl++6f1BdKxFSMgmoqEoYbHRpPcx3JEfv8VRsQe9Z4mCXeJBzxs7mbHY/XOZZuXlRNfhpVPbs6ZA==",
+        "shasum": "cb6e2a691b70cb177c6e3ae9c1d2e8b2ea8cd304",
+        "fileCount": 5,
+        "unpackedSize": 13536
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/tough-cookie"
+      },
+      "description": "TypeScript definitions for tough-cookie",
+      "directories": {},
+      "dependencies": {},
+      "_hasShrinkwrap": false,
+      "typeScriptVersion": "4.5",
+      "typesPublisherContentHash": "adafa53ff34d3665a708d3ab1af232a46d4efb906d46f48d7d0cd3206c987a58"
+    }
+  },
+  "time": {
+    "created": "2023-11-07T20:48:15.280Z",
+    "modified": "2023-11-07T20:48:15.280Z",
+    "4.0.5": "2023-11-07T20:48:15.280Z"
+  }
+}

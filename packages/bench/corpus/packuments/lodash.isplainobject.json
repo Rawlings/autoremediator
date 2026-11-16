@@ -1,0 +1,49 @@
+{
+  "name": "lodash.isplainobject",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "4.0.6"
+  },
+  "versions": {
+    "4.0.6": {
+      "name": "lodash.isplainobject",
+      "version": "4.0.6",
+      "description": "The lodash method `_.isPlainObject` exported as a module.",
+      "homepage": "https://lodash.com/",
+      "icon": "https://lodash.com/icon.svg",
+      "license": "MIT",
+      "keywords": [
+        "lodash-modularized",
+        "isplainobject"
+      ],
+      "author": {
+        "name": "John-David Dalton",
+        "email": "john.david.dalton@gmail.com",
+        "url": "http://allyoucanleet.com/"
+      },
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/lodash/lodash.git"
+      },
+      "scripts": {
+        "test": "echo \"See https://travis-ci.org/lodash/lodash-cli for testing details.\""
+      },
+      "bugs": {
+        "url": "https://github.com/lodash/lodash/issues"
+      },
+      "_id": "lodash.isplainobject@4.0.6",
+      "_shasum": "7c526a52d89b45c45cc690b88163be0497f550cb",
+      "_from": ".",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lodash.isplainobject/-/lodash.isplainobject-4.0.6.tgz",
+        "integrity": "sha512-oSXzaWypCMHkPC3NvBEaPHf0KsA5mvPrOPgQWDsbg8n7orZ290M0BmC/jgRZ4vcJ6DTAhjrsSYgdsW/F+MFOBA==",
+        "shasum": "7c526a52d89b45c45cc690b88163be0497f550cb"
+      }
+    }
+  },
+  "time": {
+    "created": "2016-08-13T17:41:07.730Z",
+    "modified": "2016-08-13T17:41:07.730Z",
+    "4.0.6": "2016-08-13T17:41:07.730Z"
+  }
+}

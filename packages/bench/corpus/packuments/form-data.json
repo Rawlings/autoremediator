@@ -1,0 +1,2085 @@
+{
+  "name": "form-data",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "v2-backport": "2.5.6",
+    "latest": "4.0.6",
+    "v3-backport": "3.0.5"
+  },
+  "versions": {
+    "2.3.3": {
+      "name": "form-data",
+      "version": "2.3.3",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@2.3.3",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-2.3.3.tgz",
+        "integrity": "sha512-1lLKB2Mu3aGP1Q/2eCOx0fNbRMe7XdwktwOruhfqqd0rIJWwN4Dh+E3hrPSlDCXnSR7UtZ1N38rVXm+6+MEhJQ==",
+        "shasum": "dcce52c05f644f298c6a7ab936bd724ceffbf3a6",
+        "fileCount": 8,
+        "unpackedSize": 119230
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 0.12"
+      },
+      "gitHead": "b16916a568a0d06f3f8a16c31f9a8b89b7844094",
+      "scripts": {
+        "lint": "eslint lib/*.js test/*.js test/integration/*.js",
+        "test": "istanbul cover test/run.js",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 6 && npm run lint || is-node-not-modern 6",
+        "ci-test": "npm run test && npm run browser && npm run report",
+        "pretest": "rimraf coverage test/tmp",
+        "posttest": "istanbul report lcov text",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "in-publish && npm run update-readme || not-in-publish",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postpublish": "npm run restore-readme",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "restore-readme": "mv README.md.bak README.md"
+      },
+      "pre-commit": [
+        "lint",
+        "ci-test",
+        "check"
+      ],
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.12",
+        "combined-stream": "^1.0.6"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^4.6.2",
+        "obake": "^0.1.2",
+        "eslint": "^3.9.1",
+        "rimraf": "^2.5.4",
+        "request": "2.76.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.0",
+        "coveralls": "^2.11.14",
+        "browserify": "^13.1.1",
+        "formidable": "^1.0.17",
+        "in-publish": "^2.0.0",
+        "pre-commit": "^1.1.3",
+        "cross-spawn": "^4.0.2",
+        "is-node-modern": "^1.0.0",
+        "phantomjs-prebuilt": "^2.1.13",
+        "browserify-istanbul": "^2.0.0"
+      }
+    },
+    "2.4.0": {
+      "name": "form-data",
+      "version": "2.4.0",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@2.4.0",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-2.4.0.tgz",
+        "integrity": "sha512-4FinE8RfqYnNim20xDwZZE0V2kOs/AuElIjFUbPuegQSaoZM+vUT5FnwSl10KPugH4voTg1bEQlcbCG9ka75TA==",
+        "shasum": "4902b831b051e0db5612a35e1a098376f7b13ad8",
+        "fileCount": 8,
+        "unpackedSize": 120904
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 0.12"
+      },
+      "gitHead": "8512eef436e28372f5bc88de3ca76a9cb46e6847",
+      "scripts": {
+        "lint": "eslint lib/*.js test/*.js test/integration/*.js",
+        "test": "istanbul cover test/run.js",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 6 && npm run lint || is-node-not-modern 6",
+        "ci-test": "npm run test && npm run browser && npm run report",
+        "pretest": "rimraf coverage test/tmp",
+        "posttest": "istanbul report lcov text",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "in-publish && npm run update-readme || not-in-publish",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postpublish": "npm run restore-readme",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "restore-readme": "mv README.md.bak README.md"
+      },
+      "pre-commit": [
+        "lint",
+        "ci-test",
+        "check"
+      ],
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.12",
+        "combined-stream": "^1.0.6"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^4.6.2",
+        "obake": "^0.1.2",
+        "eslint": "^3.9.1",
+        "rimraf": "^2.5.4",
+        "request": "2.76.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.0",
+        "coveralls": "^2.11.14",
+        "browserify": "^13.1.1",
+        "formidable": "^1.0.17",
+        "in-publish": "^2.0.0",
+        "pre-commit": "^1.1.3",
+        "cross-spawn": "^4.0.2",
+        "is-node-modern": "^1.0.0",
+        "phantomjs-prebuilt": "^2.1.13",
+        "browserify-istanbul": "^2.0.0"
+      }
+    },
+    "2.5.0": {
+      "name": "form-data",
+      "version": "2.5.0",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@2.5.0",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-2.5.0.tgz",
+        "integrity": "sha512-WXieX3G/8side6VIqx44ablyULoGruSde5PNTxoUyo5CeyAMX6nVWUd0rgist/EuX655cjhUhTo1Fo3tRYqbcA==",
+        "shasum": "094ec359dc4b55e7d62e0db4acd76e89fe874d37",
+        "fileCount": 8,
+        "unpackedSize": 40764
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 0.12"
+      },
+      "gitHead": "905f173a3f785e8d312998e765634ee451ca5f42",
+      "scripts": {
+        "lint": "eslint lib/*.js test/*.js test/integration/*.js",
+        "test": "istanbul cover test/run.js",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run test && npm run browser && npm run report",
+        "pretest": "rimraf coverage test/tmp",
+        "posttest": "istanbul report lcov text",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "in-publish && npm run update-readme || not-in-publish",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postpublish": "npm run restore-readme",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "restore-readme": "mv README.md.bak README.md"
+      },
+      "typings": "./index.d.ts",
+      "pre-commit": [
+        "lint",
+        "ci-test",
+        "check"
+      ],
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.12",
+        "combined-stream": "^1.0.6"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^4.6.2",
+        "obake": "^0.1.2",
+        "eslint": "^6.0.1",
+        "rimraf": "^2.5.4",
+        "request": "^2.88.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.0",
+        "coveralls": "^3.0.4",
+        "browserify": "^13.1.1",
+        "formidable": "^1.0.17",
+        "in-publish": "^2.0.0",
+        "pre-commit": "^1.1.3",
+        "typescript": "^3.5.2",
+        "@types/node": "^12.0.10",
+        "cross-spawn": "^6.0.5",
+        "is-node-modern": "^1.0.0",
+        "phantomjs-prebuilt": "^2.1.13",
+        "browserify-istanbul": "^2.0.0"
+      }
+    },
+    "2.5.1": {
+      "name": "form-data",
+      "version": "2.5.1",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@2.5.1",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-2.5.1.tgz",
+        "integrity": "sha512-m21N3WOmEEURgk6B9GLOE4RuWOFf28Lhh9qGYeNlGq4VDXUlJy2th2slBNU8Gp8EzloYZOibZJ7t5ecIrFSjVA==",
+        "shasum": "f2cbec57b5e59e23716e128fe44d4e5dd23895f4",
+        "fileCount": 8,
+        "unpackedSize": 41342
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 0.12"
+      },
+      "gitHead": "8ce81f56cccf5466363a5eff135ad394a929f59b",
+      "scripts": {
+        "lint": "eslint lib/*.js test/*.js test/integration/*.js",
+        "test": "istanbul cover test/run.js",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run test && npm run browser && npm run report",
+        "pretest": "rimraf coverage test/tmp",
+        "posttest": "istanbul report lcov text",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "in-publish && npm run update-readme || not-in-publish",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postpublish": "npm run restore-readme",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "restore-readme": "mv README.md.bak README.md"
+      },
+      "typings": "./index.d.ts",
+      "pre-commit": [
+        "lint",
+        "ci-test",
+        "check"
+      ],
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.12",
+        "combined-stream": "^1.0.6"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^4.6.2",
+        "obake": "^0.1.2",
+        "eslint": "^6.0.1",
+        "rimraf": "^2.7.1",
+        "request": "^2.88.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.0",
+        "coveralls": "^3.0.4",
+        "browserify": "^13.1.1",
+        "formidable": "^1.0.17",
+        "in-publish": "^2.0.0",
+        "pre-commit": "^1.1.3",
+        "typescript": "^3.5.2",
+        "@types/node": "^12.0.10",
+        "cross-spawn": "^6.0.5",
+        "is-node-modern": "^1.0.0",
+        "phantomjs-prebuilt": "^2.1.13",
+        "browserify-istanbul": "^2.0.0"
+      }
+    },
+    "2.5.2": {
+      "name": "form-data",
+      "version": "2.5.2",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@2.5.2",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-2.5.2.tgz",
+        "integrity": "sha512-GgwY0PS7DbXqajuGf4OYlsrIu3zgxD6Vvql43IBhm6MahqA5SK/7mwhtNj2AdH2z35YR34ujJ7BN+3fFC3jP5Q==",
+        "shasum": "dc653743d1de2fcc340ceea38079daf6e9069fd2",
+        "fileCount": 7,
+        "unpackedSize": 30046
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 0.12"
+      },
+      "gitHead": "7020dd4c1260370abc40e86e3dfe49c5d576fbda",
+      "scripts": {
+        "lint": "eslint --ext=js,mjs .",
+        "test": "npm run tests-only",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run tests-only && npm run browser && npm run report",
+        "pretest": "npm run lint",
+        "posttest": "npx npm@'>=10.2' audit --production",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "in-publish && npm run update-readme || not-in-publish",
+        "tests-only": "istanbul cover test/run.js",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postpublish": "npm run restore-readme",
+        "pretests-only": "rimraf coverage test/tmp",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "posttests-only": "istanbul report lcov text",
+        "restore-readme": "mv README.md.bak README.md"
+      },
+      "typings": "./index.d.ts",
+      "pre-commit": [
+        "lint",
+        "ci-test",
+        "check"
+      ],
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.12",
+        "safe-buffer": "^5.2.1",
+        "combined-stream": "^1.0.6"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^4.6.2",
+        "obake": "^0.1.2",
+        "eslint": "^6.0.1",
+        "rimraf": "^2.7.1",
+        "request": "^2.88.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.0",
+        "coveralls": "^3.0.4",
+        "browserify": "^13.1.1",
+        "formidable": "^1.0.17",
+        "in-publish": "^2.0.0",
+        "pre-commit": "^1.1.3",
+        "typescript": "^3.5.2",
+        "@types/node": "^12.0.10",
+        "cross-spawn": "^4.0.2",
+        "is-node-modern": "^1.0.0",
+        "phantomjs-prebuilt": "^2.1.13",
+        "browserify-istanbul": "^2.0.0"
+      }
+    },
+    "2.5.3": {
+      "name": "form-data",
+      "version": "2.5.3",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@2.5.3",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-2.5.3.tgz",
+        "integrity": "sha512-XHIrMD0NpDrNM/Ckf7XJiBbLl57KEhT3+i3yY+eWm+cqYZJQTZrKo8Y8AWKnuV5GT4scfuUGt9LzNoIx3dU1nQ==",
+        "shasum": "f9bcf87418ce748513c0c3494bb48ec270c97acc",
+        "fileCount": 7,
+        "unpackedSize": 30454
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 0.12"
+      },
+      "gitHead": "9457283e1dce6122adc908fdd7442cfc54cabe7a",
+      "scripts": {
+        "lint": "eslint --ext=js,mjs .",
+        "test": "npm run tests-only",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run tests-only && npm run browser && npm run report",
+        "pretest": "npm run lint",
+        "posttest": "npx npm@'>=10.2' audit --production",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "in-publish && npm run update-readme || not-in-publish",
+        "tests-only": "istanbul cover test/run.js",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postpublish": "npm run restore-readme",
+        "pretests-only": "rimraf coverage test/tmp",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "posttests-only": "istanbul report lcov text",
+        "restore-readme": "mv README.md.bak README.md"
+      },
+      "typings": "./index.d.ts",
+      "pre-commit": [
+        "lint",
+        "ci-test",
+        "check"
+      ],
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.35",
+        "safe-buffer": "^5.2.1",
+        "combined-stream": "^1.0.8",
+        "es-set-tostringtag": "^2.1.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^5.9.0",
+        "obake": "^0.1.2",
+        "eslint": "^6.8.0",
+        "rimraf": "^2.7.1",
+        "request": "~2.87.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.2",
+        "coveralls": "^3.1.1",
+        "browserify": "^13.3.0",
+        "formidable": "^1.2.6",
+        "in-publish": "^2.0.1",
+        "pre-commit": "^1.2.2",
+        "typescript": "^3.9.10",
+        "@types/node": "^12.20.55",
+        "cross-spawn": "^4.0.2",
+        "is-node-modern": "^1.0.0",
+        "@types/mime-types": "^2.1.4",
+        "phantomjs-prebuilt": "^2.1.16",
+        "browserify-istanbul": "^2.0.0",
+        "@types/combined-stream": "^1.0.6"
+      }
+    },
+    "2.5.4": {
+      "name": "form-data",
+      "version": "2.5.4",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@2.5.4",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-2.5.4.tgz",
+        "integrity": "sha512-Y/3MmRiR8Nd+0CUtrbvcKtKzLWiUfpQ7DFVggH8PwmGt/0r7RSy32GuP4hpCJlQNEBusisSx1DLtD8uD386HJQ==",
+        "shasum": "7716681ab59ddb36c0a8ffd9e506ea3083e7e8d4",
+        "fileCount": 9,
+        "unpackedSize": 90032
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 0.12"
+      },
+      "gitHead": "efe6c2693159084b18c58648e77203d1d810395b",
+      "scripts": {
+        "lint": "eslint --ext=js,mjs .",
+        "test": "npm run tests-only",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-test": "npm run tests-only && npm run browser && npm run report",
+        "pretest": "npm run lint",
+        "version": "auto-changelog && git add CHANGELOG.md",
+        "posttest": "npx npm@'>=10.2' audit --production",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "not-in-publish || npm run prepublishOnly",
+        "tests-only": "istanbul cover test/run.js",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postpublish": "npm run restore-readme",
+        "postversion": "auto-changelog && git add CHANGELOG.md && git commit --no-edit --amend && git tag -f \"v$(node -e \"console.log(require('./package.json').version)\")\"",
+        "pretests-only": "rimraf coverage test/tmp",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "posttests-only": "istanbul report lcov text",
+        "prepublishOnly": "npm run update-readme",
+        "restore-readme": "mv README.md.bak README.md"
+      },
+      "typings": "./index.d.ts",
+      "deprecated": "This version has an incorrect dependency; please use v2.5.5",
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "has-own": "^1.0.1",
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.35",
+        "safe-buffer": "^5.2.1",
+        "combined-stream": "^1.0.8",
+        "es-set-tostringtag": "^2.1.0"
+      },
+      "_hasShrinkwrap": false,
+      "auto-changelog": {
+        "output": "CHANGELOG.md",
+        "template": "keepachangelog",
+        "hideCredit": true,
+        "unreleased": false,
+        "commitLimit": false,
+        "backfillLimit": false
+      },
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^5.9.0",
+        "obake": "^0.1.2",
+        "eslint": "=8.8.0",
+        "rimraf": "^2.7.1",
+        "semver": "^6.3.1",
+        "request": "~2.87.0",
+        "encoding": "^0.1.13",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.2",
+        "coveralls": "^3.1.1",
+        "puppeteer": "^1.20.0",
+        "browserify": "^13.3.0",
+        "formidable": "^1.2.6",
+        "in-publish": "^2.0.1",
+        "pre-commit": "^1.2.2",
+        "cross-spawn": "^4.0.2",
+        "auto-changelog": "^2.5.0",
+        "phantomjs-prebuilt": "^2.1.16",
+        "browserify-istanbul": "^2.0.0",
+        "@ljharb/eslint-config": "^21.2.0",
+        "js-randomness-predictor": "^1.5.5"
+      }
+    },
+    "2.5.5": {
+      "name": "form-data",
+      "version": "2.5.5",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@2.5.5",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-2.5.5.tgz",
+        "integrity": "sha512-jqdObeR2rxZZbPSGL+3VckHMYtu+f9//KXBsVny6JSX/pa38Fy+bGjuG8eW/H6USNQWhLi8Num++cU2yOCNz4A==",
+        "shasum": "a5f6364ad7e4e67e95b4a07e2d8c6f711c74f624",
+        "fileCount": 8,
+        "unpackedSize": 78958
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 0.12"
+      },
+      "gitHead": "40de5a74209992979f6695d894c1d554ddb72f29",
+      "scripts": {
+        "lint": "eslint --ext=js,mjs .",
+        "test": "npm run tests-only",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-test": "npm run tests-only && npm run browser && npm run report",
+        "prepack": "npm run update-readme",
+        "pretest": "npm run lint",
+        "version": "auto-changelog && git add CHANGELOG.md",
+        "postpack": "npm run restore-readme",
+        "posttest": "npx npm@'>=10.2' audit --production",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "not-in-publish || npm run prepublishOnly",
+        "tests-only": "istanbul cover test/run.js",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postversion": "auto-changelog && git add CHANGELOG.md && git commit --no-edit --amend && git tag -f \"v$(node -e \"console.log(require('./package.json').version)\")\"",
+        "pretests-only": "rimraf coverage test/tmp",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "posttests-only": "istanbul report lcov text",
+        "restore-readme": "mv READ.ME.md.bak README.md",
+        "postupdate-readme": "mv README.md.bak READ.ME.md.bak"
+      },
+      "typings": "./index.d.ts",
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "hasown": "^2.0.2",
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.35",
+        "safe-buffer": "^5.2.1",
+        "combined-stream": "^1.0.8",
+        "es-set-tostringtag": "^2.1.0"
+      },
+      "_hasShrinkwrap": false,
+      "auto-changelog": {
+        "output": "CHANGELOG.md",
+        "template": "keepachangelog",
+        "hideCredit": true,
+        "unreleased": false,
+        "commitLimit": false,
+        "backfillLimit": false
+      },
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^5.9.0",
+        "obake": "^0.1.2",
+        "eslint": "=8.8.0",
+        "rimraf": "^2.7.1",
+        "semver": "^6.3.1",
+        "request": "~2.87.0",
+        "encoding": "^0.1.13",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.2",
+        "coveralls": "^3.1.1",
+        "puppeteer": "^1.20.0",
+        "browserify": "^13.3.0",
+        "formidable": "^1.2.6",
+        "in-publish": "^2.0.1",
+        "pre-commit": "^1.2.2",
+        "cross-spawn": "^4.0.2",
+        "auto-changelog": "^2.5.0",
+        "phantomjs-prebuilt": "^2.1.16",
+        "browserify-istanbul": "^2.0.0",
+        "@ljharb/eslint-config": "^21.2.0",
+        "js-randomness-predictor": "^1.5.5"
+      }
+    },
+    "2.5.6": {
+      "_id": "form-data@2.5.6",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-2.5.6.tgz",
+        "integrity": "sha512-Ogz/E85h9tlfJzpI6TuFpGcHZFhLrb9Gw8wq9v40CxSCPnv7ahKr6Xgtkn0KYCDQJ8DNn5VoMO8EXr9V5PadyA==",
+        "shasum": "ef39b3d99e2fc9f25420c0db7962fe36cafcd244",
+        "fileCount": 8,
+        "unpackedSize": 80726
+      },
+      "main": "./lib/form_data",
+      "name": "form-data",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 0.12"
+      },
+      "gitHead": "c7133499c2ee1b80c678e411244f4442bf902045",
+      "license": "MIT",
+      "scripts": {
+        "lint": "eslint --ext=js,mjs .",
+        "test": "npm run tests-only",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-test": "npm run tests-only && npm run browser && npm run report",
+        "prepack": "npm run update-readme",
+        "pretest": "npm run lint",
+        "version": "auto-changelog && git add CHANGELOG.md",
+        "postpack": "npm run restore-readme",
+        "posttest": "npx npm@'>=10.2' audit --production",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "not-in-publish || npm run prepublishOnly",
+        "tests-only": "istanbul cover test/run.js",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postversion": "auto-changelog && git add CHANGELOG.md && git commit --no-edit --amend && git tag -f \"v$(node -e \"console.log(require('./package.json').version)\")\"",
+        "pretests-only": "rimraf coverage test/tmp",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "posttests-only": "istanbul report lcov text",
+        "restore-readme": "mv READ.ME.md.bak README.md",
+        "postupdate-readme": "mv README.md.bak READ.ME.md.bak"
+      },
+      "typings": "./index.d.ts",
+      "version": "2.5.6",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "hasown": "^2.0.4",
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.35",
+        "safe-buffer": "^5.2.1",
+        "combined-stream": "^1.0.8",
+        "es-set-tostringtag": "^2.1.0"
+      },
+      "auto-changelog": {
+        "output": "CHANGELOG.md",
+        "template": "keepachangelog",
+        "hideCredit": true,
+        "unreleased": false,
+        "commitLimit": false,
+        "backfillLimit": false
+      },
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^5.10.1",
+        "obake": "^0.1.2",
+        "eslint": "^8.57.1",
+        "rimraf": "^2.7.1",
+        "semver": "^6.3.1",
+        "request": "~2.87.0",
+        "encoding": "^0.1.13",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.2",
+        "coveralls": "^3.1.1",
+        "puppeteer": "^1.20.0",
+        "browserify": "^13.3.0",
+        "formidable": "^1.2.6",
+        "in-publish": "^2.0.1",
+        "pre-commit": "^1.2.2",
+        "cross-spawn": "^4.0.2",
+        "auto-changelog": "^2.6.0",
+        "phantomjs-prebuilt": "^2.1.16",
+        "browserify-istanbul": "^2.0.0",
+        "@ljharb/eslint-config": "^22.2.3",
+        "js-randomness-predictor": "^3.6.0"
+      },
+      "_hasShrinkwrap": false
+    },
+    "3.0.0": {
+      "name": "form-data",
+      "version": "3.0.0",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@3.0.0",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-3.0.0.tgz",
+        "integrity": "sha512-CKMFDglpbMi6PyN+brwB9Q/GOw0eAnsrEZDgcsH5Krhz5Od/haKHAX0NmQfha2zPPz0JpWzA7GJHGSnvCRLWsg==",
+        "shasum": "31b7e39c85f1355b7139ee0c647cf0de7f83c682",
+        "fileCount": 8,
+        "unpackedSize": 42171
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 6"
+      },
+      "gitHead": "5c9b3a94aad8482ad8126cd7405a3060cd8e022e",
+      "scripts": {
+        "lint": "eslint lib/*.js test/*.js test/integration/*.js",
+        "test": "istanbul cover test/run.js",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run test && npm run browser && npm run report",
+        "pretest": "rimraf coverage test/tmp",
+        "posttest": "istanbul report lcov text",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "in-publish && npm run update-readme || not-in-publish",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postpublish": "npm run restore-readme",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "restore-readme": "mv README.md.bak README.md"
+      },
+      "typings": "./index.d.ts",
+      "pre-commit": [
+        "lint",
+        "ci-test",
+        "check"
+      ],
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.12",
+        "combined-stream": "^1.0.8"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^4.6.2",
+        "obake": "^0.1.2",
+        "eslint": "^6.0.1",
+        "rimraf": "^2.7.1",
+        "request": "^2.88.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.0",
+        "coveralls": "^3.0.4",
+        "puppeteer": "^1.19.0",
+        "browserify": "^13.1.1",
+        "formidable": "^1.0.17",
+        "in-publish": "^2.0.0",
+        "pre-commit": "^1.1.3",
+        "typescript": "^3.5.2",
+        "@types/node": "^12.0.10",
+        "cross-spawn": "^6.0.5",
+        "is-node-modern": "^1.0.0",
+        "browserify-istanbul": "^2.0.0"
+      }
+    },
+    "3.0.1": {
+      "name": "form-data",
+      "version": "3.0.1",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@3.0.1",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-3.0.1.tgz",
+        "integrity": "sha512-RHkBKtLWUVwd7SqRIvCZMEvAMoGUp0XU+seQiZejj0COz3RI3hWP4sCv3gZWWLjJTd7rGwcsF5eKZGii0r/hbg==",
+        "shasum": "ebd53791b78356a99af9a300d4282c4d5eb9755f",
+        "fileCount": 8,
+        "unpackedSize": 42729
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 6"
+      },
+      "gitHead": "c72ad6728ae394e55c0f7a025864429edd656879",
+      "scripts": {
+        "lint": "eslint lib/*.js test/*.js test/integration/*.js",
+        "test": "istanbul cover test/run.js",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run test && npm run browser && npm run report",
+        "pretest": "rimraf coverage test/tmp",
+        "posttest": "istanbul report lcov text",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "in-publish && npm run update-readme || not-in-publish",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postpublish": "npm run restore-readme",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "restore-readme": "mv README.md.bak README.md"
+      },
+      "typings": "./index.d.ts",
+      "pre-commit": [
+        "lint",
+        "ci-test",
+        "check"
+      ],
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.12",
+        "combined-stream": "^1.0.8"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^4.6.2",
+        "obake": "^0.1.2",
+        "eslint": "^6.0.1",
+        "rimraf": "^2.7.1",
+        "request": "^2.88.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.0",
+        "coveralls": "^3.0.4",
+        "puppeteer": "^1.19.0",
+        "browserify": "^13.1.1",
+        "formidable": "^1.0.17",
+        "in-publish": "^2.0.0",
+        "pre-commit": "^1.1.3",
+        "typescript": "^3.5.2",
+        "@types/node": "^12.0.10",
+        "cross-spawn": "^6.0.5",
+        "is-node-modern": "^1.0.0",
+        "browserify-istanbul": "^2.0.0"
+      }
+    },
+    "3.0.2": {
+      "name": "form-data",
+      "version": "3.0.2",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@3.0.2",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-3.0.2.tgz",
+        "integrity": "sha512-sJe+TQb2vIaIyO783qN6BlMYWMw3WBOHA1Ay2qxsnjuafEOQFJ2JakedOQirT6D5XPRxDvS7AHYyem9fTpb4LQ==",
+        "shasum": "83ad9ced7c03feaad97e293d6f6091011e1659c8",
+        "fileCount": 7,
+        "unpackedSize": 31035
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 6"
+      },
+      "gitHead": "f06b0d85d10bc942b3bf586b01ace6e874ac61b3",
+      "scripts": {
+        "lint": "eslint --ext=js,mjs .",
+        "test": "npm run tests-only",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run tests-only && npm run browser && npm run report",
+        "pretest": "npm run lint",
+        "posttest": "npx npm@'>=10.2' audit --production",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "in-publish && npm run update-readme || not-in-publish",
+        "tests-only": "istanbul cover test/run.js",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postpublish": "npm run restore-readme",
+        "pretests-only": "rimraf coverage test/tmp",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "posttests-only": "istanbul report lcov text",
+        "restore-readme": "mv README.md.bak README.md"
+      },
+      "typings": "./index.d.ts",
+      "pre-commit": [
+        "lint",
+        "ci-test",
+        "check"
+      ],
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.12",
+        "combined-stream": "^1.0.8"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^4.6.2",
+        "obake": "^0.1.2",
+        "eslint": "^6.0.1",
+        "rimraf": "^2.7.1",
+        "request": "^2.88.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.0",
+        "coveralls": "^3.0.4",
+        "puppeteer": "^1.19.0",
+        "browserify": "^13.1.1",
+        "formidable": "^1.0.17",
+        "in-publish": "^2.0.0",
+        "pre-commit": "^1.1.3",
+        "typescript": "^3.5.2",
+        "@types/node": "^12.0.10",
+        "cross-spawn": "^6.0.5",
+        "is-node-modern": "^1.0.0",
+        "browserify-istanbul": "^2.0.0"
+      }
+    },
+    "3.0.3": {
+      "name": "form-data",
+      "version": "3.0.3",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@3.0.3",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-3.0.3.tgz",
+        "integrity": "sha512-q5YBMeWy6E2Un0nMGWMgI65MAKtaylxfNJGJxpGh45YDciZB4epbWpaAfImil6CPAPTYB4sh0URQNDRIZG5F2w==",
+        "shasum": "349c8f2c9d8f8f0c879ee0eb7cc0d300018d6b09",
+        "fileCount": 7,
+        "unpackedSize": 31368
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 6"
+      },
+      "gitHead": "e46f09bb5338bff090f5cceea5119a8b37c9b147",
+      "scripts": {
+        "lint": "eslint --ext=js,mjs .",
+        "test": "npm run tests-only",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run tests-only && npm run browser && npm run report",
+        "pretest": "npm run lint",
+        "posttest": "npx npm@'>=10.2' audit --production",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "in-publish && npm run update-readme || not-in-publish",
+        "tests-only": "istanbul cover test/run.js",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postpublish": "npm run restore-readme",
+        "pretests-only": "rimraf coverage test/tmp",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "posttests-only": "istanbul report lcov text",
+        "restore-readme": "mv README.md.bak README.md"
+      },
+      "typings": "./index.d.ts",
+      "pre-commit": [
+        "lint",
+        "ci-test",
+        "check"
+      ],
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.35",
+        "combined-stream": "^1.0.8",
+        "es-set-tostringtag": "^2.1.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^5.9.0",
+        "obake": "^0.1.2",
+        "eslint": "^6.8.0",
+        "rimraf": "^2.7.1",
+        "request": "~2.87.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.2",
+        "coveralls": "^3.1.1",
+        "puppeteer": "^1.20.0",
+        "browserify": "^13.3.0",
+        "formidable": "^1.2.6",
+        "in-publish": "^2.0.1",
+        "pre-commit": "^1.2.2",
+        "typescript": "^3.9.10",
+        "@types/node": "^12.20.55",
+        "cross-spawn": "^6.0.6",
+        "is-node-modern": "^1.0.0",
+        "browserify-istanbul": "^2.0.0"
+      }
+    },
+    "3.0.4": {
+      "name": "form-data",
+      "version": "3.0.4",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@3.0.4",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-3.0.4.tgz",
+        "integrity": "sha512-f0cRzm6dkyVYV3nPoooP8XlccPQukegwhAnpoLcXy+X+A8KfpGOoXwDr9FLZd3wzgLaBGQBE3lY93Zm/i1JvIQ==",
+        "shasum": "938273171d3f999286a4557528ce022dc2c98df1",
+        "fileCount": 8,
+        "unpackedSize": 77450
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 6"
+      },
+      "gitHead": "9c82fcdf0858b2764060a87803a55375ffbee6ed",
+      "scripts": {
+        "lint": "eslint --ext=js,mjs .",
+        "test": "npm run tests-only",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run tests-only && npm run browser && npm run report",
+        "prepack": "npm run update-readme",
+        "pretest": "npm run lint",
+        "version": "auto-changelog && git add CHANGELOG.md",
+        "postpack": "npm run restore-readme",
+        "posttest": "npx npm@'>=10.2' audit --production",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "not-in-publish || npm run prepublishOnly",
+        "tests-only": "istanbul cover test/run.js",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postversion": "auto-changelog && git add CHANGELOG.md && git commit --no-edit --amend && git tag -f \"v$(node -e \"console.log(require('./package.json').version)\")\"",
+        "pretests-only": "rimraf coverage test/tmp",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "posttests-only": "istanbul report lcov text",
+        "restore-readme": "mv READ.ME.md.bak README.md",
+        "postupdate-readme": "mv README.md.bak READ.ME.md.bak"
+      },
+      "typings": "./index.d.ts",
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "hasown": "^2.0.2",
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.35",
+        "combined-stream": "^1.0.8",
+        "es-set-tostringtag": "^2.1.0"
+      },
+      "_hasShrinkwrap": false,
+      "auto-changelog": {
+        "output": "CHANGELOG.md",
+        "template": "keepachangelog",
+        "hideCredit": true,
+        "unreleased": false,
+        "commitLimit": false,
+        "backfillLimit": false
+      },
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^5.9.0",
+        "obake": "^0.1.2",
+        "eslint": "=8.8.0",
+        "rimraf": "^2.7.1",
+        "semver": "^6.3.1",
+        "request": "~2.87.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.2",
+        "coveralls": "^3.1.1",
+        "puppeteer": "^1.20.0",
+        "browserify": "^13.3.0",
+        "formidable": "^1.2.6",
+        "in-publish": "^2.0.1",
+        "pre-commit": "^1.2.2",
+        "cross-spawn": "^6.0.6",
+        "auto-changelog": "^2.5.0",
+        "is-node-modern": "^1.0.0",
+        "browserify-istanbul": "^2.0.0",
+        "@ljharb/eslint-config": "^21.2.0",
+        "predict-v8-randomness": "^1.0.35"
+      }
+    },
+    "3.0.5": {
+      "name": "form-data",
+      "version": "3.0.5",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@3.0.5",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-3.0.5.tgz",
+        "integrity": "sha512-j23EibVLnp4zNXGW7LjryXYa2X6U/M96yoOX+ybZxwkYajdxRNEqYY3zhh7y0i6kfISKS2jr+EJq1YTUDEv5+w==",
+        "shasum": "2ea3ec24f0dcb7e0262a11efb732031240ea8e9f",
+        "fileCount": 8,
+        "unpackedSize": 82280
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 6"
+      },
+      "gitHead": "be3f3cf553978bac15a5182f1f3c3d2d38ccf229",
+      "scripts": {
+        "lint": "eslint --ext=js,mjs .",
+        "test": "npm run tests-only",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run tests-only && npm run browser && npm run report",
+        "prepack": "npm run update-readme",
+        "pretest": "npm run lint",
+        "version": "auto-changelog && git add CHANGELOG.md",
+        "postpack": "npm run restore-readme",
+        "posttest": "npx npm@'>=10.2' audit --production",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "not-in-publish || npm run prepublishOnly",
+        "tests-only": "istanbul cover test/run.js",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postversion": "auto-changelog && git add CHANGELOG.md && git commit --no-edit --amend && git tag -f \"v$(node -e \"console.log(require('./package.json').version)\")\"",
+        "pretests-only": "rimraf coverage test/tmp",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "posttests-only": "istanbul report lcov text",
+        "restore-readme": "mv READ.ME.md.bak README.md",
+        "postupdate-readme": "mv README.md.bak READ.ME.md.bak"
+      },
+      "typings": "./index.d.ts",
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "hasown": "^2.0.4",
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.35",
+        "combined-stream": "^1.0.8",
+        "es-set-tostringtag": "^2.1.0"
+      },
+      "_hasShrinkwrap": false,
+      "auto-changelog": {
+        "output": "CHANGELOG.md",
+        "template": "keepachangelog",
+        "hideCredit": true,
+        "unreleased": false,
+        "commitLimit": false,
+        "backfillLimit": false
+      },
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^5.10.1",
+        "obake": "^0.1.2",
+        "eslint": "^8.57.1",
+        "rimraf": "^2.7.1",
+        "semver": "^6.3.1",
+        "request": "~2.87.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.2",
+        "coveralls": "^3.1.1",
+        "puppeteer": "^1.20.0",
+        "browserify": "^13.3.0",
+        "formidable": "^1.2.6",
+        "in-publish": "^2.0.1",
+        "pre-commit": "^1.2.2",
+        "cross-spawn": "^6.0.6",
+        "auto-changelog": "^2.6.0",
+        "is-node-modern": "^1.0.0",
+        "browserify-istanbul": "^2.0.0",
+        "@ljharb/eslint-config": "^22.2.3",
+        "predict-v8-randomness": "^1.0.35"
+      }
+    },
+    "4.0.0": {
+      "name": "form-data",
+      "version": "4.0.0",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@4.0.0",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-4.0.0.tgz",
+        "integrity": "sha512-ETEklSGi5t0QMZuiXoA/Q6vcnxcLQP5vdugSpuAyi6SVGi2clPPp+xgEhuMaHC+zGgn31Kd235W35f7Hykkaww==",
+        "shasum": "93919daeaf361ee529584b9b31664dc12c9fa452",
+        "fileCount": 8,
+        "unpackedSize": 43381
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 6"
+      },
+      "gitHead": "53adbd81e9bde27007b28083068f2fc8272614dc",
+      "scripts": {
+        "lint": "eslint lib/*.js test/*.js test/integration/*.js",
+        "test": "istanbul cover test/run.js",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run test && npm run browser && npm run report",
+        "pretest": "rimraf coverage test/tmp",
+        "posttest": "istanbul report lcov text",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "in-publish && npm run update-readme || not-in-publish",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postpublish": "npm run restore-readme",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "restore-readme": "mv README.md.bak README.md"
+      },
+      "typings": "./index.d.ts",
+      "pre-commit": [
+        "lint",
+        "ci-test",
+        "check"
+      ],
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.12",
+        "combined-stream": "^1.0.8"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^4.6.2",
+        "obake": "^0.1.2",
+        "eslint": "^6.0.1",
+        "rimraf": "^2.7.1",
+        "request": "^2.88.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.0",
+        "coveralls": "^3.0.4",
+        "puppeteer": "^1.19.0",
+        "browserify": "^13.1.1",
+        "formidable": "^1.0.17",
+        "in-publish": "^2.0.0",
+        "pre-commit": "^1.1.3",
+        "typescript": "^3.5.2",
+        "@types/node": "^12.0.10",
+        "cross-spawn": "^6.0.5",
+        "is-node-modern": "^1.0.0",
+        "browserify-istanbul": "^2.0.0"
+      }
+    },
+    "4.0.1": {
+      "name": "form-data",
+      "version": "4.0.1",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@4.0.1",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-4.0.1.tgz",
+        "integrity": "sha512-tzN8e4TX8+kkxGPK8D5u0FNmjPUjw3lwC9lSLxxoB/+GtsJG91CO8bSWy73APlgAZzZbXEYZJuxjkHH2w+Ezhw==",
+        "shasum": "ba1076daaaa5bfd7e99c1a6cb02aa0a5cff90d48",
+        "fileCount": 7,
+        "unpackedSize": 31430
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 6"
+      },
+      "gitHead": "d04f7381b0111c707baa47190de2d48a02988b5b",
+      "scripts": {
+        "lint": "eslint --ext=js,mjs .",
+        "test": "npm run tests-only",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run tests-only && npm run browser && npm run report",
+        "pretest": "npm run lint",
+        "posttest": "npx npm@'>=10.2' audit --production",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "in-publish && npm run update-readme || not-in-publish",
+        "tests-only": "istanbul cover test/run.js",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postpublish": "npm run restore-readme",
+        "pretests-only": "rimraf coverage test/tmp",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "posttests-only": "istanbul report lcov text",
+        "restore-readme": "mv README.md.bak README.md"
+      },
+      "typings": "./index.d.ts",
+      "pre-commit": [
+        "lint",
+        "ci-test",
+        "check"
+      ],
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.12",
+        "combined-stream": "^1.0.8"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^4.6.2",
+        "obake": "^0.1.2",
+        "eslint": "^6.0.1",
+        "rimraf": "^2.7.1",
+        "request": "^2.88.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.0",
+        "coveralls": "^3.0.4",
+        "puppeteer": "^1.19.0",
+        "browserify": "^13.1.1",
+        "formidable": "^1.0.17",
+        "in-publish": "^2.0.0",
+        "pre-commit": "^1.1.3",
+        "typescript": "^3.5.2",
+        "@types/node": "^12.0.10",
+        "cross-spawn": "^6.0.5",
+        "is-node-modern": "^1.0.0",
+        "browserify-istanbul": "^2.0.0"
+      }
+    },
+    "4.0.2": {
+      "name": "form-data",
+      "version": "4.0.2",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@4.0.2",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-4.0.2.tgz",
+        "integrity": "sha512-hGfm/slu0ZabnNt4oaRZ6uREyfCj6P4fT/n6A1rGV+Z0VdGXjfOhVUpkn6qVQONHGIFwmveGXyDs75+nr6FM8w==",
+        "shasum": "35cabbdd30c3ce73deb2c42d3c8d3ed9ca51794c",
+        "fileCount": 7,
+        "unpackedSize": 31836
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 6"
+      },
+      "gitHead": "7465e1337244831e91f9a2413a2bf49bdc2a2e04",
+      "scripts": {
+        "lint": "eslint --ext=js,mjs .",
+        "test": "npm run tests-only",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run tests-only && npm run browser && npm run report",
+        "pretest": "npm run lint",
+        "posttest": "npx npm@'>=10.2' audit --production",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "in-publish && npm run update-readme || not-in-publish",
+        "tests-only": "istanbul cover test/run.js",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postpublish": "npm run restore-readme",
+        "pretests-only": "rimraf coverage test/tmp",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "posttests-only": "istanbul report lcov text",
+        "restore-readme": "mv README.md.bak README.md"
+      },
+      "typings": "./index.d.ts",
+      "pre-commit": [
+        "lint",
+        "ci-test",
+        "check"
+      ],
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.12",
+        "combined-stream": "^1.0.8",
+        "es-set-tostringtag": "^2.1.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^5.9.0",
+        "obake": "^0.1.2",
+        "eslint": "^6.8.0",
+        "rimraf": "^2.7.1",
+        "request": "~2.87.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.2",
+        "coveralls": "^3.1.1",
+        "puppeteer": "^1.20.0",
+        "browserify": "^13.3.0",
+        "formidable": "^1.2.6",
+        "in-publish": "^2.0.1",
+        "pre-commit": "^1.2.2",
+        "typescript": "^3.9.10",
+        "@types/node": "^12.20.55",
+        "cross-spawn": "^6.0.6",
+        "is-node-modern": "^1.0.0",
+        "@types/mime-types": "^2.1.4",
+        "browserify-istanbul": "^2.0.0",
+        "@types/combined-stream": "^1.0.6"
+      }
+    },
+    "4.0.3": {
+      "name": "form-data",
+      "version": "4.0.3",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@4.0.3",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-4.0.3.tgz",
+        "integrity": "sha512-qsITQPfmvMOSAdeyZ+12I1c+CKSstAFAwu+97zrnWAbIr5u8wfsExUzCesVLC8NgHuRUqNN4Zy6UPWUTRGslcA==",
+        "shasum": "608b1b3f3e28be0fccf5901fc85fb3641e5cf0ae",
+        "fileCount": 8,
+        "unpackedSize": 44398
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 6"
+      },
+      "gitHead": "d8d67dc8ac79285154edf7d3f57dbab593b9a146",
+      "scripts": {
+        "lint": "eslint --ext=js,mjs .",
+        "test": "npm run tests-only",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run tests-only && npm run browser && npm run report",
+        "pretest": "npm run lint",
+        "posttest": "npx npm@'>=10.2' audit --production",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "not-in-publish || npm run prepublishOnly",
+        "tests-only": "istanbul cover test/run.js",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postpublish": "npm run restore-readme",
+        "pretests-only": "rimraf coverage test/tmp",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "posttests-only": "istanbul report lcov text",
+        "prepublishOnly": "npm run update-readme",
+        "restore-readme": "mv README.md.bak README.md"
+      },
+      "typings": "./index.d.ts",
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "hasown": "^2.0.2",
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.12",
+        "combined-stream": "^1.0.8",
+        "es-set-tostringtag": "^2.1.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^5.9.0",
+        "obake": "^0.1.2",
+        "eslint": "=8.8.0",
+        "rimraf": "^2.7.1",
+        "request": "~2.87.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.2",
+        "coveralls": "^3.1.1",
+        "browserify": "^13.3.0",
+        "formidable": "^1.2.6",
+        "in-publish": "^2.0.1",
+        "cross-spawn": "^6.0.6",
+        "is-node-modern": "^1.0.0",
+        "browserify-istanbul": "^2.0.0",
+        "@ljharb/eslint-config": "^21.1.1"
+      }
+    },
+    "4.0.4": {
+      "name": "form-data",
+      "version": "4.0.4",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@4.0.4",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-4.0.4.tgz",
+        "integrity": "sha512-KrGhL9Q4zjj0kiUt5OO4Mr/A/jlI2jDYs5eHBpYHPcBEVSiipAvn2Ko2HnPe20rmcuuvMHNdZFp+4IlGTMF0Ow==",
+        "shasum": "784cdcce0669a9d68e94d11ac4eea98088edd2c4",
+        "fileCount": 8,
+        "unpackedSize": 76169
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 6"
+      },
+      "gitHead": "41996f5ac73a867046d48512cab62e64fc846dad",
+      "scripts": {
+        "lint": "eslint --ext=js,mjs .",
+        "test": "npm run tests-only",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run tests-only && npm run browser && npm run report",
+        "prepack": "npm run update-readme",
+        "pretest": "npm run lint",
+        "version": "auto-changelog && git add CHANGELOG.md",
+        "postpack": "npm run restore-readme",
+        "posttest": "npx npm@'>=10.2' audit --production",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "not-in-publish || npm run prepublishOnly",
+        "tests-only": "istanbul cover test/run.js",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postversion": "auto-changelog && git add CHANGELOG.md && git commit --no-edit --amend && git tag -f \"v$(node -e \"console.log(require('./package.json').version)\")\"",
+        "pretests-only": "rimraf coverage test/tmp",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "posttests-only": "istanbul report lcov text",
+        "restore-readme": "mv READ.ME.md.bak README.md",
+        "postupdate-readme": "mv README.md.bak READ.ME.md.bak"
+      },
+      "typings": "./index.d.ts",
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "hasown": "^2.0.2",
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.12",
+        "combined-stream": "^1.0.8",
+        "es-set-tostringtag": "^2.1.0"
+      },
+      "_hasShrinkwrap": false,
+      "auto-changelog": {
+        "output": "CHANGELOG.md",
+        "template": "keepachangelog",
+        "hideCredit": true,
+        "unreleased": false,
+        "commitLimit": false,
+        "backfillLimit": false
+      },
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^5.9.0",
+        "obake": "^0.1.2",
+        "eslint": "=8.8.0",
+        "rimraf": "^2.7.1",
+        "semver": "^6.3.1",
+        "request": "~2.87.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.2",
+        "coveralls": "^3.1.1",
+        "puppeteer": "^1.20.0",
+        "browserify": "^13.3.0",
+        "formidable": "^1.2.6",
+        "in-publish": "^2.0.1",
+        "pre-commit": "^1.2.2",
+        "cross-spawn": "^6.0.6",
+        "auto-changelog": "^2.5.0",
+        "is-node-modern": "^1.0.0",
+        "browserify-istanbul": "^2.0.0",
+        "@ljharb/eslint-config": "^21.2.0",
+        "predict-v8-randomness": "^1.0.35"
+      }
+    },
+    "4.0.5": {
+      "name": "form-data",
+      "version": "4.0.5",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@4.0.5",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-4.0.5.tgz",
+        "integrity": "sha512-8RipRLol37bNs2bhoV67fiTEvdTrbMUYcFTiy3+wuuOnUog2QBHCZWXDRijWQfAkhBj2Uf5UnVaiWwA5vdd82w==",
+        "shasum": "b49e48858045ff4cbf6b03e1805cebcad3679053",
+        "fileCount": 8,
+        "unpackedSize": 81211
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 6"
+      },
+      "gitHead": "68ff7dda8834d6de095a7008cef0e03bc252ca98",
+      "scripts": {
+        "lint": "eslint --ext=js,mjs .",
+        "test": "npm run tests-only",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run tests-only && npm run browser && npm run report",
+        "prepack": "npm run update-readme",
+        "pretest": "npm run lint",
+        "version": "auto-changelog && git add CHANGELOG.md",
+        "postpack": "npm run restore-readme",
+        "posttest": "npx npm@'>=10.2' audit --production",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "not-in-publish || npm run prepublishOnly",
+        "tests-only": "istanbul cover test/run.js",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postversion": "auto-changelog && git add CHANGELOG.md && git commit --no-edit --amend && git tag -f \"v$(node -e \"console.log(require('./package.json').version)\")\"",
+        "pretests-only": "rimraf coverage test/tmp",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "posttests-only": "istanbul report lcov text",
+        "restore-readme": "mv READ.ME.md.bak README.md",
+        "postupdate-readme": "mv README.md.bak READ.ME.md.bak"
+      },
+      "typings": "./index.d.ts",
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "hasown": "^2.0.2",
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.12",
+        "combined-stream": "^1.0.8",
+        "es-set-tostringtag": "^2.1.0"
+      },
+      "_hasShrinkwrap": false,
+      "auto-changelog": {
+        "output": "CHANGELOG.md",
+        "template": "keepachangelog",
+        "hideCredit": true,
+        "unreleased": false,
+        "commitLimit": false,
+        "backfillLimit": false
+      },
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^5.9.0",
+        "obake": "^0.1.2",
+        "eslint": "^8.57.1",
+        "rimraf": "^2.7.1",
+        "semver": "^6.3.1",
+        "request": "~2.87.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.2",
+        "coveralls": "^3.1.1",
+        "puppeteer": "^1.20.0",
+        "browserify": "^13.3.0",
+        "formidable": "^1.2.6",
+        "in-publish": "^2.0.1",
+        "pre-commit": "^1.2.2",
+        "cross-spawn": "^6.0.6",
+        "auto-changelog": "^2.5.0",
+        "is-node-modern": "^1.0.0",
+        "browserify-istanbul": "^2.0.0",
+        "@ljharb/eslint-config": "^21.4.0",
+        "js-randomness-predictor": "^1.5.5"
+      }
+    },
+    "4.0.6": {
+      "name": "form-data",
+      "version": "4.0.6",
+      "author": {
+        "url": "http://debuggable.com/",
+        "name": "Felix Geisendörfer",
+        "email": "felix@debuggable.com"
+      },
+      "license": "MIT",
+      "_id": "form-data@4.0.6",
+      "homepage": "https://github.com/form-data/form-data#readme",
+      "bugs": {
+        "url": "https://github.com/form-data/form-data/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/form-data/-/form-data-4.0.6.tgz",
+        "integrity": "sha512-vKatAh4SlVfgbv+YtmhiRjhEMJsYpsG1Y2rMQtR+SVSbytsSD1YGzDIcrAJmdFec88u/+VoGmxnl+80gL1tRCQ==",
+        "shasum": "28e864e1b786dbebb68db1f452f9635278665827",
+        "fileCount": 8,
+        "unpackedSize": 83901
+      },
+      "main": "./lib/form_data",
+      "browser": "./lib/browser",
+      "engines": {
+        "node": ">= 6"
+      },
+      "gitHead": "64190db548c0179e37206858e39f27cf513e9435",
+      "scripts": {
+        "lint": "eslint --ext=js,mjs .",
+        "test": "npm run tests-only",
+        "check": "istanbul check-coverage coverage/coverage*.json",
+        "debug": "verbose=1 ./test/run.js",
+        "files": "pkgfiles --sort=name",
+        "report": "istanbul report lcov text",
+        "browser": "browserify -t browserify-istanbul test/run-browser.js | obake --coverage",
+        "ci-lint": "is-node-modern 8 && npm run lint || is-node-not-modern 8",
+        "ci-test": "npm run tests-only && npm run browser && npm run report",
+        "prepack": "npm run update-readme",
+        "pretest": "npm run lint",
+        "version": "auto-changelog && git add CHANGELOG.md",
+        "postpack": "npm run restore-readme",
+        "posttest": "npx npm@'>=10.2' audit --production",
+        "predebug": "rimraf coverage test/tmp",
+        "prepublish": "not-in-publish || npm run prepublishOnly",
+        "tests-only": "istanbul cover test/run.js",
+        "get-version": "node -e \"console.log(require('./package.json').version)\"",
+        "postversion": "auto-changelog && git add CHANGELOG.md && git commit --no-edit --amend && git tag -f \"v$(node -e \"console.log(require('./package.json').version)\")\"",
+        "pretests-only": "rimraf coverage test/tmp",
+        "update-readme": "sed -i.bak 's/\\/master\\.svg/\\/v'$(npm --silent run get-version)'.svg/g' README.md",
+        "posttests-only": "istanbul report lcov text",
+        "restore-readme": "mv READ.ME.md.bak README.md",
+        "postupdate-readme": "mv README.md.bak READ.ME.md.bak"
+      },
+      "typings": "./index.d.ts",
+      "repository": {
+        "url": "git://github.com/form-data/form-data.git",
+        "type": "git"
+      },
+      "description": "A library to create readable \"multipart/form-data\" streams. Can be used to submit forms and file uploads to other web applications.",
+      "directories": {},
+      "dependencies": {
+        "hasown": "^2.0.4",
+        "asynckit": "^0.4.0",
+        "mime-types": "^2.1.35",
+        "combined-stream": "^1.0.8",
+        "es-set-tostringtag": "^2.1.0"
+      },
+      "_hasShrinkwrap": false,
+      "auto-changelog": {
+        "output": "CHANGELOG.md",
+        "template": "keepachangelog",
+        "hideCredit": true,
+        "unreleased": false,
+        "commitLimit": false,
+        "backfillLimit": false
+      },
+      "devDependencies": {
+        "far": "^0.0.7",
+        "fake": "^0.2.2",
+        "tape": "^5.10.1",
+        "obake": "^0.1.2",
+        "eslint": "^8.57.1",
+        "rimraf": "^2.7.1",
+        "semver": "^6.3.1",
+        "request": "~2.87.0",
+        "istanbul": "^0.4.5",
+        "pkgfiles": "^2.3.2",
+        "coveralls": "^3.1.1",
+        "puppeteer": "^1.20.0",
+        "browserify": "^13.3.0",
+        "formidable": "^1.2.6",
+        "in-publish": "^2.0.1",
+        "pre-commit": "^1.2.2",
+        "cross-spawn": "^6.0.6",
+        "auto-changelog": "^2.6.0",
+        "is-node-modern": "^1.0.0",
+        "browserify-istanbul": "^2.0.0",
+        "@ljharb/eslint-config": "^22.2.3",
+        "js-randomness-predictor": "^3.6.0"
+      }
+    }
+  },
+  "time": {
+    "created": "2018-10-17T07:26:22.767Z",
+    "modified": "2026-06-12T17:39:55.670Z",
+    "2.3.3": "2018-10-17T07:26:22.767Z",
+    "2.4.0": "2019-06-19T07:27:06.596Z",
+    "2.5.0": "2019-07-04T04:44:27.090Z",
+    "2.5.1": "2019-08-29T06:48:54.586Z",
+    "2.5.2": "2024-10-10T03:46:33.800Z",
+    "2.5.3": "2025-02-14T21:56:16.969Z",
+    "2.5.4": "2025-07-17T21:42:15.999Z",
+    "2.5.5": "2025-07-18T22:54:20.578Z",
+    "2.5.6": "2026-06-12T17:39:55.670Z",
+    "3.0.0": "2019-11-06T07:56:58.467Z",
+    "3.0.1": "2021-02-15T17:33:58.367Z",
+    "3.0.2": "2024-10-10T03:48:50.494Z",
+    "3.0.3": "2025-02-14T23:00:12.690Z",
+    "3.0.4": "2025-07-17T06:17:45.147Z",
+    "3.0.5": "2026-06-12T17:39:18.105Z",
+    "4.0.0": "2021-02-15T17:38:54.740Z",
+    "4.0.1": "2024-10-10T03:49:46.006Z",
+    "4.0.2": "2025-02-14T23:23:57.699Z",
+    "4.0.3": "2025-06-05T14:51:11.479Z",
+    "4.0.4": "2025-07-17T04:54:11.284Z",
+    "4.0.5": "2025-11-17T04:16:07.493Z",
+    "4.0.6": "2026-06-12T17:37:53.689Z"
+  }
+}

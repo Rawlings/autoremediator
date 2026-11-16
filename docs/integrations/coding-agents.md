@@ -64,7 +64,7 @@ Instead of per-project files, install the plugin once:
 
 It adds the MCP server, the [install guard hook](../guides/guard.md), the three skills, two commands (`/autoremediator:remediate <id>`,
 `/autoremediator:vet <package>`) and a `dependency-remediator` subagent. The plugin lives in
-[`plugins/claude-code`](../../plugins/claude-code) and is generated from the same text `init` writes,
+[`integrations/claude-code`](../../integrations/claude-code) and is generated from the same text `init` writes,
 so the two cannot disagree.
 
 ## Per host notes

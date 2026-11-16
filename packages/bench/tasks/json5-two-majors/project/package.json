@@ -1,0 +1,14 @@
+{
+  "name": "bench-app-json5-two-majors",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "node \"$BENCH_TSC\" -p tsconfig.json",
+    "test": "node --permission --allow-fs-read=\"$PWD\" --test-isolation=none --test test/*.test.ts"
+  },
+  "dependencies": {
+    "json5": "2.2.1",
+    "tsconfig-paths": "3.14.1"
+  }
+}

@@ -1,0 +1,4113 @@
+{
+  "name": "uuid",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "legacy-12": "12.0.1",
+    "legacy-11": "11.1.1",
+    "legacy-13": "13.0.2",
+    "latest": "14.0.3"
+  },
+  "versions": {
+    "3.4.0": {
+      "name": "uuid",
+      "version": "3.4.0",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122"
+      ],
+      "license": "MIT",
+      "_id": "uuid@3.4.0",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "./bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-3.4.0.tgz",
+        "integrity": "sha512-HjSDRw6gZE5JMggctHBcjVak08+KEVhSIiDzFnT9S9aegmp85S/bReBVTb4QTFaRNptJ9kuYaNhnbNEOkbKb/A==",
+        "shasum": "b23e4358afa8a202fe7a100af1f5f883f02007ee",
+        "fileCount": 19,
+        "unpackedSize": 34269
+      },
+      "husky": {
+        "hooks": {
+          "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+        }
+      },
+      "browser": {
+        "./lib/md5.js": "./lib/md5-browser.js",
+        "./lib/rng.js": "./lib/rng-browser.js",
+        "./lib/sha1.js": "./lib/sha1-browser.js"
+      },
+      "gitHead": "3df73a98f07c0a38a94bcaf1ecde0e384dc3b126",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "lint": "eslint .",
+        "test": "npm run lint && mocha test/test.js",
+        "prepare": "runmd --output=README.md README_js.md",
+        "release": "standard-version"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).",
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC4122 (v1, v4, and v5) UUIDs",
+      "directories": {},
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "husky": "~3.0.5",
+        "mocha": "6.2.0",
+        "runmd": "1.2.1",
+        "eslint": "~6.4.0",
+        "@commitlint/cli": "~8.2.0",
+        "standard-version": "7.0.0",
+        "@commitlint/config-conventional": "~8.2.0"
+      }
+    },
+    "7.0.0": {
+      "name": "uuid",
+      "version": "7.0.0",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122"
+      ],
+      "license": "MIT",
+      "_id": "uuid@7.0.0",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-7.0.0.tgz",
+        "integrity": "sha512-LNUrNsXdI/fUsypJbWM8Jt4DgQdFAZh41p9C7WE9Cn+CULOEkoG2lgQyH68v3wnIy5K3fN4jdSt270K6IFA3MQ==",
+        "shasum": "1833d4b9ce50b732bfaa271f9cb74e974d303c79",
+        "fileCount": 36,
+        "unpackedSize": 72408
+      },
+      "main": "dist/index.js",
+      "husky": {
+        "hooks": {
+          "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
+          "pre-commit": "lint-staged"
+        }
+      },
+      "module": "dist/esm-browser/index.js",
+      "gitHead": "63e5702d7629303a5193c4dd31825376f240f888",
+      "scripts": {
+        "ci": "npm run lint && npm run test && npm run prettier:check && npm run docs:diff && npm run bundlewatch",
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "( node --version | grep -q 'v12' ) && ( npm run build && runmd --output=README.md README_js.md )",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "BABEL_ENV=commonjs node --throw-deprecation node_modules/.bin/jest test/unit/",
+        "build": "./scripts/build.sh",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "( node --version | grep -vq 'v12' ) || ( npm run docs && git diff --quiet README.md )",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.js",
+        "bundlewatch": "( node --version | grep -vq 'v12' ) || ( npm run pretest:browser && CI_REPO_OWNER=uuidjs CI_REPO_NAME=uuid CI_COMMIT_SHA=$GITHUB_SHA CI_BRANCH=${GITHUB_REF##refs/heads/} bundlewatch --config bundlewatch.config.json )",
+        "eslint:check": "eslint src/ test/ examples/ *.js",
+        "prettier:fix": "prettier --ignore-path .prettierignore --write '**/*.{js,jsx,json,md}'",
+        "test:browser": "BABEL_ENV=commonjs jest --forceExit --verbose test/browser/${BROWSER:-}*",
+        "prettier:check": "prettier --ignore-path .prettierignore --check '**/*.{js,jsx,json,md}'",
+        "pretest:browser": "npm run build && npm-run-all --parallel examples:**",
+        "examples:browser-rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser-webpack:build": "cd examples/browser-webpack && npm install && npm run build",
+        "examples:browser-esmodules:build": "cd examples/browser-esmodules && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).",
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC4122 (v1, v4, and v5) UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*.{js,jsx}": [
+          "eslint --fix"
+        ],
+        "*.{js,jsx,json,md}": [
+          "prettier --write"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "esm": "3.2.25",
+        "jest": "25.1.0",
+        "husky": "3.0.9",
+        "runmd": "1.3.2",
+        "eslint": "6.8.0",
+        "rollup": "1.31.1",
+        "prettier": "1.19.1",
+        "@babel/cli": "7.8.4",
+        "@babel/core": "7.8.4",
+        "bundlewatch": "0.2.5",
+        "http-server": "0.12.1",
+        "lint-staged": "10.0.7",
+        "npm-run-all": "4.1.5",
+        "babel-eslint": "10.0.3",
+        "@commitlint/cli": "8.3.5",
+        "standard-version": "7.1.0",
+        "@babel/preset-env": "7.8.4",
+        "browserstack-local": "1.4.5",
+        "selenium-webdriver": "3.6.0",
+        "rollup-plugin-terser": "5.2.0",
+        "eslint-config-prettier": "6.10.0",
+        "eslint-plugin-prettier": "3.1.2",
+        "@commitlint/config-conventional": "8.3.4",
+        "babel-plugin-add-module-exports": "1.0.2"
+      },
+      "standard-version": {
+        "scripts": {
+          "postcommit": "npm run build",
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      }
+    },
+    "7.0.1": {
+      "name": "uuid",
+      "version": "7.0.1",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122"
+      ],
+      "license": "MIT",
+      "_id": "uuid@7.0.1",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-7.0.1.tgz",
+        "integrity": "sha512-yqjRXZzSJm9Dbl84H2VDHpM3zMjzSJQ+hn6C4zqd5ilW+7P4ZmLEEqwho9LjP+tGuZlF4xrHQXT0h9QZUS/pWA==",
+        "shasum": "95ed6ff3d8c881cbf85f0f05cc3915ef994818ef",
+        "fileCount": 49,
+        "unpackedSize": 91125
+      },
+      "main": "dist/index.js",
+      "husky": {
+        "hooks": {
+          "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
+          "pre-commit": "lint-staged"
+        }
+      },
+      "module": "dist/esm-node/index.js",
+      "browser": {
+        "./dist/md5.js": "./dist/md5-browser.js",
+        "./dist/rng.js": "./dist/rng-browser.js",
+        "./dist/sha1.js": "./dist/sha1-browser.js",
+        "./dist/esm-node/index.js": "./dist/esm-browser/index.js"
+      },
+      "gitHead": "3f78220564ff2abcb06cbf5ea173513a0e0cba43",
+      "scripts": {
+        "ci": "npm run lint && npm run test && npm run prettier:check && npm run docs:diff && npm run bundlewatch",
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "( node --version | grep -q 'v12' ) && ( npm run build && runmd --output=README.md README_js.md )",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "BABEL_ENV=commonjs node --throw-deprecation node_modules/.bin/jest test/unit/",
+        "build": "./scripts/build.sh",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "( node --version | grep -vq 'v12' ) || ( npm run docs && git diff --quiet README.md )",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.js",
+        "bundlewatch": "( node --version | grep -vq 'v12' ) || ( npm run pretest:browser && CI_REPO_OWNER=uuidjs CI_REPO_NAME=uuid CI_COMMIT_SHA=$GITHUB_SHA CI_BRANCH=${GITHUB_REF##refs/heads/} bundlewatch --config bundlewatch.config.json )",
+        "eslint:check": "eslint src/ test/ examples/ *.js",
+        "prettier:fix": "prettier --ignore-path .prettierignore --write '**/*.{js,jsx,json,md}'",
+        "test:browser": "BABEL_ENV=commonjs jest --forceExit --verbose test/browser/${BROWSER:-}*",
+        "prettier:check": "prettier --ignore-path .prettierignore --check '**/*.{js,jsx,json,md}'",
+        "pretest:browser": "npm run build && npm-run-all --parallel examples:**",
+        "examples:browser-rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser-webpack:build": "cd examples/browser-webpack && npm install && npm run build",
+        "examples:browser-esmodules:build": "cd examples/browser-esmodules && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).",
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC4122 (v1, v4, and v5) UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*.{js,jsx}": [
+          "eslint --fix"
+        ],
+        "*.{js,jsx,json,md}": [
+          "prettier --write"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "esm": "3.2.25",
+        "jest": "25.1.0",
+        "husky": "3.0.9",
+        "runmd": "1.3.2",
+        "eslint": "6.8.0",
+        "rollup": "1.31.1",
+        "prettier": "1.19.1",
+        "@babel/cli": "7.8.4",
+        "@babel/core": "7.8.4",
+        "bundlewatch": "0.2.5",
+        "http-server": "0.12.1",
+        "lint-staged": "10.0.7",
+        "npm-run-all": "4.1.5",
+        "babel-eslint": "10.0.3",
+        "@commitlint/cli": "8.3.5",
+        "standard-version": "7.1.0",
+        "@babel/preset-env": "7.8.4",
+        "browserstack-local": "1.4.5",
+        "selenium-webdriver": "3.6.0",
+        "rollup-plugin-terser": "5.2.0",
+        "eslint-config-prettier": "6.10.0",
+        "eslint-plugin-prettier": "3.1.2",
+        "@rollup/plugin-node-resolve": "7.1.1",
+        "@commitlint/config-conventional": "8.3.4",
+        "babel-plugin-add-module-exports": "1.0.2"
+      },
+      "standard-version": {
+        "scripts": {
+          "postcommit": "npm run build",
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      }
+    },
+    "7.0.2": {
+      "name": "uuid",
+      "version": "7.0.2",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122"
+      ],
+      "license": "MIT",
+      "_id": "uuid@7.0.2",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-7.0.2.tgz",
+        "integrity": "sha512-vy9V/+pKG+5ZTYKf+VcphF5Oc6EFiu3W8Nv3P3zIh0EqVI80ZxOzuPfe9EHjkFNvf8+xuTHVeei4Drydlx4zjw==",
+        "shasum": "7ff5c203467e91f5e0d85cfcbaaf7d2ebbca9be6",
+        "fileCount": 49,
+        "unpackedSize": 92084
+      },
+      "main": "dist/index.js",
+      "husky": {
+        "hooks": {
+          "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
+          "pre-commit": "lint-staged"
+        }
+      },
+      "module": "dist/esm-node/index.js",
+      "browser": {
+        "./dist/md5.js": "./dist/md5-browser.js",
+        "./dist/rng.js": "./dist/rng-browser.js",
+        "./dist/sha1.js": "./dist/sha1-browser.js",
+        "./dist/esm-node/index.js": "./dist/esm-browser/index.js"
+      },
+      "gitHead": "4b61be05c840ba4d6fadf89cc8d4e1bbba7b9b1a",
+      "scripts": {
+        "ci": "npm run lint && npm run test && npm run prettier:check && npm run docs:diff && npm run bundlewatch",
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "( node --version | grep -q 'v12' ) && ( npm run build && runmd --output=README.md README_js.md )",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "BABEL_ENV=commonjs node --throw-deprecation node_modules/.bin/jest test/unit/",
+        "build": "./scripts/build.sh",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "( node --version | grep -vq 'v12' ) || ( npm run docs && git diff --quiet README.md )",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.js",
+        "bundlewatch": "( node --version | grep -vq 'v12' ) || ( npm run pretest:browser && CI_REPO_OWNER=uuidjs CI_REPO_NAME=uuid CI_COMMIT_SHA=$GITHUB_SHA CI_BRANCH=${GITHUB_REF##refs/heads/} bundlewatch --config bundlewatch.config.json )",
+        "eslint:check": "eslint src/ test/ examples/ *.js",
+        "prettier:fix": "prettier --ignore-path .prettierignore --write '**/*.{js,jsx,json,md}'",
+        "test:browser": "BABEL_ENV=commonjs jest --forceExit --verbose test/browser/${BROWSER:-}*",
+        "prettier:check": "prettier --ignore-path .prettierignore --check '**/*.{js,jsx,json,md}'",
+        "pretest:browser": "npm run build && npm-run-all --parallel examples:**",
+        "examples:browser-rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser-webpack:build": "cd examples/browser-webpack && npm install && npm run build",
+        "examples:browser-esmodules:build": "cd examples/browser-esmodules && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).",
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC4122 (v1, v4, and v5) UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*.{js,jsx}": [
+          "eslint --fix"
+        ],
+        "*.{js,jsx,json,md}": [
+          "prettier --write"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "esm": "3.2.25",
+        "jest": "25.1.0",
+        "husky": "3.0.9",
+        "runmd": "1.3.2",
+        "eslint": "6.8.0",
+        "rollup": "1.31.1",
+        "prettier": "1.19.1",
+        "@babel/cli": "7.8.4",
+        "@babel/core": "7.8.4",
+        "bundlewatch": "0.2.5",
+        "http-server": "0.12.1",
+        "lint-staged": "10.0.7",
+        "npm-run-all": "4.1.5",
+        "babel-eslint": "10.0.3",
+        "@commitlint/cli": "8.3.5",
+        "standard-version": "7.1.0",
+        "@babel/preset-env": "7.8.4",
+        "browserstack-local": "1.4.5",
+        "selenium-webdriver": "3.6.0",
+        "rollup-plugin-terser": "5.2.0",
+        "eslint-config-prettier": "6.10.0",
+        "eslint-plugin-prettier": "3.1.2",
+        "@rollup/plugin-node-resolve": "7.1.1",
+        "@commitlint/config-conventional": "8.3.4",
+        "babel-plugin-add-module-exports": "1.0.2"
+      },
+      "standard-version": {
+        "scripts": {
+          "postcommit": "npm run build",
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      }
+    },
+    "7.0.3": {
+      "name": "uuid",
+      "version": "7.0.3",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122"
+      ],
+      "license": "MIT",
+      "_id": "uuid@7.0.3",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-7.0.3.tgz",
+        "integrity": "sha512-DPSke0pXhTZgoF/d+WSt2QaKMCFSfx7QegxEWT+JOuHF5aWrKEn0G+ztjuJg/gG8/ItK+rbPCD/yNv8yyih6Cg==",
+        "shasum": "c5c9f2c8cf25dc0a372c4df1441c41f5bd0c680b",
+        "fileCount": 50,
+        "unpackedSize": 92933
+      },
+      "main": "dist/index.js",
+      "husky": {
+        "hooks": {
+          "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
+          "pre-commit": "lint-staged"
+        }
+      },
+      "module": "dist/esm-node/index.js",
+      "browser": {
+        "./dist/md5.js": "./dist/md5-browser.js",
+        "./dist/rng.js": "./dist/rng-browser.js",
+        "./dist/sha1.js": "./dist/sha1-browser.js",
+        "./dist/esm-node/index.js": "./dist/esm-browser/index.js"
+      },
+      "gitHead": "4fcd881246f102239fa386f958ec0e5f83b53bbe",
+      "scripts": {
+        "ci": "npm run lint && npm run test && npm run prettier:check && npm run docs:diff && npm run bundlewatch",
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "( node --version | grep -q 'v12' ) && ( npm run build && runmd --output=README.md README_js.md )",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "BABEL_ENV=commonjs node --throw-deprecation node_modules/.bin/jest test/unit/",
+        "build": "./scripts/build.sh",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "( node --version | grep -vq 'v12' ) || ( npm run docs && git diff --quiet README.md )",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.js",
+        "bundlewatch": "( node --version | grep -vq 'v12' ) || ( npm run pretest:browser && bundlewatch --config bundlewatch.config.json )",
+        "eslint:check": "eslint src/ test/ examples/ *.js",
+        "prettier:fix": "prettier --ignore-path .prettierignore --write '**/*.{js,jsx,json,md}'",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prettier:check": "prettier --ignore-path .prettierignore --check '**/*.{js,jsx,json,md}'",
+        "pretest:browser": "npm run build && npm-run-all --parallel examples:**",
+        "examples:browser-rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser-webpack:build": "cd examples/browser-webpack && npm install && npm run build",
+        "examples:browser-esmodules:build": "cd examples/browser-esmodules && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).",
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC4122 (v1, v4, and v5) UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*.{js,jsx}": [
+          "eslint --fix"
+        ],
+        "*.{js,jsx,json,md}": [
+          "prettier --write"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "25.1.0",
+        "husky": "3.0.9",
+        "runmd": "1.3.2",
+        "eslint": "6.8.0",
+        "rollup": "1.32.0",
+        "prettier": "1.19.1",
+        "@wdio/cli": "5.18.7",
+        "@babel/cli": "7.8.4",
+        "@wdio/sync": "5.18.7",
+        "@babel/core": "7.8.7",
+        "bundlewatch": "0.2.6",
+        "lint-staged": "10.0.8",
+        "npm-run-all": "4.1.5",
+        "babel-eslint": "10.1.0",
+        "@commitlint/cli": "8.3.5",
+        "standard-version": "7.1.0",
+        "@babel/preset-env": "7.8.7",
+        "@wdio/local-runner": "5.18.7",
+        "@wdio/spec-reporter": "5.18.7",
+        "rollup-plugin-terser": "5.2.0",
+        "eslint-config-prettier": "6.10.0",
+        "eslint-plugin-prettier": "3.1.2",
+        "@wdio/jasmine-framework": "5.18.6",
+        "@wdio/browserstack-service": "5.18.7",
+        "@rollup/plugin-node-resolve": "7.1.1",
+        "@wdio/static-server-service": "5.16.10",
+        "@commitlint/config-conventional": "8.3.4",
+        "babel-plugin-add-module-exports": "1.0.2"
+      },
+      "standard-version": {
+        "scripts": {
+          "postcommit": "npm run build",
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      }
+    },
+    "8.0.0": {
+      "name": "uuid",
+      "version": "8.0.0",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122"
+      ],
+      "license": "MIT",
+      "_id": "uuid@8.0.0",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-8.0.0.tgz",
+        "integrity": "sha512-jOXGuXZAWdsTH7eZLtyXMqUb9EcWMGZNbL9YcGBJl4MH4nrxHmZJhEHvyLFrkxo+28uLb/NYRcStH48fnD0Vzw==",
+        "shasum": "bc6ccf91b5ff0ac07bbcdbf1c7c4e150db4dbb6c",
+        "fileCount": 46,
+        "unpackedSize": 92955
+      },
+      "main": "./dist/index.js",
+      "husky": {
+        "hooks": {
+          "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
+          "pre-commit": "lint-staged"
+        }
+      },
+      "module": "./dist/esm-node/index.js",
+      "browser": {
+        "./dist/md5.js": "./dist/md5-browser.js",
+        "./dist/rng.js": "./dist/rng-browser.js",
+        "./dist/sha1.js": "./dist/sha1-browser.js",
+        "./dist/esm-node/index.js": "./dist/esm-browser/index.js"
+      },
+      "exports": {
+        "import": "./wrapper.mjs",
+        "require": "./dist/index.js"
+      },
+      "gitHead": "a7d3d517382490eda6dd21158e5413261c45ccdd",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "( node --version | grep -q 'v12' ) && ( npm run build && runmd --output=README.md README_js.md )",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "BABEL_ENV=commonjs node --throw-deprecation node_modules/.bin/jest test/unit/",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build",
+        "pretest": "[ -n $CI ] || npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:pack": "./scripts/testpack.sh",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.js",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.js",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --ignore-path .prettierignore --write '**/*.{js,jsx,json,md}'",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prettier:check": "prettier --ignore-path .prettierignore --check '**/*.{js,jsx,json,md}'",
+        "pretest:browser": "npm run build && npm-run-all --parallel examples:browser:**",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm install && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm install && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).",
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC4122 (v1, v4, and v5) UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*.{js,jsx}": [
+          "eslint --fix"
+        ],
+        "*.{js,jsx,json,md}": [
+          "prettier --write"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "25.3.0",
+        "husky": "4.2.5",
+        "runmd": "1.3.2",
+        "eslint": "6.8.0",
+        "rollup": "2.6.1",
+        "prettier": "2.0.4",
+        "@wdio/cli": "6.0.15",
+        "@babel/cli": "7.8.4",
+        "@wdio/sync": "6.0.15",
+        "@babel/core": "7.9.0",
+        "bundlewatch": "0.2.6",
+        "lint-staged": "10.1.3",
+        "npm-run-all": "4.1.5",
+        "babel-eslint": "10.1.0",
+        "@commitlint/cli": "8.3.5",
+        "standard-version": "7.1.0",
+        "@babel/preset-env": "7.9.5",
+        "@wdio/local-runner": "6.0.15",
+        "@wdio/spec-reporter": "6.0.14",
+        "rollup-plugin-terser": "5.3.0",
+        "eslint-config-prettier": "6.10.1",
+        "eslint-plugin-prettier": "3.1.3",
+        "@wdio/jasmine-framework": "6.0.15",
+        "@wdio/browserstack-service": "6.0.12",
+        "@rollup/plugin-node-resolve": "7.1.3",
+        "@wdio/static-server-service": "6.0.13",
+        "@commitlint/config-conventional": "8.3.4"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      }
+    },
+    "8.1.0": {
+      "name": "uuid",
+      "version": "8.1.0",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122"
+      ],
+      "license": "MIT",
+      "_id": "uuid@8.1.0",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-8.1.0.tgz",
+        "integrity": "sha512-CI18flHDznR0lq54xBycOVmphdCYnQLKn8abKn7PXUiKUGdEd+/l9LWNJmugXel4hXq7S+RMNl34ecyC9TntWg==",
+        "shasum": "6f1536eb43249f473abc6bd58ff983da1ca30d8d",
+        "fileCount": 46,
+        "unpackedSize": 95154
+      },
+      "main": "./dist/index.js",
+      "husky": {
+        "hooks": {
+          "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
+          "pre-commit": "lint-staged"
+        }
+      },
+      "module": "./dist/esm-node/index.js",
+      "browser": {
+        "./dist/md5.js": "./dist/md5-browser.js",
+        "./dist/rng.js": "./dist/rng-browser.js",
+        "./dist/sha1.js": "./dist/sha1-browser.js",
+        "./dist/esm-node/index.js": "./dist/esm-browser/index.js"
+      },
+      "exports": {
+        ".": {
+          "import": "./wrapper.mjs",
+          "require": "./dist/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "gitHead": "4124ec75f032da7b405b870b68219cda8495297f",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "( node --version | grep -q 'v12' ) && ( npm run build && runmd --output=README.md README_js.md )",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "BABEL_ENV=commonjs node --throw-deprecation node_modules/.bin/jest test/unit/",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build",
+        "pretest": "[ -n $CI ] || npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:pack": "./scripts/testpack.sh",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.js",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.js",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --ignore-path .prettierignore --write '**/*.{js,jsx,json,md}'",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prettier:check": "prettier --ignore-path .prettierignore --check '**/*.{js,jsx,json,md}'",
+        "test:benchmark": "cd examples/benchmark && npm install && npm test",
+        "pretest:browser": "npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm install && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm install && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).",
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC4122 (v1, v4, and v5) UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*.{js,jsx}": [
+          "eslint --fix"
+        ],
+        "*.{js,jsx,json,md}": [
+          "prettier --write"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "25.3.0",
+        "husky": "4.2.5",
+        "runmd": "1.3.2",
+        "eslint": "6.8.0",
+        "rollup": "2.6.1",
+        "prettier": "2.0.4",
+        "@wdio/cli": "6.0.15",
+        "@babel/cli": "7.8.4",
+        "@wdio/sync": "6.0.15",
+        "@babel/core": "7.9.0",
+        "bundlewatch": "0.2.6",
+        "lint-staged": "10.1.3",
+        "npm-run-all": "4.1.5",
+        "babel-eslint": "10.1.0",
+        "@commitlint/cli": "8.3.5",
+        "standard-version": "7.1.0",
+        "@babel/preset-env": "7.9.5",
+        "@wdio/local-runner": "6.0.15",
+        "eslint-plugin-node": "11.1.0",
+        "@wdio/spec-reporter": "6.0.14",
+        "eslint-plugin-import": "2.20.2",
+        "rollup-plugin-terser": "5.3.0",
+        "eslint-plugin-promise": "4.2.1",
+        "eslint-config-prettier": "6.10.1",
+        "eslint-config-standard": "14.1.1",
+        "eslint-plugin-prettier": "3.1.3",
+        "eslint-plugin-standard": "4.0.1",
+        "@wdio/jasmine-framework": "6.0.15",
+        "@wdio/browserstack-service": "6.0.12",
+        "@rollup/plugin-node-resolve": "7.1.3",
+        "@wdio/static-server-service": "6.0.13",
+        "@commitlint/config-conventional": "8.3.4"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      }
+    },
+    "8.2.0": {
+      "name": "uuid",
+      "version": "8.2.0",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122"
+      ],
+      "license": "MIT",
+      "_id": "uuid@8.2.0",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-8.2.0.tgz",
+        "integrity": "sha512-CYpGiFTUrmI6OBMkAdjSDM0k5h8SkkiTP4WAjQgDgNB1S3Ou9VBEvr6q0Kv2H1mMk7IWfxYGpMH5sd5AvcIV2Q==",
+        "shasum": "cb10dd6b118e2dada7d0cd9730ba7417c93d920e",
+        "fileCount": 46,
+        "unpackedSize": 97285
+      },
+      "main": "./dist/index.js",
+      "husky": {
+        "hooks": {
+          "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
+          "pre-commit": "lint-staged"
+        }
+      },
+      "module": "./dist/esm-node/index.js",
+      "browser": {
+        "./dist/md5.js": "./dist/md5-browser.js",
+        "./dist/rng.js": "./dist/rng-browser.js",
+        "./dist/sha1.js": "./dist/sha1-browser.js",
+        "./dist/esm-node/index.js": "./dist/esm-browser/index.js"
+      },
+      "exports": {
+        ".": {
+          "node": {
+            "import": "./wrapper.mjs",
+            "module": "./dist/esm-node/index.js",
+            "require": "./dist/index.js"
+          },
+          "default": "./dist/esm-browser/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "gitHead": "b51f172b22580dabd382861c1a6316173244f51b",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "( node --version | grep -q 'v12' ) && ( npm run build && runmd --output=README.md README_js.md )",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "BABEL_ENV=commonjs node --throw-deprecation node_modules/.bin/jest test/unit/",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build",
+        "pretest": "[ -n $CI ] || npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:pack": "./scripts/testpack.sh",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.js",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.js",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --ignore-path .prettierignore --write '**/*.{js,jsx,json,md}'",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prettier:check": "prettier --ignore-path .prettierignore --check '**/*.{js,jsx,json,md}'",
+        "test:benchmark": "cd examples/benchmark && npm install && npm test",
+        "pretest:browser": "npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm install && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm install && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).",
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC4122 (v1, v4, and v5) UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*.{js,jsx}": [
+          "eslint --fix"
+        ],
+        "*.{js,jsx,json,md}": [
+          "prettier --write"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "25.5.4",
+        "husky": "4.2.5",
+        "runmd": "1.3.2",
+        "eslint": "7.3.0",
+        "rollup": "2.18.0",
+        "prettier": "2.0.5",
+        "@wdio/cli": "6.1.20",
+        "@babel/cli": "7.10.3",
+        "@wdio/sync": "6.1.14",
+        "@babel/core": "7.10.3",
+        "bundlewatch": "0.2.7",
+        "lint-staged": "10.2.11",
+        "npm-run-all": "4.1.5",
+        "babel-eslint": "10.1.0",
+        "@commitlint/cli": "9.0.1",
+        "standard-version": "8.0.0",
+        "@babel/preset-env": "7.10.3",
+        "@wdio/local-runner": "6.1.20",
+        "eslint-plugin-node": "11.1.0",
+        "@wdio/spec-reporter": "6.1.14",
+        "eslint-plugin-import": "2.21.2",
+        "rollup-plugin-terser": "6.1.0",
+        "eslint-plugin-promise": "4.2.1",
+        "eslint-config-prettier": "6.11.0",
+        "eslint-config-standard": "14.1.1",
+        "eslint-plugin-prettier": "3.1.4",
+        "eslint-plugin-standard": "4.0.1",
+        "@wdio/jasmine-framework": "6.1.17",
+        "@wdio/browserstack-service": "6.1.15",
+        "@rollup/plugin-node-resolve": "8.0.1",
+        "@wdio/static-server-service": "6.1.14",
+        "@commitlint/config-conventional": "9.0.1"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      }
+    },
+    "8.3.0": {
+      "name": "uuid",
+      "version": "8.3.0",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122"
+      ],
+      "license": "MIT",
+      "_id": "uuid@8.3.0",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-8.3.0.tgz",
+        "integrity": "sha512-fX6Z5o4m6XsXBdli9g7DtWgAx+osMsRRZFKma1mIUsLCz6vRvv+pz5VNbyu9UEDzpMWulZfvpgb/cmDXVulYFQ==",
+        "shasum": "ab738085ca22dc9a8c92725e459b1d507df5d6ea",
+        "fileCount": 66,
+        "unpackedSize": 112959
+      },
+      "main": "./dist/index.js",
+      "husky": {
+        "hooks": {
+          "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
+          "pre-commit": "lint-staged"
+        }
+      },
+      "module": "./dist/esm-node/index.js",
+      "browser": {
+        "./dist/md5.js": "./dist/md5-browser.js",
+        "./dist/rng.js": "./dist/rng-browser.js",
+        "./dist/sha1.js": "./dist/sha1-browser.js",
+        "./dist/esm-node/index.js": "./dist/esm-browser/index.js"
+      },
+      "exports": {
+        ".": {
+          "node": {
+            "import": "./wrapper.mjs",
+            "module": "./dist/esm-node/index.js",
+            "require": "./dist/index.js"
+          },
+          "default": "./dist/esm-browser/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "gitHead": "a91f78d9e593b8a9af1cfebdf33b771b82c42475",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "( node --version | grep -q 'v12' ) && ( npm run build && runmd --output=README.md README_js.md )",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "BABEL_ENV=commonjs node --throw-deprecation node_modules/.bin/jest test/unit/",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build",
+        "pretest": "[ -n $CI ] || npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:pack": "./scripts/testpack.sh",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.js",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.js",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --ignore-path .prettierignore --write '**/*.{js,jsx,json,md}'",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prettier:check": "prettier --ignore-path .prettierignore --check '**/*.{js,jsx,json,md}'",
+        "test:benchmark": "cd examples/benchmark && npm install && npm test",
+        "pretest:browser": "npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm install && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm install && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).",
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC4122 (v1, v4, and v5) UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*.{js,jsx}": [
+          "eslint --fix"
+        ],
+        "*.{js,jsx,json,md}": [
+          "prettier --write"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "25.5.4",
+        "husky": "4.2.5",
+        "runmd": "1.3.2",
+        "eslint": "7.3.0",
+        "rollup": "2.18.0",
+        "prettier": "2.0.5",
+        "@wdio/cli": "6.1.20",
+        "@babel/cli": "7.10.3",
+        "@wdio/sync": "6.1.14",
+        "@babel/core": "7.10.3",
+        "bundlewatch": "0.2.7",
+        "lint-staged": "10.2.11",
+        "npm-run-all": "4.1.5",
+        "random-seed": "0.3.0",
+        "babel-eslint": "10.1.0",
+        "@commitlint/cli": "9.1.2",
+        "standard-version": "8.0.2",
+        "@babel/preset-env": "7.10.3",
+        "@wdio/local-runner": "6.1.20",
+        "eslint-plugin-node": "11.1.0",
+        "@wdio/spec-reporter": "6.1.14",
+        "eslint-plugin-import": "2.21.2",
+        "rollup-plugin-terser": "6.1.0",
+        "eslint-plugin-promise": "4.2.1",
+        "eslint-config-prettier": "6.11.0",
+        "eslint-config-standard": "14.1.1",
+        "eslint-plugin-prettier": "3.1.4",
+        "eslint-plugin-standard": "4.0.1",
+        "@wdio/jasmine-framework": "6.1.17",
+        "@wdio/browserstack-service": "6.1.15",
+        "@rollup/plugin-node-resolve": "8.0.1",
+        "@wdio/static-server-service": "6.1.14",
+        "@commitlint/config-conventional": "9.0.1"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      }
+    },
+    "8.3.1": {
+      "name": "uuid",
+      "version": "8.3.1",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122"
+      ],
+      "license": "MIT",
+      "_id": "uuid@8.3.1",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-8.3.1.tgz",
+        "integrity": "sha512-FOmRr+FmWEIG8uhZv6C2bTgEVXsHk08kE7mPlrBbEe+c3r9pjceVPgupIfNIhc4yx55H69OXANrUaSuu9eInKg==",
+        "shasum": "2ba2e6ca000da60fce5a196954ab241131e05a31",
+        "fileCount": 66,
+        "unpackedSize": 114950
+      },
+      "main": "./dist/index.js",
+      "husky": {
+        "hooks": {
+          "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
+          "pre-commit": "lint-staged"
+        }
+      },
+      "module": "./dist/esm-node/index.js",
+      "browser": {
+        "./dist/md5.js": "./dist/md5-browser.js",
+        "./dist/rng.js": "./dist/rng-browser.js",
+        "./dist/sha1.js": "./dist/sha1-browser.js",
+        "./dist/esm-node/index.js": "./dist/esm-browser/index.js"
+      },
+      "exports": {
+        ".": {
+          "node": {
+            "import": "./wrapper.mjs",
+            "module": "./dist/esm-node/index.js",
+            "require": "./dist/index.js"
+          },
+          "default": "./dist/esm-browser/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "gitHead": "252ebcfb33b2d056963a530fc02067ae3de6095a",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "( node --version | grep -q 'v12' ) && ( npm run build && runmd --output=README.md README_js.md )",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "BABEL_ENV=commonjs node --throw-deprecation node_modules/.bin/jest test/unit/",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build",
+        "pretest": "[ -n $CI ] || npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:pack": "./scripts/testpack.sh",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.js",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.js",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --ignore-path .prettierignore --write '**/*.{js,jsx,json,md}'",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prettier:check": "prettier --ignore-path .prettierignore --check '**/*.{js,jsx,json,md}'",
+        "test:benchmark": "cd examples/benchmark && npm install && npm test",
+        "pretest:browser": "optional-dev-dependency && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm install && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm install && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).",
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC4122 (v1, v4, and v5) UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*.{js,jsx}": [
+          "eslint --fix"
+        ],
+        "*.{js,jsx,json,md}": [
+          "prettier --write"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "25.5.4",
+        "husky": "4.3.0",
+        "runmd": "1.3.2",
+        "eslint": "7.10.0",
+        "rollup": "2.28.2",
+        "prettier": "2.1.2",
+        "@babel/cli": "7.11.6",
+        "@babel/core": "7.11.6",
+        "bundlewatch": "0.3.1",
+        "lint-staged": "10.4.0",
+        "npm-run-all": "4.1.5",
+        "random-seed": "0.3.0",
+        "babel-eslint": "10.1.0",
+        "@commitlint/cli": "11.0.0",
+        "standard-version": "9.0.0",
+        "@babel/preset-env": "7.11.5",
+        "eslint-plugin-node": "11.1.0",
+        "eslint-plugin-import": "2.22.1",
+        "rollup-plugin-terser": "7.0.2",
+        "eslint-plugin-promise": "4.2.1",
+        "eslint-config-prettier": "6.12.0",
+        "eslint-config-standard": "14.1.1",
+        "eslint-plugin-prettier": "3.1.4",
+        "eslint-plugin-standard": "4.0.1",
+        "optional-dev-dependency": "2.0.1",
+        "@rollup/plugin-node-resolve": "9.0.0",
+        "@commitlint/config-conventional": "11.0.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "6.4.0",
+        "@wdio/sync": "6.4.0",
+        "@wdio/local-runner": "6.4.0",
+        "@wdio/spec-reporter": "6.4.0",
+        "@wdio/jasmine-framework": "6.4.0",
+        "@wdio/browserstack-service": "6.4.0",
+        "@wdio/static-server-service": "6.4.0"
+      }
+    },
+    "8.3.2": {
+      "name": "uuid",
+      "version": "8.3.2",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122"
+      ],
+      "license": "MIT",
+      "_id": "uuid@8.3.2",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz",
+        "integrity": "sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==",
+        "shasum": "80d5b5ced271bb9af6c445f21a1a04c606cefbe2",
+        "fileCount": 66,
+        "unpackedSize": 116098
+      },
+      "main": "./dist/index.js",
+      "husky": {
+        "hooks": {
+          "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
+          "pre-commit": "lint-staged"
+        }
+      },
+      "module": "./dist/esm-node/index.js",
+      "browser": {
+        "./dist/md5.js": "./dist/md5-browser.js",
+        "./dist/rng.js": "./dist/rng-browser.js",
+        "./dist/sha1.js": "./dist/sha1-browser.js",
+        "./dist/esm-node/index.js": "./dist/esm-browser/index.js"
+      },
+      "exports": {
+        ".": {
+          "node": {
+            "import": "./wrapper.mjs",
+            "module": "./dist/esm-node/index.js",
+            "require": "./dist/index.js"
+          },
+          "default": "./dist/esm-browser/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "gitHead": "ed3240154759b748f6a3b7d545f3b10759ee4ba7",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "( node --version | grep -q 'v12' ) && ( npm run build && runmd --output=README.md README_js.md )",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "BABEL_ENV=commonjs node --throw-deprecation node_modules/.bin/jest test/unit/",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build",
+        "pretest": "[ -n $CI ] || npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:pack": "./scripts/testpack.sh",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.js",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.js",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --ignore-path .prettierignore --write '**/*.{js,jsx,json,md}'",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prettier:check": "prettier --ignore-path .prettierignore --check '**/*.{js,jsx,json,md}'",
+        "test:benchmark": "cd examples/benchmark && npm install && npm test",
+        "pretest:browser": "optional-dev-dependency && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm install && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm install && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).",
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC4122 (v1, v4, and v5) UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*.{js,jsx}": [
+          "eslint --fix"
+        ],
+        "*.{js,jsx,json,md}": [
+          "prettier --write"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "25.5.4",
+        "husky": "4.3.0",
+        "runmd": "1.3.2",
+        "eslint": "7.10.0",
+        "rollup": "2.28.2",
+        "prettier": "2.1.2",
+        "@babel/cli": "7.11.6",
+        "@babel/core": "7.11.6",
+        "bundlewatch": "0.3.1",
+        "lint-staged": "10.4.0",
+        "npm-run-all": "4.1.5",
+        "random-seed": "0.3.0",
+        "babel-eslint": "10.1.0",
+        "@commitlint/cli": "11.0.0",
+        "standard-version": "9.0.0",
+        "@babel/preset-env": "7.11.5",
+        "eslint-plugin-node": "11.1.0",
+        "eslint-plugin-import": "2.22.1",
+        "rollup-plugin-terser": "7.0.2",
+        "eslint-plugin-promise": "4.2.1",
+        "eslint-config-prettier": "6.12.0",
+        "eslint-config-standard": "14.1.1",
+        "eslint-plugin-prettier": "3.1.4",
+        "eslint-plugin-standard": "4.0.1",
+        "optional-dev-dependency": "2.0.1",
+        "@rollup/plugin-node-resolve": "9.0.0",
+        "@commitlint/config-conventional": "11.0.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "6.4.0",
+        "@wdio/sync": "6.4.0",
+        "@wdio/local-runner": "6.4.0",
+        "@wdio/spec-reporter": "6.4.0",
+        "@wdio/jasmine-framework": "6.4.0",
+        "@wdio/browserstack-service": "6.4.0",
+        "@wdio/static-server-service": "6.4.0"
+      }
+    },
+    "9.0.0": {
+      "name": "uuid",
+      "version": "9.0.0",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122"
+      ],
+      "license": "MIT",
+      "_id": "uuid@9.0.0",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-9.0.0.tgz",
+        "integrity": "sha512-MXcSTerfPa4uqyzStbRoTgt5XIe3x5+42+q1sDuy3R5MDk66URdLMOZe5aPX/SQd+kuYAh0FdP/pO28IkQyTeg==",
+        "shasum": "592f550650024a38ceb0c562f2f6aa435761efb5",
+        "fileCount": 76,
+        "unpackedSize": 122687
+      },
+      "main": "./dist/index.js",
+      "module": "./dist/esm-node/index.js",
+      "browser": {
+        "./dist/md5.js": "./dist/md5-browser.js",
+        "./dist/rng.js": "./dist/rng-browser.js",
+        "./dist/sha1.js": "./dist/sha1-browser.js",
+        "./dist/native.js": "./dist/native-browser.js",
+        "./dist/esm-node/index.js": "./dist/esm-browser/index.js"
+      },
+      "exports": {
+        ".": {
+          "node": {
+            "import": "./wrapper.mjs",
+            "module": "./dist/esm-node/index.js",
+            "require": "./dist/index.js"
+          },
+          "browser": {
+            "import": "./dist/esm-browser/index.js",
+            "require": "./dist/commonjs-browser/index.js"
+          },
+          "default": "./dist/esm-browser/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "gitHead": "4cf24c018cead5ebe48cb4da232b57a2345d9fb5",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "( node --version | grep -q 'v16' ) && ( npm run build && runmd --output=README.md README_js.md )",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "BABEL_ENV=commonjsNode node --throw-deprecation node_modules/.bin/jest test/unit/",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build",
+        "prepare": "cd $( git rev-parse --show-toplevel ) && husky install",
+        "pretest": "[ -n $CI ] || npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:pack": "./scripts/testpack.sh",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.js",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.js",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --write '**/*.{js,jsx,json,md}'",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prettier:check": "prettier --check '**/*.{js,jsx,json,md}'",
+        "test:benchmark": "cd examples/benchmark && npm install && npm test",
+        "pretest:browser": "optional-dev-dependency && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm install && npm test",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm install && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm install && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).",
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC4122 (v1, v4, and v5) UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*.{js,jsx}": [
+          "eslint --fix"
+        ],
+        "*.{js,jsx,json,md}": [
+          "prettier --write"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "28.1.3",
+        "husky": "8.0.1",
+        "runmd": "1.3.6",
+        "eslint": "8.21.0",
+        "prettier": "2.7.1",
+        "@babel/cli": "7.18.10",
+        "@babel/core": "7.18.10",
+        "bundlewatch": "0.3.3",
+        "lint-staged": "13.0.3",
+        "npm-run-all": "4.1.5",
+        "random-seed": "0.3.0",
+        "@commitlint/cli": "17.0.3",
+        "standard-version": "9.5.0",
+        "@babel/preset-env": "7.18.10",
+        "eslint-plugin-node": "11.1.0",
+        "@babel/eslint-parser": "7.18.9",
+        "eslint-plugin-import": "2.26.0",
+        "eslint-plugin-promise": "6.0.0",
+        "eslint-config-prettier": "8.5.0",
+        "eslint-config-standard": "17.0.0",
+        "eslint-plugin-prettier": "4.2.1",
+        "optional-dev-dependency": "2.0.1",
+        "@commitlint/config-conventional": "17.0.3"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "7.16.10",
+        "@wdio/local-runner": "7.16.10",
+        "@wdio/spec-reporter": "7.16.9",
+        "@wdio/jasmine-framework": "7.16.6",
+        "@wdio/browserstack-service": "7.16.10",
+        "@wdio/static-server-service": "7.16.6"
+      }
+    },
+    "9.0.1": {
+      "name": "uuid",
+      "version": "9.0.1",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122"
+      ],
+      "license": "MIT",
+      "_id": "uuid@9.0.1",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-9.0.1.tgz",
+        "integrity": "sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==",
+        "shasum": "e188d4c8853cc722220392c424cd637f32293f30",
+        "fileCount": 76,
+        "unpackedSize": 123288
+      },
+      "main": "./dist/index.js",
+      "module": "./dist/esm-node/index.js",
+      "browser": {
+        "./dist/md5.js": "./dist/md5-browser.js",
+        "./dist/rng.js": "./dist/rng-browser.js",
+        "./dist/sha1.js": "./dist/sha1-browser.js",
+        "./dist/native.js": "./dist/native-browser.js",
+        "./dist/esm-node/index.js": "./dist/esm-browser/index.js"
+      },
+      "exports": {
+        ".": {
+          "node": {
+            "import": "./wrapper.mjs",
+            "module": "./dist/esm-node/index.js",
+            "require": "./dist/index.js"
+          },
+          "browser": {
+            "import": "./dist/esm-browser/index.js",
+            "require": "./dist/commonjs-browser/index.js"
+          },
+          "default": "./dist/esm-browser/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "ca1d39d58a6308d5311bcb356a931aa818ec0ded",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "( node --version | grep -q 'v18' ) && ( npm run build && npx runmd --output=README.md README_js.md )",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "BABEL_ENV=commonjsNode node --throw-deprecation node_modules/.bin/jest test/unit/",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build",
+        "prepare": "cd $( git rev-parse --show-toplevel ) && husky install",
+        "pretest": "[ -n $CI ] || npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:pack": "./scripts/testpack.sh",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.js",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.js",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --write '**/*.{js,jsx,json,md}'",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prettier:check": "prettier --check '**/*.{js,jsx,json,md}'",
+        "test:benchmark": "cd examples/benchmark && npm install && npm test",
+        "pretest:browser": "optional-dev-dependency && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm install && npm test",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm install && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm install && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).",
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC4122 (v1, v4, and v5) UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*.{js,jsx}": [
+          "eslint --fix"
+        ],
+        "*.{js,jsx,json,md}": [
+          "prettier --write"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "jest": "28.1.3",
+        "husky": "8.0.1",
+        "runmd": "1.3.9",
+        "eslint": "8.21.0",
+        "prettier": "2.7.1",
+        "@babel/cli": "7.18.10",
+        "@babel/core": "7.18.10",
+        "bundlewatch": "0.3.3",
+        "lint-staged": "13.0.3",
+        "npm-run-all": "4.1.5",
+        "random-seed": "0.3.0",
+        "@commitlint/cli": "17.0.3",
+        "standard-version": "9.5.0",
+        "@babel/preset-env": "7.18.10",
+        "eslint-plugin-node": "11.1.0",
+        "@babel/eslint-parser": "7.18.9",
+        "eslint-plugin-import": "2.26.0",
+        "eslint-plugin-promise": "6.0.0",
+        "eslint-config-prettier": "8.5.0",
+        "eslint-config-standard": "17.0.0",
+        "eslint-plugin-prettier": "4.2.1",
+        "optional-dev-dependency": "2.0.1",
+        "@commitlint/config-conventional": "17.0.3"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "7.16.10",
+        "@wdio/local-runner": "7.16.10",
+        "@wdio/spec-reporter": "7.16.9",
+        "@wdio/jasmine-framework": "7.16.6",
+        "@wdio/browserstack-service": "7.16.10",
+        "@wdio/static-server-service": "7.16.6"
+      }
+    },
+    "10.0.0": {
+      "name": "uuid",
+      "version": "10.0.0",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@10.0.0",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-10.0.0.tgz",
+        "integrity": "sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==",
+        "shasum": "5a95aa454e6e002725c79055fd42aaba30ca6294",
+        "fileCount": 96,
+        "unpackedSize": 168173
+      },
+      "main": "./dist/index.js",
+      "module": "./dist/esm-node/index.js",
+      "browser": {
+        "./dist/md5.js": "./dist/md5-browser.js",
+        "./dist/rng.js": "./dist/rng-browser.js",
+        "./dist/sha1.js": "./dist/sha1-browser.js",
+        "./dist/native.js": "./dist/native-browser.js",
+        "./dist/esm-node/index.js": "./dist/esm-browser/index.js"
+      },
+      "exports": {
+        ".": {
+          "node": {
+            "import": "./wrapper.mjs",
+            "module": "./dist/esm-node/index.js",
+            "require": "./dist/index.js"
+          },
+          "browser": {
+            "import": "./dist/esm-browser/index.js",
+            "require": "./dist/commonjs-browser/index.js"
+          },
+          "default": "./dist/esm-browser/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "5388bbb03bbb426ade0bb32ad0b0f6a2e8d69042",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "BABEL_ENV=commonjsNode node --throw-deprecation node_modules/.bin/jest test/unit/",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build",
+        "prepare": "husky install",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:pack": "./scripts/testpack.sh",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.js",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.js",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --write .",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "test:matching": "BABEL_ENV=commonjsNode node --throw-deprecation node_modules/.bin/jest test/unit/ -t",
+        "prettier:check": "prettier --check .",
+        "test:benchmark": "cd examples/benchmark && HUSKY=0 npm install && npm test",
+        "pretest:browser": "optional-dev-dependency && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm install && npm test",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm install && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm install && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "deprecated": "uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).",
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "prettier --no-error-on-unmatched-pattern --write"
+        ],
+        "*.{js,jsx}": [
+          "eslint --no-error-on-unmatched-pattern --fix"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@10.8.1+sha256.b8807aebb9656758e2872fa6e7c564b506aa2faa9297439a478d471d2fe32483",
+      "devDependencies": {
+        "jest": "29.7.0",
+        "husky": "9.0.11",
+        "runmd": "1.3.9",
+        "eslint": "9.4.0",
+        "globals": "15.3.0",
+        "prettier": "3.3.0",
+        "@wdio/cli": "7.16.10",
+        "@babel/cli": "7.24.6",
+        "@babel/core": "7.24.6",
+        "bundlewatch": "0.3.3",
+        "lint-staged": "15.2.5",
+        "neostandard": "0.5.1",
+        "npm-run-all": "4.1.5",
+        "random-seed": "0.3.0",
+        "@commitlint/cli": "19.3.0",
+        "standard-version": "9.5.0",
+        "@babel/preset-env": "7.24.6",
+        "@wdio/local-runner": "7.16.10",
+        "@wdio/spec-reporter": "7.16.9",
+        "@babel/eslint-parser": "7.24.6",
+        "eslint-plugin-prettier": "5.1.3",
+        "@wdio/jasmine-framework": "7.16.6",
+        "optional-dev-dependency": "2.0.1",
+        "@wdio/browserstack-service": "7.16.10",
+        "@wdio/static-server-service": "7.16.6",
+        "@commitlint/config-conventional": "19.2.2",
+        "@babel/plugin-syntax-import-attributes": "7.24.6"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "7.16.10",
+        "@wdio/local-runner": "7.16.10",
+        "@wdio/spec-reporter": "7.16.9",
+        "@wdio/jasmine-framework": "7.16.6",
+        "@wdio/browserstack-service": "7.16.10",
+        "@wdio/static-server-service": "7.16.6"
+      }
+    },
+    "11.0.0": {
+      "name": "uuid",
+      "version": "11.0.0",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@11.0.0",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/esm/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-11.0.0.tgz",
+        "integrity": "sha512-iE8Fa5fgBY4rN5GvNUJ8TSwO1QG7TzdPfhrJczf6XJ6mZUxh/GX433N70fCiJL9h8EKP5ayEIo0Q6EBQGWHFqA==",
+        "shasum": "01c1f5492ed10ad2c0fba1ae1f6d542e6b568d0c",
+        "fileCount": 281,
+        "unpackedSize": 667676
+      },
+      "main": "./dist/cjs/index.js",
+      "type": "module",
+      "types": "./dist/cjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "exports": {
+        ".": {
+          "node": {
+            "import": "./wrapper.mjs",
+            "module": "./dist/esm/index.js",
+            "require": "./dist/cjs/index.js"
+          },
+          "browser": {
+            "import": "./dist/esm-browser/index.js",
+            "require": "./dist/cjs-browser/index.js"
+          },
+          "default": "./dist/esm-browser/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "964be22f812c89ee2e1c1fb335eea3b2163f45b3",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "node --test --enable-source-maps dist/esm/test/*.js",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build",
+        "prepare": "husky",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:pack": "./scripts/testpack.sh",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.[jt]s",
+        "test:watch": "node --test --enable-source-maps --watch dist/esm/test/*.js",
+        "build:watch": "tsc --watch -p tsconfig.esm.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.[jt]s",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --write .",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prettier:check": "prettier --check .",
+        "test:benchmark": "cd examples/benchmark && HUSKY=0 npm install && npm test",
+        "pretest:browser": "optional-dev-dependency && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm install && npm test",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm install && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm install && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "prettier --no-error-on-unmatched-pattern --write"
+        ],
+        "*.{js,jsx}": [
+          "eslint --no-error-on-unmatched-pattern --fix"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@10.9.0",
+      "devDependencies": {
+        "jest": "29.7.0",
+        "husky": "9.1.6",
+        "runmd": "1.3.9",
+        "eslint": "9.13.0",
+        "globals": "15.11.0",
+        "prettier": "3.3.3",
+        "@eslint/js": "9.13.0",
+        "typescript": "5.6.3",
+        "bundlewatch": "0.4.0",
+        "lint-staged": "15.2.10",
+        "neostandard": "0.11.7",
+        "npm-run-all": "4.1.5",
+        "release-please": "16.14.3",
+        "@commitlint/cli": "19.5.0",
+        "standard-version": "9.5.0",
+        "@types/eslint__js": "8.42.3",
+        "typescript-eslint": "8.11.0",
+        "@babel/eslint-parser": "7.25.9",
+        "eslint-config-prettier": "9.1.0",
+        "eslint-plugin-prettier": "5.2.1",
+        "optional-dev-dependency": "2.0.1",
+        "@commitlint/config-conventional": "19.5.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.2.1",
+        "@wdio/local-runner": "9.2.1",
+        "@wdio/spec-reporter": "9.1.3",
+        "@wdio/jasmine-framework": "9.2.1",
+        "@wdio/browserstack-service": "9.2.1",
+        "@wdio/static-server-service": "9.1.3"
+      }
+    },
+    "11.0.1": {
+      "name": "uuid",
+      "version": "11.0.1",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@11.0.1",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/esm/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-11.0.1.tgz",
+        "integrity": "sha512-wt9UB5EcLhnboy1UvA1mvGPXkIIrHSu+3FmUksARfdVw9tuPf3CH/CohxO0Su1ApoKAeT6BVzAJIvjTuQVSmuQ==",
+        "shasum": "a527e188c4c11a7ff5d139e59f229a9f90440669",
+        "fileCount": 281,
+        "unpackedSize": 650767
+      },
+      "main": "./dist/cjs/index.js",
+      "type": "module",
+      "types": "./dist/cjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "browser": {
+        "./dist/cjs/index.js": "./dist/cjs-browser/index.js",
+        "./dist/esm/index.js": "./dist/esm-browser/index.js"
+      },
+      "exports": {
+        ".": {
+          "node": {
+            "import": "./wrapper.mjs",
+            "module": "./dist/esm/index.js",
+            "require": "./dist/cjs/index.js"
+          },
+          "browser": {
+            "import": "./dist/esm-browser/index.js",
+            "require": "./dist/cjs-browser/index.js"
+          },
+          "default": "./dist/esm-browser/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "50dc0cee4b5879f1b77698b0103f38aac902939d",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "node --test --enable-source-maps dist/esm/test/*.js",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build",
+        "prepare": "husky",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:pack": "./scripts/testpack.sh",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.[jt]s",
+        "test:watch": "node --test --enable-source-maps --watch dist/esm/test/*.js",
+        "build:watch": "tsc --watch -p tsconfig.esm.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.[jt]s",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --write .",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prettier:check": "prettier --check .",
+        "test:benchmark": "cd examples/benchmark && HUSKY=0 npm install && npm test",
+        "pretest:browser": "optional-dev-dependency && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm install && npm test",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm install && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm install && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "prettier --no-error-on-unmatched-pattern --write"
+        ],
+        "*.{js,jsx}": [
+          "eslint --no-error-on-unmatched-pattern --fix"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@10.9.0",
+      "devDependencies": {
+        "jest": "29.7.0",
+        "husky": "9.1.6",
+        "runmd": "1.3.9",
+        "eslint": "9.13.0",
+        "globals": "15.11.0",
+        "prettier": "3.3.3",
+        "@eslint/js": "9.13.0",
+        "typescript": "5.6.3",
+        "bundlewatch": "0.4.0",
+        "lint-staged": "15.2.10",
+        "neostandard": "0.11.7",
+        "npm-run-all": "4.1.5",
+        "release-please": "16.14.3",
+        "@commitlint/cli": "19.5.0",
+        "standard-version": "9.5.0",
+        "@types/eslint__js": "8.42.3",
+        "typescript-eslint": "8.11.0",
+        "@babel/eslint-parser": "7.25.9",
+        "eslint-config-prettier": "9.1.0",
+        "eslint-plugin-prettier": "5.2.1",
+        "optional-dev-dependency": "2.0.1",
+        "@commitlint/config-conventional": "19.5.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.2.1",
+        "@wdio/local-runner": "9.2.1",
+        "@wdio/spec-reporter": "9.1.3",
+        "@wdio/jasmine-framework": "9.2.1",
+        "@wdio/browserstack-service": "9.2.1",
+        "@wdio/static-server-service": "9.1.3"
+      }
+    },
+    "11.0.2": {
+      "name": "uuid",
+      "version": "11.0.2",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@11.0.2",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/esm/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-11.0.2.tgz",
+        "integrity": "sha512-14FfcOJmqdjbBPdDjFQyk/SdT4NySW4eM0zcG+HqbHP5jzuH56xO3J1DGhgs/cEMCfwYi3HQI1gnTO62iaG+tQ==",
+        "shasum": "a8d68ba7347d051e7ea716cc8dcbbab634d66875",
+        "fileCount": 280,
+        "unpackedSize": 650519
+      },
+      "main": "./dist/cjs/index.js",
+      "type": "module",
+      "types": "./dist/cjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "browser": {
+        "./dist/cjs/index.js": "./dist/cjs-browser/index.js",
+        "./dist/esm/index.js": "./dist/esm-browser/index.js"
+      },
+      "exports": {
+        ".": {
+          "node": {
+            "import": "./dist/esm/index.js",
+            "require": "./dist/cjs/index.js"
+          },
+          "browser": {
+            "import": "./dist/esm-browser/index.js",
+            "require": "./dist/cjs-browser/index.js"
+          },
+          "default": "./dist/esm-browser/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "36f2369af6479a46db1eb4fdffb73cbbf6108cf4",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "node --test --enable-source-maps dist/esm/test/*.js",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build",
+        "prepare": "husky",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:pack": "./scripts/testpack.sh",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.[jt]s",
+        "test:watch": "node --test --enable-source-maps --watch dist/esm/test/*.js",
+        "build:watch": "tsc --watch -p tsconfig.esm.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.[jt]s",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --write .",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prettier:check": "prettier --check .",
+        "test:benchmark": "cd examples/benchmark && HUSKY=0 npm install && npm test",
+        "pretest:browser": "optional-dev-dependency && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm install && npm test",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm install && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm install && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "prettier --no-error-on-unmatched-pattern --write"
+        ],
+        "*.{js,jsx}": [
+          "eslint --no-error-on-unmatched-pattern --fix"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@10.9.0",
+      "devDependencies": {
+        "jest": "29.7.0",
+        "husky": "9.1.6",
+        "runmd": "1.3.9",
+        "eslint": "9.13.0",
+        "globals": "15.11.0",
+        "prettier": "3.3.3",
+        "@eslint/js": "9.13.0",
+        "typescript": "5.6.3",
+        "bundlewatch": "0.4.0",
+        "lint-staged": "15.2.10",
+        "neostandard": "0.11.7",
+        "npm-run-all": "4.1.5",
+        "release-please": "16.14.3",
+        "@commitlint/cli": "19.5.0",
+        "standard-version": "9.5.0",
+        "@types/eslint__js": "8.42.3",
+        "typescript-eslint": "8.11.0",
+        "@babel/eslint-parser": "7.25.9",
+        "eslint-config-prettier": "9.1.0",
+        "eslint-plugin-prettier": "5.2.1",
+        "optional-dev-dependency": "2.0.1",
+        "@commitlint/config-conventional": "19.5.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.2.1",
+        "@wdio/local-runner": "9.2.1",
+        "@wdio/spec-reporter": "9.1.3",
+        "@wdio/jasmine-framework": "9.2.1",
+        "@wdio/browserstack-service": "9.2.1",
+        "@wdio/static-server-service": "9.1.3"
+      }
+    },
+    "11.0.3": {
+      "name": "uuid",
+      "version": "11.0.3",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@11.0.3",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/esm/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-11.0.3.tgz",
+        "integrity": "sha512-d0z310fCWv5dJwnX1Y/MncBAqGMKEzlBb1AOf7z9K8ALnd0utBX/msg/fA0+sbyN1ihbMsLhrBlnl1ak7Wa0rg==",
+        "shasum": "248451cac9d1a4a4128033e765d137e2b2c49a3d",
+        "fileCount": 280,
+        "unpackedSize": 293890
+      },
+      "main": "./dist/cjs/index.js",
+      "type": "module",
+      "types": "./dist/cjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "browser": {
+        "./dist/cjs/index.js": "./dist/cjs-browser/index.js",
+        "./dist/esm/index.js": "./dist/esm-browser/index.js"
+      },
+      "exports": {
+        ".": {
+          "node": {
+            "import": "./dist/esm/index.js",
+            "require": "./dist/cjs/index.js"
+          },
+          "browser": {
+            "import": "./dist/esm-browser/index.js",
+            "require": "./dist/cjs-browser/index.js"
+          },
+          "default": "./dist/esm-browser/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "1370497eecb5c4a570da3d76aa1b47b86448470f",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "node --test --enable-source-maps dist/esm/test/*.js",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build",
+        "prepare": "husky",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:pack": "./scripts/testpack.sh",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.[jt]s",
+        "test:watch": "node --test --enable-source-maps --watch dist/esm/test/*.js",
+        "build:watch": "tsc --watch -p tsconfig.esm.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.[jt]s",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --write .",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prettier:check": "prettier --check .",
+        "test:benchmark": "cd examples/benchmark && HUSKY=0 npm install && npm test",
+        "pretest:browser": "./scripts/iodd && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm install && npm test",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm install && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm install && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "prettier --no-error-on-unmatched-pattern --write"
+        ],
+        "*.{js,jsx}": [
+          "eslint --no-error-on-unmatched-pattern --fix"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@10.9.0",
+      "devDependencies": {
+        "jest": "29.7.0",
+        "husky": "9.1.6",
+        "runmd": "1.3.9",
+        "eslint": "9.13.0",
+        "globals": "15.11.0",
+        "prettier": "3.3.3",
+        "commander": "12.1.0",
+        "@eslint/js": "9.13.0",
+        "typescript": "5.6.3",
+        "bundlewatch": "0.4.0",
+        "lint-staged": "15.2.10",
+        "neostandard": "0.11.7",
+        "npm-run-all": "4.1.5",
+        "release-please": "16.14.3",
+        "@commitlint/cli": "19.5.0",
+        "standard-version": "9.5.0",
+        "@types/eslint__js": "8.42.3",
+        "typescript-eslint": "8.11.0",
+        "@babel/eslint-parser": "7.25.9",
+        "eslint-config-prettier": "9.1.0",
+        "eslint-plugin-prettier": "5.2.1",
+        "@commitlint/config-conventional": "19.5.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.2.1",
+        "@wdio/local-runner": "9.2.1",
+        "@wdio/spec-reporter": "9.1.3",
+        "@wdio/jasmine-framework": "9.2.1",
+        "@wdio/browserstack-service": "9.2.1",
+        "@wdio/static-server-service": "9.1.3"
+      }
+    },
+    "11.0.4": {
+      "name": "uuid",
+      "version": "11.0.4",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@11.0.4",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/esm/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-11.0.4.tgz",
+        "integrity": "sha512-IzL6VtTTYcAhA/oghbFJ1Dkmqev+FpQWnCBaKq/gUluLxliWvO8DPFWfIviRmYbtaavtSQe4WBL++rFjdcGWEg==",
+        "shasum": "37943977894ef806d2919a7ca3f89d6e23c60bac",
+        "fileCount": 190,
+        "unpackedSize": 131611
+      },
+      "main": "./dist/cjs/index.js",
+      "type": "module",
+      "types": "./dist/cjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "browser": {
+        "./dist/cjs/index.js": "./dist/cjs-browser/index.js",
+        "./dist/esm/index.js": "./dist/esm-browser/index.js"
+      },
+      "exports": {
+        ".": {
+          "node": {
+            "import": "./dist/esm/index.js",
+            "require": "./dist/cjs/index.js"
+          },
+          "browser": {
+            "import": "./dist/esm-browser/index.js",
+            "require": "./dist/cjs-browser/index.js"
+          },
+          "default": "./dist/esm-browser/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "050cd5b9df5aa73097a1677b9e7c3482eb4367fc",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "node --test --enable-source-maps dist/esm/test/*.js",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build",
+        "prepare": "husky",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:pack": "./scripts/testpack.sh",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.[jt]s",
+        "test:watch": "node --test --enable-source-maps --watch dist/esm/test/*.js",
+        "build:watch": "tsc --watch -p tsconfig.esm.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.[jt]s",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --write .",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prettier:check": "prettier --check .",
+        "test:benchmark": "cd examples/benchmark && HUSKY=0 npm install && npm test",
+        "pretest:browser": "./scripts/iodd && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm install && npm test",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm install && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm install && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm install && npm run build",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm install && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "prettier --no-error-on-unmatched-pattern --write"
+        ],
+        "*.{js,jsx}": [
+          "eslint --no-error-on-unmatched-pattern --fix"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@11.0.0",
+      "devDependencies": {
+        "jest": "29.7.0",
+        "husky": "9.1.7",
+        "runmd": "1.4.1",
+        "eslint": "9.17.0",
+        "globals": "15.14.0",
+        "prettier": "3.4.2",
+        "commander": "12.1.0",
+        "@eslint/js": "9.17.0",
+        "typescript": "5.7.2",
+        "bundlewatch": "0.4.0",
+        "lint-staged": "15.2.11",
+        "neostandard": "0.12.0",
+        "npm-run-all": "4.1.5",
+        "release-please": "16.15.0",
+        "@commitlint/cli": "19.6.1",
+        "standard-version": "9.5.0",
+        "@types/eslint__js": "8.42.3",
+        "typescript-eslint": "8.18.2",
+        "@babel/eslint-parser": "7.25.9",
+        "eslint-config-prettier": "9.1.0",
+        "eslint-plugin-prettier": "5.2.1",
+        "@commitlint/config-conventional": "19.6.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.2.1",
+        "@wdio/local-runner": "9.2.1",
+        "@wdio/spec-reporter": "9.1.3",
+        "@wdio/jasmine-framework": "9.2.1",
+        "@wdio/browserstack-service": "9.2.1",
+        "@wdio/static-server-service": "9.1.3"
+      }
+    },
+    "11.0.5": {
+      "name": "uuid",
+      "version": "11.0.5",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@11.0.5",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/esm/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-11.0.5.tgz",
+        "integrity": "sha512-508e6IcKLrhxKdBbcA2b4KQZlLVp2+J5UwQ6F7Drckkc5N9ZJwFa4TgWtsww9UG8fGHbm6gbV19TdM5pQ4GaIA==",
+        "shasum": "07b46bdfa6310c92c3fb3953a8720f170427fc62",
+        "fileCount": 190,
+        "unpackedSize": 131959
+      },
+      "main": "./dist/cjs/index.js",
+      "type": "module",
+      "types": "./dist/cjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "browser": {
+        "./dist/cjs/index.js": "./dist/cjs-browser/index.js",
+        "./dist/esm/index.js": "./dist/esm-browser/index.js"
+      },
+      "exports": {
+        ".": {
+          "node": {
+            "import": "./dist/esm/index.js",
+            "require": "./dist/cjs/index.js"
+          },
+          "browser": {
+            "import": "./dist/esm-browser/index.js",
+            "require": "./dist/cjs-browser/index.js"
+          },
+          "default": "./dist/esm-browser/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "46ada3cbc4acdc907dd6924eaedcc2c53dc6095a",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "node --test --enable-source-maps dist/esm/test/*.js",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build -- --no-pack",
+        "prepare": "husky",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.[jt]s",
+        "test:watch": "node --test --enable-source-maps --watch dist/esm/test/*.js",
+        "build:watch": "tsc --watch -p tsconfig.esm.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.[jt]s",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --write .",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prepublishOnly": "npm run build",
+        "prettier:check": "prettier --check .",
+        "test:benchmark": "cd examples/benchmark && npm test",
+        "pretest:browser": "./scripts/iodd && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm test",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm run build",
+        "examples:node:typescript:test": "cd examples/typescript && npm test",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "prettier --no-error-on-unmatched-pattern --write"
+        ],
+        "*.{js,jsx}": [
+          "eslint --no-error-on-unmatched-pattern --fix"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@11.0.0",
+      "devDependencies": {
+        "jest": "29.7.0",
+        "husky": "9.1.7",
+        "runmd": "1.4.1",
+        "eslint": "9.17.0",
+        "globals": "15.14.0",
+        "prettier": "3.4.2",
+        "commander": "12.1.0",
+        "@eslint/js": "9.17.0",
+        "typescript": "5.0.4",
+        "bundlewatch": "0.4.0",
+        "lint-staged": "15.2.11",
+        "neostandard": "0.12.0",
+        "npm-run-all": "4.1.5",
+        "release-please": "16.15.0",
+        "@commitlint/cli": "19.6.1",
+        "standard-version": "9.5.0",
+        "@types/eslint__js": "8.42.3",
+        "typescript-eslint": "8.18.2",
+        "@babel/eslint-parser": "7.25.9",
+        "eslint-config-prettier": "9.1.0",
+        "eslint-plugin-prettier": "5.2.1",
+        "@commitlint/config-conventional": "19.6.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.2.1",
+        "@wdio/local-runner": "9.2.1",
+        "@wdio/spec-reporter": "9.1.3",
+        "@wdio/jasmine-framework": "9.2.1",
+        "@wdio/browserstack-service": "9.2.1",
+        "@wdio/static-server-service": "9.1.3"
+      }
+    },
+    "11.1.0": {
+      "name": "uuid",
+      "version": "11.1.0",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@11.1.0",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/esm/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-11.1.0.tgz",
+        "integrity": "sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==",
+        "shasum": "9549028be1753bb934fc96e2bca09bb4105ae912",
+        "fileCount": 190,
+        "unpackedSize": 132894
+      },
+      "main": "./dist/cjs/index.js",
+      "type": "module",
+      "types": "./dist/cjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "browser": {
+        "./dist/cjs/index.js": "./dist/cjs-browser/index.js",
+        "./dist/esm/index.js": "./dist/esm-browser/index.js"
+      },
+      "exports": {
+        ".": {
+          "node": {
+            "import": "./dist/esm/index.js",
+            "require": "./dist/cjs/index.js"
+          },
+          "browser": {
+            "import": "./dist/esm-browser/index.js",
+            "require": "./dist/cjs-browser/index.js"
+          },
+          "default": "./dist/esm-browser/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "3d1eba06be81fb3a02e16d06ef6fe959c9bb5c5c",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "node --test --enable-source-maps dist/esm/test/*.js",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build -- --no-pack",
+        "prepare": "husky",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.[jt]s",
+        "test:watch": "node --test --enable-source-maps --watch dist/esm/test/*.js",
+        "build:watch": "tsc --watch -p tsconfig.esm.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.[jt]s",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --write .",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prepublishOnly": "npm run build",
+        "prettier:check": "prettier --check .",
+        "test:benchmark": "cd examples/benchmark && npm test",
+        "pretest:browser": "./scripts/iodd && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm test",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm run build",
+        "examples:node:typescript:test": "cd examples/typescript && npm test",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "prettier --no-error-on-unmatched-pattern --write"
+        ],
+        "*.{js,jsx}": [
+          "eslint --no-error-on-unmatched-pattern --fix"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@11.0.0",
+      "devDependencies": {
+        "jest": "29.7.0",
+        "husky": "9.1.7",
+        "runmd": "1.4.1",
+        "eslint": "9.17.0",
+        "globals": "15.14.0",
+        "prettier": "3.4.2",
+        "commander": "12.1.0",
+        "@eslint/js": "9.17.0",
+        "typescript": "5.0.4",
+        "bundlewatch": "0.4.0",
+        "lint-staged": "15.2.11",
+        "neostandard": "0.12.0",
+        "npm-run-all": "4.1.5",
+        "release-please": "16.15.0",
+        "@commitlint/cli": "19.6.1",
+        "standard-version": "9.5.0",
+        "@types/eslint__js": "8.42.3",
+        "typescript-eslint": "8.18.2",
+        "@babel/eslint-parser": "7.25.9",
+        "eslint-config-prettier": "9.1.0",
+        "eslint-plugin-prettier": "5.2.1",
+        "@commitlint/config-conventional": "19.6.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.2.1",
+        "@wdio/local-runner": "9.2.1",
+        "@wdio/spec-reporter": "9.1.3",
+        "@wdio/jasmine-framework": "9.2.1",
+        "@wdio/browserstack-service": "9.2.1",
+        "@wdio/static-server-service": "9.1.3"
+      }
+    },
+    "11.1.1": {
+      "name": "uuid",
+      "version": "11.1.1",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@11.1.1",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/esm/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-11.1.1.tgz",
+        "integrity": "sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==",
+        "shasum": "f6d81d2e1c65d00762e5e29b16c5d2d995e208ad",
+        "fileCount": 190,
+        "unpackedSize": 134222
+      },
+      "main": "./dist/cjs/index.js",
+      "type": "module",
+      "types": "./dist/cjs/index.d.ts",
+      "module": "./dist/esm/index.js",
+      "browser": {
+        "./dist/cjs/index.js": "./dist/cjs-browser/index.js",
+        "./dist/esm/index.js": "./dist/esm-browser/index.js"
+      },
+      "exports": {
+        ".": {
+          "node": {
+            "import": "./dist/esm/index.js",
+            "require": "./dist/cjs/index.js"
+          },
+          "browser": {
+            "import": "./dist/esm-browser/index.js",
+            "require": "./dist/cjs-browser/index.js"
+          },
+          "default": "./dist/esm-browser/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "7269a96c12a55a745bd4a7812c01cfd385ec6c46",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "node --test --enable-source-maps dist/esm/test/*.js",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build -- --no-pack",
+        "prepare": "husky",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.[jt]s",
+        "test:watch": "node --test --enable-source-maps --watch dist/esm/test/*.js",
+        "build:watch": "tsc --watch -p tsconfig.esm.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.[jt]s",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --write .",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prepublishOnly": "npm run build",
+        "prettier:check": "prettier --check .",
+        "test:benchmark": "cd examples/benchmark && npm test",
+        "pretest:browser": "./scripts/iodd && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm test",
+        "examples:node:commonjs:test": "cd examples/node-commonjs && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm run build",
+        "examples:node:typescript:test": "cd examples/typescript && npm test",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "prettier --no-error-on-unmatched-pattern --write"
+        ],
+        "*.{js,jsx}": [
+          "eslint --no-error-on-unmatched-pattern --fix"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@11.0.0",
+      "devDependencies": {
+        "jest": "29.7.0",
+        "husky": "9.1.7",
+        "runmd": "1.4.1",
+        "eslint": "9.17.0",
+        "globals": "15.14.0",
+        "prettier": "3.4.2",
+        "commander": "12.1.0",
+        "@eslint/js": "9.17.0",
+        "typescript": "5.0.4",
+        "bundlewatch": "0.4.0",
+        "lint-staged": "15.2.11",
+        "neostandard": "0.12.0",
+        "npm-run-all": "4.1.5",
+        "release-please": "16.15.0",
+        "@commitlint/cli": "19.6.1",
+        "standard-version": "9.5.0",
+        "@types/eslint__js": "8.42.3",
+        "typescript-eslint": "8.18.2",
+        "@babel/eslint-parser": "7.25.9",
+        "eslint-config-prettier": "9.1.0",
+        "eslint-plugin-prettier": "5.2.1",
+        "@commitlint/config-conventional": "19.6.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.2.1",
+        "@wdio/local-runner": "9.2.1",
+        "@wdio/spec-reporter": "9.1.3",
+        "@wdio/jasmine-framework": "9.2.1",
+        "@wdio/browserstack-service": "9.2.1",
+        "@wdio/static-server-service": "9.1.3"
+      }
+    },
+    "12.0.0": {
+      "name": "uuid",
+      "version": "12.0.0",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@12.0.0",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-12.0.0.tgz",
+        "integrity": "sha512-USe1zesMYh4fjCA8ZH5+X5WIVD0J4V1Jksm1bFTVBX2F/cwSXt0RO5w/3UXbdLKmZX65MiWV+hwhSS8p6oBTGA==",
+        "shasum": "114e150a140571af7b188c5c2a8d8493755fb587",
+        "fileCount": 73,
+        "unpackedSize": 66917
+      },
+      "type": "module",
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "browser": "./dist-browser/index.js",
+          "default": "./dist/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "7844bc2cd98d171bf631965047bb267505e25318",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "node --test --enable-source-maps dist/test/*.js",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build -- --no-pack",
+        "prepare": "husky",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.[jt]s",
+        "test:watch": "node --test --enable-source-maps --watch dist/test/*.js",
+        "build:watch": "tsc --watch -p tsconfig.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.[jt]s",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --write .",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prepublishOnly": "npm run build",
+        "prettier:check": "prettier --check .",
+        "test:benchmark": "cd examples/benchmark && npm test",
+        "pretest:browser": "./scripts/iodd && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm run build",
+        "examples:node:typescript:test": "cd examples/typescript && npm test",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "prettier --no-error-on-unmatched-pattern --write"
+        ],
+        "*.{js,jsx}": [
+          "eslint --no-error-on-unmatched-pattern --fix"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@11.3.0",
+      "devDependencies": {
+        "jest": "29.7.0",
+        "husky": "9.1.7",
+        "runmd": "1.4.1",
+        "eslint": "9.26.0",
+        "globals": "16.0.0",
+        "prettier": "3.5.3",
+        "commander": "13.1.0",
+        "@eslint/js": "9.26.0",
+        "typescript": "5.2.2",
+        "bundlewatch": "0.4.1",
+        "lint-staged": "15.5.2",
+        "neostandard": "0.12.1",
+        "npm-run-all": "4.1.5",
+        "release-please": "17.0.0",
+        "@commitlint/cli": "19.8.0",
+        "standard-version": "9.5.0",
+        "typescript-eslint": "8.32.0",
+        "@babel/eslint-parser": "7.27.1",
+        "eslint-config-prettier": "10.1.2",
+        "eslint-plugin-prettier": "5.4.0",
+        "@commitlint/config-conventional": "19.8.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.2.1",
+        "@wdio/local-runner": "9.2.1",
+        "@wdio/spec-reporter": "9.1.3",
+        "@wdio/jasmine-framework": "9.2.1",
+        "@wdio/browserstack-service": "9.2.1",
+        "@wdio/static-server-service": "9.1.3"
+      }
+    },
+    "12.0.1": {
+      "name": "uuid",
+      "version": "12.0.1",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@12.0.1",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-12.0.1.tgz",
+        "integrity": "sha512-9obBF8sMIHJWNQaO6IGOG8giGa/jUpKX34bz6o4whVs8M0WAvhID2tNxYp6A2XEBJPuZSX8wsS/6TEKfIDc+nw==",
+        "shasum": "03ce5dad5375e4e1b3aa6954ed2519af1eac8c9b",
+        "fileCount": 73,
+        "unpackedSize": 67581
+      },
+      "type": "module",
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "browser": "./dist-browser/index.js",
+          "default": "./dist/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "f276031f3bd45d2c75b25cb87a9f3012ad273bbf",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "node --test --enable-source-maps dist/test/*.js",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build -- --no-pack",
+        "prepare": "husky",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.[jt]s",
+        "test:watch": "node --test --enable-source-maps --watch dist/test/*.js",
+        "build:watch": "tsc --watch -p tsconfig.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.[jt]s",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --write .",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prepublishOnly": "npm run build",
+        "prettier:check": "prettier --check .",
+        "test:benchmark": "cd examples/benchmark && npm test",
+        "pretest:browser": "./scripts/iodd && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm run build",
+        "examples:node:typescript:test": "cd examples/typescript && npm test",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "prettier --no-error-on-unmatched-pattern --write"
+        ],
+        "*.{js,jsx}": [
+          "eslint --no-error-on-unmatched-pattern --fix"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@11.3.0",
+      "devDependencies": {
+        "jest": "29.7.0",
+        "husky": "9.1.7",
+        "runmd": "1.4.1",
+        "eslint": "9.26.0",
+        "globals": "16.0.0",
+        "prettier": "3.5.3",
+        "commander": "13.1.0",
+        "@eslint/js": "9.26.0",
+        "typescript": "5.2.2",
+        "bundlewatch": "0.4.1",
+        "lint-staged": "15.5.2",
+        "neostandard": "0.12.1",
+        "npm-run-all": "4.1.5",
+        "release-please": "17.0.0",
+        "@commitlint/cli": "19.8.0",
+        "standard-version": "9.5.0",
+        "typescript-eslint": "8.32.0",
+        "@babel/eslint-parser": "7.27.1",
+        "eslint-config-prettier": "10.1.2",
+        "eslint-plugin-prettier": "5.4.0",
+        "@commitlint/config-conventional": "19.8.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.2.1",
+        "@wdio/local-runner": "9.2.1",
+        "@wdio/spec-reporter": "9.1.3",
+        "@wdio/jasmine-framework": "9.2.1",
+        "@wdio/browserstack-service": "9.2.1",
+        "@wdio/static-server-service": "9.1.3"
+      }
+    },
+    "13.0.0": {
+      "name": "uuid",
+      "version": "13.0.0",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@13.0.0",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist-node/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-13.0.0.tgz",
+        "integrity": "sha512-XQegIaBTVUjSHliKqcnFqYypAd4S+WCYt5NIeRs6w/UAry7z8Y9j5ZwRRL4kzq9U3sD6v+85er9FvkEaBpji2w==",
+        "shasum": "263dc341b19b4d755eb8fe36b78d95a6b65707e8",
+        "fileCount": 73,
+        "unpackedSize": 66680
+      },
+      "type": "module",
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "node": "./dist-node/index.js",
+          "default": "./dist/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "24c123841fdd1cd66edf11cb4b9b49c9c0e1fc12",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "node --test --enable-source-maps dist-node/test/*.js",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build -- --no-pack",
+        "prepare": "husky",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet -I \"[0-9a-f-]{36}\" README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.[jt]s",
+        "test:watch": "node --test --enable-source-maps --watch dist-node/test/*.js",
+        "build:watch": "tsc --watch -p tsconfig.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.[jt]s",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --write .",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prepublishOnly": "npm run build",
+        "prettier:check": "prettier --check .",
+        "test:benchmark": "cd examples/benchmark && npm test",
+        "pretest:browser": "./scripts/iodd && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm run build",
+        "examples:node:typescript:test": "cd examples/typescript && npm test",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "prettier --no-error-on-unmatched-pattern --write"
+        ],
+        "*.{js,jsx}": [
+          "eslint --no-error-on-unmatched-pattern --fix"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@11.3.0",
+      "devDependencies": {
+        "jest": "29.7.0",
+        "husky": "9.1.7",
+        "runmd": "1.4.1",
+        "eslint": "9.26.0",
+        "globals": "16.0.0",
+        "prettier": "3.5.3",
+        "commander": "13.1.0",
+        "@eslint/js": "9.26.0",
+        "typescript": "5.2.2",
+        "bundlewatch": "0.4.1",
+        "lint-staged": "15.5.2",
+        "neostandard": "0.12.1",
+        "npm-run-all": "4.1.5",
+        "release-please": "17.0.0",
+        "@commitlint/cli": "19.8.0",
+        "standard-version": "9.5.0",
+        "typescript-eslint": "8.32.0",
+        "@babel/eslint-parser": "7.27.1",
+        "eslint-config-prettier": "10.1.2",
+        "eslint-plugin-prettier": "5.4.0",
+        "@commitlint/config-conventional": "19.8.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.2.1",
+        "@wdio/local-runner": "9.2.1",
+        "@wdio/spec-reporter": "9.1.3",
+        "@wdio/jasmine-framework": "9.2.1",
+        "@wdio/browserstack-service": "9.2.1",
+        "@wdio/static-server-service": "9.1.3"
+      }
+    },
+    "13.0.1": {
+      "name": "uuid",
+      "version": "13.0.1",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@13.0.1",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist-node/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-13.0.1.tgz",
+        "integrity": "sha512-9ezox2roIft6ExBVTVqibSd5dc5/47Sw/uY6b4SjQUT2TzQ0tltNquWA46y4xPQmdZYqvnio22SgWd41M86+jw==",
+        "shasum": "a026d548852d0cb9ddbbfa18b39b3a6bc7b62217",
+        "fileCount": 73,
+        "unpackedSize": 67344
+      },
+      "type": "module",
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "node": "./dist-node/index.js",
+          "default": "./dist/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "0643802db81cece7ee445f5147529d7a77394630",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "node --test --enable-source-maps dist-node/test/*.js",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build -- --no-pack",
+        "prepare": "husky",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet -I \"[0-9a-f-]{36}\" README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.[jt]s",
+        "test:watch": "node --test --enable-source-maps --watch dist-node/test/*.js",
+        "build:watch": "tsc --watch -p tsconfig.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.[jt]s",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --write .",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prepublishOnly": "npm run build",
+        "prettier:check": "prettier --check .",
+        "test:benchmark": "cd examples/benchmark && npm test",
+        "pretest:browser": "./scripts/iodd && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm run build",
+        "examples:node:typescript:test": "cd examples/typescript && npm test",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "prettier --no-error-on-unmatched-pattern --write"
+        ],
+        "*.{js,jsx}": [
+          "eslint --no-error-on-unmatched-pattern --fix"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@11.3.0",
+      "devDependencies": {
+        "jest": "29.7.0",
+        "husky": "9.1.7",
+        "runmd": "1.4.1",
+        "eslint": "9.26.0",
+        "globals": "16.0.0",
+        "prettier": "3.5.3",
+        "commander": "13.1.0",
+        "@eslint/js": "9.26.0",
+        "typescript": "5.2.2",
+        "bundlewatch": "0.4.1",
+        "lint-staged": "15.5.2",
+        "neostandard": "0.12.1",
+        "npm-run-all": "4.1.5",
+        "release-please": "17.0.0",
+        "@commitlint/cli": "19.8.0",
+        "standard-version": "9.5.0",
+        "typescript-eslint": "8.32.0",
+        "@babel/eslint-parser": "7.27.1",
+        "eslint-config-prettier": "10.1.2",
+        "eslint-plugin-prettier": "5.4.0",
+        "@commitlint/config-conventional": "19.8.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.2.1",
+        "@wdio/local-runner": "9.2.1",
+        "@wdio/spec-reporter": "9.1.3",
+        "@wdio/jasmine-framework": "9.2.1",
+        "@wdio/browserstack-service": "9.2.1",
+        "@wdio/static-server-service": "9.1.3"
+      }
+    },
+    "13.0.2": {
+      "name": "uuid",
+      "version": "13.0.2",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@13.0.2",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist-node/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-13.0.2.tgz",
+        "integrity": "sha512-vzi9uRZ926x4XV73S/4qQaTwPXM2JBj6/6lI/byHH1jOpCzb0zDbfytgA9LcN/hzb2l7WQSQnxITOVx5un/wGw==",
+        "shasum": "41bc9c07b12f665089c205f6507976adbdf84ff8",
+        "fileCount": 73,
+        "unpackedSize": 67344
+      },
+      "type": "module",
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "node": "./dist-node/index.js",
+          "default": "./dist/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "bd349769499885c496399900d6788afabf6f142a",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run eslint:check && npm run prettier:check",
+        "test": "node --test --enable-source-maps dist-node/test/*.js",
+        "build": "./scripts/build.sh",
+        "prepack": "npm run build -- --no-pack",
+        "prepare": "husky",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "docs:diff": "npm run docs && git diff --quiet -I \"[0-9a-f-]{36}\" README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "eslint:fix": "eslint --fix src/ test/ examples/ *.[jt]s",
+        "test:watch": "node --test --enable-source-maps --watch dist-node/test/*.js",
+        "build:watch": "tsc --watch -p tsconfig.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "eslint:check": "eslint src/ test/ examples/ *.[jt]s",
+        "pretest:node": "npm run build",
+        "prettier:fix": "prettier --write .",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prepublishOnly": "npm run build",
+        "prettier:check": "prettier --check .",
+        "test:benchmark": "cd examples/benchmark && npm test",
+        "pretest:browser": "./scripts/iodd && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm run build",
+        "examples:node:typescript:test": "cd examples/typescript && npm test",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "prettier --no-error-on-unmatched-pattern --write"
+        ],
+        "*.{js,jsx}": [
+          "eslint --no-error-on-unmatched-pattern --fix"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@11.3.0",
+      "devDependencies": {
+        "jest": "29.7.0",
+        "husky": "9.1.7",
+        "runmd": "1.4.1",
+        "eslint": "9.26.0",
+        "globals": "16.0.0",
+        "prettier": "3.5.3",
+        "commander": "13.1.0",
+        "@eslint/js": "9.26.0",
+        "typescript": "5.2.2",
+        "bundlewatch": "0.4.1",
+        "lint-staged": "15.5.2",
+        "neostandard": "0.12.1",
+        "npm-run-all": "4.1.5",
+        "release-please": "17.0.0",
+        "@commitlint/cli": "19.8.0",
+        "standard-version": "9.5.0",
+        "typescript-eslint": "8.32.0",
+        "@babel/eslint-parser": "7.27.1",
+        "eslint-config-prettier": "10.1.2",
+        "eslint-plugin-prettier": "5.4.0",
+        "@commitlint/config-conventional": "19.8.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "prettier --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.2.1",
+        "@wdio/local-runner": "9.2.1",
+        "@wdio/spec-reporter": "9.1.3",
+        "@wdio/jasmine-framework": "9.2.1",
+        "@wdio/browserstack-service": "9.2.1",
+        "@wdio/static-server-service": "9.1.3"
+      }
+    },
+    "14.0.0": {
+      "name": "uuid",
+      "version": "14.0.0",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@14.0.0",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist-node/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-14.0.0.tgz",
+        "integrity": "sha512-Qo+uWgilfSmAhXCMav1uYFynlQO7fMFiMVZsQqZRMIXp0O7rR7qjkj+cPvBHLgBqi960QCoo/PH2/6ZtVqKvrg==",
+        "shasum": "0af883220163d264ffe0c084f6b8a89b9666966d",
+        "fileCount": 70,
+        "unpackedSize": 70265
+      },
+      "type": "module",
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "node": "./dist-node/index.js",
+          "default": "./dist/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "7c1ea087a8149b57380fc8bb7f68c3a215cb6e4b",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run biome:check",
+        "test": "node --test --enable-source-maps dist-node/test/*.js",
+        "build": "./scripts/build.sh",
+        "format": "biome format --write .",
+        "prepack": "npm run build -- --no-pack",
+        "prepare": "husky",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "biome:fix": "biome check --write .",
+        "docs:diff": "npm run docs && git diff --quiet -I \"[0-9a-f-]{36}\" README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:watch": "node --test --enable-source-maps --watch dist-node/test/*.js",
+        "biome:check": "biome check .",
+        "build:watch": "tsc --watch -p tsconfig.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "format:check": "biome format --check .",
+        "pretest:node": "npm run build",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prepublishOnly": "npm run build",
+        "test:benchmark": "cd examples/benchmark && npm test",
+        "pretest:browser": "./scripts/iodd && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm run build",
+        "examples:node:typescript:test": "cd examples/typescript && npm test",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "biome check --write --no-errors-on-unmatched"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@11.12.1",
+      "devDependencies": {
+        "jest": "30.3.0",
+        "husky": "9.1.7",
+        "runmd": "1.4.1",
+        "globals": "17.4.0",
+        "commander": "14.0.3",
+        "typescript": "5.4.3",
+        "bundlewatch": "0.4.1",
+        "lint-staged": "16.4.0",
+        "neostandard": "0.13.0",
+        "npm-run-all2": "8.0.4",
+        "@biomejs/biome": "2.4.10",
+        "release-please": "17.3.0",
+        "@commitlint/cli": "20.5.0",
+        "standard-version": "9.5.0",
+        "@commitlint/config-conventional": "20.5.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "biome format --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.27.0",
+        "@wdio/local-runner": "9.27.0",
+        "@wdio/spec-reporter": "9.27.0",
+        "@wdio/jasmine-framework": "9.27.0",
+        "@wdio/browserstack-service": "9.27.0",
+        "@wdio/static-server-service": "9.27.0"
+      }
+    },
+    "14.0.1": {
+      "name": "uuid",
+      "version": "14.0.1",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@14.0.1",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist-node/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-14.0.1.tgz",
+        "integrity": "sha512-6ZxzVpzDXDa3bJWaHilVayA+BH/1zmxCJoVgvmqJnid/gPoKHxUrS/aC/T6LGQtNHT+XHG9fXPJB4d+IrU30Ew==",
+        "shasum": "8a5975b3e038902bfd169a10b5202f5ec0cf3faf",
+        "fileCount": 70,
+        "unpackedSize": 65672
+      },
+      "type": "module",
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "node": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist-node/index.js"
+          },
+          "default": "./dist/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "70177807e9229dfacde2038dc1e722f1828f358a",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run biome:check",
+        "test": "node --test --enable-source-maps dist-node/test/*.js",
+        "build": "./scripts/build.sh",
+        "format": "biome format --write .",
+        "prepack": "npm run build -- --no-pack",
+        "prepare": "lefthook install",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "biome:fix": "biome check --write .",
+        "docs:diff": "npm run docs && git diff README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:watch": "node --test --enable-source-maps --watch dist-node/test/*.js",
+        "biome:check": "biome check .",
+        "build:watch": "tsc --watch -p tsconfig.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "format:check": "biome format --check .",
+        "pretest:node": "npm run build",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prepublishOnly": "npm run build",
+        "test:benchmark": "cd examples/benchmark && npm test",
+        "pretest:browser": "./scripts/iodd && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm run build",
+        "examples:node:typescript:test": "cd examples/typescript && npm test",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "biome check --write --no-errors-on-unmatched"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@11.12.1",
+      "devDependencies": {
+        "jest": "30.3.0",
+        "runmd": "2.1.1",
+        "globals": "17.4.0",
+        "lefthook": "1.11.13",
+        "prettier": "3.8.3",
+        "commander": "14.0.3",
+        "typescript": "5.4.3",
+        "bundlewatch": "0.4.1",
+        "lint-staged": "16.4.0",
+        "neostandard": "0.13.0",
+        "npm-run-all2": "8.0.4",
+        "@biomejs/biome": "2.4.10",
+        "release-please": "17.3.0",
+        "@commitlint/cli": "20.5.0",
+        "standard-version": "9.5.0",
+        "@commitlint/config-conventional": "20.5.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "biome format --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.27.0",
+        "@wdio/local-runner": "9.27.0",
+        "@wdio/spec-reporter": "9.27.0",
+        "@wdio/jasmine-framework": "9.27.0",
+        "@wdio/browserstack-service": "9.27.0",
+        "@wdio/static-server-service": "9.27.0"
+      }
+    },
+    "14.0.2": {
+      "name": "uuid",
+      "version": "14.0.2",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "license": "MIT",
+      "_id": "uuid@14.0.2",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "bin": {
+        "uuid": "dist-node/bin/uuid"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-14.0.2.tgz",
+        "integrity": "sha512-xZe/16rV4aa+HGSOCiY2YeLT1OybRLrrkL/Rqaq7p7GMVXjFh+6wN4oMYgjFmnSnhY8t6Xpdl2l9qmnHYuMHwQ==",
+        "shasum": "d5ae03e4db0881c87271f8b0b9bd7312d02c799a",
+        "fileCount": 70,
+        "unpackedSize": 65685
+      },
+      "type": "module",
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "node": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist-node/index.js"
+          },
+          "default": "./dist/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "fd59f0277549d22cc7ec00a7b3b5c9bccb4d3c1d",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run biome:check",
+        "test": "node --test --enable-source-maps dist-node/test/*.js",
+        "build": "./scripts/build.sh",
+        "format": "biome format --write .",
+        "prepack": "npm run build -- --no-pack",
+        "prepare": "lefthook install",
+        "pretest": "npm run build",
+        "release": "standard-version --no-verify",
+        "biome:fix": "biome check --write .",
+        "docs:diff": "npm run docs && git diff README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:watch": "node --test --enable-source-maps --watch dist-node/test/*.js",
+        "biome:check": "biome check .",
+        "build:watch": "tsc --watch -p tsconfig.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "format:check": "biome format --check .",
+        "pretest:node": "npm run build",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prepublishOnly": "npm run build",
+        "test:benchmark": "cd examples/benchmark && npm test",
+        "pretest:browser": "./scripts/iodd && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm run build",
+        "examples:node:typescript:test": "cd examples/typescript && npm test",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm run build"
+      },
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "biome check --write --no-errors-on-unmatched"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@11.12.1",
+      "devDependencies": {
+        "jest": "30.3.0",
+        "runmd": "2.1.1",
+        "globals": "17.4.0",
+        "publint": "0.3.21",
+        "lefthook": "1.11.13",
+        "prettier": "3.8.3",
+        "commander": "14.0.3",
+        "typescript": "5.4.3",
+        "bundlewatch": "0.4.1",
+        "lint-staged": "16.4.0",
+        "neostandard": "0.13.0",
+        "npm-run-all2": "8.0.4",
+        "@biomejs/biome": "2.4.10",
+        "release-please": "17.3.0",
+        "@commitlint/cli": "20.5.0",
+        "standard-version": "9.5.0",
+        "@commitlint/config-conventional": "20.5.0"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "biome format --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.27.0",
+        "@wdio/local-runner": "9.27.0",
+        "@wdio/spec-reporter": "9.27.0",
+        "@wdio/jasmine-framework": "9.27.0",
+        "@wdio/browserstack-service": "9.27.0",
+        "@wdio/static-server-service": "9.27.0"
+      }
+    },
+    "14.0.3": {
+      "_id": "uuid@14.0.3",
+      "bin": {
+        "uuid": "dist-node/bin/uuid"
+      },
+      "bugs": {
+        "url": "https://github.com/uuidjs/uuid/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/uuid/-/uuid-14.0.3.tgz",
+        "integrity": "sha512-Sc5u1VVln93y1Xnz4R+CunOZc7R9LUcTmhj7Rc7Eg3HVcf7rVn2FOoa812fe0W8p3jD7xeoGSYbfqCGGH2B6xw==",
+        "shasum": "48c9b0dcf5a42d983c23162399eeb9af8b2cc617",
+        "fileCount": 70,
+        "unpackedSize": 65739
+      },
+      "name": "uuid",
+      "type": "module",
+      "types": "./dist/index.d.ts",
+      "exports": {
+        ".": {
+          "node": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist-node/index.js"
+          },
+          "default": "./dist/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "funding": [
+        "https://github.com/sponsors/broofa",
+        "https://github.com/sponsors/ctavan"
+      ],
+      "gitHead": "993ff7b64a289ef7f921ccafc8bb98ef9461d214",
+      "license": "MIT",
+      "scripts": {
+        "md": "runmd --watch --output=README.md README_js.md",
+        "docs": "npm run build && npx runmd --output=README.md README_js.md",
+        "lint": "npm run biome:check",
+        "test": "node --test --enable-source-maps dist-node/test/*.js",
+        "build": "./scripts/build.sh",
+        "format": "biome format --write .",
+        "prepack": "npm run build -- --no-pack",
+        "prepare": "if [ -d .git ]; then npx lefthook install; fi",
+        "pretest": "if [ -d .git ]; then npm run build; fi",
+        "release": "standard-version --no-verify",
+        "biome:fix": "biome check --write .",
+        "docs:diff": "npm run docs && git diff README.md",
+        "test:node": "npm-run-all --parallel examples:node:**",
+        "test:watch": "node --test --enable-source-maps --watch dist-node/test/*.js",
+        "biome:check": "biome check .",
+        "build:watch": "tsc --watch -p tsconfig.json",
+        "bundlewatch": "npm run pretest:browser && bundlewatch --config bundlewatch.config.json",
+        "format:check": "biome format --check .",
+        "pretest:node": "npm run build",
+        "test:browser": "wdio run ./wdio.conf.js",
+        "prepublishOnly": "npm run build",
+        "test:benchmark": "cd examples/benchmark && npm test",
+        "pretest:browser": "./scripts/iodd && npm run build && npm-run-all --parallel examples:browser:**",
+        "pretest:benchmark": "npm run build",
+        "examples:node:jest:test": "cd examples/node-jest && npm test",
+        "examples:node:esmodules:test": "cd examples/node-esmodules && npm test",
+        "examples:browser:rollup:build": "cd examples/browser-rollup && npm run build",
+        "examples:node:typescript:test": "cd examples/typescript && npm test",
+        "examples:browser:webpack:build": "cd examples/browser-webpack && npm run build"
+      },
+      "version": "14.0.3",
+      "homepage": "https://github.com/uuidjs/uuid#readme",
+      "keywords": [
+        "uuid",
+        "guid",
+        "rfc4122",
+        "rfc9562"
+      ],
+      "commitlint": {
+        "extends": [
+          "@commitlint/config-conventional"
+        ]
+      },
+      "repository": {
+        "url": "git+https://github.com/uuidjs/uuid.git",
+        "type": "git"
+      },
+      "description": "RFC9562 UUIDs",
+      "directories": {},
+      "lint-staged": {
+        "*": [
+          "biome check --write --no-errors-on-unmatched"
+        ]
+      },
+      "sideEffects": false,
+      "_hasShrinkwrap": false,
+      "packageManager": "npm@12.0.2",
+      "devDependencies": {
+        "jest": "30.5.1",
+        "runmd": "2.1.1",
+        "globals": "17.12.0",
+        "publint": "0.3.24",
+        "lefthook": "2.1.12",
+        "prettier": "3.9.6",
+        "commander": "15.0.0",
+        "typescript": "5.4.3",
+        "bundlewatch": "0.4.2",
+        "lint-staged": "17.5.1",
+        "neostandard": "0.13.0",
+        "npm-run-all2": "9.0.3",
+        "@biomejs/biome": "2.5.13",
+        "release-please": "17.11.2",
+        "@commitlint/cli": "21.2.2",
+        "standard-version": "9.5.0",
+        "@commitlint/config-conventional": "21.2.2"
+      },
+      "standard-version": {
+        "scripts": {
+          "postchangelog": "biome format --write CHANGELOG.md"
+        }
+      },
+      "optionalDevDependencies": {
+        "@wdio/cli": "9.27.0",
+        "@wdio/local-runner": "9.27.0",
+        "@wdio/spec-reporter": "9.27.0",
+        "@wdio/jasmine-framework": "9.27.0",
+        "@wdio/browserstack-service": "9.27.0",
+        "@wdio/static-server-service": "9.27.0"
+      }
+    }
+  },
+  "time": {
+    "created": "2020-01-16T21:05:38.628Z",
+    "modified": "2026-10-10T00:30:19.423Z",
+    "3.4.0": "2020-01-16T21:05:38.628Z",
+    "7.0.0": "2020-02-24T13:23:46.712Z",
+    "7.0.1": "2020-02-25T20:26:35.800Z",
+    "7.0.2": "2020-03-04T12:49:00.666Z",
+    "7.0.3": "2020-03-31T19:41:24.836Z",
+    "8.0.0": "2020-04-29T20:42:26.823Z",
+    "8.1.0": "2020-05-20T18:52:38.248Z",
+    "8.2.0": "2020-06-23T20:56:14.285Z",
+    "8.3.0": "2020-07-27T19:01:36.217Z",
+    "8.3.1": "2020-10-04T15:46:46.276Z",
+    "8.3.2": "2020-12-08T20:38:36.233Z",
+    "9.0.0": "2022-09-05T20:03:54.869Z",
+    "9.0.1": "2023-09-12T08:56:35.205Z",
+    "10.0.0": "2024-06-09T13:42:04.366Z",
+    "11.0.0": "2024-10-27T14:35:13.696Z",
+    "11.0.1": "2024-10-27T21:40:24.728Z",
+    "11.0.2": "2024-10-28T17:27:12.069Z",
+    "11.0.3": "2024-11-10T21:25:54.278Z",
+    "11.0.4": "2025-01-05T15:16:52.451Z",
+    "11.0.5": "2025-01-09T22:40:18.873Z",
+    "11.1.0": "2025-02-19T18:16:11.602Z",
+    "11.1.1": "2026-04-29T15:17:24.795Z",
+    "12.0.0": "2025-09-05T17:25:34.532Z",
+    "12.0.1": "2026-04-29T12:54:38.598Z",
+    "13.0.0": "2025-09-08T18:43:39.868Z",
+    "13.0.1": "2026-04-29T12:44:23.872Z",
+    "13.0.2": "2026-05-04T13:37:27.339Z",
+    "14.0.0": "2026-04-19T15:15:42.302Z",
+    "14.0.1": "2026-06-20T11:56:02.499Z",
+    "14.0.2": "2026-08-18T18:21:56.060Z",
+    "14.0.3": "2026-10-10T00:30:19.423Z"
+  }
+}

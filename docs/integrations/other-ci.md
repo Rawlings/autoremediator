@@ -35,7 +35,7 @@ bot user.
 
 ## GitLab CI
 
-[`templates/gitlab/autoremediator.yml`](../../templates/gitlab/autoremediator.yml) is a template
+[`integrations/ci-templates/gitlab/autoremediator.yml`](../../integrations/ci-templates/gitlab/autoremediator.yml) is a template
 with `spec: inputs:`. Include it with GitLab 16.11 or later:
 
 ```yaml
@@ -75,7 +75,7 @@ conflict with `GITLAB_TOKEN`. Self-managed instances work: the API URL is taken 
 
 ## Bitbucket Pipelines
 
-[`templates/bitbucket/bitbucket-pipelines.yml`](../../templates/bitbucket/bitbucket-pipelines.yml)
+[`integrations/ci-templates/bitbucket/bitbucket-pipelines.yml`](../../integrations/ci-templates/bitbucket/bitbucket-pipelines.yml)
 defines a `custom` pipeline named `autoremediator`. Copy its step into your
 `bitbucket-pipelines.yml`, then schedule it (Repository settings > Pipelines > Schedules) or run it
 from the Pipelines page.
@@ -91,15 +91,15 @@ This is a pipeline snippet, not a published Bitbucket pipe.
 
 ## Azure DevOps
 
-[`templates/azure-devops/autoremediator.yml`](../../templates/azure-devops/autoremediator.yml) is a
-step template. [`azure-pipelines.example.yml`](../../templates/azure-devops/azure-pipelines.example.yml)
+[`integrations/ci-templates/azure-devops/autoremediator.yml`](../../integrations/ci-templates/azure-devops/autoremediator.yml) is a
+step template. [`azure-pipelines.example.yml`](../../integrations/ci-templates/azure-devops/azure-pipelines.example.yml)
 shows a nightly run that pulls the template from a `resources.repositories` entry.
 
 ```yaml
 steps:
   - checkout: self
     persistCredentials: false
-  - template: templates/azure-devops/autoremediator.yml@autoremediator
+  - template: integrations/ci-templates/azure-devops/autoremediator.yml@autoremediator
     parameters:
       baseBranch: main
 ```
@@ -139,7 +139,7 @@ pass the host token as `-e GITLAB_TOKEN` (or the matching variable).
 
 ## Dagger
 
-[`dagger/`](../../dagger) is a Dagger module with TypeScript functions that run the CLI in a
+[`dagger/`](../../integrations/dagger) is a Dagger module with TypeScript functions that run the CLI in a
 `node:26` container:
 
 ```sh

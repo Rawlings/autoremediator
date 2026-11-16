@@ -1,0 +1,49 @@
+{
+  "name": "forever-agent",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "0.6.1"
+  },
+  "versions": {
+    "0.6.1": {
+      "author": {
+        "name": "Mikeal Rogers",
+        "email": "mikeal.rogers@gmail.com",
+        "url": "http://www.futurealoof.com"
+      },
+      "name": "forever-agent",
+      "description": "HTTP Agent that keeps socket connections alive between keep-alive requests. Formerly part of mikeal/request, now a standalone module.",
+      "version": "0.6.1",
+      "license": "Apache-2.0",
+      "repository": {
+        "url": "https://github.com/mikeal/forever-agent"
+      },
+      "main": "index.js",
+      "dependencies": {},
+      "devDependencies": {},
+      "optionalDependencies": {},
+      "engines": {
+        "node": "*"
+      },
+      "gitHead": "1b3b6163f2b3c2c4122bbfa288c1325c0df9871d",
+      "bugs": {
+        "url": "https://github.com/mikeal/forever-agent/issues"
+      },
+      "homepage": "https://github.com/mikeal/forever-agent",
+      "_id": "forever-agent@0.6.1",
+      "scripts": {},
+      "_shasum": "fbc71f0c41adeb37f96c577ad1ed42d8fdacca91",
+      "_from": ".",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/forever-agent/-/forever-agent-0.6.1.tgz",
+        "integrity": "sha512-j0KLYPhm6zeac4lz3oJ3o65qvgQCcPubiyotZrXqEaG4hNagNYO8qdlUrX5vwqv9ohqeT/Z3j6+yW067yWWdUw==",
+        "shasum": "fbc71f0c41adeb37f96c577ad1ed42d8fdacca91"
+      }
+    }
+  },
+  "time": {
+    "created": "2015-04-07T17:03:49.221Z",
+    "modified": "2015-04-07T17:03:49.221Z",
+    "0.6.1": "2015-04-07T17:03:49.221Z"
+  }
+}

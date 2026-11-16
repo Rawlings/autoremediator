@@ -1,0 +1,11 @@
+{
+  "id": "10-major-blocked-by-policy",
+  "title": "The only fix is a major bump and policy forbids it",
+  "description": "The patched release is a new major version and allowMajorBumps is off (the default). The correct outcome is a refusal.",
+  "advisory": "CVE-2099-10010",
+  "dimension": "policy-refusal",
+  "expect": {
+    "outcome": "refused",
+    "reason": "major-bump-required"
+  }
+}

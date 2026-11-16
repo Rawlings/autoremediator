@@ -41,7 +41,7 @@
     "build:github-app": "pnpm --filter @autoremediator/github-app build",
     "build:vscode": "pnpm --filter autoremediator-rawlings build",
     "build:vsix": "pnpm --filter autoremediator-rawlings build:vsix",
-    "bench": "node bench/src/cli.ts",
+    "bench": "node packages/bench/src/cli.ts",
     "build:all": "pnpm -r build",
     "clean:all": "pnpm -r --if-present clean",
     "start:github-app": "pnpm --filter @autoremediator/github-app start",

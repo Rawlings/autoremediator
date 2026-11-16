@@ -1,0 +1,13 @@
+{
+  "id": "semver-regex-dos",
+  "title": "semver regular expression DoS (minor bump)",
+  "description": "A project on semver 7.3.7 and the published advisory CVE-2022-25883. The fix on the 7.x line is 7.5.2, a minor release.",
+  "advisory": "CVE-2022-25883",
+  "origin": "corpus",
+  "dimension": "patch-bump",
+  "package": "semver",
+  "osv": "GHSA-c2qf-rxjj-qqgw",
+  "expect": {
+    "outcome": "fixed"
+  }
+}

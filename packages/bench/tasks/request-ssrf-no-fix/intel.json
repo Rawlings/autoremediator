@@ -1,0 +1,30 @@
+{
+  "CVE-2023-28155": {
+    "id": "CVE-2023-28155",
+    "summary": "Server-Side Request Forgery in Request",
+    "severity": "MEDIUM",
+    "publishedAt": "2023-03-16T15:30:19Z",
+    "references": [
+      "https://nvd.nist.gov/vuln/detail/CVE-2023-28155",
+      "https://github.com/request/request/issues/3442",
+      "https://github.com/cypress-io/request/pull/28",
+      "https://github.com/github/advisory-database/pull/2500",
+      "https://github.com/request/request/pull/3444",
+      "https://github.com/cypress-io/request/commit/c5bcf21d40fb61feaff21a0e5a2b3934a440024f",
+      "https://doyensec.com/resources/Doyensec_Advisory_RequestSSRF_Q12023.pdf",
+      "https://github.com/cypress-io/request/blob/master/lib/redirect.js#L116",
+      "https://github.com/cypress-io/request/releases/tag/v3.0.0",
+      "https://github.com/request/request",
+      "https://github.com/request/request/blob/master/lib/redirect.js#L111",
+      "https://security.netapp.com/advisory/ntap-20230413-0007"
+    ],
+    "affectedPackages": [
+      {
+        "name": "request",
+        "ecosystem": "npm",
+        "vulnerableRange": ">=0.0.0 <=2.88.2",
+        "source": "osv"
+      }
+    ]
+  }
+}

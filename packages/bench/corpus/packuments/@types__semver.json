@@ -1,0 +1,149 @@
+{
+  "name": "@types/semver",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "ts4.7": "7.5.8",
+    "ts4.9": "7.5.8",
+    "ts4.6": "7.5.8",
+    "ts4.8": "7.5.8",
+    "ts5.0": "7.7.0",
+    "ts5.1": "7.7.0",
+    "ts5.4": "7.7.1",
+    "ts5.3": "7.7.1",
+    "ts5.2": "7.7.1",
+    "ts5.5": "7.7.1",
+    "ts5.7": "7.8.0",
+    "ts5.9": "7.8.0",
+    "ts5.6": "7.8.0",
+    "ts5.8": "7.8.0",
+    "ts7.0": "7.8.0",
+    "ts6.0": "7.8.0",
+    "latest": "7.8.0",
+    "ts7.1": "7.8.0"
+  },
+  "versions": {
+    "7.5.8": {
+      "name": "@types/semver",
+      "version": "7.5.8",
+      "license": "MIT",
+      "_id": "@types/semver@7.5.8",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/semver",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/semver/-/semver-7.5.8.tgz",
+        "integrity": "sha512-I8EUhyrgfLrcTkzV3TSsGyl1tSuPrEDzr0yd5m90UgNxQkyDXULk3b6MlQqTCpZpNtWe1K0hzclnZkTcLBe2UQ==",
+        "shasum": "8268a8c57a3e4abd25c165ecd36237db7948a55e",
+        "fileCount": 49,
+        "unpackedSize": 23276
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/semver"
+      },
+      "description": "TypeScript definitions for semver",
+      "directories": {},
+      "dependencies": {},
+      "_hasShrinkwrap": false,
+      "typeScriptVersion": "4.6",
+      "typesPublisherContentHash": "eeb34e966b621b4e47b2b11e63847d881e897b4ef9ec7a909c8d3730f7f3d6f8"
+    },
+    "7.7.0": {
+      "name": "@types/semver",
+      "version": "7.7.0",
+      "license": "MIT",
+      "_id": "@types/semver@7.7.0",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/semver",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/semver/-/semver-7.7.0.tgz",
+        "integrity": "sha512-k107IF4+Xr7UHjwDc7Cfd6PRQfbdkiRabXGRjo07b4WyPahFBZCZ1sE+BNxYIJPPg73UkfOsVOLwqVc/6ETrIA==",
+        "shasum": "64c441bdae033b378b6eef7d0c3d77c329b9378e",
+        "fileCount": 49,
+        "unpackedSize": 23316
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/semver"
+      },
+      "description": "TypeScript definitions for semver",
+      "directories": {},
+      "dependencies": {},
+      "_hasShrinkwrap": false,
+      "peerDependencies": {},
+      "typeScriptVersion": "5.0",
+      "typesPublisherContentHash": "2686be620a3b4ba9c210ad83cb60a74eefd9e714cd5942d2ff2f24993ad4b9ec"
+    },
+    "7.7.1": {
+      "name": "@types/semver",
+      "version": "7.7.1",
+      "license": "MIT",
+      "_id": "@types/semver@7.7.1",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/semver",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/semver/-/semver-7.7.1.tgz",
+        "integrity": "sha512-FmgJfu+MOcQ370SD0ev7EI8TlCAfKYU+B4m5T3yXc1CiRN94g/SZPtsCkk506aUDtlMnFZvasDwHHUcZUEaYuA==",
+        "shasum": "3ce3af1a5524ef327d2da9e4fd8b6d95c8d70528",
+        "fileCount": 49,
+        "unpackedSize": 24373
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/semver"
+      },
+      "description": "TypeScript definitions for semver",
+      "directories": {},
+      "dependencies": {},
+      "_hasShrinkwrap": false,
+      "peerDependencies": {},
+      "typeScriptVersion": "5.2",
+      "typesPublisherContentHash": "05c64b15fc87f8868c6987ed5adbd9c42e5be6045d53624b68f3046619c2e29e"
+    },
+    "7.8.0": {
+      "name": "@types/semver",
+      "version": "7.8.0",
+      "license": "MIT",
+      "_id": "@types/semver@7.8.0",
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/semver",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/@types/semver/-/semver-7.8.0.tgz",
+        "integrity": "sha512-1mAINjtQCXXeLkJ9ehXkwOcBpqtLxiVtKhpUf83DdRNdQKV0iXZpaHYqRr7nj+wvxuJzoAmAwXI+sCNMv1CzLQ==",
+        "shasum": "0bfe3ec51f5e9615bc317174cd5b88ea08b7fc2f",
+        "fileCount": 50,
+        "unpackedSize": 24724
+      },
+      "main": "",
+      "types": "index.d.ts",
+      "scripts": {},
+      "repository": {
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "type": "git",
+        "directory": "types/semver"
+      },
+      "description": "TypeScript definitions for semver",
+      "directories": {},
+      "dependencies": {},
+      "_hasShrinkwrap": false,
+      "peerDependencies": {},
+      "typeScriptVersion": "5.6",
+      "typesPublisherContentHash": "5b19f69c466c962f7421f0b75df63235dac78ddb213d6f5a326c55499cc06ace"
+    }
+  },
+  "time": {
+    "created": "2024-02-24T16:35:29.020Z",
+    "modified": "2026-08-02T08:01:52.124Z",
+    "7.5.8": "2024-02-24T16:35:29.020Z",
+    "7.7.0": "2025-03-26T16:02:26.744Z",
+    "7.7.1": "2025-09-03T15:02:35.366Z",
+    "7.8.0": "2026-08-02T08:01:52.124Z"
+  }
+}

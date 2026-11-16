@@ -1,0 +1,81 @@
+{
+  "name": "sshpk",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "1.18.0"
+  },
+  "versions": {
+    "1.18.0": {
+      "name": "sshpk",
+      "version": "1.18.0",
+      "author": {
+        "name": "Joyent, Inc"
+      },
+      "license": "MIT",
+      "_id": "sshpk@1.18.0",
+      "homepage": "https://github.com/arekinath/node-sshpk#readme",
+      "bugs": {
+        "url": "https://github.com/arekinath/node-sshpk/issues"
+      },
+      "bin": {
+        "sshpk-conv": "bin/sshpk-conv",
+        "sshpk-sign": "bin/sshpk-sign",
+        "sshpk-verify": "bin/sshpk-verify"
+      },
+      "man": [
+        "man/man1/sshpk-conv.1",
+        "man/man1/sshpk-sign.1",
+        "man/man1/sshpk-verify.1"
+      ],
+      "dist": {
+        "tarball": "https://registry.npmjs.org/sshpk/-/sshpk-1.18.0.tgz",
+        "integrity": "sha512-2p2KJZTSqQ/I3+HX42EpYOa2l3f8Erv8MWKsy2I9uf4wA7yFIkXRffYdsx86y6z4vHtV8u7g+pPlr8/4ouAxsQ==",
+        "shasum": "1663e55cddf4d688b86a46b77f0d5fe363aba028",
+        "fileCount": 36,
+        "unpackedSize": 230846
+      },
+      "main": "lib/index.js",
+      "engines": {
+        "node": ">=0.10.0"
+      },
+      "gitHead": "8df038598965802fe287715ab4389e56da2593c5",
+      "scripts": {
+        "test": "tape test/*.js"
+      },
+      "repository": {
+        "url": "git+https://github.com/joyent/node-sshpk.git",
+        "type": "git"
+      },
+      "description": "A library for finding and using SSH public keys",
+      "directories": {
+        "bin": "./bin",
+        "lib": "./lib",
+        "man": "./man/man1"
+      },
+      "dependencies": {
+        "asn1": "~0.2.3",
+        "jsbn": "~0.1.0",
+        "getpass": "^0.1.1",
+        "dashdash": "^1.12.0",
+        "ecc-jsbn": "~0.1.1",
+        "tweetnacl": "~0.14.0",
+        "assert-plus": "^1.0.0",
+        "bcrypt-pbkdf": "^1.0.0",
+        "safer-buffer": "^2.0.2"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "tape": "^3.5.0",
+        "temp": "^0.8.2",
+        "sinon": "^1.17.2",
+        "benchmark": "^1.0.0"
+      },
+      "optionalDependencies": {}
+    }
+  },
+  "time": {
+    "created": "2023-10-19T17:23:11.379Z",
+    "modified": "2023-10-19T17:23:11.379Z",
+    "1.18.0": "2023-10-19T17:23:11.379Z"
+  }
+}

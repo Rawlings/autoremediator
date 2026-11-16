@@ -1,0 +1,49 @@
+{
+  "name": "lodash.isboolean",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "3.0.3"
+  },
+  "versions": {
+    "3.0.3": {
+      "name": "lodash.isboolean",
+      "version": "3.0.3",
+      "description": "The lodash method `_.isBoolean` exported as a module.",
+      "homepage": "https://lodash.com/",
+      "icon": "https://lodash.com/icon.svg",
+      "license": "MIT",
+      "keywords": [
+        "lodash-modularized",
+        "isboolean"
+      ],
+      "author": {
+        "name": "John-David Dalton",
+        "email": "john.david.dalton@gmail.com",
+        "url": "http://allyoucanleet.com/"
+      },
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/lodash/lodash.git"
+      },
+      "scripts": {
+        "test": "echo \"See https://travis-ci.org/lodash/lodash-cli for testing details.\""
+      },
+      "bugs": {
+        "url": "https://github.com/lodash/lodash/issues"
+      },
+      "_id": "lodash.isboolean@3.0.3",
+      "_shasum": "6c2e171db2a257cd96802fd43b01b20d5f5870f6",
+      "_from": ".",
+      "dist": {
+        "tarball": "https://registry.npmjs.org/lodash.isboolean/-/lodash.isboolean-3.0.3.tgz",
+        "integrity": "sha512-Bz5mupy2SVbPHURB98VAcw+aHh4vRV5IPNhILUCsOzRmsTmSQ17jIuqopAentWoehktxGd9e/hbIXq980/1QJg==",
+        "shasum": "6c2e171db2a257cd96802fd43b01b20d5f5870f6"
+      }
+    }
+  },
+  "time": {
+    "created": "2016-02-03T07:28:20.290Z",
+    "modified": "2016-02-03T07:28:20.290Z",
+    "3.0.3": "2016-02-03T07:28:20.290Z"
+  }
+}

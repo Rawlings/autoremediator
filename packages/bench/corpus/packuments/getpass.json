@@ -1,0 +1,49 @@
+{
+  "name": "getpass",
+  "snapshotDate": "2026-11-16T18:09:27.232Z",
+  "dist-tags": {
+    "latest": "0.1.7"
+  },
+  "versions": {
+    "0.1.7": {
+      "name": "getpass",
+      "version": "0.1.7",
+      "author": {
+        "name": "Alex Wilson",
+        "email": "alex.wilson@joyent.com"
+      },
+      "license": "MIT",
+      "_id": "getpass@0.1.7",
+      "homepage": "https://github.com/arekinath/node-getpass#readme",
+      "bugs": {
+        "url": "https://github.com/arekinath/node-getpass/issues"
+      },
+      "dist": {
+        "tarball": "https://registry.npmjs.org/getpass/-/getpass-0.1.7.tgz",
+        "integrity": "sha512-0fzj9JxOLfJ+XGLhR8ze3unN0KZCgZwiSSDz168VERjK8Wl8kVSdcu2kspd4s4wtAa1y/qrVRiAA0WclVsu0ng==",
+        "shasum": "5eff8e3e684d569ae4cb2b1282604e8ba62149fa"
+      },
+      "main": "lib/index.js",
+      "_from": ".",
+      "_shasum": "5eff8e3e684d569ae4cb2b1282604e8ba62149fa",
+      "gitHead": "e219fae3a4458a1aa4b84002539265a6a1475267",
+      "scripts": {
+        "test": "tape test/*.test.js"
+      },
+      "repository": {
+        "url": "git+https://github.com/arekinath/node-getpass.git",
+        "type": "git"
+      },
+      "description": "getpass for node.js",
+      "directories": {},
+      "dependencies": {
+        "assert-plus": "^1.0.0"
+      }
+    }
+  },
+  "time": {
+    "created": "2017-04-25T23:40:58.770Z",
+    "modified": "2017-04-25T23:40:58.770Z",
+    "0.1.7": "2017-04-25T23:40:58.770Z"
+  }
+}
