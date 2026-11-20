@@ -40,7 +40,7 @@ export function buildAppManifest(baseUrl: string): Record<string, unknown> {
   const normalized = baseUrl.replace(/\/$/, "");
   return {
     name: "autoremediator",
-    url: "https://github.com/rawlings/autoremediator",
+    url: "https://github.com/Diffra/autoremediator",
     hook_attributes: {
       url: `${normalized}/webhook`,
     },

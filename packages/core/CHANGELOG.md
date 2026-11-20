@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.24.0
+
+### Minor Changes
+
+- 6f54562: `guardPackage`, `autoremediator guard` and the install hook now warn when a package version has
+  known vulnerabilities, instead of allowing it with an informational finding. A version that is being
+  exploited still blocks. The report keeps naming the safer version, and the hook asks before an
+  install of an affected version goes ahead.
+
+### Patch Changes
+
+- 6f54562: The install guard no longer mistakes shell redirections for packages. A command such as
+  `npm install --package-lock-only 2>&1`, `npm i chalk > install.log` or `pnpm add zod &>/dev/null`
+  used to be blocked as "not a valid npm package name"; redirections (`2>&1`, `>`, `>>`, `<`, `&>`)
+  and a trailing `&` are now ignored when reading the packages to check.
+- c49929c: The repository now lives at `github.com/Diffra/autoremediator`. Package metadata (`repository`, `homepage`, `bugs`), the generated Claude Code plugin manifest, the agent card, SARIF `informationUri`, the GitHub App manifest, the CI templates and the documentation point at the new location, and the container image is `ghcr.io/diffra/autoremediator`. The in-toto predicate type URIs in evidence packs keep their original value, because they are identifiers that existing attestations already carry.
+
 ## 0.23.0
 
 ### Minor Changes

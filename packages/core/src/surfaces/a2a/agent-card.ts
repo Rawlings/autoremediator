@@ -21,7 +21,7 @@ export const BEARER_SCHEME_NAME = "bearerAuth";
 
 const JSON_MEDIA_TYPE = "application/json";
 
-const PROJECT_URL = "https://github.com/Rawlings/autoremediator";
+const PROJECT_URL = "https://github.com/Diffra/autoremediator";
 
 export interface AgentInterface {
   url: string;

@@ -5,7 +5,7 @@
       "args": [
         "-y",
         "-p",
-        "autoremediator@0.23.0",
+        "autoremediator@0.24.0",
         "autoremediator-mcp"
       ]
     }

@@ -23,7 +23,7 @@ export const INSTRUCTED_TOOLS = [
   "checkReachability",
 ] as const;
 
-export const DOCS_URL = "https://github.com/Rawlings/autoremediator/tree/master/docs";
+export const DOCS_URL = "https://github.com/Diffra/autoremediator/tree/master/docs";
 
 /** How the MCP server is started from a config file. Pinned to the compatible range at write time. */
 export function mcpServerEntry(range: string = `^${PACKAGE_VERSION}`): {
@@ -71,7 +71,7 @@ export function policyFileContent(options: { typecheck: boolean }): string {
 
 export const AGENTS_MD_SECTION = `## Autoremediator
 
-This project uses [Autoremediator](https://github.com/Rawlings/autoremediator) to fix vulnerable npm dependencies. Agents propose changes; a deterministic verifier decides whether they are kept.
+This project uses [Autoremediator](https://github.com/Diffra/autoremediator) to fix vulnerable npm dependencies. Agents propose changes; a deterministic verifier decides whether they are kept.
 
 - Plan before you change anything: \`autoremediator plan <CVE-or-GHSA-id>\` (MCP tool \`planRemediation\`). It changes nothing and returns a run id.
 - Apply with \`autoremediator runs apply <runId>\` (\`applyPlan\`). Every item is verified and taken back out if it fails. Undo a run with \`runs rollback\` (\`rollbackRun\`).

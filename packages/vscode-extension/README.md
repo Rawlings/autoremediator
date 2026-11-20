@@ -1,7 +1,7 @@
 # Autoremediator for VS Code
 
 Shows known vulnerabilities in your Node.js dependencies where you edit them, and fixes them with
-[Autoremediator](https://github.com/Rawlings/autoremediator#readme).
+[Autoremediator](https://github.com/Diffra/autoremediator#readme).
 
 ## What it does
 
@@ -26,7 +26,7 @@ Node.js 26 or later. The extension uses the `autoremediator` CLI from the worksp
 ## More
 
 Documentation, including the CLI and policy file, is in the
-[main repository](https://github.com/Rawlings/autoremediator/blob/master/docs/README.md).
+[main repository](https://github.com/Diffra/autoremediator/blob/master/docs/README.md).
 
 ## License
 

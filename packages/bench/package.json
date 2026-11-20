@@ -1,6 +1,6 @@
 {
   "name": "autoremediator-bench",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
   "description": "Open benchmark for autoremediator: hermetic fixture projects, a local npm registry, and an independent pass/fail oracle",
   "license": "MIT",

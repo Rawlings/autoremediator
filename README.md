@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/autoremediator"><img alt="npm version" src="https://img.shields.io/npm/v/autoremediator?color=cb3837&logo=npm"></a>
-  <a href="https://github.com/Rawlings/autoremediator/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Rawlings/autoremediator/ci.yml?branch=master&logo=github&label=CI"></a>
+  <a href="https://github.com/Diffra/autoremediator/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Diffra/autoremediator/ci.yml?branch=master&logo=github&label=CI"></a>
   <a href="https://www.npmjs.com/package/autoremediator"><img alt="node" src="https://img.shields.io/node/v/autoremediator?logo=nodedotjs&logoColor=white"></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/npm/l/autoremediator"></a>
 </p>
@@ -130,7 +130,7 @@ Start with the command line, then move it where it earns its keep.
 > [!NOTE]
 > Autoremediator is pre-1.0 and changes your dependency files. Start with a dry run, keep CI and
 > branch protection in place, and read [Safety](docs/safety.md) before pointing it at a shared
-> repository. Rough edges are expected; [issues](https://github.com/Rawlings/autoremediator/issues)
+> repository. Rough edges are expected; [issues](https://github.com/Diffra/autoremediator/issues)
 > are welcome.
 
 ## Learn more

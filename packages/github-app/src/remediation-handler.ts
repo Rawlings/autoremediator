@@ -953,7 +953,7 @@ function createSarifFromCves(cveIds: string[]): Record<string, unknown> {
         tool: {
           driver: {
             name: "autoremediator-github-app",
-            informationUri: "https://github.com/rawlings/autoremediator",
+            informationUri: "https://github.com/Diffra/autoremediator",
           },
         },
         results: cveIds.map((cveId) => ({

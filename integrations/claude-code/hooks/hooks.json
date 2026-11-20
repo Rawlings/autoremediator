@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "in=$(cat); case \"$in\" in *npm*|*pnpm*|*yarn*|*bun*) printf '%s' \"$in\" | npx -y -p autoremediator@0.23.0 autoremediator guard-hook;; esac",
+            "command": "in=$(cat); case \"$in\" in *npm*|*pnpm*|*yarn*|*bun*) printf '%s' \"$in\" | npx -y -p autoremediator@0.24.0 autoremediator guard-hook;; esac",
             "timeout": 30
           }
         ]

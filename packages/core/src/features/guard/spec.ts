@@ -85,7 +85,7 @@ const VALUE_FLAGS: Record<string, ReadonlySet<string>> = {
 export function extractInstallSpecs(command: string): string[] {
   const specs: string[] = [];
   for (const segment of command.split(/&&|\|\||;|\n|\|/)) {
-    const words = segment.trim().split(/\s+/).filter(Boolean);
+    const words = withoutRedirections(segment.trim().split(/\s+/).filter(Boolean));
     // The package manager has to be the command itself, optionally after `sudo` or VAR=value words.
     let at = 0;
     while (
@@ -126,6 +126,28 @@ export function extractInstallSpecs(command: string): string[] {
     }
   }
   return [...new Set(specs)];
+}
+
+/** A redirection that carries its target in the same word: `>out.log`, `2>err`, `&>all`, `<in`. */
+const REDIRECT_WITH_TARGET = /^(?:\d*|&)(?:>>?|<)\S/;
+/** A redirection whose target is the next word: `>`, `>>`, `2>`, `&>`, `<`. */
+const REDIRECT_WORD = /^(?:\d*|&)(?:>>?|<)$/;
+/** A file-descriptor duplication, which has no target: `2>&1`, `>&2`, `2>&-`. */
+const REDIRECT_FD = /^\d*[<>]&(?:\d+|-)$/;
+
+/** Drop shell redirections (`2>&1`, `> log`, `&>/dev/null`) and a trailing `&`: they are not packages. */
+function withoutRedirections(words: readonly string[]): string[] {
+  const kept: string[] = [];
+  for (let i = 0; i < words.length; i += 1) {
+    const word = words[i]!;
+    if (REDIRECT_WORD.test(word)) {
+      i += 1;
+      continue;
+    }
+    if (word === "&" || REDIRECT_FD.test(word) || REDIRECT_WITH_TARGET.test(word)) continue;
+    kept.push(word);
+  }
+  return kept;
 }
 
 export function isRange(value: string): boolean {

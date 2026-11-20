@@ -21,14 +21,14 @@
     "security-automation",
     "yarn"
   ],
-  "homepage": "https://github.com/Rawlings/autoremediator#readme",
+  "homepage": "https://github.com/Diffra/autoremediator#readme",
   "bugs": {
-    "url": "https://github.com/Rawlings/autoremediator/issues"
+    "url": "https://github.com/Diffra/autoremediator/issues"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Rawlings/autoremediator.git"
+    "url": "git+https://github.com/Diffra/autoremediator.git"
   },
   "funding": {
     "type": "github",

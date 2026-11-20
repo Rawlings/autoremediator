@@ -1,5 +1,5 @@
 name: autoremediator
-url: https://github.com/rawlings/autoremediator
+url: https://github.com/Diffra/autoremediator
 
 # Webhook URL is set dynamically by the /setup manifest flow.
 # For manual registration, replace <your-host> with your server's public URL.

@@ -98,7 +98,7 @@ export function toSarifOutput(report: ScanReport): SarifOutput {
         tool: {
           driver: {
             name: "autoremediator",
-            informationUri: "https://github.com/Rawlings/autoremediator",
+            informationUri: "https://github.com/Diffra/autoremediator",
             rules,
           },
         },

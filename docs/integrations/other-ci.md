@@ -40,7 +40,7 @@ with `spec: inputs:`. Include it with GitLab 16.11 or later:
 
 ```yaml
 include:
-  - remote: https://raw.githubusercontent.com/rawlings/autoremediator/v0.22.0/templates/gitlab/autoremediator.yml
+  - remote: https://raw.githubusercontent.com/Diffra/autoremediator/v0.22.0/templates/gitlab/autoremediator.yml
     inputs:
       version: "^0.22.0"
       base_branch: main
@@ -126,11 +126,11 @@ Requirements:
 
 The [`Dockerfile`](../../Dockerfile) builds the CLI from the checkout it sits in: non-root user,
 entrypoint `autoremediator`, git included. Released images are published to
-`ghcr.io/rawlings/autoremediator`.
+`ghcr.io/diffra/autoremediator`.
 
 ```sh
 docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/workdir" \
-  ghcr.io/rawlings/autoremediator:0.22.0 --audit --output-format json
+  ghcr.io/diffra/autoremediator:0.22.0 --audit --output-format json
 ```
 
 The image carries npm but not pnpm, yarn or bun. Projects that use those need an image that adds

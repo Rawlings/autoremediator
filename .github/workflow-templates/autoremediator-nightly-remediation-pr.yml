@@ -12,7 +12,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    uses: rawlings/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v0.21.2
+    uses: Diffra/autoremediator/.github/workflows/reusable-remediate-from-audit.yml@v0.21.2
     with:
       audit: true
       upload-summary-artifact: true

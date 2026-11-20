@@ -86,6 +86,17 @@ describe("extractInstallSpecs", () => {
     expect(extractInstallSpecs("cd app; bun add 'zod'")).toEqual(["zod"]);
   });
 
+  it("does not mistake shell redirections for packages", () => {
+    expect(extractInstallSpecs("npm install --package-lock-only 2>&1")).toEqual([]);
+    expect(extractInstallSpecs("npm install lodash 2>&1 | tail -3")).toEqual(["lodash"]);
+    expect(extractInstallSpecs("npm i chalk > install.log")).toEqual(["chalk"]);
+    expect(extractInstallSpecs("npm i chalk >> install.log 2>&1")).toEqual(["chalk"]);
+    expect(extractInstallSpecs("pnpm add zod &>/dev/null")).toEqual(["zod"]);
+    expect(extractInstallSpecs("yarn add left-pad 2>err.log &")).toEqual(["left-pad"]);
+    expect(extractInstallSpecs("npm i < /dev/null left-pad")).toEqual(["left-pad"]);
+    expect(extractInstallSpecs("npm i 'lodash@>=4.17.21'")).toEqual(["lodash@>=4.17.21"]);
+  });
+
   it("understands options before the verb and skips option values", () => {
     expect(extractInstallSpecs("npm -g install evil")).toEqual(["evil"]);
     expect(extractInstallSpecs("pnpm -w add -D evil other")).toEqual(["evil", "other"]);
@@ -272,6 +283,21 @@ describe("guardPackage", () => {
     expect(finding?.message).not.toContain("MAL-2025-9");
     expect(result.alternative).toMatchObject({ version: "2.0.1" });
   });
+
+  it.each(["caution", "vulnerable"])(
+    "warns, never allows, a version with known vulnerabilities that is not being exploited (%s)",
+    async (verdict) => {
+      const evaluate = vi.fn(async () => ({
+        verdict,
+        recommendedVersion: "2.0.1",
+        vulnerabilities: [{ cveId: "CVE-2024-0001" }],
+      })) as never;
+      const result = await guardPackage("widget", {}, deps({ evaluate }));
+      expect(result.verdict).toBe("warn");
+      expect(result.findings.find((f) => f.check === "vulnerabilities")?.severity).toBe("warn");
+      expect(result.alternative).toMatchObject({ version: "2.0.1" });
+    },
+  );
 
   it("warns, rather than allowing, when a lookup fails", async () => {
     const registryDown = await guardPackage("widget", {}, deps({ doc: new Error("ECONNRESET") }));
