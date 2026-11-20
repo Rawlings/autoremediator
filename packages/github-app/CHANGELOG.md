@@ -1,5 +1,14 @@
 # @autoremediator/github-app
 
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [6f54562]
+- Updated dependencies [6f54562]
+- Updated dependencies [c49929c]
+  - autoremediator@0.24.0
+
 ## 0.6.0
 
 ### Minor Changes
