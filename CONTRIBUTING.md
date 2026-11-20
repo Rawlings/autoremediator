@@ -8,7 +8,7 @@ open an issue first so we can agree on the approach.
 You need Node.js 26 or later and pnpm 12 (pinned in `package.json`).
 
 ```bash
-git clone https://github.com/Rawlings/autoremediator.git
+git clone https://github.com/Diffra/autoremediator.git
 cd autoremediator
 pnpm install
 ```

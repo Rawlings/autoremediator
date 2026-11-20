@@ -34,28 +34,28 @@ Precedence: explicit options, then the policy file (`.github/autoremediator.yml`
 
 ## Documentation
 
-- Index: https://github.com/Rawlings/autoremediator/blob/master/docs/README.md
-- How it works: https://github.com/Rawlings/autoremediator/blob/master/docs/how-it-works.md
-- Safety: https://github.com/Rawlings/autoremediator/blob/master/docs/safety.md
-- CLI reference: https://github.com/Rawlings/autoremediator/blob/master/docs/reference/cli.md
-- SDK reference: https://github.com/Rawlings/autoremediator/blob/master/docs/reference/sdk.md
-- Policy file: https://github.com/Rawlings/autoremediator/blob/master/docs/reference/policy-file.md
-- Integrations: https://github.com/Rawlings/autoremediator/tree/master/docs/integrations
-- Other CI (GitLab, Bitbucket Pipelines, Azure DevOps, Docker, Dagger; `changeRequest.provider` is `github|gitlab|bitbucket|azure-devops`): https://github.com/Rawlings/autoremediator/blob/master/docs/integrations/other-ci.md
-- A2A: `GET /.well-known/agent-card.json` (signed with `AUTOREMEDIATOR_A2A_SIGNING_KEY`) and `POST /a2a` (`SendMessage`, `GetTask`) on the HTTP server: https://github.com/Rawlings/autoremediator/blob/master/docs/integrations/a2a.md
-- Coding agents (init, Claude Code plugin): https://github.com/Rawlings/autoremediator/blob/master/docs/integrations/coding-agents.md
-- Earned autonomy: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/earned-autonomy.md
-- Recipes: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/recipes.md
-- Runtime reachability: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/runtime-reachability.md
-- Upgrade impact: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/upgrade-impact.md
-- Incident response: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/incident-response.md
-- Lockfile bisect: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/bisect.md
-- Dependency diet: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/dependency-diet.md
-- Benchmark: https://github.com/Rawlings/autoremediator/blob/master/docs/contributing/benchmark.md
-- Evidence pack (CRA): https://github.com/Rawlings/autoremediator/blob/master/docs/guides/evidence-pack.md
-- Exploit-proof evidence: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/proof-of-fix-generation.md
-- Silent-fix radar: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/silent-fix-radar.md
-- Maintainer VEX: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/maintainer-vex.md
-- Freshness: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/freshness.md
-- Memory: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/memory.md
-- Policy in plain language: https://github.com/Rawlings/autoremediator/blob/master/docs/guides/policy-in-plain-language.md
+- Index: https://github.com/Diffra/autoremediator/blob/master/docs/README.md
+- How it works: https://github.com/Diffra/autoremediator/blob/master/docs/how-it-works.md
+- Safety: https://github.com/Diffra/autoremediator/blob/master/docs/safety.md
+- CLI reference: https://github.com/Diffra/autoremediator/blob/master/docs/reference/cli.md
+- SDK reference: https://github.com/Diffra/autoremediator/blob/master/docs/reference/sdk.md
+- Policy file: https://github.com/Diffra/autoremediator/blob/master/docs/reference/policy-file.md
+- Integrations: https://github.com/Diffra/autoremediator/tree/master/docs/integrations
+- Other CI (GitLab, Bitbucket Pipelines, Azure DevOps, Docker, Dagger; `changeRequest.provider` is `github|gitlab|bitbucket|azure-devops`): https://github.com/Diffra/autoremediator/blob/master/docs/integrations/other-ci.md
+- A2A: `GET /.well-known/agent-card.json` (signed with `AUTOREMEDIATOR_A2A_SIGNING_KEY`) and `POST /a2a` (`SendMessage`, `GetTask`) on the HTTP server: https://github.com/Diffra/autoremediator/blob/master/docs/integrations/a2a.md
+- Coding agents (init, Claude Code plugin): https://github.com/Diffra/autoremediator/blob/master/docs/integrations/coding-agents.md
+- Earned autonomy: https://github.com/Diffra/autoremediator/blob/master/docs/guides/earned-autonomy.md
+- Recipes: https://github.com/Diffra/autoremediator/blob/master/docs/guides/recipes.md
+- Runtime reachability: https://github.com/Diffra/autoremediator/blob/master/docs/guides/runtime-reachability.md
+- Upgrade impact: https://github.com/Diffra/autoremediator/blob/master/docs/guides/upgrade-impact.md
+- Incident response: https://github.com/Diffra/autoremediator/blob/master/docs/guides/incident-response.md
+- Lockfile bisect: https://github.com/Diffra/autoremediator/blob/master/docs/guides/bisect.md
+- Dependency diet: https://github.com/Diffra/autoremediator/blob/master/docs/guides/dependency-diet.md
+- Benchmark: https://github.com/Diffra/autoremediator/blob/master/docs/contributing/benchmark.md
+- Evidence pack (CRA): https://github.com/Diffra/autoremediator/blob/master/docs/guides/evidence-pack.md
+- Exploit-proof evidence: https://github.com/Diffra/autoremediator/blob/master/docs/guides/proof-of-fix-generation.md
+- Silent-fix radar: https://github.com/Diffra/autoremediator/blob/master/docs/guides/silent-fix-radar.md
+- Maintainer VEX: https://github.com/Diffra/autoremediator/blob/master/docs/guides/maintainer-vex.md
+- Freshness: https://github.com/Diffra/autoremediator/blob/master/docs/guides/freshness.md
+- Memory: https://github.com/Diffra/autoremediator/blob/master/docs/guides/memory.md
+- Policy in plain language: https://github.com/Diffra/autoremediator/blob/master/docs/guides/policy-in-plain-language.md

@@ -3,7 +3,7 @@
 # Include it with `inputs:` (GitLab 16.11+; works with `include: remote`, `project` or `component`):
 #
 #   include:
-#     - remote: https://raw.githubusercontent.com/rawlings/autoremediator/v0.22.0/templates/gitlab/autoremediator.yml
+#     - remote: https://raw.githubusercontent.com/Diffra/autoremediator/v0.22.0/templates/gitlab/autoremediator.yml
 #       inputs:
 #         version: "^0.22.0"
 #

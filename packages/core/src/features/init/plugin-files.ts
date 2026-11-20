@@ -14,7 +14,7 @@ import {
   yamlString,
 } from "./assets.js";
 
-const REPOSITORY = "https://github.com/Rawlings/autoremediator";
+const REPOSITORY = "https://github.com/Diffra/autoremediator";
 const DESCRIPTION =
   "Agentic remediation for vulnerable npm dependencies: plan, apply with verification, repair upgrades that break the project, roll back.";
 

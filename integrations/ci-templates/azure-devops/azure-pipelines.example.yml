@@ -13,7 +13,7 @@ resources:
   repositories:
     - repository: autoremediator
       type: github
-      name: rawlings/autoremediator
+      name: Diffra/autoremediator
       ref: refs/tags/v0.22.0
       endpoint: github-service-connection # GitHub service connection with read access
 

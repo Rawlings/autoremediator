@@ -58,7 +58,7 @@ range of the CLI that wrote it. Re-run `init` after upgrading to move it.
 Instead of per-project files, install the plugin once:
 
 ```text
-/plugin marketplace add Rawlings/autoremediator
+/plugin marketplace add Diffra/autoremediator
 /plugin install autoremediator@autoremediator
 ```
 

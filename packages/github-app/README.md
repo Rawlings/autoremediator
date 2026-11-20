@@ -10,7 +10,7 @@ on, and can open pull requests with the fixes.
 - Optionally repairs failing checks on its own pull requests.
 
 Setup, repository configuration and the full list of settings are in the
-[GitHub App guide](https://github.com/Rawlings/autoremediator/blob/master/docs/integrations/github-app.md).
+[GitHub App guide](https://github.com/Diffra/autoremediator/blob/master/docs/integrations/github-app.md).
 
 ## License
 
