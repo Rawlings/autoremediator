@@ -29,7 +29,7 @@ It reads the npm registry (from your `.npmrc`) and OSV, and installs nothing.
 | Install scripts (`preinstall`, `install`, `postinstall`) | **warn**; **block** if the previous release had none and this one is under a week old |
 | Build provenance | **warn** if the previous release had it and this one lost it |
 | Deprecated release | **warn** |
-| Known vulnerabilities, with exploit signals | **block** if actively exploited, **warn** for high severity, otherwise a note; a fixed version is offered |
+| Known vulnerabilities, with exploit signals | **block** if actively exploited, otherwise **warn** whenever the version has known vulnerabilities; a fixed version is offered |
 | Not a registry package (a URL, `github:` shorthand, a path) | **warn**: its contents cannot be checked |
 
 The verdict is the worst result: `allow`, `warn` or `block`. A lookup that fails (registry or OSV

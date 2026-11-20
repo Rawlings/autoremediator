@@ -28,7 +28,7 @@ route lists in the Mode 4 and Mode 5 entries).
 ### Guard: `autoremediator guard <pkg...>`
 
 - Trigger: `autoremediator guard <spec...>`, `guardPackage(spec, options)` (MCP tool and `POST /packages/guard` too), `guard --git-diff` (dependencies added since a git ref), or the `guard-hook --host claude-code|cursor|copilot` pre-command hook (`init --guard` writes the host's hook file and a `.pnpmfile.cjs` for pnpm; the Claude Code plugin ships its own)
-- Behavior: judges a package before install (existence, OSV malware, look-alike names, release age, install scripts, provenance, vulnerabilities) as `allow`/`warn`/`block`; lookup failures warn; exit `0`/`3`/`4`; the hook is a guard rail for plain install commands, not a security boundary
+- Behavior: judges a package before install (existence, OSV malware, look-alike names, release age, install scripts, provenance, vulnerabilities) as `allow`/`warn`/`block` (a version with known vulnerabilities warns, and blocks when one is being exploited); lookup failures warn; exit `0`/`3`/`4`; the hook is a guard rail for plain install commands, not a security boundary
 - Source: `packages/core/src/features/guard/`
 
 ### Git hooks: `autoremediator hook install|uninstall|status`

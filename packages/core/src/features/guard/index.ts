@@ -200,15 +200,9 @@ export async function guardPackage(
       const evaluation = await deps.evaluate(name, { version, cwd: options.cwd });
       const vulns = evaluation.vulnerabilities.filter((entry) => !entry.cveId.startsWith("MAL-"));
       if (vulns.length > 0 && evaluation.verdict !== "safe") {
-        const worst =
-          evaluation.verdict === "actively-exploited"
-            ? "block"
-            : evaluation.verdict === "vulnerable"
-              ? "warn"
-              : "info";
         findings.push({
           check: "vulnerabilities",
-          severity: worst,
+          severity: evaluation.verdict === "actively-exploited" ? "block" : "warn",
           message: `${name}@${version} has ${vulns.length} known ${vulns.length === 1 ? "vulnerability" : "vulnerabilities"} (${vulns
             .slice(0, 3)
             .map((v) => v.cveId)
